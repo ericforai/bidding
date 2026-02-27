@@ -9,6 +9,10 @@
 /* ========== Google Fonts ========== */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
+/* ========== Global Styles ========== */
+@import './styles/accessibility.css';
+@import './styles/interactions.css';
+
 /* ========== 全局重置 ========== */
 * {
   margin: 0;
