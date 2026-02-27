@@ -2213,4 +2213,205 @@ onMounted(() => {
     }
   }
 }
+
+/* ==================== Button Enhancements ==================== */
+
+.header-actions .el-button {
+  min-width: 110px;
+  height: 38px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-actions .el-button--primary {
+  background: linear-gradient(135deg, #0369a1, #0284c7);
+  border: none;
+  box-shadow: 0 2px 8px rgba(3, 105, 161, 0.2);
+}
+
+.header-actions .el-button--primary:hover {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+}
+
+.header-actions .el-button--primary:active {
+  transform: translateY(0);
+}
+
+/* ==================== Tab Enhancements ==================== */
+
+.category-tabs :deep(.el-tabs__item) {
+  height: 42px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.category-tabs :deep(.el-tabs__item:hover) {
+  color: #0369a1;
+}
+
+.category-tabs :deep(.el-tabs__item.is-active) {
+  color: #0369a1;
+  font-weight: 600;
+}
+
+.category-tabs :deep(.el-tabs__active-bar) {
+  background: linear-gradient(90deg, #0369a1, #0ea5e9);
+  height: 3px;
+  border-radius: 2px;
+}
+
+.tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-label .el-icon {
+  font-size: 16px;
+}
+
+/* ==================== Search Card Enhancements ==================== */
+
+.search-card .el-button {
+  height: 36px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 20px;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-card .el-button--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.25);
+}
+
+.search-card :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: none;
+}
+
+.search-card :deep(.el-input__wrapper:hover) {
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.1);
+}
+
+.search-card :deep(.el-input__wrapper.is-focus) {
+  border-color: #0369a1;
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+}
+
+/* ==================== Template Card Enhancements ==================== */
+
+.template-card {
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1.5px solid #e5e7eb;
+}
+
+.template-card:hover {
+  border-color: #0369a1;
+  box-shadow: 0 8px 24px rgba(3, 105, 161, 0.12);
+  transform: translateY(-2px);
+}
+
+.template-card:active {
+  transform: translateY(0);
+}
+
+.template-card .card-actions {
+  gap: 8px;
+}
+
+.template-card .card-actions .el-button {
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.template-card .card-actions .el-button:hover {
+  transform: translateY(-1px);
+}
+
+/* ==================== Tag Enhancements ==================== */
+
+:deep(.el-tag) {
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border: none;
+}
+
+:deep(.el-tag--primary) {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #ffffff;
+}
+
+:deep(.el-tag--success) {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+}
+
+:deep(.el-tag--warning) {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+}
+
+:deep(.el-tag--danger) {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #ffffff;
+}
+
+:deep(.el-tag--info) {
+  background: linear-gradient(135deg, #64748b, #475569);
+  color: #ffffff;
+}
+
+/* ==================== Table Action Buttons ==================== */
+
+.table-card :deep(.el-button--link) {
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.table-card :deep(.el-button--link:hover) {
+  transform: translateX(2px);
+}
+
+/* ==================== Pagination Enhancement ==================== */
+
+.pagination-wrapper :deep(.el-pagination) {
+  gap: 8px;
+}
+
+.pagination-wrapper :deep(.el-pager li) {
+  border-radius: 8px;
+  min-width: 36px;
+  height: 36px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pagination-wrapper :deep(.el-pager li:hover) {
+  background: #f1f5f9;
+}
+
+.pagination-wrapper :deep(.el-pager li.is-active) {
+  background: linear-gradient(135deg, #0369a1, #0284c7);
+  color: #ffffff;
+}
 </style>
