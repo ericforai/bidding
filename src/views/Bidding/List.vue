@@ -3463,4 +3463,215 @@ const handleOpportunityAction = (id) => {
 .mobile-card-actions .el-button {
   flex: 1;
 }
+
+/* ==================== Button Interaction Enhancements ==================== */
+
+/* Page header buttons */
+.header-actions .el-button {
+  min-width: 110px;
+  height: 38px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.header-actions .el-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.header-actions .el-button:active {
+  transform: translateY(0);
+}
+
+/* Search button */
+.header-actions .el-button--primary {
+  background: linear-gradient(135deg, #0369a1, #0284c7);
+  border: none;
+}
+
+.header-actions .el-button--primary:hover {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+}
+
+/* Success button */
+.header-actions .el-button--success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none;
+}
+
+.header-actions .el-button--success:hover {
+  background: linear-gradient(135deg, #059669, #10b981);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Warning button */
+.header-actions .el-button--warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: none;
+}
+
+.header-actions .el-button--warning:hover {
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+/* Default button */
+.header-actions .el-button--default {
+  border: 1.5px solid #e5e7eb;
+  color: #64748b;
+}
+
+.header-actions .el-button--default:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+  background: #f8fafc;
+}
+
+/* Search form buttons */
+.search-card .el-button {
+  height: 36px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 20px;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-card .el-button--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.25);
+}
+
+/* ==================== Input Field Enhancements ==================== */
+
+/* Search input */
+.search-card :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: none;
+}
+
+.search-card :deep(.el-input__wrapper:hover) {
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.1);
+}
+
+.search-card :deep(.el-input__wrapper.is-focus) {
+  border-color: #0369a1;
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+}
+
+/* Select dropdown */
+.search-card :deep(.el-select__wrapper) {
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-card :deep(.el-select__wrapper:hover) {
+  border-color: #94a3b8;
+}
+
+.search-card :deep(.el-select__wrapper.is-focus) {
+  border-color: #0369a1;
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+}
+
+/* Form labels */
+.search-card :deep(.el-form-item__label) {
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+}
+
+/* ==================== Card Actions Buttons ==================== */
+
+.card-actions .el-button {
+  height: 32px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.card-actions .el-button:hover {
+  transform: translateY(-1px);
+}
+
+.card-actions .el-button:active {
+  transform: translateY(0);
+}
+
+/* Radio button group */
+.card-actions :deep(.el-radio-group) {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid #e5e7eb;
+}
+
+.card-actions :deep(.el-radio-button__inner) {
+  border: none;
+  border-radius: 0;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-actions :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: linear-gradient(135deg, #0369a1, #0284c7);
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* ==================== Batch Action Enhancements ==================== */
+
+.batch-buttons .el-button {
+  min-width: 100px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.batch-buttons .el-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.batch-buttons .el-button:active {
+  transform: translateY(0);
+}
+
+/* ==================== Link Enhancements ==================== */
+
+.el-link {
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.el-link:hover {
+  transform: translateX(2px);
+}
+
+.el-link .el-icon {
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.el-link:hover .el-icon {
+  transform: translateX(4px);
+}
 </style>
