@@ -427,12 +427,13 @@ export default {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--gray-100);
-  transition: all 0.25s ease;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+  cursor: pointer;
 }
 
 .b2b-stat-card:hover {
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  border-color: var(--brand-primary);
 }
 
 .b2b-stat-icon {
@@ -510,6 +511,8 @@ export default {
 /* 流程卡片 */
 .process-item-card {
   margin-bottom: var(--space-sm);
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
 }
 
 .process-item-card :deep(.el-card__body) {
@@ -560,7 +563,8 @@ export default {
   background: var(--gray-50);
   border-radius: var(--radius-sm);
   border-left: 3px solid transparent;
-  transition: all 0.2s;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
 }
 
 .todo-item.priority-high {
@@ -626,7 +630,7 @@ export default {
   background: var(--gray-50);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .project-item:hover {
@@ -676,6 +680,10 @@ export default {
 .activity-item {
   display: flex;
   gap: var(--space-sm);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
 }
 
 .activity-icon {
