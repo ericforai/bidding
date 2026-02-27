@@ -323,4 +323,193 @@ onMounted(() => {
     min-height: 44px;
   }
 }
+
+/* ==================== Button Enhancements ==================== */
+
+.card-header .el-button {
+  min-width: 110px;
+  height: 38px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-header .el-button--primary {
+  background: linear-gradient(135deg, #0369a1, #0284c7);
+  border: none;
+  box-shadow: 0 2px 8px rgba(3, 105, 161, 0.2);
+}
+
+.card-header .el-button--primary:hover {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+}
+
+.card-header .el-button--primary:active {
+  transform: translateY(0);
+}
+
+/* Search form buttons */
+.search-form .el-button {
+  height: 36px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 20px;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-form .el-button--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.25);
+}
+
+.search-form .el-button--default:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+  background: #f8fafc;
+}
+
+/* ==================== Input Field Enhancements ==================== */
+
+.search-form :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: none;
+}
+
+.search-form :deep(.el-input__wrapper:hover) {
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.1);
+}
+
+.search-form :deep(.el-input__wrapper.is-focus) {
+  border-color: #0369a1;
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+}
+
+/* Select dropdown */
+.search-form :deep(.el-select__wrapper) {
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-form :deep(.el-select__wrapper:hover) {
+  border-color: #94a3b8;
+}
+
+.search-form :deep(.el-select__wrapper.is-focus) {
+  border-color: #0369a1;
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+}
+
+/* Form labels */
+.search-form :deep(.el-form-item__label) {
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+}
+
+/* ==================== Table Link Enhancements ==================== */
+
+:deep(.el-link) {
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:deep(.el-link:hover) {
+  transform: translateX(2px);
+}
+
+/* ==================== Tag Enhancements ==================== */
+
+:deep(.el-tag) {
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border: none;
+}
+
+:deep(.el-tag--primary) {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #ffffff;
+}
+
+:deep(.el-tag--success) {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+}
+
+:deep(.el-tag--warning) {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+}
+
+:deep(.el-tag--danger) {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #ffffff;
+}
+
+:deep(.el-tag--info) {
+  background: linear-gradient(135deg, #64748b, #475569);
+  color: #ffffff;
+}
+
+/* ==================== Progress Bar Enhancement ==================== */
+
+:deep(.el-progress__bar) {
+  border-radius: 10px;
+}
+
+:deep(.el-progress-bar__outer) {
+  border-radius: 10px;
+  background: #f1f5f9;
+}
+
+/* ==================== Pagination Enhancement ==================== */
+
+.pagination :deep(.el-pagination) {
+  gap: 8px;
+}
+
+.pagination :deep(.el-pager li) {
+  border-radius: 8px;
+  min-width: 36px;
+  height: 36px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pagination :deep(.el-pager li:hover) {
+  background: #f1f5f9;
+}
+
+.pagination :deep(.el-pager li.is-active) {
+  background: linear-gradient(135deg, #0369a1, #0284c7);
+  color: #ffffff;
+}
+
+.pagination :deep(.btn-prev),
+.pagination :deep(.btn-next) {
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pagination :deep(.btn-prev:hover),
+.pagination :deep(.btn-next:hover) {
+  background: #f1f5f9;
+  color: #0369a1;
+}
 </style>
