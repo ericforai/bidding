@@ -6,6 +6,10 @@
 </script>
 
 <style>
+/* ========== Google Fonts ========== */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+/* ========== 全局重置 ========== */
 * {
   margin: 0;
   padding: 0;
@@ -14,6 +18,6 @@
 
 html, body, #app {
   height: 100%;
-  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 </style>

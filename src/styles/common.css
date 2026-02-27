@@ -1,4 +1,38 @@
-/* 文字 */
+/* ========== 全局焦点状态（无障碍） ========== */
+*:focus-visible {
+  outline: 2px solid var(--focus-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* 跳过链接（键盘导航） */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--brand-primary);
+  color: white;
+  padding: 8px 16px;
+  z-index: 9999;
+  transition: top 0.3s;
+}
+
+.skip-to-content:focus {
+  top: 0;
+}
+
+/* Element Plus 组件焦点增强 */
+.el-button:focus-visible,
+.el-input__inner:focus-visible,
+.el-textarea__inner:focus-visible,
+.el-select .el-input__inner:focus-visible,
+.el-checkbox__input:focus-visible .el-checkbox__inner,
+.el-radio__input:focus-visible .el-radio__inner {
+  outline: 2px solid var(--focus-primary);
+  outline-offset: 2px;
+}
+
+/* ========== 文字颜色 ========== */
 .text-primary { color: var(--text-primary); }
 .text-secondary { color: var(--text-secondary); }
 .text-tertiary { color: var(--text-tertiary); }
@@ -29,10 +63,27 @@
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
 .flex-col { display: flex; flex-direction: column; }
 
+/* 光标样式 */
+.cursor-pointer { cursor: pointer; }
+.cursor-default { cursor: default; }
+.cursor-not-allowed { cursor: not-allowed; }
+
 /* 卡片 */
 .card {
   background: #fff;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   border: 1px solid var(--gray-100);
+}
+
+/* ========== 无障碍：减少动画偏好 ========== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
