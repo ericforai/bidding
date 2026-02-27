@@ -126,24 +126,41 @@
   transform: translateY(-2px);
 }
 
+/* ==================== Metric Card (for Dashboard) ==================== */
+.b2b-metric-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #fff;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--gray-200);
+  transition: all 0.25s ease;
+}
+
+.b2b-metric-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--brand-primary);
+}
+
 .b2b-metric-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-lg);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: #fff;
 }
 
-.b2b-metric-icon.blue { background: var(--brand-primary); }
-.b2b-metric-icon.green { background: var(--color-success); }
-.b2b-metric-icon.orange { background: var(--color-warning); }
-.b2b-metric-icon.red { background: var(--color-danger); }
+.b2b-metric-icon.blue { background: rgba(0, 102, 204, 0.1); color: var(--brand-primary); }
+.b2b-metric-icon.green { background: rgba(0, 170, 68, 0.1); color: var(--color-success); }
+.b2b-metric-icon.orange { background: rgba(255, 136, 0, 0.1); color: var(--color-warning); }
+.b2b-metric-icon.red { background: rgba(221, 34, 0, 0.1); color: var(--color-danger); }
 
 .b2b-metric-icon .el-icon {
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .b2b-metric-content {
@@ -153,13 +170,14 @@
 
 .b2b-metric-label {
   font-size: 13px;
+  font-weight: 500;
   color: var(--text-secondary);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .b2b-metric-value {
-  font-size: 22px;
-  font-weight: 600;
+  font-size: 24px;
+  font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
 }
@@ -168,8 +186,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
-  margin-top: 4px;
+  font-size: 13px;
+  margin-top: 2px;
 }
 
 .b2b-metric-trend .trend-label {
