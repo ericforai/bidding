@@ -27,14 +27,15 @@
         :class="metric.trendClass"
       >
         <div class="b2b-metric-icon" :class="getMetricIconClass(metric.key)">
-          <component :is="metric.icon" :size="24" />
+          <component :is="metric.icon" :size="18" />
         </div>
         <div class="b2b-metric-content">
           <div class="b2b-metric-label">{{ metric.label }}</div>
           <div class="b2b-metric-value">{{ metric.value }}</div>
           <div class="b2b-metric-trend" :class="getTrendClass(metric.trendDirection)">
-            <component :is="metric.trendIcon" :size="14" />
-            <span>{{ metric.change }}</span>
+            <component :is="metric.trendIcon" :size="12" />
+            <span class="trend-value">{{ metric.change }}</span>
+            <span class="trend-label">较上月</span>
           </div>
         </div>
       </div>

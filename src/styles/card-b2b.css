@@ -127,9 +127,9 @@
 }
 
 .b2b-metric-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-full);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -142,32 +142,45 @@
 .b2b-metric-icon.orange { background: var(--color-warning); }
 .b2b-metric-icon.red { background: var(--color-danger); }
 
+.b2b-metric-icon .el-icon {
+  font-size: 18px;
+}
+
 .b2b-metric-content {
   flex: 1;
+  min-width: 0;
 }
 
 .b2b-metric-label {
-  font-size: var(--font-size-sm);
+  font-size: 13px;
   color: var(--text-secondary);
-  margin-bottom: var(--space-xs);
+  margin-bottom: 4px;
 }
 
 .b2b-metric-value {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 600;
   color: var(--text-primary);
+  line-height: 1.2;
 }
 
 .b2b-metric-trend {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
-  font-size: var(--font-size-xs);
-  margin-top: var(--space-xs);
+  gap: 4px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.b2b-metric-trend .trend-label {
+  color: var(--text-tertiary);
+  font-weight: 400;
 }
 
 .b2b-metric-trend.positive { color: var(--color-success); }
+.b2b-metric-trend.positive .trend-value { color: var(--color-success); }
 .b2b-metric-trend.negative { color: var(--color-danger); }
+.b2b-metric-trend.negative .trend-value { color: var(--color-danger); }
 
 /* ==================== Section Card ==================== */
 .b2b-section-card {
