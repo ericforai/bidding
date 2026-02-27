@@ -145,7 +145,9 @@ const checkMobile = () => {
 }
 
 // 菜单选择后关闭抽屉
-const handleMenuSelect = () => {
+const handleMenuSelect = (index) => {
+  console.log('[Sidebar] Menu selected:', index)
+  console.log('[Sidebar] Current route:', route.path)
   if (isMobile.value) {
     drawerVisible.value = false
   }
