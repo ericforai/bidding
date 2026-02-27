@@ -1,4 +1,7 @@
 <template>
+  <!-- 跳过导航链接 - 无障碍功能 -->
+  <a href="#main-content" class="skip-to-content">跳转到主内容</a>
+
   <el-container class="main-layout" :class="{ 'mobile': isMobile }">
     <!-- PC端侧边栏 -->
     <el-aside :width="isCollapse ? '64px' : '220px'" class="layout-aside" v-if="!isMobile">
@@ -16,7 +19,7 @@
         />
       </el-header>
 
-      <el-main class="layout-main">
+      <el-main id="main-content" class="layout-main">
         <router-view v-slot="{ Component }">
           <transition name="fade-transform" mode="out-in">
             <component :is="Component" />
@@ -56,6 +59,26 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* 跳过导航链接样式 - 无障碍功能 */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #1890ff;
+  color: #ffffff;
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 9999;
+  font-weight: 500;
+  transition: top 0.3s ease;
+}
+
+.skip-to-content:focus {
+  top: 0;
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
 .main-layout {
   height: 100vh;
 }
