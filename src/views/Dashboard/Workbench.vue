@@ -15,7 +15,7 @@
             <div class="b2b-stat-trend" :class="'trend-' + stat.trend.direction">
               <el-icon :size="12">
                 <ArrowTop v-if="stat.trend.direction === 'up'" />
-                <ArrowBottom v-else-if="stat.trend.direction === 'down'" />
+                <ArrowDown v-else-if="stat.trend.direction === 'down'" />
               </el-icon>
               <span>{{ stat.trend.value }}</span>
               <span class="trend-label">{{ stat.trend.label }}</span>
@@ -224,7 +224,7 @@ import { useRouter } from 'vue-router'
 import {
   List, Warning, Briefcase, Bell, View, Clock, Calendar, User,
   Document, Plus, TrendCharts, DataAnalysis, Message, Check,
-  CircleCheck, CircleClose, Loading, ArrowTop, ArrowBottom
+  CircleCheck, CircleClose, Loading, ArrowTop, ArrowDown
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
