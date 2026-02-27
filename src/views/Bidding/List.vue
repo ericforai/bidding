@@ -242,62 +242,56 @@
           </el-table-column>
           <el-table-column prop="aiScore" label="AI评分" width="100" align="center">
             <template #default="{ row }">
-              <el-tag :type="getScoreTagType(row.aiScore)" size="small">
-                {{ row.aiScore }}分
-              </el-tag>
+              <span class="ai-score-highlight" :class="row.aiScore >= 85 ? 'ai-score-high' : row.aiScore >= 70 ? 'ai-score-medium' : 'ai-score-low'">
+                {{ row.aiScore }}
+              </span>
             </template>
           </el-table-column>
           <el-table-column prop="deadline" label="截止日期" width="120" align="center" />
           <el-table-column prop="status" label="状态" width="100" align="center">
             <template #default="{ row }">
-              <el-tag :type="getStatusType(row.status)" size="small">
+              <span class="status-badge" :class="'status-' + row.status">
                 {{ getStatusText(row.status) }}
-              </el-tag>
+              </span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="320" align="center" fixed="right">
+          <el-table-column label="操作" width="280" align="center" fixed="right">
             <template #default="{ row }">
-              <el-button link type="primary" size="small" @click="handleViewDetail(row.id)">
-                查看详情
-              </el-button>
-              <el-button link type="success" size="small" @click="handleAIAnalysis(row.id)">
-                AI分析
-              </el-button>
-              <el-button link type="primary" size="small" @click="handleParticipate(row.id)">
-                参与投标
-              </el-button>
-              <el-button
-                link
-                :type="isFollowed(row.id) ? 'warning' : 'default'"
-                size="small"
-                @click="handleToggleFollow(row.id)"
-              >
-                <el-icon>
-                  <Star v-if="isFollowed(row.id)" />
-                  <StarFilled v-else />
-                </el-icon>
-              </el-button>
-              <el-dropdown trigger="click" @command="(cmd) => handleRowAction(cmd, row)">
-                <el-button link type="primary" size="small">
-                  更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
-                </el-button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item command="distribute">
-                      <el-icon><Share /></el-icon>分发
-                    </el-dropdown-item>
-                    <el-dropdown-item command="claim">
-                      <el-icon><CircleCheck /></el-icon>领取
-                    </el-dropdown-item>
-                    <el-dropdown-item command="assign">
-                      <el-icon><User /></el-icon>指派
-                    </el-dropdown-item>
-                    <el-dropdown-item command="delete" divided>
-                      <el-icon><Delete /></el-icon>删除
-                    </el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
+              <div class="table-actions">
+                <button class="btn-view" @click="handleViewDetail(row.id)">
+                  <el-icon><View /></el-icon>
+                  详情
+                </button>
+                <button class="btn-analyze" @click="handleAIAnalysis(row.id)">
+                  <el-icon><MagicStick /></el-icon>
+                  AI分析
+                </button>
+                <button class="btn-participate" @click="handleParticipate(row.id)">
+                  <el-icon><Document /></el-icon>
+                  参与投标
+                </button>
+                <el-dropdown trigger="click" @command="(cmd) => handleRowAction(cmd, row)">
+                  <button class="btn-more">
+                    <el-icon><MoreFilled /></el-icon>
+                  </button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="distribute">
+                        <el-icon><Share /></el-icon>分发
+                      </el-dropdown-item>
+                      <el-dropdown-item command="claim">
+                        <el-icon><CircleCheck /></el-icon>领取
+                      </el-dropdown-item>
+                      <el-dropdown-item command="assign">
+                        <el-icon><User /></el-icon>指派
+                      </el-dropdown-item>
+                      <el-dropdown-item command="delete" divided>
+                        <el-icon><Delete /></el-icon>删除
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -3184,6 +3178,158 @@ const handleOpportunityAction = (id) => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+/* ==================== Table Action Buttons ==================== */
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  background: #F8FAFC;
+  color: #64748B;
+}
+
+.table-actions button:hover {
+  transform: translateY(-1px);
+}
+
+/* 查看详情按钮 */
+.btn-view {
+  color: #0369A1;
+}
+
+.btn-view:hover {
+  background: #E0F2FE !important;
+  color: #0369A1 !important;
+  box-shadow: 0 2px 4px rgba(3, 105, 161, 0.2);
+}
+
+/* AI分析按钮 */
+.btn-analyze {
+  color: #7C3AED;
+  background: linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%) !important;
+}
+
+.btn-analyze:hover {
+  background: linear-gradient(135deg, #DDD6FE 0%, #C7D2FE 100%) !important;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
+}
+
+/* 参与投标按钮 - 主操作 */
+.btn-participate {
+  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: 0 2px 6px rgba(3, 105, 161, 0.25);
+  font-weight: 600;
+}
+
+.btn-participate:hover {
+  background: linear-gradient(135deg, #0479b8 0%, #09a8c9 100%) !important;
+  box-shadow: 0 4px 10px rgba(3, 105, 161, 0.35);
+  transform: translateY(-2px);
+}
+
+/* 更多按钮 */
+.btn-more {
+  color: #94A3B8;
+}
+
+.btn-more:hover {
+  background: #F1F5F9 !important;
+  color: #64748B !important;
+}
+
+/* ==================== AI Score Highlight ==================== */
+
+.ai-score-highlight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 24px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ai-score-high {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+}
+
+.ai-score-medium {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+}
+
+.ai-score-low {
+  background: linear-gradient(135deg, #94A3B8 0%, #64748B 100%);
+  color: #fff;
+}
+
+/* ==================== Status Badge ==================== */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-badge.status-new {
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  color: #fff;
+}
+
+.status-badge.status-following {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  color: #fff;
+}
+
+.status-badge.status-bidding {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #fff;
+}
+
+/* ==================== Title Cell Enhancement ==================== */
+
+.title-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title-text {
+  font-weight: 500;
+  color: #1E293B;
+  font-size: 14px;
+}
+
+.title-cell .el-tag {
+  flex-shrink: 0;
 }
 
 /* 获取标讯结果样式 */
