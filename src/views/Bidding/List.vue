@@ -2362,9 +2362,23 @@ const handleOpportunityAction = (id) => {
 }
 
 .match-tag {
-  margin-left: 4px;
+  margin-left: 8px;
   background: linear-gradient(135deg, #10B981 0%, #059669 100%);
   border: none;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 5px 12px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+  letter-spacing: 0.5px;
+}
+
+/* 表格中的高匹配标签 */
+:deep(.el-tag--success) {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  border: none;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .recommend-cards {
