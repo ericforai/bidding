@@ -412,4 +412,72 @@ export default {
     justify-content: flex-end;
   }
 }
+
+/* ==================== Button Enhancements ==================== */
+
+.header-actions .el-button {
+  min-width: 90px;
+  height: 38px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-actions .el-button--primary {
+  background: linear-gradient(135deg, #0369a1, #0284c7);
+  border: none;
+  box-shadow: 0 2px 8px rgba(3, 105, 161, 0.2);
+}
+
+.header-actions .el-button--primary:hover {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+}
+
+.header-actions .el-button--primary:active {
+  transform: translateY(0);
+}
+
+.header-actions .el-button--default {
+  border: 1.5px solid #e5e7eb;
+  color: #64748b;
+}
+
+.header-actions .el-button--default:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+  background: #f8fafc;
+}
+
+/* ==================== Tab Enhancements ==================== */
+
+.ai-tabs :deep(.el-tabs__item) {
+  height: 42px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px 8px 0 0;
+}
+
+.ai-tabs :deep(.el-tabs__item:hover) {
+  color: #0369a1;
+  background: #f8fafc;
+}
+
+.ai-tabs :deep(.el-tabs__item.is-active) {
+  color: #0369a1;
+  font-weight: 600;
+}
+
+.ai-tabs :deep(.el-tabs__active-bar) {
+  background: linear-gradient(90deg, #0369a1, #0ea5e9);
+  height: 3px;
+  border-radius: 2px;
+}
 </style>

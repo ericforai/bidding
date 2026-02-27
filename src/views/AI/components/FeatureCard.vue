@@ -296,4 +296,112 @@ export default {
     flex-direction: column;
   }
 }
+
+/* ==================== Card Interaction Enhancements ==================== */
+
+.feature-card {
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1.5px solid #e5e7eb;
+}
+
+.feature-card:hover {
+  border-color: #0369a1;
+  box-shadow: 0 8px 24px rgba(3, 105, 161, 0.12);
+  transform: translateY(-2px);
+}
+
+.feature-card:active {
+  transform: translateY(0);
+}
+
+/* ==================== Icon Enhancement ==================== */
+
+.feature-icon {
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.feature-card:hover .feature-icon {
+  transform: scale(1.05) rotate(5deg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ==================== Switch Enhancement ==================== */
+
+:deep(.el-switch__core) {
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==================== Button Enhancement ==================== */
+
+:deep(.el-button--link) {
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:deep(.el-button--link:hover) {
+  transform: translateX(2px);
+}
+
+/* ==================== Tag Enhancement ==================== */
+
+:deep(.el-tag) {
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border: none;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:deep(.el-tag--primary) {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #ffffff;
+}
+
+:deep(.el-tag--success) {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+}
+
+:deep(.el-tag--warning) {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+}
+
+:deep(.el-tag--danger) {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #ffffff;
+}
+
+:deep(.el-tag--info) {
+  background: linear-gradient(135deg, #64748b, #475569);
+  color: #ffffff;
+}
+
+:deep(.el-tag:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ==================== Prompt Preview Enhancement ==================== */
+
+.prompt-preview {
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.prompt-preview:hover {
+  background: #edf2f7;
+}
+
+.prompt-icon {
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.prompt-preview:hover .prompt-icon {
+  transform: scale(1.1);
+  color: #0284c7;
+}
 </style>
