@@ -483,6 +483,31 @@ const multiMenus = computed(() => {
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ========== 子菜单箭头动画 ========== */
+:deep(.el-sub-menu__title-arrow) {
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:deep(.el-sub-menu.is-opened > .el-sub-menu__title .el-sub-menu__title-arrow) {
+  transform: rotate(180deg);
+}
+
+/* ========== 子菜单展开动画 ========== */
+:deep(.el-menu--inline) {
+  animation: slideDown 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ========== 折叠状态 ========== */
 :deep(.el-menu--collapse .el-menu-item) {
   padding: 0;
@@ -528,14 +553,22 @@ const multiMenus = computed(() => {
   font-size: 20px;
   color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
-  transition: color 0.3s;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md, 8px);
 }
 
 .close-icon:hover {
   color: #409EFF;
+  background: rgba(64, 158, 255, 0.15);
+}
+
+.close-icon:active {
+  transform: scale(0.95);
 }
 
 .close-icon :deep(.el-icon) {
