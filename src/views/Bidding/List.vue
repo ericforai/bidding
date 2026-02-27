@@ -2229,34 +2229,120 @@ const handleOpportunityAction = (id) => {
 
 <style scoped>
 .bidding-list-page {
-  padding: 20px;
-  background-color: #f5f7fa;
+  padding: 24px;
+  background: #F8FAFC;
   min-height: 100vh;
 }
 
+/* ==================== 页面头部 ==================== */
 .page-header {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.header-left {
+  flex: 1;
 }
 
 .page-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #303133;
+  font-size: 28px;
+  font-weight: 700;
+  color: #0F172A;
   margin: 0 0 8px 0;
+  letter-spacing: -0.02em;
 }
 
 .page-subtitle {
   font-size: 14px;
-  color: #909399;
+  color: #64748B;
   margin: 0;
 }
 
-.search-card {
-  margin-bottom: 20px;
+.header-actions {
+  display: flex;
+  gap: 12px;
 }
 
-.ai-recommend-section {
+/* ==================== 搜索卡片 ==================== */
+.search-card {
+  margin-bottom: 24px;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.search-card :deep(.el-card__body) {
+  padding: 20px;
+}
+
+.search-card :deep(.el-form--inline .el-form-item) {
+  margin-right: 12px;
+  margin-bottom: 12px;
+}
+
+/* ==================== 源状态卡片 ==================== */
+.source-status-card {
   margin-bottom: 20px;
+  background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
+  border: 1px solid #BAE6FD;
+  border-radius: 12px;
+}
+
+.source-status-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-icon {
+  color: #0284C7;
+  font-size: 18px;
+}
+
+.status-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0C4A6E;
+}
+
+.source-tag {
+  margin-left: 8px;
+}
+
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sync-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #0369A1;
+}
+
+.last-sync {
+  font-size: 12px;
+  color: #64748B;
+}
+
+/* ==================== AI推荐区 ==================== */
+.ai-recommend-section {
+  margin-bottom: 24px;
 }
 
 .section-header {
@@ -2270,112 +2356,158 @@ const handleOpportunityAction = (id) => {
 .section-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 16px;
+  gap: 10px;
+  font-size: 17px;
   font-weight: 600;
-  color: #303133;
+  color: #0F172A;
 }
 
 .ai-icon {
-  color: #409eff;
-  font-size: 18px;
+  color: #8B5CF6;
+  font-size: 20px;
 }
 
 .match-tag {
   margin-left: 4px;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  border: none;
 }
 
 .recommend-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 20px;
 }
 
 .recommend-card {
   background: #fff;
-  border-radius: 8px;
-  padding: 16px;
+  border-radius: 12px;
+  padding: 20px;
   cursor: pointer;
-  transition: all 0.3s;
-  border: 1px solid #e4e7ed;
+  transition: all 0.25s ease;
+  border: 1px solid #E5E7EB;
+  position: relative;
+  overflow: hidden;
+}
+
+.recommend-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
 }
 
 .recommend-card:hover {
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-  border-color: #409eff;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  border-color: #10B981;
+  transform: translateY(-2px);
+}
+
+.recommend-card:hover::before {
+  opacity: 1;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .card-title {
   flex: 1;
   font-size: 15px;
-  font-weight: 500;
-  color: #303133;
+  font-weight: 600;
+  color: #1E293B;
   margin: 0;
   line-height: 1.5;
+  padding-right: 12px;
 }
 
 .ai-score {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   flex-shrink: 0;
 }
 
 .score-excellent {
-  background: linear-gradient(135deg, #67c23a, #85ce61);
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
   color: #fff;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .score-good {
-  background: linear-gradient(135deg, #e6a23c, #f0c78a);
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
   color: #fff;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
 .score-normal {
-  background: linear-gradient(135deg, #909399, #b1b3b8);
+  background: linear-gradient(135deg, #64748B 0%, #475569 100%);
   color: #fff;
 }
 
 .card-info {
   display: flex;
-  gap: 16px;
+  gap: 20px;
   margin-bottom: 12px;
 }
 
 .info-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-size: 13px;
-  color: #606266;
+  color: #64748B;
+}
+
+.info-item .el-icon {
+  font-size: 16px;
+  color: #94A3B8;
 }
 
 .card-tags {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .card-footer {
-  padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+  border-top: 1px solid #F1F5F9;
 }
 
+.card-footer .el-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748B;
+}
+
+/* ==================== 表格卡片 ==================== */
 .table-card {
   margin-bottom: 20px;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.table-card :deep(.el-card__header) {
+  padding: 16px 20px;
+  border-bottom: 1px solid #F1F5F9;
 }
 
 .card-header-content {
@@ -2387,12 +2519,39 @@ const handleOpportunityAction = (id) => {
 .card-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: #0F172A;
 }
 
 .card-actions {
   display: flex;
   gap: 12px;
+  align-items: center;
+}
+
+.card-actions .el-radio-group {
+  flex-wrap: wrap;
+}
+
+/* ==================== 批量操作 ==================== */
+.batch-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.batch-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.batch-buttons {
+  display: flex;
+  gap: 8px;
 }
 
 .title-cell {
