@@ -1,344 +1,301 @@
 <template>
-  <div class="workbench-page">
-    <!-- 顶部统计卡片 -->
-    <el-row :gutter="16" class="stats-row">
-      <el-col :xs="24" :sm="12" :md="6" v-for="stat in stats" :key="stat.key">
-        <div class="b2b-stat-card">
-          <div class="b2b-stat-icon" :style="{ background: stat.color }">
-            <el-icon :size="24">
-              <component :is="stat.icon" />
+  <div class="workbench">
+    <!-- 欢迎横幅 -->
+    <div class="welcome-banner">
+      <div class="banner-content">
+        <div class="banner-greeting">
+          <h1 class="banner-title">欢迎回来，{{ userStore.currentUser?.name || '用户' }}</h1>
+          <p class="banner-subtitle">今天是 {{ currentDate }}，您有 {{ pendingCount }} 项待处理任务</p>
+        </div>
+        <div class="banner-actions">
+          <el-button type="primary" :icon="Plus" @click="handleCreateProject">
+            新建项目
+          </el-button>
+          <el-button :icon="DataAnalysis" @click="handleAnalysis">
+            数据分析
+          </el-button>
+        </div>
+      </div>
+      <div class="banner-decoration">
+        <div class="decoration-circle circle-1"></div>
+        <div class="decoration-circle circle-2"></div>
+        <div class="decoration-circle circle-3"></div>
+      </div>
+    </div>
+
+    <!-- 统计指标卡片 -->
+    <div class="metrics-grid">
+      <div
+        v-for="metric in metrics"
+        :key="metric.key"
+        class="metric-card"
+        :class="'metric-' + metric.variant"
+        @click="handleMetricClick(metric)"
+      >
+        <div class="metric-header">
+          <span class="metric-label">{{ metric.label }}</span>
+          <div class="metric-icon" :style="{ background: metric.iconBg }">
+            <el-icon :size="20">
+              <component :is="metric.icon" />
             </el-icon>
           </div>
-          <div class="b2b-stat-content">
-            <div class="b2b-stat-value">{{ stat.value }}</div>
-            <div class="b2b-stat-label">{{ stat.label }}</div>
-            <div class="b2b-stat-trend" :class="'trend-' + stat.trend.direction">
-              <el-icon :size="12">
-                <ArrowUp v-if="stat.trend.direction === 'up'" />
-                <ArrowDown v-else-if="stat.trend.direction === 'down'" />
-              </el-icon>
-              <span>{{ stat.trend.value }}</span>
-              <span class="trend-label">{{ stat.trend.label }}</span>
+        </div>
+        <div class="metric-value">{{ metric.value }}</div>
+        <div class="metric-footer">
+          <span class="metric-change" :class="metric.changeClass">
+            {{ metric.change }}
+          </span>
+          <span class="metric-compare">较上月</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主内容网格 -->
+    <div class="content-grid">
+      <!-- 左侧主栏 -->
+      <div class="main-column">
+        <!-- 进行中项目 -->
+        <div class="section-card projects-card">
+          <div class="section-header">
+            <h3 class="section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+              </svg>
+              进行中项目
+            </h3>
+            <el-link type="primary" :underline="false" @click="router.push('/project/list')">
+              查看全部
+              <el-icon class="el-icon--right"><ArrowRight /></el-icon>
+            </el-link>
+          </div>
+          <div class="projects-list">
+            <div
+              v-for="project in activeProjects"
+              :key="project.id"
+              class="project-card"
+              @click="handleProjectClick(project)"
+            >
+              <div class="project-progress-ring">
+                <svg viewBox="0 0 36 36" class="progress-ring">
+                  <path
+                    class="progress-ring-bg"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#E5E7EB"
+                    stroke-width="3"
+                  />
+                  <path
+                    class="progress-ring-fill"
+                    :stroke-dasharray="project.progress + ', 100'"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    :stroke="getProgressColor(project.progress)"
+                    stroke-width="3"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <span class="progress-text">{{ project.progress }}%</span>
+              </div>
+              <div class="project-info">
+                <h4 class="project-name">{{ project.name }}</h4>
+                <div class="project-meta">
+                  <span class="meta-tag">
+                    <el-icon><Calendar /></el-icon>
+                    {{ project.deadline }}
+                  </span>
+                  <span class="meta-tag">
+                    <el-icon><User /></el-icon>
+                    {{ project.manager }}
+                  </span>
+                </div>
+              </div>
+              <el-tag :type="getProjectStatusType(project.status)" size="small">
+                {{ project.status }}
+              </el-tag>
             </div>
           </div>
         </div>
-      </el-col>
-    </el-row>
 
-    <!-- 快捷操作 -->
-    <el-card class="quick-actions-card b2b-section-card" shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span class="card-title">快捷操作</span>
-        </div>
-      </template>
-      <div class="quick-actions">
-        <el-button
-          v-for="action in quickActions"
-          :key="action.key"
-          :type="action.type"
-          :icon="action.icon"
-          @click="action.handler"
-        >
-          {{ action.label }}
-        </el-button>
-      </div>
-    </el-card>
-
-    <!-- 主要内容区域 -->
-    <el-row :gutter="20" class="content-row">
-      <!-- 左侧：流程状态跟踪 + 待办优先级 -->
-      <el-col :xs="24" :lg="16">
-        <!-- 流程状态跟踪 -->
-        <el-card class="b2b-section-card section-card process-tracking-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span class="card-title">
-                <el-icon><List /></el-icon>
-                我的流程
-              </span>
-              <el-tag size="small" type="info">{{ myProcesses.length }} 个</el-tag>
-            </div>
-          </template>
-
-          <el-timeline>
-            <el-timeline-item
-              v-for="process in myProcesses"
-              :key="process.id"
-              :timestamp="process.time"
-              :type="getProcessType(process.status)"
-            >
-              <el-card class="process-item-card" shadow="hover">
-                <div class="process-header">
-                  <h4>{{ process.title }}</h4>
-                  <div class="process-meta">
-                    <el-tag size="small">{{ process.category }}</el-tag>
-                    <el-tag size="small" :type="getProcessStatusType(process.status)">
-                      {{ getProcessStatusLabel(process.status) }}
-                    </el-tag>
-                  </div>
-                </div>
-                <p class="process-desc">{{ process.description }}</p>
-
-                <!-- 流程进度 -->
-                <div v-if="process.progress" class="process-progress">
-                  <el-progress
-                    :percentage="process.progress"
-                    :status="process.progress === 100 ? 'success' : undefined"
-                  />
-                </div>
-              </el-card>
-            </el-timeline-item>
-          </el-timeline>
-        </el-card>
-
-        <!-- 待办优先级管理 -->
-        <el-card class="b2b-section-card section-card todos-priority-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span class="card-title">
-                <el-icon><Warning /></el-icon>
-                待办事项
-              </span>
-              <el-tag size="small" type="danger">{{ priorityTodos.length }} 项</el-tag>
-            </div>
-          </template>
-
-          <div class="todo-list">
+        <!-- 待办事项 -->
+        <div class="section-card todos-card">
+          <div class="section-header">
+            <h3 class="section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+                <path d="M9 11l3 3L22 4"/>
+                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+              </svg>
+              待办事项
+            </h3>
+            <el-tag size="small" type="danger">{{ priorityTodos.length }}</el-tag>
+          </div>
+          <div class="todos-list">
             <div
               v-for="todo in priorityTodos"
               :key="todo.id"
               class="todo-item"
               :class="'priority-' + todo.priority"
             >
-              <div class="todo-check">
-                <el-checkbox v-model="todo.done" @change="handleTodoCheck(todo)" />
+              <div class="todo-checkbox" @click.stop="todo.done = !todo.done">
+                <div class="checkbox-custom" :class="{ checked: todo.done }">
+                  <el-icon v-if="todo.done"><Check /></el-icon>
+                </div>
               </div>
               <div class="todo-content">
-                <div class="todo-title" :class="{ done: todo.done }">
-                  {{ todo.title }}
-                </div>
+                <span class="todo-title" :class="{ done: todo.done }">{{ todo.title }}</span>
                 <div class="todo-meta">
-                  <el-tag :type="getPriorityType(todo.priority)" size="small">
-                    {{ getPriorityLabel(todo.priority) }}
-                  </el-tag>
                   <span class="todo-deadline">
                     <el-icon><Clock /></el-icon>
                     {{ todo.deadline }}
                   </span>
                 </div>
               </div>
-              <div class="todo-actions">
-                <el-button
-                  :icon="View"
-                  circle
-                  size="small"
-                  @click="handleViewTodo(todo)"
-                />
-              </div>
+              <el-tag :type="getPriorityType(todo.priority)" size="small">
+                {{ getPriorityLabel(todo.priority) }}
+              </el-tag>
             </div>
           </div>
-        </el-card>
-      </el-col>
+        </div>
+      </div>
 
-      <!-- 右侧：进行中项目 -->
-      <el-col :xs="24" :lg="8">
-        <el-card class="b2b-section-card section-card project-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span class="card-title">
-                <el-icon><Briefcase /></el-icon>
-                进行中项目
-              </span>
-              <el-tag size="small" type="primary">{{ activeProjects.length }} 个</el-tag>
-            </div>
-          </template>
-
-          <div class="project-list">
+      <!-- 右侧边栏 -->
+      <div class="side-column">
+        <!-- 流程跟踪 -->
+        <div class="section-card process-card">
+          <div class="section-header">
+            <h3 class="section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              我的流程
+            </h3>
+          </div>
+          <div class="process-timeline">
             <div
-              v-for="project in activeProjects"
-              :key="project.id"
-              class="project-item"
-              @click="handleProjectClick(project)"
+              v-for="(process, index) in myProcesses"
+              :key="process.id"
+              class="process-item"
             >
-              <div class="project-header">
-                <h4 class="project-name">{{ project.name }}</h4>
-                <el-tag :type="getProjectStatusType(project.status)" size="small">
-                  {{ project.status }}
-                </el-tag>
-              </div>
-              <div class="project-info">
-                <div class="project-meta">
-                  <span class="meta-item">
-                    <el-icon><Calendar /></el-icon>
-                    {{ project.deadline }}
-                  </span>
-                  <span class="meta-item">
-                    <el-icon><User /></el-icon>
-                    {{ project.manager }}
-                  </span>
+              <div class="process-dot" :class="'status-' + process.status"></div>
+              <div class="process-content">
+                <div class="process-header">
+                  <span class="process-title">{{ process.title }}</span>
+                  <span class="process-time">{{ formatTime(process.time) }}</span>
                 </div>
-                <el-progress
-                  :percentage="project.progress"
-                  :show-text="false"
-                  class="project-progress"
-                />
+                <p class="process-desc">{{ process.description }}</p>
+                <div v-if="process.progress" class="process-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill" :style="{ width: process.progress + '%' }"></div>
+                  </div>
+                  <span class="progress-label">{{ process.progress }}%</span>
+                </div>
               </div>
             </div>
           </div>
-        </el-card>
+        </div>
 
         <!-- 最新动态 -->
-        <el-card class="b2b-section-card section-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span class="card-title">
-                <el-icon><Bell /></el-icon>
-                最新动态
-              </span>
-            </div>
-          </template>
-
+        <div class="section-card activity-card">
+          <div class="section-header">
+            <h3 class="section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 01-3.46 0"/>
+              </svg>
+              最新动态
+            </h3>
+          </div>
           <div class="activity-list">
-            <div v-for="activity in activities" :key="activity.id" class="activity-item">
-              <div class="activity-icon" :class="'activity-' + activity.type">
-                <el-icon>
-                  <component :is="activity.icon" />
-                </el-icon>
-              </div>
+            <div
+              v-for="activity in activities"
+              :key="activity.id"
+              class="activity-item"
+            >
+              <div class="activity-dot" :class="'type-' + activity.type"></div>
               <div class="activity-content">
-                <div class="activity-text">{{ activity.text }}</div>
-                <div class="activity-time">{{ activity.time }}</div>
+                <p class="activity-text">{{ activity.text }}</p>
+                <span class="activity-time">{{ activity.time }}</span>
               </div>
             </div>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 import {
-  List, Warning, Briefcase, Bell, View, Clock, Calendar, User,
-  Document, Plus, TrendCharts, DataAnalysis, Message, Check,
-  CircleCheck, CircleClose, Loading, ArrowUp, ArrowDown
+  Plus, DataAnalysis, ArrowRight, Calendar, User, Clock, Check,
+  Document, Briefcase, TrendCharts, Flag
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const userStore = useUserStore()
 
-// 统计数据
-const stats = ref([
+// 当前日期
+const currentDate = computed(() => {
+  const now = new Date()
+  const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }
+  return now.toLocaleDateString('zh-CN', options)
+})
+
+// 待处理数量
+const pendingCount = computed(() => {
+  return priorityTodos.value.filter(t => !t.done).length
+})
+
+// 统计指标
+const metrics = ref([
   {
     key: 'tenders',
     label: '标讯数量',
     value: '128',
     icon: Document,
-    color: '#E6F7FF',
-    trend: {
-      value: '+12.5%',
-      direction: 'up',
-      label: '较上月'
-    }
+    iconBg: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)',
+    iconColor: '#1E40AF',
+    change: '+12.5%',
+    changeClass: 'up',
+    variant: 'blue'
   },
   {
     key: 'projects',
     label: '进行中项目',
     value: '12',
     icon: Briefcase,
-    color: '#F6FFED',
-    trend: {
-      value: '+2',
-      direction: 'up',
-      label: '较上月'
-    }
+    iconBg: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)',
+    iconColor: '#059669',
+    change: '+2',
+    changeClass: 'up',
+    variant: 'green'
   },
   {
     key: 'winRate',
     label: '中标率',
     value: '68%',
     icon: TrendCharts,
-    color: '#FFF7E6',
-    trend: {
-      value: '-3.2%',
-      direction: 'down',
-      label: '较上月'
-    }
+    iconBg: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+    iconColor: '#D97706',
+    change: '-3.2%',
+    changeClass: 'down',
+    variant: 'amber'
   },
   {
     key: 'tasks',
     label: '待处理任务',
     value: '23',
-    icon: Check,
-    color: '#FFF1F0',
-    trend: {
-      value: '0',
-      direction: 'neutral',
-      label: '较上月'
-    }
+    icon: Flag,
+    iconBg: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)',
+    iconColor: '#DC2626',
+    change: '0',
+    changeClass: 'neutral',
+    variant: 'red'
   }
-])
-
-// 快捷操作处理函数（必须在 quickActions 之前定义）
-const handleCreateProject = () => {
-  router.push('/project/create')
-}
-
-const handleAnalysis = () => {
-  router.push('/analytics/dashboard')
-}
-
-const handleMessage = () => {
-  ElMessage.info('消息中心功能开发中...')
-}
-
-// 快捷操作
-const quickActions = ref([
-  { key: 'create', label: '新建项目', type: 'primary', icon: Plus, handler: handleCreateProject },
-  { key: 'analysis', label: '数据分析', type: 'success', icon: DataAnalysis, handler: handleAnalysis },
-  { key: 'message', label: '消息中心', type: 'warning', icon: Message, handler: handleMessage }
-])
-
-// 我的流程
-const myProcesses = ref([
-  {
-    id: 1,
-    title: 'XX市智慧交通项目 - 标书编制',
-    category: '标书编制',
-    status: 'in-progress',
-    description: '技术方案编写中，预计2天内完成',
-    progress: 65,
-    time: '2025-02-26 14:30'
-  },
-  {
-    id: 2,
-    title: 'XX区数字政府项目 - 资质准备',
-    category: '资格预审',
-    status: 'pending',
-    description: '需要补充CMMI 5级认证文件',
-    progress: 30,
-    time: '2025-02-26 10:15'
-  },
-  {
-    id: 3,
-    title: 'XX县智慧社区项目 - 开标前准备',
-    category: '开标准备',
-    status: 'urgent',
-    description: '投标保证金已缴纳，确认密封要求',
-    progress: 90,
-    time: '2025-02-25 16:45'
-  }
-])
-
-// 待办事项
-const priorityTodos = ref([
-  { id: 1, title: 'XX项目技术方案终审', priority: 'high', deadline: '今天 18:00', done: false },
-  { id: 2, title: 'XX项目商务报价确认', priority: 'high', deadline: '明天 10:00', done: false },
-  { id: 3, title: '资质文件更新（ISO9001）', priority: 'medium', deadline: '2025-02-28', done: false },
-  { id: 4, title: '新员工投标系统培训', priority: 'low', deadline: '2025-03-01', done: false }
 ])
 
 // 进行中项目
@@ -348,7 +305,7 @@ const activeProjects = ref([
     name: 'XX市智慧交通管理系统',
     status: '编制中',
     progress: 45,
-    deadline: '2025-03-05',
+    deadline: '03-05',
     manager: '张三'
   },
   {
@@ -356,7 +313,7 @@ const activeProjects = ref([
     name: 'XX区数字政府平台',
     status: '评审中',
     progress: 70,
-    deadline: '2025-03-10',
+    deadline: '03-10',
     manager: '李四'
   },
   {
@@ -364,48 +321,71 @@ const activeProjects = ref([
     name: 'XX县智慧社区建设',
     status: '即将开标',
     progress: 95,
-    deadline: '2025-02-28',
+    deadline: '02-28',
     manager: '王五'
+  }
+])
+
+// 待办事项
+const priorityTodos = ref([
+  { id: 1, title: 'XX项目技术方案终审', priority: 'high', deadline: '今天 18:00', done: false },
+  { id: 2, title: 'XX项目商务报价确认', priority: 'high', deadline: '明天 10:00', done: false },
+  { id: 3, title: '资质文件更新（ISO9001）', priority: 'medium', deadline: '02-28', done: false },
+  { id: 4, title: '新员工投标系统培训', priority: 'low', deadline: '03-01', done: false }
+])
+
+// 我的流程
+const myProcesses = ref([
+  {
+    id: 1,
+    title: 'XX市智慧交通项目 - 标书编制',
+    status: 'in-progress',
+    description: '技术方案编写中，预计2天内完成',
+    progress: 65,
+    time: '2025-02-26 14:30'
+  },
+  {
+    id: 2,
+    title: 'XX区数字政府项目 - 资质准备',
+    status: 'pending',
+    description: '需要补充CMMI 5级认证文件',
+    progress: 30,
+    time: '2025-02-26 10:15'
+  },
+  {
+    id: 3,
+    title: 'XX县智慧社区项目 - 开标前准备',
+    status: 'urgent',
+    description: '投标保证金已缴纳，确认密封要求',
+    progress: 90,
+    time: '2025-02-25 16:45'
   }
 ])
 
 // 最新动态
 const activities = ref([
-  { id: 1, type: 'success', text: 'XX项目技术方案评审通过', time: '10分钟前', icon: CircleCheck },
-  { id: 2, type: 'warning', text: 'XX项目需要补充业绩材料', time: '1小时前', icon: Warning },
-  { id: 3, type: 'info', text: '新标讯：XX市大数据平台采购', time: '2小时前', icon: Bell },
-  { id: 4, type: 'success', text: 'XX县项目成功中标！', time: '昨天', icon: CircleClose }
+  { id: 1, type: 'success', text: 'XX项目技术方案评审通过', time: '10分钟前' },
+  { id: 2, type: 'warning', text: 'XX项目需要补充业绩材料', time: '1小时前' },
+  { id: 3, type: 'info', text: '新标讯：XX市大数据平台采购', time: '2小时前' },
+  { id: 4, type: 'success', text: 'XX县项目成功中标！', time: '昨天' }
 ])
 
-// 获取流程类型
-const getProcessType = (status) => {
-  const map = {
-    'in-progress': 'primary',
-    'pending': 'info',
-    'urgent': 'danger',
-    'completed': 'success'
-  }
-  return map[status] || 'info'
+// 获取进度条颜色
+const getProgressColor = (progress) => {
+  if (progress >= 80) return '#059669'
+  if (progress >= 50) return '#3B82F6'
+  if (progress >= 20) return '#F59E0B'
+  return '#EF4444'
 }
 
-const getProcessStatusType = (status) => {
+// 获取项目状态类型
+const getProjectStatusType = (status) => {
   const map = {
-    'in-progress': '',
-    'pending': 'info',
-    'urgent': 'danger',
-    'completed': 'success'
+    '编制中': 'warning',
+    '评审中': 'primary',
+    '即将开标': 'danger'
   }
   return map[status] || ''
-}
-
-const getProcessStatusLabel = (status) => {
-  const map = {
-    'in-progress': '进行中',
-    'pending': '待处理',
-    'urgent': '紧急',
-    'completed': '已完成'
-  }
-  return map[status] || status
 }
 
 // 获取优先级类型
@@ -420,36 +400,36 @@ const getPriorityType = (priority) => {
 
 const getPriorityLabel = (priority) => {
   const map = {
-    'high': '高优先级',
-    'medium': '中优先级',
-    'low': '低优先级'
+    'high': '高',
+    'medium': '中',
+    'low': '低'
   }
   return map[priority] || priority
 }
 
-// 获取项目状态类型
-const getProjectStatusType = (status) => {
-  const map = {
-    '编制中': 'warning',
-    '评审中': 'primary',
-    '即将开标': 'danger'
-  }
-  return map[status] || ''
+// 格式化时间
+const formatTime = (time) => {
+  const date = new Date(time)
+  const now = new Date()
+  const diff = now - date
+  if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前'
+  if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前'
+  return Math.floor(diff / 86400000) + '天前'
 }
 
-// 处理待办勾选
-const handleTodoCheck = (todo) => {
-  if (todo.done) {
-    ElMessage.success('已完成: ' + todo.title)
-  }
+// 事件处理
+const handleCreateProject = () => {
+  router.push('/project/create')
 }
 
-// 查看待办
-const handleViewTodo = (todo) => {
-  ElMessage.info('查看详情: ' + todo.title)
+const handleAnalysis = () => {
+  router.push('/analytics/dashboard')
 }
 
-// 点击项目
+const handleMetricClick = (metric) => {
+  ElMessage.info(`查看 ${metric.label} 详情`)
+}
+
 const handleProjectClick = (project) => {
   router.push(`/project/${project.id}`)
 }
@@ -462,204 +442,379 @@ export default {
 </script>
 
 <style scoped>
-.workbench-page {
-  padding: var(--space-md);
+.workbench {
+  padding: 24px;
+  background: #F8FAFC;
+  min-height: 100%;
 }
 
-/* 统计卡片行 */
-.stats-row {
-  margin-bottom: var(--space-md);
-}
-
-.b2b-stat-card {
+/* ==================== 欢迎横幅 ==================== */
+.welcome-banner {
+  position: relative;
   display: flex;
   align-items: center;
-  padding: var(--space-md);
+  justify-content: space-between;
+  padding: 32px 40px;
+  background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
+  border-radius: 16px;
+  margin-bottom: 24px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(30, 64, 175, 0.2);
+}
+
+.banner-content {
+  position: relative;
+  z-index: 2;
+}
+
+.banner-greeting {
+  margin-bottom: 20px;
+}
+
+.banner-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.banner-subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.banner-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.banner-actions .el-button {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+.banner-actions .el-button:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.banner-actions .el-button--primary {
   background: #fff;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--gray-100);
-  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+  color: #1E40AF;
+  border-color: #fff;
+}
+
+.banner-actions .el-button--primary:hover {
+  background: #F8FAFC;
+}
+
+.banner-decoration {
+  position: absolute;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.decoration-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.circle-1 {
+  width: 120px;
+  height: 120px;
+  right: 0;
+  top: -60px;
+}
+
+.circle-2 {
+  width: 80px;
+  height: 80px;
+  right: 100px;
+  top: 20px;
+}
+
+.circle-3 {
+  width: 60px;
+  height: 60px;
+  right: 40px;
+  top: -40px;
+}
+
+/* ==================== 统计指标网格 ==================== */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.metric-card {
+  padding: 20px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #E5E7EB;
   cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
 }
 
-.b2b-stat-card:hover {
-  box-shadow: var(--shadow-md);
-  border-color: var(--brand-primary);
+.metric-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
 }
 
-.b2b-stat-icon {
-  width: 48px;
-  height: 48px;
+.metric-card.metric-blue::before { background: linear-gradient(180deg, #1E40AF 0%, #3B82F6 100%); }
+.metric-card.metric-green::before { background: linear-gradient(180deg, #059669 0%, #10B981 100%); }
+.metric-card.metric-amber::before { background: linear-gradient(180deg, #D97706 0%, #F59E0B 100%); }
+.metric-card.metric-red::before { background: linear-gradient(180deg, #DC2626 0%, #EF4444 100%); }
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.metric-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6B7280;
+}
+
+.metric-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-lg);
-  color: var(--brand-primary);
-  margin-right: var(--space-md);
+  color: #1E40AF;
 }
 
-.b2b-stat-content {
-  flex: 1;
+.metric-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
+  margin-bottom: 12px;
 }
 
-.b2b-stat-value {
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.2;
+.metric-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.b2b-stat-label {
+.metric-change {
   font-size: 13px;
-  color: var(--text-secondary);
-  margin-top: 4px;
+  font-weight: 600;
 }
 
-/* 趋势指示器 */
-.b2b-stat-trend {
+.metric-change.up { color: #059669; }
+.metric-change.down { color: #DC2626; }
+.metric-change.neutral { color: #6B7280; }
+
+.metric-compare {
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+/* ==================== 内容网格 ==================== */
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+}
+
+.main-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ==================== 卡片通用样式 ==================== */
+.section-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #E5E7EB;
+  overflow: hidden;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.section-icon {
+  width: 20px;
+  height: 20px;
+  color: #1E40AF;
+}
+
+/* ==================== 项目列表 ==================== */
+.projects-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.project-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #F9FAFB;
+  border-radius: 10px;
+  border: 1px solid #E5E7EB;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.project-card:hover {
+  background: #F3F4F6;
+  border-color: #D1D5DB;
+}
+
+.project-progress-ring {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+
+.progress-ring {
+  transform: rotate(-90deg);
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.project-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.project-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-meta {
+  display: flex;
+  gap: 16px;
+}
+
+.meta-tag {
   display: flex;
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  margin-top: 4px;
+  color: #6B7280;
 }
 
-.b2b-stat-trend.trend-up {
-  color: var(--color-success);
-}
-
-.b2b-stat-trend.trend-down {
-  color: var(--color-danger);
-}
-
-.b2b-stat-trend.trend-neutral {
-  color: var(--text-secondary);
-}
-
-.b2b-stat-trend .trend-label {
-  color: var(--text-secondary);
-  margin-left: 2px;
-}
-
-/* 快捷操作卡片 */
-.quick-actions-card {
-  margin-bottom: var(--space-md);
-}
-
-.quick-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-}
-
-/* 内容区域 */
-.content-row {
-  margin-bottom: var(--space-md);
-}
-
-/* 卡片通用样式 */
-.b2b-section-card {
-  background: #fff;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--gray-100);
-  margin-bottom: var(--space-md);
-}
-
-.section-card {
-  height: 100%;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* 流程卡片 */
-.process-item-card {
-  margin-bottom: var(--space-sm);
-  cursor: pointer;
-  transition: box-shadow 0.2s ease;
-}
-
-.process-item-card :deep(.el-card__body) {
-  padding: var(--space-md);
-}
-
-.process-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--space-sm);
-}
-
-.process-header h4 {
-  margin: 0;
+.meta-tag .el-icon {
   font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
 }
 
-.process-meta {
-  display: flex;
-  gap: var(--space-xs);
-}
-
-.process-desc {
-  margin: var(--space-sm) 0;
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-
-.process-progress {
-  margin-top: var(--space-sm);
-}
-
-/* 待办列表 */
-.todo-list {
+/* ==================== 待办列表 ==================== */
+.todos-list {
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: 8px;
 }
 
 .todo-item {
   display: flex;
   align-items: center;
-  padding: var(--space-sm);
-  background: var(--gray-50);
-  border-radius: var(--radius-sm);
+  gap: 12px;
+  padding: 12px;
+  background: #F9FAFB;
+  border-radius: 8px;
   border-left: 3px solid transparent;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .todo-item.priority-high {
-  border-left-color: var(--color-danger);
-  background: #FFF7F0;
+  border-left-color: #EF4444;
+  background: #FEF2F2;
 }
 
 .todo-item.priority-medium {
-  border-left-color: var(--color-warning);
+  border-left-color: #F59E0B;
 }
 
 .todo-item.priority-low {
-  border-left-color: var(--color-success);
+  border-left-color: #10B981;
 }
 
-.todo-check {
-  margin-right: var(--space-sm);
+.todo-checkbox {
+  cursor: pointer;
+}
+
+.checkbox-custom {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #D1D5DB;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: #fff;
+}
+
+.checkbox-custom.checked {
+  background: #10B981;
+  border-color: #10B981;
+}
+
+.checkbox-custom .el-icon {
+  font-size: 14px;
 }
 
 .todo-content {
@@ -668,159 +823,238 @@ export default {
 }
 
 .todo-title {
+  display: block;
   font-size: 14px;
-  color: var(--text-primary);
+  color: #111827;
   margin-bottom: 4px;
 }
 
 .todo-title.done {
   text-decoration: line-through;
-  color: var(--text-placeholder);
+  color: #9CA3AF;
 }
 
 .todo-meta {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  font-size: 12px;
+  gap: 8px;
 }
 
 .todo-deadline {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: var(--text-secondary);
+  font-size: 12px;
+  color: #6B7280;
 }
 
-.todo-actions {
-  margin-left: var(--space-sm);
+/* ==================== 流程时间线 ==================== */
+.process-timeline {
+  padding: 16px;
 }
 
-/* 项目列表 */
-.project-list {
+.process-item {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
+  gap: 12px;
+  padding-bottom: 20px;
+  position: relative;
 }
 
-.project-item {
-  padding: var(--space-md);
-  background: var(--gray-50);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+.process-item:last-child {
+  padding-bottom: 0;
 }
 
-.project-item:hover {
-  background: var(--gray-100);
+.process-item::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 24px;
+  bottom: 0;
+  width: 2px;
+  background: #E5E7EB;
 }
 
-.project-header {
+.process-item:last-child::before {
+  display: none;
+}
+
+.process-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px #E5E7EB;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.process-dot.status-in-progress {
+  background: #3B82F6;
+  box-shadow: 0 0 0 1px #3B82F6;
+}
+
+.process-dot.status-pending {
+  background: #9CA3AF;
+}
+
+.process-dot.status-urgent {
+  background: #EF4444;
+  box-shadow: 0 0 0 1px #EF4444;
+}
+
+.process-content {
+  flex: 1;
+}
+
+.process-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-sm);
+  align-items: flex-start;
+  margin-bottom: 4px;
 }
 
-.project-name {
-  margin: 0;
+.process-title {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: #111827;
 }
 
-.project-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.project-meta {
-  display: flex;
-  justify-content: space-between;
+.process-time {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: #9CA3AF;
 }
 
-.meta-item {
+.process-desc {
+  font-size: 13px;
+  color: #6B7280;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.process-progress {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
 }
 
-/* 动态列表 */
+.progress-bar {
+  flex: 1;
+  height: 4px;
+  background: #E5E7EB;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3B82F6 0%, #1E40AF 100%);
+  transition: width 0.3s ease;
+}
+
+.progress-label {
+  font-size: 12px;
+  color: #6B7280;
+  min-width: 36px;
+}
+
+/* ==================== 动态列表 ==================== */
 .activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
+  padding: 16px;
 }
 
 .activity-item {
   display: flex;
-  gap: var(--space-sm);
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  padding: var(--space-xs);
-  border-radius: var(--radius-sm);
+  gap: 12px;
+  padding-bottom: 16px;
 }
 
-.activity-icon {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-full);
+.activity-item:last-child {
+  padding-bottom: 0;
+}
+
+.activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 6px;
   flex-shrink: 0;
 }
 
-.activity-success {
-  background: #F6FFED;
-  color: var(--color-success);
+.activity-dot.type-success {
+  background: #10B981;
 }
 
-.activity-warning {
-  background: #FFFBE6;
-  color: var(--color-warning);
+.activity-dot.type-warning {
+  background: #F59E0B;
 }
 
-.activity-info {
-  background: #E6F7FF;
-  color: var(--brand-primary);
+.activity-dot.type-info {
+  background: #3B82F6;
 }
 
 .activity-content {
   flex: 1;
-  min-width: 0;
 }
 
 .activity-text {
   font-size: 13px;
-  color: var(--text-primary);
+  color: #374151;
   margin-bottom: 2px;
+  line-height: 1.5;
 }
 
 .activity-time {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: #9CA3AF;
 }
 
-/* 响应式 */
+/* ==================== 响应式 ==================== */
+@media (max-width: 1200px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .side-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+}
+
 @media (max-width: 768px) {
-  .workbench-page {
-    padding: var(--space-sm);
+  .workbench {
+    padding: 16px;
   }
 
-  .stats-row {
-    margin-bottom: var(--space-sm);
-  }
-
-  .quick-actions {
+  .welcome-banner {
     flex-direction: column;
+    padding: 24px;
+    text-align: center;
   }
 
-  .quick-actions .el-button {
-    width: 100%;
+  .banner-actions {
+    justify-content: center;
+  }
+
+  .banner-decoration {
+    display: none;
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .metric-card {
+    padding: 16px;
+  }
+
+  .metric-value {
+    font-size: 24px;
+  }
+
+  .side-column {
+    grid-template-columns: 1fr;
   }
 }
 </style>
