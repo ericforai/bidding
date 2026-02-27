@@ -128,9 +128,6 @@
 
 /* ==================== Metric Card (for Dashboard) ==================== */
 .b2b-metric-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
   padding: 16px 20px;
   background: #fff;
   border-radius: var(--radius-md);
@@ -144,42 +141,48 @@
   border-color: var(--brand-primary);
 }
 
+.b2b-metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
 .b2b-metric-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.b2b-metric-icon.blue { background: rgba(0, 102, 204, 0.1); color: var(--brand-primary); }
-.b2b-metric-icon.green { background: rgba(0, 170, 68, 0.1); color: var(--color-success); }
-.b2b-metric-icon.orange { background: rgba(255, 136, 0, 0.1); color: var(--color-warning); }
-.b2b-metric-icon.red { background: rgba(221, 34, 0, 0.1); color: var(--color-danger); }
-
 .b2b-metric-icon .el-icon {
-  font-size: 16px;
+  font-size: 12px;
 }
+
+.b2b-metric-icon.blue { background: rgba(0, 102, 204, 0.08); color: var(--brand-primary); }
+.b2b-metric-icon.green { background: rgba(0, 170, 68, 0.08); color: var(--color-success); }
+.b2b-metric-icon.orange { background: rgba(255, 136, 0, 0.08); color: var(--color-warning); }
+.b2b-metric-icon.red { background: rgba(221, 34, 0, 0.08); color: var(--color-danger); }
 
 .b2b-metric-content {
   flex: 1;
-  min-width: 0;
 }
 
 .b2b-metric-label {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 400;
   color: var(--text-secondary);
-  margin-bottom: 2px;
 }
 
 .b2b-metric-value {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
-  line-height: 1.2;
+  line-height: 1;
+  margin: 4px 0;
 }
 
 .b2b-metric-trend {
@@ -187,7 +190,6 @@
   align-items: center;
   gap: 4px;
   font-size: 13px;
-  margin-top: 2px;
 }
 
 .b2b-metric-trend .trend-label {

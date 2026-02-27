@@ -26,11 +26,13 @@
         class="b2b-metric-card"
         :class="metric.trendClass"
       >
-        <div class="b2b-metric-icon" :class="getMetricIconClass(metric.key)">
-          <component :is="metric.icon" :size="16" />
-        </div>
         <div class="b2b-metric-content">
-          <div class="b2b-metric-label">{{ metric.label }}</div>
+          <div class="b2b-metric-header">
+            <div class="b2b-metric-label">{{ metric.label }}</div>
+            <div class="b2b-metric-icon" :class="getMetricIconClass(metric.key)">
+              <component :is="metric.icon" :size="12" />
+            </div>
+          </div>
           <div class="b2b-metric-value">{{ metric.value }}</div>
           <div class="b2b-metric-trend" :class="getTrendClass(metric.trendDirection)">
             <component :is="metric.trendIcon" :size="10" />
