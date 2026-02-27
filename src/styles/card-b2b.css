@@ -1,0 +1,403 @@
+/**
+ * B2B Professional Card Styles
+ * Unified card component styling for bid management platform
+ */
+
+:root {
+  /* Professional B2B Color Palette */
+  --color-primary: #0066CC;       /* Tech Blue */
+  --color-success: #00AA44;       /* Green */
+  --color-warning: #FF8800;       /* Orange */
+  --color-danger: #DD2200;        /* Red */
+
+  /* Card Design Tokens */
+  --card-border-radius: 8px;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --card-border: 1px solid #E8E8E8;
+  --card-padding: 20px;
+  --card-gap: 16px;
+
+  /* Icon Backgrounds */
+  --icon-bg-primary: rgba(0, 102, 204, 0.1);
+  --icon-bg-success: rgba(0, 170, 68, 0.1);
+  --icon-bg-warning: rgba(255, 136, 0, 0.1);
+  --icon-bg-danger: rgba(221, 34, 0, 0.1);
+}
+
+/* ==================== Base Card Styles ==================== */
+.b2b-card {
+  background: #fff;
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+  padding: var(--card-padding);
+  transition: all 0.25s ease;
+}
+
+.b2b-card:hover {
+  box-shadow: var(--card-shadow-hover);
+}
+
+/* ==================== Stat Card Styles ==================== */
+.b2b-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: var(--card-padding);
+  background: #fff;
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.b2b-stat-card:hover {
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-2px);
+}
+
+/* Icon Wrapper - 48px Circle */
+.b2b-stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.b2b-stat-icon.primary {
+  background: var(--icon-bg-primary);
+  color: var(--color-primary);
+}
+
+.b2b-stat-icon.success {
+  background: var(--icon-bg-success);
+  color: var(--color-success);
+}
+
+.b2b-stat-icon.warning {
+  background: var(--icon-bg-warning);
+  color: var(--color-warning);
+}
+
+.b2b-stat-icon.danger {
+  background: var(--icon-bg-danger);
+  color: var(--color-danger);
+}
+
+.b2b-stat-icon .el-icon {
+  font-size: 24px;
+}
+
+/* Stat Content */
+.b2b-stat-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.b2b-stat-value {
+  font-size: 32px;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.b2b-stat-label {
+  font-size: 14px;
+  color: #666666;
+  font-weight: 400;
+}
+
+.b2b-stat-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.b2b-stat-trend.up {
+  color: var(--color-success);
+}
+
+.b2b-stat-trend.down {
+  color: var(--color-danger);
+}
+
+/* ==================== Metric Card (for Dashboard) ==================== */
+.b2b-metric-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: var(--card-padding);
+  background: #fff;
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+  transition: all 0.25s ease;
+}
+
+.b2b-metric-card:hover {
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-2px);
+}
+
+.b2b-metric-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+
+.b2b-metric-icon.blue { background: var(--color-primary); }
+.b2b-metric-icon.green { background: var(--color-success); }
+.b2b-metric-icon.orange { background: var(--color-warning); }
+.b2b-metric-icon.red { background: var(--color-danger); }
+
+.b2b-metric-content {
+  flex: 1;
+}
+
+.b2b-metric-label {
+  font-size: 14px;
+  color: #666666;
+  margin-bottom: 4px;
+}
+
+.b2b-metric-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.b2b-metric-trend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.b2b-metric-trend.positive { color: var(--color-success); }
+.b2b-metric-trend.negative { color: var(--color-danger); }
+
+/* ==================== Section Card ==================== */
+.b2b-section-card {
+  background: #fff;
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+  overflow: hidden;
+}
+
+.b2b-section-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px var(--card-padding);
+  border-bottom: 1px solid #E8E8E8;
+}
+
+.b2b-section-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.b2b-section-card-title .el-icon {
+  color: var(--color-primary);
+}
+
+.b2b-section-card-body {
+  padding: var(--card-padding);
+}
+
+/* ==================== Feature Card (for AI Center) ==================== */
+.b2b-feature-card {
+  background: #fff;
+  border-radius: var(--card-border-radius);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+  padding: var(--card-padding);
+  transition: all 0.25s ease;
+}
+
+.b2b-feature-card:hover {
+  box-shadow: var(--card-shadow-hover);
+}
+
+.b2b-feature-card.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.b2b-feature-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--card-gap);
+}
+
+.b2b-feature-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.b2b-feature-icon {
+  font-size: 24px;
+}
+
+.b2b-feature-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.b2b-feature-description {
+  font-size: 14px;
+  color: #666666;
+  line-height: 1.6;
+}
+
+/* ==================== Project Item Card ==================== */
+.b2b-project-item {
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #E8E8E8;
+  border-radius: var(--card-border-radius);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.b2b-project-item:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.b2b-project-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.b2b-project-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.b2b-project-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #666666;
+  margin-bottom: 12px;
+}
+
+.b2b-project-budget {
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+/* ==================== Quick Action Card ==================== */
+.b2b-quick-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px;
+  background: #fff;
+  border-radius: var(--card-border-radius);
+  border: 1px solid #E8E8E8;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.b2b-quick-action:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-2px);
+}
+
+.b2b-quick-action-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  margin-bottom: 12px;
+}
+
+.b2b-quick-action-label {
+  font-size: 14px;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+.b2b-quick-action-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* ==================== Responsive Styles ==================== */
+@media (max-width: 768px) {
+  :root {
+    --card-padding: 16px;
+    --card-gap: 12px;
+  }
+
+  .b2b-stat-value {
+    font-size: 24px;
+  }
+
+  .b2b-stat-label {
+    font-size: 12px;
+  }
+
+  .b2b-stat-icon,
+  .b2b-metric-icon,
+  .b2b-quick-action-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .b2b-metric-value {
+    font-size: 20px;
+  }
+}
+
+/* ==================== Touch Device Optimization ==================== */
+@media (hover: none) and (pointer: coarse) {
+  .b2b-card:active,
+  .b2b-stat-card:active,
+  .b2b-metric-card:active,
+  .b2b-feature-card:active,
+  .b2b-project-item:active,
+  .b2b-quick-action:active {
+    background: #f5f5f5;
+  }
+}

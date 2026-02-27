@@ -1,0 +1,1108 @@
+<template>
+  <div class="project-create-container">
+    <el-card>
+      <template #header>
+        <div class="card-header">
+          <span class="title">创建投标项目</span>
+          <el-button @click="goBack">返回</el-button>
+        </div>
+      </template>
+
+      <el-steps :active="currentStep" finish-status="success" align-center class="steps">
+        <el-step title="基本信息" description="从CRM同步或手动输入" />
+        <el-step title="项目详情" description="完善项目信息" />
+        <el-step title="任务分解" description="添加项目任务" />
+        <el-step title="智能辅助" description="AI分析与建议" />
+      </el-steps>
+
+      <div class="step-content">
+        <!-- 步骤1: 基本信息 -->
+        <div v-show="currentStep === 0" class="step-panel">
+          <el-form ref="basicFormRef" :model="basicForm" :rules="basicRules" label-width="120px">
+            <el-alert
+              title="提示：可以从CRM系统同步客户信息，或手动填写以下信息"
+              type="info"
+              :closable="false"
+              show-icon
+              class="mb-16"
+            />
+
+            <el-form-item label="CRM同步" prop="syncFromCRM">
+              <el-button type="primary" :icon="Refresh" @click="syncFromCRM" :loading="syncing">
+                从CRM同步客户信息
+              </el-button>
+              <span v-if="syncedFromCRM" class="sync-tip">已从CRM同步</span>
+            </el-form-item>
+
+            <el-divider content-position="left">基本信息</el-divider>
+
+            <el-form-item label="项目名称" prop="name">
+              <el-input v-model="basicForm.name" placeholder="请输入项目名称" clearable />
+            </el-form-item>
+
+            <el-form-item label="客户名称" prop="customer">
+              <el-input v-model="basicForm.customer" placeholder="请输入客户名称" clearable />
+            </el-form-item>
+
+            <el-form-item label="预算(万元)" prop="budget">
+              <el-input-number
+                v-model="basicForm.budget"
+                :min="0"
+                :precision="2"
+                :step="10"
+                controls-position="right"
+                style="width: 200px"
+              />
+            </el-form-item>
+
+            <el-form-item label="行业" prop="industry">
+              <el-select v-model="basicForm.industry" placeholder="请选择行业" clearable>
+                <el-option label="政府" value="政府" />
+                <el-option label="能源" value="能源" />
+                <el-option label="交通" value="交通" />
+                <el-option label="金融" value="金融" />
+                <el-option label="教育" value="教育" />
+                <el-option label="医疗" value="医疗" />
+                <el-option label="其他" value="其他" />
+              </el-select>
+            </el-form-item>
+
+            <el-form-item label="地区" prop="region">
+              <el-input v-model="basicForm.region" placeholder="请输入地区" clearable />
+            </el-form-item>
+
+            <el-form-item label="投标截止日期" prop="deadline">
+              <el-date-picker
+                v-model="basicForm.deadline"
+                type="date"
+                placeholder="请选择日期"
+                value-format="YYYY-MM-DD"
+                :disabled-date="disabledDate"
+              />
+            </el-form-item>
+
+            <el-form-item label="项目负责人" prop="manager">
+              <el-select v-model="basicForm.manager" placeholder="请选择负责人">
+                <el-option
+                  v-for="user in userList"
+                  :key="user.id"
+                  :label="user.name"
+                  :value="user.name"
+                />
+              </el-select>
+            </el-form-item>
+
+            <el-divider content-position="left">竞争对手信息</el-divider>
+
+            <el-form-item label="竞争对手">
+              <el-select
+                v-model="basicForm.competitors"
+                multiple
+                filterable
+                allow-create
+                placeholder="选择或输入竞争对手名称"
+                style="width: 100%"
+                @change="handleCompetitorsChange"
+              >
+                <el-option
+                  v-for="item in competitorOptions"
+                  :key="item"
+                  :label="item"
+                  :value="item"
+                />
+              </el-select>
+            </el-form-item>
+
+            <el-form-item
+              label="竞争分析"
+              v-if="competitorAnalysis.length > 0"
+              class="competitor-analysis-item"
+            >
+              <el-table :data="competitorAnalysis" size="small" border>
+                <el-table-column prop="name" label="竞争对手" width="150" />
+                <el-table-column prop="strength" label="优势分析" width="200">
+                  <template #default="{ row }">
+                    <el-input v-model="row.strength" placeholder="优势分析" size="small" />
+                  </template>
+                </el-table-column>
+                <el-table-column prop="weakness" label="劣势分析" width="200">
+                  <template #default="{ row }">
+                    <el-input v-model="row.weakness" placeholder="劣势分析" size="small" />
+                  </template>
+                </el-table-column>
+                <el-table-column prop="winRate" label="历史中标率" width="150">
+                  <template #default="{ row }">
+                    <div class="win-rate-input">
+                      <el-input-number
+                        v-model="row.winRate"
+                        :min="0"
+                        :max="100"
+                        :precision="0"
+                        size="small"
+                        controls-position="right"
+                      />
+                      <span>%</span>
+                    </div>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="history" label="历史中标项目" min-width="200">
+                  <template #default="{ row }">
+                    <el-input
+                      v-model="row.history"
+                      placeholder="历史中标项目，用逗号分隔"
+                      size="small"
+                      type="textarea"
+                      :rows="2"
+                    />
+                  </template>
+                </el-table-column>
+              </el-table>
+            </el-form-item>
+          </el-form>
+        </div>
+
+        <!-- 步骤2: 项目详情 -->
+        <div v-show="currentStep === 1" class="step-panel">
+          <el-form ref="detailFormRef" :model="detailForm" :rules="detailRules" label-width="120px">
+            <el-divider content-position="left">项目详情</el-divider>
+
+            <el-form-item label="项目描述" prop="description">
+              <el-input
+                v-model="detailForm.description"
+                type="textarea"
+                :rows="4"
+                placeholder="请输入项目描述、需求概述等"
+              />
+            </el-form-item>
+
+            <el-form-item label="项目标签" prop="tags">
+              <el-select
+                v-model="detailForm.tags"
+                multiple
+                filterable
+                allow-create
+                placeholder="请选择或输入标签"
+              >
+                <el-option label="智慧办公" value="智慧办公" />
+                <el-option label="信创" value="信创" />
+                <el-option label="大数据" value="大数据" />
+                <el-option label="云计算" value="云计算" />
+                <el-option label="物联网" value="物联网" />
+                <el-option label="AI" value="AI" />
+                <el-option label="高优先级" value="高优先级" />
+              </el-select>
+            </el-form-item>
+
+            <el-form-item label="预计开工日期">
+              <el-date-picker
+                v-model="detailForm.startDate"
+                type="date"
+                placeholder="请选择预计开工日期"
+                value-format="YYYY-MM-DD"
+              />
+            </el-form-item>
+
+            <el-form-item label="预计完工日期">
+              <el-date-picker
+                v-model="detailForm.endDate"
+                type="date"
+                placeholder="请选择预计完工日期"
+                value-format="YYYY-MM-DD"
+              />
+            </el-form-item>
+
+            <el-form-item label="备注">
+              <el-input
+                v-model="detailForm.remark"
+                type="textarea"
+                :rows="3"
+                placeholder="其他备注信息"
+              />
+            </el-form-item>
+          </el-form>
+        </div>
+
+        <!-- 步骤3: 任务分解 -->
+        <div v-show="currentStep === 2" class="step-panel">
+          <el-form ref="taskFormRef" :model="taskForm" label-width="120px">
+            <el-divider content-position="left">任务分解</el-divider>
+
+            <div class="task-list">
+              <div
+                v-for="(task, index) in taskForm.tasks"
+                :key="index"
+                class="task-item"
+              >
+                <el-card>
+                  <template #header>
+                    <div class="task-header">
+                      <span>任务 {{ index + 1 }}</span>
+                      <el-button
+                        link
+                        type="danger"
+                        :icon="Delete"
+                        @click="removeTask(index)"
+                        v-if="taskForm.tasks.length > 1"
+                      >
+                        删除
+                      </el-button>
+                    </div>
+                  </template>
+                  <el-form :model="task" label-width="100px">
+                    <el-row :gutter="20">
+                      <el-col :span="12">
+                        <el-form-item label="任务名称">
+                          <el-input v-model="task.name" placeholder="请输入任务名称" />
+                        </el-form-item>
+                      </el-col>
+                      <el-col :span="12">
+                        <el-form-item label="负责人">
+                          <el-select v-model="task.owner" placeholder="请选择负责人">
+                            <el-option
+                              v-for="user in userList"
+                              :key="user.id"
+                              :label="user.name"
+                              :value="user.name"
+                            />
+                          </el-select>
+                        </el-form-item>
+                      </el-col>
+                    </el-row>
+                    <el-row :gutter="20">
+                      <el-col :span="12">
+                        <el-form-item label="截止日期">
+                          <el-date-picker
+                            v-model="task.deadline"
+                            type="date"
+                            placeholder="请选择日期"
+                            value-format="YYYY-MM-DD"
+                            style="width: 100%"
+                          />
+                        </el-form-item>
+                      </el-col>
+                      <el-col :span="12">
+                        <el-form-item label="优先级">
+                          <el-select v-model="task.priority" placeholder="请选择优先级">
+                            <el-option label="高" value="high" />
+                            <el-option label="中" value="medium" />
+                            <el-option label="低" value="low" />
+                          </el-select>
+                        </el-form-item>
+                      </el-col>
+                    </el-row>
+                  </el-form>
+                </el-card>
+              </div>
+            </div>
+
+            <el-button type="dashed" :icon="Plus" @click="addTask" class="add-task-btn">
+              添加任务
+            </el-button>
+          </el-form>
+        </div>
+
+        <!-- 步骤4: 智能辅助 -->
+        <div v-show="currentStep === 3" class="step-panel">
+          <el-alert
+            title="AI智能分析"
+            type="success"
+            :closable="false"
+            show-icon
+            class="mb-16"
+          >
+            <template #default>
+              <div class="ai-loading" v-if="analyzing">
+                <el-icon class="is-loading"><Loading /></el-icon>
+                <span>AI正在分析项目数据...</span>
+              </div>
+              <div v-else class="ai-summary">
+                <div class="summary-header">
+                  <div class="win-score">
+                    <span class="score-label">赢面评分</span>
+                    <span class="score-value" :class="getWinScoreClass(aiSummary.winScore)">
+                      {{ aiSummary.winScore }}
+                    </span>
+                    <span class="score-max">/100</span>
+                  </div>
+                  <div class="win-level">
+                    <el-tag :type="getWinLevelType(aiSummary.winLevel)" size="large">
+                      {{ getWinLevelText(aiSummary.winLevel) }}
+                    </el-tag>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </el-alert>
+
+          <!-- 关键风险 -->
+          <el-divider content-position="left">
+            <el-icon><Warning /></el-icon>
+            关键风险
+          </el-divider>
+          <div class="risk-list">
+            <div
+              v-for="(risk, index) in aiSummary.risks"
+              :key="index"
+              class="risk-item"
+              :class="'risk-' + risk.level"
+            >
+              <el-icon class="risk-icon">
+                <WarningFilled v-if="risk.level === 'high'" />
+                <Warning v-else />
+              </el-icon>
+              <span class="risk-content">{{ risk.content }}</span>
+              <el-tag :type="risk.level === 'high' ? 'danger' : 'warning'" size="small">
+                {{ risk.level === 'high' ? '高风险' : '中风险' }}
+              </el-tag>
+            </div>
+          </div>
+
+          <!-- AI建议 -->
+          <el-divider content-position="left">
+            <el-icon><MagicStick /></el-icon>
+            AI建议
+          </el-divider>
+          <ul class="suggestion-list">
+            <li v-for="(suggestion, index) in aiSummary.suggestions" :key="index">
+              {{ suggestion }}
+            </li>
+          </ul>
+
+          <!-- 评分点覆盖率组件 -->
+          <el-divider content-position="left">
+            <el-icon><DataAnalysis /></el-icon>
+            评分点覆盖率
+          </el-divider>
+          <ScoreCoverage
+            :score-categories="scoreAnalysis.scoreCategories"
+            :gap-items="scoreAnalysis.gapItems"
+          />
+
+          <!-- 自动生成任务清单 -->
+          <el-divider content-position="left">
+            <el-icon><List /></el-icon>
+            AI生成任务清单
+          </el-divider>
+          <div class="ai-tasks">
+            <el-alert
+              title="以下任务由AI根据评分缺口自动生成，您可以编辑调整"
+              type="info"
+              :closable="false"
+              show-icon
+              class="mb-12"
+            />
+            <div
+              v-for="(aiTask, index) in aiGeneratedTasks"
+              :key="index"
+              class="ai-task-item"
+            >
+              <el-checkbox v-model="aiTask.selected" :label="aiTask.name" />
+              <div class="ai-task-meta">
+                <el-tag size="small" :type="getPriorityType(aiTask.priority)">
+                  {{ getPriorityText(aiTask.priority) }}
+                </el-tag>
+                <span class="ai-task-suggest">{{ aiTask.suggestion }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 确认提示 -->
+          <el-alert
+            title="确认以上信息无误后，点击下方按钮完成项目创建"
+            type="success"
+            :closable="false"
+            show-icon
+            class="mt-16"
+          />
+        </div>
+      </div>
+
+      <div class="step-actions">
+        <el-button v-if="currentStep > 0" @click="prevStep">上一步</el-button>
+        <el-button v-if="currentStep < 3" type="primary" @click="nextStep">下一步</el-button>
+        <el-button v-if="currentStep === 3" type="primary" :loading="submitting" @click="handleSubmit">
+          确认并创建项目
+        </el-button>
+      </div>
+    </el-card>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useProjectStore } from '@/stores/project'
+import { useUserStore } from '@/stores/user'
+import { Refresh, Plus, Delete, Loading, Warning, WarningFilled, MagicStick, DataAnalysis, List } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import ScoreCoverage from '@/components/ai/ScoreCoverage.vue'
+
+const router = useRouter()
+const projectStore = useProjectStore()
+const userStore = useUserStore()
+
+const currentStep = ref(0)
+const syncing = ref(false)
+const syncedFromCRM = ref(false)
+const submitting = ref(false)
+const analyzing = ref(false)
+
+const userList = computed(() => userStore.users)
+
+const basicFormRef = ref()
+const detailFormRef = ref()
+const taskFormRef = ref()
+
+const basicForm = reactive({
+  name: '',
+  customer: '',
+  budget: null,
+  industry: '',
+  region: '',
+  deadline: '',
+  manager: '',
+  competitors: []
+})
+
+// 常见竞争对手选项
+const competitorOptions = ref([
+  '华为技术有限公司',
+  '腾讯云计算有限公司',
+  '阿里巴巴云计算有限公司',
+  '百度智能云',
+  '京东科技',
+  '科大讯飞股份有限公司',
+  '浪潮集团有限公司',
+  '中软国际',
+  '东软集团',
+  '用友网络'
+])
+
+// 竞争对手分析数据
+const competitorAnalysis = ref([])
+
+const detailForm = reactive({
+  description: '',
+  tags: [],
+  startDate: '',
+  endDate: '',
+  remark: ''
+})
+
+const taskForm = reactive({
+  tasks: [
+    { name: '', owner: '', deadline: '', priority: 'medium', status: 'todo' }
+  ]
+})
+
+// AI分析数据
+const aiSummary = ref({
+  winScore: 72,
+  winLevel: 'medium',
+  risks: [
+    { level: 'high', content: '技术方案中物联网架构缺失，可能扣15分' },
+    { level: 'medium', content: '智慧城市同类案例储备不足' }
+  ],
+  suggestions: [
+    '优先补充物联网架构方案，建议参考某省政府IoT项目',
+    '尽快完善智慧城市案例材料，可使用西部智慧园区项目作为类似案例',
+    '商务条件较好，建议继续保持'
+  ]
+})
+
+// 评分分析数据
+const scoreAnalysis = ref({
+  scoreCategories: [
+    { name: '技术', weight: 40, covered: 28, total: 40, percentage: 70, gaps: ['物联网架构方案', '大数据平台'] },
+    { name: '商务', weight: 30, covered: 25, total: 30, percentage: 83, gaps: [] },
+    { name: '案例', weight: 20, covered: 8, total: 20, percentage: 40, gaps: ['智慧城市案例'] },
+    { name: '服务', weight: 10, covered: 7, total: 10, percentage: 70, gaps: ['运维承诺'] }
+  ],
+  gapItems: [
+    { category: '技术', scorePoint: '物联网架构', required: '架构图+技术说明', status: 'missing' },
+    { category: '技术', scorePoint: '大数据平台', required: '平台架构+性能指标', status: 'missing' },
+    { category: '案例', scorePoint: '智慧城市案例', required: '至少1个同类案例', status: 'missing' },
+    { category: '服务', scorePoint: '运维承诺', required: '3年免费运维承诺', status: 'missing' }
+  ]
+})
+
+// AI生成的任务清单
+const aiGeneratedTasks = ref([
+  { name: '补充物联网架构方案', priority: 'high', suggestion: '参考某省政府IoT项目架构', selected: true },
+  { name: '完善大数据平台方案', priority: 'high', suggestion: '需包含性能指标说明', selected: true },
+  { name: '准备智慧城市案例材料', priority: 'medium', suggestion: '使用西部智慧园区作为类似案例', selected: true },
+  { name: '编制运维承诺文件', priority: 'medium', suggestion: '明确3年免费运维条款', selected: true }
+])
+
+const basicRules = {
+  name: [{ required: true, message: '请输入项目名称', trigger: 'blur' }],
+  customer: [{ required: true, message: '请输入客户名称', trigger: 'blur' }],
+  budget: [{ required: true, message: '请输入预算金额', trigger: 'blur' }],
+  deadline: [{ required: true, message: '请选择投标截止日期', trigger: 'change' }],
+  manager: [{ required: true, message: '请选择项目负责人', trigger: 'change' }]
+}
+
+const detailRules = {
+  description: [{ required: true, message: '请输入项目描述', trigger: 'blur' }]
+}
+
+const disabledDate = (time) => {
+  return time.getTime() < Date.now() - 24 * 60 * 60 * 1000
+}
+
+const syncFromCRM = async () => {
+  syncing.value = true
+  try {
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    basicForm.name = '某央企智慧办公平台采购项目'
+    basicForm.customer = '某央企集团'
+    basicForm.budget = 500
+    basicForm.industry = '政府'
+    basicForm.region = '北京'
+    syncedFromCRM.value = true
+    ElMessage.success('CRM数据同步成功')
+  } catch (error) {
+    ElMessage.error('CRM数据同步失败')
+  } finally {
+    syncing.value = false
+  }
+}
+
+const addTask = () => {
+  taskForm.tasks.push({
+    name: '',
+    owner: '',
+    deadline: '',
+    priority: 'medium',
+    status: 'todo'
+  })
+}
+
+const removeTask = (index) => {
+  taskForm.tasks.splice(index, 1)
+}
+
+const nextStep = async () => {
+  if (currentStep.value === 0) {
+    const valid = await basicFormRef.value?.validate().catch(() => false)
+    if (!valid) return
+  } else if (currentStep.value === 1) {
+    const valid = await detailFormRef.value?.validate().catch(() => false)
+    if (!valid) return
+  } else if (currentStep.value === 2) {
+    // 进入智能辅助步骤时，执行AI分析
+    await runAIAnalysis()
+  }
+  currentStep.value++
+}
+
+const prevStep = () => {
+  currentStep.value--
+}
+
+// 运行AI分析
+const runAIAnalysis = async () => {
+  analyzing.value = true
+  try {
+    // 模拟AI分析
+    await new Promise(resolve => setTimeout(resolve, 1500))
+
+    // 根据项目信息动态生成分析结果
+    const industry = basicForm.industry
+    const tags = detailForm.tags || []
+
+    // 动态调整赢面分数
+    let winScore = 60
+    if (industry === '政府') winScore += 10
+    if (tags.includes('信创')) winScore += 5
+    if (basicForm.budget > 500) winScore -= 5
+
+    aiSummary.value.winScore = Math.min(100, winScore)
+
+    // 根据赢面分数确定等级
+    if (winScore >= 80) {
+      aiSummary.value.winLevel = 'high'
+    } else if (winScore >= 60) {
+      aiSummary.value.winLevel = 'medium'
+    } else {
+      aiSummary.value.winLevel = 'low'
+    }
+
+    ElMessage.success('AI分析完成')
+  } catch (error) {
+    ElMessage.error('AI分析失败')
+  } finally {
+    analyzing.value = false
+  }
+}
+
+// 获取赢面分数样式
+const getWinScoreClass = (score) => {
+  if (score >= 80) return 'score-high'
+  if (score >= 60) return 'score-medium'
+  return 'score-low'
+}
+
+// 获取赢面等级标签类型
+const getWinLevelType = (level) => {
+  const typeMap = {
+    high: 'success',
+    medium: 'warning',
+    low: 'danger'
+  }
+  return typeMap[level] || ''
+}
+
+// 获取赢面等级文本
+const getWinLevelText = (level) => {
+  const textMap = {
+    high: '赢面较高',
+    medium: '赢面中等',
+    low: '赢面较低'
+  }
+  return textMap[level] || ''
+}
+
+// 获取优先级标签类型
+const getPriorityType = (priority) => {
+  const typeMap = {
+    high: 'danger',
+    medium: 'warning',
+    low: 'info'
+  }
+  return typeMap[priority] || ''
+}
+
+// 获取优先级文本
+const getPriorityText = (priority) => {
+  const textMap = {
+    high: '高',
+    medium: '中',
+    low: '低'
+  }
+  return textMap[priority] || ''
+}
+
+const handleSubmit = async () => {
+  submitting.value = true
+  try {
+    // 合并用户任务和AI生成的任务
+    const userTasks = taskForm.tasks.filter(t => t.name)
+    const aiTasks = aiGeneratedTasks.value
+      .filter(t => t.selected)
+      .map(t => ({
+        name: t.name,
+        priority: t.priority,
+        status: 'todo',
+        owner: basicForm.manager
+      }))
+
+    const projectData = {
+      ...basicForm,
+      ...detailForm,
+      tasks: [...userTasks, ...aiTasks],
+      competitorAnalysis: competitorAnalysis.value,
+      aiAnalysis: {
+        ...aiSummary.value,
+        scoreCoverage: scoreAnalysis.value
+      }
+    }
+
+    await projectStore.createProject(projectData)
+
+    ElMessage.success('项目创建成功')
+    router.push('/project')
+  } catch (error) {
+    ElMessage.error('项目创建失败')
+  } finally {
+    submitting.value = false
+  }
+}
+
+const goBack = () => {
+  router.back()
+}
+
+// 处理竞争对手变化
+const handleCompetitorsChange = (value) => {
+  value.forEach(name => {
+    const existing = competitorAnalysis.value.find(c => c.name === name)
+    if (!existing) {
+      competitorAnalysis.value.push({
+        name,
+        strength: '',
+        weakness: '',
+        winRate: 0,
+        history: ''
+      })
+    }
+  })
+  competitorAnalysis.value = competitorAnalysis.value.filter(
+    c => value.includes(c.name)
+  )
+}
+</script>
+
+<style scoped>
+.project-create-container {
+  padding: 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header .title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.steps {
+  margin: 32px 0;
+  padding: 0 40px;
+}
+
+.step-content {
+  min-height: 400px;
+  padding: 20px 40px;
+}
+
+.step-panel {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.mb-16 {
+  margin-bottom: 16px;
+}
+
+.mb-12 {
+  margin-bottom: 12px;
+}
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+.sync-tip {
+  margin-left: 12px;
+  color: #67c23a;
+  font-size: 14px;
+}
+
+.competitor-analysis-item {
+  display: block;
+}
+
+.competitor-analysis-item :deep(.el-form-item__content) {
+  width: 100%;
+}
+
+.win-rate-input {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.task-list {
+  margin-bottom: 16px;
+}
+
+.task-item {
+  margin-bottom: 16px;
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.add-task-btn {
+  width: 100%;
+  border-style: dashed;
+}
+
+.step-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding-top: 20px;
+  border-top: 1px solid #ebeef5;
+  margin-top: 20px;
+}
+
+/* AI分析相关样式 */
+.ai-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #909399;
+}
+
+.ai-summary {
+  width: 100%;
+}
+
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.win-score {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.score-label {
+  font-size: 14px;
+  color: #606266;
+}
+
+.score-value {
+  font-size: 32px;
+  font-weight: 600;
+}
+
+.score-high {
+  color: #67c23a;
+}
+
+.score-medium {
+  color: #e6a23c;
+}
+
+.score-low {
+  color: #f56c6c;
+}
+
+.score-max {
+  font-size: 16px;
+  color: #909399;
+}
+
+.win-level {
+  flex-shrink: 0;
+}
+
+.risk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.risk-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background-color: #fef0f0;
+  border-radius: 8px;
+  border-left: 4px solid #f56c6c;
+}
+
+.risk-item.risk-medium {
+  background-color: #fdf6ec;
+  border-left-color: #e6a23c;
+}
+
+.risk-icon {
+  font-size: 20px;
+}
+
+.risk-item.risk-high .risk-icon {
+  color: #f56c6c;
+}
+
+.risk-item.risk-medium .risk-icon {
+  color: #e6a23c;
+}
+
+.risk-content {
+  flex: 1;
+  color: #606266;
+}
+
+.suggestion-list {
+  margin: 0;
+  padding-left: 20px;
+  margin-bottom: 16px;
+}
+
+.suggestion-list li {
+  margin-bottom: 8px;
+  color: #606266;
+  line-height: 1.6;
+}
+
+.ai-tasks {
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+}
+
+.ai-task-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background-color: #fff;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.ai-task-item:last-child {
+  margin-bottom: 0;
+}
+
+.ai-task-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-left: 24px;
+}
+
+.ai-task-suggest {
+  font-size: 12px;
+  color: #909399;
+}
+
+/* 移动端响应式样式 */
+@media (max-width: 768px) {
+  .project-create-container {
+    padding: 12px;
+  }
+
+  .page-header {
+    margin-bottom: 12px;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  :deep(.el-steps) {
+    font-size: 12px;
+  }
+
+  :deep(.el-step__title) {
+    font-size: 12px;
+  }
+
+  .create-form :deep(.el-form-item__label) {
+    width: 100% !important;
+    text-align: left;
+  }
+
+  .create-form :deep(.el-form-item__content) {
+    margin-left: 0 !important;
+  }
+
+  .create-form :deep(.el-input),
+  .create-form :deep(.el-select),
+  .create-form :deep(.el-date-picker) {
+    width: 100% !important;
+  }
+
+  .step-actions {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .step-actions .el-button {
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .task-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  :deep(.el-drawer) {
+    width: 95% !important;
+  }
+
+  :deep(.el-dialog) {
+    width: 95% !important;
+    margin: 0 auto;
+  }
+
+  :deep(.el-dialog__body) {
+    padding: 16px;
+  }
+
+  .create-card {
+    margin-bottom: 12px;
+  }
+
+  .create-card :deep(.el-card__header) {
+    padding: 12px 16px;
+  }
+
+  .create-card :deep(.el-card__body) {
+    padding: 16px;
+  }
+
+  :deep(.el-upload) {
+    width: 100%;
+  }
+
+  :deep(.el-upload-dragger) {
+    width: 100% !important;
+    min-height: 120px;
+  }
+
+  .summary-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .risk-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .ai-task-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding-left: 0;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .step-actions .el-button,
+  .add-task-btn {
+    min-height: 44px;
+  }
+
+  .task-item {
+    min-height: 60px;
+  }
+
+  .task-item:active {
+    background: #f5f7fa;
+  }
+}
+</style>
