@@ -128,61 +128,41 @@
 
 /* ==================== Metric Card (for Dashboard) ==================== */
 .b2b-metric-card {
-  padding: 16px 20px;
+  padding: 20px 24px;
   background: #fff;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--gray-200);
+  border-top: 3px solid transparent;
   transition: all 0.25s ease;
 }
 
+.b2b-metric-card.metric-blue { border-top-color: var(--brand-primary); }
+.b2b-metric-card.metric-green { border-top-color: var(--color-success); }
+.b2b-metric-card.metric-orange { border-top-color: var(--color-warning); }
+.b2b-metric-card.metric-red { border-top-color: var(--color-danger); }
+
 .b2b-metric-card:hover {
   box-shadow: var(--shadow-md);
-  border-color: var(--brand-primary);
 }
-
-.b2b-metric-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.b2b-metric-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.b2b-metric-icon .el-icon {
-  font-size: 12px;
-}
-
-.b2b-metric-icon.blue { background: rgba(0, 102, 204, 0.08); color: var(--brand-primary); }
-.b2b-metric-icon.green { background: rgba(0, 170, 68, 0.08); color: var(--color-success); }
-.b2b-metric-icon.orange { background: rgba(255, 136, 0, 0.08); color: var(--color-warning); }
-.b2b-metric-icon.red { background: rgba(221, 34, 0, 0.08); color: var(--color-danger); }
 
 .b2b-metric-content {
   flex: 1;
 }
 
 .b2b-metric-label {
-  font-size: 14px;
-  font-weight: 400;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--text-secondary);
+  margin-bottom: 8px;
 }
 
 .b2b-metric-value {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1;
-  margin: 4px 0;
+  margin-bottom: 8px;
 }
 
 .b2b-metric-trend {

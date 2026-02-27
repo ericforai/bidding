@@ -24,18 +24,12 @@
         v-for="metric in metrics"
         :key="metric.key"
         class="b2b-metric-card"
-        :class="metric.trendClass"
+        :class="'metric-' + getMetricColorClass(metric.key)"
       >
         <div class="b2b-metric-content">
-          <div class="b2b-metric-header">
-            <div class="b2b-metric-label">{{ metric.label }}</div>
-            <div class="b2b-metric-icon" :class="getMetricIconClass(metric.key)">
-              <component :is="metric.icon" :size="12" />
-            </div>
-          </div>
+          <div class="b2b-metric-label">{{ metric.label }}</div>
           <div class="b2b-metric-value">{{ metric.value }}</div>
           <div class="b2b-metric-trend" :class="getTrendClass(metric.trendDirection)">
-            <component :is="metric.trendIcon" :size="10" />
             <span class="trend-value">{{ metric.change }}</span>
             <span class="trend-label">较上月</span>
           </div>
