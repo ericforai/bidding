@@ -9,6 +9,7 @@ import App from './App.vue'
 // 导入设计系统 CSS 变量
 import './styles/variables.css'
 import './styles/common.css'
+import './styles/card-b2b.css'
 
 const app = createApp(App)
 const pinia = createPinia()
