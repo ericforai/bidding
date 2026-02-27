@@ -12,6 +12,14 @@
           <div class="b2b-stat-content">
             <div class="b2b-stat-value">{{ stat.value }}</div>
             <div class="b2b-stat-label">{{ stat.label }}</div>
+            <div class="b2b-stat-trend" :class="'trend-' + stat.trend.direction">
+              <el-icon :size="12">
+                <ArrowTop v-if="stat.trend.direction === 'up'" />
+                <ArrowBottom v-else-if="stat.trend.direction === 'down'" />
+              </el-icon>
+              <span>{{ stat.trend.value }}</span>
+              <span class="trend-label">{{ stat.trend.label }}</span>
+            </div>
           </div>
         </div>
       </el-col>
@@ -216,7 +224,7 @@ import { useRouter } from 'vue-router'
 import {
   List, Warning, Briefcase, Bell, View, Clock, Calendar, User,
   Document, Plus, TrendCharts, DataAnalysis, Message, Check,
-  CircleCheck, CircleClose, Loading
+  CircleCheck, CircleClose, Loading, ArrowTop, ArrowBottom
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
@@ -224,10 +232,54 @@ const router = useRouter()
 
 // 统计数据
 const stats = ref([
-  { key: 'tenders', label: '标讯数量', value: '128', icon: Document, color: '#E6F7FF' },
-  { key: 'projects', label: '进行中项目', value: '12', icon: Briefcase, color: '#F6FFED' },
-  { key: 'winRate', label: '中标率', value: '68%', icon: TrendCharts, color: '#FFF7E6' },
-  { key: 'tasks', label: '待处理任务', value: '23', icon: Check, color: '#FFF1F0' }
+  {
+    key: 'tenders',
+    label: '标讯数量',
+    value: '128',
+    icon: Document,
+    color: '#E6F7FF',
+    trend: {
+      value: '+12.5%',
+      direction: 'up',
+      label: '较上月'
+    }
+  },
+  {
+    key: 'projects',
+    label: '进行中项目',
+    value: '12',
+    icon: Briefcase,
+    color: '#F6FFED',
+    trend: {
+      value: '+2',
+      direction: 'up',
+      label: '较上月'
+    }
+  },
+  {
+    key: 'winRate',
+    label: '中标率',
+    value: '68%',
+    icon: TrendCharts,
+    color: '#FFF7E6',
+    trend: {
+      value: '-3.2%',
+      direction: 'down',
+      label: '较上月'
+    }
+  },
+  {
+    key: 'tasks',
+    label: '待处理任务',
+    value: '23',
+    icon: Check,
+    color: '#FFF1F0',
+    trend: {
+      value: '0',
+      direction: 'neutral',
+      label: '较上月'
+    }
+  }
 ])
 
 // 快捷操作处理函数（必须在 quickActions 之前定义）
@@ -462,6 +514,32 @@ export default {
   font-size: 13px;
   color: var(--text-secondary);
   margin-top: 4px;
+}
+
+/* 趋势指示器 */
+.b2b-stat-trend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.b2b-stat-trend.trend-up {
+  color: var(--color-success);
+}
+
+.b2b-stat-trend.trend-down {
+  color: var(--color-danger);
+}
+
+.b2b-stat-trend.trend-neutral {
+  color: var(--text-secondary);
+}
+
+.b2b-stat-trend .trend-label {
+  color: var(--text-secondary);
+  margin-left: 2px;
 }
 
 /* 快捷操作卡片 */
