@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="dialogVisible"
-    title="📈 ROI核算 - 投入产出分析"
+    title="ROI核算 - 投入产出分析"
     width="1100px"
     :close-on-click-modal="false"
     destroy-on-close
@@ -10,7 +10,7 @@
       <!-- 关键指标卡片 -->
       <div class="metrics-grid">
         <div class="metric-card">
-          <div class="metric-icon">👥</div>
+          <div class="metric-icon"></div>
           <div class="metric-content">
             <div class="metric-value">{{ currentData.totalManDays }}</div>
             <div class="metric-label">预计投入人天</div>
@@ -24,7 +24,7 @@
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-icon">🎯</div>
+          <div class="metric-icon"></div>
           <div class="metric-content">
             <div class="metric-value" :class="getWinRateClass(currentData.winRate)">
               {{ currentData.winRate }}%
@@ -33,7 +33,7 @@
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-icon">📈</div>
+          <div class="metric-icon"></div>
           <div class="metric-content">
             <div class="metric-value profit">{{ formatCurrency(currentData.expectedProfit) }}</div>
             <div class="metric-label">预计毛利(元)</div>
@@ -65,7 +65,7 @@
 
       <!-- 历史对比图 -->
       <div class="section chart-section" v-if="currentData.historyComparison?.length">
-        <h3 class="section-title">📊 历史项目对比</h3>
+        <h3 class="section-title">历史项目对比</h3>
         <div class="chart-container">
           <BarChart
             ref="chartRef"
@@ -256,8 +256,7 @@ const handleExport = () => {
 }
 
 .metric-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--card-shadow-hover, 0 4px 12px rgba(0, 0, 0, 0.1));
+  box-shadow: var(--card-shadow-hover, 0 6px 16px rgba(0, 0, 0, 0.12));
 }
 
 .metric-icon {
