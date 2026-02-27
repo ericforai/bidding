@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="dialogVisible"
-    title="⚡ 自动化节点"
+    title="自动化节点"
     width="800px"
     :close-on-click-modal="false"
     destroy-on-close

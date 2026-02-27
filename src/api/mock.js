@@ -3,10 +3,10 @@
 export const mockData = {
   // 用户信息
   users: [
-    { id: 'U001', name: '小王', role: 'sales', dept: '华南销售部', avatar: '👤' },
-    { id: 'U002', name: '张经理', role: 'manager', dept: '投标管理部', avatar: '👨‍💼' },
-    { id: 'U003', name: '李总', role: 'admin', dept: '管理层', avatar: '👔' },
-    { id: 'U004', name: '李工', role: 'staff', dept: '技术部', avatar: '👨‍💻' }
+    { id: 'U001', name: '小王', role: 'sales', dept: '华南销售部', avatar: '' },
+    { id: 'U002', name: '张经理', role: 'manager', dept: '投标管理部', avatar: '' },
+    { id: 'U003', name: '李总', role: 'admin', dept: '管理层', avatar: '' },
+    { id: 'U004', name: '李工', role: 'staff', dept: '技术部', avatar: '' }
   ],
 
   // 待办任务
@@ -694,7 +694,7 @@ mockData.collaboration = [
     id: 'COLL001',
     type: 'comment',
     author: '张经理',
-    avatar: '👨‍💼',
+    avatar: '',
     content: '技术方案的移动端部分需要再详细一些，建议单独作为一个章节',
     position: { section: '技术方案', page: 15 },
     time: '2025-02-25 14:20',
@@ -707,7 +707,7 @@ mockData.collaboration = [
     id: 'COLL002',
     type: 'review',
     author: '李总',
-    avatar: '👔',
+    avatar: '',
     content: '整体方案不错，报价策略需要再评估一下',
     position: { section: '商务报价', page: 32 },
     time: '2025-02-25 16:30',
@@ -718,7 +718,7 @@ mockData.collaboration = [
     id: 'COLL003',
     type: 'task',
     author: '系统',
-    avatar: '🤖',
+    avatar: '',
     content: 'AI检测到1处可能的错别字："信产" → "信创"？',
     position: { section: '技术方案', page: 8, line: 12 },
     time: '2025-02-26 10:00',
@@ -731,7 +731,7 @@ mockData.collaboration = [
     id: 'COLL004',
     type: 'approval',
     author: '张经理',
-    avatar: '👨‍💼',
+    avatar: '',
     content: '技术方案已通过评审',
     position: null,
     time: '2025-02-26 11:00',

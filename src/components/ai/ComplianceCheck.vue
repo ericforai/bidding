@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="🛡️ 合规雷达 - 废标风险检查"
+    title="合规雷达 - 废标风险检查"
     :width="900"
     :close-on-click-modal="false"
     @close="handleClose"
@@ -40,7 +40,7 @@
           <template #label>
             <span class="tab-label">
               <el-icon><Document /></el-icon>
-              📋 强制条款
+              强制条款
               <el-badge
                 v-if="failCount(data.checks.mandatory) > 0"
                 :value="failCount(data.checks.mandatory)"
@@ -84,7 +84,7 @@
           <template #label>
             <span class="tab-label">
               <el-icon><Edit /></el-icon>
-              📄 格式检查
+              格式检查
               <el-badge
                 v-if="failCount(data.checks.format) > 0"
                 :value="failCount(data.checks.format)"
@@ -134,7 +134,7 @@
           <template #label>
             <span class="tab-label">
               <el-icon><Lock /></el-icon>
-              🔒 签章资质
+              签章资质
               <el-badge
                 v-if="expiringCount(data.checks.qualification) > 0"
                 :value="expiringCount(data.checks.qualification)"

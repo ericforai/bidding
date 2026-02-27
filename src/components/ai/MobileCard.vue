@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="dialogVisible"
-    title="📱 移动端战情卡片"
+    title="移动端战情卡片"
     width="420px"
     :close-on-click-modal="false"
     destroy-on-close
@@ -50,7 +50,7 @@
           <!-- 客户信息 -->
           <div class="info-card">
             <div class="card-title">
-              <span class="title-icon">👤</span>
+              <span class="title-icon"></span>
               客户信息
             </div>
             <div class="info-row">
@@ -106,7 +106,7 @@
           <!-- 底部导航 -->
           <div class="bottom-nav">
             <div class="nav-item active">
-              <span class="nav-icon">📊</span>
+              <span class="nav-icon"></span>
               <span class="nav-label">战情</span>
             </div>
             <div class="nav-item">
@@ -118,7 +118,7 @@
               <span class="nav-label">文档</span>
             </div>
             <div class="nav-item">
-              <span class="nav-icon">⚙️</span>
+              <span class="nav-icon"></span>
               <span class="nav-label">设置</span>
             </div>
           </div>

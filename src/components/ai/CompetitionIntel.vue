@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="🕵️ 竞争情报分析"
+    title="竞争情报分析"
     :width="900"
     :close-on-click-modal="false"
     @close="handleClose"
