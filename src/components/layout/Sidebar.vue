@@ -407,20 +407,80 @@ const multiMenus = computed(() => {
 }
 
 /* ========== 菜单交互状态 ========== */
+:deep(.el-menu-item),
+:deep(.el-sub-menu__title) {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
 :deep(.el-menu-item:hover),
 :deep(.el-sub-menu__title:hover) {
   background: rgba(255, 255, 255, 0.08) !important;
 }
 
+:deep(.el-menu-item:hover)::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 0 2px 2px 0;
+}
+
+:deep(.el-menu-item:focus-visible) {
+  outline: 2px solid rgba(64, 158, 255, 0.5);
+  outline-offset: -2px;
+}
+
 :deep(.el-menu-item.is-active) {
-  background: var(--brand-primary) !important;
+  background: linear-gradient(90deg, var(--brand-primary) 0%, rgba(64, 158, 255, 0.8) 100%) !important;
   border-right: 3px solid var(--brand-primary-hover);
   color: #FFFFFF !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.el-menu-item.is-active)::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 24px;
+  background: #fff;
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
 
 :deep(.el-sub-menu .el-menu-item.is-active) {
   background: rgba(64, 158, 255, 0.2) !important;
   color: #fff !important;
+}
+
+:deep(.el-sub-menu .el-menu-item.is-active)::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 16px;
+  background: #fff;
+  border-radius: 0 2px 2px 0;
+}
+
+/* Icon animation on hover */
+:deep(.el-menu-item:hover .el-icon),
+:deep(.el-sub-menu__title:hover .el-icon) {
+  transform: scale(1.08);
+}
+
+:deep(.el-menu-item .el-icon),
+:deep(.el-sub-menu__title .el-icon) {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ========== 折叠状态 ========== */
