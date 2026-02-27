@@ -3,7 +3,7 @@
     <!-- 顶部标题栏 -->
     <div class="page-header">
       <div class="header-left">
-        <h2 class="page-title">🤖 AI 智能中心</h2>
+        <h2 class="page-title">AI 智能中心</h2>
       </div>
       <div class="header-actions">
         <el-button @click="handleSave">
@@ -77,12 +77,41 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, markRaw } from 'vue'
 import { Document, RefreshLeft, Download } from '@element-plus/icons-vue'
+import {
+  TrendCharts,
+  Aim,
+  View,
+  TrendCharts as TrendUp,
+  MagicStick,
+  Shield,
+  Document as DocumentIcon,
+  User,
+  Setting as SettingIcon
+} from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import FeatureCard from './components/FeatureCard.vue'
 import ConfigDialog from '@/components/ai/ConfigDialog.vue'
 import { aiConfigs, getConfigById } from '@/config/ai-prompts'
+
+// 图标映射表
+const iconMap = {
+  'analysis': markRaw(TrendCharts),
+  'score': markRaw(Aim),
+  'intel': markRaw(View),
+  'roi': markRaw(TrendUp),
+  'assembly': markRaw(MagicStick),
+  'compliance': markRaw(Shield),
+  'version': markRaw(DocumentIcon),
+  'collab': markRaw(User),
+  'tasks': markRaw(SettingIcon)
+}
+
+// 获取图标组件
+const getIconComponent = (iconName) => {
+  return iconMap[iconName] || iconMap['analysis']
+}
 
 // Tab 切换
 const activeTab = ref('prepare')
@@ -96,7 +125,7 @@ const currentConfigData = ref(null)
 const prepareFeatures = ref([
   {
     id: 'ai-analysis',
-    icon: '📊',
+    icon: 'analysis',
     name: 'AI 分析',
     description: '智能分析招标文件，提取关键信息和风险点',
     enabled: true,
@@ -105,7 +134,7 @@ const prepareFeatures = ref([
   },
   {
     id: 'score-coverage',
-    icon: '🎯',
+    icon: 'score',
     name: '评分点覆盖',
     description: '自动匹配评分点与响应内容，确保不漏项',
     enabled: true,
@@ -114,7 +143,7 @@ const prepareFeatures = ref([
   },
   {
     id: 'competition-intel',
-    icon: '🕵️',
+    icon: 'intel',
     name: '竞争情报',
     description: '分析竞争对手策略，提供差异化建议',
     enabled: false,
@@ -123,7 +152,7 @@ const prepareFeatures = ref([
   },
   {
     id: 'roi-analysis',
-    icon: '📈',
+    icon: 'roi',
     name: 'ROI 核算',
     description: '智能测算项目投入产出比，辅助决策',
     enabled: true,
@@ -136,7 +165,7 @@ const prepareFeatures = ref([
 const compileFeatures = ref([
   {
     id: 'smart-assembly',
-    icon: '⚡',
+    icon: 'assembly',
     name: '智能装配',
     description: '基于模板自动组装标书内容，提升编制效率',
     enabled: true,
@@ -145,7 +174,7 @@ const compileFeatures = ref([
   },
   {
     id: 'compliance-radar',
-    icon: '🛡️',
+    icon: 'compliance',
     name: '合规雷达',
     description: '全方位扫描标书合规风险，智能预警',
     enabled: true,
@@ -158,7 +187,7 @@ const compileFeatures = ref([
 const collabFeatures = ref([
   {
     id: 'version-control',
-    icon: '📝',
+    icon: 'version',
     name: '版本管理',
     description: '智能追踪文档变更，支持版本对比和回溯',
     enabled: true,
@@ -167,7 +196,7 @@ const collabFeatures = ref([
   },
   {
     id: 'collab-center',
-    icon: '👥',
+    icon: 'collab',
     name: '协作中心',
     description: '团队任务分配与进度跟踪，智能提醒',
     enabled: true,
@@ -176,7 +205,7 @@ const collabFeatures = ref([
   },
   {
     id: 'auto-tasks',
-    icon: '⚙️',
+    icon: 'tasks',
     name: '自动化任务',
     description: '自定义自动化规则，减少重复操作',
     enabled: false,

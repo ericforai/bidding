@@ -3,7 +3,9 @@
     <!-- 卡片头部 -->
     <div class="card-header">
       <div class="header-left">
-        <span class="feature-icon">{{ feature.icon }}</span>
+        <div class="feature-icon" :style="{ backgroundColor: getIconColor(feature.icon) }">
+          <component :is="getIconComponent(feature.icon)" />
+        </div>
         <span class="feature-name">{{ feature.name }}</span>
       </div>
       <div class="header-right">
@@ -66,8 +68,45 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, markRaw } from 'vue'
 import { Setting, ChatDotRound, MoreFilled } from '@element-plus/icons-vue'
+import {
+  TrendCharts,
+  Aim,
+  View,
+  TrendCharts as TrendUp,
+  MagicStick,
+  Shield,
+  Document as DocumentIcon,
+  User,
+  Setting as SettingIcon
+} from '@element-plus/icons-vue'
+
+// 图标映射表
+const iconMap = {
+  'analysis': markRaw(TrendCharts),
+  'score': markRaw(Aim),
+  'intel': markRaw(View),
+  'roi': markRaw(TrendUp),
+  'assembly': markRaw(MagicStick),
+  'compliance': markRaw(Shield),
+  'version': markRaw(DocumentIcon),
+  'collab': markRaw(User),
+  'tasks': markRaw(SettingIcon)
+}
+
+// 图标颜色映射
+const iconColorMap = {
+  'analysis': '#409EFF',
+  'score': '#67C23A',
+  'intel': '#E6A23C',
+  'roi': '#F56C6C',
+  'assembly': '#909399',
+  'compliance': '#67C23A',
+  'version': '#409EFF',
+  'collab': '#E6A23C',
+  'tasks': '#909399'
+}
 
 const props = defineProps({
   feature: {
@@ -77,6 +116,16 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['toggle', 'configure'])
+
+// 获取图标组件
+const getIconComponent = (iconName) => {
+  return iconMap[iconName] || iconMap['analysis']
+}
+
+// 获取图标背景色
+const getIconColor = (iconName) => {
+  return iconColorMap[iconName] || '#409EFF'
+}
 
 // 截断提示词预览（前50字）
 const truncatedPrompt = computed(() => {
@@ -137,7 +186,20 @@ export default {
 }
 
 .feature-icon {
-  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 20px;
+  color: #fff;
+}
+
+.feature-icon :deep(svg) {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
 }
 
 .feature-name {
