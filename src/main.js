@@ -11,6 +11,7 @@ import './styles/variables.css'
 import './styles/common.css'
 import './styles/card-b2b.css'
 import './styles/micro-interactions.css'
+import './styles/attention-guidance.css'
 
 const app = createApp(App)
 const pinia = createPinia()
