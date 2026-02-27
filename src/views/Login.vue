@@ -1,61 +1,168 @@
 <template>
-  <div class="login-container">
-    <div class="login-box">
-      <div class="login-header">
-        <h1 class="login-title">西域MRO投标管理平台</h1>
-        <p class="login-subtitle">专业的招投标全流程管理系统</p>
+  <div class="login-page">
+    <!-- 左侧品牌区域 -->
+    <div class="brand-section">
+      <div class="brand-content">
+        <!-- Logo -->
+        <div class="brand-logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="logo-text">西域数智化投标管理平台</span>
+        </div>
+
+        <!-- 标语 -->
+        <div class="brand-hero">
+          <h1 class="hero-title">专业高效的<br>招投标全流程管理</h1>
+          <p class="hero-desc">AI 驱动的智能投标分析，助您提升中标率</p>
+        </div>
+
+        <!-- 核心功能 -->
+        <div class="features-grid">
+          <div class="feature-item">
+            <div class="feature-icon feature-blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 12l2 2 4-4"/>
+                <circle cx="12" cy="12" r="10"/>
+              </svg>
+            </div>
+            <span class="feature-text">智能标书分析</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon feature-green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+              </svg>
+            </div>
+            <span class="feature-text">中标率预测</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon feature-orange">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+            </div>
+            <span class="feature-text">团队协作</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon feature-purple">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+            </div>
+            <span class="feature-text">数据报表</span>
+          </div>
+        </div>
+
+        <!-- 数据统计 -->
+        <div class="stats-row">
+          <div class="stat-item">
+            <div class="stat-value">500+</div>
+            <div class="stat-label">服务企业</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-value">35%</div>
+            <div class="stat-label">平均中标率提升</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-value">10000+</div>
+            <div class="stat-label">管理项目</div>
+          </div>
+        </div>
+
+        <!-- 底部版权 -->
+        <div class="brand-footer">
+          <span>© 2025 西域数智化投标管理平台</span>
+        </div>
       </div>
+    </div>
 
-      <el-form
-        ref="loginFormRef"
-        :model="loginForm"
-        :rules="loginRules"
-        class="login-form"
-        @submit.prevent="handleLogin"
-      >
-        <el-form-item prop="username">
-          <el-input
-            v-model="loginForm.username"
-            placeholder="请输入用户名"
-            size="large"
-            :prefix-icon="User"
-          />
-        </el-form-item>
+    <!-- 右侧登录区域 -->
+    <div class="login-section">
+      <div class="login-container">
+        <div class="login-header">
+          <h2 class="login-title">欢迎回来</h2>
+          <p class="login-subtitle">登录您的账户继续工作</p>
+        </div>
 
-        <el-form-item prop="password">
-          <el-input
-            v-model="loginForm.password"
-            type="password"
-            placeholder="请输入密码"
-            size="large"
-            :prefix-icon="Lock"
-            show-password
-            @keyup.enter="handleLogin"
-          />
-        </el-form-item>
+        <el-form
+          ref="loginFormRef"
+          :model="loginForm"
+          :rules="loginRules"
+          class="login-form"
+          @submit.prevent="handleLogin"
+        >
+          <el-form-item prop="username">
+            <label class="form-label">用户名</label>
+            <el-input
+              v-model="loginForm.username"
+              placeholder="请输入用户名"
+              size="large"
+              :prefix-icon="User"
+              class="form-input"
+            />
+          </el-form-item>
 
-        <el-form-item>
-          <el-checkbox v-model="loginForm.remember" class="login-checkbox">
-            记住我
-          </el-checkbox>
-        </el-form-item>
+          <el-form-item prop="password">
+            <label class="form-label">密码</label>
+            <el-input
+              v-model="loginForm.password"
+              type="password"
+              placeholder="请输入密码"
+              size="large"
+              :prefix-icon="Lock"
+              show-password
+              class="form-input"
+              @keyup.enter="handleLogin"
+            />
+          </el-form-item>
 
-        <el-form-item>
-          <el-button
-            type="primary"
-            size="large"
-            :loading="loading"
-            class="login-button"
-            @click="handleLogin"
-          >
-            登录
-          </el-button>
-        </el-form-item>
-      </el-form>
+          <el-form-item>
+            <div class="form-actions">
+              <el-checkbox v-model="loginForm.remember" class="login-checkbox">
+                记住我
+              </el-checkbox>
+              <a href="#" class="forgot-link">忘记密码？</a>
+            </div>
+          </el-form-item>
 
-      <div class="login-tips">
-        <p>测试账号：小王 / 张经理 / 李总 / 李工</p>
-        <p>密码：任意输入即可</p>
+          <el-form-item>
+            <el-button
+              type="primary"
+              size="large"
+              :loading="loading"
+              class="login-button"
+              @click="handleLogin"
+            >
+              {{ loading ? '登录中...' : '登录' }}
+            </el-button>
+          </el-form-item>
+        </el-form>
+
+        <!-- 测试账号提示 -->
+        <div class="test-accounts">
+          <div class="test-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4"/>
+              <path d="M12 8h.01"/>
+            </svg>
+            <span>测试账号</span>
+          </div>
+          <div class="account-list">
+            <span class="account-tag">小王</span>
+            <span class="account-tag">张经理</span>
+            <span class="account-tag">李总</span>
+            <span class="account-tag">李工</span>
+          </div>
+          <p class="test-hint">密码：任意输入即可</p>
+        </div>
       </div>
     </div>
   </div>
@@ -112,117 +219,399 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-.login-container {
+.login-page {
+  display: flex;
+  min-height: 100vh;
+  background: #F8FAFC;
+}
+
+/* ==================== 品牌区域（左侧） ==================== */
+.brand-section {
+  flex: 1;
+  background: linear-gradient(135deg, #0F172A 0%, #1e293b 50%, #0F172A 100%);
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #409EFF 100%);
+  padding: 48px;
 }
 
-.login-box {
-  width: 420px;
-  padding: 48px 40px;
-  background: #ffffff;
+.brand-section::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 80%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(3, 105, 161, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.brand-section::after {
+  content: '';
+  position: absolute;
+  bottom: -30%;
+  left: -10%;
+  width: 60%;
+  height: 160%;
+  background: radial-gradient(circle, rgba(0, 170, 68, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.brand-content {
+  position: relative;
+  z-index: 1;
+  max-width: 520px;
+  width: 100%;
+}
+
+/* Logo */
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 48px;
+}
+
+.logo-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%);
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.logo-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+/* Hero */
+.brand-hero {
+  margin-bottom: 56px;
+}
+
+.hero-title {
+  font-size: 48px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
+}
+
+.hero-desc {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+}
+
+/* 功能网格 */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 48px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateX(4px);
+}
+
+.feature-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.feature-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.feature-blue {
+  background: linear-gradient(135deg, rgba(3, 105, 161, 0.2) 0%, rgba(3, 105, 161, 0.1) 100%);
+  color: #38bdf8;
+}
+
+.feature-green {
+  background: linear-gradient(135deg, rgba(0, 170, 68, 0.2) 0%, rgba(0, 170, 68, 0.1) 100%);
+  color: #4ade80;
+}
+
+.feature-orange {
+  background: linear-gradient(135deg, rgba(255, 136, 0, 0.2) 0%, rgba(255, 136, 0, 0.1) 100%);
+  color: #fb923c;
+}
+
+.feature-purple {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%);
+  color: #a78bfa;
+}
+
+.feature-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 统计数据 */
+.stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  margin-bottom: 48px;
+}
+
+.stat-item {
+  text-align: center;
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.stat-divider {
+  width: 1px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 底部版权 */
+.brand-footer {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+}
+
+/* ==================== 登录区域（右侧） ==================== */
+.login-section {
+  width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  background: #fff;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 400px;
 }
 
 .login-header {
-  text-align: center;
   margin-bottom: 40px;
 }
 
 .login-title {
   font-size: 28px;
-  font-weight: 600;
-  color: #1a1a1a;
+  font-weight: 700;
+  color: #0F172A;
   margin-bottom: 8px;
 }
 
 .login-subtitle {
   font-size: 14px;
-  color: #8c8c8c;
-  margin: 0;
+  color: #64748b;
 }
 
+/* 表单样式 */
 .login-form {
-  margin-top: 32px;
-}
-
-.login-form :deep(.el-form-item) {
   margin-bottom: 24px;
 }
 
-.login-form :deep(.el-input__wrapper) {
-  padding: 8px 16px;
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  margin-bottom: 8px;
+}
+
+.form-input :deep(.el-input__wrapper) {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
+  transition: all 0.2s ease;
+}
+
+.form-input :deep(.el-input__wrapper:hover) {
+  border-color: #cbd5e1;
+}
+
+.form-input :deep(.el-input__wrapper.is-focus) {
+  border-color: #0369A1;
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+}
+
+.form-input :deep(.el-input__inner) {
+  font-size: 14px;
+  color: #0F172A;
+}
+
+.form-input :deep(.el-input__inner::placeholder) {
+  color: #94a3b8;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
 .login-checkbox {
-  color: #595959;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.forgot-link {
+  color: #0369A1;
+  font-size: 13px;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.forgot-link:hover {
+  color: #0891b2;
 }
 
 .login-button {
   width: 100%;
-  height: 44px;
-  font-size: 16px;
+  height: 48px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.login-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(3, 105, 161, 0.25);
+}
+
+/* 测试账号 */
+.test-accounts {
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(3, 105, 161, 0.05) 0%, rgba(3, 105, 161, 0.02) 100%);
+  border: 1px solid rgba(3, 105, 161, 0.1);
+  border-radius: 12px;
+}
+
+.test-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #0369A1;
+  font-size: 13px;
   font-weight: 500;
 }
 
-.login-tips {
-  margin-top: 24px;
-  padding: 16px;
-  background: #f5f7fa;
-  border-radius: 8px;
-  text-align: center;
+.test-header svg {
+  width: 16px;
+  height: 16px;
 }
 
-.login-tips p {
-  margin: 4px 0;
+.account-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.account-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #fff;
+  border: 1px solid rgba(3, 105, 161, 0.2);
+  border-radius: 16px;
   font-size: 12px;
-  color: #8c8c8c;
+  color: #0369A1;
+  font-weight: 500;
 }
 
-@media (max-width: 480px) {
-  .login-box {
-    width: 90%;
-    padding: 32px 24px;
+.test-hint {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ==================== 响应式设计 ==================== */
+@media (max-width: 1024px) {
+  .brand-section {
+    display: none;
   }
 
-  .login-title {
-    font-size: 24px;
-  }
-
-  .login-subtitle {
-    font-size: 12px;
-  }
-
-  .login-form {
-    margin-top: 24px;
-  }
-
-  .login-form :deep(.el-form-item) {
-    margin-bottom: 20px;
-  }
-
-  .login-tips {
-    margin-top: 20px;
-    padding: 12px;
-  }
-
-  .login-tips p {
-    font-size: 11px;
+  .login-section {
+    width: 100%;
   }
 }
 
-/* 触摸设备优化 */
-@media (hover: none) and (pointer: coarse) {
-  .login-button {
-    min-height: 48px;
+@media (max-width: 640px) {
+  .login-section {
+    padding: 24px;
   }
 
-  .login-form :deep(.el-input__wrapper) {
-    min-height: 48px;
+  .hero-title {
+    font-size: 36px;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .stat-divider {
+    display: none;
   }
 }
 </style>
