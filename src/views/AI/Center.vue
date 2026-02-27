@@ -85,7 +85,7 @@ import {
   View,
   TrendCharts as TrendUp,
   MagicStick,
-  Shield,
+  Lock,
   Document as DocumentIcon,
   User,
   Setting as SettingIcon
@@ -102,7 +102,7 @@ const iconMap = {
   'intel': markRaw(View),
   'roi': markRaw(TrendUp),
   'assembly': markRaw(MagicStick),
-  'compliance': markRaw(Shield),
+  'compliance': markRaw(Lock),
   'version': markRaw(DocumentIcon),
   'collab': markRaw(User),
   'tasks': markRaw(SettingIcon)
