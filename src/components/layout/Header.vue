@@ -306,16 +306,25 @@ const confirmSwitchRole = () => {
   font-size: 20px;
   cursor: pointer;
   color: var(--text-secondary);
-  transition: color 0.3s;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md, 8px);
 }
 
 .collapse-icon:hover,
 .mobile-menu-icon:hover {
   color: var(--brand-primary);
+  background: var(--surface-hover, #f1f5f9);
+}
+
+.collapse-icon:active,
+.mobile-menu-icon:active {
+  transform: scale(0.95);
 }
 
 .logo {
@@ -351,17 +360,39 @@ const confirmSwitchRole = () => {
 }
 
 .search-input :deep(.el-input__wrapper) {
-  border-radius: var(--radius-xl);
-  background: var(--gray-50);
+  border-radius: var(--radius-xl, 20px);
+  background: var(--surface-hover, #f8fafc);
   box-shadow: none;
   display: flex;
   align-items: center;
+  padding: 8px 16px;
+  border: 1.5px solid transparent;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.search-input :deep(.el-input__wrapper:hover),
+.search-input :deep(.el-input__wrapper:hover) {
+  background: #ffffff;
+  border-color: var(--border-color, #e5e7eb);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
 .search-input :deep(.el-input__wrapper.is-focus) {
   background: #ffffff;
-  box-shadow: 0 0 0 1px var(--brand-primary) inset;
+  border-color: var(--brand-primary, #0369a1);
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.search-input :deep(.el-input__inner) {
+  font-size: 14px;
+  color: var(--text-primary, #1e293b);
+}
+
+.search-input :deep(.el-input__inner::placeholder) {
+  color: var(--text-tertiary, #94a3b8);
+}
+
+.search-input :deep(.el-input__prefix) {
+  color: var(--text-secondary, #64748b);
 }
 
 /* ========== 右侧用户区 ========== */
@@ -376,35 +407,63 @@ const confirmSwitchRole = () => {
   cursor: pointer;
   display: flex;
   align-items: center;
+  position: relative;
 }
 
 .header-icon {
   font-size: 20px;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: color 0.3s;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full, 9999px);
 }
 
 .header-icon:hover {
   color: var(--brand-primary);
+  background: var(--surface-hover, #f1f5f9);
+}
+
+.header-icon:active {
+  transform: scale(0.95);
+}
+
+/* 徽标样式优化 */
+:deep(.el-badge__content) {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+  font-weight: 600;
+  font-size: 11px;
+  height: 18px;
+  line-height: 18px;
+  min-width: 18px;
+  padding: 0 5px;
 }
 
 .user-info {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  padding: var(--space-xs) 12px var(--space-xs) var(--space-xs);
-  border-radius: var(--radius-xl);
+  padding: 6px 12px 6px 6px;
+  border-radius: var(--radius-xl, 16px);
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
+  border: 1.5px solid transparent;
 }
 
 .user-info:hover {
-  background: var(--gray-50);
+  background: var(--surface-hover, #f8fafc);
+  border-color: var(--border-color, #e5e7eb);
+}
+
+.user-info:active {
+  transform: scale(0.98);
 }
 
 .user-avatar {
@@ -416,9 +475,16 @@ const confirmSwitchRole = () => {
   font-size: 14px;
   font-weight: 600;
   color: #ffffff;
-  background: linear-gradient(135deg, #0066CC, #3388DD);
-  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, #0369a1, #0ea5e9);
+  border-radius: var(--radius-full, 9999px);
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(3, 105, 161, 0.2);
+  transition: all 200ms ease;
+}
+
+.user-info:hover .user-avatar {
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+  transform: scale(1.05);
 }
 
 .user-name {
@@ -442,6 +508,53 @@ const confirmSwitchRole = () => {
 .user-info-dropdown {
   cursor: default;
   padding: var(--space-sm) 12px;
+  background: transparent;
+}
+
+/* 下拉菜单项样式优化 */
+:deep(.el-dropdown-menu) {
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #f1f5f9);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.el-dropdown-menu__item) {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-primary, #1e293b);
+  transition: all 150ms ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+:deep(.el-dropdown-menu__item:hover) {
+  background: var(--surface-hover, #f1f5f9);
+  color: var(--brand-primary, #0369a1);
+}
+
+:deep(.el-dropdown-menu__item.is-disabled) {
+  background: transparent;
+  cursor: default;
+}
+
+:deep(.el-dropdown-menu__item.is-disabled:hover) {
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+}
+
+:deep(.el-dropdown-menu__item .el-icon) {
+  font-size: 16px;
+  color: currentColor;
+}
+
+/* 分割线样式 */
+:deep(.el-dropdown-menu__item--divided::before) {
+  height: 1px;
+  margin: 0;
+  background: var(--border-color, #f1f5f9);
 }
 
 .dropdown-user-detail {
