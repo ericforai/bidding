@@ -367,6 +367,17 @@ const formatAmount = (amount) => {
   return amount + '万'
 }
 
+// Helper function for metric color class
+const getMetricColorClass = (key) => {
+  const classMap = {
+    'bids': 'blue',
+    'winRate': 'green',
+    'amount': 'orange',
+    'cost': 'red'
+  }
+  return classMap[key] || 'blue'
+}
+
 // Helper function for trend class
 const getTrendClass = (direction) => {
   return direction === 'trend-up' ? 'positive' : 'negative'
