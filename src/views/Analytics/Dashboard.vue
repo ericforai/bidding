@@ -1,7 +1,13 @@
 <template>
   <div class="analytics-dashboard">
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-container">
+      <el-icon class="is-loading" :size="32"><Loading /></el-icon>
+      <p>加载数据中...</p>
+    </div>
+
     <!-- Page Header -->
-    <div class="page-header">
+    <div v-else class="page-header">
       <h2 class="page-title">数据分析</h2>
       <div class="header-actions">
         <el-date-picker
@@ -289,7 +295,7 @@
 import { ref, computed, onMounted, markRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Refresh, Download, Document, FolderOpened, User } from '@element-plus/icons-vue'
+import { Refresh, Download, Document, FolderOpened, User, Loading } from '@element-plus/icons-vue'
 import { api, mockData } from '@/api/mock'
 import LineChart from '@/components/charts/LineChart.vue'
 import PieChart from '@/components/charts/PieChart.vue'
@@ -298,6 +304,7 @@ import BarChart from '@/components/charts/BarChart.vue'
 const router = useRouter()
 
 // Data
+const loading = ref(true)
 const dateRange = ref([])
 const dashboardData = ref(null)
 const trendPeriod = ref('month')
@@ -679,11 +686,15 @@ const regionChartOption = computed(() => {
 
 // Load data
 const loadData = async () => {
+  loading.value = true
   try {
     const response = await api.getDashboard()
     dashboardData.value = response
   } catch (error) {
+    console.error('Dashboard load error:', error)
     ElMessage.error('加载数据失败')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -1104,6 +1115,27 @@ onMounted(() => {
   padding: 20px;
   background-color: #f5f7fa;
   min-height: 100%;
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #909399;
+}
+
+.loading-container .el-icon {
+  font-size: 32px;
+  color: #409eff;
+  margin-bottom: 16px;
+}
+
+.loading-container p {
+  font-size: 14px;
+  margin: 0;
 }
 
 .page-header {
