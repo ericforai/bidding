@@ -289,7 +289,7 @@
 import { ref, computed, onMounted, markRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Refresh, Download, TrendCharts, ArrowUp, ArrowDown, Coin, Money, DataLine, Document, FolderOpened, User } from '@element-plus/icons-vue'
+import { Refresh, Download, Document, FolderOpened, User } from '@element-plus/icons-vue'
 import { api, mockData } from '@/api/mock'
 import LineChart from '@/components/charts/LineChart.vue'
 import PieChart from '@/components/charts/PieChart.vue'
@@ -333,44 +333,28 @@ const metrics = computed(() => {
       label: '年度投标数',
       value: dashboardData.value.totalBids,
       change: dashboardData.value.totalBidsChange,
-      trendDirection: isPositive(dashboardData.value.totalBidsChange) ? 'trend-up' : 'trend-down',
-      trendIcon: markRaw(isPositive(dashboardData.value.totalBidsChange) ? ArrowUp : ArrowDown),
-      trendClass: 'metric-card-blue',
-      color: '#0066CC',
-      icon: markRaw(TrendCharts)
+      trendDirection: isPositive(dashboardData.value.totalBidsChange) ? 'trend-up' : 'trend-down'
     },
     {
       key: 'winRate',
       label: '中标率',
       value: dashboardData.value.winRate + '%',
       change: dashboardData.value.winRateChange,
-      trendDirection: isPositive(dashboardData.value.winRateChange) ? 'trend-up' : 'trend-down',
-      trendIcon: markRaw(isPositive(dashboardData.value.winRateChange) ? ArrowUp : ArrowDown),
-      trendClass: 'metric-card-green',
-      color: '#00AA44',
-      icon: markRaw(DataLine)
+      trendDirection: isPositive(dashboardData.value.winRateChange) ? 'trend-up' : 'trend-down'
     },
     {
       key: 'amount',
       label: '中标金额',
       value: formatAmount(dashboardData.value.totalAmount),
       change: dashboardData.value.totalAmountChange,
-      trendDirection: isPositive(dashboardData.value.totalAmountChange) ? 'trend-up' : 'trend-down',
-      trendIcon: markRaw(isPositive(dashboardData.value.totalAmountChange) ? ArrowUp : ArrowDown),
-      trendClass: 'metric-card-orange',
-      color: '#FF8800',
-      icon: markRaw(Money)
+      trendDirection: isPositive(dashboardData.value.totalAmountChange) ? 'trend-up' : 'trend-down'
     },
     {
       key: 'cost',
       label: '投入费用',
       value: formatAmount(dashboardData.value.totalCost),
       change: dashboardData.value.totalCostChange,
-      trendDirection: isPositive(dashboardData.value.totalCostChange) ? 'trend-up' : 'trend-down',
-      trendIcon: markRaw(isPositive(dashboardData.value.totalCostChange) ? ArrowUp : ArrowDown),
-      trendClass: 'metric-card-red',
-      color: '#DD2200',
-      icon: markRaw(Coin)
+      trendDirection: isPositive(dashboardData.value.totalCostChange) ? 'trend-up' : 'trend-down'
     }
   ]
 })
@@ -381,17 +365,6 @@ const formatAmount = (amount) => {
     return (amount / 10000).toFixed(1) + '亿'
   }
   return amount + '万'
-}
-
-// Helper function for metric icon color classes
-const getMetricIconClass = (key) => {
-  const classMap = {
-    'bids': 'blue',
-    'winRate': 'green',
-    'amount': 'orange',
-    'cost': 'red'
-  }
-  return classMap[key] || 'blue'
 }
 
 // Helper function for trend class
