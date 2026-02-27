@@ -208,97 +208,161 @@
         </div>
       </div>
 
-      <el-table
-        ref="tableRef"
-        :data="displayTenders"
-        style="width: 100%"
-        stripe
-        @selection-change="handleSelectionChange"
-      >
-        <el-table-column type="selection" width="50" />
-        <el-table-column prop="title" label="标讯标题" min-width="280" show-overflow-tooltip>
-          <template #default="{ row }">
-            <div class="title-cell">
-              <span class="title-text">{{ row.title }}</span>
-              <el-tag v-if="row.aiScore >= 90" size="small" type="success">高匹配</el-tag>
+      <!-- PC端表格视图 -->
+      <div v-if="!isMobile" class="table-container">
+        <el-table
+          ref="tableRef"
+          :data="displayTenders"
+          style="width: 100%"
+          stripe
+          @selection-change="handleSelectionChange"
+        >
+          <el-table-column type="selection" width="50" />
+          <el-table-column prop="title" label="标讯标题" min-width="280" show-overflow-tooltip>
+            <template #default="{ row }">
+              <div class="title-cell">
+                <span class="title-text">{{ row.title }}</span>
+                <el-tag v-if="row.aiScore >= 90" size="small" type="success">高匹配</el-tag>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="budget" label="预算" width="100" align="center">
+            <template #default="{ row }">
+              <span>{{ row.budget }}万元</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="region" label="地区" width="100" align="center" />
+          <el-table-column prop="industry" label="行业" width="100" align="center" />
+          <el-table-column prop="source" label="来源" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag v-if="row.source" :type="getSourceTagType(row.source)" size="small">
+                {{ getSourceText(row.source) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="aiScore" label="AI评分" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag :type="getScoreTagType(row.aiScore)" size="small">
+                {{ row.aiScore }}分
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="deadline" label="截止日期" width="120" align="center" />
+          <el-table-column prop="status" label="状态" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag :type="getStatusType(row.status)" size="small">
+                {{ getStatusText(row.status) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="320" align="center" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="primary" size="small" @click="handleViewDetail(row.id)">
+                查看详情
+              </el-button>
+              <el-button link type="success" size="small" @click="handleAIAnalysis(row.id)">
+                AI分析
+              </el-button>
+              <el-button link type="primary" size="small" @click="handleParticipate(row.id)">
+                参与投标
+              </el-button>
+              <el-button
+                link
+                :type="isFollowed(row.id) ? 'warning' : 'default'"
+                size="small"
+                @click="handleToggleFollow(row.id)"
+              >
+                <el-icon>
+                  <Star v-if="isFollowed(row.id)" />
+                  <StarFilled v-else />
+                </el-icon>
+              </el-button>
+              <el-dropdown trigger="click" @command="(cmd) => handleRowAction(cmd, row)">
+                <el-button link type="primary" size="small">
+                  更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="distribute">
+                      <el-icon><Share /></el-icon>分发
+                    </el-dropdown-item>
+                    <el-dropdown-item command="claim">
+                      <el-icon><CircleCheck /></el-icon>领取
+                    </el-dropdown-item>
+                    <el-dropdown-item command="assign">
+                      <el-icon><User /></el-icon>指派
+                    </el-dropdown-item>
+                    <el-dropdown-item command="delete" divided>
+                      <el-icon><Delete /></el-icon>删除
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- 移动端卡片视图 -->
+      <div v-else class="mobile-card-view">
+        <div
+          v-for="row in displayTenders"
+          :key="row.id"
+          class="mobile-card-item"
+        >
+          <div class="mobile-card-header">
+            <h4 class="mobile-card-title">{{ row.title }}</h4>
+            <el-tag v-if="row.aiScore >= 90" size="small" type="success">高匹配</el-tag>
+          </div>
+          <div class="mobile-card-body">
+            <div class="mobile-card-row">
+              <span class="mobile-label">预算:</span>
+              <span class="mobile-value">{{ row.budget }}万元</span>
             </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="budget" label="预算" width="100" align="center">
-          <template #default="{ row }">
-            <span>{{ row.budget }}万元</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="region" label="地区" width="100" align="center" />
-        <el-table-column prop="industry" label="行业" width="100" align="center" />
-        <el-table-column prop="source" label="来源" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag v-if="row.source" :type="getSourceTagType(row.source)" size="small">
-              {{ getSourceText(row.source) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="aiScore" label="AI评分" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag :type="getScoreTagType(row.aiScore)" size="small">
-              {{ row.aiScore }}分
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="deadline" label="截止日期" width="120" align="center" />
-        <el-table-column prop="status" label="状态" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)" size="small">
-              {{ getStatusText(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="320" align="center" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleViewDetail(row.id)">
+            <div class="mobile-card-row">
+              <span class="mobile-label">地区:</span>
+              <span class="mobile-value">{{ row.region }}</span>
+            </div>
+            <div class="mobile-card-row">
+              <span class="mobile-label">行业:</span>
+              <span class="mobile-value">{{ row.industry }}</span>
+            </div>
+            <div class="mobile-card-row">
+              <span class="mobile-label">来源:</span>
+              <el-tag v-if="row.source" :type="getSourceTagType(row.source)" size="small">
+                {{ getSourceText(row.source) }}
+              </el-tag>
+            </div>
+            <div class="mobile-card-row">
+              <span class="mobile-label">AI评分:</span>
+              <el-tag :type="getScoreTagType(row.aiScore)" size="small">
+                {{ row.aiScore }}分
+              </el-tag>
+            </div>
+            <div class="mobile-card-row">
+              <span class="mobile-label">截止日期:</span>
+              <span class="mobile-value">{{ row.deadline }}</span>
+            </div>
+            <div class="mobile-card-row">
+              <span class="mobile-label">状态:</span>
+              <el-tag :type="getStatusType(row.status)" size="small">
+                {{ getStatusText(row.status) }}
+              </el-tag>
+            </div>
+          </div>
+          <div class="mobile-card-actions">
+            <el-button type="primary" size="small" @click="handleViewDetail(row.id)">
               查看详情
             </el-button>
-            <el-button link type="success" size="small" @click="handleAIAnalysis(row.id)">
+            <el-button type="success" size="small" @click="handleAIAnalysis(row.id)">
               AI分析
             </el-button>
-            <el-button link type="primary" size="small" @click="handleParticipate(row.id)">
+            <el-button size="small" @click="handleParticipate(row.id)">
               参与投标
             </el-button>
-            <el-button
-              link
-              :type="isFollowed(row.id) ? 'warning' : 'default'"
-              size="small"
-              @click="handleToggleFollow(row.id)"
-            >
-              <el-icon>
-                <Star v-if="isFollowed(row.id)" />
-                <StarFilled v-else />
-              </el-icon>
-            </el-button>
-            <el-dropdown trigger="click" @command="(cmd) => handleRowAction(cmd, row)">
-              <el-button link type="primary" size="small">
-                更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="distribute">
-                    <el-icon><Share /></el-icon>分发
-                  </el-dropdown-item>
-                  <el-dropdown-item command="claim">
-                    <el-icon><CircleCheck /></el-icon>领取
-                  </el-dropdown-item>
-                  <el-dropdown-item command="assign">
-                    <el-icon><User /></el-icon>指派
-                  </el-dropdown-item>
-                  <el-dropdown-item command="delete" divided>
-                    <el-icon><Delete /></el-icon>删除
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </template>
-        </el-table-column>
-      </el-table>
+          </div>
+        </div>
+      </div>
 
       <div class="pagination-wrapper">
         <el-pagination
@@ -1009,7 +1073,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBiddingStore } from '@/stores/bidding'
 import {
@@ -1056,6 +1120,16 @@ const searchForm = ref({
 
 // 视图模式
 const viewMode = ref('all')
+
+// 移动端检测
+const isMobile = ref(false)
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
+
+const handleResize = () => {
+  checkMobile()
+}
 
 // 分页
 const pagination = ref({
@@ -1396,8 +1470,14 @@ const industrySalesMap = {
 }
 
 onMounted(async () => {
+  checkMobile()
+  window.addEventListener('resize', handleResize)
   await biddingStore.getTenders()
   loadSavedConfig()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
 })
 
 const tenders = computed(() => biddingStore.tenders || [])
@@ -3001,5 +3081,83 @@ const handleOpportunityAction = (id) => {
   margin-top: 16px;
   font-size: 13px;
   color: #909399;
+}
+
+/* 移动端适配样式 */
+.table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-card-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobile-card-item {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #e4e7ed;
+  transition: all 0.3s;
+}
+
+.mobile-card-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.mobile-card-title {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 500;
+  color: #303133;
+  margin: 0;
+  line-height: 1.5;
+  padding-right: 8px;
+}
+
+.mobile-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mobile-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.mobile-label {
+  color: #909399;
+  min-width: 80px;
+}
+
+.mobile-value {
+  color: #303133;
+  text-align: right;
+}
+
+.mobile-card-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.mobile-card-actions .el-button {
+  flex: 1;
 }
 </style>
