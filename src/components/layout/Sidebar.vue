@@ -22,7 +22,6 @@
         text-color="rgba(255, 255, 255, 0.85)"
         active-text-color="#FFFFFF"
         router
-        @select="handleMenuSelect"
       >
         <!-- 单级菜单项 -->
         <el-menu-item
