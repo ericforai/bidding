@@ -19,8 +19,8 @@
         :collapse="false"
         class="sidebar-menu"
         background-color="#001529"
-        text-color="rgba(255, 255, 255, 0.65)"
-        active-text-color="#409EFF"
+        text-color="rgba(255, 255, 255, 0.85)"
+        active-text-color="#FFFFFF"
         router
         @select="handleMenuSelect"
       >
@@ -70,8 +70,8 @@
       :collapse-transition="false"
       class="sidebar-menu"
       background-color="#001529"
-      text-color="rgba(255, 255, 255, 0.65)"
-      active-text-color="#409EFF"
+      text-color="rgba(255, 255, 255, 0.85)"
+      active-text-color="#FFFFFF"
       router
     >
       <!-- 单级菜单项 -->
@@ -403,9 +403,9 @@ const multiMenus = computed(() => {
 }
 
 :deep(.el-menu-item.is-active) {
-  background: #409EFF !important;
-  border-right: 3px solid #1890ff;
-  color: #fff !important;
+  background: var(--brand-primary) !important;
+  border-right: 3px solid var(--brand-primary-hover);
+  color: #FFFFFF !important;
 }
 
 :deep(.el-sub-menu .el-menu-item.is-active) {
