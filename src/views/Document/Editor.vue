@@ -1296,4 +1296,219 @@ onMounted(() => {
     min-height: 500px;
   }
 }
+
+/* ==================== Button Enhancements ==================== */
+
+.header-actions .el-button,
+.card-header .el-button {
+  min-width: 90px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-actions .el-button--primary {
+  background: linear-gradient(135deg, #0369a1, #0284c7);
+  border: none;
+  box-shadow: 0 2px 8px rgba(3, 105, 161, 0.2);
+}
+
+.header-actions .el-button--primary:hover {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+}
+
+.header-actions .el-button--primary:active {
+  transform: translateY(0);
+}
+
+.header-actions .el-button--default {
+  border: 1.5px solid #e5e7eb;
+  color: #64748b;
+}
+
+.header-actions .el-button--default:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+  background: #f8fafc;
+}
+
+.editor-header .el-button {
+  height: 36px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Button group styling */
+:deep(.el-button-group) {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+:deep(.el-button-group .el-button) {
+  border-radius: 0;
+}
+
+:deep(.el-button-group .el-button:first-child) {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+:deep(.el-button-group .el-button:last-child) {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+/* ==================== Tree Node Enhancements ==================== */
+
+.tree-node-content {
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.tree-node-content:hover {
+  background: #f1f5f9;
+}
+
+.node-more-icon {
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 4px;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.node-more-icon:hover {
+  background: #e5e7eb;
+  color: #0369a1;
+}
+
+/* ==================== Knowledge Panel Enhancements ==================== */
+
+.knowledge-item {
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1.5px solid #e5e7eb;
+  cursor: pointer;
+}
+
+.knowledge-item:hover {
+  border-color: #0369a1;
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.1);
+  transform: translateY(-1px);
+}
+
+.knowledge-item:active {
+  transform: translateY(0);
+}
+
+/* ==================== Input/Radio/Checkbox Enhancements ==================== */
+
+:deep(.el-radio.is-bordered) {
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:deep(.el-radio.is-bordered:hover) {
+  border-color: #94a3b8;
+}
+
+:deep(.el-radio.is-bordered.is-checked) {
+  border-color: #0369a1;
+  background: #f0f9ff;
+}
+
+:deep(.el-checkbox) {
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:deep(.el-checkbox:hover) {
+  color: #0369a1;
+}
+
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background: linear-gradient(135deg, #0369a1, #0284c7);
+  border-color: #0369a1;
+}
+
+/* ==================== Assembly Button ==================== */
+
+.assembly-btn {
+  height: 42px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #0369a1, #0284c7);
+  border: none;
+  box-shadow: 0 2px 8px rgba(3, 105, 161, 0.2);
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.assembly-btn:hover {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+}
+
+.assembly-btn:active {
+  transform: translateY(0);
+}
+
+/* ==================== History Item Enhancement ==================== */
+
+.history-item {
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.history-item:hover {
+  background: #edf2f7;
+  transform: translateX(4px);
+}
+
+/* ==================== Tag Enhancements ==================== */
+
+:deep(.el-tag) {
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border: none;
+}
+
+:deep(.el-tag--primary) {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #ffffff;
+}
+
+:deep(.el-tag--success) {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+}
+
+:deep(.el-tag--info) {
+  background: linear-gradient(135deg, #64748b, #475569);
+  color: #ffffff;
+}
+
+/* ==================== Textarea Enhancement ==================== */
+
+.content-textarea {
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.content-textarea:focus {
+  outline: none;
+  border-color: #0369a1;
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+}
 </style>
