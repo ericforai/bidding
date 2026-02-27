@@ -190,7 +190,10 @@ const roleTextMap = {
   guest: '游客'
 }
 
-const userAvatar = computed(() => userStore.currentUser?.avatar || '👤')
+const userAvatar = computed(() => {
+  const name = userStore.currentUser?.name || '游客'
+  return name.charAt(0).toUpperCase()
+})
 const userName = computed(() => userStore.currentUser?.name || '游客')
 const userRoleText = computed(() => roleTextMap[userStore.userRole] || '游客')
 const allUsers = computed(() => userStore.users || [])
@@ -393,8 +396,10 @@ const confirmSwitchRole = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  background: #e6f7ff;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0066CC, #3388DD);
   border-radius: var(--radius-full);
   flex-shrink: 0;
 }
@@ -434,8 +439,10 @@ const confirmSwitchRole = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  background: #e6f7ff;
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0066CC, #3388DD);
   border-radius: var(--radius-full);
   flex-shrink: 0;
 }
@@ -558,7 +565,7 @@ const confirmSwitchRole = () => {
   .user-avatar {
     width: 28px;
     height: 28px;
-    font-size: 14px;
+    font-size: 12px;
   }
 
   .header-icon {
