@@ -2301,8 +2301,7 @@ const handleOpportunityAction = (id) => {
 }
 
 .recommend-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
   border-color: #409eff;
 }
 
@@ -2638,8 +2637,7 @@ const handleOpportunityAction = (id) => {
 }
 
 .opportunity-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .opportunity-header {
