@@ -574,4 +574,158 @@ const handleConfirmReturn = (row) => {
     }
   }
 }
+
+/* ==================== Button Enhancements ==================== */
+
+.card-header .el-button {
+  min-width: 110px;
+  height: 38px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-header .el-button--primary {
+  background: linear-gradient(135deg, #0369a1, #0284c7);
+  border: none;
+  box-shadow: 0 2px 8px rgba(3, 105, 161, 0.2);
+}
+
+.card-header .el-button--primary:hover {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+}
+
+.card-header .el-button--primary:active {
+  transform: translateY(0);
+}
+
+.card-header .el-button--default {
+  border: 1.5px solid #e5e7eb;
+  color: #64748b;
+}
+
+.card-header .el-button--default:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+  background: #f8fafc;
+}
+
+/* Search form buttons */
+.search-card .el-button {
+  height: 36px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 20px;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-card .el-button--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.25);
+}
+
+/* ==================== Stat Card Enhancements ==================== */
+
+.stat-item {
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.stat-item:active {
+  transform: translateY(0);
+}
+
+/* ==================== Input Field Enhancements ==================== */
+
+.search-card :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: none;
+}
+
+.search-card :deep(.el-input__wrapper:hover) {
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.1);
+}
+
+.search-card :deep(.el-input__wrapper.is-focus) {
+  border-color: #0369a1;
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+}
+
+/* Select dropdown */
+.search-card :deep(.el-select__wrapper) {
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-card :deep(.el-select__wrapper:hover) {
+  border-color: #94a3b8;
+}
+
+.search-card :deep(.el-select__wrapper.is-focus) {
+  border-color: #0369a1;
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+}
+
+/* ==================== Table Action Buttons ==================== */
+
+:deep(.el-button--link) {
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:deep(.el-button--link:hover) {
+  transform: translateX(2px);
+}
+
+/* ==================== Tag Enhancements ==================== */
+
+:deep(.el-tag) {
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border: none;
+}
+
+:deep(.el-tag--primary) {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #ffffff;
+}
+
+:deep(.el-tag--success) {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+}
+
+:deep(.el-tag--warning) {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+}
+
+:deep(.el-tag--danger) {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #ffffff;
+}
+
+:deep(.el-tag--info) {
+  background: linear-gradient(135deg, #64748b, #475569);
+  color: #ffffff;
+}
 </style>
