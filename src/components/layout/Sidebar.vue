@@ -456,7 +456,7 @@ const multiMenus = computed(() => {
 
 .close-icon {
   font-size: 20px;
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
   transition: color 0.3s;
   display: flex;
