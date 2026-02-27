@@ -110,77 +110,126 @@
 
 /* ==================== Metric Card (for Dashboard) ==================== */
 .b2b-metric-card {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-lg);
-  background: #fff;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--gray-100);
-  transition: all 0.25s ease;
+  position: relative;
+  padding: 24px;
+  background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
 
+.b2b-metric-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, rgba(0, 102, 204, 0.8) 0%, rgba(0, 102, 204, 0.4) 100%);
+}
+
+.b2b-metric-card.metric-blue::before {
+  background: linear-gradient(180deg, #0066CC 0%, #3388DD 100%);
+}
+
+.b2b-metric-card.metric-green::before {
+  background: linear-gradient(180deg, #00AA44 0%, #22CC66 100%);
+}
+
+.b2b-metric-card.metric-orange::before {
+  background: linear-gradient(180deg, #FF8800 0%, #FFAA33 100%);
+}
+
+.b2b-metric-card.metric-red::before {
+  background: linear-gradient(180deg, #DD2200 0%, #FF4422 100%);
+}
+
+.b2b-metric-card::after {
+  content: '';
+  position: absolute;
+  right: -20px;
+  top: -20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  opacity: 0.03;
+  transition: opacity 0.3s ease;
+}
+
+.b2b-metric-card.metric-blue::after { background: #0066CC; }
+.b2b-metric-card.metric-green::after { background: #00AA44; }
+.b2b-metric-card.metric-orange::after { background: #FF8800; }
+.b2b-metric-card.metric-red::after { background: #DD2200; }
+
 .b2b-metric-card:hover {
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
   transform: translateY(-2px);
 }
 
-/* ==================== Metric Card (for Dashboard) ==================== */
-.b2b-metric-card {
-  padding: 20px 24px;
-  background: #fff;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--gray-200);
-  border-top: 3px solid transparent;
-  transition: all 0.25s ease;
-}
-
-.b2b-metric-card.metric-blue { border-top-color: var(--brand-primary); }
-.b2b-metric-card.metric-green { border-top-color: var(--color-success); }
-.b2b-metric-card.metric-orange { border-top-color: var(--color-warning); }
-.b2b-metric-card.metric-red { border-top-color: var(--color-danger); }
-
-.b2b-metric-card:hover {
-  box-shadow: var(--shadow-md);
+.b2b-metric-card:hover::after {
+  opacity: 0.06;
 }
 
 .b2b-metric-content {
   flex: 1;
+  position: relative;
+  z-index: 1;
 }
 
 .b2b-metric-label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
+  color: #6b7280;
+  margin-bottom: 12px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .b2b-metric-value {
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #111827;
   line-height: 1;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
 }
 
 .b2b-metric-trend {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 500;
 }
 
 .b2b-metric-trend .trend-label {
-  color: var(--text-tertiary);
+  color: #9ca3af;
   font-weight: 400;
+  font-size: 12px;
 }
 
-.b2b-metric-trend.positive { color: var(--color-success); }
-.b2b-metric-trend.positive .trend-value { color: var(--color-success); }
-.b2b-metric-trend.negative { color: var(--color-danger); }
-.b2b-metric-trend.negative .trend-value { color: var(--color-danger); }
+.b2b-metric-trend.positive {
+  background: linear-gradient(135deg, rgba(0, 170, 68, 0.1) 0%, rgba(0, 170, 68, 0.05) 100%);
+}
+
+.b2b-metric-trend.positive .trend-value {
+  color: #00AA44;
+  font-weight: 600;
+}
+
+.b2b-metric-trend.negative {
+  background: linear-gradient(135deg, rgba(221, 34, 0, 0.1) 0%, rgba(221, 34, 0, 0.05) 100%);
+}
+
+.b2b-metric-trend.negative .trend-value {
+  color: #DD2200;
+  font-weight: 600;
+}
 
 /* ==================== Section Card ==================== */
 .b2b-section-card {
