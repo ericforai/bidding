@@ -95,10 +95,14 @@ const routes = [
         meta: { title: '账户管理' }
       },
       {
-        path: 'analytics',
-        name: 'Analytics',
+        path: 'analytics/dashboard',
+        name: 'AnalyticsDashboard',
         component: () => import('@/views/Analytics/Dashboard.vue'),
         meta: { title: '数据分析', roles: ['admin', 'manager'] }
+      },
+      {
+        path: 'analytics',
+        redirect: '/analytics/dashboard'
       },
       {
         path: 'settings',

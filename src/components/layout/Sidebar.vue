@@ -253,8 +253,8 @@ const menuConfig = [
     meta: { title: 'AI 智能中心', icon: 'ai-center' }
   },
   {
-    path: '/analytics',
-    name: 'Analytics',
+    path: '/analytics/dashboard',
+    name: 'AnalyticsDashboard',
     meta: { title: '数据分析', icon: 'analytics', roles: ['admin', 'manager'] }
   },
   {
