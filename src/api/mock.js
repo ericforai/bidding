@@ -3,7 +3,7 @@
 export const mockData = {
   // 用户信息
   users: [
-    { id: 'U001', name: '小王', role: 'sales', dept: '华南销售部', avatar: '' },
+    { id: 'U001', name: '小王', role: 'manager', dept: '华南销售部', avatar: '' },
     { id: 'U002', name: '张经理', role: 'manager', dept: '投标管理部', avatar: '' },
     { id: 'U003', name: '李总', role: 'admin', dept: '管理层', avatar: '' },
     { id: 'U004', name: '李工', role: 'staff', dept: '技术部', avatar: '' }
