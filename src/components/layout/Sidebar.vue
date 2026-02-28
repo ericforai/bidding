@@ -183,6 +183,7 @@ const activeMenu = computed(() => {
 })
 
 // 所有菜单配置（使用业务图标名称，通过 iconMap 映射）
+// 按照业务流程排序：发现商机→创建项目→知识支持→资源管理→AI辅助→数据分析→系统设置
 const menuConfig = [
   {
     path: '/dashboard',
@@ -193,11 +194,6 @@ const menuConfig = [
     path: '/bidding',
     name: 'Bidding',
     meta: { title: '标讯中心', icon: 'bidding' }
-  },
-  {
-    path: '/ai-center',
-    name: 'AICenter',
-    meta: { title: 'AI 智能中心', icon: 'ai-center' }
   },
   {
     path: '/project',
@@ -254,6 +250,11 @@ const menuConfig = [
         meta: { title: '账户管理' }
       }
     ]
+  },
+  {
+    path: '/ai-center',
+    name: 'AICenter',
+    meta: { title: 'AI 智能中心', icon: 'ai-center' }
   },
   {
     path: '/analytics',
