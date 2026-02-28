@@ -23,35 +23,33 @@
         active-text-color="#FFFFFF"
         router
       >
-        <!-- 单级菜单项 -->
-        <el-menu-item
-          v-for="item in singleMenus"
-          :key="item.path"
-          :index="item.path"
-        >
-          <CommonIcon :name="item.meta?.icon" size="md" />
-          <template #title>{{ item.meta?.title }}</template>
-        </el-menu-item>
-
-        <!-- 多级菜单项 -->
-        <el-sub-menu
-          v-for="item in multiMenus"
-          :key="item.path"
-          :index="item.path"
-        >
-          <template #title>
-            <CommonIcon :name="item.meta?.icon" size="md" />
-            <span>{{ item.meta?.title }}</span>
-          </template>
+        <!-- 直接按配置顺序渲染菜单项 -->
+        <template v-for="item in filteredMenus" :key="item.path">
+          <!-- 单级菜单 -->
           <el-menu-item
-            v-for="child in item.children"
-            :key="child.path"
-            :index="child.path"
-            class="sub-menu-item"
+            v-if="!item.children || item.children.length === 0"
+            :index="item.path"
           >
-            <template #title>{{ child.meta?.title }}</template>
+            <CommonIcon :name="item.meta?.icon" size="md" />
+            <template #title>{{ item.meta?.title }}</template>
           </el-menu-item>
-        </el-sub-menu>
+
+          <!-- 多级菜单 -->
+          <el-sub-menu v-else :index="item.path">
+            <template #title>
+              <CommonIcon :name="item.meta?.icon" size="md" />
+              <span>{{ item.meta?.title }}</span>
+            </template>
+            <el-menu-item
+              v-for="child in item.children"
+              :key="child.path"
+              :index="child.path"
+              class="sub-menu-item"
+            >
+              <template #title>{{ child.meta?.title }}</template>
+            </el-menu-item>
+          </el-sub-menu>
+        </template>
       </el-menu>
     </div>
   </el-drawer>
@@ -73,35 +71,33 @@
       active-text-color="#FFFFFF"
       router
     >
-      <!-- 单级菜单项 -->
-      <el-menu-item
-        v-for="item in singleMenus"
-        :key="item.path"
-        :index="item.path"
-      >
-        <CommonIcon :name="item.meta?.icon" size="md" />
-        <template #title>{{ item.meta?.title }}</template>
-      </el-menu-item>
-
-      <!-- 多级菜单项 -->
-      <el-sub-menu
-        v-for="item in multiMenus"
-        :key="item.path"
-        :index="item.path"
-      >
-        <template #title>
-          <CommonIcon :name="item.meta?.icon" size="md" />
-          <span>{{ item.meta?.title }}</span>
-        </template>
+      <!-- 直接按配置顺序渲染菜单项 -->
+      <template v-for="item in filteredMenus" :key="item.path">
+        <!-- 单级菜单 -->
         <el-menu-item
-          v-for="child in item.children"
-          :key="child.path"
-          :index="child.path"
-          class="sub-menu-item"
+          v-if="!item.children || item.children.length === 0"
+          :index="item.path"
         >
-          <template #title>{{ child.meta?.title }}</template>
+          <CommonIcon :name="item.meta?.icon" size="md" />
+          <template #title>{{ item.meta?.title }}</template>
         </el-menu-item>
-      </el-sub-menu>
+
+        <!-- 多级菜单 -->
+        <el-sub-menu v-else :index="item.path">
+          <template #title>
+            <CommonIcon :name="item.meta?.icon" size="md" />
+            <span>{{ item.meta?.title }}</span>
+          </template>
+          <el-menu-item
+            v-for="child in item.children"
+            :key="child.path"
+            :index="child.path"
+            class="sub-menu-item"
+          >
+            <template #title>{{ child.meta?.title }}</template>
+          </el-menu-item>
+        </el-sub-menu>
+      </template>
     </el-menu>
   </div>
 </template>
@@ -298,15 +294,6 @@ const filteredMenus = computed(() => {
     })
     .filter(Boolean)
 })
-
-// 单级菜单
-const singleMenus = computed(() => {
-  return filteredMenus.value.filter(menu => !menu.children || menu.children.length === 0)
-})
-
-// 多级菜单
-const multiMenus = computed(() => {
-  return filteredMenus.value.filter(menu => menu.children && menu.children.length > 0)
 })
 </script>
 
