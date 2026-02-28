@@ -1,23 +1,43 @@
 import { defineStore } from 'pinia'
 import { mockData } from '@/api/mock'
 
+// 从 localStorage 恢复用户状态
+const getSavedUser = () => {
+  try {
+    const saved = localStorage.getItem('user')
+    if (saved) {
+      return JSON.parse(saved)
+    }
+  } catch (e) {
+    console.error('Failed to parse saved user:', e)
+  }
+  return null
+}
+
 export const useUserStore = defineStore('user', {
-  state: () => ({
-    currentUser: null,
-    users: mockData.users
-  }),
+  state: () => {
+    // 企业内部系统，默认登录为小王账号
+    const defaultUser = mockData.users.find(u => u.name === '小王') || mockData.users[0]
+    const savedUser = getSavedUser()
+
+    return {
+      // 如果有保存的用户则使用保存的，否则使用默认的小王账号
+      currentUser: savedUser || defaultUser,
+      users: mockData.users
+    }
+  },
 
   getters: {
     isLoggedIn: (state) => !!state.currentUser,
-    userRole: (state) => state.currentUser?.role || 'guest',
-    userName: (state) => state.currentUser?.name || '游客'
+    userRole: (state) => state.currentUser?.role || 'staff',
+    userName: (state) => state.currentUser?.name || '用户'
   },
 
   actions: {
     login(username, password) {
       this.currentUser = this.users.find(u => u.name === username) || this.users[0]
-      // 保存到 localStorage 供路由守卫使用
-      localStorage.setItem('user', JSON.stringify(this.currentUser))
+      // 保存到 localStorage
+      this.persistUser()
       return Promise.resolve(this.currentUser)
     },
 
@@ -28,7 +48,14 @@ export const useUserStore = defineStore('user', {
 
     switchUser(userId) {
       this.currentUser = this.users.find(u => u.id === userId)
-      localStorage.setItem('user', JSON.stringify(this.currentUser))
+      this.persistUser()
+    },
+
+    // 持久化用户状态到 localStorage
+    persistUser() {
+      if (this.currentUser) {
+        localStorage.setItem('user', JSON.stringify(this.currentUser))
+      }
     }
   }
 })
