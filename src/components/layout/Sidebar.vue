@@ -294,7 +294,6 @@ const filteredMenus = computed(() => {
     })
     .filter(Boolean)
 })
-})
 </script>
 
 <style scoped>
