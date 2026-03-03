@@ -83,7 +83,7 @@
     <el-card class="table-card" shadow="never">
       <el-table :data="filteredSites" stripe v-loading="loading">
         <el-table-column type="index" label="序号" width="60" />
-        <el-table-column label="平台名称" min-width="200">
+        <el-table-column label="平台名称" min-width="240">
           <template #default="{ row }">
             <div class="site-name-cell">
               <div class="name">{{ row.name }}</div>
@@ -420,12 +420,14 @@ onMounted(async () => {
 .site-name-cell .name {
   font-weight: 500;
   color: #303133;
+  word-break: break-word;
 }
 
 .site-name-cell .url {
   font-size: 12px;
   color: #909399;
   margin-top: 2px;
+  word-break: break-all;
 }
 
 .status-dot {

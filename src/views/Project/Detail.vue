@@ -2680,7 +2680,13 @@ onMounted(async () => {
 .asset-check-content .check-actions {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
   padding-top: 16px;
   border-top: 1px solid #e5e7eb;
+}
+
+.asset-check-content .check-actions .el-button {
+  flex: 1;
+  min-width: 100px;
 }
 </style>

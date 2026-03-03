@@ -171,6 +171,8 @@ const handleViewSOP = () => emit('view-sop', props.site)
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1;
+  min-width: 0;
 }
 
 .site-name {
@@ -178,6 +180,7 @@ const handleViewSOP = () => emit('view-sop', props.site)
   font-weight: 600;
   margin: 0;
   color: #1a1a1a;
+  word-break: break-word;
 }
 
 .site-link {
@@ -188,6 +191,9 @@ const handleViewSOP = () => emit('view-sop', props.site)
   font-size: 13px;
   text-decoration: none;
   transition: color 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .site-link:hover {
@@ -256,9 +262,13 @@ const handleViewSOP = () => emit('view-sop', props.site)
 .card-footer {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
   padding-top: 16px;
   border-top: 1px solid #f0f0f0;
+}
+
+.card-footer .el-button {
+  flex: 1;
+  min-width: 80px;
 }
 
 .card-footer .el-button {
