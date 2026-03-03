@@ -64,7 +64,7 @@
               </svg>
               进行中项目
             </h3>
-            <el-link type="primary" :underline="false" @click="router.push('/project/list')">
+            <el-link type="primary" :underline="false" @click="router.push('/project')">
               查看全部
               <el-icon class="el-icon--right"><ArrowRight /></el-icon>
             </el-link>

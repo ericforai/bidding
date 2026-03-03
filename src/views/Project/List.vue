@@ -98,6 +98,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
+import { mockData } from '@/api/mock'
 import { Search, Refresh, Plus, View, Edit } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
@@ -122,7 +123,12 @@ const pagination = ref({
 const userList = computed(() => userStore.users)
 
 const filteredProjects = computed(() => {
-  let result = [...projectStore.projects]
+  // 确保 store 中有项目数据
+  let source = projectStore.projects
+  if (!source || source.length === 0) {
+    source = mockData.projects
+  }
+  let result = [...source]
 
   if (searchForm.value.name) {
     result = result.filter(p => p.name.includes(searchForm.value.name))
@@ -208,6 +214,10 @@ const handleEdit = (id) => {
 }
 
 onMounted(() => {
+  // 确保 store 中有项目数据
+  if (!projectStore.projects || projectStore.projects.length === 0) {
+    projectStore.projects = [...mockData.projects]
+  }
   projectStore.getProjects()
 })
 </script>
