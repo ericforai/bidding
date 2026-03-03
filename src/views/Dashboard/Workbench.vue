@@ -160,6 +160,73 @@
 
       <!-- 右侧边栏 -->
       <div class="side-column">
+        <!-- 投标日历 -->
+        <div class="section-card calendar-card">
+          <div class="section-header">
+            <h3 class="section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              投标日历
+            </h3>
+            <el-tag size="small" type="primary">{{ calendarEvents.length }} 个日程</el-tag>
+          </div>
+          <div class="calendar-wrapper">
+            <el-calendar v-model="calendarDate">
+              <template #date-cell="{ data }">
+                <div
+                  class="calendar-day-cell"
+                  :class="calendarCellClass(data)"
+                  @click="handleDateClick(data.date)"
+                >
+                  <span class="calendar-day-number">{{ data.day.split('-')[2] }}</span>
+                  <div class="calendar-day-dots" v-if="getEventsForDate(data.date).length > 0">
+                    <span
+                      v-for="event in getEventsForDate(data.date).slice(0, 3)"
+                      :key="event.id"
+                                              class="calendar-dot"
+                                              :class="'type-' + event.type"
+                                            ></span>
+                  </div>
+                </div>
+              </template>
+            </el-calendar>
+          </div>
+        </div>
+
+        <!-- 今日日程 -->
+        <div class="section-card today-events-card" v-if="todayCalendarEvents.length > 0">
+          <div class="section-header">
+            <h3 class="section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 01-3.46 0"/>
+              </svg>
+              今日日程
+            </h3>
+          </div>
+          <div class="today-events-list">
+            <div
+              v-for="event in todayCalendarEvents"
+              :key="event.id"
+              class="today-event-item"
+              :class="'event-' + event.type"
+            >
+              <div class="event-dot"></div>
+              <div class="event-content">
+                <span class="event-title">{{ event.title }}</span>
+                <span class="event-project">{{ event.project }}</span>
+              </div>
+              <el-tag :type="getEventTypeTag(event.type).type" size="small">
+                {{ getEventTypeTag(event.type).label }}
+              </el-tag>
+            </div>
+          </div>
+        </div>
+
         <!-- 流程跟踪 -->
         <div class="section-card process-card">
           <div class="section-header">
@@ -222,13 +289,47 @@
         </div>
       </div>
     </div>
+
+    <!-- 日历事件详情弹窗 -->
+    <el-dialog
+      v-model="calendarEventDialogVisible"
+      :title="`${selectedDateEvents[0]?.date || ''} 的日程`"
+      width="500px"
+      class="calendar-event-dialog"
+    >
+      <div class="event-dialog-list">
+        <div
+          v-for="event in selectedDateEvents"
+          :key="event.id"
+          class="event-dialog-item"
+          :class="'event-' + event.type"
+        >
+          <div class="event-dialog-header">
+            <div class="event-dialog-icon" :class="'icon-' + event.type">
+              <el-icon><Calendar /></el-icon>
+            </div>
+            <div class="event-dialog-info">
+              <h4 class="event-dialog-title">{{ event.title }}</h4>
+              <p class="event-dialog-project">{{ event.project }}</p>
+            </div>
+          </div>
+          <el-tag :type="getEventTypeTag(event.type).type" size="small">
+            {{ getEventTypeTag(event.type).label }}
+          </el-tag>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="calendarEventDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useBiddingStore } from '@/stores/bidding'
 import {
   Plus, DataAnalysis, ArrowRight, Calendar, User, Clock, Check,
   Document, Briefcase, TrendCharts, Flag
@@ -237,6 +338,7 @@ import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const userStore = useUserStore()
+const biddingStore = useBiddingStore()
 
 // 当前日期
 const currentDate = computed(() => {
@@ -369,6 +471,105 @@ const activities = ref([
   { id: 3, type: 'info', text: '新标讯：XX市大数据平台采购', time: '2小时前' },
   { id: 4, type: 'success', text: 'XX县项目成功中标！', time: '昨天' }
 ])
+
+// ========== 投标日历相关 ==========
+const calendarDate = ref(new Date())
+const selectedDateEvents = ref([])
+const calendarEventDialogVisible = ref(false)
+
+// 从 store 获取日历数据
+const calendarEvents = computed(() => biddingStore.calendar || [])
+
+// 获取指定日期的事件
+const getEventsForDate = (date) => {
+  const dateStr = formatDateKey(date)
+  return calendarEvents.value.filter(event => event.date === dateStr)
+}
+
+// 格式化日期为 YYYY-MM-DD
+const formatDateKey = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// 日历单元格自定义渲染
+const calendarCellClass = ({ date, viewType }) => {
+  if (viewType !== 'month') return ''
+  const dateStr = formatDateKey(date)
+  const events = getEventsForDate(date)
+  if (events.length === 0) return ''
+
+  const hasUrgent = events.some(e => e.urgent)
+  return hasUrgent ? 'calendar-day-urgent' : 'calendar-day-has-event'
+}
+
+// 日历日期单元格内容
+const calendarDayContent = ({ date, viewType }) => {
+  if (viewType !== 'month') return null
+
+  const events = getEventsForDate(date)
+  if (events.length === 0) {
+    return date.getDate()
+  }
+
+  return {
+    children: [
+      h('div', { class: 'calendar-day-number' }, date.getDate()),
+      h('div', { class: 'calendar-day-dots' },
+        events.slice(0, 3).map(event =>
+          h('span', {
+            class: `calendar-dot type-${event.type}`,
+            key: event.id
+          })
+        )
+      )
+    ]
+  }
+}
+
+// 点击日期
+const handleDateClick = (date) => {
+  const events = getEventsForDate(date)
+  if (events.length > 0) {
+    selectedDateEvents.value = events
+    calendarEventDialogVisible.value = true
+  }
+}
+
+// 获取事件类型标签
+const getEventTypeTag = (type) => {
+  const map = {
+    'deadline': { type: 'danger', label: '截止' },
+    'bid': { type: 'primary', label: '投标' },
+    'opening': { type: 'success', label: '开标' },
+    'review': { type: 'warning', label: '评审' }
+  }
+  return map[type] || { type: 'info', label: '其他' }
+}
+
+// 获取事件图标
+const getEventIcon = (type) => {
+  const map = {
+    'deadline': 'Clock',
+    'bid': 'Document',
+    'opening': 'Check',
+    'review': 'View'
+  }
+  return map[type] || 'Calendar'
+}
+
+// 日历加载
+onMounted(async () => {
+  await biddingStore.getCalendar()
+})
+
+// 今日日程事件
+const todayCalendarEvents = computed(() => {
+  const today = formatDateKey(new Date())
+  return calendarEvents.value.filter(e => e.date === today)
+})
 
 // 获取进度条颜色
 const getProgressColor = (progress) => {

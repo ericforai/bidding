@@ -126,9 +126,9 @@
         <el-table-column prop="lastVerifyTime" label="最近验证" width="110" />
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="goToDetail(row.id)">详情</el-button>
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button size="small" @click="goToDetail(row.id)">详情</el-button>
+            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -449,5 +449,10 @@ onMounted(async () => {
   margin-top: 16px;
   display: flex;
   justify-content: flex-end;
+}
+
+/* 操作列按钮横向排列 */
+:deep(.el-table__cell) .el-button {
+  margin-right: 4px;
 }
 </style>
