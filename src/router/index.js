@@ -94,6 +94,31 @@ const routes = [
         component: () => import('@/views/Resource/Account.vue'),
         meta: { title: '账户管理' }
       },
+      // BAR 投标资产台账
+      {
+        path: 'resource/bar',
+        name: 'BAR',
+        component: () => import('@/views/Resource/BAR/CheckPanel.vue'),
+        meta: { title: '可投标能力检查' }
+      },
+      {
+        path: 'resource/bar/sites',
+        name: 'BAR_SiteList',
+        component: () => import('@/views/Resource/BAR/SiteList.vue'),
+        meta: { title: '站点台账' }
+      },
+      {
+        path: 'resource/bar/site/:id',
+        name: 'BAR_SiteDetail',
+        component: () => import('@/views/Resource/BAR/SiteDetail.vue'),
+        meta: { title: '站点详情' }
+      },
+      {
+        path: 'resource/bar/sop/:siteId',
+        name: 'BAR_SOPDetail',
+        component: () => import('@/views/Resource/BAR/SOPDetail.vue'),
+        meta: { title: '找回SOP' }
+      },
       {
         path: 'analytics/dashboard',
         name: 'AnalyticsDashboard',

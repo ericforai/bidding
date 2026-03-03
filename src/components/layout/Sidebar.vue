@@ -236,6 +236,16 @@ const menuConfig = [
     meta: { title: '资源管理', icon: 'resource' },
     children: [
       {
+        path: '/resource/bar',
+        name: 'BAR',
+        meta: { title: '资产台账' }
+      },
+      {
+        path: '/resource/bar/sites',
+        name: 'BAR_SiteList',
+        meta: { title: '站点台账' }
+      },
+      {
         path: '/resource/expense',
         name: 'Expense',
         meta: { title: '费用管理' }

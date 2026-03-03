@@ -994,3 +994,301 @@ mockData.documentAssembly = {
     }
   }
 }
+
+// ========== BAR 投标资产台账 Mock数据 ==========
+
+mockData.barSites = [
+  {
+    id: 'S001',
+    name: '中国政府采购网',
+    url: 'http://www.ccgp.gov.cn',
+    region: '全国',
+    industry: '政府',
+    siteType: '公共资源交易中心',
+    loginType: 'both', // password / ca / both
+    status: 'active', // active / inactive / need_verify
+    hasRisk: true,
+    lastVerifyTime: '2025-03-01',
+    nextVerifyTime: '2025-03-15',
+    remark: '需要IE浏览器，安装CA驱动插件',
+    createTime: '2024-01-15',
+    accounts: [
+      {
+        id: 'A001',
+        username: 'xy_admin',
+        phone: '138****1234',
+        email: 't***@example.com',
+        role: 'admin', // admin / operator / viewer
+        owner: '张三',
+        status: 'active',
+        recoverMethod: 'sms' // sms / email / manual
+      },
+      {
+        id: 'A002',
+        username: 'xy_operator',
+        phone: '139****5678',
+        email: 'o***@example.com',
+        role: 'operator',
+        owner: '李四',
+        status: 'active',
+        recoverMethod: 'sms'
+      }
+    ],
+    uks: [
+      {
+        id: 'UK001',
+        type: '法人CA',
+        provider: '北京CA',
+        serialNo: 'SN123456789',
+        expiryDate: '2025-12-31',
+        holder: '王五',
+        location: '保险柜A-1',
+        status: 'available' // available / borrowed / expired
+      },
+      {
+        id: 'UK002',
+        type: '业务CA',
+        provider: '北京CA',
+        serialNo: 'SN789012345',
+        expiryDate: '2025-04-15',
+        holder: '赵六',
+        location: '保险柜A-2',
+        status: 'borrowed',
+        borrower: '李四',
+        borrowProject: '某央企智慧办公平台采购',
+        borrowPurpose: '投标上传',
+        borrowTime: '2025-02-28 10:00',
+        expectedReturn: '2025-03-05'
+      }
+    ],
+    sop: {
+      resetUrl: 'http://www.ccgp.gov.cn/reset',
+      unlockUrl: 'http://www.ccgp.gov.cn/unlock',
+      contacts: ['400-888-8888 (工作日 9:00-17:00)'],
+      requiredDocs: [
+        { name: '营业执照副本（加盖公章）', required: true },
+        { name: '法人授权委托书', required: true },
+        { name: '经办人身份证正反面', required: true },
+        { name: 'CA证书申请表（现场填写）', required: true }
+      ],
+      estimatedTime: '1-3个工作日',
+      faqs: [
+        {
+          q: '验证码收不到怎么办？',
+          a: '尝试使用邮箱找回，或联系客服人工处理。'
+        },
+        {
+          q: 'CA密码输错3次被锁？',
+          a: '需携带CA证书和授权书到服务网点解锁。'
+        }
+      ],
+      history: [
+        { date: '2025-02-15', user: '张三', action: '密码重置成功', duration: '1天' },
+        { date: '2025-01-20', user: '李四', action: 'CA补办完成', duration: '5天' }
+      ]
+    },
+    attachments: [
+      { id: 'ATT001', name: '营业执照.pdf', url: '#', size: '2.3MB', uploadTime: '2024-01-15' },
+      { id: 'ATT002', name: 'CA办理资料.zip', url: '#', size: '5.6MB', uploadTime: '2024-01-15' },
+      { id: 'ATT003', name: '注册截图.png', url: '#', size: '1.2MB', uploadTime: '2024-01-15' }
+    ],
+    auditLog: [
+      { time: '2025-03-01 10:30', user: '张三', action: '验证登录成功' },
+      { time: '2025-02-28 15:20', user: '李四', action: '借用 业务CA (SN789012345)' },
+      { time: '2025-02-15 14:00', user: '张三', action: '密码重置' },
+      { time: '2025-01-20 09:30', user: '李四', action: 'CA补办' }
+    ]
+  },
+  {
+    id: 'S002',
+    name: '广东省公共资源交易中心',
+    url: 'http://www.gdggzy.cn',
+    region: '广东',
+    industry: '政府',
+    siteType: '公共资源交易中心',
+    loginType: 'ca',
+    status: 'active',
+    hasRisk: true,
+    lastVerifyTime: '2025-02-20',
+    nextVerifyTime: '2025-03-20',
+    remark: '仅支持CA登录，需要广东CA',
+    createTime: '2024-02-10',
+    accounts: [],
+    uks: [
+      {
+        id: 'UK003',
+        type: '机构CA',
+        provider: '广东CA',
+        serialNo: 'GD987654321',
+        expiryDate: '2025-06-30',
+        holder: '王五',
+        location: '保险柜B-1',
+        status: 'available'
+      }
+    ],
+    sop: {
+      resetUrl: 'http://www.gdggzy.cn/help',
+      contacts: ['020-12345678'],
+      requiredDocs: [
+        { name: '组织机构代码证', required: true },
+        { name: '法人授权书', required: true }
+      ],
+      estimatedTime: '3-5个工作日',
+      faqs: [],
+      history: []
+    },
+    attachments: [],
+    auditLog: []
+  },
+  {
+    id: 'S003',
+    name: '某央企招标采购平台',
+    url: 'http://bidding.xxx-corp.com',
+    region: '北京',
+    industry: '央企',
+    siteType: '企业自建平台',
+    loginType: 'password',
+    status: 'inactive',
+    hasRisk: false,
+    lastVerifyTime: '2025-01-15',
+    nextVerifyTime: '2025-04-15',
+    remark: '账号密码丢失，正在找回中',
+    createTime: '2023-06-20',
+    accounts: [
+      {
+        id: 'A003',
+        username: 'xiyu_bidding',
+        phone: '138****9999',
+        email: 'b***@example.com',
+        role: 'admin',
+        owner: '张三',
+        status: 'inactive',
+        recoverMethod: 'manual'
+      }
+    ],
+    uks: [],
+    sop: {
+      resetUrl: 'http://bidding.xxx-corp.com/reset',
+      contacts: ['客服工单系统'],
+      requiredDocs: [
+        { name: '营业执照', required: true },
+        { name: '公章扫描件', required: true },
+        { name: '法人身份证明', required: true }
+      ],
+      estimatedTime: '5-7个工作日',
+      faqs: [
+        {
+          q: '账号被锁定怎么办？',
+          a: '需要提交工单，上传营业执照和法人授权书，等待客服人工处理。'
+        }
+      ],
+      history: []
+    },
+    attachments: [
+      { id: 'ATT004', name: '工单回执.pdf', url: '#', size: '0.5MB', uploadTime: '2025-01-15' }
+    ],
+    auditLog: [
+      { time: '2025-01-15 09:00', user: '张三', action: '发现账号无法登录' },
+      { time: '2025-01-15 10:30', user: '张三', action: '提交找回工单' }
+    ]
+  },
+  {
+    id: 'S004',
+    name: '深圳市建设工程交易服务中心',
+    url: 'http://www.szjsjy.cn',
+    region: '深圳',
+    industry: '建设',
+    siteType: '公共资源交易中心',
+    loginType: 'both',
+    status: 'active',
+    hasRisk: false,
+    lastVerifyTime: '2025-02-28',
+    nextVerifyTime: '2025-03-28',
+    remark: '需要办理深圳数字证书',
+    createTime: '2024-03-01',
+    accounts: [
+      {
+        id: 'A004',
+        username: 'sz_xy_001',
+        phone: '137****1111',
+        email: 's***@example.com',
+        role: 'admin',
+        owner: '王五',
+        status: 'active',
+        recoverMethod: 'email'
+      }
+    ],
+    uks: [
+      {
+        id: 'UK004',
+        type: '机构数字证书',
+        provider: '深圳CA',
+        serialNo: 'SZ11223344',
+        expiryDate: '2025-10-20',
+        holder: '王五',
+        location: '保险柜C-1',
+        status: 'available'
+      }
+    ],
+    sop: {
+      resetUrl: 'http://www.szjsjy.cn/help',
+      contacts: ['0755-12345678'],
+      requiredDocs: [
+        { name: '企业资质证书', required: true },
+        { name: '法人授权书', required: true }
+      ],
+      estimatedTime: '2-3个工作日',
+      faqs: [],
+      history: []
+    },
+    attachments: [],
+    auditLog: []
+  },
+  {
+    id: 'S005',
+    name: '军队采购网',
+    url: 'http://www.plap.cn',
+    region: '全国',
+    industry: '军队',
+    siteType: '军队采购平台',
+    loginType: 'ca',
+    status: 'active',
+    hasRisk: true,
+    lastVerifyTime: '2025-02-25',
+    nextVerifyTime: '2025-03-25',
+    remark: '需要军队专用CA，办理周期较长',
+    createTime: '2023-11-10',
+    accounts: [],
+    uks: [
+      {
+        id: 'UK005',
+        type: '军队采购CA',
+        provider: '军队CA中心',
+        serialNo: 'PLA55667788',
+        expiryDate: '2025-08-15',
+        holder: '李四',
+        location: '保险柜A-3',
+        status: 'available'
+      }
+    ],
+    sop: {
+      resetUrl: 'http://www.plap.cn/help',
+      contacts: ['010-66666666 (军队专线)'],
+      requiredDocs: [
+        { name: '军工保密资格证', required: true },
+        { name: '法人授权书（加盖公章）', required: true },
+        { name: '经办人军官证/身份证', required: true }
+      ],
+      estimatedTime: '7-15个工作日',
+      faqs: [
+        {
+          q: 'CA过期怎么办？',
+          a: '需提前30个工作日申请续期，携带原有CA证书和授权书到指定地点办理。'
+        }
+      ],
+      history: []
+    },
+    attachments: [],
+    auditLog: []
+  }
+]
