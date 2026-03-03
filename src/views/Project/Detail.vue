@@ -310,6 +310,117 @@
               </div>
             </el-tab-pane>
 
+            <!-- 可投标能力检查 -->
+            <el-tab-pane name="asset-check">
+              <template #label>
+                <div class="tab-label">
+                  <span>可投标能力</span>
+                  <el-badge
+                    v-if="assetCheckResult"
+                    :value="assetCheckResult.capability?.status === 'available' ? 1 : 0"
+                    :type="assetCheckResult.capability?.status === 'available' ? 'success' : 'warning'"
+                  />
+                </div>
+              </template>
+
+              <div class="asset-check-tab">
+                <div v-if="assetCheckResult && assetCheckResult.found" class="asset-check-content">
+                  <div class="check-header">
+                    <div class="site-info">
+                      <h3>{{ assetCheckResult.site?.name }}</h3>
+                      <el-tag
+                        v-if="assetCheckResult.capability?.status === 'available'"
+                        type="success"
+                        size="large"
+                      >
+                        可投标
+                      </el-tag>
+                      <el-tag
+                        v-else-if="assetCheckResult.capability?.status === 'risk'"
+                        type="warning"
+                        size="large"
+                      >
+                        有风险
+                      </el-tag>
+                      <el-tag v-else type="danger" size="large">
+                        不可投标
+                      </el-tag>
+                    </div>
+                    <a :href="assetCheckResult.site?.url" target="_blank" class="site-link">
+                      {{ assetCheckResult.site?.url }}
+                    </a>
+                  </div>
+
+                  <div class="check-items-grid">
+                    <div class="check-item-card">
+                      <div class="item-icon">
+                        <el-icon v-if="assetCheckResult.capability?.hasAccount" class="icon-success">
+                          <CircleCheck />
+                        </el-icon>
+                        <el-icon v-else class="icon-error"><CircleClose /></el-icon>
+                      </div>
+                      <div class="item-content">
+                        <div class="item-label">账号状态</div>
+                        <div class="item-value">
+                          {{ assetCheckResult.capability?.hasAccount ? '已注册' : '未注册' }}
+                          <span v-if="assetCheckResult.capability?.accountCount > 0">
+                            ({{ assetCheckResult.capability?.accountCount }}个)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="check-item-card">
+                      <div class="item-icon">
+                        <el-icon v-if="assetCheckResult.capability?.hasAvailableUK" class="icon-success">
+                          <CircleCheck />
+                        </el-icon>
+                        <el-icon v-else-if="assetCheckResult.capability?.ukCount > 0" class="icon-warning">
+                          <Warning />
+                        </el-icon>
+                        <el-icon v-else class="icon-success"><CircleCheck /></el-icon>
+                      </div>
+                      <div class="item-content">
+                        <div class="item-label">UK状态</div>
+                        <div class="item-value">
+                          <span v-if="assetCheckResult.capability?.ukCount === 0">不需要</span>
+                          <span v-else-if="assetCheckResult.capability?.hasAvailableUK">在库</span>
+                          <span v-else>已借出</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="check-item-card" v-if="assetCheckResult.capability?.primaryOwner">
+                      <div class="item-icon">
+                        <el-icon class="icon-user"><User /></el-icon>
+                      </div>
+                      <div class="item-content">
+                        <div class="item-label">责任人</div>
+                        <div class="item-value">
+                          {{ assetCheckResult.capability?.primaryOwner }}
+                          <span class="phone">({{ assetCheckResult.capability?.primaryPhone }})</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="check-actions">
+                    <el-button type="primary" @click="goToSiteDetail">
+                      查看详情
+                    </el-button>
+                    <el-button v-if="assetCheckResult.capability?.ukCount > 0" @click="borrowUK">
+                      借用UK
+                    </el-button>
+                    <el-button @click="viewSOP">查看SOP</el-button>
+                  </div>
+                </div>
+
+                <el-empty v-else description="未找到该站点的资产信息" :image-size="100">
+                  <el-button type="primary" @click="goToAssetManagement">前往资产管理</el-button>
+                </el-empty>
+              </div>
+            </el-tab-pane>
+
             <!-- 质量检查 -->
             <el-tab-pane name="quality">
               <template #label>
@@ -1024,12 +1135,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
+import { useBarStore } from '@/stores/bar'
 import { mockData } from '@/api/mock'
 import {
   Edit, DocumentChecked, Coin, InfoFilled, List, Folder, Upload, Plus,
   MagicStick, Operation, DocumentAdd, Share, Download, Bell, Clock,
   Document, CircleCheckFilled, MoreFilled, Delete, UploadFilled, VideoPlay,
-  WarningFilled, QuestionFilled, ArrowRight
+  WarningFilled, QuestionFilled, ArrowRight, CircleCheck, CircleClose, Warning, User
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import TaskBoard from '@/components/common/TaskBoard.vue'
@@ -1046,9 +1158,13 @@ const route = useRoute()
 const router = useRouter()
 const projectStore = useProjectStore()
 const userStore = useUserStore()
+const barStore = useBarStore()
 
 // 加载状态
 const loading = ref(true)
+
+// 资产检查结果
+const assetCheckResult = ref(null)
 
 // 对话框状态
 const taskDialogVisible = ref(false)
@@ -1487,6 +1603,27 @@ const goBack = () => {
   router.push('/project')
 }
 
+// 资产检查相关方法
+const goToSiteDetail = () => {
+  if (assetCheckResult.value?.site?.id) {
+    router.push(`/resource/bar/site/${assetCheckResult.value.site.id}`)
+  }
+}
+
+const borrowUK = () => {
+  ElMessage.info('借用功能请在站点详情页操作')
+}
+
+const viewSOP = () => {
+  if (assetCheckResult.value?.site?.id) {
+    router.push(`/resource/bar/sop/${assetCheckResult.value.site.id}`)
+  }
+}
+
+const goToAssetManagement = () => {
+  router.push('/resource/bar')
+}
+
 // 处理函数
 const handleEdit = () => {
   // 跳转到标书编辑器
@@ -1854,6 +1991,26 @@ onMounted(async () => {
     } else {
       console.error('未找到项目，ID:', projectId)
       console.log('可用项目列表:', mockData.projects.map(p => ({ id: p.id, name: p.name })))
+    }
+  }
+
+  // 加载资产台账数据
+  await barStore.getSites()
+
+  // 尝试根据项目信息匹配站点
+  const currentProject = projectStore.currentProject
+  if (currentProject) {
+    // 根据客户名称或地区匹配站点
+    const matchedSite = barStore.sites.find(site => {
+      return site.region === currentProject.region ||
+             currentProject.customer?.includes(site.name?.substring(0, 4))
+    })
+
+    if (matchedSite) {
+      const result = await barStore.checkSiteCapability(matchedSite.name)
+      if (result.found) {
+        assetCheckResult.value = result
+      }
     }
   }
 
@@ -2419,5 +2576,111 @@ onMounted(async () => {
   .info-card:active {
     background: #f5f7fa;
   }
+}
+
+/* 资产检查 Tab 样式 */
+.asset-check-tab {
+  padding: 16px 0;
+}
+
+.asset-check-content {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.asset-check-content .check-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.asset-check-content .site-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.asset-check-content .site-link {
+  color: #909399;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.asset-check-content .site-link:hover {
+  color: #409eff;
+}
+
+.asset-check-content .check-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.asset-check-content .check-item-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.asset-check-content .check-item-card .item-icon {
+  flex-shrink: 0;
+}
+
+.asset-check-content .check-item-card .icon-success {
+  color: #67c23a;
+  font-size: 28px;
+}
+
+.asset-check-content .check-item-card .icon-error {
+  color: #f56c6c;
+  font-size: 28px;
+}
+
+.asset-check-content .check-item-card .icon-warning {
+  color: #e6a23c;
+  font-size: 28px;
+}
+
+.asset-check-content .check-item-card .icon-user {
+  color: #909399;
+  font-size: 24px;
+}
+
+.asset-check-content .check-item-card .item-content {
+  flex: 1;
+}
+
+.asset-check-content .check-item-card .item-label {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 4px;
+}
+
+.asset-check-content .check-item-card .item-value {
+  font-size: 14px;
+  color: #303133;
+  font-weight: 500;
+}
+
+.asset-check-content .check-item-card .item-value .phone {
+  color: #909399;
+  font-size: 12px;
+}
+
+.asset-check-content .check-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
 }
 </style>
