@@ -1209,6 +1209,290 @@ export default {
   color: #9CA3AF;
 }
 
+/* ==================== 投标日历 ==================== */
+.calendar-wrapper {
+  padding: 16px;
+}
+
+.calendar-wrapper :deep(.el-calendar) {
+  --el-calendar-cell-width: 40px;
+  --el-calendar-border-color: #F3F4F6;
+}
+
+.calendar-wrapper :deep(.el-calendar__header) {
+  padding: 0 0 16px 0;
+  border-bottom: 1px solid #F3F4F6;
+  margin-bottom: 16px;
+}
+
+.calendar-wrapper :deep(.el-calendar__title) {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.calendar-wrapper :deep(.el-calendar__button-group) {
+  display: flex;
+  gap: 8px;
+}
+
+.calendar-wrapper :deep(.el-calendar__button-group .el-button) {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.calendar-wrapper :deep(.el-calendar-table) {
+  thead {
+    th {
+      padding: 8px 0;
+      font-size: 12px;
+      color: #6B7280;
+      font-weight: 500;
+      border-bottom: 1px solid #F3F4F6;
+    }
+  }
+
+  td {
+    border: none;
+    padding: 2px;
+  }
+
+  .el-calendar-day {
+    height: 40px;
+    padding: 0;
+    text-align: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .el-calendar-day:hover {
+    background: #F3F4F6;
+  }
+
+  .el-calendar-day.is-selected {
+    background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%) !important;
+    color: #fff !important;
+  }
+
+  .el-calendar-day.is-today {
+    background: #DBEAFE;
+    color: #1E40AF;
+    font-weight: 600;
+  }
+}
+
+.calendar-day-cell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.calendar-day-cell:hover {
+  background: #F3F4F6;
+}
+
+.calendar-day-cell.calendar-day-has-event {
+  background: #EFF6FF;
+}
+
+.calendar-day-cell.calendar-day-urgent {
+  background: #FEF2F2;
+}
+
+.calendar-day-number {
+  font-size: 13px;
+  line-height: 1;
+  z-index: 1;
+}
+
+.calendar-day-dots {
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.calendar-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+
+.calendar-dot.type-deadline {
+  background: #EF4444;
+}
+
+.calendar-dot.type-bid {
+  background: #3B82F6;
+}
+
+.calendar-dot.type-opening {
+  background: #10B981;
+}
+
+.calendar-dot.type-review {
+  background: #F59E0B;
+}
+
+/* 今日日程卡片 */
+.today-events-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.today-event-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #F9FAFB;
+  border-radius: 8px;
+  border-left: 3px solid #E5E7EB;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.today-event-item:hover {
+  background: #F3F4F6;
+}
+
+.today-event-item.event-deadline {
+  border-left-color: #EF4444;
+  background: #FEF2F2;
+}
+
+.today-event-item.event-bid {
+  border-left-color: #3B82F6;
+  background: #DBEAFE;
+}
+
+.today-event-item.event-opening {
+  border-left-color: #10B981;
+  background: #D1FAE5;
+}
+
+.today-event-item.event-review {
+  border-left-color: #F59E0B;
+  background: #FEF3C7;
+}
+
+.event-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.today-event-item.event-deadline .event-dot { background: #EF4444; }
+.today-event-item.event-bid .event-dot { background: #3B82F6; }
+.today-event-item.event-opening .event-dot { background: #10B981; }
+.today-event-item.event-review .event-dot { background: #F59E0B; }
+
+.event-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.event-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-project {
+  font-size: 12px;
+  color: #6B7280;
+}
+
+/* 事件详情弹窗 */
+.event-dialog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.event-dialog-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #F9FAFB;
+  border-radius: 8px;
+  border-left: 3px solid #E5E7EB;
+}
+
+.event-dialog-item.event-deadline {
+  border-left-color: #EF4444;
+  background: #FEF2F2;
+}
+
+.event-dialog-item.event-bid {
+  border-left-color: #3B82F6;
+  background: #DBEAFE;
+}
+
+.event-dialog-item.event-opening {
+  border-left-color: #10B981;
+  background: #D1FAE5;
+}
+
+.event-dialog-item.event-review {
+  border-left-color: #F59E0B;
+  background: #FEF3C7;
+}
+
+.event-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.event-dialog-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: #fff;
+}
+
+.event-dialog-icon.icon-deadline { background: #EF4444; }
+.event-dialog-icon.icon-bid { background: #3B82F6; }
+.event-dialog-icon.icon-opening { background: #10B981; }
+.event-dialog-icon.icon-review { background: #F59E0B; }
+
+.event-dialog-info {
+  flex: 1;
+}
+
+.event-dialog-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  margin: 0 0 2px 0;
+}
+
+.event-dialog-project {
+  font-size: 12px;
+  color: #6B7280;
+  margin: 0;
+}
+
 /* ==================== 响应式 ==================== */
 @media (max-width: 1200px) {
   .content-grid {
@@ -1256,6 +1540,20 @@ export default {
 
   .side-column {
     grid-template-columns: 1fr;
+  }
+
+  /* 日历响应式 */
+  .calendar-wrapper :deep(.el-calendar-table .el-calendar-day) {
+    height: 32px;
+  }
+
+  .calendar-day-number {
+    font-size: 11px;
+  }
+
+  .calendar-dot {
+    width: 3px;
+    height: 3px;
   }
 }
 </style>

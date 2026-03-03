@@ -124,11 +124,56 @@
           </template>
         </el-table-column>
         <el-table-column prop="lastVerifyTime" label="最近验证" width="110" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="160" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button size="small" @click="goToDetail(row.id)">详情</el-button>
-            <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <div class="action-buttons">
+              <el-tooltip content="查看详情" placement="top">
+                <el-button
+                  :icon="View"
+                  circle
+                  size="small"
+                  type="primary"
+                  @click="goToDetail(row.id)"
+                />
+              </el-tooltip>
+              <el-tooltip content="编辑" placement="top">
+                <el-button
+                  :icon="Edit"
+                  circle
+                  size="small"
+                  type="warning"
+                  @click="handleEdit(row)"
+                />
+              </el-tooltip>
+              <el-tooltip content="访问网站" placement="top">
+                <el-button
+                  :icon="Link"
+                  circle
+                  size="small"
+                  type="success"
+                  @click="handleVisitSite(row)"
+                />
+              </el-tooltip>
+              <el-dropdown trigger="click" @command="(cmd) => handleMoreAction(cmd, row)">
+                <el-button :icon="MoreFilled" circle size="small" />
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="verify" :icon="Setting">
+                      立即验证
+                    </el-dropdown-item>
+                    <el-dropdown-item command="copy" :icon="CopyDocument">
+                      复制站点信息
+                    </el-dropdown-item>
+                    <el-dropdown-item command="toggle" :icon="View">
+                      {{ row.status === 'active' ? '禁用站点' : '启用站点' }}
+                    </el-dropdown-item>
+                    <el-dropdown-item divided command="delete" :icon="Delete" style="color: #f56c6c">
+                      删除站点
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -204,7 +249,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBarStore } from '@/stores/bar'
 import {
-  Back, Plus, Upload, Search, RefreshLeft
+  Back, Plus, Upload, Search, RefreshLeft, View, Edit, Delete, CopyDocument, MoreFilled, Link, Setting
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -367,6 +412,41 @@ const handleSaveSite = async () => {
 
 const handleImport = () => {
   ElMessage.info('导入功能开发中，敬请期待')
+}
+
+const handleVisitSite = (site) => {
+  window.open(site.url, '_blank')
+}
+
+const handleMoreAction = async (command, site) => {
+  switch (command) {
+    case 'verify':
+      ElMessage.success(`正在验证站点"${site.name}"...`)
+      // 模拟验证
+      setTimeout(() => {
+        site.lastVerifyTime = new Date().toLocaleDateString()
+        site.status = 'active'
+        site.hasRisk = false
+        ElMessage.success('验证完成，站点状态正常')
+      }, 1000)
+      break
+    case 'copy':
+      const siteInfo = `站点名称：${site.name}\n网址：${site.url}\n地区：${site.region}\n行业：${site.industry}`
+      navigator.clipboard.writeText(siteInfo).then(() => {
+        ElMessage.success('站点信息已复制到剪贴板')
+      }).catch(() => {
+        ElMessage.error('复制失败')
+      })
+      break
+    case 'toggle':
+      const newStatus = site.status === 'active' ? 'inactive' : 'active'
+      site.status = newStatus
+      ElMessage.success(`站点已${newStatus === 'active' ? '启用' : '禁用'}`)
+      break
+    case 'delete':
+      await handleDelete(site)
+      break
+  }
 }
 
 onMounted(async () => {
