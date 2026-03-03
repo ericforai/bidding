@@ -535,4 +535,29 @@ onMounted(async () => {
 :deep(.el-table__cell) .el-button {
   margin-right: 4px;
 }
+
+/* 表头不换行 */
+:deep(.el-table__header-wrapper) .el-table__header {
+  white-space: nowrap;
+}
+
+:deep(.el-table__header) .cell {
+  white-space: nowrap;
+}
+
+/* 操作按钮样式 */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.action-buttons .el-button {
+  padding: 4px;
+}
+
+.action-buttons .el-dropdown {
+  margin-left: 0;
+}
 </style>

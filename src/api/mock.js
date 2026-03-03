@@ -300,16 +300,24 @@ export const mockData = {
     ]
   },
 
-  // 投标日历
+  // 投标日历 - 使用当前年月
   calendar: [
-    { id: 'CAL001', date: '2025-02-26', type: 'deadline', title: '某央企项目 - 保证金缴纳', project: '某央企项目', urgent: true },
-    { id: 'CAL002', date: '2025-02-27', type: 'review', title: '华南电力 - 方案评审', project: '华南电力', urgent: false },
-    { id: 'CAL003', date: '2025-02-28', type: 'deadline', title: '深圳地铁 - 中标通知书上传', project: '深圳地铁', urgent: false },
-    { id: 'CAL004', date: '2025-03-01', type: 'bid', title: '西部云 - 投标截止', project: '西部云', urgent: false },
-    { id: 'CAL005', date: '2025-03-05', type: 'opening', title: '某央企项目 - 开标', project: '某央企项目', urgent: false },
-    { id: 'CAL006', date: '2025-03-10', type: 'deadline', title: '深圳地铁 - 保证金退还', project: '深圳地铁', urgent: false },
-    { id: 'CAL007', date: '2025-03-15', type: 'bid', title: '某央企项目 - 投标截止', project: '某央企项目', urgent: false },
-    { id: 'CAL008', date: '2025-03-20', type: 'bid', title: '华南电力 - 投标截止', project: '华南电力', urgent: false }
+    // 3月的事件
+    { id: 'CAL001', date: '2026-03-05', type: 'deadline', title: '某央企项目 - 保证金缴纳', shortTitle: '保证金缴纳', project: '某央企智慧办公平台采购', urgent: true },
+    { id: 'CAL002', date: '2026-03-08', type: 'review', title: '华南电力 - 方案评审', shortTitle: '方案评审', project: '华南电力集团集采项目', urgent: false },
+    { id: 'CAL003', date: '2026-03-10', type: 'deadline', title: '深圳地铁 - 中标通知书上传', shortTitle: '中标书上传', project: '深圳地铁自动化系统', urgent: false },
+    { id: 'CAL004', date: '2026-03-12', type: 'bid', title: '西部云 - 投标截止', shortTitle: '投标截止', project: '西部云数据中心建设', urgent: false },
+    { id: 'CAL005', date: '2026-03-15', type: 'opening', title: '某央企项目 - 开标', shortTitle: '开标', project: '某央企智慧办公平台采购', urgent: false },
+    { id: 'CAL006', date: '2026-03-18', type: 'deadline', title: '深圳地铁 - 保证金退还', shortTitle: '保证金退还', project: '深圳地铁自动化系统', urgent: false },
+    { id: 'CAL007', date: '2026-03-20', type: 'bid', title: '华东电网 - 投标截止', shortTitle: '投标截止', project: '华东电网信息化项目', urgent: false },
+    { id: 'CAL008', date: '2026-03-22', type: 'review', title: '某政府项目 - 预审', shortTitle: '资格预审', project: 'XX区政府数字平台', urgent: false },
+    { id: 'CAL009', date: '2026-03-25', type: 'opening', title: 'XX区数字政府 - 开标', shortTitle: '开标', project: 'XX区数字政府平台', urgent: false },
+    { id: 'CAL010', date: '2026-03-28', type: 'deadline', title: '资质文件更新', shortTitle: '资质更新', project: 'ISO9001认证续期', urgent: true },
+    { id: 'CAL011', date: '2026-03-30', type: 'bid', title: '某央企项目 - 投标截止', shortTitle: '投标截止', project: '某央企集团OA系统', urgent: false },
+    // 4月的事件
+    { id: 'CAL012', date: '2026-04-02', type: 'opening', title: '华南电力 - 开标', shortTitle: '开标', project: '华南电力集团集采项目', urgent: false },
+    { id: 'CAL013', date: '2026-04-08', type: 'deadline', title: '西安智慧园区 - 保证金缴纳', shortTitle: '保证金缴纳', project: '西安智慧园区项目', urgent: false },
+    { id: 'CAL014', date: '2026-04-15', type: 'bid', title: '某制造企业 - 投标截止', shortTitle: '投标截止', project: '制造执行系统(MES)', urgent: false }
   ],
 
   // AI分析数据

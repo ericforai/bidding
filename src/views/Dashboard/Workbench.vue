@@ -183,13 +183,20 @@
                   @click="handleDateClick(data.date)"
                 >
                   <span class="calendar-day-number">{{ data.day.split('-')[2] }}</span>
-                  <div class="calendar-day-dots" v-if="getEventsForDate(data.date).length > 0">
-                    <span
+                  <div class="calendar-day-events" v-if="getEventsForDate(data.date).length > 0">
+                    <div
                       v-for="event in getEventsForDate(data.date).slice(0, 3)"
                       :key="event.id"
-                                              class="calendar-dot"
-                                              :class="'type-' + event.type"
-                                            ></span>
+                      class="calendar-event-item"
+                      :class="'event-' + event.type"
+                      :title="event.title"
+                    >
+                      <span class="event-type-icon">{{ getEventIcon(event.type) }}</span>
+                      <span class="event-title-short">{{ event.shortTitle || event.title }}</span>
+                    </div>
+                    <div v-if="getEventsForDate(data.date).length > 3" class="event-more">
+                      +{{ getEventsForDate(data.date).length - 3 }}
+                    </div>
                   </div>
                 </div>
               </template>
@@ -505,30 +512,6 @@ const calendarCellClass = ({ date, viewType }) => {
   return hasUrgent ? 'calendar-day-urgent' : 'calendar-day-has-event'
 }
 
-// 日历日期单元格内容
-const calendarDayContent = ({ date, viewType }) => {
-  if (viewType !== 'month') return null
-
-  const events = getEventsForDate(date)
-  if (events.length === 0) {
-    return date.getDate()
-  }
-
-  return {
-    children: [
-      h('div', { class: 'calendar-day-number' }, date.getDate()),
-      h('div', { class: 'calendar-day-dots' },
-        events.slice(0, 3).map(event =>
-          h('span', {
-            class: `calendar-dot type-${event.type}`,
-            key: event.id
-          })
-        )
-      )
-    ]
-  }
-}
-
 // 点击日期
 const handleDateClick = (date) => {
   const events = getEventsForDate(date)
@@ -552,12 +535,12 @@ const getEventTypeTag = (type) => {
 // 获取事件图标
 const getEventIcon = (type) => {
   const map = {
-    'deadline': 'Clock',
-    'bid': 'Document',
-    'opening': 'Check',
-    'review': 'View'
+    'deadline': '📅',
+    'bid': '📝',
+    'opening': '📌',
+    'review': '👁'
   }
-  return map[type] || 'Calendar'
+  return map[type] || '📌'
 }
 
 // 日历加载
@@ -1258,7 +1241,7 @@ export default {
   }
 
   .el-calendar-day {
-    height: 40px;
+    height: 60px;
     padding: 0;
     text-align: center;
     border-radius: 8px;
@@ -1285,12 +1268,14 @@ export default {
   position: relative;
   width: 100%;
   height: 100%;
+  min-height: 45px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 4px 2px;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 6px;
   transition: all 0.2s ease;
 }
 
@@ -1299,45 +1284,87 @@ export default {
 }
 
 .calendar-day-cell.calendar-day-has-event {
-  background: #EFF6FF;
+  background: #FAFBFF;
+  border: 1px solid #DBEAFE;
 }
 
 .calendar-day-cell.calendar-day-urgent {
-  background: #FEF2F2;
+  background: #FEFAFA;
+  border: 1px solid #FEE2E2;
 }
 
 .calendar-day-number {
   font-size: 13px;
   line-height: 1;
   z-index: 1;
+  align-self: center;
+  width: 100%;
+  text-align: center;
 }
 
-.calendar-day-dots {
+.calendar-day-events {
   display: flex;
+  flex-direction: column;
   gap: 2px;
-  margin-top: 2px;
+  margin-top: 4px;
+  width: 100%;
 }
 
-.calendar-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
+.calendar-event-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  line-height: 1.3;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.calendar-dot.type-deadline {
-  background: #EF4444;
+.calendar-event-item.event-deadline {
+  background: #FEF2F2;
+  color: #DC2626;
+  border-left: 2px solid #EF4444;
 }
 
-.calendar-dot.type-bid {
-  background: #3B82F6;
+.calendar-event-item.event-bid {
+  background: #DBEAFE;
+  color: #1D4ED8;
+  border-left: 2px solid #3B82F6;
 }
 
-.calendar-dot.type-opening {
-  background: #10B981;
+.calendar-event-item.event-opening {
+  background: #D1FAE5;
+  color: #059669;
+  border-left: 2px solid #10B981;
 }
 
-.calendar-dot.type-review {
-  background: #F59E0B;
+.calendar-event-item.event-review {
+  background: #FEF3C7;
+  color: #D97706;
+  border-left: 2px solid #F59E0B;
+}
+
+.event-type-icon {
+  flex-shrink: 0;
+  font-size: 10px;
+}
+
+.event-title-short {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+.event-more {
+  font-size: 9px;
+  color: #6B7280;
+  text-align: center;
+  padding: 2px 0;
 }
 
 /* 今日日程卡片 */
@@ -1551,9 +1578,17 @@ export default {
     font-size: 11px;
   }
 
-  .calendar-dot {
-    width: 3px;
-    height: 3px;
+  .calendar-event-item {
+    font-size: 9px;
+    padding: 1px 2px;
+  }
+
+  .event-title-short {
+    font-size: 9px;
+  }
+
+  .calendar-day-cell {
+    min-height: 50px;
   }
 }
 </style>
