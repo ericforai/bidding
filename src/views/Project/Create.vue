@@ -71,6 +71,28 @@
               <el-input v-model="basicForm.region" placeholder="请输入地区" clearable />
             </el-form-item>
 
+            <el-form-item label="招标平台" prop="platform">
+              <el-select
+                v-model="basicForm.platform"
+                placeholder="请选择招标平台"
+                filterable
+                allow-create
+                clearable
+                @change="handlePlatformChange"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="site in platformOptions"
+                  :key="site.id"
+                  :label="site.name"
+                  :value="site.name"
+                >
+                  <span>{{ site.name }}</span>
+                  <span style="float: right; color: #8492a6; font-size: 12px">{{ site.region }}</span>
+                </el-option>
+              </el-select>
+            </el-form-item>
+
             <el-form-item label="投标截止日期" prop="deadline">
               <el-date-picker
                 v-model="basicForm.deadline"
@@ -425,6 +447,89 @@
         </el-button>
       </div>
     </el-card>
+
+    <!-- 资产检查弹窗 -->
+    <el-dialog
+      v-model="showAssetCheckDialog"
+      title="投标资产检查"
+      width="500px"
+      :close-on-click-modal="false"
+    >
+      <div v-if="assetCheckResult" class="asset-check-result">
+        <div class="check-header">
+          <span class="site-name">{{ assetCheckResult.site?.name }}</span>
+          <el-tag
+            v-if="assetCheckResult.capability?.status === 'available'"
+            type="success"
+            size="large"
+          >
+            可投标
+          </el-tag>
+          <el-tag
+            v-else-if="assetCheckResult.capability?.status === 'risk'"
+            type="warning"
+            size="large"
+          >
+            有风险
+          </el-tag>
+          <el-tag v-else type="danger" size="large">
+            不可投标
+          </el-tag>
+        </div>
+
+        <div class="check-items">
+          <div class="check-item">
+            <el-icon
+              :class="assetCheckResult.capability?.hasAccount ? 'icon-success' : 'icon-error'"
+            >
+              <component :is="assetCheckResult.capability?.hasAccount ? 'CircleCheck' : 'CircleClose'" />
+            </el-icon>
+            <span>账号：{{ assetCheckResult.capability?.hasAccount ? '已注册' : '未注册' }}</span>
+          </div>
+          <div class="check-item">
+            <el-icon
+              :class="assetCheckResult.capability?.hasAvailableUK ? 'icon-success' : 'icon-error'"
+            >
+              <component :is="assetCheckResult.capability?.hasAvailableUK ? 'CircleCheck' : 'CircleClose'" />
+            </el-icon>
+            <span>UK：{{ assetCheckResult.capability?.ukCount > 0 ? (assetCheckResult.capability?.hasAvailableUK ? '在库' : '已借出') : '不需要' }}</span>
+          </div>
+          <div v-if="assetCheckResult.capability?.primaryOwner" class="check-item">
+            <el-icon class="icon-user"><User /></el-icon>
+            <span>责任人：{{ assetCheckResult.capability?.primaryOwner }} ({{ assetCheckResult.capability?.primaryPhone }})</span>
+          </div>
+        </div>
+
+        <el-alert
+          v-if="assetCheckResult.capability?.hasRisk"
+          type="warning"
+          :closable="false"
+          show-icon
+        >
+          存在风险项，请确认后继续
+        </el-alert>
+      </div>
+
+      <el-empty v-else description="未找到该站点的资产信息" :image-size="80" />
+
+      <template #footer>
+        <el-button @click="showAssetCheckDialog = false">取消</el-button>
+        <el-button
+          v-if="assetCheckResult?.capability?.status !== 'unavailable'"
+          type="primary"
+          @click="confirmAssetCheck"
+        >
+          继续创建
+        </el-button>
+        <el-button
+          v-else
+          type="primary"
+          @click="goToAssetManagement"
+        >
+          前去管理资产
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -433,21 +538,31 @@ import { ref, computed, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
-import { Refresh, Plus, Delete, Loading, Warning, WarningFilled, MagicStick, DataAnalysis, List } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { useBarStore } from '@/stores/bar'
+import {
+  Refresh, Plus, Delete, Loading, Warning, WarningFilled,
+  MagicStick, DataAnalysis, List, CircleCheck, CircleClose, User
+} from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import ScoreCoverage from '@/components/ai/ScoreCoverage.vue'
 
 const router = useRouter()
 const projectStore = useProjectStore()
 const userStore = useUserStore()
+const barStore = useBarStore()
 
 const currentStep = ref(0)
 const syncing = ref(false)
 const syncedFromCRM = ref(false)
 const submitting = ref(false)
 const analyzing = ref(false)
+const showAssetCheckDialog = ref(false)
+const assetCheckResult = ref(null)
 
 const userList = computed(() => userStore.users)
+
+// 平台选项（从 BAR store 获取）
+const platformOptions = computed(() => barStore.sites || [])
 
 const basicFormRef = ref()
 const detailFormRef = ref()
@@ -459,6 +574,7 @@ const basicForm = reactive({
   budget: null,
   industry: '',
   region: '',
+  platform: '',
   deadline: '',
   manager: '',
   competitors: []
@@ -740,6 +856,31 @@ const handleCompetitorsChange = (value) => {
   competitorAnalysis.value = competitorAnalysis.value.filter(
     c => value.includes(c.name)
   )
+}
+
+// 处理招标平台变化
+const handlePlatformChange = async (platformName) => {
+  if (!platformName) return
+
+  // 触发资产检查
+  const result = await barStore.checkSiteCapability(platformName)
+
+  if (result.found) {
+    assetCheckResult.value = result
+    showAssetCheckDialog.value = true
+  }
+}
+
+// 确认资产检查，继续创建
+const confirmAssetCheck = () => {
+  showAssetCheckDialog.value = false
+  ElMessage.success('已确认资产状态，请继续完善项目信息')
+}
+
+// 前往资产管理
+const goToAssetManagement = () => {
+  showAssetCheckDialog.value = false
+  router.push('/resource/bar')
 }
 </script>
 
@@ -1104,5 +1245,52 @@ const handleCompetitorsChange = (value) => {
   .task-item:active {
     background: #f5f7fa;
   }
+}
+
+/* 资产检查弹窗样式 */
+.asset-check-result {
+  padding: 16px 0;
+}
+
+.asset-check-result .check-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.asset-check-result .site-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.asset-check-result .check-items {
+  margin-bottom: 20px;
+}
+
+.asset-check-result .check-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  font-size: 15px;
+}
+
+.asset-check-result .check-item .icon-success {
+  color: #67c23a;
+  font-size: 22px;
+}
+
+.asset-check-result .check-item .icon-error {
+  color: #f56c6c;
+  font-size: 22px;
+}
+
+.asset-check-result .check-item .icon-user {
+  color: #909399;
+  font-size: 20px;
 }
 </style>
