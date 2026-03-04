@@ -99,7 +99,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <el-button
               type="primary"
@@ -111,6 +111,15 @@
               查看
             </el-button>
             <el-button
+              type="success"
+              link
+              :icon="Share"
+              size="small"
+              @click="handleBorrow(row)"
+            >
+              借阅
+            </el-button>
+            <el-button
               type="primary"
               link
               :icon="Download"
@@ -120,6 +129,7 @@
               下载
             </el-button>
             <el-button
+              v-if="isAdmin"
               type="danger"
               link
               :icon="Delete"
@@ -255,6 +265,83 @@
         </el-descriptions-item>
       </el-descriptions>
     </el-dialog>
+
+    <!-- 借阅对话框 -->
+    <el-dialog v-model="borrowDialogVisible" title="资质借阅申请" width="500px">
+      <el-form :model="borrowForm" label-width="100px">
+        <el-form-item label="资质名称">
+          <el-input :value="currentQualification?.name" disabled />
+        </el-form-item>
+        <el-form-item label="借用人" required>
+          <el-input v-model="borrowForm.borrower" placeholder="请输入借用人姓名" />
+        </el-form-item>
+        <el-form-item label="所属部门">
+          <el-input v-model="borrowForm.department" placeholder="请输入所属部门" />
+        </el-form-item>
+        <el-form-item label="借阅用途" required>
+          <el-select v-model="borrowForm.purpose" placeholder="请选择用途" style="width: 100%">
+            <el-option label="投标使用" value="bidding" />
+            <el-option label="资质审核" value="audit" />
+            <el-option label="客户展示" value="presentation" />
+            <el-option label="其他" value="other" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="预计归还">
+          <el-date-picker
+            v-model="borrowForm.returnDate"
+            type="date"
+            placeholder="选择日期"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="borrowForm.remark" type="textarea" :rows="2" placeholder="请输入备注信息" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="borrowDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleConfirmBorrow">提交申请</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 借阅记录 -->
+    <el-card class="borrow-history-card">
+      <template #header>
+        <div class="card-header">
+          <span>借阅记录</span>
+          <el-button type="primary" size="small" @click="borrowDialogVisible = true; currentQualification = null">
+            新增借阅
+          </el-button>
+        </div>
+      </template>
+      <el-table :data="borrowRecords" stripe>
+        <el-table-column prop="qualificationName" label="资质名称" min-width="180" />
+        <el-table-column prop="borrower" label="借用人" width="100" />
+        <el-table-column prop="department" label="部门" width="120" />
+        <el-table-column prop="purpose" label="用途" width="100">
+          <template #default="{ row }">
+            <el-tag size="small">{{ getPurposeLabel(row.purpose) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="borrowDate" label="借阅日期" width="120" />
+        <el-table-column prop="returnDate" label="应归还日期" width="120" />
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="getBorrowStatusType(row.status)" size="small">
+              {{ getBorrowStatusLabel(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="120">
+          <template #default="{ row }">
+            <el-button v-if="row.status === 'borrowed'" size="small" type="primary" link @click="handleReturn(row)">
+              归还
+            </el-button>
+            <el-button v-else size="small" link disabled>已归还</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
   </div>
 </template>
 
@@ -272,9 +359,14 @@ import {
   OfficeBuilding,
   User,
   Box,
-  Medal
+  Medal,
+  Share
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
+const isAdmin = computed(() => userStore.currentUser?.role === 'admin')
 
 // 搜索表单
 const searchForm = reactive({
@@ -296,9 +388,63 @@ const loading = ref(false)
 // 对话框
 const uploadDialogVisible = ref(false)
 const detailDialogVisible = ref(false)
+const borrowDialogVisible = ref(false)
 
 // 当前查看的资质
 const currentQualification = ref(null)
+
+// 借阅表单
+const borrowForm = reactive({
+  borrower: '',
+  department: '',
+  purpose: '',
+  returnDate: '',
+  remark: ''
+})
+
+// 借阅记录 Mock 数据
+const borrowRecords = ref([
+  {
+    id: 1,
+    qualificationName: '高新技术企业证书',
+    borrower: '小王',
+    department: '销售部',
+    purpose: 'bidding',
+    borrowDate: '2025-02-20',
+    returnDate: '2025-03-05',
+    status: 'borrowed'
+  },
+  {
+    id: 2,
+    qualificationName: 'ISO9001质量管理体系认证',
+    borrower: '张经理',
+    department: '商务部',
+    purpose: 'audit',
+    borrowDate: '2025-02-15',
+    returnDate: '2025-02-28',
+    status: 'returned'
+  },
+  {
+    id: 3,
+    qualificationName: '涉密信息系统集成资质',
+    borrower: '李工',
+    department: '技术部',
+    purpose: 'bidding',
+    borrowDate: '2025-02-25',
+    returnDate: '2025-03-10',
+    status: 'borrowed'
+  },
+  {
+    id: 4,
+    qualificationName: 'CMMI5级认证证书',
+    borrower: '小王',
+    department: '销售部',
+    purpose: 'presentation',
+    borrowDate: '2025-01-20',
+    returnDate: '2025-02-05',
+    status: 'returned'
+  }
+])
 
 // 上传表单
 const uploadForm = reactive({
@@ -660,6 +806,92 @@ const handleDelete = (row) => {
   }).catch(() => {})
 }
 
+// 借阅
+const handleBorrow = (row) => {
+  currentQualification.value = row
+  // 重置表单
+  borrowForm.borrower = ''
+  borrowForm.department = ''
+  borrowForm.purpose = ''
+  borrowForm.returnDate = ''
+  borrowForm.remark = ''
+  borrowDialogVisible.value = true
+}
+
+// 确认借阅
+const handleConfirmBorrow = () => {
+  if (!borrowForm.borrower || !borrowForm.purpose) {
+    ElMessage.warning('请填写必填项')
+    return
+  }
+
+  // 添加借阅记录
+  const newRecord = {
+    id: Date.now(),
+    qualificationName: currentQualification.value?.name || '资质文件',
+    borrower: borrowForm.borrower,
+    department: borrowForm.department || '-',
+    purpose: borrowForm.purpose,
+    borrowDate: new Date().toISOString().split('T')[0],
+    returnDate: borrowForm.returnDate || '-',
+    status: 'borrowed'
+  }
+
+  borrowRecords.value.unshift(newRecord)
+  ElMessage.success('借阅申请已提交')
+  borrowDialogVisible.value = false
+}
+
+// 归还
+const handleReturn = (row) => {
+  ElMessageBox.confirm(
+    `确认「${row.qualificationName}」已归还吗？`,
+    '归还确认',
+    {
+      confirmButtonText: '确认归还',
+      cancelButtonText: '取消',
+      type: 'success'
+    }
+  ).then(() => {
+    const record = borrowRecords.value.find(r => r.id === row.id)
+    if (record) {
+      record.status = 'returned'
+      ElMessage.success('归还成功')
+    }
+  }).catch(() => {})
+}
+
+// 用途标签
+const getPurposeLabel = (purpose) => {
+  const map = {
+    'bidding': '投标使用',
+    'audit': '资质审核',
+    'presentation': '客户展示',
+    'other': '其他'
+  }
+  return map[purpose] || purpose
+}
+
+// 借阅状态类型
+const getBorrowStatusType = (status) => {
+  const map = {
+    'borrowed': 'warning',
+    'returned': 'success',
+    'overdue': 'danger'
+  }
+  return map[status] || ''
+}
+
+// 借阅状态标签
+const getBorrowStatusLabel = (status) => {
+  const map = {
+    'borrowed': '借阅中',
+    'returned': '已归还',
+    'overdue': '逾期'
+  }
+  return map[status] || status
+}
+
 // 分页变化
 const handlePageChange = (page) => {
   pagination.page = page
@@ -830,6 +1062,16 @@ onMounted(() => {
   @media (hover: none) and (pointer: coarse) {
     .el-button {
       min-height: 44px;
+    }
+  }
+
+  .borrow-history-card {
+    margin-top: 20px;
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
   }
 }

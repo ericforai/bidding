@@ -9,6 +9,8 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
 
@@ -127,21 +129,17 @@ public class PasswordEncryptionUtil {
     }
 
     /**
-     * Derive a 256-bit key from the provided key string
+     * Derive a 256-bit key from the provided key string using SHA-256
      * @param keyString the key string
      * @return a 32-byte array suitable for AES-256
      */
     private byte[] deriveKey(String keyString) {
-        byte[] keyBytes = keyString.getBytes(StandardCharsets.UTF_8);
-        byte[] derivedKey = new byte[32]; // 256 bits
-
-        // Simple key derivation - repeat or truncate as needed
-        int keyLength = keyBytes.length;
-        for (int i = 0; i < 32; i++) {
-            derivedKey[i] = keyBytes[i % keyLength];
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return digest.digest(keyString.getBytes(StandardCharsets.UTF_8));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 algorithm not available", e);
         }
-
-        return derivedKey;
     }
 
     /**

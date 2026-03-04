@@ -90,9 +90,17 @@
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag v-if="row.status === 'paid'" type="success">已支付</el-tag>
-            <el-tag v-else-if="row.status === 'pending'" type="warning">待支付</el-tag>
+            <el-tag v-if="row.approvalStatus === 'pending'" type="info">待审批</el-tag>
+            <el-tag v-else-if="row.approvalStatus === 'approved' && row.status === 'pending'" type="warning">待支付</el-tag>
+            <el-tag v-else-if="row.status === 'paid'" type="success">已支付</el-tag>
             <el-tag v-else-if="row.status === 'returned'" type="info">已退还</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="approvalStatus" label="审批状态" width="100">
+          <template #default="{ row }">
+            <el-tag v-if="row.approvalStatus === 'pending'" type="warning">待审批</el-tag>
+            <el-tag v-else-if="row.approvalStatus === 'approved'" type="success">已通过</el-tag>
+            <el-tag v-else-if="row.approvalStatus === 'rejected'" type="danger">已拒绝</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="date" label="发生日期" width="120" />
@@ -176,6 +184,46 @@
       </el-table>
     </el-card>
 
+    <!-- 审批记录卡片 -->
+    <el-card class="approval-card">
+      <template #header>
+        <div class="card-header">
+          <span>审批记录</span>
+        </div>
+      </template>
+      <el-table :data="approvalRecords" stripe>
+        <el-table-column prop="project" label="项目名称" min-width="150" />
+        <el-table-column prop="type" label="费用类型" width="100">
+          <template #default="{ row }">
+            <el-tag size="small">{{ row.type }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="amount" label="金额(万元)" width="120" align="right">
+          <template #default="{ row }">
+            ¥{{ row.amount.toFixed(2) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="applicant" label="申请人" width="100" />
+        <el-table-column prop="applyTime" label="申请时间" width="160" />
+        <el-table-column prop="approver" label="审批人" width="100" />
+        <el-table-column prop="approvalStatus" label="审批状态" width="100">
+          <template #default="{ row }">
+            <el-tag v-if="row.approvalStatus === 'pending'" type="warning" size="small">待审批</el-tag>
+            <el-tag v-else-if="row.approvalStatus === 'approved'" type="success" size="small">已通过</el-tag>
+            <el-tag v-else-if="row.approvalStatus === 'rejected'" type="danger" size="small">已拒绝</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="150">
+          <template #default="{ row }">
+            <el-button v-if="row.approvalStatus === 'pending'" size="small" type="primary" link @click="handleApprove(row)">
+              审批
+            </el-button>
+            <el-button v-else size="small" link disabled>已处理</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+
     <!-- 费用申请对话框 -->
     <el-dialog v-model="showApplyDialog" title="费用申请" width="500px">
       <el-form :model="applyForm" label-width="100px">
@@ -231,6 +279,35 @@
         <el-button type="primary" @click="confirmRemind">发送提醒</el-button>
       </template>
     </el-dialog>
+
+    <!-- 审批对话框 -->
+    <el-dialog v-model="showApprovalDialog" title="费用审批" width="500px">
+      <div v-if="currentApprovalItem" class="approval-content">
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="项目名称">{{ currentApprovalItem.project }}</el-descriptions-item>
+          <el-descriptions-item label="费用类型">{{ currentApprovalItem.type }}</el-descriptions-item>
+          <el-descriptions-item label="金额">¥{{ currentApprovalItem.amount }}万元</el-descriptions-item>
+          <el-descriptions-item label="申请人">{{ currentApprovalItem.applicant }}</el-descriptions-item>
+          <el-descriptions-item label="申请说明">{{ currentApprovalItem.remark || '无' }}</el-descriptions-item>
+        </el-descriptions>
+        <el-divider />
+        <el-form :model="approvalForm" label-width="80px">
+          <el-form-item label="审批结果">
+            <el-radio-group v-model="approvalForm.result">
+              <el-radio label="approved">通过</el-radio>
+              <el-radio label="rejected">拒绝</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="审批意见">
+            <el-input v-model="approvalForm.comment" type="textarea" :rows="3" placeholder="请输入审批意见" />
+          </el-form-item>
+        </el-form>
+      </div>
+      <template #footer>
+        <el-button @click="showApprovalDialog = false">取消</el-button>
+        <el-button type="primary" @click="confirmApproval">提交审批</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -249,6 +326,7 @@ const searchForm = ref({
 const fees = ref(mockData.fees)
 const showApplyDialog = ref(false)
 const showRemindDialog = ref(false)
+const showApprovalDialog = ref(false)
 const applyForm = ref({
   type: '保证金',
   project: '',
@@ -256,6 +334,59 @@ const applyForm = ref({
   remark: ''
 })
 const currentRemindItem = ref(null)
+const currentApprovalItem = ref(null)
+const approvalForm = ref({
+  result: 'approved',
+  comment: ''
+})
+
+// 审批记录 Mock 数据
+const approvalRecords = ref([
+  {
+    id: 1,
+    project: '某央企项目',
+    type: '保证金',
+    amount: 10,
+    applicant: '小王',
+    applyTime: '2025-03-01 10:30',
+    approver: '张经理',
+    approvalStatus: 'approved',
+    remark: '投标保证金'
+  },
+  {
+    id: 2,
+    project: '深圳地铁',
+    type: '标书费',
+    amount: 0.05,
+    applicant: '李工',
+    applyTime: '2025-03-02 14:20',
+    approver: null,
+    approvalStatus: 'pending',
+    remark: '购买标书'
+  },
+  {
+    id: 3,
+    project: '西部云',
+    type: '差旅费',
+    amount: 0.8,
+    applicant: '小王',
+    applyTime: '2025-02-28 09:15',
+    approver: '张经理',
+    approvalStatus: 'rejected',
+    remark: '现场踏勘差旅'
+  },
+  {
+    id: 4,
+    project: '华南电力',
+    type: '保证金',
+    amount: 15,
+    applicant: '李工',
+    applyTime: '2025-03-03 08:45',
+    approver: null,
+    approvalStatus: 'pending',
+    remark: '集采项目保证金'
+  }
+])
 
 // 保证金列表 - 从费用中筛选保证金类型
 const depositList = computed(() => {
@@ -390,6 +521,30 @@ const handleConfirmReturn = (row) => {
     ElMessage.success(`已确认${row.project}保证金退还，金额：${row.amount}万元`)
   }
 }
+
+// 审批
+const handleApprove = (row) => {
+  currentApprovalItem.value = row
+  approvalForm.value = {
+    result: 'approved',
+    comment: ''
+  }
+  showApprovalDialog.value = true
+}
+
+// 确认审批
+const confirmApproval = () => {
+  if (currentApprovalItem.value) {
+    const record = approvalRecords.value.find(r => r.id === currentApprovalItem.value.id)
+    if (record) {
+      record.approvalStatus = approvalForm.value.result
+      record.approver = '张经理'
+    }
+    ElMessage.success(`审批${approvalForm.value.result === 'approved' ? '通过' : '拒绝'}`)
+    showApprovalDialog.value = false
+    currentApprovalItem.value = null
+  }
+}
 </script>
 
 <style scoped lang="scss">
@@ -455,6 +610,16 @@ const handleConfirmReturn = (row) => {
 
 .deposit-tracking-card {
   margin-top: 20px;
+}
+
+.approval-card {
+  margin-top: 20px;
+}
+
+.approval-content {
+  .approval-form {
+    margin-top: 16px;
+  }
 }
 
 .remind-content {

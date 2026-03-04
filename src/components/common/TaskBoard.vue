@@ -1,6 +1,17 @@
 <template>
   <div class="task-board">
-    <div class="board-column" v-for="column in columns" :key="column.key">
+    <div class="board-header">
+      <div class="header-left">
+        <span class="board-title">任务看板</span>
+        <el-tag type="info" size="small">总进度: {{ progress }}%</el-tag>
+      </div>
+      <el-button type="primary" size="small" @click="$emit('generate-tasks')" v-if="canGenerate">
+        <el-icon><MagicStick /></el-icon>
+        拆解任务
+      </el-button>
+    </div>
+    <div class="board-columns-container">
+      <div class="board-column" v-for="column in columns" :key="column.key">
       <div class="column-header" :class="`column-${column.key}`">
         <span class="column-title">{{ column.title }}</span>
         <el-badge :value="getTaskCount(column.key)" class="badge" />
@@ -10,7 +21,7 @@
           v-for="task in getTasksByStatus(column.key)"
           :key="task.id"
           class="task-card"
-          :class="{ 'task-high': task.priority === 'high' }"
+          :class="{ 'task-high': task.priority === 'high', 'task-review': task.status === 'review' }"
           @click="handleTaskClick(task)"
         >
           <div class="task-header">
@@ -21,24 +32,31 @@
             >
               {{ getPriorityText(task.priority) }}
             </el-tag>
+            <el-tag v-if="task.hasDeliverable" type="success" size="small">有交付物</el-tag>
             <el-dropdown trigger="click" @click.stop>
               <el-icon class="more-icon"><MoreFilled /></el-icon>
               <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item @click="handleStatusChange(task, 'todo')">
-                    移至待办
-                  </el-dropdown-item>
-                  <el-dropdown-item @click="handleStatusChange(task, 'doing')">
-                    移至进行中
-                  </el-dropdown-item>
-                  <el-dropdown-item @click="handleStatusChange(task, 'done')">
-                    移至已完成
-                  </el-dropdown-item>
-                </el-dropdown-menu>
+                <el-dropdown-item @click="handleStatusChange(task, 'todo')" :disabled="task.status === 'todo'">
+                  设为待办
+                </el-dropdown-item>
+                <el-dropdown-item @click="handleStatusChange(task, 'doing')" :disabled="task.status === 'doing'">
+                  设为进行中
+                </el-dropdown-item>
+                <el-dropdown-item @click="handleStatusChange(task, 'review')" :disabled="task.status === 'review'">
+                  提交审核
+                </el-dropdown-item>
+                <el-dropdown-item @click="handleStatusChange(task, 'done')" :disabled="task.status === 'done'">
+                  设为已完成
+                </el-dropdown-item>
+                <el-dropdown-item divided @click="handleUploadDeliverable(task)">
+                  <el-icon><Upload /></el-icon>
+                  上传交付物
+                </el-dropdown-item>
               </template>
             </el-dropdown>
           </div>
           <div class="task-name">{{ task.name }}</div>
+          <div class="task-desc">{{ task.description }}</div>
           <div class="task-meta">
             <div class="task-owner">
               <el-icon><User /></el-icon>
@@ -49,31 +67,126 @@
               <span>{{ task.deadline }}</span>
             </div>
           </div>
+          <!-- 交付物列表 -->
+          <div v-if="task.deliverables && task.deliverables.length > 0" class="deliverables">
+            <div class="deliverable-title">交付物:</div>
+            <div v-for="del in task.deliverables" :key="del.id" class="deliverable-item">
+              <el-tag size="small" closable @close="handleRemoveDeliverable(task, del)">
+                <el-link :href="del.url" target="_blank" type="primary">
+                  <el-icon><Document /></el-icon>
+                  {{ del.name }}
+                </el-link>
+              </el-tag>
+            </div>
+          </div>
         </div>
         <el-empty v-if="getTasksByStatus(column.key).length === 0" description="暂无任务" :image-size="60" />
       </div>
     </div>
+    </div>
+
+    <!-- 提交至标书编写按钮 -->
+    <div class="submit-section" v-if="canSubmitToDocument">
+      <el-button type="success" size="large" @click="handleSubmitToDocument" :disabled="!allTasksCompleted">
+        <el-icon><DocumentAdd /></el-icon>
+        提交至标书编写流程
+      </el-button>
+      <div class="submit-tip">所有任务已完成并审核通过，可开始标书编写</div>
+    </div>
+
+    <!-- 上传交付物对话框 -->
+    <el-dialog v-model="showUploadDialog" title="上传交付物" width="500px">
+      <el-form :model="deliverableForm" label-width="80px">
+        <el-form-item label="交付物名称">
+          <el-input v-model="deliverableForm.name" placeholder="请输入交付物名称" />
+        </el-form-item>
+        <el-form-item label="交付物类型">
+          <el-select v-model="deliverableForm.type" placeholder="请选择类型">
+            <el-option label="文档" value="document" />
+            <el-option label="资质文件" value="qualification" />
+            <el-option label="技术方案" value="technical" />
+            <el-option label="报价单" value="quotation" />
+            <el-option label="其他" value="other" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="上传文件">
+          <el-upload
+            class="upload-demo"
+            drag
+            action="#"
+            :auto-upload="false"
+            :on-change="handleFileChange"
+            :file-list="fileList"
+          >
+            <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+            <div class="el-upload__text">拖拽文件到此处或<em>点击上传</em></div>
+            <template #tip>
+              <div class="el-upload__tip">支持 doc/docx/pdf/xls/xlsx 格式</div>
+            </template>
+          </el-upload>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showUploadDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleSaveDeliverable" :disabled="!deliverableForm.name || !deliverableForm.file">
+          保存
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { MoreFilled, User, Calendar } from '@element-plus/icons-vue'
+import { ref, computed } from 'vue'
+import { MoreFilled, User, Calendar, Document, MagicStick, Upload, DocumentAdd, UploadFilled } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 
 const props = defineProps({
   tasks: {
     type: Array,
     default: () => []
+  },
+  projectId: String,
+  canGenerate: {
+    type: Boolean,
+    default: true
   }
 })
 
-const emit = defineEmits(['task-click', 'status-change'])
+const emit = defineEmits(['task-click', 'status-change', 'generate-tasks', 'submit-to-document', 'add-deliverable', 'remove-deliverable'])
+
+const showUploadDialog = ref(false)
+const currentTask = ref(null)
+const fileList = ref([])
+
+const deliverableForm = ref({
+  name: '',
+  type: 'document',
+  file: null
+})
 
 const columns = [
   { key: 'todo', title: '待办' },
   { key: 'doing', title: '进行中' },
+  { key: 'review', title: '待审核' },
   { key: 'done', title: '已完成' }
 ]
+
+// 计算进度
+const progress = computed(() => {
+  if (props.tasks.length === 0) return 0
+  const completedCount = props.tasks.filter(t => t.status === 'done').length
+  return Math.round((completedCount / props.tasks.length) * 100)
+})
+
+// 所有任务都完成且审核通过
+const allTasksCompleted = computed(() => {
+  return props.tasks.length > 0 && props.tasks.every(t => t.status === 'done')
+})
+
+const canSubmitToDocument = computed(() => {
+  return props.tasks.length > 0 && props.tasks.every(t => t.status === 'done')
+})
 
 const getTasksByStatus = (status) => {
   return props.tasks.filter(t => t.status === status)
@@ -114,25 +227,97 @@ const handleTaskClick = (task) => {
 }
 
 const handleStatusChange = (task, newStatus) => {
-  emit('status-change', task.id, newStatus)
+  emit('status-change', task, newStatus)
+}
+
+const handleUploadDeliverable = (task) => {
+  currentTask.value = task
+  showUploadDialog.value = true
+  deliverableForm.value = {
+    name: '',
+    type: 'document',
+    file: null
+  }
+  fileList.value = []
+}
+
+const handleFileChange = (file) => {
+  deliverableForm.value.file = file.raw
+}
+
+const handleSaveDeliverable = () => {
+  if (!currentTask.value || !deliverableForm.value.name) {
+    ElMessage.warning('请填写交付物名称')
+    return
+  }
+
+  const deliverable = {
+    id: Date.now().toString(),
+    name: deliverableForm.value.name,
+    type: deliverableForm.value.type,
+    url: '#',
+    uploader: '当前用户',
+    time: new Date().toLocaleString('zh-CN')
+  }
+
+  emit('add-deliverable', currentTask.value.id, deliverable)
+
+  showUploadDialog.value = false
+  deliverableForm.value = { name: '', type: 'document', file: null }
+  fileList.value = []
+
+  ElMessage.success('交付物已保存')
+}
+
+const handleRemoveDeliverable = (task, deliverable) => {
+  emit('remove-deliverable', task.id, deliverable.id)
+}
+
+const handleSubmitToDocument = () => {
+  emit('submit-to-document', props.projectId)
 }
 </script>
 
 <style scoped>
 .task-board {
   display: flex;
+  flex-direction: column;
   gap: 16px;
-  min-height: 400px;
+}
+
+.board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.board-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.board-columns-container {
+  display: flex;
+  gap: 16px;
+  min-height: 500px;
 }
 
 .board-column {
-  flex: 1;
-  min-width: 280px;
   background: #f5f7fa;
   border-radius: 8px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-width: 260px;
+  flex: 1;
 }
 
 .column-header {
@@ -151,6 +336,11 @@ const handleStatusChange = (task, newStatus) => {
 .column-doing .column-header {
   background: #e1f3ff;
   color: #409eff;
+}
+
+.column-review .column-header {
+  background: #fff7e6;
+  color: #e6a23c;
 }
 
 .column-done .column-header {
@@ -183,8 +373,12 @@ const handleStatusChange = (task, newStatus) => {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
-.task-card.task-high {
+.task-high {
   border-left: 3px solid #f56c6c;
+}
+
+.task-review {
+  border-left: 3px solid #e6a23c;
 }
 
 .task-header {
@@ -192,6 +386,7 @@ const handleStatusChange = (task, newStatus) => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  gap: 8px;
 }
 
 .more-icon {
@@ -207,8 +402,15 @@ const handleStatusChange = (task, newStatus) => {
 .task-name {
   font-size: 14px;
   color: #303133;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   font-weight: 500;
+  line-height: 1.4;
+}
+
+.task-desc {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 12px;
   line-height: 1.4;
 }
 
@@ -230,68 +432,43 @@ const handleStatusChange = (task, newStatus) => {
   color: #f56c6c;
 }
 
+.deliverables {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #dcdfe6;
+}
+
+.deliverable-title {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 8px;
+}
+
+.deliverable-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 8px 8px 0;
+}
+
+.submit-section {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f0f9ff;
+  border: 1px solid #b3e8ff;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.submit-tip {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #409eff;
+}
+
 .badge :deep(.el-badge__content) {
   background-color: transparent;
   color: inherit;
   border: none;
-}
-
-/* 移动端响应式样式 */
-@media (max-width: 768px) {
-  .board-container {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .board-column {
-    min-width: 100%;
-    width: 100%;
-  }
-
-  .column-header {
-    padding: 12px;
-  }
-
-  .column-title {
-    font-size: 14px;
-  }
-
-  .task-card {
-    padding: 12px;
-    margin-bottom: 10px;
-  }
-
-  .task-name {
-    font-size: 13px;
-  }
-
-  .task-meta {
-    font-size: 11px;
-  }
-
-  /* 对话框移动端优化 */
-  :deep(.el-dialog) {
-    width: 95% !important;
-    margin: 0 auto;
-  }
-
-  :deep(.el-dialog__body) {
-    padding: 16px;
-  }
-}
-
-/* 触摸设备优化 */
-@media (hover: none) and (pointer: coarse) {
-  .task-card {
-    min-height: 80px;
-  }
-
-  .task-card:active {
-    background: #f5f7fa;
-  }
-
-  .el-button {
-    min-height: 44px;
-  }
 }
 </style>

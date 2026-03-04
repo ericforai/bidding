@@ -32,6 +32,9 @@
           <el-button type="success" :icon="Coin" @click="handleRecordResult" v-if="canRecordResult">
             录入结果
           </el-button>
+          <el-button type="warning" :icon="DataAnalysis" @click="goToResultPage">
+            结果闭环
+          </el-button>
           <el-button
             type="info"
             :icon="MagicStick"
@@ -83,6 +86,43 @@
           </div>
         </el-card>
 
+        <!-- 费用汇总 -->
+        <el-card class="expense-card">
+          <template #header>
+            <div class="card-title">
+              <el-icon><Receipt /></el-icon>
+              <span>费用汇总</span>
+              <el-button link type="primary" @click="goToExpensePage">费用管理</el-button>
+            </div>
+          </template>
+          <el-table :data="projectExpenses" stripe size="small">
+            <el-table-column prop="type" label="费用类型" width="100">
+              <template #default="{ row }">
+                <el-tag size="small" :type="getExpenseTypeColor(row.type)">
+                  {{ row.type }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="amount" label="金额" width="100" align="right">
+              <template #default="{ row }">
+                ¥{{ row.amount }}万
+              </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态" width="80">
+              <template #default="{ row }">
+                <el-tag size="small" :type="getExpenseStatusType(row.status)">
+                  {{ getExpenseStatusLabel(row.status) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="date" label="日期" width="110" />
+            <el-table-column prop="remark" label="说明" min-width="120" />
+          </el-table>
+          <div class="expense-total">
+            <span>合计：¥{{ expenseTotal }}万元</span>
+          </div>
+        </el-card>
+
         <!-- 任务看板 -->
         <el-card class="task-card">
           <template #header>
@@ -90,12 +130,19 @@
               <el-icon><List /></el-icon>
               <span>任务看板</span>
               <el-button link type="primary" :icon="Plus" @click="handleAddTask">添加任务</el-button>
+              <el-button link type="warning" @click="handleResetTasks">重置任务</el-button>
             </div>
           </template>
           <TaskBoard
             :tasks="project?.tasks || []"
+            :project-id="project?.id"
+            :can-generate="!project?.tasks || project.tasks.length === 0"
             @task-click="handleTaskClick"
             @status-change="handleTaskStatusChange"
+            @generate-tasks="handleGenerateTasks"
+            @add-deliverable="handleAddDeliverable"
+            @remove-deliverable="handleRemoveDeliverable"
+            @submit-to-document="handleSubmitToDocument"
           />
         </el-card>
 
@@ -1141,7 +1188,8 @@ import {
   Edit, DocumentChecked, Coin, InfoFilled, List, Folder, Upload, Plus,
   MagicStick, Operation, DocumentAdd, Share, Download, Bell, Clock,
   Document, CircleCheckFilled, MoreFilled, Delete, UploadFilled, VideoPlay,
-  WarningFilled, QuestionFilled, ArrowRight, CircleCheck, CircleClose, Warning, User
+  WarningFilled, QuestionFilled, ArrowRight, CircleCheck, CircleClose, Warning, User,
+  DataAnalysis
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import TaskBoard from '@/components/common/TaskBoard.vue'
@@ -1276,6 +1324,60 @@ const submitForm = ref({
 // 模板数据
 const templates = ref(mockData.templates || [])
 
+// 任务模板 - 根据不同项目类型自动生成任务
+const taskTemplates = {
+  // 政府类项目
+  government: [
+    { id: 'GT01', name: '招标文件研读', description: '仔细阅读招标文件，标记关键要求', owner: '项目经理', priority: 'high', deadlineOffset: 1, needsDeliverable: false },
+    { id: 'GT02', name: '资质文件准备', description: '准备营业执照、ISO认证、相关资质证书', owner: '行政专员', priority: 'high', deadlineOffset: 3, needsDeliverable: true, deliverableType: 'qualification' },
+    { id: 'GT03', name: '技术方案编制', description: '根据招标要求编制技术方案', owner: '技术负责人', priority: 'high', deadlineOffset: 7, needsDeliverable: true, deliverableType: 'technical' },
+    { id: 'GT04', name: '商务应答编制', description: '编制商务条款应答文件', owner: '商务负责人', priority: 'high', deadlineOffset: 7, needsDeliverable: true, deliverableType: 'document' },
+    { id: 'GT05', name: '报价单制作', description: '根据招标要求制作报价单', owner: '财务', priority: 'high', deadlineOffset: 5, needsDeliverable: true, deliverableType: 'quotation' },
+    { id: 'GT06', name: '合同条款审核', description: '法务审核合同条款', owner: '法务', priority: 'medium', deadlineOffset: 5, needsDeliverable: false },
+    { id: 'GT07', name: '内部评审', description: '组织内部评审会议', owner: '项目经理', priority: 'high', deadlineOffset: 8, needsDeliverable: false },
+    { id: 'GT08', name: '标书装订封装', description: '按招标要求装订封装标书', owner: '行政专员', priority: 'medium', deadlineOffset: 9, needsDeliverable: false }
+  ],
+  // 能源类项目
+  energy: [
+    { id: 'ET01', name: '招标文件分析', description: '分析技术要求和评分标准', owner: '项目经理', priority: 'high', deadlineOffset: 1, needsDeliverable: false },
+    { id: 'ET02', name: '资质文件审核', description: '确认相关行业资质', owner: '行政专员', priority: 'high', deadlineOffset: 2, needsDeliverable: true, deliverableType: 'qualification' },
+    { id: 'ET03', name: '技术方案设计', description: '设计符合能源行业要求的技术方案', owner: '技术总监', priority: 'high', deadlineOffset: 6, needsDeliverable: true, deliverableType: 'technical' },
+    { id: 'ET04', name: '产品选型', description: '确定投标产品型号和参数', owner: '产品经理', priority: 'high', deadlineOffset: 4, needsDeliverable: true, deliverableType: 'document' },
+    { id: 'ET05', name: '报价测算', description: '测算项目成本和投标报价', owner: '财务', priority: 'high', deadlineOffset: 5, needsDeliverable: true, deliverableType: 'quotation' },
+    { id: 'ET06', name: '技术偏离表编制', description: '编制技术响应偏离表', owner: '技术负责人', priority: 'medium', deadlineOffset: 6, needsDeliverable: false },
+    { id: 'ET07', name: '商务偏离表编制', description: '编制商务条款偏离表', owner: '商务负责人', priority: 'medium', deadlineOffset: 6, needsDeliverable: false },
+    { id: 'ET08', name: '内部评审', description: '组织技术和商务联合评审', owner: '项目经理', priority: 'high', deadlineOffset: 7, needsDeliverable: false }
+  ],
+  // 交通类项目
+  traffic: [
+    { id: 'TT01', name: '招标文件解读', description: '解读招标文件技术规范', owner: '项目经理', priority: 'high', deadlineOffset: 1, needsDeliverable: false },
+    { id: 'TT02', name: '行业资质确认', description: '确认交通行业相关资质', owner: '行政专员', priority: 'high', deadlineOffset: 2, needsDeliverable: true, deliverableType: 'qualification' },
+    { id: 'TT03', name: '系统方案设计', description: '设计自动化系统整体方案', owner: '技术总监', priority: 'high', deadlineOffset: 7, needsDeliverable: true, deliverableType: 'technical' },
+    { id: 'TT04', name: '设备清单编制', description: '编制设备材料清单', owner: '技术负责人', priority: 'medium', deadlineOffset: 5, needsDeliverable: true, deliverableType: 'document' },
+    { id: 'TT05', name: '项目实施计划', description: '编制项目实施进度计划', owner: '项目助理', priority: 'medium', deadlineOffset: 5, needsDeliverable: false },
+    { id: 'TT06', name: '报价分析', description: '分析竞争对手报价策略', owner: '商务经理', priority: 'high', deadlineOffset: 4, needsDeliverable: true, deliverableType: 'quotation' },
+    { id: 'TT07', name: '综合评审', description: '组织综合评审', owner: '项目经理', priority: 'high', deadlineOffset: 8, needsDeliverable: false }
+  ],
+  // 默认模板
+  default: [
+    { id: 'DT01', name: '招标文件研读', description: '仔细阅读招标文件', owner: '项目经理', priority: 'high', deadlineOffset: 1, needsDeliverable: false },
+    { id: 'DT02', name: '资质文件准备', description: '准备相关资质文件', owner: '行政专员', priority: 'high', deadlineOffset: 3, needsDeliverable: true, deliverableType: 'qualification' },
+    { id: 'DT03', name: '技术方案编制', description: '编制技术方案', owner: '技术负责人', priority: 'high', deadlineOffset: 6, needsDeliverable: true, deliverableType: 'technical' },
+    { id: 'DT04', name: '商务应答编制', description: '编制商务应答文件', owner: '商务负责人', priority: 'high', deadlineOffset: 6, needsDeliverable: true, deliverableType: 'document' },
+    { id: 'DT05', name: '报价单制作', description: '制作报价单', owner: '财务', priority: 'high', deadlineOffset: 4, needsDeliverable: true, deliverableType: 'quotation' },
+    { id: 'DT06', name: '内部评审', description: '组织内部评审', owner: '项目经理', priority: 'medium', deadlineOffset: 7, needsDeliverable: false }
+  ]
+}
+
+// 交付物类型映射
+const deliverableTypeMap = {
+  qualification: '资质文件',
+  technical: '技术方案',
+  document: '文档',
+  quotation: '报价单',
+  other: '其他'
+}
+
 // 项目动态
 const activities = ref([
   { id: 1, user: '小王', action: '创建了项目', time: '2025-02-20 10:00' },
@@ -1330,6 +1432,53 @@ const handleOpenAutoTasks = () => {
 
 const handleOpenMobileCard = () => {
   showMobileCard.value = true
+}
+
+// 项目费用 Mock 数据
+const projectExpenses = ref([
+  { type: '保证金', amount: 10, status: 'paid', date: '2025-02-20', remark: '投标保证金' },
+  { type: '标书费', amount: 0.05, status: 'paid', date: '2025-02-18', remark: '购买招标文件' },
+  { type: '差旅费', amount: 0.35, status: 'paid', date: '2025-02-22', remark: '现场踏勘（往返交通+住宿）' },
+  { type: '制作费', amount: 0.25, status: 'paid', date: '2025-02-25', remark: '标书打印装订' },
+  { type: '制作费', amount: 0.15, status: 'pending', date: '2025-03-01', remark: '技术方案绘制' },
+  { type: '公证费', amount: 0.08, status: 'pending', date: '2025-03-05', remark: '投标公证' },
+  { type: '其他', amount: 0.12, status: 'paid', date: '2025-02-28', remark: '快递费用' }
+])
+
+const expenseTotal = computed(() => {
+  return projectExpenses.value.reduce((sum, item) => sum + item.amount, 0).toFixed(2)
+})
+
+const getExpenseTypeColor = (type) => {
+  const map = {
+    '保证金': 'warning',
+    '标书费': 'success',
+    '差旅费': 'info',
+    '制作费': 'primary',
+    '公证费': 'danger',
+    '其他': ''
+  }
+  return map[type] || ''
+}
+
+const getExpenseStatusType = (status) => {
+  const map = {
+    'paid': 'success',
+    'pending': 'warning'
+  }
+  return map[status] || ''
+}
+
+const getExpenseStatusLabel = (status) => {
+  const map = {
+    'paid': '已支付',
+    'pending': '待支付'
+  }
+  return map[status] || status
+}
+
+const goToExpensePage = () => {
+  router.push('/resource/expense')
 }
 
 const project = computed(() => projectStore.currentProject)
@@ -1661,6 +1810,10 @@ const handleRecordResult = () => {
   resultDialogVisible.value = true
 }
 
+const goToResultPage = () => {
+  router.push('/resource/bid-result')
+}
+
 const handleUploadSuccess = (response, file) => {
   if (response.code === 200) {
     resultForm.value.noticeFile = response.data.url
@@ -1732,8 +1885,92 @@ const handleSaveResult = async () => {
   }
 }
 
+// 根据项目类型获取任务模板
+const getTaskTemplateByProject = (project) => {
+  const industry = project?.industry?.toLowerCase() || ''
+  if (industry.includes('政府') || industry.includes('gov')) {
+    return taskTemplates.government
+  } else if (industry.includes('能源') || industry.includes('电力') || industry.includes('energy')) {
+    return taskTemplates.energy
+  } else if (industry.includes('交通') || industry.includes('地铁') || industry.includes('traffic')) {
+    return taskTemplates.traffic
+  }
+  return taskTemplates.default
+}
+
+// 自动生成任务
+const handleGenerateTasks = () => {
+  if (!project.value) {
+    ElMessage.warning('项目信息未加载')
+    return
+  }
+
+  const template = getTaskTemplateByProject(project.value)
+  const deadline = new Date(project.value.deadline)
+
+  const newTasks = template.map((taskTemplate, index) => {
+    const taskDeadline = new Date(deadline)
+    taskDeadline.setDate(taskDeadline.getDate() - taskTemplate.deadlineOffset)
+
+    return {
+      id: `${project.value.id}_T${String(index + 1).padStart(3, '0')}`,
+      name: taskTemplate.name,
+      description: taskTemplate.description,
+      owner: taskTemplate.owner,
+      status: 'todo',
+      priority: taskTemplate.priority,
+      deadline: taskDeadline.toISOString().split('T')[0],
+      hasDeliverable: taskTemplate.needsDeliverable,
+      deliverableType: taskTemplate.deliverableType || 'other',
+      deliverables: []
+    }
+  })
+
+  // 更新项目任务
+  project.value.tasks = newTasks
+
+  // 添加动态记录
+  activities.value.unshift({
+    id: Date.now(),
+    user: userStore.userName,
+    action: `根据项目模板自动生成了 ${newTasks.length} 个任务`,
+    time: new Date().toLocaleString('zh-CN', { hour12: false })
+  })
+
+  ElMessage.success(`已自动生成 ${newTasks.length} 个任务`)
+}
+
 const handleAddTask = () => {
   ElMessage.info('添加任务功能开发中')
+}
+
+// 重置任务（用于演示）
+const handleResetTasks = () => {
+  ElMessageBox.confirm(
+    '确认重置所有任务？这将清空当前项目的所有任务数据。',
+    '重置确认',
+    {
+      confirmButtonText: '确认重置',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(() => {
+    if (project.value) {
+      project.value.tasks = []
+
+      // 添加动态记录
+      activities.value.unshift({
+        id: Date.now(),
+        user: userStore.userName,
+        action: '重置了项目任务',
+        time: new Date().toLocaleString('zh-CN', { hour12: false })
+      })
+
+      ElMessage.success('任务已重置，可以重新拆解任务')
+    }
+  }).catch(() => {
+    // 用户取消
+  })
 }
 
 const handleTaskClick = (task) => {
@@ -1741,9 +1978,118 @@ const handleTaskClick = (task) => {
   taskDialogVisible.value = true
 }
 
-const handleTaskStatusChange = async (taskId, newStatus) => {
-  await projectStore.updateTaskStatus(route.params.id, taskId, newStatus)
+const handleTaskStatusChange = async (task, newStatus) => {
+  // 更新任务状态
+  if (task) {
+    task.status = newStatus
+
+    // 添加动态记录
+    const statusText = { todo: '待办', doing: '进行中', review: '待审核', done: '已完成' }
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `将任务"${task.name}"状态更新为${statusText[newStatus] || newStatus}`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false })
+    })
+  }
+
+  await projectStore.updateTaskStatus(route.params.id, task?.id, newStatus)
   ElMessage.success('任务状态已更新')
+}
+
+// 添加交付物
+const handleAddDeliverable = (taskId, deliverable) => {
+  if (!project.value?.tasks) return
+
+  const task = project.value.tasks.find(t => t.id === taskId)
+  if (task) {
+    if (!task.deliverables) {
+      task.deliverables = []
+    }
+    task.deliverables.push(deliverable)
+    task.hasDeliverable = true
+
+    // 添加动态记录
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `为任务"${task.name}"上传了交付物: ${deliverable.name}`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false })
+    })
+
+    ElMessage.success('交付物已添加')
+  }
+}
+
+// 删除交付物
+const handleRemoveDeliverable = (taskId, deliverableId) => {
+  if (!project.value?.tasks) return
+
+  const task = project.value.tasks.find(t => t.id === taskId)
+  if (task && task.deliverables) {
+    const deliverable = task.deliverables.find(d => d.id === deliverableId)
+    task.deliverables = task.deliverables.filter(d => d.id !== deliverableId)
+
+    if (task.deliverables.length === 0) {
+      task.hasDeliverable = false
+    }
+
+    // 添加动态记录
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `删除了任务"${task.name}"的交付物: ${deliverable?.name}`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false })
+    })
+
+    ElMessage.success('交付物已删除')
+  }
+}
+
+// 提交至标书编写流程
+const handleSubmitToDocument = (projectId) => {
+  if (!project.value?.tasks) return
+
+  // 检查所有任务是否完成
+  const allCompleted = project.value.tasks.every(t => t.status === 'done')
+
+  if (!allCompleted) {
+    ElMessage.warning('请先完成所有任务后再提交至标书编写流程')
+    return
+  }
+
+  // 检查是否已有交付物
+  const tasksWithDeliverables = project.value.tasks.filter(t => t.deliverables && t.deliverables.length > 0)
+
+  if (tasksWithDeliverables.length === 0) {
+    ElMessage.warning('请至少上传一个任务的交付物后再提交')
+    return
+  }
+
+  ElMessageBox.confirm(
+    `所有任务已完成，确认提交至标书编写流程？\n\n已完成任务数: ${project.value.tasks.length}\n已上传交付物: ${tasksWithDeliverables.length} 个任务`,
+    '提交确认',
+    {
+      confirmButtonText: '确认提交',
+      cancelButtonText: '取消',
+      type: 'success'
+    }
+  ).then(() => {
+    // 发起标书编制流程
+    handleInitiateProcess()
+
+    // 添加动态记录
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: '所有任务已完成，提交至标书编写流程',
+      time: new Date().toLocaleString('zh-CN', { hour12: false })
+    })
+
+    ElMessage.success('已提交至标书编写流程，可开始编制标书')
+  }).catch(() => {
+    // 用户取消
+  })
 }
 
 const handleUpload = (file) => {
@@ -2081,6 +2427,7 @@ onMounted(async () => {
 
 .info-card,
 .task-card,
+.expense-card,
 .process-card,
 .document-card,
 .ai-card,
@@ -2156,6 +2503,17 @@ onMounted(async () => {
 
 .deliverables-section {
   margin-top: 16px;
+}
+
+/* 费用汇总样式 */
+.expense-total {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 0;
+  border-top: 1px solid #ebeef5;
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
 }
 
 .section-title {

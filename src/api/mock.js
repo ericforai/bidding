@@ -243,11 +243,11 @@ export const mockData = {
 
   // 费用台账
   fees: [
-    { id: 'F001', project: '某央企项目', type: '保证金', amount: 10, status: 'paid', date: '2025-02-20', returnDate: '2025-04-20' },
-    { id: 'F002', project: '华南电力', type: '标书费', amount: 0.05, status: 'pending', date: '2025-02-26', returnDate: null },
-    { id: 'F003', project: '深圳地铁', type: '保证金', amount: 16, status: 'returned', date: '2025-02-10', returnDate: '2025-02-22' },
-    { id: 'F004', project: '西部云', type: '差旅费', amount: 0.8, status: 'pending', date: '2025-02-25', returnDate: null },
-    { id: 'F005', project: '某央企项目', type: '标书费', amount: 0.05, status: 'paid', date: '2025-02-18', returnDate: null }
+    { id: 'F001', project: '某央企项目', type: '保证金', amount: 10, status: 'paid', date: '2025-02-20', returnDate: '2025-04-20', approvalStatus: 'approved' },
+    { id: 'F002', project: '华南电力', type: '标书费', amount: 0.05, status: 'pending', date: '2025-02-26', returnDate: null, approvalStatus: 'pending' },
+    { id: 'F003', project: '深圳地铁', type: '保证金', amount: 16, status: 'returned', date: '2025-02-10', returnDate: '2025-02-22', approvalStatus: 'approved' },
+    { id: 'F004', project: '西部云', type: '差旅费', amount: 0.8, status: 'pending', date: '2025-02-25', returnDate: null, approvalStatus: 'approved' },
+    { id: 'F005', project: '某央企项目', type: '标书费', amount: 0.05, status: 'paid', date: '2025-02-18', returnDate: null, approvalStatus: 'approved' }
   ],
 
   // 平台账户
@@ -1016,6 +1016,7 @@ mockData.barSites = [
     loginType: 'both', // password / ca / both
     status: 'active', // active / inactive / need_verify
     hasRisk: true,
+    riskLevel: 'medium', // high / medium / low
     lastVerifyTime: '2025-03-01',
     nextVerifyTime: '2025-03-15',
     remark: '需要IE浏览器，安装CA驱动插件',
@@ -1117,6 +1118,7 @@ mockData.barSites = [
     loginType: 'ca',
     status: 'active',
     hasRisk: true,
+    riskLevel: 'high', // high / medium / low
     lastVerifyTime: '2025-02-20',
     nextVerifyTime: '2025-03-20',
     remark: '仅支持CA登录，需要广东CA',
@@ -1158,6 +1160,7 @@ mockData.barSites = [
     loginType: 'password',
     status: 'inactive',
     hasRisk: false,
+    riskLevel: 'low', // high / medium / low
     lastVerifyTime: '2025-01-15',
     nextVerifyTime: '2025-04-15',
     remark: '账号密码丢失，正在找回中',
@@ -1262,6 +1265,7 @@ mockData.barSites = [
     loginType: 'ca',
     status: 'active',
     hasRisk: true,
+    riskLevel: 'high', // high / medium / low
     lastVerifyTime: '2025-02-25',
     nextVerifyTime: '2025-03-25',
     remark: '需要军队专用CA，办理周期较长',

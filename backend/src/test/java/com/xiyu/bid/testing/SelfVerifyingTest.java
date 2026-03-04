@@ -97,14 +97,21 @@ public abstract class SelfVerifyingTest {
     }
 
     /**
-     * 计数查询
+     * 计数查询 (仅支持简单条件，防止SQL注入)
      *
      * @param tableName 表名
-     * @param whereCondition WHERE条件
+     * @param whereCondition WHERE条件 (仅支持 "id = ?")
      * @param args 参数
      * @return 计数
+     * @throws IllegalArgumentException 如果whereCondition不是 "id = ?"
      */
     protected Integer count(String tableName, String whereCondition, Object... args) {
+        // 安全检查：只允许简单的id查询
+        if (!"id = ?".equals(whereCondition) && !"project_id = ?".equals(whereCondition)) {
+            throw new IllegalArgumentException(
+                "Only simple conditions like 'id = ?' or 'project_id = ?' are allowed for security"
+            );
+        }
         String sql = String.format("SELECT COUNT(*) FROM %s WHERE %s", tableName, whereCondition);
         return jdbcTemplate.queryForObject(sql, Integer.class, args);
     }

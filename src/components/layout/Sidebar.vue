@@ -254,6 +254,11 @@ const menuConfig = [
         path: '/resource/account',
         name: 'Account',
         meta: { title: '账户管理' }
+      },
+      {
+        path: '/resource/bid-result',
+        name: 'BidResult',
+        meta: { title: '结果闭环' }
       }
     ]
   },

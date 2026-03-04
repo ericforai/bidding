@@ -94,6 +94,12 @@ const routes = [
         component: () => import('@/views/Resource/Account.vue'),
         meta: { title: '账户管理' }
       },
+      {
+        path: 'resource/bid-result',
+        name: 'BidResult',
+        component: () => import('@/views/Resource/BidResult.vue'),
+        meta: { title: '投标结果闭环' }
+      },
       // BAR 投标资产台账
       {
         path: 'resource/bar',

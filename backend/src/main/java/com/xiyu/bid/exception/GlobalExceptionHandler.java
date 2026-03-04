@@ -1,0 +1,169 @@
+package com.xiyu.bid.exception;
+
+import com.xiyu.bid.dto.ApiResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import java.util.stream.Collectors;
+
+/**
+ * 全局异常处理器
+ * 统一处理所有异常，返回标准格式的错误响应
+ */
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    /**
+     * 处理参数校验异常 (@Valid)
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<Void>> handleValidationException(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request) {
+        String errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.joining("; "));
+
+        log.warn("参数校验失败 - URI: {}, Errors: {}", request.getRequestURI(), errors);
+
+        return ResponseEntity
+                .badRequest()
+                .body(ApiResponse.error(400, "参数校验失败: " + errors));
+    }
+
+    /**
+     * 处理约束违反异常 (@Validated)
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolationException(
+            ConstraintViolationException ex,
+            HttpServletRequest request) {
+        String errors = ex.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining("; "));
+
+        log.warn("约束校验失败 - URI: {}, Errors: {}", request.getRequestURI(), errors);
+
+        return ResponseEntity
+                .badRequest()
+                .body(ApiResponse.error(400, "参数校验失败: " + errors));
+    }
+
+    /**
+     * 处理认证异常
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuthenticationException(
+            AuthenticationException ex,
+            HttpServletRequest request) {
+        log.warn("认证失败 - URI: {}, IP: {}", request.getRequestURI(), getClientIp(request));
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(401, "认证失败，请重新登录"));
+    }
+
+    /**
+     * 处理授权异常
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(
+            AccessDeniedException ex,
+            HttpServletRequest request) {
+        log.warn("权限不足 - URI: {}, User: {}", request.getRequestURI(),
+                request.getUserPrincipal() != null ? request.getUserPrincipal().getName() : "anonymous");
+
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(403, "权限不足，无法访问该资源"));
+    }
+
+    /**
+     * 处理错误凭据异常
+     */
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBadCredentialsException(
+            BadCredentialsException ex,
+            HttpServletRequest request) {
+        log.warn("登录失败 - URI: {}, IP: {}", request.getRequestURI(), getClientIp(request));
+
+        // 使用通用错误消息，防止用户枚举攻击
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(401, "用户名或密码错误"));
+    }
+
+    /**
+     * 处理业务异常
+     */
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBusinessException(
+            BusinessException ex,
+            HttpServletRequest request) {
+        log.warn("业务异常 - URI: {}, Code: {}, Message: {}",
+            request.getRequestURI(), ex.getCode(), ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getCode(), ex.getMessage()));
+    }
+
+    /**
+     * 处理资源不存在异常
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(
+            ResourceNotFoundException ex,
+            HttpServletRequest request) {
+        log.warn("资源不存在 - URI: {}, Resource: {}",
+            request.getRequestURI(), ex.getResource());
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(404, "请求的资源不存在"));
+    }
+
+    /**
+     * 处理所有未捕获的异常
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<Void>> handleGlobalException(
+            Exception ex,
+            HttpServletRequest request) {
+        log.error("系统异常 - URI: {}, IP: {}, Message: {}",
+            request.getRequestURI(), getClientIp(request), ex.getMessage(), ex);
+
+        // 不暴露敏感信息给前端
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(500, "系统繁忙，请稍后重试"));
+    }
+
+    /**
+     * 获取客户端IP地址
+     */
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("X-Real-IP");
+        }
+        if (ip == null || ip.isEmpty()) {
+            ip = request.getRemoteAddr();
+        }
+        return ip;
+    }
+}

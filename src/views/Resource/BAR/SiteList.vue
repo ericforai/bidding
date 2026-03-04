@@ -60,10 +60,11 @@
           </el-select>
         </el-form-item>
         <el-form-item label="风险">
-          <el-select v-model="filterForm.hasRisk" placeholder="全部" clearable style="width: 120px">
+          <el-select v-model="filterForm.riskLevel" placeholder="全部" clearable style="width: 120px">
             <el-option label="全部" value="" />
-            <el-option label="有风险" value="true" />
-            <el-option label="无风险" value="false" />
+            <el-option label="高" value="high" />
+            <el-option label="中" value="medium" />
+            <el-option label="低" value="low" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -91,19 +92,19 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="region" label="地区" width="80" />
-        <el-table-column prop="industry" label="行业" width="80" />
-        <el-table-column label="登录方式" width="100">
+        <el-table-column prop="region" label="地区" width="100" />
+        <el-table-column prop="industry" label="行业" width="100" />
+        <el-table-column label="登录方式" width="120">
           <template #default="{ row }">
             <el-tag size="small">{{ getLoginTypeText(row.loginType) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="账号数" width="80" align="center">
+        <el-table-column label="账号数" width="100" align="center">
           <template #default="{ row }">
             {{ row.accounts?.length || 0 }}
           </template>
         </el-table-column>
-        <el-table-column label="UK数" width="100" align="center">
+        <el-table-column label="UK数" width="120" align="center">
           <template #default="{ row }">
             <span v-if="row.uks && row.uks.length > 0">
               {{ row.uks.length }} ({{ row.uks.filter(u => u.status === 'available').length }})
@@ -111,51 +112,50 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="80" align="center">
+        <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
             <div v-if="row.status === 'active'" class="status-dot status-active"></div>
             <div v-else class="status-dot status-inactive"></div>
           </template>
         </el-table-column>
-        <el-table-column label="风险" width="80" align="center">
+        <el-table-column label="风险" width="100" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.hasRisk" type="warning" size="small">风险</el-tag>
+            <span v-if="row.riskLevel === 'high'" class="risk-high">高</span>
+            <span v-else-if="row.riskLevel === 'medium'" class="risk-medium">中</span>
+            <span v-else-if="row.riskLevel === 'low'" class="risk-low">低</span>
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="lastVerifyTime" label="最近验证" width="110" />
-        <el-table-column label="操作" width="160" fixed="right" align="center">
+        <el-table-column prop="lastVerifyTime" label="最近验证" width="120" />
+        <el-table-column label="操作" width="230" fixed="right" align="center">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-tooltip content="查看详情" placement="top">
                 <el-button
                   :icon="View"
-                  circle
                   size="small"
-                  type="primary"
+                  link
                   @click="goToDetail(row.id)"
                 />
               </el-tooltip>
               <el-tooltip content="编辑" placement="top">
                 <el-button
                   :icon="Edit"
-                  circle
                   size="small"
-                  type="warning"
+                  link
                   @click="handleEdit(row)"
                 />
               </el-tooltip>
               <el-tooltip content="访问网站" placement="top">
                 <el-button
                   :icon="Link"
-                  circle
                   size="small"
-                  type="success"
+                  link
                   @click="handleVisitSite(row)"
                 />
               </el-tooltip>
               <el-dropdown trigger="click" @command="(cmd) => handleMoreAction(cmd, row)">
-                <el-button :icon="MoreFilled" circle size="small" />
+                <el-button :icon="MoreFilled" size="small" link />
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item command="verify" :icon="Setting">
@@ -266,7 +266,7 @@ const filterForm = ref({
   industry: '',
   loginType: '',
   status: '',
-  hasRisk: ''
+  riskLevel: ''
 })
 
 const pagination = ref({
@@ -312,9 +312,8 @@ const filteredSites = computed(() => {
   if (filterForm.value.status) {
     result = result.filter(s => s.status === filterForm.value.status)
   }
-  if (filterForm.value.hasRisk !== '') {
-    const hasRisk = filterForm.value.hasRisk === 'true'
-    result = result.filter(s => s.hasRisk === hasRisk)
+  if (filterForm.value.riskLevel) {
+    result = result.filter(s => s.riskLevel === filterForm.value.riskLevel)
   }
 
   pagination.value.total = result.length
@@ -343,7 +342,7 @@ const handleReset = () => {
     industry: '',
     loginType: '',
     status: '',
-    hasRisk: ''
+    riskLevel: ''
   }
   pagination.value.page = 1
 }
@@ -525,6 +524,21 @@ onMounted(async () => {
   background: #f56c6c;
 }
 
+.risk-high {
+  color: #f56c6c;
+  font-weight: 500;
+}
+
+.risk-medium {
+  color: #e6a23c;
+  font-weight: 500;
+}
+
+.risk-low {
+  color: #67c23a;
+  font-weight: 500;
+}
+
 .pagination-wrapper {
   margin-top: 16px;
   display: flex;
@@ -550,11 +564,19 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 0;
 }
 
-.action-buttons .el-button {
-  padding: 4px;
+.action-buttons :deep(.el-button) {
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+}
+
+.action-buttons :deep(.el-button .el-icon) {
+  width: 14px;
+  height: 14px;
 }
 
 .action-buttons .el-dropdown {

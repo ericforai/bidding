@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -37,6 +38,52 @@ public class ShadowInspector {
 
     private final JdbcTemplate jdbcTemplate;
     private final IAuditLogService auditLogService;
+
+    /**
+     * 允许的表名白名单 - 防止SQL注入
+     */
+    private static final Set<String> ALLOWED_TABLES = Set.of(
+        "collaboration_threads",
+        "comments",
+        "projects",
+        "tasks",
+        "tenders",
+        "qualifications",
+        "cases",
+        "templates",
+        "fees",
+        "platform_accounts",
+        "bar_assets",
+        "compliance_check_results",
+        "alert_rules",
+        "alert_history",
+        "calendar_events",
+        "competitors",
+        "competition_analyses",
+        "score_analyses",
+        "dimension_scores",
+        "roi_analyses",
+        "document_versions",
+        "document_sections",
+        "document_structures",
+        "assembly_templates",
+        "document_assemblies",
+        "audit_logs"
+    );
+
+    /**
+     * 验证表名是否在白名单中
+     *
+     * @param tableName 表名
+     * @throws IllegalArgumentException 如果表名不在白名单中
+     */
+    private void validateTable(String tableName) {
+        if (!ALLOWED_TABLES.contains(tableName)) {
+            throw new IllegalArgumentException(
+                "Table not allowed: " + tableName + ". This table is not in the allowed list."
+            );
+        }
+    }
 
     /**
      * 验证三层一致性
@@ -72,6 +119,7 @@ public class ShadowInspector {
      * 验证实体存在性
      */
     public void verifyExists(String tableName, Long entityId) {
+        validateTable(tableName);
         String sql = String.format("SELECT COUNT(*) FROM %s WHERE id = ?", tableName);
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, entityId);
 
@@ -85,6 +133,7 @@ public class ShadowInspector {
      * 验证实体不存在（删除后）
      */
     public void verifyNotExists(String tableName, Long entityId) {
+        validateTable(tableName);
         String sql = String.format("SELECT COUNT(*) FROM %s WHERE id = ?", tableName);
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, entityId);
 
@@ -125,6 +174,7 @@ public class ShadowInspector {
      * created_at 和 updated_at 应该符合预期
      */
     public void verifyTimestamps(String tableName, Long entityId, boolean shouldBeUpdated) {
+        validateTable(tableName);
         String sql = String.format("SELECT created_at, updated_at FROM %s WHERE id = ?", tableName);
         Map<String, Object> result = jdbcTemplate.queryForMap(sql, entityId);
 
@@ -148,6 +198,7 @@ public class ShadowInspector {
      * 验证软删除状态
      */
     public void verifySoftDeleted(String tableName, Long entityId, String deletedColumn) {
+        validateTable(tableName);
         String sql = String.format("SELECT %s FROM %s WHERE id = ?", deletedColumn, tableName);
         Boolean isDeleted = jdbcTemplate.queryForObject(sql, Boolean.class, entityId);
 
@@ -168,6 +219,7 @@ public class ShadowInspector {
             String fromStatus,
             String toStatus) {
 
+        validateTable(tableName);
         String sql = String.format("SELECT %s FROM %s WHERE id = ?", statusColumn, tableName);
         String currentStatus = jdbcTemplate.queryForObject(sql, String.class, entityId);
 
