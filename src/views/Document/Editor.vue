@@ -242,7 +242,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   ArrowLeft,
@@ -259,9 +259,13 @@ import {
   Loading
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { collaborationApi, projectsApi } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
+const currentStructureId = ref(null)
+const activeSectionId = ref(null)
+const isRemoteProjectId = computed(() => /^\d+$/.test(String(route.params.id || '')))
 
 // 项目信息
 const projectInfo = ref({
@@ -413,18 +417,141 @@ const sectionForm = ref({
 // 编辑章节ID
 const editingSectionId = ref('')
 
+const resolveSectionApiId = (section) => section?.apiId || section?.id
+
+const findFirstEditableSection = (sections) => {
+  for (const item of sections || []) {
+    if (item.type === 'section' || !item.children?.length) {
+      return item
+    }
+    const nested = findFirstEditableSection(item.children)
+    if (nested) return nested
+  }
+  return sections?.[0] || null
+}
+
+const selectSectionById = (id) => {
+  const section = findSectionById(id)
+  if (!section) return null
+  currentSection.value = section
+  activeSectionId.value = section.id
+  loadKnowledgeMatches(section.id)
+  return section
+}
+
+const buildSectionOrders = (sections, orders = {}) => {
+  ;(sections || []).forEach((item, index) => {
+    const apiId = resolveSectionApiId(item)
+    if (apiId && /^\d+$/.test(String(apiId))) {
+      orders[String(apiId)] = index + 1
+    }
+    if (item.children?.length) {
+      buildSectionOrders(item.children, orders)
+    }
+  })
+  return orders
+}
+
+const syncCurrentSectionReference = () => {
+  if (!activeSectionId.value) return
+  const latest = findSectionById(activeSectionId.value)
+  if (latest) {
+    currentSection.value = latest
+  }
+}
+
+const ensureEditorStructure = async (projectId) => {
+  if (!isRemoteProjectId.value) return null
+
+  try {
+    const result = await collaborationApi.editor.getStructure(projectId)
+    if (result?.success && result?.data?.id) {
+      return result.data
+    }
+  } catch (error) {
+    if (error?.response?.status && error.response.status !== 404) {
+      throw error
+    }
+  }
+
+  const created = await collaborationApi.editor.createStructure(projectId, {
+    name: `${projectInfo.value.name || '项目'} 文档结构`,
+  })
+  return created?.data || null
+}
+
+const loadProjectInfo = async (projectId) => {
+  try {
+    const result = await projectsApi.getDetail(projectId)
+    if (result?.success && result?.data) {
+      projectInfo.value = {
+        id: result.data.id,
+        name: result.data.name || projectInfo.value.name,
+      }
+    }
+  } catch (error) {
+    console.warn('加载项目详情失败，使用当前演示项目信息:', error.message)
+  }
+}
+
+const loadEditorData = async () => {
+  const projectId = route.params.id
+  await loadProjectInfo(projectId)
+
+  if (!isRemoteProjectId.value) {
+    const fallbackSection = findFirstEditableSection(sectionData.value.sections)
+    if (fallbackSection) {
+      selectSectionById(fallbackSection.id)
+    }
+    return
+  }
+
+  try {
+    const structure = await ensureEditorStructure(projectId)
+    currentStructureId.value = structure?.id || null
+    if (structure?.name) {
+      documentInfo.value.templateName = structure.name
+    }
+
+    const treeResult = await collaborationApi.editor.getEditorTree(projectId)
+    if (treeResult?.success) {
+      sectionData.value.sections = Array.isArray(treeResult.data) ? treeResult.data : []
+    }
+
+    const preferredSection = activeSectionId.value
+      ? findSectionById(activeSectionId.value)
+      : findFirstEditableSection(sectionData.value.sections)
+
+    if (preferredSection) {
+      selectSectionById(preferredSection.id)
+    } else {
+      currentSection.value = null
+      activeSectionId.value = null
+    }
+  } catch (error) {
+    console.warn('加载文档编辑器真实数据失败，保留演示数据:', error.message)
+    ElMessage.warning('文档结构加载失败，已保留演示数据')
+    const fallbackSection = findFirstEditableSection(sectionData.value.sections)
+    if (fallbackSection) {
+      selectSectionById(fallbackSection.id)
+    }
+  }
+}
+
 // 获取章节图标
 const getSectionIcon = (type) => {
   return type === 'folder' ? '📁' : '📄'
 }
 
 // 检查是否允许拖拽
-const checkAllowDrag = (node) => {
-  return true
-}
+const checkAllowDrag = (node) => true
 
 // 检查是否允许放置
 const checkAllowDrop = (draggingNode, dropNode, type) => {
+  if (isRemoteProjectId.value) {
+    if (type === 'inner') return false
+    return String(draggingNode.data.parentId || '') === String(dropNode.data.parentId || '')
+  }
   if (type === 'inner') {
     return dropNode.data.type === 'folder'
   }
@@ -433,10 +560,7 @@ const checkAllowDrop = (draggingNode, dropNode, type) => {
 
 // 点击章节节点
 const handleNodeClick = (data) => {
-  if (data.type === 'section') {
-    currentSection.value = data
-    loadKnowledgeMatches(data.id)
-  }
+  selectSectionById(data.id)
 }
 
 // 加载知识库匹配
@@ -505,7 +629,21 @@ const loadKnowledgeMatches = (sectionId) => {
 
 // 拖拽节点放置
 const handleNodeDrop = (draggingNode, dropNode, position) => {
-  ElMessage.success('章节顺序已更新')
+  if (!isRemoteProjectId.value || !currentStructureId.value) {
+    ElMessage.success('章节顺序已更新')
+    return
+  }
+
+  collaborationApi.editor.reorderSections(route.params.id, {
+    structureId: currentStructureId.value,
+    sectionOrders: buildSectionOrders(sectionData.value.sections),
+  }).then(() => {
+    syncCurrentSectionReference()
+    ElMessage.success('章节顺序已同步')
+  }).catch((error) => {
+    ElMessage.error(`章节排序同步失败: ${error.message}`)
+    loadEditorData()
+  })
 }
 
 // 缩放
@@ -737,6 +875,22 @@ const handleDeleteSection = (data) => {
   ElMessageBox.confirm('确定要删除该章节吗？', '确认删除', {
     type: 'warning'
   }).then(() => {
+    if (isRemoteProjectId.value && /^\d+$/.test(String(resolveSectionApiId(data)))) {
+      collaborationApi.editor.deleteSection(route.params.id, resolveSectionApiId(data))
+        .then(() => {
+          deleteSectionById(data.id)
+          ElMessage.success('章节已删除')
+          if (currentSection.value?.id === data.id) {
+            currentSection.value = findFirstEditableSection(sectionData.value.sections)
+            activeSectionId.value = currentSection.value?.id || null
+          }
+        })
+        .catch((error) => {
+          ElMessage.error(`删除章节失败: ${error.message}`)
+        })
+      return
+    }
+
     deleteSectionById(data.id)
     ElMessage.success('章节已删除')
     if (currentSection.value?.id === data.id) {
@@ -770,6 +924,23 @@ const handleConfirmSection = () => {
     return
   }
 
+  if (editingSectionId.value && isRemoteProjectId.value) {
+    const targetSection = findSectionById(editingSectionId.value)
+    collaborationApi.editor.updateSection(route.params.id, resolveSectionApiId(targetSection), {
+      title: sectionForm.value.name,
+    }).then((result) => {
+      if (targetSection) {
+        targetSection.name = result?.data?.name || sectionForm.value.name
+      }
+      syncCurrentSectionReference()
+      ElMessage.success('章节已重命名')
+      showSectionDialog.value = false
+    }).catch((error) => {
+      ElMessage.error(`重命名失败: ${error.message}`)
+    })
+    return
+  }
+
   if (editingSectionId.value) {
     // 重命名
     const section = findSectionById(editingSectionId.value)
@@ -777,6 +948,32 @@ const handleConfirmSection = () => {
       section.name = sectionForm.value.name
       ElMessage.success('章节已重命名')
     }
+  } else if (isRemoteProjectId.value && currentStructureId.value) {
+    const parent = sectionForm.value.parentId ? findSectionById(sectionForm.value.parentId) : null
+    collaborationApi.editor.createSection(route.params.id, {
+      structureId: currentStructureId.value,
+      parentId: parent ? resolveSectionApiId(parent) : null,
+      sectionType: parent ? 'SECTION' : 'CHAPTER',
+      title: sectionForm.value.name,
+      content: sectionForm.value.type === 'section' ? `## ${sectionForm.value.name}\n\n在此处添加内容...` : '',
+      orderIndex: parent?.children?.length ? parent.children.length + 1 : sectionData.value.sections.length + 1,
+    }).then((result) => {
+      const newSection = result?.data
+      if (!newSection) return
+
+      if (sectionForm.value.parentId && parent) {
+        if (!parent.children) parent.children = []
+        parent.children.push(newSection)
+      } else {
+        sectionData.value.sections.push(newSection)
+      }
+      selectSectionById(newSection.id)
+      ElMessage.success('章节已添加')
+      showSectionDialog.value = false
+    }).catch((error) => {
+      ElMessage.error(`添加章节失败: ${error.message}`)
+    })
+    return
   } else {
     // 添加新章节
     const newSection = {
@@ -829,21 +1026,40 @@ const handleExport = () => {
 }
 
 const handleSave = () => {
-  ElMessage.success('保存成功')
+  if (!currentSection.value) {
+    ElMessage.warning('请先选择要保存的章节')
+    return
+  }
+
+  if (!isRemoteProjectId.value || !/^\d+$/.test(String(resolveSectionApiId(currentSection.value)))) {
+    ElMessage.success('保存成功')
+    return
+  }
+
+  collaborationApi.editor.updateSection(route.params.id, resolveSectionApiId(currentSection.value), {
+    title: currentSection.value.name,
+    content: currentSection.value.content,
+    metadata: currentSection.value.metadata || '',
+    orderIndex: currentSection.value.orderIndex ?? 0,
+  }).then((result) => {
+    currentSection.value = {
+      ...currentSection.value,
+      ...(result?.data || {}),
+    }
+    activeSectionId.value = currentSection.value.id
+    syncCurrentSectionReference()
+    ElMessage.success('保存成功')
+  }).catch((error) => {
+    ElMessage.error(`保存失败: ${error.message}`)
+  })
 }
 
 onMounted(() => {
-  // 默认选中第一个章节
-  if (sectionData.value.sections.length > 0) {
-    const firstSection = sectionData.value.sections[0]
-    if (firstSection.type === 'section') {
-      currentSection.value = firstSection
-      loadKnowledgeMatches(firstSection.id)
-    } else if (firstSection.children && firstSection.children.length > 0) {
-      currentSection.value = firstSection.children[0]
-      loadKnowledgeMatches(firstSection.children[0].id)
-    }
-  }
+  loadEditorData()
+})
+
+watch(() => route.params.id, () => {
+  loadEditorData()
 })
 </script>
 

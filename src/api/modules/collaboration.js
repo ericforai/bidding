@@ -148,6 +148,83 @@ function getMockSections(projectId) {
   )
 }
 
+function normalizeEditorSection(item = {}) {
+  const children = Array.isArray(item.children) ? item.children.map(normalizeEditorSection) : []
+  const normalizedType = item.type || (children.length > 0 ? 'folder' : 'section')
+
+  return {
+    id: item.id,
+    apiId: item.apiId ?? item.id,
+    structureId: item.structureId ?? null,
+    parentId: item.parentId ?? null,
+    sectionType: item.sectionType || null,
+    name: item.name || item.title || '未命名章节',
+    type: normalizedType,
+    content: item.content || '',
+    orderIndex: item.orderIndex ?? 0,
+    metadata: item.metadata || '',
+    owner: item.owner || '',
+    dueDate: item.dueDate || '',
+    locked: Boolean(item.locked),
+    assignedBy: item.assignedBy || null,
+    lockedBy: item.lockedBy || null,
+    lockedAt: item.lockedAt || '',
+    children,
+  }
+}
+
+function normalizeApiEditorSection(item = {}) {
+  const children = Array.isArray(item.children) ? item.children.map(normalizeApiEditorSection) : []
+  return normalizeEditorSection({
+    id: String(item.id),
+    apiId: item.id,
+    structureId: item.structureId ?? null,
+    parentId: item.parentId ?? null,
+    sectionType: item.sectionType || 'SECTION',
+    name: item.title || '未命名章节',
+    type: children.length > 0 ? 'folder' : 'section',
+    content: item.content || '',
+    orderIndex: item.orderIndex ?? 0,
+    metadata: item.metadata || '',
+    owner: item.owner || '',
+    dueDate: item.dueDate || '',
+    locked: Boolean(item.locked),
+    assignedBy: item.assignedBy || null,
+    lockedBy: item.lockedBy || null,
+    lockedAt: item.lockedAt || '',
+    children,
+  })
+}
+
+function buildMockEditorDocument(projectId) {
+  const key = resolveMockProjectId(projectId)
+  const mockEditor = mockData.documentEditor?.[key]
+  const mockProject = mockData.projects.find((item) => String(item.id) === String(key)) || mockData.projects[0]
+
+  const sections = (mockEditor?.sections || []).map((section) =>
+    normalizeEditorSection({
+      id: section.id,
+      apiId: section.id,
+      name: section.name,
+      type: 'section',
+      content: section.content || `## ${section.name}\n\n在此处添加内容...`,
+      orderIndex: section.order ?? 0,
+      owner: section.owner || '',
+      dueDate: section.dueDate || '',
+      status: section.status || 'pending',
+    }),
+  )
+
+  return {
+    structureId: key,
+    projectId: key,
+    projectName: mockProject?.name || '演示项目',
+    templateId: mockEditor?.documentType || 'TPL_SMARTCITY',
+    templateName: mockEditor?.documentName || '演示文档',
+    sections,
+  }
+}
+
 export const collaborationApi = {
   async getThreads(params = {}) {
     if (isMockMode()) {
@@ -401,6 +478,49 @@ export const documentVersionsApi = {
 }
 
 export const documentEditorApi = {
+  async getEditorDocument(projectId) {
+    if (isMockMode()) {
+      return Promise.resolve({ success: true, data: buildMockEditorDocument(projectId) })
+    }
+    if (!isNumericId(projectId)) {
+      return Promise.resolve({
+        success: true,
+        data: buildMockEditorDocument(projectId),
+        message: '使用演示文档编辑数据',
+      })
+    }
+
+    try {
+      const [structureResponse, treeResponse] = await Promise.all([
+        documentEditorApi.getStructure(projectId),
+        documentEditorApi.getTree(projectId),
+      ])
+
+      const sections = Array.isArray(treeResponse?.data)
+        ? treeResponse.data.map(normalizeApiEditorSection)
+        : []
+
+      return {
+        success: true,
+        data: {
+          structureId: structureResponse?.data?.id ?? null,
+          projectId: Number(projectId),
+          projectName: '',
+          templateId: structureResponse?.data?.name || 'API_DOCUMENT',
+          templateName: structureResponse?.data?.name || '文档结构',
+          sections,
+        },
+      }
+    } catch (error) {
+      const fallback = buildMockEditorDocument(projectId)
+      return {
+        success: true,
+        data: fallback,
+        message: '使用演示文档编辑数据',
+      }
+    }
+  },
+
   async getStructure(projectId) {
     if (isMockMode()) {
       const editor = mockData.documentEditor?.[resolveMockProjectId(projectId)]
@@ -414,13 +534,91 @@ export const documentEditorApi = {
     return httpClient.get(`/api/documents/${projectId}/editor/structure`)
   },
 
+  async createStructure(projectId, data) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: {
+          id: `STRUCT-${Date.now()}`,
+          projectId,
+          name: data?.name || '演示文档结构',
+        },
+      })
+    }
+    if (!isNumericId(projectId)) return Promise.resolve(invalidIdMessage('project'))
+
+    return httpClient.post(`/api/documents/${projectId}/editor/structure`, {
+      projectId: Number(projectId),
+      name: data?.name || '文档结构',
+    })
+  },
+
+  async createSection(projectId, data) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: normalizeEditorSection({
+          id: `SEC-${Date.now()}`,
+          apiId: `SEC-${Date.now()}`,
+          structureId: data?.structureId || null,
+          parentId: data?.parentId || null,
+          name: data?.title || '新章节',
+          type: data?.sectionType === 'CHAPTER' ? 'folder' : 'section',
+          content: data?.content || '',
+          orderIndex: data?.orderIndex ?? 0,
+        }),
+      })
+    }
+    if (!isNumericId(projectId) || !isNumericId(data?.structureId)) return Promise.resolve(invalidIdMessage('project/structure'))
+
+    const response = await httpClient.post(`/api/documents/${projectId}/editor/sections`, {
+      ...data,
+      structureId: Number(data.structureId),
+      parentId: data?.parentId ? Number(data.parentId) : null,
+    })
+
+    return {
+      ...response,
+      data: normalizeApiEditorSection(response?.data),
+    }
+  },
+
   async updateSection(projectId, sectionId, data) {
     if (isMockMode()) {
-      return Promise.resolve({ success: true, data: { ...data, id: sectionId } })
+      return Promise.resolve({ success: true, data: normalizeEditorSection({ ...data, id: sectionId, apiId: sectionId }) })
     }
     if (!isNumericId(projectId) || !isNumericId(sectionId)) return Promise.resolve(invalidIdMessage('project/section'))
 
-    return httpClient.put(`/api/documents/${projectId}/editor/sections/${sectionId}`, data)
+    const response = await httpClient.put(`/api/documents/${projectId}/editor/sections/${sectionId}`, data)
+    return {
+      ...response,
+      data: normalizeApiEditorSection(response?.data),
+    }
+  },
+
+  async deleteSection(projectId, sectionId) {
+    if (isMockMode()) {
+      return Promise.resolve({ success: true })
+    }
+    if (!isNumericId(projectId) || !isNumericId(sectionId)) return Promise.resolve(invalidIdMessage('project/section'))
+
+    return httpClient.delete(`/api/documents/${projectId}/editor/sections/${sectionId}`)
+  },
+
+  async reorderSections(projectId, data) {
+    if (isMockMode()) {
+      return Promise.resolve({ success: true, data })
+    }
+    if (!isNumericId(projectId) || !isNumericId(data?.structureId)) return Promise.resolve(invalidIdMessage('project/structure'))
+
+    const normalizedOrders = Object.fromEntries(
+      Object.entries(data?.sectionOrders || {}).map(([sectionId, orderIndex]) => [Number(sectionId), orderIndex]),
+    )
+
+    return httpClient.put(`/api/documents/${projectId}/editor/sections/reorder`, {
+      structureId: Number(data.structureId),
+      sectionOrders: normalizedOrders,
+    })
   },
 
   async assignSection(projectId, data) {
@@ -507,6 +705,26 @@ export const documentEditorApi = {
     return {
       ...response,
       data: apiData.length > 0 ? apiData : getMockSections(projectId),
+    }
+  },
+
+  async getEditorTree(projectId) {
+    if (isMockMode()) {
+      return Promise.resolve({ success: true, data: buildMockEditorDocument(projectId).sections })
+    }
+    if (!isNumericId(projectId)) {
+      return Promise.resolve({
+        success: true,
+        data: buildMockEditorDocument(projectId).sections,
+        message: '使用演示章节树数据',
+      })
+    }
+
+    const response = await httpClient.get(`/api/documents/${projectId}/editor/sections/tree`)
+    const apiData = Array.isArray(response?.data) ? response.data.map(normalizeApiEditorSection) : []
+    return {
+      ...response,
+      data: apiData,
     }
   },
 }
