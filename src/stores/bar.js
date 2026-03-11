@@ -36,6 +36,35 @@ function computeCapability(site) {
   }
 }
 
+function buildAuditLog(verifications = [], certificates = [], attachments = []) {
+  const verifyLogs = verifications.map((item) => ({
+    time: item.verifiedAt || '',
+    user: item.verifiedBy || 'system',
+    action: item.message || '执行了站点验证',
+  }))
+
+  const borrowLogs = certificates.flatMap((certificate) => {
+    const records = Array.isArray(certificate.borrowRecords) ? certificate.borrowRecords : []
+    return records.map((record) => ({
+      time: record.returnedAt || record.borrowedAt || '',
+      user: record.borrower || '',
+      action: record.status === 'RETURNED'
+        ? `归还 ${certificate.type} (${certificate.serialNo})`
+        : `借用 ${certificate.type} (${certificate.serialNo})`,
+    }))
+  })
+
+  const attachmentLogs = attachments.map((item) => ({
+    time: item.uploadedAt || '',
+    user: item.uploadedBy || 'system',
+    action: `上传附件 ${item.name}`,
+  }))
+
+  return [...verifyLogs, ...borrowLogs, ...attachmentLogs]
+    .filter((item) => item.time || item.action)
+    .sort((left, right) => String(right.time).localeCompare(String(left.time)))
+}
+
 export const useBarStore = defineStore('bar', {
   state: () => ({
     sites: [],
@@ -53,27 +82,37 @@ export const useBarStore = defineStore('bar', {
     async getSites(params = {}) {
       this.loading = true
       try {
-      const response = await resourcesApi.barSites.getList(params)
-      if (!response?.success) {
+        const response = await resourcesApi.barSites.getList(params)
+        if (!response?.success) {
           return response
-      }
+        }
 
-      const sites = Array.isArray(response.data) ? response.data : []
-      if (!isMockMode()) {
+        const sites = Array.isArray(response.data) ? response.data : []
+        if (!isMockMode()) {
           const withCertificates = await Promise.all(sites.map(async (site) => {
-              const certificatesResponse = await resourcesApi.certificates.getList(site.id)
-              return {
-                  ...site,
-                  uks: certificatesResponse?.success && Array.isArray(certificatesResponse.data)
-                      ? certificatesResponse.data
-                      : [],
-              }
+            const accountsResponse = await resourcesApi.barSiteAccounts.getList(site.id)
+            const certificatesResponse = await resourcesApi.certificates.getList(site.id)
+            const verificationResponse = await resourcesApi.barSites.getVerificationRecords(site.id)
+            const verifications = verificationResponse?.success && Array.isArray(verificationResponse.data)
+              ? verificationResponse.data
+              : []
+            const accounts = accountsResponse?.success && Array.isArray(accountsResponse.data)
+              ? accountsResponse.data
+              : []
+            return {
+              ...site,
+              accounts,
+              uks: certificatesResponse?.success && Array.isArray(certificatesResponse.data)
+                ? certificatesResponse.data
+                : [],
+              lastVerifyTime: verifications[0]?.verifiedAt || site.lastVerifyTime,
+            }
           }))
           this.sites = withCertificates
-      } else {
+        } else {
           this.sites = sites
-      }
-      return { success: true, data: this.sites }
+        }
+        return { success: true, data: this.sites }
       } finally {
         this.loading = false
       }
@@ -93,12 +132,39 @@ export const useBarStore = defineStore('bar', {
 
       let site = response.data
       if (site && !isMockMode()) {
-        const certificatesResponse = await resourcesApi.certificates.getList(id)
+        const [accountsResponse, certificatesResponse, verificationResponse, sopResponse, attachmentsResponse] = await Promise.all([
+          resourcesApi.barSiteAccounts.getList(id),
+          resourcesApi.certificates.getList(id),
+          resourcesApi.barSites.getVerificationRecords(id),
+          resourcesApi.barSiteSop.get(id),
+          resourcesApi.barSiteAttachments.getList(id),
+        ])
+        const certificates = certificatesResponse?.success && Array.isArray(certificatesResponse.data)
+          ? certificatesResponse.data
+          : []
+        const certificatesWithRecords = await Promise.all(certificates.map(async (certificate) => {
+          const borrowRecordsResponse = await resourcesApi.certificates.getBorrowRecords(id, certificate.id)
+          return {
+            ...certificate,
+            borrowRecords: borrowRecordsResponse?.success && Array.isArray(borrowRecordsResponse.data)
+              ? borrowRecordsResponse.data
+              : [],
+          }
+        }))
+        const verifications = verificationResponse?.success && Array.isArray(verificationResponse.data)
+          ? verificationResponse.data
+          : []
+        const attachments = attachmentsResponse?.success && Array.isArray(attachmentsResponse.data)
+          ? attachmentsResponse.data
+          : []
         site = {
           ...site,
-          uks: certificatesResponse?.success && Array.isArray(certificatesResponse.data)
-            ? certificatesResponse.data
-            : [],
+          accounts: accountsResponse?.success && Array.isArray(accountsResponse.data) ? accountsResponse.data : [],
+          uks: certificatesWithRecords,
+          sop: sopResponse?.success ? sopResponse.data : null,
+          attachments,
+          lastVerifyTime: verifications[0]?.verifiedAt || site.lastVerifyTime,
+          auditLog: buildAuditLog(verifications, certificatesWithRecords, attachments),
         }
       }
 
@@ -182,10 +248,11 @@ export const useBarStore = defineStore('bar', {
 
     async addAccount(siteId, accountData) {
       if (!isMockMode()) {
-        return {
-          success: false,
-          message: '真实后端仅提供扁平 BAR 资产接口，站点账号子资源尚未接入',
+        const response = await resourcesApi.barSiteAccounts.create(siteId, accountData)
+        if (response?.success) {
+          await this.getSiteById(siteId)
         }
+        return response
       }
 
       const site = this.sites.find((item) => String(item.id) === String(siteId))
@@ -204,10 +271,11 @@ export const useBarStore = defineStore('bar', {
 
     async updateAccount(siteId, accountId, data) {
       if (!isMockMode()) {
-        return {
-          success: false,
-          message: '真实后端仅提供扁平 BAR 资产接口，站点账号子资源尚未接入',
+        const response = await resourcesApi.barSiteAccounts.update(siteId, accountId, data)
+        if (response?.success) {
+          await this.getSiteById(siteId)
         }
+        return response
       }
 
       const site = this.sites.find((item) => String(item.id) === String(siteId))
@@ -221,10 +289,11 @@ export const useBarStore = defineStore('bar', {
 
     async deleteAccount(siteId, accountId) {
       if (!isMockMode()) {
-        return {
-          success: false,
-          message: '真实后端仅提供扁平 BAR 资产接口，站点账号子资源尚未接入',
+        const response = await resourcesApi.barSiteAccounts.delete(siteId, accountId)
+        if (response?.success) {
+          await this.getSiteById(siteId)
         }
+        return response
       }
 
       const site = this.sites.find((item) => String(item.id) === String(siteId))
@@ -348,6 +417,46 @@ export const useBarStore = defineStore('bar', {
 
       this.updateSiteRisk(siteId)
       return { success: true, data: uk }
+    },
+
+    async updateSiteStatus(siteId, status) {
+      const response = await resourcesApi.barSites.updateStatus(siteId, status)
+      if (response?.success) {
+        await this.getSiteById(siteId)
+      }
+      return response
+    },
+
+    async verifySite(siteId, payload = {}) {
+      const response = await resourcesApi.barSites.verify(siteId, payload)
+      if (response?.success) {
+        await this.getSiteById(siteId)
+      }
+      return response
+    },
+
+    async updateSop(siteId, sop) {
+      const response = await resourcesApi.barSiteSop.update(siteId, sop)
+      if (response?.success) {
+        await this.getSiteById(siteId)
+      }
+      return response
+    },
+
+    async addAttachment(siteId, attachment) {
+      const response = await resourcesApi.barSiteAttachments.create(siteId, attachment)
+      if (response?.success) {
+        await this.getSiteById(siteId)
+      }
+      return response
+    },
+
+    async deleteAttachment(siteId, attachmentId) {
+      const response = await resourcesApi.barSiteAttachments.delete(siteId, attachmentId)
+      if (response?.success) {
+        await this.getSiteById(siteId)
+      }
+      return response
     },
 
     updateSiteRisk(siteId) {

@@ -194,7 +194,7 @@
         <template #header>
           <div class="card-header">
             <span class="card-title">附件材料</span>
-            <el-button type="primary" size="small">上传</el-button>
+            <el-button type="primary" size="small" @click="handleUploadAttachment">上传</el-button>
           </div>
         </template>
         <div class="attachment-list">
@@ -423,11 +423,16 @@ const isExpiringSoon = (date) => {
   return daysLeft <= 30 && daysLeft > 0
 }
 
-const handleEdit = () => {
+const handleEdit = async () => {
   if (!site.value) return
-  site.value = {
+  const nextRemark = `${site.value.remark || '维护记录'}；${new Date().toLocaleDateString('zh-CN')} 已完成站点信息校正`
+  const response = await barStore.updateSite(site.value.id, {
     ...site.value,
-    remark: `${site.value.remark || '演示维护记录'}；${new Date().toLocaleDateString('zh-CN')} 已完成站点信息校正`
+    remark: nextRemark,
+  })
+  if (!response?.success) {
+    ElMessage.error(response?.message || '站点更新失败')
+    return
   }
   site.value.auditLog = Array.isArray(site.value.auditLog) ? site.value.auditLog : []
   site.value.auditLog.unshift({
@@ -436,10 +441,10 @@ const handleEdit = () => {
     action: '更新了站点基础信息'
   })
   persistSitePatch(site.value.id, {
-    remark: site.value.remark,
     auditLog: site.value.auditLog,
   })
-  ElMessage.success(`已保存站点「${site.value?.name || ''}」演示修改`)
+  await refreshSite()
+  ElMessage.success(`已保存站点「${site.value?.name || ''}」修改`)
 }
 
 const handleDelete = async () => {
@@ -610,6 +615,23 @@ const handleBorrowConfirm = async (data) => {
 
 const goToSOP = () => {
   router.push(`/resource/bar/sop/${site.value.id}`)
+}
+
+const handleUploadAttachment = async () => {
+  if (!site.value) return
+  const response = await barStore.addAttachment(site.value.id, {
+    name: `${site.value.name}_附件_${Date.now()}.pdf`,
+    size: '128KB',
+    contentType: 'application/pdf',
+    uploadedBy: '李总',
+    url: '',
+  })
+  if (!response?.success) {
+    ElMessage.error(response?.message || '附件上传失败')
+    return
+  }
+  await refreshSite()
+  ElMessage.success('附件已上传')
 }
 
 const refreshSite = async () => {

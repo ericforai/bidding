@@ -225,6 +225,55 @@ function normalizeBarSite(item = {}) {
   }
 }
 
+function normalizeBarSiteAccount(item = {}) {
+  return {
+    id: item.id,
+    username: item.username || '',
+    role: item.role || 'viewer',
+    owner: item.owner || '',
+    phone: item.phone || '',
+    email: item.email || '',
+    status: item.status || 'active',
+    raw: item,
+  }
+}
+
+function normalizeBarSiteAttachment(item = {}) {
+  return {
+    id: item.id,
+    name: item.name || '',
+    size: item.size || '',
+    contentType: item.contentType || '',
+    url: item.url || '',
+    uploadedBy: item.uploadedBy || '',
+    uploadedAt: formatDateTime(item.uploadedAt),
+    raw: item,
+  }
+}
+
+function normalizeBarVerification(item = {}) {
+  return {
+    id: item.id,
+    verifiedBy: item.verifiedBy || '',
+    verifiedAt: formatDateTime(item.verifiedAt),
+    status: String(item.status || '').toUpperCase() || 'SUCCESS',
+    message: item.message || '',
+    raw: item,
+  }
+}
+
+function normalizeBarSop(item = {}) {
+  return {
+    resetUrl: item.resetUrl || '',
+    unlockUrl: item.unlockUrl || '',
+    contacts: Array.isArray(item.contacts) ? item.contacts : [],
+    requiredDocs: Array.isArray(item.requiredDocs) ? item.requiredDocs : [],
+    faqs: Array.isArray(item.faqs) ? item.faqs : [],
+    history: Array.isArray(item.history) ? item.history : [],
+    estimatedTime: item.estimatedTime || '',
+  }
+}
+
 function createBarAssetPayload(site = {}) {
   const parsedValue = Number(site.assetValue || 1)
   return {
@@ -534,6 +583,51 @@ export const barSitesApi = {
     return { ...response, data: normalizeBarSite(response?.data) }
   },
 
+  async updateStatus(id, status) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: { id, status: status === 'inactive' ? 'inactive' : 'active' },
+      })
+    }
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('bar asset'))
+
+    const response = await httpClient.patch(`/api/resources/bar-assets/${id}/status`, { status })
+    return { ...response, data: normalizeBarSite(response?.data) }
+  },
+
+  async verify(id, payload = {}) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: normalizeBarVerification({
+          id: `VERIFY-${Date.now()}`,
+          verifiedBy: payload.verifiedBy || 'system',
+          verifiedAt: new Date().toISOString(),
+          status: payload.status || 'SUCCESS',
+          message: payload.message || '站点连通性校验通过',
+        }),
+      })
+    }
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('bar asset'))
+
+    const response = await httpClient.post(`/api/resources/bar-assets/${id}/verify`, payload)
+    return { ...response, data: normalizeBarVerification(response?.data) }
+  },
+
+  async getVerificationRecords(id) {
+    if (isMockMode()) {
+      return Promise.resolve({ success: true, data: [] })
+    }
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('bar asset'))
+
+    const response = await httpClient.get(`/api/resources/bar-assets/${id}/verification-records`)
+    return {
+      ...response,
+      data: Array.isArray(response?.data) ? response.data.map(normalizeBarVerification) : [],
+    }
+  },
+
   async delete(id) {
     if (isMockMode()) {
       return Promise.resolve({ success: true })
@@ -541,6 +635,121 @@ export const barSitesApi = {
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('bar asset'))
 
     return httpClient.delete(`/api/resources/bar-assets/${id}`)
+  },
+}
+
+export const barSiteAccountsApi = {
+  async getList(siteId) {
+    if (isMockMode()) {
+      const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
+      return Promise.resolve({ success: true, data: site?.accounts || [] })
+    }
+    if (!isNumericId(siteId)) {
+      const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
+      return Promise.resolve({ success: true, data: site?.accounts || [] })
+    }
+
+    const response = await httpClient.get(`/api/resources/bar-assets/${siteId}/accounts`)
+    return {
+      ...response,
+      data: Array.isArray(response?.data) ? response.data.map(normalizeBarSiteAccount) : [],
+    }
+  },
+
+  async create(siteId, data) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: { id: `A${Date.now()}`, status: 'active', ...data },
+      })
+    }
+    if (!isNumericId(siteId)) return Promise.resolve(invalidIdMessage('bar asset'))
+
+    const response = await httpClient.post(`/api/resources/bar-assets/${siteId}/accounts`, data)
+    return { ...response, data: normalizeBarSiteAccount(response?.data) }
+  },
+
+  async update(siteId, accountId, data) {
+    if (isMockMode()) {
+      return Promise.resolve({ success: true, data: { ...data, id: accountId } })
+    }
+    if (!isNumericId(siteId) || !isNumericId(accountId)) return Promise.resolve(invalidIdMessage('bar site account'))
+
+    const response = await httpClient.put(`/api/resources/bar-assets/${siteId}/accounts/${accountId}`, data)
+    return { ...response, data: normalizeBarSiteAccount(response?.data) }
+  },
+
+  async delete(siteId, accountId) {
+    if (isMockMode()) {
+      return Promise.resolve({ success: true })
+    }
+    if (!isNumericId(siteId) || !isNumericId(accountId)) return Promise.resolve(invalidIdMessage('bar site account'))
+
+    return httpClient.delete(`/api/resources/bar-assets/${siteId}/accounts/${accountId}`)
+  },
+}
+
+export const barSiteSopApi = {
+  async get(siteId) {
+    if (isMockMode()) {
+      const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
+      return Promise.resolve({ success: true, data: site?.sop || null })
+    }
+    if (!isNumericId(siteId)) {
+      const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
+      return Promise.resolve({ success: true, data: site?.sop || null })
+    }
+
+    const response = await httpClient.get(`/api/resources/bar-assets/${siteId}/sop`)
+    return { ...response, data: normalizeBarSop(response?.data || {}) }
+  },
+
+  async update(siteId, data) {
+    if (isMockMode()) {
+      return Promise.resolve({ success: true, data })
+    }
+    if (!isNumericId(siteId)) return Promise.resolve(invalidIdMessage('bar asset'))
+
+    const response = await httpClient.put(`/api/resources/bar-assets/${siteId}/sop`, data)
+    return { ...response, data: normalizeBarSop(response?.data || {}) }
+  },
+}
+
+export const barSiteAttachmentsApi = {
+  async getList(siteId) {
+    if (isMockMode()) {
+      const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
+      return Promise.resolve({ success: true, data: site?.attachments || [] })
+    }
+    if (!isNumericId(siteId)) {
+      const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
+      return Promise.resolve({ success: true, data: site?.attachments || [] })
+    }
+
+    const response = await httpClient.get(`/api/resources/bar-assets/${siteId}/attachments`)
+    return {
+      ...response,
+      data: Array.isArray(response?.data) ? response.data.map(normalizeBarSiteAttachment) : [],
+    }
+  },
+
+  async create(siteId, data) {
+    if (isMockMode()) {
+      return Promise.resolve({ success: true, data: { id: `ATT-${Date.now()}`, ...data } })
+    }
+    if (!isNumericId(siteId)) return Promise.resolve(invalidIdMessage('bar asset'))
+
+    const response = await httpClient.post(`/api/resources/bar-assets/${siteId}/attachments`, data)
+    return { ...response, data: normalizeBarSiteAttachment(response?.data) }
+  },
+
+  async delete(siteId, attachmentId) {
+    if (isMockMode()) {
+      return Promise.resolve({ success: true })
+    }
+    if (!isNumericId(siteId) || !isNumericId(attachmentId)) return Promise.resolve(invalidIdMessage('bar site attachment'))
+
+    return httpClient.delete(`/api/resources/bar-assets/${siteId}/attachments/${attachmentId}`)
   },
 }
 
@@ -746,6 +955,9 @@ export const expensesApi = {
 export default {
   accounts: accountsApi,
   barSites: barSitesApi,
+  barSiteAccounts: barSiteAccountsApi,
+  barSiteSop: barSiteSopApi,
+  barSiteAttachments: barSiteAttachmentsApi,
   certificates: barCertificatesApi,
   expenses: expensesApi,
 }

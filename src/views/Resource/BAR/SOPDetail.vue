@@ -185,19 +185,31 @@ const downloadTextFile = (filename, content, mimeType = 'text/plain;charset=utf-
 
 const handleEdit = () => {
   if (!site.value?.sop) return
-  site.value.sop.history = Array.isArray(site.value.sop.history) ? site.value.sop.history : []
-  site.value.sop.history.unshift({
+  const nextHistory = Array.isArray(site.value.sop.history) ? [...site.value.sop.history] : []
+  nextHistory.unshift({
     date: new Date().toLocaleString('zh-CN', { hour12: false }),
     action: '更新了 SOP 联系方式与所需材料',
     user: '李总',
     duration: '10分钟'
   })
-  persistSitePatch(site.value.id, {
-    sop: {
-      history: site.value.sop.history,
-    },
+  const nextSop = {
+    ...site.value.sop,
+    history: nextHistory,
+  }
+  barStore.updateSop(site.value.id, nextSop).then(async (response) => {
+    if (!response?.success) {
+      ElMessage.error(response?.message || 'SOP 保存失败')
+      return
+    }
+    persistSitePatch(site.value.id, {
+      sop: {
+        history: nextHistory,
+      },
+    })
+    const latestSite = await barStore.getSiteById(route.params.siteId)
+    site.value = applySitePersistence(latestSite)
+    ElMessage.success(`已保存「${site.value?.name || '当前站点'}」SOP 修改`)
   })
-  ElMessage.success(`已保存「${site.value?.name || '当前站点'}」SOP 演示修改`)
 }
 
 const handleExport = () => {
@@ -208,7 +220,7 @@ const handleExport = () => {
     `预计时长：${site.value?.sop?.estimatedTime || '-'}`,
   ].join('\n')
   downloadTextFile(`${site.value?.name || '站点'}_找回SOP.txt`, content)
-  ElMessage.success(`已导出演示 SOP：${site.value?.name || '站点'}_找回SOP.txt`)
+  ElMessage.success(`已导出 SOP：${site.value?.name || '站点'}_找回SOP.txt`)
 }
 
 onMounted(async () => {

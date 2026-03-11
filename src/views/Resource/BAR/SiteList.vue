@@ -158,13 +158,13 @@
                 <el-button :icon="MoreFilled" size="small" link />
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item v-if="showDemoOnlyActions" command="verify" :icon="Setting">
+                    <el-dropdown-item command="verify" :icon="Setting">
                       立即验证
                     </el-dropdown-item>
                     <el-dropdown-item command="copy" :icon="CopyDocument">
                       复制站点信息
                     </el-dropdown-item>
-                    <el-dropdown-item v-if="showDemoOnlyActions" command="toggle" :icon="View">
+                    <el-dropdown-item command="toggle" :icon="View">
                       {{ row.status === 'active' ? '禁用站点' : '启用站点' }}
                     </el-dropdown-item>
                     <el-dropdown-item divided command="delete" :icon="Delete" style="color: #f56c6c">
@@ -433,7 +433,18 @@ const handleVisitSite = (site) => {
 const handleMoreAction = async (command, site) => {
   switch (command) {
     case 'verify':
-      ElMessage.success(`站点「${site.name}」验证通过`)
+      {
+        const response = await barStore.verifySite(site.id, {
+          verifiedBy: '李总',
+          status: 'SUCCESS',
+          message: `站点「${site.name}」验证通过`,
+        })
+        if (!response?.success) {
+          ElMessage.error(response?.message || '站点验证失败')
+          return
+        }
+        ElMessage.success(`站点「${site.name}」验证通过`)
+      }
       break
     case 'copy':
       const siteInfo = `站点名称：${site.name}\n网址：${site.url}\n地区：${site.region}\n行业：${site.industry}`
@@ -444,8 +455,16 @@ const handleMoreAction = async (command, site) => {
       })
       break
     case 'toggle':
-      site.status = site.status === 'active' ? 'disabled' : 'active'
-      ElMessage.success(`已${site.status === 'active' ? '启用' : '停用'}站点：${site.name}`)
+      {
+        const nextStatus = site.status === 'active' ? 'inactive' : 'active'
+        const response = await barStore.updateSiteStatus(site.id, nextStatus)
+        if (!response?.success) {
+          ElMessage.error(response?.message || '站点状态更新失败')
+          return
+        }
+        await barStore.getSites()
+        ElMessage.success(`已${nextStatus === 'active' ? '启用' : '停用'}站点：${site.name}`)
+      }
       break
     case 'delete':
       await handleDelete(site)
