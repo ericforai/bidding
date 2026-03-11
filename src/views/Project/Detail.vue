@@ -850,12 +850,12 @@
 
     <VersionControl
       v-model="showVersionControl"
-      :project-id="route.params.id"
+      :project-id="dialogProjectId"
     />
 
     <CollaborationCenter
       v-model="showCollaboration"
-      :project-id="route.params.id"
+      :project-id="dialogProjectId"
     />
 
     <ROIAnalysis
@@ -1503,6 +1503,8 @@ const project = computed(() => {
   const routeProjectId = String(route.params.id || '')
   return mockData.projects.find((item) => String(item.id) === routeProjectId) || null
 })
+
+const dialogProjectId = computed(() => project.value?.id ?? route.params.id)
 
 const canSubmit = computed(() => {
   return project.value?.status === 'drafting' || project.value?.status === 'reviewing'

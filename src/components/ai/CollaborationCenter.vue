@@ -181,42 +181,57 @@ const users = computed(() =>
 const chapters = ref([])
 const changeHistory = ref([])
 
+const flattenSections = (sections = []) => sections.flatMap((section) => {
+  const normalized = {
+    ...section,
+    chapter: section.chapter || section.title || section.name || '未命名章节',
+    owner: section.owner || '',
+    dueDate: section.dueDate || '',
+    locked: Boolean(section.locked),
+    status: section.status || (section.owner ? 'editing' : 'pending'),
+  }
+  return [normalized, ...flattenSections(section.children || [])]
+})
+
+const resolveUserIdByName = (name) => {
+  const matchedUser = (userStore.users || []).find((user) => user.name === name)
+  return matchedUser?.id ?? userStore.currentUser?.id ?? null
+}
+
 const loadData = async () => {
   if (!props.projectId) return
 
   loading.value = true
 
-  const [treeResponse, threadResponse] = await Promise.all([
-    collaborationApi.editor.getTree(props.projectId),
-    collaborationApi.collaboration.getThreads({ projectId: props.projectId }),
-  ])
+  try {
+    const [treeResponse, threadResponse] = await Promise.all([
+      collaborationApi.editor.getTree(props.projectId),
+      collaborationApi.collaboration.getThreads({ projectId: props.projectId }),
+    ])
 
-  chapters.value = treeResponse?.success && Array.isArray(treeResponse.data)
-    ? treeResponse.data.map((item, index) => ({
-        ...item,
-        dueDate: item.dueDate || '',
-        owner: item.owner || '',
-        locked: Boolean(item.locked),
-        status: item.status || 'pending',
-        chapter: item.chapter || `${index + 1}. ${item.title || item.name || '未命名章节'}`,
-      }))
-    : []
+    chapters.value = treeResponse?.success && Array.isArray(treeResponse.data)
+      ? flattenSections(treeResponse.data).map((item, index) => ({
+          ...item,
+          chapter: item.chapter || `${index + 1}. ${item.title || item.name || '未命名章节'}`,
+        }))
+      : []
 
-  changeHistory.value = threadResponse?.success && Array.isArray(threadResponse.data)
-    ? threadResponse.data.map((item) => ({
-        type: item.type === 'thread' ? 'edit' : item.type || 'comment',
-        author: item.author || '未知用户',
-        avatar: item.avatar || '协',
-        timestamp: item.timestamp || '',
-        description: item.content || item.title || '暂无内容',
-      }))
-    : []
+    changeHistory.value = threadResponse?.success && Array.isArray(threadResponse.data)
+      ? threadResponse.data.map((item) => ({
+          type: item.type === 'thread' ? 'edit' : item.type || 'comment',
+          author: item.author || '未知用户',
+          avatar: item.avatar || '协',
+          timestamp: item.timestamp || '',
+          description: item.content || item.title || '暂无内容',
+        }))
+      : []
 
-  if (!treeResponse?.success && !threadResponse?.success) {
-    ElMessage.info(treeResponse?.message || threadResponse?.message || '当前项目暂无协作数据')
+    if (!treeResponse?.success && !threadResponse?.success) {
+      ElMessage.info(treeResponse?.message || threadResponse?.message || '当前项目暂无协作数据')
+    }
+  } finally {
+    loading.value = false
   }
-
-  loading.value = false
 }
 
 const getRowClassName = ({ row }) => {
@@ -282,35 +297,99 @@ const getPendingCount = () => {
   return chapters.value.filter(c => c.status === 'pending').length
 }
 
-const handleOwnerChange = (row) => {
-  emit('owner-change', row)
+const handleOwnerChange = async (row) => {
+  const assignedBy = resolveUserIdByName(userStore.userName)
+
+  if (isApiMode.value && !assignedBy) {
+    ElMessage.warning('当前用户缺少真实用户 ID，无法提交章节分配')
+    await loadData()
+    return
+  }
+
+  const response = await collaborationApi.editor.assignSection(props.projectId, {
+    sectionId: row.id,
+    owner: row.owner,
+    assignedBy,
+    dueDate: row.dueDate || null,
+  })
+
+  if (!response?.success) {
+    await loadData()
+    ElMessage.error(response?.message || '章节分配失败')
+    return
+  }
+
+  row.owner = response?.data?.owner || row.owner
+  row.dueDate = response?.data?.dueDate || row.dueDate
+  row.status = row.owner ? 'editing' : 'pending'
+  emit('owner-change', { ...row, response: response.data })
   ElMessage.success(`已将 ${row.chapter} 分配给 ${row.owner}`)
 }
 
-const handleRemind = (row) => {
-  ElMessageBox.confirm(
+const handleRemind = async (row) => {
+  try {
+    await ElMessageBox.confirm(
     `确定要提醒 ${row.owner} 完成章节「${row.chapter}」吗？`,
     '发送提醒',
     {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'info'
-    }
-  ).then(() => {
-    emit('remind', row)
-    ElMessage.success(`已向 ${row.owner} 发送提醒`)
-  }).catch(() => {
-    // 用户取消
+    })
+  } catch {
+    return
+  }
+
+  const remindedBy = resolveUserIdByName(userStore.userName)
+  if (isApiMode.value && !remindedBy) {
+    ElMessage.warning('当前用户缺少真实用户 ID，无法发送提醒')
+    return
+  }
+
+  const response = await collaborationApi.editor.createReminder(props.projectId, {
+    sectionId: row.id,
+    recipient: row.owner,
+    remindedBy,
+    message: `请尽快完成章节「${row.chapter}」`,
   })
+
+  if (!response?.success) {
+    ElMessage.error(response?.message || '发送提醒失败')
+    return
+  }
+
+  emit('remind', { ...row, reminder: response.data })
+  ElMessage.success(`已向 ${row.owner} 发送提醒`)
 }
 
-const handleToggleLock = (row) => {
+const handleToggleLock = async (row) => {
+  const previousLocked = row.locked
+  const userId = resolveUserIdByName(userStore.userName)
+  if (isApiMode.value && !userId) {
+    ElMessage.warning('当前用户缺少真实用户 ID，无法变更锁定状态')
+    return
+  }
+
   row.locked = !row.locked
-  emit('toggle-lock', row)
+  const response = await collaborationApi.editor.updateLock(props.projectId, {
+    sectionId: row.id,
+    locked: row.locked,
+    userId,
+  })
+
+  if (!response?.success) {
+    row.locked = previousLocked
+    ElMessage.error(response?.message || '锁定状态更新失败')
+    return
+  }
+
+  row.locked = Boolean(response?.data?.locked)
+  emit('toggle-lock', { ...row, response: response.data })
   ElMessage.success(`${row.chapter} 已${row.locked ? '锁定' : '解锁'}`)
 }
 
-const handleSave = () => {
+const handleSave = async () => {
+  await loadData()
   emit('save', chapters.value)
   ElMessage.success('章节分配保存成功')
 }

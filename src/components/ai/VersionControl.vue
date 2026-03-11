@@ -219,6 +219,7 @@ const selectedVersion = ref(null)
 const versions = ref([])
 const compareResult = ref(null)
 const isApiMode = computed(() => !isMockMode())
+const currentUserId = computed(() => userStore.currentUser?.id ?? null)
 
 const oldVersion = computed(() => {
   return versions.value.find(v => String(v.id) === String(compareOld.value))
@@ -274,10 +275,14 @@ const handleRestore = (version) => {
       type: 'warning'
     }
   ).then(async () => {
-    const userId = userStore.currentUser?.id
-    const response = await collaborationApi.versions.rollback(props.projectId, version.id, userId)
+    if (isApiMode.value && !currentUserId.value) {
+      ElMessage.warning('当前用户缺少真实用户 ID，无法回滚版本')
+      return
+    }
+
+    const response = await collaborationApi.versions.rollback(props.projectId, version.id, currentUserId.value)
     if (!response?.success) {
-      ElMessage.info(response?.message || '当前环境未接入版本回滚能力')
+      ElMessage.error(response?.message || '版本回滚失败')
       return
     }
     emit('restore', version)
@@ -294,13 +299,18 @@ const handleCreateVersion = () => {
     cancelButtonText: '取消',
     inputPlaceholder: '请描述本次主要变更...'
   }).then(async ({ value }) => {
+    if (isApiMode.value && !currentUserId.value) {
+      ElMessage.warning('当前用户缺少真实用户 ID，无法创建版本')
+      return
+    }
+
     const response = await collaborationApi.versions.createVersion(props.projectId, {
       changeSummary: value,
       content: value,
-      createdBy: userStore.currentUser?.id || 1,
+      createdBy: currentUserId.value || 1,
     })
     if (!response?.success) {
-      ElMessage.info(response?.message || '创建版本失败')
+      ElMessage.error(response?.message || '创建版本失败')
       return
     }
     emit('create-version', { description: value })
@@ -333,6 +343,9 @@ watch(
     if (!isCompare || !oldId || !newId) return
     const response = await collaborationApi.versions.compare(props.projectId, oldId, newId)
     compareResult.value = response?.success ? response.data : null
+    if (!response?.success && isApiMode.value) {
+      ElMessage.error(response?.message || '版本对比失败')
+    }
   }
 )
 </script>

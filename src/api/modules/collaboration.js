@@ -88,9 +88,12 @@ function normalizeSection(item = {}) {
     id: item.id,
     chapter: item.name || item.title || '未命名章节',
     owner: item.owner || '',
+    assignedBy: item.assignedBy || null,
     status: item.status || (item.content ? 'editing' : 'pending'),
     dueDate: item.dueDate || '',
     locked: Boolean(item.locked),
+    lockedBy: item.lockedBy || null,
+    lockedAt: item.lockedAt || '',
     children: Array.isArray(item.children) ? item.children.map(normalizeSection) : [],
   }
 }
