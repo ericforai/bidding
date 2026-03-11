@@ -1,8 +1,13 @@
-# 西域数智化投标管理平台 POC
+# 西域数智化投标管理平台
 
 ## 项目简介
 
-这是一个为西域集团打造的投标管理平台概念验证(POC)项目，演示完整的投标业务流程，从标讯发现到结果闭环的全流程数字化管理。
+这是一个为西域集团打造的投标管理平台，当前支持双模式运行：
+
+- `mock` 模式：用于长期 MVP 演示和无后端场景展示
+- `api` 模式：用于真实后端联调、上线准备和发布演练
+
+系统已经具备前后端统一 API 层、数据库 Flyway 基线、关键集成测试、最小可观测性基线，以及上线前演练所需的脚本和清单。
 
 ## 技术栈
 
@@ -56,6 +61,20 @@
 - 系统参数配置
 - 操作日志
 
+## 模式说明
+
+### Mock 模式
+
+- 默认模式
+- 前端可独立运行
+- 使用 `src/api/mock.js` 作为正式演示数据源
+
+### API 模式
+
+- 对接 Spring Boot + PostgreSQL + Redis
+- 用于真实联调、上线前验证、UAT 和发布演练
+- 启动前需要准备后端环境和必要环境变量
+
 ## 演示账号
 
 | 用户名 | 角色 | 说明 |
@@ -84,7 +103,8 @@ npm run dev
 
 ### 4. 登录
 
-输入任意用户名（如"小王"）和密码即可登录
+- Mock 模式：可使用演示账号登录
+- API 模式：使用后端真实用户与鉴权
 
 ## 项目结构
 
@@ -155,15 +175,64 @@ xiyu-bid-poc/
 
 **总时长: 约5分钟**
 
+## 发布与演练
+
+### 预检
+
+```bash
+bash scripts/release/preflight.sh
+```
+
+### 发布演练
+
+```bash
+bash scripts/release/deploy.sh
+```
+
+### 本地全流程演练
+
+```bash
+bash scripts/release/rehearse-release.sh
+```
+
+### 正式签字包
+
+```bash
+node scripts/release/build-signoff-packet.mjs
+```
+
+### 数据库备份
+
+```bash
+bash scripts/release/backup-db.sh
+```
+
+### 数据库恢复
+
+```bash
+CONFIRM_RESTORE=YES bash scripts/release/restore-db.sh <backup-file>
+```
+
+## 上线文档
+
+- `docs/UAT_PLAN.md`
+- `docs/UAT_SIGNOFF_TEMPLATE.md`
+- `docs/GO_LIVE_CHECKLIST.md`
+- `docs/ROLLBACK_RUNBOOK.md`
+- `docs/plans/2026-03-10-go-live-execution-plan.md`
+- `docs/plans/2026-03-10-go-live-wave-2.md`
+
 ## 开发说明
 
-- 本项目使用Mock数据，无需后端服务
-- 所有数据在 `src/api/mock.js` 中定义
-- 状态管理使用Pinia，stores在 `src/stores/` 目录
+- Mock 数据保留在 `src/api/mock.js`，作为长期演示模式资产
+- 统一 API 层位于 `src/api/modules/`
+- 状态管理使用 Pinia，stores 在 `src/stores/` 目录
 - 路由配置在 `src/router/index.js`
+- 后端位于 `backend/`，使用 Spring Boot + Flyway + PostgreSQL
 
-## 版本信息
+## 当前状态
 
-- 版本: 1.0.0 POC
-- 开发周期: 7天
-- 完成日期: 2025-02-26
+- 已支持 Mock/API 双模式
+- 已建立关键数据库迁移和 PostgreSQL baseline 验证
+- 已建立最小 CI 门禁和 Actuator/Prometheus 可观测性基线
+- 仍需按上线计划继续完成 UAT、发布演练和剩余真实化收口

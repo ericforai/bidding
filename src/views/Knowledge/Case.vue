@@ -569,6 +569,7 @@ import {
   Check
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { knowledgeApi } from '@/api'
 
 // 搜索表单
 const searchForm = reactive({
@@ -945,7 +946,6 @@ const saveCase = async () => {
     const highlights = formData.techHighlights.split('\n').filter(h => h.trim())
 
     const newCase = {
-      id: Date.now(),
       title: formData.title,
       customer: formData.customer,
       amount: formData.amount,
@@ -964,20 +964,14 @@ const saveCase = async () => {
         lessons: formData.lessons,
         attachments: formData.attachments.map(f => f.name)
       },
-      viewCount: 0,
-      useCount: 0
     }
 
-    // 模拟保存到后端
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const result = await knowledgeApi.cases.create(newCase)
+    if (!result?.success) {
+      throw new Error(result?.message || '保存失败')
+    }
 
-    // 添加到案例列表
-    cases.value.unshift(newCase)
-
-    // 保存到本地存储（模拟持久化）
-    const archivedCases = JSON.parse(localStorage.getItem('archivedCases') || '[]')
-    archivedCases.push(newCase)
-    localStorage.setItem('archivedCases', JSON.stringify(archivedCases))
+    cases.value.unshift(result.data)
 
     ElMessage.success('案例保存成功')
 
@@ -1324,6 +1318,19 @@ const mockCases = [
 
 const cases = ref([])
 
+const loadCases = async () => {
+  loading.value = true
+  try {
+    const result = await knowledgeApi.cases.getList()
+    if (result?.success) {
+      cases.value = result.data || []
+      pagination.total = cases.value.length
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
 // 过滤后的案例
 const filteredCases = computed(() => {
   let result = cases.value
@@ -1450,8 +1457,7 @@ const handleSizeChange = (size) => {
 }
 
 onMounted(() => {
-  cases.value = mockCases
-  pagination.total = mockCases.length
+  loadCases()
 })
 </script>
 

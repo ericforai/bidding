@@ -1,5 +1,6 @@
 package com.xiyu.bid.resources.service;
 
+import com.xiyu.bid.exception.ResourceNotFoundException;
 import com.xiyu.bid.resources.dto.BarAssetCreateRequest;
 import com.xiyu.bid.resources.dto.BarAssetUpdateRequest;
 import com.xiyu.bid.resources.entity.BarAsset;
@@ -59,7 +60,7 @@ public class BarAssetService {
 
     public BarAsset getBarAssetById(Long id) {
         return barAssetRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("BarAsset not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("BarAsset", id.toString()));
     }
 
     public Page<BarAsset> getAllBarAssets(Pageable pageable) {
@@ -121,7 +122,7 @@ public class BarAssetService {
     @Transactional
     public void deleteBarAsset(Long id) {
         if (!barAssetRepository.existsById(id)) {
-            throw new RuntimeException("BarAsset not found with id: " + id);
+            throw new ResourceNotFoundException("BarAsset", id.toString());
         }
         barAssetRepository.deleteById(id);
     }

@@ -288,15 +288,43 @@
         <el-button type="primary" :icon="Download" @click="exportDrillDownData">导出数据</el-button>
       </template>
     </el-dialog>
+
+    <!-- 文件预览对话框 -->
+    <el-dialog
+      v-model="previewFileDialogVisible"
+      :title="`预览: ${previewFileName}`"
+      width="80%"
+      top="5vh"
+      @close="previewFileUrl = ''"
+    >
+      <div class="file-preview-container">
+        <iframe
+          v-if="previewFileUrl"
+          :src="previewFileUrl"
+          class="file-preview-frame"
+          frameborder="0"
+        ></iframe>
+        <div v-else class="preview-placeholder">
+          <el-icon :size="60"><Document /></el-icon>
+          <p>无法预览此文件</p>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="previewFileDialogVisible = false">关闭</el-button>
+        <el-button type="primary" @click="downloadFile({ name: previewFileName, url: previewFileUrl })">
+          下载文件
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, markRaw } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Download, Document, FolderOpened, User, Loading } from '@element-plus/icons-vue'
-import { api, mockData } from '@/api/mock'
+import { dashboardApi, projectsApi, mockData, isMockMode } from '@/api'
 import LineChart from '@/components/charts/LineChart.vue'
 import PieChart from '@/components/charts/PieChart.vue'
 import BarChart from '@/components/charts/BarChart.vue'
@@ -327,12 +355,16 @@ const drillDownData = ref({
   stats: null
 })
 const currentDrillDownContext = ref(null)
+const isDemoMode = isMockMode()
 
 // Metrics configuration
 const metrics = computed(() => {
   if (!dashboardData.value) return []
 
-  const isPositive = (val) => val.startsWith('+')
+  const getTrendDirection = (val) => {
+    if (val === '--') return 'trend-neutral'
+    return String(val).startsWith('+') ? 'trend-up' : 'trend-down'
+  }
 
   return [
     {
@@ -340,28 +372,28 @@ const metrics = computed(() => {
       label: '年度投标数',
       value: dashboardData.value.totalBids,
       change: dashboardData.value.totalBidsChange,
-      trendDirection: isPositive(dashboardData.value.totalBidsChange) ? 'trend-up' : 'trend-down'
+      trendDirection: getTrendDirection(dashboardData.value.totalBidsChange)
     },
     {
       key: 'winRate',
       label: '中标率',
       value: dashboardData.value.winRate + '%',
       change: dashboardData.value.winRateChange,
-      trendDirection: isPositive(dashboardData.value.winRateChange) ? 'trend-up' : 'trend-down'
+      trendDirection: getTrendDirection(dashboardData.value.winRateChange)
     },
     {
       key: 'amount',
       label: '中标金额',
       value: formatAmount(dashboardData.value.totalAmount),
       change: dashboardData.value.totalAmountChange,
-      trendDirection: isPositive(dashboardData.value.totalAmountChange) ? 'trend-up' : 'trend-down'
+      trendDirection: getTrendDirection(dashboardData.value.totalAmountChange)
     },
     {
       key: 'cost',
       label: '投入费用',
       value: formatAmount(dashboardData.value.totalCost),
       change: dashboardData.value.totalCostChange,
-      trendDirection: isPositive(dashboardData.value.totalCostChange) ? 'trend-up' : 'trend-down'
+      trendDirection: getTrendDirection(dashboardData.value.totalCostChange)
     }
   ]
 })
@@ -387,6 +419,7 @@ const getMetricColorClass = (key) => {
 
 // Helper function for trend class
 const getTrendClass = (direction) => {
+  if (direction === 'trend-neutral') return 'neutral'
   return direction === 'trend-up' ? 'positive' : 'negative'
 }
 
@@ -688,11 +721,13 @@ const regionChartOption = computed(() => {
 const loadData = async () => {
   loading.value = true
   try {
-    const response = await api.getDashboard()
-    dashboardData.value = response
+    const response = await dashboardApi.getOverview()
+    if (!response?.success) {
+      throw new Error(response?.message || '加载数据失败')
+    }
+    dashboardData.value = response.data
   } catch (error) {
-    console.error('Dashboard load error:', error)
-    ElMessage.error('加载数据失败')
+    ElMessage.error(error?.message || '加载数据失败')
   } finally {
     loading.value = false
   }
@@ -704,8 +739,8 @@ const handleDateChange = () => {
   ElMessage.info('日期范围已更新')
 }
 
-const refreshData = () => {
-  loadData()
+const refreshData = async () => {
+  await loadData()
   ElMessage.success('数据已刷新')
 }
 
@@ -756,14 +791,14 @@ const handleDialogClose = () => {
 // ========== 下钻功能相关函数 ==========
 
 // 打开下钻对话框
-const openDrillDownDialog = (type, data) => {
+const openDrillDownDialog = async (type, data) => {
   currentDrillDownContext.value = { type, data }
   drillDownTab.value = 'projects'
 
   switch (type) {
     case 'trend':
       drillDownTitle.value = `${data.month} 投标数据详情`
-      loadTrendDrillDownData(data)
+      await loadTrendDrillDownData(data)
       break
     case 'competitor':
       drillDownTitle.value = `${data.name} 竞争分析详情`
@@ -783,9 +818,46 @@ const openDrillDownDialog = (type, data) => {
 }
 
 // 加载趋势下钻数据
-const loadTrendDrillDownData = (monthData) => {
-  // 根据月份筛选相关项目
-  const monthIndex = dashboardData.value.trendData.findIndex(d => d.month === monthData.month)
+const buildAggregateOnlyDrillDown = (stats) => ({
+  projects: [],
+  team: [],
+  files: [],
+  stats
+})
+
+const loadTrendDrillDownData = async (monthData) => {
+  if (!isDemoMode) {
+    try {
+      const projectResult = await projectsApi.getList()
+      const projects = projectResult?.success && Array.isArray(projectResult.data)
+        ? projectResult.data.map((project) => ({
+          id: project.id,
+          name: project.name,
+          customer: project.customer || '-',
+          budget: project.budget || 0,
+          status: project.status || '-',
+          manager: project.manager || '-',
+          result: project.status === 'won' ? 'won' : project.status === 'lost' ? 'lost' : null
+        }))
+        : []
+
+      drillDownData.value = {
+        projects,
+        team: [],
+        files: [],
+        stats: {
+          totalParticipation: monthData.bids,
+          wonCount: monthData.wins,
+          teamWinRate: monthData.rate,
+          totalAmount: monthData.amount
+        }
+      }
+      return
+    } catch (error) {
+      ElMessage.warning('真实项目明细加载失败，当前仅展示聚合统计')
+    }
+  }
+
   const mockProjects = mockData.projects.map(p => ({
     ...p,
     result: p.status === 'won' ? 'won' : p.status === 'lost' ? 'lost' : null
@@ -814,6 +886,16 @@ const loadTrendDrillDownData = (monthData) => {
 
 // 加载竞争对手下钻数据
 const loadCompetitorDrillDownData = (competitorData) => {
+  if (!isDemoMode) {
+    drillDownData.value = buildAggregateOnlyDrillDown({
+      totalParticipation: competitorData.bids,
+      wonCount: Math.floor(competitorData.bids * (competitorData.share / 100)),
+      teamWinRate: Math.floor(competitorData.share),
+      totalAmount: competitorData.amount
+    })
+    return
+  }
+
   drillDownData.value = {
     projects: generateCompetitorProjects(competitorData),
     team: generateCompetitorTeam(competitorData),
@@ -829,6 +911,16 @@ const loadCompetitorDrillDownData = (competitorData) => {
 
 // 加载产品线下钻数据
 const loadProductDrillDownData = (productData) => {
+  if (!isDemoMode) {
+    drillDownData.value = buildAggregateOnlyDrillDown({
+      totalParticipation: productData.bids,
+      wonCount: Math.floor(productData.bids * (productData.rate / 100)),
+      teamWinRate: productData.rate,
+      totalAmount: productData.revenue
+    })
+    return
+  }
+
   drillDownData.value = {
     projects: generateProductLineProjects(productData),
     team: generateProductTeam(productData),
@@ -844,6 +936,16 @@ const loadProductDrillDownData = (productData) => {
 
 // 加载区域下钻数据
 const loadRegionDrillDownData = (regionData) => {
+  if (!isDemoMode) {
+    drillDownData.value = buildAggregateOnlyDrillDown({
+      totalParticipation: regionData.bids,
+      wonCount: Math.floor(regionData.bids * (regionData.rate / 100)),
+      teamWinRate: regionData.rate,
+      totalAmount: regionData.amount
+    })
+    return
+  }
+
   drillDownData.value = {
     projects: generateRegionProjects(regionData),
     team: generateRegionTeam(regionData),
@@ -1061,15 +1163,94 @@ const goToProject = (projectId) => {
 }
 
 // 预览文件
+const previewFileDialogVisible = ref(false)
+const previewFileUrl = ref('')
+const previewFileName = ref('')
+
 const previewFile = (file) => {
-  ElMessage.info(`预览文件: ${file.name}`)
-  // TODO: 实现文件预览功能
+  previewFileName.value = file.name
+
+  // 支持预览的文件类型
+  const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase()
+  const previewableExts = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.txt', '.md']
+
+  if (previewableExts.includes(ext)) {
+    // 模拟文件 URL - 实际项目中应从后端 API 获取
+    previewFileUrl.value = file.url || `/api/files/preview/${file.id}`
+    previewFileDialogVisible.value = true
+  } else if (['.docx', '.doc', '.xlsx', '.xls', '.pptx', '.ppt'].includes(ext)) {
+    // Office 文档提示下载或使用在线预览服务
+    ElMessageBox.confirm(
+        `${file.name} 暂不支持直接预览，是否下载查看？`,
+        '文件预览',
+        {
+          confirmButtonText: '下载',
+          cancelButtonText: '取消',
+          type: 'info'
+        }
+    ).then(() => {
+      downloadFile(file)
+    }).catch(() => {})
+  } else {
+    ElMessage.warning(`文件类型 ${ext} 暂不支持预览，请下载后查看`)
+  }
 }
 
 // 下载文件
 const downloadFile = (file) => {
-  ElMessage.success(`开始下载: ${file.name}`)
-  // TODO: 实现文件下载功能
+  try {
+    // 创建下载链接
+    let downloadUrl = file.url || `/api/files/download/${file.id}`
+
+    // 如果是 mock 模式，使用模拟数据
+    if (import.meta.env.VITE_API_MODE === 'mock') {
+      // 创建模拟文件内容
+      const mockContent = `文件名: ${file.name}\n大小: ${file.size || '未知'}\n创建时间: ${file.uploadTime || new Date().toLocaleString()}\n\n这是模拟文件内容。`
+      const blob = new Blob([mockContent], { type: 'text/plain;charset=utf-8' })
+      downloadUrl = URL.createObjectURL(blob)
+
+      // 触发下载
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = file.name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      // 释放对象 URL
+      URL.revokeObjectURL(downloadUrl)
+    } else {
+      // 实际 API 模式 - 使用 fetch 下载并添加认证头
+      fetch(downloadUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        }
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('下载失败')
+          return response.blob()
+        })
+        .then(blob => {
+          const url = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = file.name
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          URL.revokeObjectURL(url)
+        })
+        .catch(error => {
+          ElMessage.error(`文件下载失败: ${error.message}`)
+        })
+      return
+    }
+
+    ElMessage.success(`开始下载: ${file.name}`)
+  } catch (error) {
+    ElMessage.error(`下载失败: ${error.message}`)
+  }
 }
 
 // 导出下钻数据
@@ -1088,7 +1269,6 @@ const exportDrillDownData = () => {
   }
 
   // 模拟导出
-  console.log('导出数据:', exportData)
   ElMessage.success('数据导出成功，请查看下载列表')
 
   // 实际项目中可以使用以下代码下载为JSON或Excel
@@ -1377,5 +1557,35 @@ onMounted(() => {
   .stat-value {
     font-size: 20px;
   }
+}
+
+/* 文件预览对话框样式 */
+.file-preview-container {
+  width: 100%;
+  height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-preview-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.preview-placeholder {
+  text-align: center;
+  color: #909399;
+}
+
+.preview-placeholder .el-icon {
+  margin-bottom: 16px;
+  color: #c0c4cc;
+}
+
+.preview-placeholder p {
+  font-size: 14px;
+  margin: 0;
 }
 </style>

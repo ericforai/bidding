@@ -8,6 +8,7 @@ import com.xiyu.bid.platform.entity.PlatformAccount.PlatformType;
 import com.xiyu.bid.platform.repository.PlatformAccountRepository;
 import com.xiyu.bid.platform.util.PasswordEncryptionUtil;
 import com.xiyu.bid.service.AuditLogService;
+import com.xiyu.bid.service.IAuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -28,7 +29,7 @@ public class PlatformAccountService {
 
     private final PlatformAccountRepository repository;
     private final PasswordEncryptionUtil passwordEncryptionUtil;
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     /**
      * Create a new platform account

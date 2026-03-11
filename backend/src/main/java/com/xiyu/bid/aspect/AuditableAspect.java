@@ -1,6 +1,7 @@
 package com.xiyu.bid.aspect;
 
 import com.xiyu.bid.service.AuditLogService;
+import com.xiyu.bid.service.IAuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -23,7 +24,7 @@ import java.lang.reflect.Method;
 @Slf4j
 public class AuditableAspect {
 
-    private final AuditLogService auditLogService;
+    private final IAuditLogService auditLogService;
 
     @Around("@annotation(com.xiyu.bid.annotation.Auditable)")
     public Object auditMethod(ProceedingJoinPoint joinPoint) throws Throwable {

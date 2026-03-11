@@ -73,9 +73,9 @@
       </el-row>
 
       <el-table :data="filteredFees" stripe>
-        <el-table-column type="index" label="序号" width="60" />
+        <el-table-column type="index" label="序号" width="100" />
         <el-table-column prop="project" label="项目名称" min-width="150" />
-        <el-table-column prop="type" label="费用类型" width="100">
+        <el-table-column prop="type" label="费用类型" width="120">
           <template #default="{ row }">
             <el-tag v-if="row.type === '保证金'" type="warning">保证金</el-tag>
             <el-tag v-else-if="row.type === '标书费'" type="success">标书费</el-tag>
@@ -83,12 +83,12 @@
             <el-tag v-else>其他</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="amount" label="金额(万元)" width="120" align="right">
+        <el-table-column prop="amount" label="金额(万元)" width="130" align="right">
           <template #default="{ row }">
             <span class="amount">¥{{ row.amount.toFixed(2) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" label="状态" width="140">
           <template #default="{ row }">
             <el-tag v-if="row.approvalStatus === 'pending'" type="info">待审批</el-tag>
             <el-tag v-else-if="row.approvalStatus === 'approved' && row.status === 'pending'" type="warning">待支付</el-tag>
@@ -96,15 +96,15 @@
             <el-tag v-else-if="row.status === 'returned'" type="info">已退还</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="approvalStatus" label="审批状态" width="100">
+        <el-table-column prop="approvalStatus" label="审批状态" width="140">
           <template #default="{ row }">
             <el-tag v-if="row.approvalStatus === 'pending'" type="warning">待审批</el-tag>
             <el-tag v-else-if="row.approvalStatus === 'approved'" type="success">已通过</el-tag>
             <el-tag v-else-if="row.approvalStatus === 'rejected'" type="danger">已拒绝</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="date" label="发生日期" width="120" />
-        <el-table-column prop="returnDate" label="预计退还日期" width="130">
+        <el-table-column prop="date" label="发生日期" width="160" />
+        <el-table-column prop="returnDate" label="预计退还日期" width="170">
           <template #default="{ row }">
             <span v-if="row.returnDate" :class="{ 'warning-text': isReturnOverdue(row.returnDate) }">
               {{ row.returnDate }}
@@ -137,20 +137,20 @@
 
       <el-table :data="depositList" stripe>
         <el-table-column prop="project" label="项目名称" min-width="150" />
-        <el-table-column prop="amount" label="金额(万元)" width="120" align="right">
+        <el-table-column prop="amount" label="金额(万元)" width="130" align="right">
           <template #default="{ row }">
             <span class="amount">¥{{ row.amount.toFixed(2) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="date" label="缴纳日期" width="120" />
-        <el-table-column prop="expectedReturn" label="应退日期" width="130">
+        <el-table-column prop="date" label="缴纳日期" width="160" />
+        <el-table-column prop="expectedReturn" label="应退日期" width="160">
           <template #default="{ row }">
             <span :class="{ 'overdue-text': isOverdue(row.expectedReturn) && row.status !== 'returned' }">
               {{ row.expectedReturn }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="110">
+        <el-table-column prop="status" label="状态" width="140">
           <template #default="{ row }">
             <el-tag v-if="row.status === 'returned'" type="success">已退还</el-tag>
             <el-tag v-else-if="isOverdue(row.expectedReturn)" type="danger">超期未退</el-tag>
@@ -191,22 +191,22 @@
           <span>审批记录</span>
         </div>
       </template>
-      <el-table :data="approvalRecords" stripe>
+      <el-table :data="displayedApprovalRecords" stripe>
         <el-table-column prop="project" label="项目名称" min-width="150" />
-        <el-table-column prop="type" label="费用类型" width="100">
+        <el-table-column prop="type" label="费用类型" width="120">
           <template #default="{ row }">
             <el-tag size="small">{{ row.type }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="amount" label="金额(万元)" width="120" align="right">
+        <el-table-column prop="amount" label="金额(万元)" width="130" align="right">
           <template #default="{ row }">
             ¥{{ row.amount.toFixed(2) }}
           </template>
         </el-table-column>
-        <el-table-column prop="applicant" label="申请人" width="100" />
-        <el-table-column prop="applyTime" label="申请时间" width="160" />
-        <el-table-column prop="approver" label="审批人" width="100" />
-        <el-table-column prop="approvalStatus" label="审批状态" width="100">
+        <el-table-column prop="applicant" label="申请人" width="110" />
+        <el-table-column prop="applyTime" label="申请时间" width="200" />
+        <el-table-column prop="approver" label="审批人" width="110" />
+        <el-table-column prop="approvalStatus" label="审批状态" width="140">
           <template #default="{ row }">
             <el-tag v-if="row.approvalStatus === 'pending'" type="warning" size="small">待审批</el-tag>
             <el-tag v-else-if="row.approvalStatus === 'approved'" type="success" size="small">已通过</el-tag>
@@ -236,9 +236,12 @@
         </el-form-item>
         <el-form-item label="关联项目">
           <el-select v-model="applyForm.project" placeholder="请选择">
-            <el-option label="某央企智慧办公平台采购" value="某央企项目" />
-            <el-option label="华南电力集团集采项目" value="华南电力" />
-            <el-option label="深圳地铁自动化系统" value="深圳地铁" />
+            <el-option
+              v-for="project in availableProjects"
+              :key="project.id"
+              :label="project.name"
+              :value="project.id"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="金额">
@@ -315,7 +318,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Plus, Download, Bell, WarningFilled } from '@element-plus/icons-vue'
-import { mockData } from '@/api/mock'
+import { projectsApi, resourcesApi, isMockMode } from '@/api'
+import { useUserStore } from '@/stores/user'
 
 const searchForm = ref({
   project: '',
@@ -323,10 +327,11 @@ const searchForm = ref({
   status: ''
 })
 
-const fees = ref(mockData.fees)
+const fees = ref([])
 const showApplyDialog = ref(false)
 const showRemindDialog = ref(false)
 const showApprovalDialog = ref(false)
+const userStore = useUserStore()
 const applyForm = ref({
   type: '保证金',
   project: '',
@@ -339,6 +344,60 @@ const approvalForm = ref({
   result: 'approved',
   comment: ''
 })
+const isMockResourceMode = computed(() => isMockMode())
+const availableProjects = ref([])
+
+const expenseCategoryMap = {
+  保证金: 'OTHER',
+  标书费: 'OTHER',
+  差旅费: 'TRANSPORTATION',
+  其他: 'OTHER',
+}
+
+const resolveExpenseCategory = (type) => expenseCategoryMap[type] || 'OTHER'
+
+const getProjectNameById = (projectId, fallback = '') => {
+  const match = availableProjects.value.find((project) => String(project.id) === String(projectId))
+  return match?.name || fallback || (projectId ? `项目#${projectId}` : '未关联项目')
+}
+
+const hydrateExpenseProjectNames = (items = []) => items.map((item) => ({
+  ...item,
+  project: getProjectNameById(item.projectId, item.project),
+}))
+
+const hydrateApprovalProjectNames = (items = []) => items.map((item) => ({
+  ...item,
+  project: getProjectNameById(item.projectId, item.project),
+}))
+
+const loadExpenses = async () => {
+  const response = await resourcesApi.expenses.getList(searchForm.value)
+  if (!response?.success) {
+    ElMessage.error(response?.message || '费用数据加载失败')
+    return
+  }
+  const rawFees = Array.isArray(response.data) ? response.data : []
+  fees.value = hydrateExpenseProjectNames(rawFees)
+}
+
+const loadProjectOptions = async () => {
+  const response = await projectsApi.getList()
+  if (!response?.success) {
+    return
+  }
+
+  const projects = Array.isArray(response.data) ? response.data : []
+  availableProjects.value = projects
+    .filter((project) => project?.id && project?.name)
+    .map((project) => ({
+      id: project.id,
+      name: project.name,
+    }))
+
+  fees.value = hydrateExpenseProjectNames(fees.value)
+  approvalRecords.value = hydrateApprovalProjectNames(approvalRecords.value)
+}
 
 // 审批记录 Mock 数据
 const approvalRecords = ref([
@@ -387,6 +446,41 @@ const approvalRecords = ref([
     remark: '集采项目保证金'
   }
 ])
+
+const displayedApprovalRecords = computed(() => {
+  if (isMockResourceMode.value) {
+    return approvalRecords.value
+  }
+
+  return fees.value.map((expense) => {
+    const record = approvalRecords.value.find((item) => String(item.expenseId) === String(expense.id))
+    return {
+      id: expense.id,
+      expenseId: expense.id,
+      project: expense.project || record?.project || '-',
+      type: expense.type || record?.type || '-',
+      amount: Number(expense.amount || record?.amount || 0),
+      applicant: expense.createdBy || record?.applicant || '-',
+      applyTime: expense.date || record?.applyTime || '-',
+      approver: expense.approvedBy || record?.approver || '',
+      approvalStatus: expense.approvalStatus || record?.approvalStatus || 'pending',
+      remark: expense.approvalComment || record?.remark || expense.description || '',
+    }
+  }).filter((item) => item.approvalStatus)
+})
+
+const loadApprovalRecords = async () => {
+  if (isMockMode()) return
+
+  const response = await resourcesApi.expenses.getApprovalRecords()
+  if (!response?.success) {
+    ElMessage.error(response?.message || '审批记录加载失败')
+    return
+  }
+
+  const records = Array.isArray(response.data) ? response.data : []
+  approvalRecords.value = hydrateApprovalProjectNames(records)
+}
 
 // 保证金列表 - 从费用中筛选保证金类型
 const depositList = computed(() => {
@@ -473,11 +567,12 @@ const isReturnOverdue = (date) => {
 }
 
 const handleSearch = () => {
-  ElMessage.success('搜索完成')
+  loadExpenses()
 }
 
 const handleReset = () => {
   searchForm.value = { project: '', type: '', status: '' }
+  loadExpenses()
 }
 
 const handleExport = () => {
@@ -489,12 +584,66 @@ const handleDetail = (row) => {
 }
 
 const handleReturn = (row) => {
+  if (!isMockMode()) {
+    resourcesApi.expenses.requestReturn(row.id, {
+      actor: userStore.userName,
+      comment: `${userStore.userName} 发起保证金退还申请`
+    }).then(async (response) => {
+      if (!response?.success) {
+        ElMessage.error(response?.message || '保证金退还申请失败')
+        return
+      }
+      await loadExpenses()
+      ElMessage.success(`已提交退还申请：${row.project}`)
+    })
+    return
+  }
   ElMessage.success(`已提交退还申请：${row.project}`)
 }
 
-const handleSubmitApply = () => {
+const handleSubmitApply = async () => {
+  if (!isMockMode()) {
+    ElMessage.info('真实后端创建费用记录还需要项目ID和分类映射，当前表单暂未接入')
+    return
+  }
+
+  const payload = {
+    type: applyForm.value.type,
+    projectId: applyForm.value.project,
+    project: availableProjects.value.find((project) => String(project.id) === String(applyForm.value.project))?.name || '',
+    amount: applyForm.value.amount,
+    remark: applyForm.value.remark,
+    status: 'pending',
+    approvalStatus: 'pending',
+    date: new Date().toISOString().split('T')[0]
+  }
+
+  const response = isMockMode()
+    ? await resourcesApi.expenses.create(payload)
+    : await resourcesApi.expenses.create({
+        projectId: Number(applyForm.value.project),
+        category: resolveExpenseCategory(applyForm.value.type),
+        amount: applyForm.value.amount,
+        date: new Date().toISOString().split('T')[0],
+        expenseType: applyForm.value.type,
+        description: applyForm.value.remark,
+        createdBy: userStore.userName,
+      })
+  if (!response?.success) {
+    ElMessage.error(response?.message || '费用申请提交失败')
+    return
+  }
+
+  await loadExpenses()
+  await loadApprovalRecords()
   ElMessage.success('费用申请已提交，等待审批')
   showApplyDialog.value = false
+  applyForm.value = {
+    type: '保证金',
+    project: '',
+    amount: 0,
+    remark: '',
+  }
 }
 
 // 发送保证金归还提醒
@@ -514,6 +663,20 @@ const confirmRemind = () => {
 
 // 确认退还
 const handleConfirmReturn = (row) => {
+  if (!isMockMode()) {
+    resourcesApi.expenses.confirmReturn(row.id, {
+      actor: userStore.userName,
+      comment: `${userStore.userName} 确认保证金已退还`
+    }).then(async (response) => {
+      if (!response?.success) {
+        ElMessage.error(response?.message || '保证金退还确认失败')
+        return
+      }
+      await loadExpenses()
+      ElMessage.success(`已确认${row.project}保证金退还，金额：${row.amount}万元`)
+    })
+    return
+  }
   const index = fees.value.findIndex(f => f.id === row.id)
   if (index !== -1) {
     fees.value[index].status = 'returned'
@@ -534,6 +697,24 @@ const handleApprove = (row) => {
 
 // 确认审批
 const confirmApproval = () => {
+  if (!isMockMode()) {
+    resourcesApi.expenses.approve(currentApprovalItem.value?.id, {
+      result: approvalForm.value.result === 'approved' ? 'APPROVED' : 'REJECTED',
+      comment: approvalForm.value.comment,
+      approver: userStore.userName
+    }).then(async (response) => {
+      if (!response?.success) {
+        ElMessage.error(response?.message || '费用审批失败')
+        return
+      }
+      await loadExpenses()
+      await loadApprovalRecords()
+      ElMessage.success(`审批${approvalForm.value.result === 'approved' ? '通过' : '拒绝'}`)
+    })
+    showApprovalDialog.value = false
+    currentApprovalItem.value = null
+    return
+  }
   if (currentApprovalItem.value) {
     const record = approvalRecords.value.find(r => r.id === currentApprovalItem.value.id)
     if (record) {
@@ -545,6 +726,12 @@ const confirmApproval = () => {
     currentApprovalItem.value = null
   }
 }
+
+onMounted(async () => {
+  await loadProjectOptions()
+  await loadExpenses()
+  await loadApprovalRecords()
+})
 </script>
 
 <style scoped lang="scss">
@@ -892,5 +1079,20 @@ const confirmApproval = () => {
 :deep(.el-tag--info) {
   background: linear-gradient(135deg, #64748b, #475569);
   color: #ffffff;
+}
+
+/* 防止表格内容换行 */
+:deep(.el-table__cell) {
+  white-space: nowrap !important;
+}
+
+:deep(.el-table .cell) {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+:deep(.el-table__body-wrapper .el-table__cell) {
+  white-space: nowrap !important;
 }
 </style>

@@ -46,7 +46,7 @@
             <div class="competitor-stats">
               <div class="stat-item">
                 <span class="stat-label">同类标出现</span>
-                <span class="stat-value">{{ competitor.similarBids }} 次</span>
+                <span class="stat-value">{{ competitor.similarBidsLabel || `${competitor.similarBids} 次` }}</span>
               </div>
               <div class="stat-item">
                 <span class="stat-label">价格区间</span>
@@ -124,6 +124,7 @@ import {
   Warning, InfoFilled, StarFilled, Operation
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { aiApi } from '@/api'
 
 const props = defineProps({
   modelValue: {
@@ -146,44 +147,43 @@ const visible = computed({
 const loading = ref(false)
 const data = ref(null)
 
-// Mock 数据
-const mockData = {
-  P001: {
-    competitors: [
-      {
-        id: 'C001',
-        name: '华东科技',
-        threatLevel: 'high',
-        similarBids: 12,
-        priceRange: '800-1200万',
-        winRate: 65,
-        tactics: '低价策略，常以低于市场价10%-15%投标，适合价格敏感型客户'
-      },
-      {
-        id: 'C002',
-        name: '智慧云通',
-        threatLevel: 'medium',
-        similarBids: 8,
-        priceRange: '1000-1500万',
-        winRate: 45,
-        tactics: '技术领先策略，强调创新能力和AI能力，适合技术型客户'
-      },
-      {
-        id: 'C003',
-        name: '城投建设',
-        threatLevel: 'medium',
-        similarBids: 15,
-        priceRange: '900-1300万',
-        winRate: 55,
-        tactics: '本地化优势，强调本地服务能力，适合政府类项目'
-      }
-    ],
-    strategies: [
-      { priority: 'high', text: '突出技术方案创新性，避免与华东科技拼价格' },
-      { priority: 'high', text: '尽快补齐智慧城市类案例，可借用关联公司案例' },
-      { priority: 'medium', text: '加强客户关系维护，安排高层拜访' },
-      { priority: 'medium', text: '报价建议控制在1000-1200万区间' }
-    ]
+function formatPriceRange(min, max) {
+  if (min && max) return `${min}-${max}`
+  if (min) return `${min}+`
+  if (max) return `<=${max}`
+  return '暂无报价区间'
+}
+
+function normalizeCompetitionView(analysisItems = [], competitorItems = []) {
+  const competitorMap = new Map(
+    competitorItems.map((item) => [String(item.id), item])
+  )
+
+  const competitors = analysisItems.map((item, index) => {
+    const competitor = competitorMap.get(String(item.competitorId)) || {}
+    const winRate = Number(item.winProbability || 0)
+
+    return {
+      id: item.id || item.competitorId || `competitor-${index}`,
+      name: competitor.name || `竞争对手 #${item.competitorId || index + 1}`,
+      threatLevel: winRate >= 60 ? 'high' : 'medium',
+      similarBidsLabel: '暂无历史频次',
+      priceRange: formatPriceRange(competitor.typicalBidRangeMin, competitor.typicalBidRangeMax),
+      winRate,
+      tactics: item.competitiveAdvantage || competitor.strengths || item.riskFactors || '暂无竞争情报摘要',
+    }
+  })
+
+  const strategies = analysisItems
+    .filter((item) => item.recommendedStrategy)
+    .map((item) => ({
+      priority: Number(item.winProbability || 0) >= 60 ? 'high' : 'medium',
+      text: item.recommendedStrategy,
+    }))
+
+  return {
+    competitors,
+    strategies,
   }
 }
 
@@ -192,11 +192,22 @@ const loadData = async () => {
 
   loading.value = true
 
-  // 模拟 API 调用延迟
-  await new Promise(resolve => setTimeout(resolve, 800))
+  const response = await aiApi.competition.getProjectAnalysis(props.projectId)
 
-  // 获取 mock 数据，实际应从 API 获取
-  data.value = mockData[props.projectId] || mockData.P001
+  if (!response?.success || !response.data) {
+    data.value = null
+    loading.value = false
+    ElMessage.info(response?.message || '当前项目暂无竞争情报数据')
+    return
+  }
+
+  if (Array.isArray(response.data)) {
+    const competitorsResponse = await aiApi.competition.getCompetitors()
+    const competitorItems = Array.isArray(competitorsResponse?.data) ? competitorsResponse.data : []
+    data.value = normalizeCompetitionView(response.data, competitorItems)
+  } else {
+    data.value = response.data
+  }
 
   loading.value = false
 }

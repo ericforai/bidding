@@ -360,6 +360,16 @@ const currentSection = ref(null)
 
 // 知识库匹配数据
 const knowledgeMatches = ref([])
+const downloadTextFile = (filename, content, mimeType = 'text/plain;charset=utf-8') => {
+  const blob = new Blob([content], { type: mimeType })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(link.href)
+}
 
 // 缩放比例
 const zoomLevel = ref(100)
@@ -800,11 +810,22 @@ const handleGoBack = () => {
 }
 
 const handlePreview = () => {
-  ElMessage.info('预览功能开发中...')
+  const previewContent = sectionData.value.sections
+    .map((section) => `${section.name}\n${section.content || ''}`)
+    .join('\n\n')
+  downloadTextFile(`${projectInfo.value.name}_预览.txt`, previewContent)
+  ElMessage.success('已生成演示预览，可继续编辑内容')
 }
 
 const handleExport = () => {
-  ElMessage.info('导出功能开发中...')
+  const exportContent = JSON.stringify({
+    project: projectInfo.value,
+    document: documentInfo.value,
+    sections: sectionData.value.sections,
+    exportedAt: new Date().toISOString()
+  }, null, 2)
+  downloadTextFile(`${projectInfo.value.name}_标书导出.json`, exportContent, 'application/json;charset=utf-8')
+  ElMessage.success('已导出演示文档包')
 }
 
 const handleSave = () => {

@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
 @Table(name = "calendar_events", indexes = {
     @Index(name = "idx_event_date", columnList = "event_date"),
     @Index(name = "idx_event_type", columnList = "event_type"),
-    @Index(name = "idx_project_id", columnList = "project_id"),
+    @Index(name = "idx_calendar_project_id", columnList = "project_id"),
     @Index(name = "idx_urgent", columnList = "is_urgent"),
     @Index(name = "idx_date_range", columnList = "event_date, event_type")
 })

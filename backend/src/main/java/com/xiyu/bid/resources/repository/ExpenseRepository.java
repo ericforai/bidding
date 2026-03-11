@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Repository
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
@@ -30,4 +31,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     Page<Expense> findByProjectIdAndCategory(Long projectId, Expense.ExpenseCategory category, Pageable pageable);
 
     Page<Expense> findByProjectIdAndDateBetween(Long projectId, LocalDate startDate, LocalDate endDate, Pageable pageable);
+
+    List<Expense> findByProjectIdOrderByCreatedAtDesc(Long projectId);
 }

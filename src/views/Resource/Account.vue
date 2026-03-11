@@ -13,7 +13,7 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary">
+          <el-button type="primary" @click="loadAccounts">
             <el-icon><Search /></el-icon> 搜索
           </el-button>
         </el-form-item>
@@ -24,7 +24,7 @@
       <template #header>
         <div class="card-header">
           <span>平台账户管理</span>
-          <el-button type="primary">
+          <el-button v-if="isMockResourceMode" type="primary" @click="handleCreate">
             <el-icon><Plus /></el-icon> 添加账户
           </el-button>
         </div>
@@ -105,7 +105,7 @@
                   <el-dropdown-menu>
                     <el-dropdown-item command="view" :icon="View">查看详情</el-dropdown-item>
                     <el-dropdown-item command="reset" :icon="RefreshLeft">重置密码</el-dropdown-item>
-                    <el-dropdown-item command="toggle" :icon="View">
+                    <el-dropdown-item v-if="isMockResourceMode" command="toggle" :icon="View">
                       {{ row.status === 'available' ? '禁用账户' : '启用账户' }}
                     </el-dropdown-item>
                     <el-dropdown-item divided command="delete" :icon="Delete" style="color: #f56c6c">
@@ -155,21 +155,25 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Platform, View, Edit, Delete, CopyDocument, MoreFilled, Key, RefreshLeft, Hide } from '@element-plus/icons-vue'
-import { mockData } from '@/api/mock'
+import { resourcesApi, isMockMode } from '@/api'
+import { useUserStore } from '@/stores/user'
 
 const searchForm = ref({
   platform: '',
   status: ''
 })
 
+const userStore = useUserStore()
+
 // 密码显示状态
 const passwordVisible = ref({})
 
-const accounts = ref(mockData.accounts)
+const accounts = ref([])
 const showBorrowDialog = ref(false)
+const currentAccount = ref(null)
 const borrowForm = ref({
   platform: '',
   project: '',
@@ -177,9 +181,24 @@ const borrowForm = ref({
   returnDate: '',
   remark: ''
 })
+const isMockResourceMode = isMockMode()
+
+const loadAccounts = async () => {
+  const response = await resourcesApi.accounts.getList(searchForm.value)
+  if (!response?.success) {
+    ElMessage.error(response?.message || '账户数据加载失败')
+    return
+  }
+  accounts.value = Array.isArray(response.data) ? response.data : []
+}
 
 const handleBorrow = (row) => {
+  currentAccount.value = row
   borrowForm.value.platform = row.platform
+  borrowForm.value.project = ''
+  borrowForm.value.purpose = '购买标书'
+  borrowForm.value.returnDate = ''
+  borrowForm.value.remark = ''
   showBorrowDialog.value = true
 }
 
@@ -187,8 +206,19 @@ const handleEdit = (row) => {
   ElMessage.info(`编辑账户：${row.platform}`)
 }
 
-const handleCopyPassword = (row) => {
-  navigator.clipboard.writeText(row.password || '').then(() => {
+const handleCopyPassword = async (row) => {
+  let password = row.password || ''
+
+  if (!password && !isMockMode()) {
+    const response = await resourcesApi.accounts.getPassword(row.id)
+    if (!response?.success || !response?.data?.password) {
+      ElMessage.info(response?.message || '当前账号密码不可直接查看')
+      return
+    }
+    password = response.data.password
+  }
+
+  navigator.clipboard.writeText(password || '').then(() => {
     ElMessage.success('密码已复制到剪贴板')
   }).catch(() => {
     ElMessage.error('复制失败')
@@ -213,9 +243,8 @@ const handleMoreAction = async (command, row) => {
       }
       break
     case 'toggle':
-      const newStatus = row.status === 'available' ? 'disabled' : 'available'
-      ElMessage.success(`账户已${newStatus === 'available' ? '启用' : '禁用'}`)
-      row.status = newStatus
+      row.status = row.status === 'available' ? 'disabled' : 'available'
+      ElMessage.success(`已${row.status === 'available' ? '启用' : '禁用'}账户：${row.platform}`)
       break
     case 'delete':
       try {
@@ -224,6 +253,12 @@ const handleMoreAction = async (command, row) => {
           cancelButtonText: '取消',
           type: 'warning'
         })
+        const response = await resourcesApi.accounts.delete(row.id)
+        if (!response?.success) {
+          ElMessage.error(response?.message || '删除失败')
+          return
+        }
+        await loadAccounts()
         ElMessage.success(`删除账户：${row.platform}`)
       } catch {
         // 用户取消
@@ -236,7 +271,27 @@ const handleDelete = (row) => {
   ElMessage.success(`删除账户：${row.platform}`)
 }
 
-const handleSubmitBorrow = () => {
+const handleCreate = () => {
+  ElMessage.success('新增账户演示入口已开启，可继续使用现有表单流程')
+}
+
+const handleSubmitBorrow = async () => {
+  if (!currentAccount.value) return
+
+  const payload = isMockMode()
+    ? { borrower: userStore.userName }
+    : {
+        borrowedBy: Number(userStore.currentUser?.id || 0),
+        dueHours: 24
+      }
+
+  const response = await resourcesApi.accounts.borrow(currentAccount.value.id, payload)
+  if (!response?.success) {
+    ElMessage.error(response?.message || '借阅申请提交失败')
+    return
+  }
+
+  await loadAccounts()
   ElMessage.success('借阅申请已提交')
   showBorrowDialog.value = false
 }
@@ -245,6 +300,10 @@ const handleSubmitBorrow = () => {
 const togglePasswordVisibility = (accountId) => {
   passwordVisible.value[accountId] = !passwordVisible.value[accountId]
 }
+
+onMounted(() => {
+  loadAccounts()
+})
 </script>
 
 <style scoped lang="scss">

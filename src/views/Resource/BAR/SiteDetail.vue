@@ -312,10 +312,12 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import BorrowDialog from './components/BorrowDialog.vue'
+import { loadDemoState, saveDemoState } from '@/utils/demoPersistence'
 
 const router = useRouter()
 const route = useRoute()
 const barStore = useBarStore()
+const BAR_SITE_STORAGE_KEY = 'bar-site-overrides'
 
 const loading = ref(false)
 const site = ref(null)
@@ -363,6 +365,31 @@ const ukRules = {
   expiryDate: [{ required: true, message: '请选择有效期', trigger: 'change' }]
 }
 
+const loadSitePersistence = () => loadDemoState(BAR_SITE_STORAGE_KEY, {})
+
+const applySitePersistence = (data) => {
+  if (!data) return data
+  const persisted = loadSitePersistence()[String(data.id)]
+  if (!persisted) return data
+  return {
+    ...data,
+    ...persisted,
+    auditLog: Array.isArray(persisted.auditLog) ? persisted.auditLog : data.auditLog,
+    sop: persisted.sop ? { ...(data.sop || {}), ...persisted.sop } : data.sop,
+  }
+}
+
+const persistSitePatch = (siteId, patch) => {
+  const state = loadSitePersistence()
+  const current = state[String(siteId)] || {}
+  state[String(siteId)] = {
+    ...current,
+    ...patch,
+    sop: patch.sop ? { ...(current.sop || {}), ...patch.sop } : current.sop,
+  }
+  saveDemoState(BAR_SITE_STORAGE_KEY, state)
+}
+
 const getLoginTypeText = (type) => {
   const map = {
     'password': '密码登录',
@@ -397,7 +424,22 @@ const isExpiringSoon = (date) => {
 }
 
 const handleEdit = () => {
-  ElMessage.info('编辑功能开发中')
+  if (!site.value) return
+  site.value = {
+    ...site.value,
+    remark: `${site.value.remark || '演示维护记录'}；${new Date().toLocaleDateString('zh-CN')} 已完成站点信息校正`
+  }
+  site.value.auditLog = Array.isArray(site.value.auditLog) ? site.value.auditLog : []
+  site.value.auditLog.unshift({
+    time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    user: '李总',
+    action: '更新了站点基础信息'
+  })
+  persistSitePatch(site.value.id, {
+    remark: site.value.remark,
+    auditLog: site.value.auditLog,
+  })
+  ElMessage.success(`已保存站点「${site.value?.name || ''}」演示修改`)
 }
 
 const handleDelete = async () => {
@@ -407,7 +449,11 @@ const handleDelete = async () => {
       '确认删除',
       { type: 'warning' }
     )
-    await barStore.deleteSite(site.value.id)
+    const response = await barStore.deleteSite(site.value.id)
+    if (!response?.success) {
+      ElMessage.error(response?.message || '删除失败')
+      return
+    }
     ElMessage.success('删除成功')
     router.push('/resource/bar/sites')
   } catch {
@@ -428,7 +474,11 @@ const deleteAccount = async (account) => {
       '确认删除',
       { type: 'warning' }
     )
-    await barStore.deleteAccount(site.value.id, account.id)
+    const response = await barStore.deleteAccount(site.value.id, account.id)
+    if (!response?.success) {
+      ElMessage.error(response?.message || '删除账号失败')
+      return
+    }
     await refreshSite()
     ElMessage.success('删除成功')
   } catch {
@@ -440,13 +490,16 @@ const saveAccount = async () => {
   try {
     await accountFormRef.value.validate()
 
-    if (editingAccount.value) {
-      await barStore.updateAccount(site.value.id, editingAccount.value.id, accountForm.value)
-      ElMessage.success('更新成功')
-    } else {
-      await barStore.addAccount(site.value.id, accountForm.value)
-      ElMessage.success('添加成功')
+    const response = editingAccount.value
+      ? await barStore.updateAccount(site.value.id, editingAccount.value.id, accountForm.value)
+      : await barStore.addAccount(site.value.id, accountForm.value)
+
+    if (!response?.success) {
+      ElMessage.error(response?.message || '保存账号失败')
+      return
     }
+
+    ElMessage.success(editingAccount.value ? '更新成功' : '添加成功')
 
     showAccountDialog.value = false
     editingAccount.value = null
@@ -477,7 +530,11 @@ const deleteUk = async (uk) => {
       '确认删除',
       { type: 'warning' }
     )
-    await barStore.deleteUk(site.value.id, uk.id)
+    const response = await barStore.deleteUk(site.value.id, uk.id)
+    if (!response?.success) {
+      ElMessage.error(response?.message || '删除 UK 失败')
+      return
+    }
     await refreshSite()
     ElMessage.success('删除成功')
   } catch {
@@ -489,13 +546,16 @@ const saveUk = async () => {
   try {
     await ukFormRef.value.validate()
 
-    if (editingUk.value) {
-      await barStore.updateUk(site.value.id, editingUk.value.id, ukForm.value)
-      ElMessage.success('更新成功')
-    } else {
-      await barStore.addUk(site.value.id, ukForm.value)
-      ElMessage.success('添加成功')
+    const response = editingUk.value
+      ? await barStore.updateUk(site.value.id, editingUk.value.id, ukForm.value)
+      : await barStore.addUk(site.value.id, ukForm.value)
+
+    if (!response?.success) {
+      ElMessage.error(response?.message || '保存 UK 失败')
+      return
     }
+
+    ElMessage.success(editingUk.value ? '更新成功' : '添加成功')
 
     showUkDialog.value = false
     editingUk.value = null
@@ -526,7 +586,11 @@ const returnUk = async (uk) => {
       '确认归还',
       { type: 'info' }
     )
-    await barStore.returnUk(site.value.id, uk.id)
+    const response = await barStore.returnUk(site.value.id, uk.id)
+    if (!response?.success) {
+      ElMessage.error(response?.message || '归还失败')
+      return
+    }
     await refreshSite()
     ElMessage.success('归还成功')
   } catch {
@@ -535,7 +599,11 @@ const returnUk = async (uk) => {
 }
 
 const handleBorrowConfirm = async (data) => {
-  await barStore.borrowUk(site.value.id, data.ukId, data)
+  const response = await barStore.borrowUk(site.value.id, data.ukId, data)
+  if (!response?.success) {
+    ElMessage.error(response?.message || '借用申请提交失败')
+    return
+  }
   await refreshSite()
   ElMessage.success('借用成功')
 }
@@ -545,12 +613,16 @@ const goToSOP = () => {
 }
 
 const refreshSite = async () => {
-  site.value = await barStore.getSiteById(route.params.id)
+  const latestSite = await barStore.getSiteById(route.params.id)
+  site.value = applySitePersistence(latestSite)
 }
 
 onMounted(async () => {
   loading.value = true
-  await barStore.getSites()
+  const response = await barStore.getSites()
+  if (!response?.success) {
+    ElMessage.error(response?.message || 'BAR 站点数据加载失败')
+  }
   await refreshSite()
   loading.value = false
 })

@@ -126,7 +126,7 @@
           <div class="b2b-project-header">
             <h4 class="b2b-project-name">{{ tender.title }}</h4>
             <div class="ai-score" :class="getScoreClass(tender.aiScore)">
-              {{ tender.aiScore }}
+              {{ tender.aiScore }}分
             </div>
           </div>
           <div class="card-info">
@@ -176,10 +176,10 @@
             <el-radio-group v-model="viewMode" size="small">
               <el-radio-button value="all">全部 ({{ filteredTenders.length }})</el-radio-button>
               <el-radio-button value="new">新建 ({{ newTendersCount }})</el-radio-button>
-              <el-radio-button value="contacted">已联系</el-radio-button>
-              <el-radio-button value="following">跟进中</el-radio-button>
-              <el-radio-button value="quoting">报价中</el-radio-button>
-              <el-radio-button value="bidding">投标中</el-radio-button>
+              <el-radio-button value="contacted">已联系 ({{ contactedTendersCount }})</el-radio-button>
+              <el-radio-button value="following">跟进中 ({{ followingTendersCount }})</el-radio-button>
+              <el-radio-button value="quoting">报价中 ({{ quotingTendersCount }})</el-radio-button>
+              <el-radio-button value="bidding">投标中 ({{ biddingTendersCount }})</el-radio-button>
             </el-radio-group>
           </div>
         </div>
@@ -266,7 +266,7 @@
                 <el-tooltip content="查看详情" placement="top">
                   <el-button class="action-btn btn-view" size="small" :icon="View" @click="handleViewDetail(row.id)" />
                 </el-tooltip>
-                <el-tooltip content="AI分析" placement="top">
+                <el-tooltip v-if="showTenderAiEntry" content="AI分析" placement="top">
                   <el-button class="action-btn btn-analyze" size="small" :icon="MagicStick" @click="handleAIAnalysis(row.id)" />
                 </el-tooltip>
                 <el-tooltip content="参与投标" placement="top">
@@ -361,7 +361,7 @@
             <div class="mobile-card-row">
               <span class="mobile-label">AI评分:</span>
               <el-tag :type="getScoreTagType(row.aiScore)" size="small">
-                {{ row.aiScore }}分
+                {{ row.aiScore }}
               </el-tag>
             </div>
             <div class="mobile-card-row">
@@ -379,7 +379,7 @@
             <el-button type="primary" size="small" @click="handleViewDetail(row.id)">
               查看详情
             </el-button>
-            <el-button type="success" size="small" @click="handleAIAnalysis(row.id)">
+            <el-button v-if="showTenderAiEntry" type="success" size="small" @click="handleAIAnalysis(row.id)">
               AI分析
             </el-button>
             <el-button size="small" @click="handleParticipate(row.id)">
@@ -1290,6 +1290,7 @@ import {
   Phone, Close, EditPen, Loading
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { isMockMode } from '@/api'
 import {
   getBreakoutTopics,
   getStatsSummary,
@@ -1301,6 +1302,7 @@ import {
 
 const router = useRouter()
 const biddingStore = useBiddingStore()
+const showTenderAiEntry = true
 
 // 表格引用
 const tableRef = ref(null)
@@ -1918,8 +1920,16 @@ const newTendersCount = computed(() =>
   tenders.value.filter(t => t.status === 'new').length
 )
 
+const contactedTendersCount = computed(() =>
+  tenders.value.filter(t => t.status === 'contacted').length
+)
+
 const followingTendersCount = computed(() =>
   tenders.value.filter(t => t.status === 'following').length
+)
+
+const quotingTendersCount = computed(() =>
+  tenders.value.filter(t => t.status === 'quoting').length
 )
 
 const biddingTendersCount = computed(() =>
@@ -2025,6 +2035,9 @@ const progressColors = [
 ]
 
 const handleAIAnalysis = (id) => {
+  if (!showTenderAiEntry) {
+    return
+  }
   parsingTenderId.value = id
   parseProgress.value = 0
   showParsingDialog.value = true
@@ -2980,13 +2993,13 @@ const handleOpportunityAction = (id) => {
 }
 
 .ai-score {
-  width: 48px;
+  width: 65px;
   height: 48px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -4311,15 +4324,29 @@ const handleOpportunityAction = (id) => {
   border-radius: 8px;
   overflow: hidden;
   border: 1.5px solid #e5e7eb;
+  display: inline-flex !important;
+  flex-direction: row !important;
+}
+
+.card-actions :deep(.el-radio-button) {
+  display: inline-flex !important;
 }
 
 .card-actions :deep(.el-radio-button__inner) {
-  border: none;
-  border-radius: 0;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 500;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 8px 12px !important;
+  min-width: 70px !important;
+  min-height: 32px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .card-actions :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
@@ -4816,5 +4843,29 @@ const handleOpportunityAction = (id) => {
   padding: 16px 24px;
   background: #F9FAFB;
   border-top: 1px solid #E5E7EB;
+}
+
+/* 强制横排显示 - 覆盖所有可能的竖版文字样式 */
+.card-actions .el-radio-button__inner,
+.card-actions :deep(.el-radio-button__inner) {
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  direction: ltr !important;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* 移动端响应式 */
+@media (max-width: 768px) {
+  .card-actions .el-radio-button__inner,
+  .card-actions :deep(.el-radio-button__inner) {
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    direction: ltr !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+  }
 }
 </style>

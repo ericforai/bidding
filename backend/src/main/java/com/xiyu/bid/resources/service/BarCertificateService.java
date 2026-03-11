@@ -1,0 +1,153 @@
+package com.xiyu.bid.resources.service;
+
+import com.xiyu.bid.exception.ResourceNotFoundException;
+import com.xiyu.bid.resources.dto.BarCertificateBorrowRequest;
+import com.xiyu.bid.resources.dto.BarCertificateCreateRequest;
+import com.xiyu.bid.resources.dto.BarCertificateReturnRequest;
+import com.xiyu.bid.resources.dto.BarCertificateUpdateRequest;
+import com.xiyu.bid.resources.entity.BarAsset;
+import com.xiyu.bid.resources.entity.BarCertificate;
+import com.xiyu.bid.resources.entity.BarCertificateBorrowRecord;
+import com.xiyu.bid.resources.repository.BarAssetRepository;
+import com.xiyu.bid.resources.repository.BarCertificateBorrowRecordRepository;
+import com.xiyu.bid.resources.repository.BarCertificateRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class BarCertificateService {
+
+    private final BarAssetRepository barAssetRepository;
+    private final BarCertificateRepository barCertificateRepository;
+    private final BarCertificateBorrowRecordRepository borrowRecordRepository;
+
+    public List<BarCertificate> getCertificates(Long assetId) {
+        ensureAssetExists(assetId);
+        return barCertificateRepository.findByBarAssetIdOrderByExpiryDateAsc(assetId);
+    }
+
+    public List<BarCertificateBorrowRecord> getBorrowRecords(Long assetId, Long certificateId) {
+        BarCertificate certificate = getCertificate(assetId, certificateId);
+        return borrowRecordRepository.findByCertificateIdOrderByBorrowedAtDesc(certificate.getId());
+    }
+
+    @Transactional
+    public BarCertificate createCertificate(Long assetId, BarCertificateCreateRequest request) {
+        ensureAssetExists(assetId);
+        BarCertificate certificate = BarCertificate.builder()
+                .barAssetId(assetId)
+                .type(request.getType())
+                .provider(request.getProvider())
+                .serialNo(request.getSerialNo())
+                .holder(request.getHolder())
+                .location(request.getLocation())
+                .expiryDate(request.getExpiryDate())
+                .status(BarCertificate.CertificateStatus.AVAILABLE)
+                .remark(request.getRemark())
+                .build();
+        return barCertificateRepository.save(certificate);
+    }
+
+    @Transactional
+    public BarCertificate updateCertificate(Long assetId, Long certificateId, BarCertificateUpdateRequest request) {
+        BarCertificate certificate = getCertificate(assetId, certificateId);
+        if (request.getType() != null) certificate.setType(request.getType());
+        if (request.getProvider() != null) certificate.setProvider(request.getProvider());
+        if (request.getSerialNo() != null) certificate.setSerialNo(request.getSerialNo());
+        if (request.getHolder() != null) certificate.setHolder(request.getHolder());
+        if (request.getLocation() != null) certificate.setLocation(request.getLocation());
+        if (request.getExpiryDate() != null) certificate.setExpiryDate(request.getExpiryDate());
+        if (request.getRemark() != null) certificate.setRemark(request.getRemark());
+        return barCertificateRepository.save(certificate);
+    }
+
+    @Transactional
+    public void deleteCertificate(Long assetId, Long certificateId) {
+        BarCertificate certificate = getCertificate(assetId, certificateId);
+        if (certificate.getStatus() == BarCertificate.CertificateStatus.BORROWED) {
+            throw new IllegalStateException("Borrowed certificate cannot be deleted");
+        }
+        barCertificateRepository.delete(certificate);
+    }
+
+    @Transactional
+    public BarCertificate borrowCertificate(Long assetId, Long certificateId, BarCertificateBorrowRequest request) {
+        BarCertificate certificate = getCertificate(assetId, certificateId);
+        if (certificate.getStatus() != BarCertificate.CertificateStatus.AVAILABLE) {
+            throw new IllegalStateException("Certificate is not available for borrowing");
+        }
+
+        certificate.setStatus(BarCertificate.CertificateStatus.BORROWED);
+        certificate.setCurrentBorrower(request.getBorrower());
+        certificate.setCurrentProjectId(request.getProjectId());
+        certificate.setBorrowPurpose(request.getPurpose());
+        certificate.setExpectedReturnDate(request.getExpectedReturnDate());
+        certificate.setRemark(request.getRemark());
+        BarCertificate saved = barCertificateRepository.save(certificate);
+
+        borrowRecordRepository.save(BarCertificateBorrowRecord.builder()
+                .certificateId(saved.getId())
+                .borrower(request.getBorrower())
+                .projectId(request.getProjectId())
+                .purpose(request.getPurpose())
+                .remark(request.getRemark())
+                .expectedReturnDate(request.getExpectedReturnDate())
+                .status(BarCertificateBorrowRecord.BorrowStatus.BORROWED)
+                .build());
+
+        return saved;
+    }
+
+    @Transactional
+    public BarCertificate returnCertificate(Long assetId, Long certificateId, BarCertificateReturnRequest request) {
+        BarCertificate certificate = getCertificate(assetId, certificateId);
+        if (certificate.getStatus() != BarCertificate.CertificateStatus.BORROWED) {
+            throw new IllegalStateException("Only borrowed certificates can be returned");
+        }
+
+        List<BarCertificateBorrowRecord> records = borrowRecordRepository.findByCertificateIdOrderByBorrowedAtDesc(certificate.getId());
+        BarCertificateBorrowRecord latestBorrow = records.stream()
+                .filter(record -> record.getStatus() == BarCertificateBorrowRecord.BorrowStatus.BORROWED)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Borrow record not found"));
+
+        latestBorrow.setStatus(BarCertificateBorrowRecord.BorrowStatus.RETURNED);
+        latestBorrow.setReturnedAt(LocalDateTime.now());
+        if (request.getRemark() != null && !request.getRemark().isBlank()) {
+            latestBorrow.setRemark(request.getRemark());
+        }
+        borrowRecordRepository.save(latestBorrow);
+
+        certificate.setStatus(BarCertificate.CertificateStatus.AVAILABLE);
+        certificate.setCurrentBorrower(null);
+        certificate.setCurrentProjectId(null);
+        certificate.setBorrowPurpose(null);
+        certificate.setExpectedReturnDate(null);
+        if (request.getRemark() != null && !request.getRemark().isBlank()) {
+            certificate.setRemark(request.getRemark());
+        }
+
+        return barCertificateRepository.save(certificate);
+    }
+
+    private void ensureAssetExists(Long assetId) {
+        if (!barAssetRepository.existsById(assetId)) {
+            throw new ResourceNotFoundException("BarAsset", String.valueOf(assetId));
+        }
+    }
+
+    private BarCertificate getCertificate(Long assetId, Long certificateId) {
+        ensureAssetExists(assetId);
+        BarCertificate certificate = barCertificateRepository.findById(certificateId)
+                .orElseThrow(() -> new ResourceNotFoundException("BarCertificate", String.valueOf(certificateId)));
+        if (!certificate.getBarAssetId().equals(assetId)) {
+            throw new IllegalArgumentException("Certificate does not belong to the specified asset");
+        }
+        return certificate;
+    }
+}

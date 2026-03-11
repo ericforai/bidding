@@ -1,7 +1,10 @@
 # Fee Management Module (费用管理模块)
 
-## Overview
-The Fee Management Module handles all fee-related operations for bidding projects, including bid bonds, service fees, document fees, travel fees, notary fees, and other miscellaneous fees.
+> 一旦我所属的文件夹有所变化，请更新我。
+
+## 功能作用
+
+处理投标项目的所有费用相关操作，包括投标保证金、服务费、文档费、差旅费、公证费等。
 
 ## Package Structure
 ```

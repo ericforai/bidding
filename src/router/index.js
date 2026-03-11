@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
 const routes = [
   {
@@ -75,6 +76,12 @@ const routes = [
         name: 'Case',
         component: () => import('@/views/Knowledge/Case.vue'),
         meta: { title: '案例库' }
+      },
+      {
+        path: 'knowledge/case/detail',
+        name: 'CaseDetail',
+        component: () => import('@/views/Knowledge/CaseDetail.vue'),
+        meta: { title: '案例详情' }
       },
       {
         path: 'knowledge/template',
@@ -157,13 +164,30 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
-  // 从 localStorage 获取登录状态
-  const hasToken = localStorage.getItem('user') || sessionStorage.getItem('user')
+router.beforeEach(async (to, from, next) => {
+  const userStore = useUserStore()
+  let hasAuthState =
+    userStore.token ||
+    localStorage.getItem('token') ||
+    sessionStorage.getItem('token') ||
+    userStore.currentUser ||
+    localStorage.getItem('user') ||
+    sessionStorage.getItem('user')
 
-  if (to.meta.requiresAuth && !hasToken) {
+  if (hasAuthState && !userStore.currentUser && userStore.token) {
+    await userStore.restoreSession()
+    hasAuthState =
+      userStore.token ||
+      localStorage.getItem('token') ||
+      sessionStorage.getItem('token') ||
+      userStore.currentUser ||
+      localStorage.getItem('user') ||
+      sessionStorage.getItem('user')
+  }
+
+  if (to.meta.requiresAuth && !hasAuthState) {
     next('/login')
-  } else if (to.path === '/login' && hasToken) {
+  } else if (to.path === '/login' && hasAuthState) {
     next('/dashboard')
   } else {
     next()

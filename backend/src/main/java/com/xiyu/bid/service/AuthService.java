@@ -83,4 +83,18 @@ public class AuthService {
 
         return AuthResponse.from(token, user);
     }
+
+    public AuthResponse getCurrentUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        return AuthResponse.builder()
+                .type("Bearer")
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .role(user.getRole())
+                .build();
+    }
 }

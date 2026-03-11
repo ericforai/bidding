@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -230,7 +231,7 @@ public class ProjectService {
                 .tenderId(project.getTenderId())
                 .status(project.getStatus())
                 .managerId(project.getManagerId())
-                .teamMembers(project.getTeamMembers())
+                .teamMembers(project.getTeamMembers() == null ? List.of() : new ArrayList<>(project.getTeamMembers()))
                 .startDate(project.getStartDate())
                 .endDate(project.getEndDate())
                 .createdAt(project.getCreatedAt())

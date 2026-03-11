@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+BACKEND_DIR="$ROOT_DIR/backend"
+
+required_commands=(node npm java mvn)
+optional_commands=(docker pg_dump psql)
+required_env=(SPRING_PROFILES_ACTIVE DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD JWT_SECRET REDIS_HOST CORS_ALLOWED_ORIGINS)
+
+printf '==> Preflight checks\n'
+printf 'Root: %s\n' "$ROOT_DIR"
+
+for cmd in "${required_commands[@]}"; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    printf 'Missing required command: %s\n' "$cmd" >&2
+    exit 1
+  fi
+done
+
+for cmd in "${optional_commands[@]}"; do
+  if command -v "$cmd" >/dev/null 2>&1; then
+    printf 'Optional command available: %s\n' "$cmd"
+  else
+    printf 'Optional command missing: %s\n' "$cmd"
+  fi
+done
+
+missing_env=0
+for name in "${required_env[@]}"; do
+  if [[ -z "${!name:-}" ]]; then
+    printf 'Missing required env: %s\n' "$name" >&2
+    missing_env=1
+  fi
+done
+
+if [[ "$missing_env" -ne 0 ]]; then
+  exit 1
+fi
+
+printf 'Node: %s\n' "$(node -v)"
+printf 'NPM: %s\n' "$(npm -v)"
+printf 'Java: %s\n' "$(java -version 2>&1 | head -n 1)"
+printf 'Maven: %s\n' "$(mvn -v | head -n 1)"
+
+printf 'Database target: %s:%s/%s (user=%s)\n' "$DB_HOST" "$DB_PORT" "$DB_NAME" "$DB_USER"
+printf 'Redis target: %s:%s\n' "$REDIS_HOST" "${REDIS_PORT:-6379}"
+printf 'CORS origins: %s\n' "$CORS_ALLOWED_ORIGINS"
+
+printf 'Preflight checks passed.\n'

@@ -1,282 +1,383 @@
 import { defineStore } from 'pinia'
-import { mockData } from '@/api/mock'
+import { isMockMode, resourcesApi } from '@/api'
+
+function computeCapability(site) {
+  const accounts = Array.isArray(site.accounts) ? site.accounts : []
+  const uks = Array.isArray(site.uks) ? site.uks : []
+  const hasDetailedChildData = isMockMode() || accounts.length > 0 || uks.length > 0
+
+  const hasAccount = accounts.length > 0
+  const hasAvailableUK = uks.some((uk) => uk.status === 'available')
+  const hasRisk = Boolean(site.hasRisk) || uks.some((uk) => {
+    if (!uk.expiryDate) return false
+    const daysLeft = Math.ceil((new Date(uk.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))
+    return daysLeft <= 30
+  })
+
+  let status = 'available'
+  if (hasDetailedChildData && (!hasAccount || (uks.length > 0 && !hasAvailableUK))) {
+    status = 'unavailable'
+  } else if (!hasDetailedChildData && site.status !== 'active') {
+    status = 'unavailable'
+  } else if (hasRisk) {
+    status = 'risk'
+  }
+
+  return {
+    status,
+    hasAccount,
+    hasAvailableUK,
+    hasRisk,
+    accountCount: accounts.length,
+    ukCount: uks.length,
+    availableUkCount: uks.filter((uk) => uk.status === 'available').length,
+    primaryOwner: accounts[0]?.owner || '',
+    primaryPhone: accounts[0]?.phone || '',
+  }
+}
 
 export const useBarStore = defineStore('bar', {
   state: () => ({
     sites: [],
     currentSite: null,
-    loading: false
+    loading: false,
   }),
 
   getters: {
-    activeSites: (state) => state.sites.filter(s => s.status === 'active'),
-    riskSites: (state) => state.sites.filter(s => s.hasRisk),
-    getSiteById: (state) => (id) => state.sites.find(s => s.id === id),
-    getSiteByUrl: (state) => (url) => state.sites.find(s => s.url === url)
+    activeSites: (state) => state.sites.filter((site) => site.status === 'active'),
+    riskSites: (state) => state.sites.filter((site) => site.hasRisk),
+    getSiteByUrl: (state) => (url) => state.sites.find((site) => site.url === url),
   },
 
   actions: {
-    async getSites() {
+    async getSites(params = {}) {
       this.loading = true
-      // 从 mock 数据加载
-      this.sites = mockData.barSites || []
-      this.loading = false
-      return this.sites
+      try {
+      const response = await resourcesApi.barSites.getList(params)
+      if (!response?.success) {
+          return response
+      }
+
+      const sites = Array.isArray(response.data) ? response.data : []
+      if (!isMockMode()) {
+          const withCertificates = await Promise.all(sites.map(async (site) => {
+              const certificatesResponse = await resourcesApi.certificates.getList(site.id)
+              return {
+                  ...site,
+                  uks: certificatesResponse?.success && Array.isArray(certificatesResponse.data)
+                      ? certificatesResponse.data
+                      : [],
+              }
+          }))
+          this.sites = withCertificates
+      } else {
+          this.sites = sites
+      }
+      return { success: true, data: this.sites }
+      } finally {
+        this.loading = false
+      }
     },
 
     async getSiteById(id) {
-      const site = this.sites.find(s => s.id === id)
+      const existing = this.sites.find((site) => String(site.id) === String(id))
+      if (existing) {
+        this.currentSite = existing
+        return existing
+      }
+
+      const response = await resourcesApi.barSites.getDetail(id)
+      if (!response?.success) {
+        return null
+      }
+
+      let site = response.data
+      if (site && !isMockMode()) {
+        const certificatesResponse = await resourcesApi.certificates.getList(id)
+        site = {
+          ...site,
+          uks: certificatesResponse?.success && Array.isArray(certificatesResponse.data)
+            ? certificatesResponse.data
+            : [],
+        }
+      }
+
       this.currentSite = site
+      if (site) {
+        const index = this.sites.findIndex((site) => String(site.id) === String(id))
+        if (index === -1) {
+          this.sites.push(site)
+        } else {
+          this.sites[index] = site
+        }
+      }
       return site
     },
 
     async checkSiteCapability(siteNameOrUrl) {
-      // 根据名称或URL查找站点
-      const site = this.sites.find(s =>
-        s.name.includes(siteNameOrUrl) ||
-        s.url.includes(siteNameOrUrl)
-      )
-      if (!site) {
-        return { found: false, siteNameOrUrl }
+      if (!this.sites.length) {
+        const response = await this.getSites()
+        if (!response?.success) {
+          return { found: false, siteNameOrUrl }
+        }
       }
 
-      // 计算可投标能力状态
-      const hasAccount = site.accounts && site.accounts.length > 0
-      const hasAvailableUK = site.uks && site.uks.some(uk => uk.status === 'available')
-      const hasRisk = site.uks && site.uks.some(uk => {
-        if (!uk.expiryDate) return false
-        const daysLeft = Math.ceil((new Date(uk.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))
-        return daysLeft <= 30
-      })
+      const keyword = String(siteNameOrUrl || '').trim()
+      const site = this.sites.find((item) =>
+        item.name?.includes(keyword) || item.url?.includes(keyword),
+      )
 
-      let status = 'available' // 可投标
-      if (!hasAccount || !hasAvailableUK) {
-        status = 'unavailable' // 不可投标
-      } else if (hasRisk) {
-        status = 'risk' // 有风险
+      if (!site) {
+        return { found: false, siteNameOrUrl }
       }
 
       return {
         found: true,
         site,
-        capability: {
-          status,
-          hasAccount,
-          hasAvailableUK,
-          hasRisk,
-          accountCount: site.accounts?.length || 0,
-          ukCount: site.uks?.length || 0,
-          availableUkCount: site.uks?.filter(uk => uk.status === 'available').length || 0,
-          primaryOwner: site.accounts?.[0]?.owner || '',
-          primaryPhone: site.accounts?.[0]?.phone || ''
-        }
+        capability: computeCapability(site),
       }
     },
 
     async createSite(data) {
-      const newSite = {
-        id: `S${Date.now()}`,
-        status: 'active',
-        hasRisk: false,
-        accounts: [],
-        uks: [],
-        attachments: [],
-        auditLog: [],
-        createTime: new Date().toISOString().split('T')[0],
-        ...data
+      const response = await resourcesApi.barSites.create(data)
+      if (!response?.success) {
+        return response
       }
-      this.sites.unshift(newSite)
-      return newSite
+
+      this.sites.unshift(response.data)
+      return response
     },
 
     async updateSite(id, data) {
-      const index = this.sites.findIndex(s => s.id === id)
-      if (index !== -1) {
-        this.sites[index] = { ...this.sites[index], ...data }
-        return this.sites[index]
+      const response = await resourcesApi.barSites.update(id, data)
+      if (!response?.success) {
+        return response
       }
-      return null
+
+      const index = this.sites.findIndex((site) => String(site.id) === String(id))
+      if (index !== -1) {
+        this.sites[index] = response.data
+      }
+      if (this.currentSite && String(this.currentSite.id) === String(id)) {
+        this.currentSite = response.data
+      }
+      return response
     },
 
     async deleteSite(id) {
-      const index = this.sites.findIndex(s => s.id === id)
+      const response = await resourcesApi.barSites.delete(id)
+      if (!response?.success) {
+        return response
+      }
+
+      const index = this.sites.findIndex((site) => String(site.id) === String(id))
       if (index !== -1) {
         this.sites.splice(index, 1)
-        return true
       }
-      return false
+      if (this.currentSite && String(this.currentSite.id) === String(id)) {
+        this.currentSite = null
+      }
+      return response
     },
 
-    // 账号管理
     async addAccount(siteId, accountData) {
-      const site = this.sites.find(s => s.id === siteId)
-      if (site) {
-        const newAccount = {
-          id: `A${Date.now()}`,
-          status: 'active',
-          ...accountData
+      if (!isMockMode()) {
+        return {
+          success: false,
+          message: '真实后端仅提供扁平 BAR 资产接口，站点账号子资源尚未接入',
         }
-        if (!site.accounts) site.accounts = []
-        site.accounts.push(newAccount)
-        return newAccount
       }
-      return null
+
+      const site = this.sites.find((item) => String(item.id) === String(siteId))
+      if (!site) return { success: false, message: '站点不存在' }
+
+      const newAccount = {
+        id: `A${Date.now()}`,
+        status: 'active',
+        ...accountData,
+      }
+      site.accounts = Array.isArray(site.accounts) ? site.accounts : []
+      site.accounts.push(newAccount)
+      this.updateSiteRisk(siteId)
+      return { success: true, data: newAccount }
     },
 
     async updateAccount(siteId, accountId, data) {
-      const site = this.sites.find(s => s.id === siteId)
-      if (site) {
-        const account = site.accounts.find(a => a.id === accountId)
-        if (account) {
-          Object.assign(account, data)
-          return account
+      if (!isMockMode()) {
+        return {
+          success: false,
+          message: '真实后端仅提供扁平 BAR 资产接口，站点账号子资源尚未接入',
         }
       }
-      return null
+
+      const site = this.sites.find((item) => String(item.id) === String(siteId))
+      const account = site?.accounts?.find((item) => String(item.id) === String(accountId))
+      if (!account) return { success: false, message: '账号不存在' }
+
+      Object.assign(account, data)
+      this.updateSiteRisk(siteId)
+      return { success: true, data: account }
     },
 
     async deleteAccount(siteId, accountId) {
-      const site = this.sites.find(s => s.id === siteId)
-      if (site) {
-        const index = site.accounts.findIndex(a => a.id === accountId)
-        if (index !== -1) {
-          site.accounts.splice(index, 1)
-          return true
+      if (!isMockMode()) {
+        return {
+          success: false,
+          message: '真实后端仅提供扁平 BAR 资产接口，站点账号子资源尚未接入',
         }
       }
-      return false
+
+      const site = this.sites.find((item) => String(item.id) === String(siteId))
+      if (!site?.accounts) return { success: false, message: '账号不存在' }
+
+      const index = site.accounts.findIndex((item) => String(item.id) === String(accountId))
+      if (index === -1) return { success: false, message: '账号不存在' }
+
+      site.accounts.splice(index, 1)
+      this.updateSiteRisk(siteId)
+      return { success: true }
     },
 
-    // UK管理
     async addUk(siteId, ukData) {
-      const site = this.sites.find(s => s.id === siteId)
-      if (site) {
-        const newUk = {
-          id: `UK${Date.now()}`,
-          status: 'available',
-          ...ukData
-        }
-        if (!site.uks) site.uks = []
-        site.uks.push(newUk)
-        this.updateSiteRisk(siteId)
-        return newUk
+      if (!isMockMode()) {
+        return resourcesApi.certificates.create(siteId, ukDataToPayload(ukData))
       }
-      return null
+
+      const site = this.sites.find((item) => String(item.id) === String(siteId))
+      if (!site) return { success: false, message: '站点不存在' }
+
+      const newUk = {
+        id: `UK${Date.now()}`,
+        status: 'available',
+        ...ukData,
+      }
+      site.uks = Array.isArray(site.uks) ? site.uks : []
+      site.uks.push(newUk)
+      this.updateSiteRisk(siteId)
+      return { success: true, data: newUk }
     },
 
     async updateUk(siteId, ukId, data) {
-      const site = this.sites.find(s => s.id === siteId)
-      if (site) {
-        const uk = site.uks.find(u => u.id === ukId)
-        if (uk) {
-          Object.assign(uk, data)
-          this.updateSiteRisk(siteId)
-          return uk
-        }
+      if (!isMockMode()) {
+        return resourcesApi.certificates.update(siteId, ukId, ukDataToPayload(data))
       }
-      return null
+
+      const site = this.sites.find((item) => String(item.id) === String(siteId))
+      const uk = site?.uks?.find((item) => String(item.id) === String(ukId))
+      if (!uk) return { success: false, message: 'UK 不存在' }
+
+      Object.assign(uk, data)
+      this.updateSiteRisk(siteId)
+      return { success: true, data: uk }
     },
 
     async deleteUk(siteId, ukId) {
-      const site = this.sites.find(s => s.id === siteId)
-      if (site) {
-        const index = site.uks.findIndex(u => u.id === ukId)
-        if (index !== -1) {
-          site.uks.splice(index, 1)
-          this.updateSiteRisk(siteId)
-          return true
-        }
+      if (!isMockMode()) {
+        return resourcesApi.certificates.delete(siteId, ukId)
       }
-      return false
+
+      const site = this.sites.find((item) => String(item.id) === String(siteId))
+      if (!site?.uks) return { success: false, message: 'UK 不存在' }
+
+      const index = site.uks.findIndex((item) => String(item.id) === String(ukId))
+      if (index === -1) return { success: false, message: 'UK 不存在' }
+
+      site.uks.splice(index, 1)
+      this.updateSiteRisk(siteId)
+      return { success: true }
     },
 
     async borrowUk(siteId, ukId, borrowData) {
-      const site = this.sites.find(s => s.id === siteId)
-      if (site) {
-        const uk = site.uks.find(u => u.id === ukId)
-        if (uk) {
-          uk.status = 'borrowed'
-          uk.borrower = borrowData.borrower
-          uk.borrowProject = borrowData.project
-          uk.borrowPurpose = borrowData.purpose
-          uk.borrowTime = new Date().toISOString()
-          uk.expectedReturn = borrowData.returnDate
-
-          // 添加操作记录
-          if (!site.auditLog) site.auditLog = []
-          site.auditLog.unshift({
-            time: new Date().toLocaleString('zh-CN'),
-            user: borrowData.borrower,
-            action: `借用 ${uk.type} (${uk.serialNo})`
-          })
-
-          this.updateSiteRisk(siteId)
-          return uk
-        }
+      if (!isMockMode()) {
+        return resourcesApi.certificates.borrow(siteId, ukId, {
+          borrower: borrowData.borrower,
+          projectId: borrowData.projectId ? Number(borrowData.projectId) : null,
+          purpose: borrowData.purpose,
+          remark: borrowData.remark,
+          expectedReturnDate: borrowData.returnDate,
+        })
       }
-      return null
+
+      const site = this.sites.find((item) => String(item.id) === String(siteId))
+      const uk = site?.uks?.find((item) => String(item.id) === String(ukId))
+      if (!uk) return { success: false, message: 'UK 不存在' }
+
+      uk.status = 'borrowed'
+      uk.borrower = borrowData.borrower
+      uk.borrowProject = borrowData.project
+      uk.borrowPurpose = borrowData.purpose
+      uk.borrowTime = new Date().toISOString()
+      uk.expectedReturn = borrowData.returnDate
+
+      site.auditLog = Array.isArray(site.auditLog) ? site.auditLog : []
+      site.auditLog.unshift({
+        time: new Date().toLocaleString('zh-CN'),
+        user: borrowData.borrower,
+        action: `借用 ${uk.type} (${uk.serialNo})`,
+      })
+
+      this.updateSiteRisk(siteId)
+      return { success: true, data: uk }
     },
 
     async returnUk(siteId, ukId) {
-      const site = this.sites.find(s => s.id === siteId)
-      if (site) {
-        const uk = site.uks.find(u => u.id === ukId)
-        if (uk && uk.status === 'borrowed') {
-          const borrower = uk.borrower
-          uk.status = 'available'
-          delete uk.borrower
-          delete uk.borrowProject
-          delete uk.borrowPurpose
-          delete uk.borrowTime
-          delete uk.expectedReturn
-
-          // 添加操作记录
-          if (!site.auditLog) site.auditLog = []
-          site.auditLog.unshift({
-            time: new Date().toLocaleString('zh-CN'),
-            user: borrower,
-            action: `归还 ${uk.type} (${uk.serialNo})`
-          })
-
-          this.updateSiteRisk(siteId)
-          return uk
-        }
+      if (!isMockMode()) {
+        return resourcesApi.certificates.return(siteId, ukId, {})
       }
-      return null
+
+      const site = this.sites.find((item) => String(item.id) === String(siteId))
+      const uk = site?.uks?.find((item) => String(item.id) === String(ukId))
+      if (!uk || uk.status !== 'borrowed') {
+        return { success: false, message: 'UK 当前不可归还' }
+      }
+
+      const borrower = uk.borrower
+      uk.status = 'available'
+      delete uk.borrower
+      delete uk.borrowProject
+      delete uk.borrowPurpose
+      delete uk.borrowTime
+      delete uk.expectedReturn
+
+      site.auditLog = Array.isArray(site.auditLog) ? site.auditLog : []
+      site.auditLog.unshift({
+        time: new Date().toLocaleString('zh-CN'),
+        user: borrower,
+        action: `归还 ${uk.type} (${uk.serialNo})`,
+      })
+
+      this.updateSiteRisk(siteId)
+      return { success: true, data: uk }
     },
 
-    // 更新站点风险状态
     updateSiteRisk(siteId) {
-      const site = this.sites.find(s => s.id === siteId)
+      const site = this.sites.find((item) => String(item.id) === String(siteId))
       if (!site) return
 
-      let hasRisk = false
+      const accounts = Array.isArray(site.accounts) ? site.accounts : []
+      const uks = Array.isArray(site.uks) ? site.uks : []
 
-      // 检查UK是否即将过期
-      if (site.uks) {
-        for (const uk of site.uks) {
-          if (uk.expiryDate) {
-            const daysLeft = Math.ceil((new Date(uk.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))
-            if (daysLeft <= 30) {
-              hasRisk = true
-              break
-            }
-          }
-        }
-      }
+      const ukRisk = uks.some((uk) => {
+        if (!uk.expiryDate) return false
+        const daysLeft = Math.ceil((new Date(uk.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))
+        return daysLeft <= 30
+      })
 
-      // 检查账号是否绑定个人手机号（简化判断：包含个人字样）
-      if (site.accounts) {
-        for (const account of site.accounts) {
-          if (account.phone && !account.phone.includes('****')) {
-            // 如果手机号没有脱敏，可能存在风险
-            hasRisk = true
-            break
-          }
-        }
-      }
-
-      site.hasRisk = hasRisk
-    }
-  }
+      const accountRisk = accounts.some((account) => account.phone && !account.phone.includes('****'))
+      site.hasRisk = ukRisk || accountRisk
+      site.riskLevel = site.hasRisk ? 'high' : 'low'
+    },
+  },
 })
+
+function ukDataToPayload(data) {
+  return {
+    type: data.type,
+    provider: data.provider,
+    serialNo: data.serialNo,
+    holder: data.holder,
+    location: data.location,
+    expiryDate: data.expiryDate,
+    remark: data.remark,
+  }
+}

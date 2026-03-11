@@ -1,0 +1,62 @@
+/**
+ * API 统一导出
+ * 支持双模式切换: Mock 数据 / 真实后端 API
+ *
+ * 使用方式:
+ * import { authApi, projectsApi, tendersApi } from '@/api'
+ *
+ * 环境变量控制模式:
+ * - VITE_API_MODE=mock    使用 Mock 数据
+ * - VITE_API_MODE=api     使用真实后端 API
+ * - VITE_API_BASE_URL     后端 API 地址 (默认: http://localhost:8080)
+ */
+
+// 导出配置
+export { API_CONFIG, isMockMode, isCommercialMode, getApiUrl } from './config.js'
+
+// 导出 HTTP 客户端
+export { default as httpClient } from './client.js'
+
+// 导出 Mock 数据 (保留原有数据源)
+export { mockData, api as mockApi } from './mock.js'
+
+// 导出各模块 API
+export { authApi } from './modules/auth.js'
+export { tendersApi } from './modules/tenders.js'
+export { projectsApi } from './modules/projects.js'
+export { default as knowledgeApi } from './modules/knowledge.js'
+export { feesApi } from './modules/fees.js'
+export { default as aiApi } from './modules/ai.js'
+export { default as resourcesApi } from './modules/resources.js'
+export { default as collaborationApi } from './modules/collaboration.js'
+export { dashboardApi } from './modules/dashboard.js'
+
+// 统一导出对象 (方便解构使用)
+export default {
+  // 认证
+  auth: () => import('./modules/auth.js').then(m => m.authApi),
+
+  // 标讯
+  tenders: () => import('./modules/tenders.js').then(m => m.tendersApi),
+
+  // 项目
+  projects: () => import('./modules/projects.js').then(m => m.projectsApi),
+
+  // 知识库
+  knowledge: () => import('./modules/knowledge.js').then(m => m.default),
+
+  // 费用
+  fees: () => import('./modules/fees.js').then(m => m.feesApi),
+
+  // AI 分析
+  ai: () => import('./modules/ai.js').then(m => m.default),
+
+  // 资源
+  resources: () => import('./modules/resources.js').then(m => m.default),
+
+  // 协作
+  collaboration: () => import('./modules/collaboration.js').then(m => m.default),
+
+  // 看板
+  dashboard: () => import('./modules/dashboard.js').then(m => m.default)
+}

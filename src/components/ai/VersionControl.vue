@@ -119,7 +119,7 @@
               版本 {{ oldVersion.version }}
             </div>
             <div class="panel-body">
-              <div v-for="(change, idx) in oldVersion.changes" :key="idx" class="change-item removed">
+              <div v-for="(change, idx) in (compareResult?.version1?.changes || oldVersion.changes)" :key="idx" class="change-item removed">
                 - {{ change }}
               </div>
             </div>
@@ -130,7 +130,7 @@
               版本 {{ newVersion.version }}
             </div>
             <div class="panel-body">
-              <div v-for="(change, idx) in newVersion.changes" :key="idx" class="change-item added">
+              <div v-for="(change, idx) in (compareResult?.version2?.changes || newVersion.changes)" :key="idx" class="change-item added">
                 + {{ change }}
               </div>
             </div>
@@ -188,8 +188,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { collaborationApi, isMockMode } from '@/api'
+import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
   modelValue: {
@@ -203,6 +205,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'restore', 'create-version'])
+const userStore = useUserStore()
 
 const dialogVisible = computed({
   get: () => props.modelValue,
@@ -213,52 +216,16 @@ const compareMode = ref(false)
 const compareOld = ref('')
 const compareNew = ref('')
 const selectedVersion = ref(null)
-
-// Mock 数据
-const versionHistory = {
-  P001: {
-    versions: [
-      {
-        id: 'v3',
-        version: '3.0',
-        isCurrent: true,
-        timestamp: '2024-03-10 14:30',
-        author: '李四',
-        avatar: '李',
-        changes: ['更新技术架构章节', '补充AI能力描述', '修改报价为1180万']
-      },
-      {
-        id: 'v2',
-        version: '2.0',
-        isCurrent: false,
-        timestamp: '2024-03-08 10:15',
-        author: '张三',
-        avatar: '张',
-        changes: ['补充案例章节', '更新服务承诺', '调整项目团队']
-      },
-      {
-        id: 'v1',
-        version: '1.0',
-        isCurrent: false,
-        timestamp: '2024-03-05 16:00',
-        author: '王五',
-        avatar: '王',
-        changes: ['初始版本创建', '完成基础框架']
-      }
-    ]
-  }
-}
-
-const versions = computed(() => {
-  return versionHistory[props.projectId]?.versions || []
-})
+const versions = ref([])
+const compareResult = ref(null)
+const isApiMode = computed(() => !isMockMode())
 
 const oldVersion = computed(() => {
-  return versions.value.find(v => v.id === compareOld.value)
+  return versions.value.find(v => String(v.id) === String(compareOld.value))
 })
 
 const newVersion = computed(() => {
-  return versions.value.find(v => v.id === compareNew.value)
+  return versions.value.find(v => String(v.id) === String(compareNew.value))
 })
 
 // 初始化对比版本
@@ -267,6 +234,19 @@ const initCompareVersions = () => {
     compareNew.value = versions.value[0].id
     compareOld.value = versions.value[1].id
   }
+}
+
+const loadVersions = async () => {
+  const response = await collaborationApi.versions.getVersions(props.projectId)
+  if (!response?.success) {
+    versions.value = []
+    selectedVersion.value = null
+    ElMessage.info(response?.message || '当前项目暂无版本数据')
+    return
+  }
+
+  versions.value = Array.isArray(response.data) ? response.data : []
+  selectedVersion.value = versions.value[0] || null
 }
 
 const selectVersion = (version) => {
@@ -280,6 +260,7 @@ const viewVersionDetail = (version) => {
 
 const handleCompareMode = () => {
   initCompareVersions()
+  compareResult.value = null
   compareMode.value = true
 }
 
@@ -292,9 +273,16 @@ const handleRestore = (version) => {
       cancelButtonText: '取消',
       type: 'warning'
     }
-  ).then(() => {
+  ).then(async () => {
+    const userId = userStore.currentUser?.id
+    const response = await collaborationApi.versions.rollback(props.projectId, version.id, userId)
+    if (!response?.success) {
+      ElMessage.info(response?.message || '当前环境未接入版本回滚能力')
+      return
+    }
     emit('restore', version)
     ElMessage.success(`已恢复到版本 ${version.version}`)
+    await loadVersions()
   }).catch(() => {
     // 用户取消
   })
@@ -305,9 +293,19 @@ const handleCreateVersion = () => {
     confirmButtonText: '创建',
     cancelButtonText: '取消',
     inputPlaceholder: '请描述本次主要变更...'
-  }).then(({ value }) => {
+  }).then(async ({ value }) => {
+    const response = await collaborationApi.versions.createVersion(props.projectId, {
+      changeSummary: value,
+      content: value,
+      createdBy: userStore.currentUser?.id || 1,
+    })
+    if (!response?.success) {
+      ElMessage.info(response?.message || '创建版本失败')
+      return
+    }
     emit('create-version', { description: value })
     ElMessage.success('新版本创建成功')
+    await loadVersions()
   }).catch(() => {
     // 用户取消
   })
@@ -317,7 +315,26 @@ const handleClose = () => {
   dialogVisible.value = false
   compareMode.value = false
   selectedVersion.value = null
+  compareResult.value = null
 }
+
+watch(
+  () => props.modelValue,
+  (visible) => {
+    if (visible) {
+      loadVersions()
+    }
+  }
+)
+
+watch(
+  () => [compareOld.value, compareNew.value, compareMode.value],
+  async ([oldId, newId, isCompare]) => {
+    if (!isCompare || !oldId || !newId) return
+    const response = await collaborationApi.versions.compare(props.projectId, oldId, newId)
+    compareResult.value = response?.success ? response.data : null
+  }
+)
 </script>
 
 <style scoped>

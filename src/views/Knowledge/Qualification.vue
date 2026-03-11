@@ -364,6 +364,7 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+import { knowledgeApi, isMockMode } from '@/api'
 
 const userStore = useUserStore()
 const isAdmin = computed(() => userStore.currentUser?.role === 'admin')
@@ -457,143 +458,20 @@ const uploadForm = reactive({
   file: null
 })
 
-// Mock 数据
-const mockQualifications = [
-  {
-    id: 1,
-    name: '高新技术企业证书',
-    type: 'enterprise',
-    certificateNo: 'GR202311000123',
-    issueDate: '2023-06-15',
-    expiryDate: '2026-06-14',
-    issuer: '科学技术部',
-    status: 'valid',
-    remainingDays: 890
-  },
-  {
-    id: 2,
-    name: 'ISO9001质量管理体系认证',
-    type: 'industry',
-    certificateNo: 'QMS2023-01-001',
-    issueDate: '2023-03-20',
-    expiryDate: '2026-03-19',
-    issuer: '中国质量认证中心',
-    status: 'valid',
-    remainingDays: 750
-  },
-  {
-    id: 3,
-    name: '建筑工程施工总承包壹级',
-    type: 'enterprise',
-    certificateNo: 'D144007891',
-    issueDate: '2021-08-10',
-    expiryDate: '2026-08-09',
-    issuer: '住房和城乡建设部',
-    status: 'valid',
-    remainingDays: 890
-  },
-  {
-    id: 4,
-    name: '软件能力成熟度CMMI5级',
-    type: 'industry',
-    certificateNo: 'CMMI-5-2023-001',
-    issueDate: '2023-05-01',
-    expiryDate: '2025-05-01',
-    issuer: 'CMMI Institute',
-    status: 'expiring',
-    remainingDays: 430
-  },
-  {
-    id: 5,
-    name: '安全生产许可证',
-    type: 'enterprise',
-    certificateNo: '（浙）JZ安许证字〔2023〕000123',
-    issueDate: '2023-01-15',
-    expiryDate: '2026-01-14',
-    issuer: '浙江省应急管理厅',
-    status: 'valid',
-    remainingDays: 690
-  },
-  {
-    id: 6,
-    name: 'PMP项目管理专业人士认证',
-    type: 'personnel',
-    certificateNo: '3889123',
-    issueDate: '2023-09-01',
-    expiryDate: '2026-09-01',
-    issuer: 'PMI',
-    status: 'valid',
-    remainingDays: 920
-  },
-  {
-    id: 7,
-    name: '信息安全等级保护三级认证',
-    type: 'industry',
-    certificateNo: 'DJCP2023-330100-001',
-    issueDate: '2023-07-20',
-    expiryDate: '2026-07-19',
-    issuer: '公安部网络安全保卫局',
-    status: 'valid',
-    remainingDays: 870
-  },
-  {
-    id: 8,
-    name: '环保工程专项设计资质乙级',
-    type: 'enterprise',
-    certificateNo: 'A233001234',
-    issueDate: '2020-03-15',
-    expiryDate: '2025-03-14',
-    issuer: '环境保护部',
-    status: 'expiring',
-    remainingDays: 22
-  },
-  {
-    id: 9,
-    name: '系统集成及服务资质二级',
-    type: 'enterprise',
-    certificateNo: 'XZ2023-001-0056',
-    issueDate: '2023-02-10',
-    expiryDate: '2025-02-09',
-    issuer: '中国电子信息行业联合会',
-    status: 'expiring',
-    remainingDays: 18
-  },
-  {
-    id: 10,
-    name: '注册建造师一级证书',
-    type: 'personnel',
-    certificateNo: '浙133202301234',
-    issueDate: '2020-05-20',
-    expiryDate: '2024-05-19',
-    issuer: '人力资源和社会保障部',
-    status: 'expired',
-    remainingDays: -280
-  },
-  {
-    id: 11,
-    name: '3C强制性产品认证',
-    type: 'product',
-    certificateNo: '2023010101234567',
-    issueDate: '2023-01-10',
-    expiryDate: '2028-01-09',
-    issuer: '中国强制性产品认证中心',
-    status: 'valid',
-    remainingDays: 2150
-  },
-  {
-    id: 12,
-    name: '环境管理体系认证ISO14001',
-    type: 'industry',
-    certificateNo: 'EMS2023-01-002',
-    issueDate: '2023-04-15',
-    expiryDate: '2026-04-14',
-    issuer: '中国质量认证中心',
-    status: 'valid',
-    remainingDays: 780
-  }
-]
-
 const qualifications = ref([])
+
+const loadQualifications = async () => {
+  loading.value = true
+  try {
+    const result = await knowledgeApi.qualifications.getList()
+    if (result?.success) {
+      qualifications.value = result.data || []
+      pagination.total = qualifications.value.length
+    }
+  } finally {
+    loading.value = false
+  }
+}
 
 // 过滤后的数据
 const filteredQualifications = computed(() => {
@@ -752,28 +630,31 @@ const handleFileChange = (file) => {
 }
 
 // 确认上传
-const handleConfirmUpload = () => {
+const handleConfirmUpload = async () => {
   if (!uploadForm.name || !uploadForm.type || !uploadForm.expiryDate) {
     ElMessage.warning('请填写必填项')
     return
   }
 
-  ElMessage.success('上传成功')
-  uploadDialogVisible.value = false
-
-  // 模拟添加数据
-  const newQualification = {
-    id: Date.now(),
+  const payload = {
     name: uploadForm.name,
     type: uploadForm.type,
-    certificateNo: uploadForm.certificateNo || '-',
-    issueDate: uploadForm.issueDate || '-',
+    certificateNo: uploadForm.certificateNo,
+    issueDate: uploadForm.issueDate,
     expiryDate: uploadForm.expiryDate,
-    issuer: uploadForm.issuer || '-',
-    status: 'valid',
-    remainingDays: Math.ceil((new Date(uploadForm.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))
+    issuer: uploadForm.issuer,
+    fileUrl: uploadForm.file?.name || ''
   }
-  qualifications.value.unshift(newQualification)
+
+  const result = await knowledgeApi.qualifications.create(payload)
+  if (!result?.success) {
+    ElMessage.error(result?.message || '上传失败')
+    return
+  }
+
+  qualifications.value.unshift(result.data)
+  uploadDialogVisible.value = false
+  ElMessage.success(isMockMode() ? '上传成功' : '资质元数据已创建，文件上传后端暂未接入')
 }
 
 // 查看
@@ -797,12 +678,17 @@ const handleDelete = (row) => {
       cancelButtonText: '取消',
       type: 'warning'
     }
-  ).then(() => {
+  ).then(async () => {
+    const result = await knowledgeApi.qualifications.delete(row.id)
+    if (!result?.success && result !== undefined) {
+      ElMessage.error(result?.message || '删除失败')
+      return
+    }
     const index = qualifications.value.findIndex(item => item.id === row.id)
     if (index > -1) {
       qualifications.value.splice(index, 1)
-      ElMessage.success('删除成功')
     }
+    ElMessage.success('删除成功')
   }).catch(() => {})
 }
 
@@ -903,8 +789,7 @@ const handleSizeChange = (size) => {
 }
 
 onMounted(() => {
-  qualifications.value = mockQualifications
-  pagination.total = mockQualifications.length
+  loadQualifications()
 })
 </script>
 

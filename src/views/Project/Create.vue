@@ -3,7 +3,7 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span class="title">创建投标项目</span>
+          <span class="title">{{ pageTitle }}</span>
           <el-button @click="goBack">返回</el-button>
         </div>
       </template>
@@ -12,7 +12,7 @@
         <el-step title="基本信息" description="从CRM同步或手动输入" />
         <el-step title="项目详情" description="完善项目信息" />
         <el-step title="任务分解" description="添加项目任务" />
-        <el-step title="智能辅助" description="AI分析与建议" />
+        <el-step v-if="hasAiStep" title="智能辅助" description="AI分析与建议" />
       </el-steps>
 
       <div class="step-content">
@@ -324,7 +324,7 @@
         </div>
 
         <!-- 步骤4: 智能辅助 -->
-        <div v-show="currentStep === 3" class="step-panel">
+        <div v-if="hasAiStep" v-show="currentStep === 3" class="step-panel">
           <el-alert
             title="AI智能分析"
             type="success"
@@ -384,6 +384,14 @@
             <el-icon><MagicStick /></el-icon>
             AI建议
           </el-divider>
+          <el-alert
+            v-if="scorePreviewUnavailable"
+            :title="scorePreviewMessage"
+            type="warning"
+            :closable="false"
+            show-icon
+            class="mb-12"
+          />
           <ul class="suggestion-list">
             <li v-for="(suggestion, index) in aiSummary.suggestions" :key="index">
               {{ suggestion }}
@@ -441,8 +449,8 @@
 
       <div class="step-actions">
         <el-button v-if="currentStep > 0" @click="prevStep">上一步</el-button>
-        <el-button v-if="currentStep < 3" type="primary" @click="nextStep">下一步</el-button>
-        <el-button v-if="currentStep === 3" type="primary" :loading="submitting" @click="handleSubmit">
+        <el-button v-if="currentStep < lastStepIndex" type="primary" @click="nextStep">下一步</el-button>
+        <el-button v-if="currentStep === lastStepIndex" type="primary" :loading="submitting" @click="handleSubmit">
           确认并创建项目
         </el-button>
       </div>
@@ -535,7 +543,7 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
 import { useBarStore } from '@/stores/bar'
@@ -545,11 +553,17 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ScoreCoverage from '@/components/ai/ScoreCoverage.vue'
+import { aiApi, isMockMode } from '@/api'
 
 const router = useRouter()
+const route = useRoute()
 const projectStore = useProjectStore()
 const userStore = useUserStore()
 const barStore = useBarStore()
+
+// 编辑模式
+const isEditMode = ref(false)
+const editProjectId = ref(null)
 
 const currentStep = ref(0)
 const syncing = ref(false)
@@ -558,6 +572,13 @@ const submitting = ref(false)
 const analyzing = ref(false)
 const showAssetCheckDialog = ref(false)
 const assetCheckResult = ref(null)
+const scorePreviewUnavailable = ref(false)
+const scorePreviewMessage = ref('')
+const hasAiStep = true
+const lastStepIndex = hasAiStep ? 3 : 2
+
+// 计算页面标题
+const pageTitle = computed(() => isEditMode.value ? '编辑项目' : '创建项目')
 
 const userList = computed(() => userStore.users)
 
@@ -613,42 +634,20 @@ const taskForm = reactive({
 
 // AI分析数据
 const aiSummary = ref({
-  winScore: 72,
-  winLevel: 'medium',
-  risks: [
-    { level: 'high', content: '技术方案中物联网架构缺失，可能扣15分' },
-    { level: 'medium', content: '智慧城市同类案例储备不足' }
-  ],
-  suggestions: [
-    '优先补充物联网架构方案，建议参考某省政府IoT项目',
-    '尽快完善智慧城市案例材料，可使用西部智慧园区项目作为类似案例',
-    '商务条件较好，建议继续保持'
-  ]
+  winScore: 0,
+  winLevel: 'low',
+  risks: [],
+  suggestions: []
 })
 
 // 评分分析数据
 const scoreAnalysis = ref({
-  scoreCategories: [
-    { name: '技术', weight: 40, covered: 28, total: 40, percentage: 70, gaps: ['物联网架构方案', '大数据平台'] },
-    { name: '商务', weight: 30, covered: 25, total: 30, percentage: 83, gaps: [] },
-    { name: '案例', weight: 20, covered: 8, total: 20, percentage: 40, gaps: ['智慧城市案例'] },
-    { name: '服务', weight: 10, covered: 7, total: 10, percentage: 70, gaps: ['运维承诺'] }
-  ],
-  gapItems: [
-    { category: '技术', scorePoint: '物联网架构', required: '架构图+技术说明', status: 'missing' },
-    { category: '技术', scorePoint: '大数据平台', required: '平台架构+性能指标', status: 'missing' },
-    { category: '案例', scorePoint: '智慧城市案例', required: '至少1个同类案例', status: 'missing' },
-    { category: '服务', scorePoint: '运维承诺', required: '3年免费运维承诺', status: 'missing' }
-  ]
+  scoreCategories: [],
+  gapItems: []
 })
 
 // AI生成的任务清单
-const aiGeneratedTasks = ref([
-  { name: '补充物联网架构方案', priority: 'high', suggestion: '参考某省政府IoT项目架构', selected: true },
-  { name: '完善大数据平台方案', priority: 'high', suggestion: '需包含性能指标说明', selected: true },
-  { name: '准备智慧城市案例材料', priority: 'medium', suggestion: '使用西部智慧园区作为类似案例', selected: true },
-  { name: '编制运维承诺文件', priority: 'medium', suggestion: '明确3年免费运维条款', selected: true }
-])
+const aiGeneratedTasks = ref([])
 
 const basicRules = {
   name: [{ required: true, message: '请输入项目名称', trigger: 'blur' }],
@@ -705,7 +704,7 @@ const nextStep = async () => {
   } else if (currentStep.value === 1) {
     const valid = await detailFormRef.value?.validate().catch(() => false)
     if (!valid) return
-  } else if (currentStep.value === 2) {
+  } else if (currentStep.value === 2 && hasAiStep) {
     // 进入智能辅助步骤时，执行AI分析
     await runAIAnalysis()
   }
@@ -720,31 +719,35 @@ const prevStep = () => {
 const runAIAnalysis = async () => {
   analyzing.value = true
   try {
-    // 模拟AI分析
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    const response = await aiApi.score.generatePreview({
+      industry: basicForm.industry,
+      tags: detailForm.tags,
+      budget: basicForm.budget,
+    })
 
-    // 根据项目信息动态生成分析结果
-    const industry = basicForm.industry
-    const tags = detailForm.tags || []
-
-    // 动态调整赢面分数
-    let winScore = 60
-    if (industry === '政府') winScore += 10
-    if (tags.includes('信创')) winScore += 5
-    if (basicForm.budget > 500) winScore -= 5
-
-    aiSummary.value.winScore = Math.min(100, winScore)
-
-    // 根据赢面分数确定等级
-    if (winScore >= 80) {
-      aiSummary.value.winLevel = 'high'
-    } else if (winScore >= 60) {
-      aiSummary.value.winLevel = 'medium'
+    if (response?.success && response.data) {
+      aiSummary.value = response.data.aiSummary
+      scoreAnalysis.value = response.data.scoreAnalysis
+      aiGeneratedTasks.value = response.data.generatedTasks
+      scorePreviewUnavailable.value = false
+      scorePreviewMessage.value = ''
+      ElMessage.success('AI分析完成')
     } else {
-      aiSummary.value.winLevel = 'low'
+      aiSummary.value = {
+        winScore: 0,
+        winLevel: 'low',
+        risks: [],
+        suggestions: [],
+      }
+      scoreAnalysis.value = {
+        scoreCategories: [],
+        gapItems: [],
+      }
+      aiGeneratedTasks.value = []
+      scorePreviewUnavailable.value = true
+      scorePreviewMessage.value = response?.message || '当前场景未生成评分结果，已保留后续演示分析入口'
+      ElMessage.info(scorePreviewMessage.value)
     }
-
-    ElMessage.success('AI分析完成')
   } catch (error) {
     ElMessage.error('AI分析失败')
   } finally {
@@ -804,24 +807,28 @@ const handleSubmit = async () => {
   try {
     // 合并用户任务和AI生成的任务
     const userTasks = taskForm.tasks.filter(t => t.name)
-    const aiTasks = aiGeneratedTasks.value
-      .filter(t => t.selected)
-      .map(t => ({
-        name: t.name,
-        priority: t.priority,
-        status: 'todo',
-        owner: basicForm.manager
-      }))
+    const aiTasks = hasAiStep
+      ? aiGeneratedTasks.value
+          .filter(t => t.selected)
+          .map(t => ({
+            name: t.name,
+            priority: t.priority,
+            status: 'todo',
+            owner: basicForm.manager
+          }))
+      : []
 
     const projectData = {
       ...basicForm,
       ...detailForm,
       tasks: [...userTasks, ...aiTasks],
       competitorAnalysis: competitorAnalysis.value,
-      aiAnalysis: {
-        ...aiSummary.value,
-        scoreCoverage: scoreAnalysis.value
-      }
+      aiAnalysis: hasAiStep
+        ? {
+            ...aiSummary.value,
+            scoreCoverage: scoreAnalysis.value
+          }
+        : null
     }
 
     await projectStore.createProject(projectData)
@@ -881,6 +888,59 @@ const confirmAssetCheck = () => {
 const goToAssetManagement = () => {
   showAssetCheckDialog.value = false
   router.push('/resource/bar')
+}
+
+// 检测编辑模式并加载项目数据
+onMounted(async () => {
+  const editId = route.query.editId
+  if (editId) {
+    isEditMode.value = true
+    editProjectId.value = editId
+    await loadProjectData(editId)
+  }
+})
+
+// 加载项目数据用于编辑
+const loadProjectData = async (id) => {
+  try {
+    // 从 store 中获取项目数据
+    await projectStore.getProjects()
+    const project = projectStore.projects.find(p => p.id === id)
+
+    if (project) {
+      // 填充基本信息
+      basicForm.name = project.name || ''
+      basicForm.customer = project.customer || ''
+      basicForm.budget = project.budget || null
+      basicForm.industry = project.industry || ''
+      basicForm.region = project.region || ''
+      basicForm.platform = project.platform || ''
+      basicForm.deadline = project.deadline || ''
+      basicForm.manager = project.manager || ''
+      basicForm.competitors = project.competitors || []
+
+      // 填充详细信息
+      detailForm.description = project.description || ''
+      detailForm.tags = project.tags || []
+      detailForm.startDate = project.startDate || ''
+      detailForm.endDate = project.endDate || ''
+      detailForm.remark = project.remark || ''
+
+      // 填充任务信息
+      if (project.tasks && project.tasks.length > 0) {
+        taskForm.tasks = project.tasks
+      }
+
+      ElMessage.success('项目数据加载成功')
+    } else {
+      ElMessage.error('未找到该项目')
+      // 返回列表页
+      router.push('/project')
+    }
+  } catch (error) {
+    console.error('加载项目数据失败:', error)
+    ElMessage.error('加载项目数据失败')
+  }
 }
 </script>
 

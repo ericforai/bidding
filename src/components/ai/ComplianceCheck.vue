@@ -164,7 +164,7 @@
             <el-table-column label="剩余天数" width="120" align="center">
               <template #default="{ row }">
                 <span :class="getDaysClass(row.expireDate)">
-                  {{ getDaysRemaining(row.expireDate) }} 天
+                  {{ getDaysRemaining(row.expireDate) === '--' ? '--' : `${getDaysRemaining(row.expireDate)} 天` }}
                 </span>
               </template>
             </el-table-column>
@@ -211,6 +211,7 @@ import {
   Tools, RefreshRight, Refresh, Download
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { aiApi } from '@/api'
 
 const props = defineProps({
   modelValue: {
@@ -234,104 +235,55 @@ const loading = ref(false)
 const activeTab = ref('mandatory')
 const data = ref(null)
 
-// Mock 数据
-const mockData = {
-  P001: {
-    riskLevel: 'warning',
-    highRiskCount: 1,
-    mediumRiskCount: 3,
+function normalizeComplianceView(payload) {
+  if (!payload) return null
+
+  if (payload.checks) {
+    return payload
+  }
+
+  const result = Array.isArray(payload) ? payload[0] : payload
+  const issues = Array.isArray(result?.issues) ? result.issues : []
+
+  const mandatory = issues
+    .filter((issue) => issue.ruleType === 'MANDATORY')
+    .map((issue) => ({
+      item: issue.ruleName || '未命名规则',
+      requirement: issue.description || '后端未返回要求说明',
+      status: issue.passed ? 'pass' : 'fail',
+      location: '规则检查',
+      reason: issue.passed ? '' : issue.recommendation || issue.description || '',
+    }))
+
+  const format = issues
+    .filter((issue) => issue.ruleType === 'FORMAT')
+    .map((issue) => ({
+      item: issue.ruleName || '未命名规则',
+      result: issue.description || '后端未返回格式说明',
+      status: issue.passed ? 'pass' : 'fail',
+      action: issue.recommendation || '',
+    }))
+
+  const qualification = issues
+    .filter((issue) => issue.ruleType === 'QUALIFICATION')
+    .map((issue) => ({
+      item: issue.ruleName || '未命名规则',
+      status: issue.passed ? 'valid' : 'expired',
+      expireDate: '',
+    }))
+
+  const highRiskCount = issues.filter((issue) => ['CRITICAL', 'HIGH'].includes(issue.severity)).length
+  const mediumRiskCount = issues.filter((issue) => issue.severity === 'MEDIUM').length
+
+  return {
+    riskLevel: highRiskCount > 0 ? 'error' : mediumRiskCount > 0 ? 'warning' : 'success',
+    highRiskCount,
+    mediumRiskCount,
     checks: {
-      mandatory: [
-        {
-          item: '营业执照',
-          requirement: '在有效期内',
-          status: 'pass',
-          location: '资质文件夹'
-        },
-        {
-          item: '案例证明',
-          requirement: '至少3个类似案例',
-          status: 'fail',
-          location: '-',
-          reason: '仅2个有效案例'
-        },
-        {
-          item: '授权书',
-          requirement: '原厂授权',
-          status: 'pass',
-          location: '商务文件'
-        },
-        {
-          item: '财务报表',
-          requirement: '近三年审计报告',
-          status: 'pass',
-          location: '财务文件夹'
-        },
-        {
-          item: '技术负责人',
-          requirement: '具备高级职称',
-          status: 'fail',
-          location: '人员配置表',
-          reason: '目前为中级职称'
-        }
-      ],
-      format: [
-        {
-          item: '页码格式',
-          result: '连续页码',
-          status: 'pass'
-        },
-        {
-          item: '签章要求',
-          result: '公章+法人章',
-          status: 'fail',
-          action: '首页缺少法人章'
-        },
-        {
-          item: '文件命名',
-          result: '按招标文件要求',
-          status: 'pass'
-        },
-        {
-          item: '装订要求',
-          result: '胶装/精装',
-          status: 'fail',
-          action: '当前为简装'
-        },
-        {
-          item: '份数要求',
-          result: '正本1份+副本4份',
-          status: 'pass'
-        }
-      ],
-      qualification: [
-        {
-          item: 'CMMI证书',
-          status: 'valid',
-          expireDate: '2024-04-15'
-        },
-        {
-          item: 'ISO27001',
-          status: 'expiring',
-          expireDate: '2024-03-30'
-        },
-        {
-          item: 'ISO9001',
-          status: 'valid',
-          expireDate: '2025-06-20'
-        },
-        {
-          item: '信息安全等级',
-          status: 'expiring',
-          expireDate: '2024-03-15'
-        },
-        {
-          item: '软件企业证书',
-          status: 'valid',
-          expireDate: '2025-12-31'
-        }
-      ]
-    }
+      mandatory,
+      format,
+      qualification,
+    },
   }
 }
 
@@ -340,14 +292,26 @@ const loadData = async () => {
 
   loading.value = true
 
-  // 模拟 API 调用延迟
-  await new Promise(resolve => setTimeout(resolve, 1000))
+  const response = await aiApi.compliance.getCheckResult(props.projectId)
 
-  // 获取 mock 数据，实际应从 API 获取
-  data.value = mockData[props.projectId] || mockData.P001
+  if (response?.success && response.data) {
+    data.value = normalizeComplianceView(response.data)
+  } else {
+    data.value = null
+  }
 
-  // 计算风险数量
-  updateRiskCounts()
+  if (!data.value) {
+    const recheckResponse = await aiApi.compliance.performCheck(props.projectId)
+    if (recheckResponse?.success && recheckResponse.data) {
+      data.value = normalizeComplianceView(recheckResponse.data)
+    }
+  }
+
+  if (!data.value) {
+    ElMessage.info(response?.message || '当前项目暂无合规检查数据')
+  } else {
+    updateRiskCounts()
+  }
 
   loading.value = false
 }
@@ -403,14 +367,17 @@ const getStatusText = (status) => {
 }
 
 const getDaysRemaining = (expireDate) => {
+  if (!expireDate) return '--'
   const today = new Date()
   const expire = new Date(expireDate)
+  if (Number.isNaN(expire.getTime())) return '--'
   const diff = expire - today
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }
 
 const getDaysClass = (expireDate) => {
   const days = getDaysRemaining(expireDate)
+  if (days === '--') return 'text-secondary'
   if (days < 0) return 'text-danger'
   if (days < 30) return 'text-warning'
   return 'text-success'

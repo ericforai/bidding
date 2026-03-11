@@ -1,6 +1,7 @@
 package com.xiyu.bid.resources.controller;
 
 import com.xiyu.bid.annotation.Auditable;
+import com.xiyu.bid.config.PaginationConstants;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.resources.dto.AccountCreateRequest;
 import com.xiyu.bid.resources.dto.AccountUpdateRequest;
@@ -48,6 +49,10 @@ public class AccountController {
             @RequestParam(defaultValue = "name") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir) {
 
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
+
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         Page<Account> accounts = accountService.getAllAccounts(pageable);
@@ -61,6 +66,10 @@ public class AccountController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
         Page<Account> accounts = accountService.getAccountsByType(type, pageable);
         return ResponseEntity.ok(ApiResponse.success(accounts));
@@ -72,6 +81,10 @@ public class AccountController {
             @PathVariable String industry,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
         Page<Account> accounts = accountService.getAccountsByIndustry(industry, pageable);
@@ -85,6 +98,10 @@ public class AccountController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
         Page<Account> accounts = accountService.getAccountsByRegion(region, pageable);
         return ResponseEntity.ok(ApiResponse.success(accounts));
@@ -97,6 +114,10 @@ public class AccountController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
         Page<Account> accounts = accountService.getAccountsByCreditLevel(creditLevel, pageable);
         return ResponseEntity.ok(ApiResponse.success(accounts));
@@ -108,6 +129,10 @@ public class AccountController {
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
         Page<Account> accounts = accountService.searchAccounts(keyword, pageable);

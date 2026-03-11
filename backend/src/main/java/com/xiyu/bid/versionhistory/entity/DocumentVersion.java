@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "document_versions", indexes = {
-        @Index(name = "idx_project_id", columnList = "project_id"),
+        @Index(name = "idx_document_version_project_id", columnList = "project_id"),
         @Index(name = "idx_document_id", columnList = "document_id"),
         @Index(name = "idx_project_current", columnList = "project_id, is_current")
 })

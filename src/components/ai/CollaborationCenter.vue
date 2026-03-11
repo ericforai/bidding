@@ -6,7 +6,10 @@
     :close-on-click-modal="false"
     @close="handleClose"
   >
-    <el-tabs v-model="activeTab" class="collaboration-tabs">
+    <div v-if="loading" class="loading-state">
+      正在加载协作数据...
+    </div>
+    <el-tabs v-else v-model="activeTab" class="collaboration-tabs">
       <!-- Tab1: 章节分配 -->
       <el-tab-pane label="章节分配" name="chapters">
         <div class="chapters-content">
@@ -139,9 +142,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Bell } from '@element-plus/icons-vue'
+import { collaborationApi, isMockMode } from '@/api'
+import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
   modelValue: {
@@ -155,6 +160,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'save', 'remind', 'toggle-lock', 'owner-change'])
+const userStore = useUserStore()
 
 const dialogVisible = computed({
   get: () => props.modelValue,
@@ -162,49 +168,56 @@ const dialogVisible = computed({
 })
 
 const activeTab = ref('chapters')
+const loading = ref(false)
+const isApiMode = computed(() => !isMockMode())
 
-// 用户选项（Mock数据）
-const users = [
-  { value: '张三', label: '张三' },
-  { value: '李四', label: '李四' },
-  { value: '王五', label: '王五' },
-  { value: '赵六', label: '赵六' },
-  { value: '孙七', label: '孙七' }
-]
-
-// Mock 数据
-const collaborationData = {
-  P001: {
-    chapters: [
-      { id: '1', chapter: '1. 项目背景', owner: '张三', status: 'completed', dueDate: '2024-03-08', locked: true },
-      { id: '2', chapter: '2. 技术方案', owner: '李四', status: 'editing', dueDate: '2024-03-12', locked: true },
-      { id: '3', chapter: '3. 案例展示', owner: '王五', status: 'pending', dueDate: '2024-03-15', locked: false },
-      { id: '4', chapter: '4. 商务报价', owner: '赵六', status: 'pending', dueDate: '2024-03-18', locked: false },
-      { id: '5', chapter: '5. 服务承诺', owner: '孙七', status: 'editing', dueDate: '2024-03-20', locked: false }
-    ],
-    changeHistory: [
-      { type: 'edit', author: '李四', avatar: '李', timestamp: '2小时前', description: '修改了技术方案章节的架构图' },
-      { type: 'comment', author: '张三', avatar: '张', timestamp: '5小时前', description: '评论: 技术方案需要补充性能指标' },
-      { type: 'conflict', author: '王五', avatar: '王', timestamp: '昨天', description: '与李四在案例章节有冲突，已解决' },
-      { type: 'edit', author: '张三', avatar: '张', timestamp: '昨天', description: '完成了项目背景章节的编写' },
-      { type: 'comment', author: '赵六', avatar: '赵', timestamp: '2天前', description: '评论: 商务报价部分需要确认折扣率' },
-      { type: 'edit', author: '孙七', avatar: '孙', timestamp: '3天前', description: '更新了服务承诺章节的内容' }
-    ]
-  }
-}
+const users = computed(() =>
+  (userStore.users || []).map((user) => ({
+    value: user.name,
+    label: user.name,
+  }))
+)
 
 const chapters = ref([])
-const changeHistory = computed(() => {
-  return collaborationData[props.projectId]?.changeHistory || []
-})
+const changeHistory = ref([])
 
-// 初始化章节数据
-const initChapters = () => {
-  const data = collaborationData[props.projectId]?.chapters || []
-  chapters.value = JSON.parse(JSON.stringify(data))
+const loadData = async () => {
+  if (!props.projectId) return
+
+  loading.value = true
+
+  const [treeResponse, threadResponse] = await Promise.all([
+    collaborationApi.editor.getTree(props.projectId),
+    collaborationApi.collaboration.getThreads({ projectId: props.projectId }),
+  ])
+
+  chapters.value = treeResponse?.success && Array.isArray(treeResponse.data)
+    ? treeResponse.data.map((item, index) => ({
+        ...item,
+        dueDate: item.dueDate || '',
+        owner: item.owner || '',
+        locked: Boolean(item.locked),
+        status: item.status || 'pending',
+        chapter: item.chapter || `${index + 1}. ${item.title || item.name || '未命名章节'}`,
+      }))
+    : []
+
+  changeHistory.value = threadResponse?.success && Array.isArray(threadResponse.data)
+    ? threadResponse.data.map((item) => ({
+        type: item.type === 'thread' ? 'edit' : item.type || 'comment',
+        author: item.author || '未知用户',
+        avatar: item.avatar || '协',
+        timestamp: item.timestamp || '',
+        description: item.content || item.title || '暂无内容',
+      }))
+    : []
+
+  if (!treeResponse?.success && !threadResponse?.success) {
+    ElMessage.info(treeResponse?.message || threadResponse?.message || '当前项目暂无协作数据')
+  }
+
+  loading.value = false
 }
-
-initChapters()
 
 const getRowClassName = ({ row }) => {
   if (row.status === 'completed') return 'row-completed'
@@ -305,9 +318,24 @@ const handleSave = () => {
 const handleClose = () => {
   dialogVisible.value = false
 }
+
+watch(
+  () => props.modelValue,
+  (visible) => {
+    if (visible) {
+      loadData()
+    }
+  }
+)
 </script>
 
 <style scoped>
+.loading-state {
+  padding: 48px 0;
+  text-align: center;
+  color: #909399;
+}
+
 .collaboration-tabs {
   min-height: 400px;
 }
@@ -320,6 +348,10 @@ const handleClose = () => {
 .table-actions {
   display: flex;
   gap: 8px;
+}
+
+.readonly-owner {
+  color: #606266;
 }
 
 :deep(.el-table .row-completed) {

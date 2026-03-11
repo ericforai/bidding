@@ -1,6 +1,7 @@
 package com.xiyu.bid.resources.controller;
 
 import com.xiyu.bid.annotation.Auditable;
+import com.xiyu.bid.config.PaginationConstants;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.resources.dto.BarAssetCreateRequest;
 import com.xiyu.bid.resources.dto.BarAssetUpdateRequest;
@@ -50,6 +51,10 @@ public class BarAssetController {
             @RequestParam(defaultValue = "name") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir) {
 
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
+
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         Page<BarAsset> assets = barAssetService.getAllBarAssets(pageable);
@@ -63,6 +68,10 @@ public class BarAssetController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
         Page<BarAsset> assets = barAssetService.getBarAssetsByType(type, pageable);
         return ResponseEntity.ok(ApiResponse.success(assets));
@@ -74,6 +83,10 @@ public class BarAssetController {
             @PathVariable BarAsset.AssetStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
         Page<BarAsset> assets = barAssetService.getBarAssetsByStatus(status, pageable);
@@ -88,6 +101,10 @@ public class BarAssetController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("value").descending());
         Page<BarAsset> assets = barAssetService.getBarAssetsByValueRange(minValue, maxValue, pageable);
         return ResponseEntity.ok(ApiResponse.success(assets));
@@ -101,6 +118,10 @@ public class BarAssetController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("acquireDate").descending());
         Page<BarAsset> assets = barAssetService.getBarAssetsByAcquireDateRange(startDate, endDate, pageable);
         return ResponseEntity.ok(ApiResponse.success(assets));
@@ -112,6 +133,10 @@ public class BarAssetController {
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
         Page<BarAsset> assets = barAssetService.searchBarAssets(keyword, pageable);

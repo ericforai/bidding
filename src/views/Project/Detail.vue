@@ -96,27 +96,27 @@
             </div>
           </template>
           <el-table :data="projectExpenses" stripe size="small">
-            <el-table-column prop="type" label="费用类型" width="100">
+            <el-table-column prop="type" label="费用类型" width="120">
               <template #default="{ row }">
                 <el-tag size="small" :type="getExpenseTypeColor(row.type)">
                   {{ row.type }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="amount" label="金额" width="100" align="right">
+            <el-table-column prop="amount" label="金额" width="130" align="right">
               <template #default="{ row }">
                 ¥{{ row.amount }}万
               </template>
             </el-table-column>
-            <el-table-column prop="status" label="状态" width="80">
+            <el-table-column prop="status" label="状态" width="100">
               <template #default="{ row }">
                 <el-tag size="small" :type="getExpenseStatusType(row.status)">
                   {{ getExpenseStatusLabel(row.status) }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="date" label="日期" width="110" />
-            <el-table-column prop="remark" label="说明" min-width="120" />
+            <el-table-column prop="date" label="日期" width="160" />
+            <el-table-column prop="remark" label="说明" min-width="150" />
           </el-table>
           <div class="expense-total">
             <span>合计：¥{{ expenseTotal }}万元</span>
@@ -647,6 +647,7 @@
     <SmartAssistantPanel
       v-model:visible="assistantPanelVisible"
       :project-id="route.params.id"
+      :show-demo-features="true"
       @open-competition-intel="handleOpenCompetitionIntel"
       @open-roi-analysis="handleOpenRoiAnalysis"
       @open-score-coverage="handleOpenScoreCoverage"
@@ -713,6 +714,7 @@
             <el-upload
               :action="uploadAction"
               :headers="uploadHeaders"
+              :before-upload="ensureDemoUpload"
               :on-success="handleUploadSuccess"
               :on-remove="handleUploadRemove"
               :file-list="noticeFileList"
@@ -839,43 +841,38 @@
     <CompetitionIntel
       v-model="showCompetitionIntel"
       :project-id="route.params.id"
-      :data="mockData.competitionIntel[route.params.id]"
     />
 
     <ComplianceCheck
       v-model="showComplianceCheck"
       :project-id="route.params.id"
-      :data="mockData.complianceCheck[route.params.id]"
     />
 
     <VersionControl
       v-model="showVersionControl"
       :project-id="route.params.id"
-      :data="mockData.versionHistory[route.params.id]"
     />
 
     <CollaborationCenter
       v-model="showCollaboration"
       :project-id="route.params.id"
-      :data="mockData.collaboration[route.params.id]"
     />
 
     <ROIAnalysis
       v-model="showROIAnalysis"
       :project-id="route.params.id"
-      :data="mockData.roiAnalysis[route.params.id]"
     />
 
     <AutoTasks
       v-model="showAutoTasks"
       :project-id="route.params.id"
-      :data="mockData.autoTasks"
+      :data="demoAutoTasks"
     />
 
     <MobileCard
       v-model="showMobileCard"
       :project-id="route.params.id"
-      :data="mockData.mobileCard[route.params.id]"
+      :data="demoMobileCard"
     />
 
     <!-- 标书编制流程对话框 -->
@@ -906,6 +903,7 @@
               <el-upload
                 :action="uploadAction"
                 :headers="uploadHeaders"
+                :before-upload="ensureDemoUpload"
                 :on-success="handleDraftFileSuccess"
                 :file-list="draftFileList"
                 :limit="3"
@@ -1037,6 +1035,7 @@
               <el-upload
                 :action="uploadAction"
                 :headers="uploadHeaders"
+                :before-upload="ensureDemoUpload"
                 :on-success="handleSealFileSuccess"
                 :file-list="sealFileList"
                 :limit="5"
@@ -1183,6 +1182,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
 import { useBarStore } from '@/stores/bar'
+import { knowledgeApi, isMockMode } from '@/api'
 import { mockData } from '@/api/mock'
 import {
   Edit, DocumentChecked, Coin, InfoFilled, List, Folder, Upload, Plus,
@@ -1207,6 +1207,20 @@ const router = useRouter()
 const projectStore = useProjectStore()
 const userStore = useUserStore()
 const barStore = useBarStore()
+const isDemoMode = isMockMode()
+const demoAutoTasks = ref([])
+const demoMobileCard = ref(null)
+
+const downloadTextFile = (filename, content, mimeType = 'text/plain;charset=utf-8') => {
+  const blob = new Blob([content], { type: mimeType })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(link.href)
+}
 
 // 加载状态
 const loading = ref(true)
@@ -1233,7 +1247,7 @@ const showMobileCard = ref(false)
 
 // 结果录入表单
 const noticeFileList = ref([])
-const uploadAction = ref('/api/upload')
+const uploadAction = ref(isDemoMode ? '/api/upload' : '')
 const uploadHeaders = ref({
   Authorization: `Bearer ${localStorage.getItem('token') || ''}`
 })
@@ -1297,7 +1311,7 @@ const reviewerForm = ref({
 
 const availableReviewers = computed(() => {
   const existingIds = reviewers.value.map(r => r.id)
-  return mockData.users.filter(u => !existingIds.includes(u.id))
+  return (userStore.users || []).filter(u => !existingIds.includes(u.id))
 })
 
 // 用印表单
@@ -1322,7 +1336,7 @@ const submitForm = ref({
 })
 
 // 模板数据
-const templates = ref(mockData.templates || [])
+const templates = ref([])
 
 // 任务模板 - 根据不同项目类型自动生成任务
 const taskTemplates = {
@@ -1481,7 +1495,14 @@ const goToExpensePage = () => {
   router.push('/resource/expense')
 }
 
-const project = computed(() => projectStore.currentProject)
+const project = computed(() => {
+  if (projectStore.currentProject) {
+    return projectStore.currentProject
+  }
+
+  const routeProjectId = String(route.params.id || '')
+  return mockData.projects.find((item) => String(item.id) === routeProjectId) || null
+})
 
 const canSubmit = computed(() => {
   return project.value?.status === 'drafting' || project.value?.status === 'reviewing'
@@ -1941,7 +1962,33 @@ const handleGenerateTasks = () => {
 }
 
 const handleAddTask = () => {
-  ElMessage.info('添加任务功能开发中')
+  if (!project.value) return
+
+  const nextIndex = (project.value.tasks?.length || 0) + 1
+  const newTask = {
+    id: `TASK_${Date.now()}`,
+    name: `新增演示任务 ${nextIndex}`,
+    owner: userStore.userName,
+    assignee: userStore.userName,
+    department: '投标管理部',
+    dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    priority: 'medium',
+    status: 'todo',
+    deliverables: [],
+    hasDeliverable: false,
+  }
+
+  if (!Array.isArray(project.value.tasks)) {
+    project.value.tasks = []
+  }
+  project.value.tasks.unshift(newTask)
+  activities.value.unshift({
+    id: Date.now(),
+    user: userStore.userName,
+    action: `新增了任务「${newTask.name}」`,
+    time: new Date().toLocaleString('zh-CN', { hour12: false }),
+  })
+  ElMessage.success('已新增演示任务')
 }
 
 // 重置任务（用于演示）
@@ -2093,12 +2140,31 @@ const handleSubmitToDocument = (projectId) => {
 }
 
 const handleUpload = (file) => {
-  ElMessage.success(`上传 ${file.name} 成功`)
+  if (project.value) {
+    if (!Array.isArray(project.value.documents)) {
+      project.value.documents = []
+    }
+    project.value.documents.unshift({
+      id: `DOC_${Date.now()}`,
+      name: file.name,
+      uploader: userStore.userName,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+      size: `${Math.max(1, Math.round((file.size || 1024 * 1024) / 1024 / 1024))}MB`,
+    })
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `上传了文档「${file.name}」`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+  }
+  ElMessage.success(`已上传演示文档：${file.name}`)
   return false
 }
 
 const handleDownload = (doc) => {
-  ElMessage.info(`下载 ${doc.name}`)
+  downloadTextFile(doc.name, `演示文档：${doc.name}\n项目：${project.value?.name || ''}\n上传者：${doc.uploader || ''}`)
+  ElMessage.success(`已下载 ${doc.name}`)
 }
 
 const handleDeleteDoc = async (doc) => {
@@ -2115,19 +2181,59 @@ const handleDeleteDoc = async (doc) => {
 }
 
 const handleAddDocument = () => {
-  ElMessage.info('添加文档功能开发中')
+  if (!project.value) return
+  const mockDoc = {
+    id: `DOC_${Date.now()}`,
+    name: `演示文档_${new Date().toLocaleDateString('zh-CN').replaceAll('/', '')}.docx`,
+    uploader: userStore.userName,
+    time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    size: '1.2MB',
+  }
+  if (!Array.isArray(project.value.documents)) {
+    project.value.documents = []
+  }
+  project.value.documents.unshift(mockDoc)
+  activities.value.unshift({
+    id: Date.now(),
+    user: userStore.userName,
+    action: `新增了项目文档「${mockDoc.name}」`,
+    time: new Date().toLocaleString('zh-CN', { hour12: false }),
+  })
+  ElMessage.success('已新增演示文档')
 }
 
 const handleShare = () => {
-  ElMessage.info('分享功能开发中')
+  const shareLink = `${window.location.origin}/project/${route.params.id}`
+  navigator.clipboard.writeText(shareLink).then(() => {
+    ElMessage.success('项目链接已复制到剪贴板')
+  }).catch(() => {
+    ElMessage.success(`分享链接：${shareLink}`)
+  })
 }
 
 const handleExport = () => {
-  ElMessage.info('导出功能开发中')
+  const payload = {
+    project: project.value,
+    expenses: projectExpenses.value,
+    activities: activities.value,
+    exportedAt: new Date().toISOString(),
+  }
+  downloadTextFile(
+    `${project.value?.name || '项目资料'}_导出.json`,
+    JSON.stringify(payload, null, 2),
+    'application/json;charset=utf-8'
+  )
+  ElMessage.success(`已生成演示导出包：${project.value?.name || '项目资料'}.zip`)
 }
 
 const handleSetReminder = () => {
-  ElMessage.info('设置提醒功能开发中')
+  activities.value.unshift({
+    id: Date.now(),
+    user: userStore.userName,
+    action: '设置了项目跟进提醒',
+    time: new Date().toLocaleString('zh-CN', { hour12: false }),
+  })
+  ElMessage.success('已设置演示提醒，默认明天 09:00 提醒')
 }
 
 // 标书编制流程相关处理函数
@@ -2160,6 +2266,10 @@ const handleDraftFileSuccess = (response, file) => {
     name: file.name,
     url: response.data?.url || file.url
   })
+}
+
+const ensureDemoUpload = () => {
+  return true
 }
 
 const handleSaveDraft = () => {
@@ -2207,7 +2317,11 @@ const handleConfirmAddReviewer = () => {
     return
   }
 
-  const user = mockData.users.find(u => u.id === reviewerForm.value.userId)
+  const user = (userStore.users || []).find(u => u.id === reviewerForm.value.userId)
+  if (!user) {
+    ElMessage.warning('未找到评审人信息')
+    return
+  }
   reviewers.value.push({
     id: user.id,
     name: user.name,
@@ -2316,29 +2430,27 @@ const handleSubmitPackage = () => {
 }
 
 const handleDownloadDeliverable = (item) => {
-  ElMessage.info(`下载 ${item.name}`)
+  downloadTextFile(item.name, `演示交付物：${item.name}\n类型：${item.type || ''}\n上传者：${item.uploader || ''}`)
+  ElMessage.success(`已下载 ${item.name}`)
 }
 
 onMounted(async () => {
   loading.value = true
   const projectId = route.params.id
-  console.log('加载项目详情，ID:', projectId)
 
   // 从store获取项目
   await projectStore.getProjectById(projectId)
 
-  // 如果store中没有找到，直接从mock数据中查找
+  const templateResult = await knowledgeApi.templates.getList()
+  templates.value = templateResult?.success && Array.isArray(templateResult.data)
+    ? templateResult.data
+    : []
+
   if (!projectStore.currentProject) {
-    console.log('Store中未找到项目，直接从mock数据查找')
-    const project = mockData.projects.find(p => p.id === projectId)
-    if (project) {
-      projectStore.currentProject = project
-      console.log('找到项目:', project.name)
-    } else {
-      console.error('未找到项目，ID:', projectId)
-      console.log('可用项目列表:', mockData.projects.map(p => ({ id: p.id, name: p.name })))
-    }
+    projectStore.currentProject = mockData.projects.find((item) => String(item.id) === String(projectId)) || null
   }
+  demoAutoTasks.value = mockData.autoTasks || []
+  demoMobileCard.value = mockData.mobileCard?.[projectId] || mockData.mobileCard?.P001 || null
 
   // 加载资产台账数据
   await barStore.getSites()
@@ -2361,7 +2473,6 @@ onMounted(async () => {
   }
 
   loading.value = false
-  console.log('当前项目:', projectStore.currentProject?.name, '状态:', projectStore.currentProject?.status)
 })
 </script>
 

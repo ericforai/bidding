@@ -5,6 +5,7 @@ import com.xiyu.bid.alerts.dto.AlertHistoryCreateRequest;
 import com.xiyu.bid.alerts.dto.AlertStatisticsResponse;
 import com.xiyu.bid.alerts.entity.AlertHistory;
 import com.xiyu.bid.alerts.service.AlertHistoryService;
+import com.xiyu.bid.config.PaginationConstants;
 import com.xiyu.bid.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +50,11 @@ public class AlertHistoryController {
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
 
+        // 安全限制：防止过大的分页请求
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
+
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
         Page<AlertHistory> alertHistories = alertHistoryService.getAllAlertHistories(pageable);
@@ -62,6 +68,10 @@ public class AlertHistoryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<AlertHistory> alertHistories = alertHistoryService.getAlertHistoriesByRuleId(ruleId, pageable);
         return ResponseEntity.ok(ApiResponse.success(alertHistories));
@@ -74,6 +84,10 @@ public class AlertHistoryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<AlertHistory> alertHistories = alertHistoryService.getAlertHistoriesByLevel(level, pageable);
         return ResponseEntity.ok(ApiResponse.success(alertHistories));
@@ -84,6 +98,10 @@ public class AlertHistoryController {
     public ResponseEntity<ApiResponse<Page<AlertHistory>>> getUnresolvedAlertHistories(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<AlertHistory> alertHistories = alertHistoryService.getUnresolvedAlertHistories(pageable);
@@ -98,6 +116,10 @@ public class AlertHistoryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<AlertHistory> alertHistories = alertHistoryService.getAlertHistoriesByDateRange(startDate, endDate, pageable);
         return ResponseEntity.ok(ApiResponse.success(alertHistories));
@@ -109,6 +131,10 @@ public class AlertHistoryController {
             @PathVariable String relatedId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+
+        if (size > PaginationConstants.MAX_PAGE_SIZE) {
+            size = PaginationConstants.MAX_PAGE_SIZE;
+        }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<AlertHistory> alertHistories = alertHistoryService.getAlertHistoriesByRelatedId(relatedId, pageable);

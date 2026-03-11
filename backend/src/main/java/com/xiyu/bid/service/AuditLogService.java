@@ -36,7 +36,7 @@ public class AuditLogService implements IAuditLogService {
     /**
      * 异步记录审计日志
      */
-    @Async
+    @Async("auditLogExecutor")
     public void log(AuditLogEntry entry) {
         try {
             AuditLog auditLog = buildAuditLog(entry);
@@ -63,7 +63,7 @@ public class AuditLogService implements IAuditLogService {
     /**
      * 记录登录操作
      */
-    @Async
+    @Async("auditLogExecutor")
     public void logLogin(String userId, String username, boolean success, String errorMessage) {
         AuditLogEntry entry = AuditLogEntry.builder()
             .userId(userId)
@@ -79,7 +79,7 @@ public class AuditLogService implements IAuditLogService {
     /**
      * 记录登出操作
      */
-    @Async
+    @Async("auditLogExecutor")
     public void logLogout(String userId, String username) {
         AuditLogEntry entry = AuditLogEntry.builder()
             .userId(userId)
@@ -94,7 +94,7 @@ public class AuditLogService implements IAuditLogService {
     /**
      * 记录创建操作
      */
-    @Async
+    @Async("auditLogExecutor")
     public void logCreate(String userId, String username, String entityType, String entityId, Object createdEntity) {
         String newValue = toJsonString(createdEntity);
 
@@ -114,7 +114,7 @@ public class AuditLogService implements IAuditLogService {
     /**
      * 记录更新操作
      */
-    @Async
+    @Async("auditLogExecutor")
     public void logUpdate(String userId, String username, String entityType, String entityId,
                           Object oldValue, Object newValue) {
         AuditLogEntry entry = AuditLogEntry.builder()
@@ -134,7 +134,7 @@ public class AuditLogService implements IAuditLogService {
     /**
      * 记录删除操作
      */
-    @Async
+    @Async("auditLogExecutor")
     public void logDelete(String userId, String username, String entityType, String entityId, Object deletedEntity) {
         AuditLogEntry entry = AuditLogEntry.builder()
             .userId(userId)
@@ -152,7 +152,7 @@ public class AuditLogService implements IAuditLogService {
     /**
      * 记录数据导出操作
      */
-    @Async
+    @Async("auditLogExecutor")
     public void logExport(String userId, String username, String entityType, int recordCount) {
         AuditLogEntry entry = AuditLogEntry.builder()
             .userId(userId)
@@ -206,16 +206,16 @@ public class AuditLogService implements IAuditLogService {
         }
 
         return AuditLog.builder()
-            .userId(entry.getUserId())
-            .username(entry.getUsername())
-            .action(entry.getAction())
-            .entityType(entry.getEntityType())
-            .entityId(entry.getEntityId())
-            .description(entry.getDescription())
+            .userId(truncate(entry.getUserId(), 255))
+            .username(truncate(entry.getUsername(), 100))
+            .action(truncate(entry.getAction(), 50))
+            .entityType(truncate(entry.getEntityType(), 100))
+            .entityId(truncate(entry.getEntityId(), 100))
+            .description(truncate(entry.getDescription(), 500))
             .oldValue(entry.getOldValue())
             .newValue(entry.getNewValue())
-            .ipAddress(ipAddress)
-            .userAgent(userAgent)
+            .ipAddress(truncate(ipAddress, 50))
+            .userAgent(truncate(userAgent, 500))
             .success(entry.getSuccess() != null ? entry.getSuccess() : true)
             .errorMessage(entry.getErrorMessage())
             .timestamp(LocalDateTime.now())
@@ -268,6 +268,13 @@ public class AuditLogService implements IAuditLogService {
             log.warn("Failed to serialize object to JSON", e);
             return obj.toString();
         }
+    }
+
+    private String truncate(String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength);
     }
 
     /**

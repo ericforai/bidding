@@ -64,6 +64,34 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 处理非法参数异常
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(
+            IllegalArgumentException ex,
+            HttpServletRequest request) {
+        log.warn("非法参数 - URI: {}, Message: {}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity
+                .badRequest()
+                .body(ApiResponse.error(400, ex.getMessage()));
+    }
+
+    /**
+     * 处理非法状态异常
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalStateException(
+            IllegalStateException ex,
+            HttpServletRequest request) {
+        log.warn("非法状态 - URI: {}, Message: {}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(409, ex.getMessage()));
+    }
+
+    /**
      * 处理认证异常
      */
     @ExceptionHandler(AuthenticationException.class)
@@ -155,15 +183,17 @@ public class GlobalExceptionHandler {
 
     /**
      * 获取客户端IP地址
+     *
+     * SECURITY: 使用 getRemoteAddr() 获取客户端IP。
+     * 当配置了 server.forward-headers-strategy=NATIVE 时，
+     * Spring 会自动从可信转发头中提取正确的客户端IP。
+     *
+     * 不要直接读取 X-Forwarded-For 或 X-Real-IP，因为客户端可以伪造这些头部。
      */
     private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("X-Real-IP");
-        }
-        if (ip == null || ip.isEmpty()) {
-            ip = request.getRemoteAddr();
-        }
-        return ip;
+        // 直接使用 getRemoteAddr() - 最安全的方式
+        // 当配置了 forward-headers-strategy=NATIVE 时
+        // 会自动返回正确的客户端 IP
+        return request.getRemoteAddr();
     }
 }

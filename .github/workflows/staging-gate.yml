@@ -1,0 +1,72 @@
+name: Staging Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_candidate:
+        description: Release candidate identifier
+        required: true
+        default: rc-local
+      uat_owner:
+        description: UAT owner or coordinator
+        required: true
+        default: QA
+  workflow_call:
+    inputs:
+      release_candidate:
+        required: true
+        type: string
+      uat_owner:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  staging-gate:
+    name: Release Rehearsal And Signoff Pack
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      RELEASE_CANDIDATE: ${{ inputs.release_candidate || github.sha }}
+      UAT_OWNER: ${{ inputs.uat_owner || 'QA' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run staging gate rehearsal
+        run: bash scripts/release/rehearse-release.sh
+
+      - name: Build formal signoff packet
+        run: node scripts/release/build-signoff-packet.mjs
+
+      - name: Upload rehearsal and signoff artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-gate-artifacts
+          path: |
+            docs/reports/
+            .rehearsal/backend.log
+            .rehearsal/frontend.log
+            .rehearsal/backups/
+            .rehearsal/playwright/

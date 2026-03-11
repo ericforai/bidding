@@ -52,6 +52,7 @@ public class CaseService {
     /**
      * 获取所有案例（限制返回1000条）
      */
+    @Transactional(readOnly = true)
     public List<CaseDTO> getAllCases() {
         log.debug("Fetching all cases");
         return caseRepository.findAll(org.springframework.data.domain.PageRequest.of(0, 1000)).stream()
@@ -62,6 +63,7 @@ public class CaseService {
     /**
      * 根据ID获取案例
      */
+    @Transactional(readOnly = true)
     public CaseDTO getCaseById(Long id) {
         log.debug("Fetching case by id: {}", id);
         Case caseStudy = caseRepository.findById(id)
@@ -116,6 +118,7 @@ public class CaseService {
     /**
      * 根据行业查找案例（限制返回1000条）
      */
+    @Transactional(readOnly = true)
     public List<CaseDTO> getCasesByIndustry(Case.Industry industry) {
         log.debug("Fetching cases by industry: {}", industry);
         return caseRepository.findByIndustry(industry, org.springframework.data.domain.PageRequest.of(0, 1000)).stream()
@@ -126,6 +129,7 @@ public class CaseService {
     /**
      * 根据结果查找案例（限制返回1000条）
      */
+    @Transactional(readOnly = true)
     public List<CaseDTO> getCasesByOutcome(Case.Outcome outcome) {
         log.debug("Fetching cases by outcome: {}", outcome);
         return caseRepository.findByOutcome(outcome, org.springframework.data.domain.PageRequest.of(0, 1000)).stream()

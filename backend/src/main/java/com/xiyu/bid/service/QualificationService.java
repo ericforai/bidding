@@ -53,6 +53,7 @@ public class QualificationService {
     /**
      * 获取所有资质（限制返回1000条）
      */
+    @Transactional(readOnly = true)
     public List<QualificationDTO> getAllQualifications() {
         log.debug("Fetching all qualifications");
         return qualificationRepository.findAll(org.springframework.data.domain.PageRequest.of(0, 1000)).stream()
@@ -63,6 +64,7 @@ public class QualificationService {
     /**
      * 根据ID获取资质
      */
+    @Transactional(readOnly = true)
     public QualificationDTO getQualificationById(Long id) {
         log.debug("Fetching qualification by id: {}", id);
         Qualification qualification = qualificationRepository.findById(id)
@@ -117,6 +119,7 @@ public class QualificationService {
     /**
      * 根据类型查找资质（限制返回1000条）
      */
+    @Transactional(readOnly = true)
     public List<QualificationDTO> getQualificationsByType(Qualification.Type type) {
         log.debug("Fetching qualifications by type: {}", type);
         return qualificationRepository.findByType(type, org.springframework.data.domain.PageRequest.of(0, 1000)).stream()
@@ -127,6 +130,7 @@ public class QualificationService {
     /**
      * 查找未过期的资质（限制返回1000条）
      */
+    @Transactional(readOnly = true)
     public List<QualificationDTO> getValidQualifications() {
         log.debug("Fetching valid qualifications");
         return qualificationRepository.findByExpiryDateAfter(LocalDate.now(), org.springframework.data.domain.PageRequest.of(0, 1000)).stream()

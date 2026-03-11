@@ -15,7 +15,7 @@
           <el-icon><Plus /></el-icon>
           新增站点
         </el-button>
-        <el-button @click="handleImport">
+        <el-button v-if="showDemoOnlyActions" @click="handleImport">
           <el-icon><Upload /></el-icon>
           导入
         </el-button>
@@ -158,13 +158,13 @@
                 <el-button :icon="MoreFilled" size="small" link />
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item command="verify" :icon="Setting">
+                    <el-dropdown-item v-if="showDemoOnlyActions" command="verify" :icon="Setting">
                       立即验证
                     </el-dropdown-item>
                     <el-dropdown-item command="copy" :icon="CopyDocument">
                       复制站点信息
                     </el-dropdown-item>
-                    <el-dropdown-item command="toggle" :icon="View">
+                    <el-dropdown-item v-if="showDemoOnlyActions" command="toggle" :icon="View">
                       {{ row.status === 'active' ? '禁用站点' : '启用站点' }}
                     </el-dropdown-item>
                     <el-dropdown-item divided command="delete" :icon="Delete" style="color: #f56c6c">
@@ -248,6 +248,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBarStore } from '@/stores/bar'
+import { isMockMode } from '@/api'
 import {
   Back, Plus, Upload, Search, RefreshLeft, View, Edit, Delete, CopyDocument, MoreFilled, Link, Setting
 } from '@element-plus/icons-vue'
@@ -260,6 +261,7 @@ const loading = ref(false)
 const showAddDialog = ref(false)
 const editingSite = ref(null)
 const siteFormRef = ref(null)
+const showDemoOnlyActions = isMockMode()
 
 const filterForm = ref({
   region: '',
@@ -374,7 +376,11 @@ const handleDelete = async (site) => {
         type: 'warning'
       }
     )
-    await barStore.deleteSite(site.id)
+    const response = await barStore.deleteSite(site.id)
+    if (!response?.success) {
+      ElMessage.error(response?.message || '删除失败')
+      return
+    }
     ElMessage.success('删除成功')
   } catch {
     // 用户取消
@@ -385,13 +391,16 @@ const handleSaveSite = async () => {
   try {
     await siteFormRef.value.validate()
 
-    if (editingSite.value) {
-      await barStore.updateSite(editingSite.value.id, siteForm.value)
-      ElMessage.success('更新成功')
-    } else {
-      await barStore.createSite(siteForm.value)
-      ElMessage.success('添加成功')
+    const response = editingSite.value
+      ? await barStore.updateSite(editingSite.value.id, siteForm.value)
+      : await barStore.createSite(siteForm.value)
+
+    if (!response?.success) {
+      ElMessage.error(response?.message || '保存失败')
+      return
     }
+
+    ElMessage.success(editingSite.value ? '更新成功' : '添加成功')
 
     showAddDialog.value = false
     editingSite.value = null
@@ -410,24 +419,21 @@ const handleSaveSite = async () => {
 }
 
 const handleImport = () => {
-  ElMessage.info('导入功能开发中，敬请期待')
+  ElMessage.success('已执行演示导入，站点台账数据保持当前 mock 集')
 }
 
 const handleVisitSite = (site) => {
+  if (!site.url) {
+    ElMessage.info('该站点尚未登记网址')
+    return
+  }
   window.open(site.url, '_blank')
 }
 
 const handleMoreAction = async (command, site) => {
   switch (command) {
     case 'verify':
-      ElMessage.success(`正在验证站点"${site.name}"...`)
-      // 模拟验证
-      setTimeout(() => {
-        site.lastVerifyTime = new Date().toLocaleDateString()
-        site.status = 'active'
-        site.hasRisk = false
-        ElMessage.success('验证完成，站点状态正常')
-      }, 1000)
+      ElMessage.success(`站点「${site.name}」验证通过`)
       break
     case 'copy':
       const siteInfo = `站点名称：${site.name}\n网址：${site.url}\n地区：${site.region}\n行业：${site.industry}`
@@ -438,9 +444,8 @@ const handleMoreAction = async (command, site) => {
       })
       break
     case 'toggle':
-      const newStatus = site.status === 'active' ? 'inactive' : 'active'
-      site.status = newStatus
-      ElMessage.success(`站点已${newStatus === 'active' ? '启用' : '禁用'}`)
+      site.status = site.status === 'active' ? 'disabled' : 'active'
+      ElMessage.success(`已${site.status === 'active' ? '启用' : '停用'}站点：${site.name}`)
       break
     case 'delete':
       await handleDelete(site)
@@ -450,7 +455,10 @@ const handleMoreAction = async (command, site) => {
 
 onMounted(async () => {
   loading.value = true
-  await barStore.getSites()
+  const response = await barStore.getSites()
+  if (!response?.success) {
+    ElMessage.error(response?.message || 'BAR 站点数据加载失败')
+  }
   loading.value = false
 })
 </script>

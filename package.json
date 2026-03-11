@@ -6,19 +6,23 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e:commercial": "npx playwright test --config playwright.config.js",
+    "check-docs": "bash scripts/check-doc-consistency.sh"
   },
   "dependencies": {
-    "vue": "^3.4.0",
-    "vue-router": "^4.2.0",
-    "pinia": "^2.1.0",
-    "element-plus": "^2.5.0",
     "@element-plus/icons-vue": "^2.3.0",
-    "echarts": "^5.4.0"
+    "axios": "^1.6.0",
+    "echarts": "^5.4.0",
+    "element-plus": "^2.5.0",
+    "pinia": "^2.1.0",
+    "vue": "^3.4.0",
+    "vue-router": "^4.2.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@vitejs/plugin-vue": "^5.0.0",
-    "vite": "^5.0.0",
-    "sass": "^1.70.0"
+    "sass": "^1.70.0",
+    "vite": "^5.0.0"
   }
 }

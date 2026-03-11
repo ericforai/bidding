@@ -153,7 +153,7 @@
 import { ref, computed, watch } from 'vue'
 import { User, Document, Lock, CircleCheck } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { mockData } from '@/api/mock'
+import { isMockMode, projectsApi } from '@/api'
 
 const props = defineProps({
   modelValue: {
@@ -161,6 +161,10 @@ const props = defineProps({
     default: false
   },
   site: {
+    type: Object,
+    default: null
+  },
+  uk: {
     type: Object,
     default: null
   }
@@ -171,6 +175,7 @@ const emit = defineEmits(['update:modelValue', 'confirm'])
 const dialogVisible = ref(false)
 const submitting = ref(false)
 const formRef = ref(null)
+const projects = ref([])
 
 const form = ref({
   ukId: '',
@@ -200,10 +205,18 @@ const selectedUK = computed(() => {
   return availableUKs.value.find(uk => uk.id === form.value.ukId)
 })
 
-// 项目列表（从mock数据获取）
-const projects = computed(() => {
-  return mockData.projects || []
-})
+const loadProjects = async () => {
+  const response = await projectsApi.getList()
+  if (!response?.success) {
+    projects.value = []
+    if (!isMockMode()) {
+      ElMessage.warning(response?.message || '项目列表加载失败')
+    }
+    return
+  }
+
+  projects.value = Array.isArray(response.data) ? response.data : []
+}
 
 // 禁用过去的日期
 const disabledDate = (time) => {
@@ -212,6 +225,12 @@ const disabledDate = (time) => {
 
 watch(() => props.modelValue, (val) => {
   dialogVisible.value = val
+  if (val) {
+    loadProjects()
+    if (props.uk?.id) {
+      form.value.ukId = props.uk.id
+    }
+  }
 })
 
 watch(dialogVisible, (val) => {
@@ -245,7 +264,7 @@ const handleSubmit = async () => {
     const data = {
       ukId: form.value.ukId,
       borrower: form.value.borrower,
-      project: projects.value.find(p => p.id === form.value.projectId)?.name,
+      project: projects.value.find(p => String(p.id) === String(form.value.projectId))?.name,
       projectId: form.value.projectId,
       purpose: form.value.purpose === 'other' ? form.value.purposeOther : form.value.purpose,
       returnDate: form.value.returnDate,

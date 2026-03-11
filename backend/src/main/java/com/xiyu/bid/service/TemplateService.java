@@ -51,6 +51,7 @@ public class TemplateService {
     /**
      * 获取所有模板（限制返回1000条）
      */
+    @Transactional(readOnly = true)
     public List<TemplateDTO> getAllTemplates() {
         log.debug("Fetching all templates");
         return templateRepository.findAll(org.springframework.data.domain.PageRequest.of(0, 1000)).stream()
@@ -61,6 +62,7 @@ public class TemplateService {
     /**
      * 根据ID获取模板
      */
+    @Transactional(readOnly = true)
     public TemplateDTO getTemplateById(Long id) {
         log.debug("Fetching template by id: {}", id);
         Template template = templateRepository.findById(id)
@@ -114,6 +116,7 @@ public class TemplateService {
     /**
      * 根据类别查找模板（限制返回1000条）
      */
+    @Transactional(readOnly = true)
     public List<TemplateDTO> getTemplatesByCategory(Template.Category category) {
         log.debug("Fetching templates by category: {}", category);
         return templateRepository.findByCategory(category, org.springframework.data.domain.PageRequest.of(0, 1000)).stream()
@@ -124,6 +127,7 @@ public class TemplateService {
     /**
      * 根据创建者查找模板（限制返回1000条）
      */
+    @Transactional(readOnly = true)
     public List<TemplateDTO> getTemplatesByCreatedBy(Long createdBy) {
         log.debug("Fetching templates by creator: {}", createdBy);
         return templateRepository.findByCreatedBy(createdBy, org.springframework.data.domain.PageRequest.of(0, 1000)).stream()

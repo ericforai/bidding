@@ -1,12 +1,11 @@
 spring:
+  mvc:
+    problemdetails:
+      enabled: true  # RFC 7807 错误响应格式
   application:
     name: xiyu-bid-poc
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
-
-ai:
-  provider: ${AI_PROVIDER:mock}  # Options: mock, openai
-
   datasource:
     url: jdbc:postgresql://localhost:5432/xiyu_bid
     username: xiyu_user
@@ -17,13 +16,21 @@ ai:
     hibernate:
       ddl-auto: validate
     show-sql: false
+    open-in-view: false  # 性能优化：禁止 Open-in-View
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
 
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+
   data:
     redis:
+      repositories:
+        enabled: false
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       timeout: 2000ms
@@ -46,11 +53,16 @@ ai:
     serialization:
       write-dates-as-timestamps: false
 
+ai:
+  provider: ${AI_PROVIDER:mock}  # Options: mock, openai
+
 server:
   port: 8080
   error:
     include-message: on_param
     include-binding-errors: on_param
+    include-stacktrace: on_param  # 开发环境显示堆栈
+  forward-headers-strategy: NATIVE  # 云平台自动处理转发头
 
 jwt:
   secret: ${JWT_SECRET}
@@ -66,11 +78,32 @@ rate:
       max-attempts: ${RATE_LIMIT_LOGIN_MAX:5}
       window-minutes: ${RATE_LIMIT_LOGIN_WINDOW:15}
 
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
 logging:
   level:
     com.xiyu: INFO
     org.springframework.security: WARN
     org.hibernate.SQL: WARN
+    org.springframework.data.redis: WARN
+    io.lettuce.core: WARN
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
-

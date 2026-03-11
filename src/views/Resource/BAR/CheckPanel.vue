@@ -218,12 +218,16 @@ const handleBorrow = (site) => {
 }
 
 const handleBorrowConfirm = async (data) => {
-  // 这里应该调用 store 的借用方法
+  const response = await barStore.borrowUk(currentSite.value?.id, data.ukId, data)
+  if (!response?.success) {
+    ElMessage.error(response?.message || '借用申请提交失败')
+    return
+  }
   ElMessage.success('借用申请已提交')
   showBorrowDialog.value = false
   // 重新检查
   if (checkResult.value && checkResult.value.found) {
-    handleCheck()
+    await handleCheck()
   }
 }
 
@@ -238,7 +242,10 @@ const handleContact = (site) => {
 }
 
 onMounted(async () => {
-  await barStore.getSites()
+  const response = await barStore.getSites()
+  if (!response?.success) {
+    ElMessage.error(response?.message || 'BAR 站点数据加载失败')
+  }
 })
 </script>
 

@@ -93,12 +93,17 @@
   </div>
 </template>
 
+<!--
+ Input: useProjectStore, useUserStore (from @/stores), vue-router
+ Output: ProjectList component - 投标项目列表页面
+ Pos: src/views/Project/ - 视图层
+ 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+-->
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
-import { mockData } from '@/api/mock'
 import { Search, Refresh, Plus, View, Edit } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
@@ -123,12 +128,7 @@ const pagination = ref({
 const userList = computed(() => userStore.users)
 
 const filteredProjects = computed(() => {
-  // 确保 store 中有项目数据
-  let source = projectStore.projects
-  if (!source || source.length === 0) {
-    source = mockData.projects
-  }
-  let result = [...source]
+  let result = [...projectStore.projects]
 
   if (searchForm.value.name) {
     result = result.filter(p => p.name.includes(searchForm.value.name))
@@ -204,21 +204,34 @@ const goToCreate = () => {
   router.push('/project/create')
 }
 
-const goToDetail = (id) => {
-  router.push(`/project/${id}`)
-}
-
-const handleEdit = (id) => {
-  ElMessage.info('编辑功能开发中')
-  // TODO: 实现编辑功能
-}
-
-onMounted(() => {
-  // 确保 store 中有项目数据
-  if (!projectStore.projects || projectStore.projects.length === 0) {
-    projectStore.projects = [...mockData.projects]
+const goToDetail = async (id) => {
+  ElMessage.success(`正在跳转到项目详情: ${id}`)
+  try {
+    await router.push(`/project/${id}`)
+  } catch (error) {
+    ElMessage.error(`跳转失败: ${error.message}`)
   }
-  projectStore.getProjects()
+}
+
+const handleEdit = async (id) => {
+  try {
+    // 跳转到创建页面，带上编辑 ID 参数
+    await router.push({
+      name: 'ProjectCreate',
+      query: { editId: id }
+    })
+  } catch (error) {
+    ElMessage.error(`跳转失败: ${error.message}`)
+  }
+}
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    await projectStore.getProjects()
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 

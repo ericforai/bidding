@@ -36,7 +36,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     /**
      * 查询所有活跃项目（非归档状态）
      */
-    @Query("SELECT p FROM Project p WHERE p.status != com.xiyu.bid.entity.Project.Status.ARCHIVED")
+    @Query("SELECT p FROM Project p WHERE p.status <> 'ARCHIVED'")
     List<Project> findActiveProjects();
 
     /**

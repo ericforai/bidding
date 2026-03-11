@@ -13,10 +13,11 @@
           不可投标
         </el-tag>
       </div>
-      <a :href="site.url" target="_blank" class="site-link">
+      <a v-if="site.url" :href="site.url" target="_blank" class="site-link">
         <el-icon><Link /></el-icon>
         {{ site.url }}
       </a>
+      <span v-else class="site-link site-link-muted">未登记网址</span>
     </div>
 
     <div class="card-body">
@@ -198,6 +199,10 @@ const handleViewSOP = () => emit('view-sop', props.site)
 
 .site-link:hover {
   color: #409eff;
+}
+
+.site-link-muted {
+  color: #c0c4cc;
 }
 
 .card-body {

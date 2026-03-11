@@ -24,7 +24,7 @@
       <!-- 面板内容 -->
       <div class="panel-content">
         <!-- 投标前 - 决策支持 -->
-        <div class="feature-group">
+        <div v-if="showDemoFeatures" class="feature-group">
           <div class="group-header">
             <el-tag type="info" size="small">投标前</el-tag>
             <span class="group-title">决策支持</span>
@@ -173,6 +173,10 @@ const props = defineProps({
   visible: {
     type: Boolean,
     default: false
+  },
+  showDemoFeatures: {
+    type: Boolean,
+    default: true
   }
 })
 

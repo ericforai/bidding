@@ -281,7 +281,7 @@
                 </el-form-item>
                 <el-form-item label="操作人">
                   <el-select v-model="auditSearch.operator" placeholder="全部" clearable style="width: 120px">
-                    <el-option v-for="user in mockData.users" :key="user.id" :label="user.name" :value="user.name" />
+                    <el-option v-for="user in users" :key="user.id" :label="user.name" :value="user.name" />
                   </el-select>
                 </el-form-item>
                 <el-form-item label="部门">
@@ -366,15 +366,15 @@
                 </template>
               </el-table-column>
               <el-table-column prop="detail" label="操作详情" min-width="180" />
-              <el-table-column prop="ip" label="IP地址" width="130" />
-              <el-table-column prop="status" label="状态" width="80">
+              <el-table-column prop="ip" label="IP地址" width="160" />
+              <el-table-column prop="status" label="状态" width="120">
                 <template #default="{ row }">
                   <el-tag :type="row.status === 'success' ? 'success' : 'danger'" size="small">
                     {{ row.status === 'success' ? '成功' : '失败' }}
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="80" fixed="right">
+              <el-table-column label="操作" width="100" fixed="right">
                 <template #default="{ row }">
                   <el-button link type="primary" size="small" @click="handleViewAuditDetail(row)">
                     详情
@@ -551,6 +551,32 @@
                   </div>
                 </div>
               </template>
+
+              <!-- API 层测试 -->
+              <div class="api-test-section" style="margin-bottom: 20px; padding: 15px; background: #f5f7fa; border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <strong>🧪 API 层测试</strong>
+                  <el-tag size="small">{{ apiMode === 'mock' ? 'Mock 模式' : 'API 模式' }}</el-tag>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <el-button size="small" type="primary" @click="testApiLayer" :loading="apiTesting">
+                    运行测试
+                  </el-button>
+                  <el-button size="small" @click="clearApiTestResult">
+                    清除结果
+                  </el-button>
+                  <el-select v-model="apiMode" size="small" style="width: 120px">
+                    <el-option label="Mock 模式" value="mock" />
+                    <el-option label="API 模式" value="api" />
+                  </el-select>
+                </div>
+                <div v-if="apiTestResult.length > 0" style="margin-top: 12px; font-size: 13px;">
+                  <div v-for="(item, index) in apiTestResult" :key="index"
+                       :style="{ color: item.success ? '#67c23a' : '#f56c6c', marginBottom: '4px' }">
+                    {{ item.success ? '✅' : '❌' }} {{ item.name }}: {{ item.message }}
+                  </div>
+                </div>
+              </div>
               <div class="api-key-section">
                 <el-form label-width="120px">
                   <el-form-item label="API密钥">
@@ -873,10 +899,12 @@
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Key, Document, Menu, Operation, Lock, User, OfficeBuilding, Folder, InfoFilled, Search, Download } from '@element-plus/icons-vue'
-import { mockData } from '@/api/mock'
+import { useUserStore } from '@/stores/user'
+import { API_CONFIG, isMockMode } from '@/api'
 
 const activeTab = ref('user')
-const users = ref(mockData.users)
+const userStore = useUserStore()
+const users = computed(() => userStore.users || [])
 
 const roles = ref([
   { code: 'admin', name: '管理员', description: '系统管理员，拥有所有权限', userCount: 1, dataScope: 'all', menuPermissions: ['all'] },
@@ -1221,19 +1249,19 @@ const savePermissionConfig = () => {
 
 // 数据权限变更处理
 const handleUserDataScopeChange = (row) => {
-  console.log('用户数据权限变更:', row)
+  // 用户数据权限变更事件
 }
 
 const handleUserProjectChange = (row) => {
-  console.log('用户项目权限变更:', row)
+  // 用户项目权限变更事件
 }
 
 const handleDeptDataScopeChange = (row) => {
-  console.log('部门数据权限变更:', row)
+  // 部门数据权限变更事件
 }
 
 const handleDeptCrossAccessChange = (row) => {
-  console.log('部门跨部门访问变更:', row)
+  // 部门跨部门访问变更事件
 }
 
 const saveDeptConfig = (row) => {
@@ -1241,7 +1269,7 @@ const saveDeptConfig = (row) => {
 }
 
 const handleProjectVisibilityChange = (row) => {
-  console.log('项目组可见范围变更:', row)
+  // 项目组可见范围变更事件
 }
 
 const saveProjectConfig = (row) => {
@@ -1318,43 +1346,128 @@ const currentFlowMapping = ref({
 
 // API列表
 const apiList = ref([
-  { name: '获取项目列表', path: '/api/v1/projects', method: 'GET', description: '查询投标项目列表', status: 'enabled', enabled: true },
-  { name: '创建项目', path: '/api/v1/projects', method: 'POST', description: '创建新的投标项目', status: 'enabled', enabled: true },
-  { name: '获取项目详情', path: '/api/v1/projects/{id}', method: 'GET', description: '获取指定项目详情', status: 'enabled', enabled: true },
-  { name: '更新项目', path: '/api/v1/projects/{id}', method: 'PUT', description: '更新项目信息', status: 'enabled', enabled: true },
-  { name: '提交审批', path: '/api/v1/approvals/submit', method: 'POST', description: '提交审批申请', status: 'enabled', enabled: true },
-  { name: '查询审批状态', path: '/api/v1/approvals/{id}/status', method: 'GET', description: '查询审批进度', status: 'enabled', enabled: true },
-  { name: '同步组织架构', path: '/api/v1/sync/org', method: 'POST', description: '同步组织架构数据', status: 'enabled', enabled: true },
-  { name: '获取资质列表', path: '/api/v1/qualifications', method: 'GET', description: '查询企业资质信息', status: 'enabled', enabled: true },
-  { name: '上传附件', path: '/api/v1/files/upload', method: 'POST', description: '上传项目附件', status: 'enabled', enabled: true }
+  { name: '获取项目列表', path: '/api/projects', method: 'GET', description: '查询投标项目列表', status: 'enabled', enabled: true },
+  { name: '创建项目', path: '/api/projects', method: 'POST', description: '创建新的投标项目', status: 'enabled', enabled: true },
+  { name: '获取项目详情', path: '/api/projects/{id}', method: 'GET', description: '获取指定项目详情', status: 'enabled', enabled: true },
+  { name: '更新项目', path: '/api/projects/{id}', method: 'PUT', description: '更新项目信息', status: 'enabled', enabled: true },
+  { name: '获取标讯列表', path: '/api/tenders', method: 'GET', description: '查询标讯列表', status: 'enabled', enabled: true },
+  { name: '获取资质列表', path: '/api/knowledge/qualifications', method: 'GET', description: '查询企业资质信息', status: 'enabled', enabled: true },
+  { name: '获取案例列表', path: '/api/knowledge/cases', method: 'GET', description: '查询案例库', status: 'enabled', enabled: true },
+  { name: '获取模板列表', path: '/api/knowledge/templates', method: 'GET', description: '查询模板库', status: 'enabled', enabled: true },
+  { name: '数据看板总览', path: '/api/analytics/overview', method: 'GET', description: '获取核心看板指标', status: 'enabled', enabled: true }
 ])
 
 // API文档
 const showApiDoc = ref(false)
 const apiDocTab = ref('overview')
 const baseUrl = computed(() => {
-  return window.location.origin + '/api/v1'
+  return `${API_CONFIG.baseURL}/api`
 })
+
+// API 层测试
+const apiMode = ref('mock')
+const apiTesting = ref(false)
+const apiTestResult = ref([])
+
+async function testApiLayer() {
+  apiTesting.value = true
+  apiTestResult.value = []
+
+  const addResult = (name, success, message) => {
+    apiTestResult.value.push({ name, success, message })
+  }
+
+  try {
+    addResult('配置检查', true, `${isMockMode() ? 'Mock' : 'API'} 模式, 地址: ${API_CONFIG.baseURL}`)
+    addResult('正式上线范围', true, '以统一 API 层和真实 /api/* 契约为准，Mock 仅用于演示模式')
+
+    // 测试 API 模块导入
+    try {
+      await import('@/api/modules/auth.js')
+      addResult('authApi 模块', true, '导入成功')
+    } catch (e) {
+      addResult('authApi 模块', false, e.message)
+    }
+
+    try {
+      await import('@/api/modules/tenders.js')
+      addResult('tendersApi 模块', true, '导入成功')
+    } catch (e) {
+      addResult('tendersApi 模块', false, e.message)
+    }
+
+    try {
+      await import('@/api/modules/projects.js')
+      addResult('projectsApi 模块', true, '导入成功')
+    } catch (e) {
+      addResult('projectsApi 模块', false, e.message)
+    }
+
+    // 测试 API 调用
+    try {
+      const { authApi } = await import('@/api/modules/auth.js')
+      const result = await authApi.login('小王', '123456')
+      if (result.success) {
+        addResult('authApi.login()', true, `用户 ${result.data.user.name} 登录成功`)
+      } else {
+        addResult('authApi.login()', false, '登录失败')
+      }
+    } catch (e) {
+      addResult('authApi.login()', false, e.message)
+    }
+
+    try {
+      const { tendersApi } = await import('@/api/modules/tenders.js')
+      const result = await tendersApi.getList()
+      if (result.success && result.data.length > 0) {
+        addResult('tendersApi.getList()', true, `返回 ${result.data.length} 条标讯`)
+      } else {
+        addResult('tendersApi.getList()', false, '数据格式不正确')
+      }
+    } catch (e) {
+      addResult('tendersApi.getList()', false, e.message)
+    }
+
+    try {
+      const { projectsApi } = await import('@/api/modules/projects.js')
+      const result = await projectsApi.getList()
+      if (result.success && result.data.length > 0) {
+        addResult('projectsApi.getList()', true, `返回 ${result.data.length} 个项目`)
+      } else {
+        addResult('projectsApi.getList()', false, '数据格式不正确')
+      }
+    } catch (e) {
+      addResult('projectsApi.getList()', false, e.message)
+    }
+
+  } catch (e) {
+    addResult('测试框架', false, e.message)
+  }
+
+  apiTesting.value = false
+}
+
+function clearApiTestResult() {
+  apiTestResult.value = []
+}
 
 // 项目接口文档
 const projectApis = [
   {
     name: '获取项目列表',
-    path: 'GET /api/v1/projects',
+    path: 'GET /api/projects',
     method: 'GET',
-    description: '分页查询投标项目列表，支持按状态、日期等条件筛选',
+    description: '查询投标项目列表，筛选在统一 API 层完成兼容',
     params: [
-      { name: 'page', type: 'number', required: true, description: '页码，从1开始' },
-      { name: 'pageSize', type: 'number', required: true, description: '每页数量，最大100' },
-      { name: 'status', type: 'string', required: false, description: '项目状态：draft/submitting/approved/rejected/completed' },
-      { name: 'startDate', type: 'string', required: false, description: '开始日期，格式：YYYY-MM-DD' },
-      { name: 'endDate', type: 'string', required: false, description: '结束日期，格式：YYYY-MM-DD' }
+      { name: 'status', type: 'string', required: false, description: '项目状态筛选' },
+      { name: 'managerId', type: 'string', required: false, description: '项目经理筛选' },
+      { name: 'name', type: 'string', required: false, description: '项目名称关键字' }
     ],
-    example: `GET /api/v1/projects?page=1&pageSize=20&status=approved`
+    example: `GET /api/projects?status=bidding`
   },
   {
     name: '创建项目',
-    path: 'POST /api/v1/projects',
+    path: 'POST /api/projects',
     method: 'POST',
     description: '创建新的投标项目',
     params: [
@@ -1364,7 +1477,7 @@ const projectApis = [
       { name: 'bidDeadline', type: 'string', required: true, description: '投标截止时间，格式：YYYY-MM-DD HH:mm:ss' },
       { name: 'description', type: 'string', required: false, description: '项目描述' }
     ],
-    example: `POST /api/v1/projects
+    example: `POST /api/projects
 {
   "name": "某某系统集成项目",
   "customerId": "CUST_001",
@@ -1375,26 +1488,26 @@ const projectApis = [
   },
   {
     name: '获取项目详情',
-    path: 'GET /api/v1/projects/{id}',
+    path: 'GET /api/projects/{id}',
     method: 'GET',
     description: '获取指定项目的详细信息',
     params: [
       { name: 'id', type: 'string', required: true, description: '项目ID' }
     ],
-    example: `GET /api/v1/projects/P001`
+    example: `GET /api/projects/1001`
   },
   {
     name: '更新项目',
-    path: 'PUT /api/v1/projects/{id}',
+    path: 'PUT /api/projects/{id}',
     method: 'PUT',
     description: '更新项目信息',
     params: [
-      { name: 'id', type: 'string', required: true, description: '项目ID（路径参数）' },
+      { name: 'id', type: 'number', required: true, description: '项目ID（路径参数）' },
       { name: 'name', type: 'string', required: false, description: '项目名称' },
       { name: 'bidAmount', type: 'number', required: false, description: '投标金额' },
       { name: 'status', type: 'string', required: false, description: '项目状态' }
     ],
-    example: `PUT /api/v1/projects/P001
+    example: `PUT /api/projects/1001
 {
   "bidAmount": 550000,
   "status": "submitting"
@@ -1405,99 +1518,28 @@ const projectApis = [
 // 审批接口文档
 const approvalApis = [
   {
-    name: '提交审批',
-    path: 'POST /api/v1/approvals/submit',
-    method: 'POST',
-    description: '提交审批申请，支持项目立项、投标、合同等类型',
+    name: '上线范围说明',
+    path: 'N/A',
+    method: 'INFO',
+    description: '审批流、回调流未纳入当前正式上线范围，不应按演示文档联调。',
     params: [
-      { name: 'type', type: 'string', required: true, description: '审批类型：project_start/bidding/contract/seal' },
-      { name: 'businessId', type: 'string', required: true, description: '业务ID' },
-      { name: 'title', type: 'string', required: true, description: '审批标题' },
-      { name: 'content', type: 'string', required: true, description: '审批内容描述' },
-      { name: 'approvers', type: 'array', required: true, description: '审批人ID列表' }
+      { name: 'status', type: 'string', required: false, description: '仅保留说明，不提供联调参数' }
     ],
-    example: `POST /api/v1/approvals/submit
-{
-  "type": "project_start",
-  "businessId": "P001",
-  "title": "某某项目立项审批",
-  "content": "项目概况、预算、计划等说明",
-  "approvers": ["USER_001", "USER_002"]
-}`
-  },
-  {
-    name: '查询审批状态',
-    path: 'GET /api/v1/approvals/{id}/status',
-    method: 'GET',
-    description: '查询审批流程的当前状态和进度',
-    params: [
-      { name: 'id', type: 'string', required: true, description: '审批ID' }
-    ],
-    example: `GET /api/v1/approvals/APR_001/status`
-  },
-  {
-    name: '审批操作',
-    path: 'POST /api/v1/approvals/{id}/action',
-    method: 'POST',
-    description: '对审批进行通过、驳回等操作',
-    params: [
-      { name: 'id', type: 'string', required: true, description: '审批ID（路径参数）' },
-      { name: 'action', type: 'string', required: true, description: '操作类型：approve/reject/transfer' },
-      { name: 'comment', type: 'string', required: false, description: '审批意见' },
-      { name: 'toUser', type: 'string', required: false, description: '转交用户ID（action为transfer时必填）' }
-    ],
-    example: `POST /api/v1/approvals/APR_001/action
-{
-  "action": "approve",
-  "comment": "同意，请财务复核"
-}`
+    example: `正式上线版本不提供审批接口文档，避免传播错误契约`
   }
 ]
 
 // 回调接口文档
 const callbackApis = [
   {
-    name: 'OA审批回调',
-    path: 'POST /api/v1/callback/oa/approval',
-    method: 'POST',
-    description: 'OA系统审批完成后回调通知本系统',
+    name: '回调接口说明',
+    path: 'N/A',
+    method: 'INFO',
+    description: '第三方回调链路未纳入当前正式上线范围，需单独立项后提供正式契约。',
     params: [
-      { name: 'approvalId', type: 'string', required: true, description: '本系统审批ID' },
-      { name: 'oaFlowId', type: 'string', required: true, description: 'OA系统流程ID' },
-      { name: 'status', type: 'string', required: true, description: '审批结果：approved/rejected' },
-      { name: 'approver', type: 'string', required: true, description: '最后审批人' },
-      { name: 'comment', type: 'string', required: false, description: '审批意见' },
-      { name: 'timestamp', type: 'string', required: true, description: '审批时间戳' }
+      { name: 'status', type: 'string', required: false, description: '仅保留说明，不提供联调参数' }
     ],
-    example: `POST /api/v1/callback/oa/approval
-{
-  "approvalId": "APR_001",
-  "oaFlowId": "OA_FLOW_12345",
-  "status": "approved",
-  "approver": "张经理",
-  "comment": "同意该项目立项",
-  "timestamp": "2025-02-26T14:30:00Z"
-}`
-  },
-  {
-    name: '组织架构同步回调',
-    path: 'POST /api/v1/callback/org/sync',
-    method: 'POST',
-    description: '组织架构系统同步完成后的回调通知',
-    params: [
-      { name: 'taskId', type: 'string', required: true, description: '同步任务ID' },
-      { name: 'status', type: 'string', required: true, description: '同步结果：success/partial/failed' },
-      { name: 'syncedCount', type: 'number', required: true, description: '同步成功数量' },
-      { name: 'failedCount', type: 'number', required: false, description: '同步失败数量' },
-      { name: 'errors', type: 'array', required: false, description: '错误详情列表' }
-    ],
-    example: `POST /api/v1/callback/org/sync
-{
-  "taskId": "SYNC_001",
-  "status": "success",
-  "syncedCount": 150,
-  "failedCount": 0
-}`
+    example: `正式上线版本不提供回调接口文档，避免传播错误契约`
   }
 ]
 

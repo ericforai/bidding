@@ -138,26 +138,84 @@ import {
   QuestionFilled, Clock, Star, InfoFilled
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { loadDemoState, saveDemoState } from '@/utils/demoPersistence'
 
 const router = useRouter()
 const route = useRoute()
 const barStore = useBarStore()
+const BAR_SITE_STORAGE_KEY = 'bar-site-overrides'
 
 const loading = ref(false)
 const site = ref(null)
 
+const loadSitePersistence = () => loadDemoState(BAR_SITE_STORAGE_KEY, {})
+
+const applySitePersistence = (data) => {
+  if (!data) return data
+  const persisted = loadSitePersistence()[String(data.id)]
+  if (!persisted) return data
+  return {
+    ...data,
+    ...persisted,
+    sop: persisted.sop ? { ...(data.sop || {}), ...persisted.sop } : data.sop,
+  }
+}
+
+const persistSitePatch = (siteId, patch) => {
+  const state = loadSitePersistence()
+  const current = state[String(siteId)] || {}
+  state[String(siteId)] = {
+    ...current,
+    ...patch,
+    sop: patch.sop ? { ...(current.sop || {}), ...patch.sop } : current.sop,
+  }
+  saveDemoState(BAR_SITE_STORAGE_KEY, state)
+}
+
+const downloadTextFile = (filename, content, mimeType = 'text/plain;charset=utf-8') => {
+  const blob = new Blob([content], { type: mimeType })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(link.href)
+}
+
 const handleEdit = () => {
-  ElMessage.info('编辑功能开发中')
+  if (!site.value?.sop) return
+  site.value.sop.history = Array.isArray(site.value.sop.history) ? site.value.sop.history : []
+  site.value.sop.history.unshift({
+    date: new Date().toLocaleString('zh-CN', { hour12: false }),
+    action: '更新了 SOP 联系方式与所需材料',
+    user: '李总',
+    duration: '10分钟'
+  })
+  persistSitePatch(site.value.id, {
+    sop: {
+      history: site.value.sop.history,
+    },
+  })
+  ElMessage.success(`已保存「${site.value?.name || '当前站点'}」SOP 演示修改`)
 }
 
 const handleExport = () => {
-  ElMessage.info('导出功能开发中')
+  const content = [
+    `站点：${site.value?.name || '站点'}`,
+    `找回入口：${site.value?.sop?.resetUrl || '-'}`,
+    `联系方式：${site.value?.sop?.contacts?.join('、') || '-'}`,
+    `预计时长：${site.value?.sop?.estimatedTime || '-'}`,
+  ].join('\n')
+  downloadTextFile(`${site.value?.name || '站点'}_找回SOP.txt`, content)
+  ElMessage.success(`已导出演示 SOP：${site.value?.name || '站点'}_找回SOP.txt`)
 }
 
 onMounted(async () => {
   loading.value = true
   await barStore.getSites()
-  site.value = await barStore.getSiteById(route.params.siteId)
+  const latestSite = await barStore.getSiteById(route.params.siteId)
+  site.value = applySitePersistence(latestSite)
   loading.value = false
 })
 </script>
