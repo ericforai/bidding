@@ -420,6 +420,77 @@ export const documentEditorApi = {
     return httpClient.put(`/api/documents/${projectId}/editor/sections/${sectionId}`, data)
   },
 
+  async assignSection(projectId, data) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: {
+          id: data?.sectionId,
+          owner: data?.owner || '',
+          dueDate: data?.dueDate || '',
+          assignedBy: data?.assignedBy || null,
+        },
+      })
+    }
+    if (!isNumericId(projectId) || !isNumericId(data?.sectionId) || !isNumericId(data?.assignedBy)) {
+      return Promise.resolve(invalidIdMessage('project/section/user'))
+    }
+
+    return httpClient.post(`/api/documents/${projectId}/editor/assignments`, {
+      ...data,
+      sectionId: Number(data.sectionId),
+      assignedBy: Number(data.assignedBy),
+    })
+  },
+
+  async updateLock(projectId, data) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: {
+          id: data?.sectionId,
+          locked: Boolean(data?.locked),
+          lockedBy: data?.userId || null,
+        },
+      })
+    }
+    if (!isNumericId(projectId) || !isNumericId(data?.sectionId) || !isNumericId(data?.userId)) {
+      return Promise.resolve(invalidIdMessage('project/section/user'))
+    }
+
+    return httpClient.post(`/api/documents/${projectId}/editor/locks`, {
+      ...data,
+      sectionId: Number(data.sectionId),
+      userId: Number(data.userId),
+    })
+  },
+
+  async createReminder(projectId, data) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: {
+          id: `REM${Date.now()}`,
+          projectId,
+          sectionId: data?.sectionId,
+          recipient: data?.recipient || '',
+          message: data?.message || '',
+          remindedBy: data?.remindedBy || null,
+          remindedAt: new Date().toISOString(),
+        },
+      })
+    }
+    if (!isNumericId(projectId) || !isNumericId(data?.sectionId) || !isNumericId(data?.remindedBy)) {
+      return Promise.resolve(invalidIdMessage('project/section/user'))
+    }
+
+    return httpClient.post(`/api/documents/${projectId}/editor/reminders`, {
+      ...data,
+      sectionId: Number(data.sectionId),
+      remindedBy: Number(data.remindedBy),
+    })
+  },
+
   async getTree(projectId) {
     if (isMockMode()) {
       return Promise.resolve({ success: true, data: getMockSections(projectId) })

@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -26,6 +27,12 @@ public class DocumentSectionDTO {
     private String content;
     private Integer orderIndex;
     private String metadata;
+    private String owner;
+    private LocalDate dueDate;
+    private Boolean locked;
+    private Long assignedBy;
+    private Long lockedBy;
+    private LocalDateTime lockedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

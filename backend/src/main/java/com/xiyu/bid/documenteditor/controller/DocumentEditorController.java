@@ -105,6 +105,34 @@ public class DocumentEditorController {
         return ResponseEntity.ok(ApiResponse.success(section));
     }
 
+    @PostMapping("/assignments")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<DocumentSectionDTO>> assignSection(
+            @PathVariable Long projectId,
+            @Valid @RequestBody SectionAssignmentRequest request) {
+        DocumentSectionDTO section = documentEditorService.assignSection(projectId, request);
+        return ResponseEntity.ok(ApiResponse.success("Section assigned successfully", section));
+    }
+
+    @PostMapping("/locks")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<DocumentSectionDTO>> updateLock(
+            @PathVariable Long projectId,
+            @Valid @RequestBody SectionLockRequest request) {
+        DocumentSectionDTO section = documentEditorService.updateLock(projectId, request);
+        return ResponseEntity.ok(ApiResponse.success("Section lock updated successfully", section));
+    }
+
+    @PostMapping("/reminders")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<DocumentReminderDTO>> createReminder(
+            @PathVariable Long projectId,
+            @Valid @RequestBody SectionReminderRequest request) {
+        DocumentReminderDTO reminder = documentEditorService.createReminder(projectId, request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Reminder sent successfully", reminder));
+    }
+
     /**
      * 删除章节
      *

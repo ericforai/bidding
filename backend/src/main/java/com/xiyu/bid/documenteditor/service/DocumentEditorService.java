@@ -2,9 +2,15 @@ package com.xiyu.bid.documenteditor.service;
 
 import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.documenteditor.dto.*;
+import com.xiyu.bid.documenteditor.entity.DocumentReminder;
 import com.xiyu.bid.documenteditor.entity.DocumentSection;
+import com.xiyu.bid.documenteditor.entity.DocumentSectionAssignment;
+import com.xiyu.bid.documenteditor.entity.DocumentSectionLock;
 import com.xiyu.bid.documenteditor.entity.DocumentStructure;
 import com.xiyu.bid.documenteditor.entity.SectionType;
+import com.xiyu.bid.documenteditor.repository.DocumentReminderRepository;
+import com.xiyu.bid.documenteditor.repository.DocumentSectionAssignmentRepository;
+import com.xiyu.bid.documenteditor.repository.DocumentSectionLockRepository;
 import com.xiyu.bid.documenteditor.repository.DocumentSectionRepository;
 import com.xiyu.bid.documenteditor.repository.DocumentStructureRepository;
 import com.xiyu.bid.exception.ResourceNotFoundException;
@@ -14,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,6 +35,9 @@ public class DocumentEditorService {
 
     private final DocumentStructureRepository structureRepository;
     private final DocumentSectionRepository sectionRepository;
+    private final DocumentSectionAssignmentRepository assignmentRepository;
+    private final DocumentSectionLockRepository lockRepository;
+    private final DocumentReminderRepository reminderRepository;
     private final IAuditLogService auditLogService;
 
     /**
@@ -120,7 +130,7 @@ public class DocumentEditorService {
                 .build();
 
         DocumentSection saved = sectionRepository.save(section);
-        return toDTO(saved);
+        return toDTO(saved, null, null);
     }
 
     /**
@@ -158,7 +168,67 @@ public class DocumentEditorService {
         }
 
         DocumentSection saved = sectionRepository.save(section);
-        return toDTO(saved);
+        return buildSectionDTO(saved);
+    }
+
+    @Transactional
+    public DocumentSectionDTO assignSection(Long projectId, SectionAssignmentRequest request) {
+        DocumentSection section = getProjectSection(projectId, request.getSectionId());
+        DocumentSectionAssignment assignment = assignmentRepository.findBySectionId(section.getId())
+                .orElseGet(() -> DocumentSectionAssignment.builder()
+                        .projectId(projectId)
+                        .sectionId(section.getId())
+                        .build());
+
+        assignment.setOwner(request.getOwner().trim());
+        assignment.setAssignedBy(request.getAssignedBy());
+        assignment.setDueDate(request.getDueDate());
+
+        DocumentSectionAssignment savedAssignment = assignmentRepository.save(assignment);
+        DocumentSectionLock lock = lockRepository.findBySectionId(section.getId()).orElse(null);
+        return toDTO(section, savedAssignment, lock);
+    }
+
+    @Transactional
+    public DocumentSectionDTO updateLock(Long projectId, SectionLockRequest request) {
+        DocumentSection section = getProjectSection(projectId, request.getSectionId());
+        DocumentSectionLock lock = lockRepository.findBySectionId(section.getId())
+                .orElseGet(() -> DocumentSectionLock.builder()
+                        .projectId(projectId)
+                        .sectionId(section.getId())
+                        .build());
+
+        lock.setLocked(Boolean.TRUE.equals(request.getLocked()));
+        lock.setLockedBy(request.getUserId());
+        lock.setLockedAt(Boolean.TRUE.equals(request.getLocked()) ? LocalDateTime.now() : null);
+
+        DocumentSectionLock savedLock = lockRepository.save(lock);
+        DocumentSectionAssignment assignment = assignmentRepository.findBySectionId(section.getId()).orElse(null);
+        return toDTO(section, assignment, savedLock);
+    }
+
+    @Transactional
+    public DocumentReminderDTO createReminder(Long projectId, SectionReminderRequest request) {
+        DocumentSection section = getProjectSection(projectId, request.getSectionId());
+        DocumentReminder reminder = DocumentReminder.builder()
+                .projectId(projectId)
+                .sectionId(section.getId())
+                .recipient(request.getRecipient().trim())
+                .message(request.getMessage())
+                .remindedBy(request.getRemindedBy())
+                .remindedAt(LocalDateTime.now())
+                .build();
+
+        DocumentReminder savedReminder = reminderRepository.save(reminder);
+        return DocumentReminderDTO.builder()
+                .id(savedReminder.getId())
+                .projectId(savedReminder.getProjectId())
+                .sectionId(savedReminder.getSectionId())
+                .recipient(savedReminder.getRecipient())
+                .message(savedReminder.getMessage())
+                .remindedBy(savedReminder.getRemindedBy())
+                .remindedAt(savedReminder.getRemindedAt())
+                .build();
     }
 
     /**
@@ -241,9 +311,15 @@ public class DocumentEditorService {
                 .orElseThrow(() -> new ResourceNotFoundException("Document structure not found for project: " + projectId));
 
         List<DocumentSection> allSections = sectionRepository.findByStructureId(structure.getId());
+        Map<Long, DocumentSectionAssignment> assignments = assignmentRepository.findBySectionIdIn(
+                allSections.stream().map(DocumentSection::getId).toList()
+        ).stream().collect(Collectors.toMap(DocumentSectionAssignment::getSectionId, item -> item));
+        Map<Long, DocumentSectionLock> locks = lockRepository.findBySectionIdIn(
+                allSections.stream().map(DocumentSection::getId).toList()
+        ).stream().collect(Collectors.toMap(DocumentSectionLock::getSectionId, item -> item));
 
         // 构建章节树
-        return buildTree(allSections, null);
+        return buildTree(allSections, null, assignments, locks);
     }
 
     /**
@@ -253,7 +329,9 @@ public class DocumentEditorService {
      * @param parentId 父章节ID
      * @return 章节树
      */
-    private List<DocumentSectionDTO> buildTree(List<DocumentSection> allSections, Long parentId) {
+    private List<DocumentSectionDTO> buildTree(List<DocumentSection> allSections, Long parentId,
+                                              Map<Long, DocumentSectionAssignment> assignments,
+                                              Map<Long, DocumentSectionLock> locks) {
         if (allSections == null) {
             return List.of();
         }
@@ -261,11 +339,11 @@ public class DocumentEditorService {
         return allSections.stream()
                 .filter(section -> section != null && Objects.equals(section.getParentId(), parentId))
                 .map(section -> {
-                    DocumentSectionDTO dto = toDTO(section);
+                    DocumentSectionDTO dto = toDTO(section, assignments.get(section.getId()), locks.get(section.getId()));
                     // Use Optional to safely handle potential null ID
                     Long sectionId = section.getId();
                     if (sectionId != null) {
-                        List<DocumentSectionDTO> children = buildTree(allSections, sectionId);
+                        List<DocumentSectionDTO> children = buildTree(allSections, sectionId, assignments, locks);
                         if (!children.isEmpty()) {
                             dto.setChildren(children);
                         }
@@ -299,7 +377,7 @@ public class DocumentEditorService {
      * @param entity 实体
      * @return DTO
      */
-    private DocumentSectionDTO toDTO(DocumentSection entity) {
+    private DocumentSectionDTO toDTO(DocumentSection entity, DocumentSectionAssignment assignment, DocumentSectionLock lock) {
         return DocumentSectionDTO.builder()
                 .id(entity.getId())
                 .structureId(entity.getStructureId())
@@ -309,9 +387,39 @@ public class DocumentEditorService {
                 .content(entity.getContent())
                 .orderIndex(entity.getOrderIndex())
                 .metadata(entity.getMetadata())
+                .owner(assignment != null ? assignment.getOwner() : null)
+                .dueDate(assignment != null ? assignment.getDueDate() : null)
+                .locked(lock != null ? Boolean.TRUE.equals(lock.getLocked()) : Boolean.FALSE)
+                .assignedBy(assignment != null ? assignment.getAssignedBy() : null)
+                .lockedBy(lock != null ? lock.getLockedBy() : null)
+                .lockedAt(lock != null ? lock.getLockedAt() : null)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .children(List.of())
                 .build();
+    }
+
+    private DocumentSectionDTO buildSectionDTO(DocumentSection section) {
+        DocumentSectionAssignment assignment = assignmentRepository.findBySectionId(section.getId()).orElse(null);
+        DocumentSectionLock lock = lockRepository.findBySectionId(section.getId()).orElse(null);
+        return toDTO(section, assignment, lock);
+    }
+
+    private DocumentSection getProjectSection(Long projectId, Long sectionId) {
+        if (projectId == null) {
+            throw new IllegalArgumentException("Project ID is required");
+        }
+        if (sectionId == null) {
+            throw new IllegalArgumentException("Section ID is required");
+        }
+
+        DocumentStructure structure = structureRepository.findByProjectId(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Document structure not found for project: " + projectId));
+        DocumentSection section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Section not found with id: " + sectionId));
+        if (!Objects.equals(section.getStructureId(), structure.getId())) {
+            throw new IllegalArgumentException("Section does not belong to the specified project");
+        }
+        return section;
     }
 }
