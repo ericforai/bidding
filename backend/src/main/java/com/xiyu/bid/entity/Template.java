@@ -34,6 +34,15 @@ public class Template {
     @Column(name = "file_url")
     private String fileUrl;
 
+    @Column(length = 2000)
+    private String description;
+
+    @Column(name = "current_version")
+    private String currentVersion;
+
+    @Column(name = "file_size")
+    private String fileSize;
+
     @ElementCollection
     @CollectionTable(name = "template_tags", joinColumns = @JoinColumn(name = "template_id"))
     @Column(name = "tag")

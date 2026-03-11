@@ -2,7 +2,13 @@ package com.xiyu.bid.controller;
 
 import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.dto.TemplateCopyRequest;
+import com.xiyu.bid.dto.TemplateDownloadRecordRequest;
+import com.xiyu.bid.dto.TemplateDownloadRecordDTO;
 import com.xiyu.bid.dto.TemplateDTO;
+import com.xiyu.bid.dto.TemplateUseRecordDTO;
+import com.xiyu.bid.dto.TemplateUseRecordRequest;
+import com.xiyu.bid.dto.TemplateVersionDTO;
 import com.xiyu.bid.entity.Template;
 import com.xiyu.bid.service.TemplateService;
 import com.xiyu.bid.util.InputSanitizer;
@@ -94,6 +100,47 @@ public class TemplateController {
         return ResponseEntity.ok(ApiResponse.success("Templates retrieved successfully", templates));
     }
 
+    @PostMapping("/{id}/copy")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "CREATE", entityType = "Template", description = "复制模板")
+    public ResponseEntity<ApiResponse<TemplateDTO>> copyTemplate(
+            @PathVariable Long id,
+            @Valid @RequestBody TemplateCopyRequest request) {
+        request.setName(InputSanitizer.sanitizeString(request.getName(), 200));
+        TemplateDTO copied = templateService.copyTemplate(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Template copied successfully", copied));
+    }
+
+    @GetMapping("/{id}/versions")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "READ", entityType = "Template", description = "获取模板版本历史")
+    public ResponseEntity<ApiResponse<List<TemplateVersionDTO>>> getTemplateVersions(@PathVariable Long id) {
+        List<TemplateVersionDTO> versions = templateService.getTemplateVersions(id);
+        return ResponseEntity.ok(ApiResponse.success("Template versions retrieved successfully", versions));
+    }
+
+    @PostMapping("/{id}/use-records")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "CREATE", entityType = "Template", description = "记录模板使用")
+    public ResponseEntity<ApiResponse<TemplateUseRecordDTO>> createTemplateUseRecord(
+            @PathVariable Long id,
+            @Valid @RequestBody TemplateUseRecordRequest request) {
+        request.setDocumentName(InputSanitizer.sanitizeString(request.getDocumentName(), 255));
+        request.setDocType(InputSanitizer.sanitizeString(request.getDocType(), 100));
+        TemplateUseRecordDTO created = templateService.createTemplateUseRecord(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Template use recorded successfully", created));
+    }
+
+    @PostMapping("/{id}/downloads")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "CREATE", entityType = "Template", description = "记录模板下载")
+    public ResponseEntity<ApiResponse<TemplateDTO>> createTemplateDownloadRecord(
+            @PathVariable Long id,
+            @RequestBody(required = false) TemplateDownloadRecordRequest request) {
+        TemplateDTO updated = templateService.createTemplateDownloadRecord(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Template download recorded successfully", updated));
+    }
+
     /**
      * 清洗模板DTO中的用户输入
      */
@@ -103,6 +150,12 @@ public class TemplateController {
         }
         if (dto.getFileUrl() != null) {
             dto.setFileUrl(InputSanitizer.sanitizeString(dto.getFileUrl(), 500));
+        }
+        if (dto.getDescription() != null) {
+            dto.setDescription(InputSanitizer.sanitizeString(dto.getDescription(), 2000));
+        }
+        if (dto.getFileSize() != null) {
+            dto.setFileSize(InputSanitizer.sanitizeString(dto.getFileSize(), 100));
         }
         if (dto.getTags() != null) {
             dto.setTags(dto.getTags().stream()

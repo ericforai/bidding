@@ -22,6 +22,11 @@ public class TemplateDTO {
     private String name;
     private Template.Category category;
     private String fileUrl;
+    private String description;
+    private String currentVersion;
+    private String fileSize;
+    private Long downloads;
+    private Long useCount;
     private List<String> tags;
     private Long createdBy;
     private LocalDateTime createdAt;

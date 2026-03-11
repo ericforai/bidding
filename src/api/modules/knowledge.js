@@ -196,8 +196,9 @@ function normalizeTemplate(item) {
     tags: Array.isArray(item?.tags) ? item.tags : [],
     description: item?.description || '暂无真实模板描述',
     downloads: Number(item?.downloads || 0),
+    useCount: Number(item?.useCount || 0),
     updateTime: updateTime || '-',
-    version: item?.version || '1.0',
+    version: item?.currentVersion || item?.version || '1.0',
     fileSize: item?.fileSize || '未知',
     fileUrl: item?.fileUrl || '',
     content: item?.content || '',
@@ -211,6 +212,8 @@ function buildTemplatePayload(data = {}) {
     name: data.name,
     category: templateCategoryMap[data.category] || 'OTHER',
     fileUrl: data.fileUrl || '',
+    description: data.description || '',
+    fileSize: data.fileSize || '',
     tags: Array.isArray(data.tags) ? data.tags : [],
     createdBy: data.createdBy ?? null,
   }
@@ -478,6 +481,84 @@ export const templatesApi = {
     }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
     return httpClient.delete(`/api/knowledge/templates/${id}`)
+  },
+
+  async copy(id, data = {}) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: normalizeTemplate({
+          ...data,
+          id: `TP${Date.now()}`,
+          version: '1.0',
+          downloads: 0,
+          useCount: 0,
+          updateTime: new Date().toISOString().slice(0, 10),
+        }),
+      })
+    }
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
+
+    const response = await httpClient.post(`/api/knowledge/templates/${id}/copy`, {
+      name: data.name,
+      createdBy: data.createdBy ?? null,
+    })
+    return { ...response, data: normalizeTemplate(response?.data) }
+  },
+
+  async getVersions(id) {
+    if (isMockMode()) {
+      return Promise.resolve({ success: true, data: [] })
+    }
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
+
+    return httpClient.get(`/api/knowledge/templates/${id}/versions`)
+  },
+
+  async recordUse(id, data = {}) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: {
+          id: `use_${Date.now()}`,
+          documentName: data.documentName,
+          docType: data.docType,
+          projectId: data.projectId ?? null,
+          applyOptions: Array.isArray(data.applyOptions) ? data.applyOptions : [],
+          usedBy: data.usedBy ?? null,
+          usedAt: new Date().toISOString(),
+        },
+      })
+    }
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
+
+    return httpClient.post(`/api/knowledge/templates/${id}/use-records`, {
+      documentName: data.documentName,
+      docType: data.docType,
+      projectId: data.projectId ?? null,
+      applyOptions: Array.isArray(data.applyOptions) ? data.applyOptions : [],
+      usedBy: data.usedBy ?? null,
+    })
+  },
+
+  async recordDownload(id, data = {}) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: normalizeTemplate({
+          ...data,
+          id,
+          downloads: Number(data.downloads || 0),
+          useCount: Number(data.useCount || 0),
+        }),
+      })
+    }
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
+
+    const response = await httpClient.post(`/api/knowledge/templates/${id}/downloads`, {
+      downloadedBy: data.downloadedBy ?? null,
+    })
+    return { ...response, data: normalizeTemplate(response?.data) }
   },
 }
 

@@ -32,20 +32,16 @@ public class BarSiteSop {
     @Column(length = 100)
     private String estimatedTime;
 
-    @Lob
-    @Column(name = "contacts_json")
+    @Column(name = "contacts_json", columnDefinition = "TEXT")
     private String contactsJson;
 
-    @Lob
-    @Column(name = "required_docs_json")
+    @Column(name = "required_docs_json", columnDefinition = "TEXT")
     private String requiredDocsJson;
 
-    @Lob
-    @Column(name = "faqs_json")
+    @Column(name = "faqs_json", columnDefinition = "TEXT")
     private String faqsJson;
 
-    @Lob
-    @Column(name = "history_json")
+    @Column(name = "history_json", columnDefinition = "TEXT")
     private String historyJson;
 
     @Column(name = "created_at", nullable = false, updatable = false)
