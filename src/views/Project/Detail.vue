@@ -1182,7 +1182,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
 import { useBarStore } from '@/stores/bar'
-import { knowledgeApi, isMockMode } from '@/api'
+import { knowledgeApi, isMockMode, projectsApi } from '@/api'
 import { mockData } from '@/api/mock'
 import {
   Edit, DocumentChecked, Coin, InfoFilled, List, Folder, Upload, Plus,
@@ -1210,6 +1210,7 @@ const barStore = useBarStore()
 const isDemoMode = isMockMode()
 const demoAutoTasks = ref([])
 const demoMobileCard = ref(null)
+const isApiProject = computed(() => !isDemoMode && /^\d+$/.test(String(route.params.id || '')))
 
 const downloadTextFile = (filename, content, mimeType = 'text/plain;charset=utf-8') => {
   const blob = new Blob([content], { type: mimeType })
@@ -1967,30 +1968,63 @@ const handleAddTask = () => {
   if (!project.value) return
 
   const nextIndex = (project.value.tasks?.length || 0) + 1
+  const dueDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
   const newTask = {
-    id: `TASK_${Date.now()}`,
-    name: `新增演示任务 ${nextIndex}`,
+    name: `新增任务 ${nextIndex}`,
     owner: userStore.userName,
     assignee: userStore.userName,
     department: '投标管理部',
-    dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    dueDate: dueDate.toISOString().split('T')[0],
     priority: 'medium',
     status: 'todo',
     deliverables: [],
     hasDeliverable: false,
   }
 
-  if (!Array.isArray(project.value.tasks)) {
-    project.value.tasks = []
+  if (!isApiProject.value) {
+    if (!Array.isArray(project.value.tasks)) {
+      project.value.tasks = []
+    }
+    project.value.tasks.unshift({ id: `TASK_${Date.now()}`, ...newTask })
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `新增了任务「${newTask.name}」`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success('已新增演示任务')
+    return
   }
-  project.value.tasks.unshift(newTask)
-  activities.value.unshift({
-    id: Date.now(),
-    user: userStore.userName,
-    action: `新增了任务「${newTask.name}」`,
-    time: new Date().toLocaleString('zh-CN', { hour12: false }),
+
+  projectsApi.createTask(route.params.id, {
+    title: newTask.name,
+    description: '',
+    assigneeId: userStore.currentUser?.id || null,
+    assigneeName: userStore.userName,
+    priority: 'MEDIUM',
+    dueDate: dueDate.toISOString(),
+  }).then((result) => {
+    if (!result?.success || !result?.data) {
+      throw new Error(result?.message || '新增任务失败')
+    }
+    if (!Array.isArray(project.value.tasks)) {
+      project.value.tasks = []
+    }
+    project.value.tasks.unshift({
+      ...result.data,
+      deliverables: [],
+      hasDeliverable: false,
+    })
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `新增了任务「${result.data.name}」`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success('任务已新增')
+  }).catch((error) => {
+    ElMessage.error(error.message || '新增任务失败')
   })
-  ElMessage.success('已新增演示任务')
 }
 
 // 重置任务（用于演示）
@@ -2042,8 +2076,28 @@ const handleTaskStatusChange = async (task, newStatus) => {
     })
   }
 
-  await projectStore.updateTaskStatus(route.params.id, task?.id, newStatus)
-  ElMessage.success('任务状态已更新')
+  if (!isApiProject.value) {
+    await projectStore.updateTaskStatus(route.params.id, task?.id, newStatus)
+    ElMessage.success('任务状态已更新')
+    return
+  }
+
+  try {
+    const statusMap = {
+      todo: 'TODO',
+      doing: 'IN_PROGRESS',
+      done: 'COMPLETED',
+      review: 'CANCELLED'
+    }
+    const result = await projectsApi.updateTaskStatus(route.params.id, task?.id, statusMap[newStatus] || 'TODO')
+    if (!result?.success || !result?.data) {
+      throw new Error(result?.message || '任务状态更新失败')
+    }
+    Object.assign(task, result.data)
+    ElMessage.success('任务状态已更新')
+  } catch (error) {
+    ElMessage.error(error.message || '任务状态更新失败')
+  }
 }
 
 // 添加交付物
@@ -2141,17 +2195,23 @@ const handleSubmitToDocument = (projectId) => {
   })
 }
 
-const handleUpload = (file) => {
-  if (project.value) {
+const handleUpload = async (file) => {
+  if (!project.value) return false
+
+  const docPayload = {
+    name: file.name,
+    uploader: userStore.userName,
+    time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    size: `${Math.max(1, Math.round((file.size || 1024 * 1024) / 1024 / 1024))}MB`,
+  }
+
+  if (!isApiProject.value) {
     if (!Array.isArray(project.value.documents)) {
       project.value.documents = []
     }
     project.value.documents.unshift({
       id: `DOC_${Date.now()}`,
-      name: file.name,
-      uploader: userStore.userName,
-      time: new Date().toLocaleString('zh-CN', { hour12: false }),
-      size: `${Math.max(1, Math.round((file.size || 1024 * 1024) / 1024 / 1024))}MB`,
+      ...docPayload,
     })
     activities.value.unshift({
       id: Date.now(),
@@ -2159,8 +2219,36 @@ const handleUpload = (file) => {
       action: `上传了文档「${file.name}」`,
       time: new Date().toLocaleString('zh-CN', { hour12: false }),
     })
+    ElMessage.success(`已上传演示文档：${file.name}`)
+    return false
   }
-  ElMessage.success(`已上传演示文档：${file.name}`)
+
+  try {
+    const formData = new FormData()
+    formData.set('file', file)
+    formData.set('name', file.name)
+    formData.set('size', docPayload.size)
+    formData.set('fileType', file.type || 'application/octet-stream')
+    formData.set('uploaderId', String(userStore.currentUser?.id || ''))
+    formData.set('uploaderName', userStore.userName)
+    const result = await projectsApi.uploadDocument(route.params.id, formData)
+    if (!result?.success || !result?.data) {
+      throw new Error(result?.message || '上传文档失败')
+    }
+    if (!Array.isArray(project.value.documents)) {
+      project.value.documents = []
+    }
+    project.value.documents.unshift(result.data)
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `上传了文档「${result.data.name}」`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success(`已上传文档：${result.data.name}`)
+  } catch (error) {
+    ElMessage.error(error.message || '上传文档失败')
+  }
   return false
 }
 
@@ -2176,41 +2264,110 @@ const handleDeleteDoc = async (doc) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
+
+    if (isApiProject.value && /^\d+$/.test(String(doc?.id))) {
+      const result = await projectsApi.deleteDocument(route.params.id, doc.id)
+      if (!result?.success) {
+        throw new Error(result?.message || '删除文档失败')
+      }
+    }
+
+    if (Array.isArray(project.value?.documents)) {
+      project.value.documents = project.value.documents.filter(item => String(item.id) !== String(doc.id))
+    }
     ElMessage.success('删除成功')
   } catch {
     // 用户取消
   }
 }
 
-const handleAddDocument = () => {
-  if (!project.value) return
-  const mockDoc = {
-    id: `DOC_${Date.now()}`,
-    name: `演示文档_${new Date().toLocaleDateString('zh-CN').replaceAll('/', '')}.docx`,
-    uploader: userStore.userName,
-    time: new Date().toLocaleString('zh-CN', { hour12: false }),
-    size: '1.2MB',
+const handleCreateDocument = async (docName, size = '1.2MB') => {
+  const formData = new FormData()
+  formData.set('name', docName)
+  formData.set('size', size)
+  formData.set('fileType', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+  formData.set('uploaderId', String(userStore.currentUser?.id || ''))
+  formData.set('uploaderName', userStore.userName)
+  const result = await projectsApi.uploadDocument(route.params.id, formData)
+  if (!result?.success || !result?.data) {
+    throw new Error(result?.message || '新增项目文档失败')
   }
   if (!Array.isArray(project.value.documents)) {
     project.value.documents = []
   }
-  project.value.documents.unshift(mockDoc)
+  project.value.documents.unshift(result.data)
   activities.value.unshift({
     id: Date.now(),
     user: userStore.userName,
-    action: `新增了项目文档「${mockDoc.name}」`,
+    action: `新增了项目文档「${result.data.name}」`,
     time: new Date().toLocaleString('zh-CN', { hour12: false }),
   })
-  ElMessage.success('已新增演示文档')
+  ElMessage.success('项目文档已新增')
 }
 
-const handleShare = () => {
-  const shareLink = `${window.location.origin}/project/${route.params.id}`
-  navigator.clipboard.writeText(shareLink).then(() => {
-    ElMessage.success('项目链接已复制到剪贴板')
-  }).catch(() => {
-    ElMessage.success(`分享链接：${shareLink}`)
-  })
+const handleAddDocument = async () => {
+  if (!project.value) return
+  const docName = `项目文档_${new Date().toLocaleDateString('zh-CN').replaceAll('/', '')}.docx`
+
+  if (!isApiProject.value) {
+    const mockDoc = {
+      id: `DOC_${Date.now()}`,
+      name: docName,
+      uploader: userStore.userName,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+      size: '1.2MB',
+    }
+    if (!Array.isArray(project.value.documents)) {
+      project.value.documents = []
+    }
+    project.value.documents.unshift(mockDoc)
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `新增了项目文档「${mockDoc.name}」`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success('已新增演示文档')
+    return
+  }
+
+  try {
+    await handleCreateDocument(docName)
+  } catch (error) {
+    ElMessage.error(error.message || '新增项目文档失败')
+  }
+}
+
+const handleShare = async () => {
+  const fallbackLink = `${window.location.origin}/project/${route.params.id}`
+
+  if (!isApiProject.value) {
+    navigator.clipboard.writeText(fallbackLink).then(() => {
+      ElMessage.success('项目链接已复制到剪贴板')
+    }).catch(() => {
+      ElMessage.success(`分享链接：${fallbackLink}`)
+    })
+    return
+  }
+
+  try {
+    const result = await projectsApi.createShareLink(route.params.id, {
+      createdBy: userStore.currentUser?.id || null,
+      createdByName: userStore.userName,
+      baseUrl: window.location.origin,
+    })
+    const shareLink = result?.data?.url || fallbackLink
+    await navigator.clipboard.writeText(shareLink)
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: '生成了项目分享链接',
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success('项目分享链接已复制到剪贴板')
+  } catch (error) {
+    ElMessage.error(error.message || '生成分享链接失败')
+  }
 }
 
 const handleExport = () => {
@@ -2228,14 +2385,67 @@ const handleExport = () => {
   ElMessage.success(`已生成演示导出包：${project.value?.name || '项目资料'}.zip`)
 }
 
-const handleSetReminder = () => {
-  activities.value.unshift({
-    id: Date.now(),
-    user: userStore.userName,
-    action: '设置了项目跟进提醒',
-    time: new Date().toLocaleString('zh-CN', { hour12: false }),
-  })
-  ElMessage.success('已设置演示提醒，默认明天 09:00 提醒')
+const handleSetReminder = async () => {
+  const remindAt = new Date()
+  remindAt.setDate(remindAt.getDate() + 1)
+  remindAt.setHours(9, 0, 0, 0)
+
+  if (!isApiProject.value) {
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: '设置了项目跟进提醒',
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success('已设置演示提醒，默认明天 09:00 提醒')
+    return
+  }
+
+  try {
+    const result = await projectsApi.createReminder(route.params.id, {
+      title: '项目跟进提醒',
+      message: `请跟进项目「${project.value?.name || ''}」`,
+      remindAt: remindAt.toISOString(),
+      createdBy: userStore.currentUser?.id || null,
+      createdByName: userStore.userName,
+      recipient: '项目负责人',
+    })
+    if (!result?.success || !result?.data) {
+      throw new Error(result?.message || '设置提醒失败')
+    }
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `设置了项目提醒：${result.data.title}`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success('项目提醒已创建')
+  } catch (error) {
+    ElMessage.error(error.message || '设置提醒失败')
+  }
+}
+
+const loadProjectWorkflowData = async (projectId) => {
+  if (!project.value || !isApiProject.value) {
+    return
+  }
+
+  const [taskResult, documentResult] = await Promise.all([
+    projectsApi.getTasks(projectId),
+    projectsApi.getDocuments(projectId),
+  ])
+
+  project.value.tasks = taskResult?.success && Array.isArray(taskResult.data)
+    ? taskResult.data.map((task) => ({
+      ...task,
+      deliverables: task.deliverables || [],
+      hasDeliverable: Boolean(task.hasDeliverable),
+    }))
+    : []
+
+  project.value.documents = documentResult?.success && Array.isArray(documentResult.data)
+    ? documentResult.data
+    : []
 }
 
 // 标书编制流程相关处理函数
@@ -2451,6 +2661,7 @@ onMounted(async () => {
   if (!projectStore.currentProject) {
     projectStore.currentProject = mockData.projects.find((item) => String(item.id) === String(projectId)) || null
   }
+  await loadProjectWorkflowData(projectId)
   demoAutoTasks.value = mockData.autoTasks || []
   demoMobileCard.value = mockData.mobileCard?.[projectId] || mockData.mobileCard?.P001 || null
 

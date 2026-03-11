@@ -1,0 +1,48 @@
+package com.xiyu.bid.projectworkflow.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "project_documents")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProjectDocument {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "project_id", nullable = false)
+    private Long projectId;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Column(name = "file_size")
+    private String size;
+
+    @Column(name = "file_type")
+    private String fileType;
+
+    @Column(name = "uploader_id")
+    private Long uploaderId;
+
+    @Column(name = "uploader_name", nullable = false)
+    private String uploaderName;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
+}

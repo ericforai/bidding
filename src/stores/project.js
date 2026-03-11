@@ -16,7 +16,7 @@ export const useProjectStore = defineStore('project', {
   getters: {
     inProgressProjects: (state) => state.projects.filter(p => p.status !== 'won' && p.status !== 'lost'),
     wonProjects: (state) => state.projects.filter(p => p.status === 'won'),
-    getProjectById: (state) => (id) => state.projects.find(p => p.id === id)
+    findProjectById: (state) => (id) => state.projects.find(p => p.id === id)
   },
 
   actions: {

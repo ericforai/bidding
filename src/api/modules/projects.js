@@ -43,6 +43,10 @@ function getMockProjects(params = {}) {
   return applyProjectFilters([...mockData.projects], params)
 }
 
+function getMockProject(id) {
+  return mockData.projects.find((project) => String(project.id) === String(id)) || null
+}
+
 export const projectsApi = {
   /**
    * 获取项目列表
@@ -161,14 +165,60 @@ export const projectsApi = {
    */
   async getTasks(projectId) {
     if (isMockMode()) {
-      const project = mockData.projects.find(p => p.id === projectId)
+      const project = getMockProject(projectId)
       return Promise.resolve({ success: true, data: project?.tasks || [] })
     }
 
-    return Promise.resolve({
-      success: false,
-      message: 'Project task sub-route is not implemented on the backend yet'
-    })
+    if (!isNumericId(projectId)) {
+      const project = getMockProject(projectId)
+      return Promise.resolve({
+        success: true,
+        data: project?.tasks || [],
+        message: '使用演示项目任务数据'
+      })
+    }
+
+    return httpClient.get(`/api/projects/${projectId}/tasks`)
+  },
+
+  async createTask(projectId, data) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: {
+          id: `TASK_${Date.now()}`,
+          ...data,
+          status: data?.status || 'todo',
+        }
+      })
+    }
+
+    if (!isNumericId(projectId)) {
+      return Promise.resolve({
+        success: false,
+        message: 'Current backend only supports numeric project IDs in API mode'
+      })
+    }
+
+    return httpClient.post(`/api/projects/${projectId}/tasks`, data)
+  },
+
+  async updateTaskStatus(projectId, taskId, status) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: { id: taskId, status }
+      })
+    }
+
+    if (!isNumericId(projectId) || !isNumericId(taskId)) {
+      return Promise.resolve({
+        success: false,
+        message: 'Current backend only supports numeric task IDs in API mode'
+      })
+    }
+
+    return httpClient.patch(`/api/projects/${projectId}/tasks/${taskId}/status`, { status })
   },
 
   /**
@@ -176,14 +226,20 @@ export const projectsApi = {
    */
   async getDocuments(projectId) {
     if (isMockMode()) {
-      const project = mockData.projects.find(p => p.id === projectId)
+      const project = getMockProject(projectId)
       return Promise.resolve({ success: true, data: project?.documents || [] })
     }
 
-    return Promise.resolve({
-      success: false,
-      message: 'Project document sub-route is not implemented on the backend yet'
-    })
+    if (!isNumericId(projectId)) {
+      const project = getMockProject(projectId)
+      return Promise.resolve({
+        success: true,
+        data: project?.documents || [],
+        message: '使用演示项目文档数据'
+      })
+    }
+
+    return httpClient.get(`/api/projects/${projectId}/documents`)
   },
 
   /**
@@ -197,10 +253,77 @@ export const projectsApi = {
       })
     }
 
-    return Promise.resolve({
-      success: false,
-      message: 'Project document upload is not implemented on the backend yet'
+    if (!isNumericId(projectId)) {
+      return Promise.resolve({
+        success: false,
+        message: 'Current backend only supports numeric project IDs in API mode'
+      })
+    }
+
+    return httpClient.post(`/api/projects/${projectId}/documents`, {
+      name: formData.get('name') || formData.get('file')?.name || '项目文档',
+      size: formData.get('size') || '1MB',
+      fileType: formData.get('fileType') || formData.get('file')?.type || 'application/octet-stream',
+      uploaderId: formData.get('uploaderId') ? Number(formData.get('uploaderId')) : null,
+      uploaderName: formData.get('uploaderName') || '',
     })
+  },
+
+  async deleteDocument(projectId, documentId) {
+    if (isMockMode()) {
+      return Promise.resolve({ success: true })
+    }
+
+    if (!isNumericId(projectId) || !isNumericId(documentId)) {
+      return Promise.resolve({
+        success: false,
+        message: 'Current backend only supports numeric document IDs in API mode'
+      })
+    }
+
+    return httpClient.delete(`/api/projects/${projectId}/documents/${documentId}`)
+  },
+
+  async createReminder(projectId, data) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: { id: `REM_${Date.now()}`, projectId, ...data }
+      })
+    }
+
+    if (!isNumericId(projectId)) {
+      return Promise.resolve({
+        success: false,
+        message: 'Current backend only supports numeric project IDs in API mode'
+      })
+    }
+
+    return httpClient.post(`/api/projects/${projectId}/reminders`, data)
+  },
+
+  async createShareLink(projectId, data) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: {
+          id: `SHARE_${Date.now()}`,
+          projectId,
+          token: `mock-${Date.now()}`,
+          url: `${data?.baseUrl || window.location.origin}/project/${projectId}`,
+          ...data,
+        }
+      })
+    }
+
+    if (!isNumericId(projectId)) {
+      return Promise.resolve({
+        success: false,
+        message: 'Current backend only supports numeric project IDs in API mode'
+      })
+    }
+
+    return httpClient.post(`/api/projects/${projectId}/share-links`, data)
   }
 }
 
