@@ -12,6 +12,7 @@
       <div class="header-actions">
         <el-button :icon="View" @click="handlePreview">预览</el-button>
         <el-button :icon="Download" @click="handleExport">导出</el-button>
+        <el-button :icon="DocumentChecked" @click="handleArchive">归档</el-button>
         <el-button type="primary" :icon="Check" @click="handleSave">保存</el-button>
       </div>
     </div>
@@ -177,6 +178,32 @@
                 </div>
               </div>
             </div>
+
+            <div v-if="exportHistory.length > 0" class="history-section">
+              <el-divider>导出历史</el-divider>
+              <div class="history-list">
+                <div v-for="item in exportHistory" :key="item.id" class="history-item">
+                  <el-icon color="#409eff"><Download /></el-icon>
+                  <div class="history-content">
+                    <div class="history-title">{{ item.fileName }}</div>
+                    <div class="history-time">{{ item.exportedAt }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="archiveHistory.length > 0" class="history-section">
+              <el-divider>归档记录</el-divider>
+              <div class="history-list">
+                <div v-for="item in archiveHistory" :key="item.id" class="history-item">
+                  <el-icon color="#67c23a"><DocumentChecked /></el-icon>
+                  <div class="history-content">
+                    <div class="history-title">{{ item.archiveReason }}</div>
+                    <div class="history-time">{{ item.archivedAt }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </el-card>
       </div>
@@ -248,6 +275,7 @@ import {
   ArrowLeft,
   View,
   Download,
+  DocumentChecked,
   Check,
   Plus,
   ZoomIn,
@@ -403,6 +431,8 @@ const assemblySteps = ref([
 
 // 装配历史
 const assemblyHistory = ref([])
+const exportHistory = ref([])
+const archiveHistory = ref([])
 
 // 章节对话框
 const showSectionDialog = ref(false)
@@ -494,9 +524,31 @@ const loadProjectInfo = async (projectId) => {
   }
 }
 
+const loadExportArtifacts = async (projectId) => {
+  if (!isRemoteProjectId.value) {
+    exportHistory.value = []
+    archiveHistory.value = []
+    return
+  }
+
+  try {
+    const [exportResult, archiveResult] = await Promise.all([
+      collaborationApi.exports.getExports(projectId),
+      collaborationApi.exports.getArchiveRecords(projectId),
+    ])
+    exportHistory.value = Array.isArray(exportResult?.data) ? exportResult.data : []
+    archiveHistory.value = Array.isArray(archiveResult?.data) ? archiveResult.data : []
+  } catch (error) {
+    console.warn('加载导出归档记录失败:', error.message)
+    exportHistory.value = []
+    archiveHistory.value = []
+  }
+}
+
 const loadEditorData = async () => {
   const projectId = route.params.id
   await loadProjectInfo(projectId)
+  await loadExportArtifacts(projectId)
 
   if (!isRemoteProjectId.value) {
     const fallbackSection = findFirstEditableSection(sectionData.value.sections)
@@ -1015,14 +1067,59 @@ const handlePreview = () => {
 }
 
 const handleExport = () => {
-  const exportContent = JSON.stringify({
-    project: projectInfo.value,
-    document: documentInfo.value,
-    sections: sectionData.value.sections,
-    exportedAt: new Date().toISOString()
-  }, null, 2)
-  downloadTextFile(`${projectInfo.value.name}_标书导出.json`, exportContent, 'application/json;charset=utf-8')
-  ElMessage.success('已导出演示文档包')
+  if (!isRemoteProjectId.value) {
+    const exportContent = JSON.stringify({
+      project: projectInfo.value,
+      document: documentInfo.value,
+      sections: sectionData.value.sections,
+      exportedAt: new Date().toISOString()
+    }, null, 2)
+    downloadTextFile(`${projectInfo.value.name}_标书导出.json`, exportContent, 'application/json;charset=utf-8')
+    ElMessage.success('已导出演示文档包')
+    return
+  }
+
+  collaborationApi.exports.createExport(route.params.id, {
+    format: 'json',
+    exportedBy: null,
+    exportedByName: '当前用户',
+  }).then((result) => {
+    if (!result?.success || !result?.data) {
+      ElMessage.error(result?.message || '导出失败')
+      return
+    }
+    downloadTextFile(
+      result.data.fileName,
+      result.data.content || '',
+      result.data.contentType || 'application/json;charset=utf-8'
+    )
+    exportHistory.value = [result.data, ...exportHistory.value]
+    ElMessage.success('文档导出成功')
+  }).catch(() => {
+    ElMessage.error('导出失败')
+  })
+}
+
+const handleArchive = () => {
+  if (!isRemoteProjectId.value) {
+    ElMessage.success('已完成演示归档')
+    return
+  }
+
+  collaborationApi.exports.archive(route.params.id, {
+    archivedBy: null,
+    archivedByName: '当前用户',
+    archiveReason: '标书编制完成，归档留存'
+  }).then((result) => {
+    if (!result?.success || !result?.data) {
+      ElMessage.error(result?.message || '归档失败')
+      return
+    }
+    archiveHistory.value = [result.data, ...archiveHistory.value]
+    ElMessage.success('文档归档成功')
+  }).catch(() => {
+    ElMessage.error('归档失败')
+  })
 }
 
 const handleSave = () => {

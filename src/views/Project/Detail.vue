@@ -256,6 +256,9 @@
             <div class="card-title">
               <el-icon><Folder /></el-icon>
               <span>项目文档</span>
+              <el-button link type="success" :icon="DocumentChecked" @click="handleArchiveDocuments">
+                归档资料
+              </el-button>
               <el-upload
                 :show-file-list="false"
                 :before-upload="handleUpload"
@@ -1182,7 +1185,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
 import { useBarStore } from '@/stores/bar'
-import { knowledgeApi, isMockMode, projectsApi } from '@/api'
+import { knowledgeApi, isMockMode, projectsApi, collaborationApi } from '@/api'
 import { mockData } from '@/api/mock'
 import {
   Edit, DocumentChecked, Coin, InfoFilled, List, Folder, Upload, Plus,
@@ -2371,6 +2374,34 @@ const handleShare = async () => {
 }
 
 const handleExport = () => {
+  if (isApiProject.value) {
+    collaborationApi.exports.createExport(route.params.id, {
+      format: 'json',
+      exportedBy: userStore.currentUser?.id || null,
+      exportedByName: userStore.userName,
+    }).then((result) => {
+      if (!result?.success || !result?.data) {
+        ElMessage.error(result?.message || '导出资料失败')
+        return
+      }
+      downloadTextFile(
+        result.data.fileName,
+        result.data.content || '',
+        result.data.contentType || 'application/json;charset=utf-8'
+      )
+      activities.value.unshift({
+        id: Date.now(),
+        user: userStore.userName,
+        action: `导出了项目资料「${result.data.fileName}」`,
+        time: new Date().toLocaleString('zh-CN', { hour12: false }),
+      })
+      ElMessage.success(`已导出 ${result.data.fileName}`)
+    }).catch(() => {
+      ElMessage.error('导出资料失败')
+    })
+    return
+  }
+
   const payload = {
     project: project.value,
     expenses: projectExpenses.value,
@@ -2383,6 +2414,44 @@ const handleExport = () => {
     'application/json;charset=utf-8'
   )
   ElMessage.success(`已生成演示导出包：${project.value?.name || '项目资料'}.zip`)
+}
+
+const handleArchiveDocuments = async () => {
+  if (!project.value) return
+
+  if (!isApiProject.value) {
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: '归档了项目资料',
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success('已完成演示归档')
+    return
+  }
+
+  try {
+    const result = await collaborationApi.exports.archive(route.params.id, {
+      archivedBy: userStore.currentUser?.id || null,
+      archivedByName: userStore.userName,
+      archiveReason: '项目资料整理完成，归档留存',
+    })
+    if (!result?.success || !result?.data) {
+      throw new Error(result?.message || '归档资料失败')
+    }
+    if (project.value) {
+      project.value.status = 'archived'
+    }
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `归档了项目资料（${result.data.archiveReason}）`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success('项目资料归档成功')
+  } catch (error) {
+    ElMessage.error(error.message || '归档资料失败')
+  }
 }
 
 const handleSetReminder = async () => {

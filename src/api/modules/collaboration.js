@@ -729,6 +729,88 @@ export const documentEditorApi = {
   },
 }
 
+export const documentExportApi = {
+  async getExports(projectId) {
+    if (isMockMode()) {
+      return Promise.resolve({ success: true, data: [] })
+    }
+    if (!isNumericId(projectId)) {
+      return Promise.resolve({ success: true, data: [], message: '使用演示导出记录' })
+    }
+
+    return httpClient.get(`/api/documents/${projectId}/exports`)
+  },
+
+  async createExport(projectId, data = {}) {
+    if (isMockMode()) {
+      const format = String(data.format || 'json').toLowerCase()
+      const fileName = `演示文档导出.${format}`
+      return Promise.resolve({
+        success: true,
+        data: {
+          id: `EXPORT-${Date.now()}`,
+          projectId,
+          structureId: null,
+          projectName: data.projectName || '演示项目',
+          format,
+          fileName,
+          contentType: format === 'txt' ? 'text/plain;charset=utf-8' : 'application/json;charset=utf-8',
+          fileSize: 0,
+          exportedBy: data.exportedBy ?? null,
+          exportedByName: data.exportedByName || '当前用户',
+          exportedAt: new Date().toISOString(),
+          content: data.content || '',
+        },
+      })
+    }
+    if (!isNumericId(projectId)) return Promise.resolve(invalidIdMessage('project'))
+
+    return httpClient.post(`/api/documents/${projectId}/exports`, {
+      format: data.format || 'json',
+      exportedBy: data.exportedBy ?? null,
+      exportedByName: data.exportedByName || '当前用户',
+    })
+  },
+
+  async getArchiveRecords(projectId) {
+    if (isMockMode()) {
+      return Promise.resolve({ success: true, data: [] })
+    }
+    if (!isNumericId(projectId)) {
+      return Promise.resolve({ success: true, data: [], message: '使用演示归档记录' })
+    }
+
+    return httpClient.get(`/api/documents/${projectId}/archive-records`)
+  },
+
+  async archive(projectId, data = {}) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: {
+          id: `ARCHIVE-${Date.now()}`,
+          projectId,
+          structureId: null,
+          archivedBy: data.archivedBy ?? null,
+          archivedByName: data.archivedByName || '当前用户',
+          archiveReason: data.archiveReason || '演示归档',
+          exportId: null,
+          exportFileName: null,
+          projectName: data.projectName || '演示项目',
+          archivedAt: new Date().toISOString(),
+        },
+      })
+    }
+    if (!isNumericId(projectId)) return Promise.resolve(invalidIdMessage('project'))
+
+    return httpClient.post(`/api/documents/${projectId}/archive`, {
+      archivedBy: data.archivedBy ?? null,
+      archivedByName: data.archivedByName || '当前用户',
+      archiveReason: data.archiveReason || '项目资料归档',
+    })
+  },
+}
+
 export const documentAssemblyApi = {
   async getConfig(projectId) {
     if (isMockMode()) {
@@ -760,5 +842,6 @@ export default {
   calendar: calendarApi,
   versions: documentVersionsApi,
   editor: documentEditorApi,
+  exports: documentExportApi,
   assembly: documentAssemblyApi,
 }
