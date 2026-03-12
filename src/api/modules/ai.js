@@ -19,6 +19,7 @@ function invalidIdMessage(entityName) {
 
 function normalizeBidAnalysis(data = {}) {
   return {
+    tenderId: data?.tenderId,
     winScore: Number(data?.winScore || 0),
     suggestion: data?.suggestion || data?.summary || '暂无分析建议',
     dimensionScores: Array.isArray(data?.dimensionScores) ? data.dimensionScores : [],
@@ -152,6 +153,24 @@ function normalizeComplianceResult(data = {}) {
   }
 }
 
+function normalizeProjectAiCards(data = {}) {
+  return {
+    score: data?.score
+      ? {
+          overallScore: Number(data.score.overallScore || 0),
+          riskLevel: data.score.riskLevel || 'UNKNOWN',
+          summary: data.score.summary || '',
+          dimensions: Array.isArray(data.score.dimensions) ? data.score.dimensions : [],
+        }
+      : null,
+    competition: Array.isArray(data?.competition) ? data.competition : [],
+    compliance: Array.isArray(data?.compliance)
+      ? data.compliance.map(normalizeComplianceResult)
+      : [],
+    roi: data?.roi ? normalizeRoiAnalysis(data.roi) : null,
+  }
+}
+
 export const bidAnalysisApi = {
   async getAnalysis(tenderId) {
     if (isMockMode()) {
@@ -160,12 +179,10 @@ export const bidAnalysisApi = {
         data: normalizeBidAnalysis(mockData.aiAnalysis?.[tenderId] || mockData.aiAnalysis?.B001 || mockData.aiAnalysis?.T001),
       })
     }
+    if (!isNumericId(tenderId)) return Promise.resolve(invalidIdMessage('tender'))
 
-    return Promise.resolve({
-      success: true,
-      message: '使用演示 AI 分析数据',
-      data: normalizeBidAnalysis(mockData.aiAnalysis?.[tenderId] || mockData.aiAnalysis?.B001 || mockData.aiAnalysis?.T001),
-    })
+    const response = await httpClient.post(`/api/tenders/${tenderId}/ai-analysis`)
+    return { ...response, data: normalizeBidAnalysis(response?.data) }
   },
 }
 
@@ -221,11 +238,35 @@ export const scoreAnalysisApi = {
       })
     }
 
-    return Promise.resolve({
-      success: true,
-      message: '使用演示评分预分析数据',
-      data: buildScorePreview(context),
+    const response = await httpClient.post('/api/projects/score-preview', {
+      projectId: context?.projectId || null,
+      tenderId: context?.tenderId || null,
+      projectName: context?.projectName || context?.name || '',
+      industry: context?.industry || '',
+      budget: Number(context?.budget || 0),
+      tags: Array.isArray(context?.tags) ? context.tags : [],
     })
+    return { ...response, data: response?.data || buildScorePreview(context) }
+  },
+}
+
+export const projectAiApi = {
+  async getCards(projectId) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: {
+          score: normalizeScoreAnalysis(mockData.scoreAnalysis?.[projectId] || mockData.scoreAnalysis?.P001 || {}),
+          competition: mockData.competitionIntel?.[projectId]?.competitors || mockData.competitionIntel?.P001?.competitors || [],
+          compliance: [mockData.complianceCheck?.[projectId] || mockData.complianceCheck?.P001].filter(Boolean),
+          roi: normalizeRoiAnalysis(mockData.roiAnalysis?.[projectId] || mockData.roiAnalysis?.P001 || {}),
+        },
+      })
+    }
+    if (!isNumericId(projectId)) return Promise.resolve(invalidIdMessage('project'))
+
+    const response = await httpClient.get(`/api/projects/${projectId}/ai-cards`)
+    return { ...response, data: normalizeProjectAiCards(response?.data) }
   },
 }
 
@@ -362,6 +403,7 @@ export const complianceApi = {
 export default {
   bid: bidAnalysisApi,
   score: scoreAnalysisApi,
+  project: projectAiApi,
   competition: competitionApi,
   roi: roiApi,
   compliance: complianceApi,

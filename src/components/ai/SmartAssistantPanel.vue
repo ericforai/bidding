@@ -39,7 +39,7 @@
               </div>
               <div class="feature-info">
                 <div class="feature-title">竞争情报</div>
-                <div class="feature-desc">分析本标可能对手</div>
+                <div class="feature-desc">{{ competitionText }}</div>
               </div>
             </div>
             <div
@@ -51,7 +51,7 @@
               </div>
               <div class="feature-info">
                 <div class="feature-title">ROI核算</div>
-                <div class="feature-desc">投入产出预测</div>
+                <div class="feature-desc">{{ roiText }}</div>
               </div>
             </div>
           </div>
@@ -73,7 +73,7 @@
               </div>
               <div class="feature-info">
                 <div class="feature-title">评分点覆盖</div>
-                <div class="feature-desc">覆盖率: 68%</div>
+                <div class="feature-desc">{{ scoreCoverageText }}</div>
               </div>
             </div>
             <div
@@ -85,7 +85,7 @@
               </div>
               <div class="feature-info">
                 <div class="feature-title">合规雷达</div>
-                <div class="feature-desc">废标风险检查</div>
+                <div class="feature-desc">{{ complianceText }}</div>
               </div>
             </div>
             <div
@@ -109,7 +109,7 @@
               </div>
               <div class="feature-info">
                 <div class="feature-title">协作中心</div>
-                <div class="feature-desc">5人协作中</div>
+                <div class="feature-desc">{{ collaborationText }}</div>
               </div>
             </div>
           </div>
@@ -154,7 +154,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   MagicStick,
   Close,
@@ -167,6 +167,7 @@ import {
   Bell,
   Iphone
 } from '@element-plus/icons-vue'
+import { aiApi, isMockMode } from '@/api'
 
 const props = defineProps({
   projectId: String,
@@ -192,10 +193,64 @@ const emit = defineEmits([
   'open-mobile-card'
 ])
 
+const aiCards = ref({
+  score: null,
+  competition: [],
+  compliance: [],
+  roi: null
+})
+
 const drawerVisible = computed({
   get: () => props.visible,
   set: (val) => emit('update:visible', val)
 })
+
+const isNumericProjectId = computed(() => /^\d+$/.test(String(props.projectId || '')))
+const shouldUseRealCards = computed(() => !isMockMode() && !props.showDemoFeatures && isNumericProjectId.value)
+
+const scoreCoverageText = computed(() => {
+  if (shouldUseRealCards.value && aiCards.value.score) {
+    return `综合分: ${aiCards.value.score.overallScore || 0}`
+  }
+  return '覆盖率: 68%'
+})
+
+const complianceText = computed(() => {
+  if (shouldUseRealCards.value && aiCards.value.compliance.length > 0) {
+    const latest = aiCards.value.compliance[0]
+    return `最新状态: ${latest.overallStatus || 'UNKNOWN'}`
+  }
+  return '废标风险检查'
+})
+
+const competitionText = computed(() => {
+  if (shouldUseRealCards.value && aiCards.value.competition.length > 0) {
+    return `已分析 ${aiCards.value.competition.length} 个对手`
+  }
+  return '分析本标可能对手'
+})
+
+const roiText = computed(() => {
+  if (shouldUseRealCards.value && aiCards.value.roi) {
+    return `ROI: ${Number(aiCards.value.roi.roiPercentage || 0).toFixed(1)}%`
+  }
+  return '投入产出预测'
+})
+
+const collaborationText = computed(() => {
+  if (shouldUseRealCards.value) {
+    return '真实协作流程'
+  }
+  return '5人协作中'
+})
+
+const loadAiCards = async () => {
+  if (!shouldUseRealCards.value) return
+  const response = await aiApi.project.getCards(props.projectId)
+  if (response?.success && response.data) {
+    aiCards.value = response.data
+  }
+}
 
 const handleClose = () => {
   emit('update:visible', false)
@@ -204,6 +259,16 @@ const handleClose = () => {
 const handleFeatureClick = (eventName) => {
   emit(eventName)
 }
+
+watch(
+  () => [props.projectId, props.showDemoFeatures, props.visible],
+  async ([, , visible]) => {
+    if (visible) {
+      await loadAiCards()
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>

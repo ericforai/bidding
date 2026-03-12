@@ -1,5 +1,7 @@
 package com.xiyu.bid.controller;
 
+import com.xiyu.bid.ai.dto.TenderAiAnalysisDTO;
+import com.xiyu.bid.ai.service.AiDeepCapabilityService;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.dto.TenderDTO;
 import com.xiyu.bid.dto.TenderRequest;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 标讯控制器
@@ -27,6 +30,7 @@ import java.util.Map;
 public class TenderController {
 
     private final TenderService tenderService;
+    private final AiDeepCapabilityService aiDeepCapabilityService;
 
     /**
      * 获取所有标讯
@@ -110,6 +114,28 @@ public class TenderController {
         return ResponseEntity.ok(
             ApiResponse.success("Tender analyzed successfully", analyzedTender)
         );
+    }
+
+    @GetMapping("/{id}/ai-analysis")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<TenderAiAnalysisDTO>> getTenderAiAnalysis(@PathVariable Long id) {
+        log.info("GET /api/tenders/{}/ai-analysis - Fetching tender AI analysis", id);
+        Optional<TenderAiAnalysisDTO> analysis = aiDeepCapabilityService.getLatestTenderAnalysis(id);
+        if (analysis.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiResponse.error(404, "Tender AI analysis not found")
+            );
+        }
+        return ResponseEntity.ok(ApiResponse.success("Tender AI analysis retrieved successfully", analysis.get()));
+    }
+
+    @PostMapping("/{id}/ai-analysis")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<TenderAiAnalysisDTO>> createTenderAiAnalysis(@PathVariable Long id) {
+        log.info("POST /api/tenders/{}/ai-analysis - Generating tender AI analysis", id);
+        TenderAiAnalysisDTO analysis = aiDeepCapabilityService.analyzeTender(id, null);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Tender AI analysis generated successfully", analysis));
     }
 
     /**

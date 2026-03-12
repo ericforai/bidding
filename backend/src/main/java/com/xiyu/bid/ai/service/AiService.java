@@ -47,24 +47,7 @@ public class AiService {
     public CompletableFuture<Void> analyzeTender(Long tenderId, Map<String, Object> context) {
         return CompletableFuture.runAsync(() -> {
             try {
-                log.debug("Starting AI analysis for tender id: {}", tenderId);
-
-                // Fetch tender
-                Tender tender = tenderRepository.findById(tenderId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Tender", tenderId.toString()));
-
-                // Prepare content for analysis
-                String content = prepareTenderContent(tender);
-
-                // Normalize context (handle null)
-                Map<String, Object> normalizedContext = context != null ? context : Map.of();
-
-                // Call AI provider
-                aiProvider.analyzeTender(content, normalizedContext)
-                        .thenAccept(response -> updateTenderWithAnalysis(tender, response))
-                        .join(); // Wait for completion
-
-                log.info("Completed AI analysis for tender id: {}, score: {}", tenderId, tender.getAiScore());
+                analyzeTenderSync(tenderId, context);
 
             } catch (ResourceNotFoundException e) {
                 log.error("Tender not found for AI analysis: {}", tenderId);
@@ -88,21 +71,7 @@ public class AiService {
     public CompletableFuture<Void> analyzeProject(Long projectId, Map<String, Object> context) {
         return CompletableFuture.runAsync(() -> {
             try {
-                log.debug("Starting AI analysis for project id: {}", projectId);
-
-                // Fetch project
-                Project project = projectRepository.findById(projectId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Project", projectId.toString()));
-
-                // Normalize context (handle null)
-                Map<String, Object> normalizedContext = context != null ? context : Map.of();
-
-                // Call AI provider
-                aiProvider.analyzeProject(projectId, normalizedContext)
-                        .thenAccept(response -> updateProjectWithAnalysis(project, response))
-                        .join(); // Wait for completion
-
-                log.info("Completed AI analysis for project id: {}", projectId);
+                analyzeProjectSync(projectId, context);
 
             } catch (ResourceNotFoundException e) {
                 log.error("Project not found for AI analysis: {}", projectId);
@@ -112,6 +81,39 @@ public class AiService {
                 throw new RuntimeException("Failed to analyze project", e);
             }
         });
+    }
+
+    @Transactional
+    public AiAnalysisResponse analyzeTenderSync(Long tenderId, Map<String, Object> context) {
+        log.debug("Starting synchronous AI analysis for tender id: {}", tenderId);
+
+        Tender tender = tenderRepository.findById(tenderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tender", tenderId.toString()));
+
+        String content = prepareTenderContent(tender);
+        Map<String, Object> normalizedContext = context != null ? context : Map.of();
+
+        AiAnalysisResponse response = aiProvider.analyzeTender(content, normalizedContext).join();
+        updateTenderWithAnalysis(tender, response);
+
+        log.info("Completed synchronous AI analysis for tender id: {}, score: {}", tenderId, tender.getAiScore());
+        return response;
+    }
+
+    @Transactional
+    public AiAnalysisResponse analyzeProjectSync(Long projectId, Map<String, Object> context) {
+        log.debug("Starting synchronous AI analysis for project id: {}", projectId);
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", projectId.toString()));
+
+        Map<String, Object> normalizedContext = context != null ? context : Map.of();
+
+        AiAnalysisResponse response = aiProvider.analyzeProject(projectId, normalizedContext).join();
+        updateProjectWithAnalysis(project, response);
+
+        log.info("Completed synchronous AI analysis for project id: {}", projectId);
+        return response;
     }
 
     /**

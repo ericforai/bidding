@@ -646,8 +646,8 @@
     <!-- 智能助手抽屉 -->
     <SmartAssistantPanel
       v-model:visible="assistantPanelVisible"
-      :project-id="route.params.id"
-      :show-demo-features="true"
+      :project-id="dialogProjectId"
+      :show-demo-features="isDemoMode"
       @open-competition-intel="handleOpenCompetitionIntel"
       @open-roi-analysis="handleOpenRoiAnalysis"
       @open-score-coverage="handleOpenScoreCoverage"
