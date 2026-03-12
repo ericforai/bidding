@@ -145,28 +145,39 @@ function buildQualificationPayload(data = {}) {
 function normalizeCase(item) {
   const projectDate = formatDate(item?.projectDate)
   const normalizedIndustry = caseIndustryMap[item?.industry] || 'government'
+  const description = item?.description || item?.summary || '暂无描述'
+  const customer = item?.customer || item?.customerName || '待补充'
+  const location = item?.location || item?.locationName || '-'
+  const period = item?.period || item?.projectPeriod || formatCasePeriod(projectDate)
+  const technologies = Array.isArray(item?.technologies) ? item.technologies : []
+  const archivedInfo = item?.archivedInfo || {
+    techHighlights: item?.techHighlights || '',
+    priceStrategy: item?.priceStrategy || '',
+    successFactors: item?.successFactors || [],
+    lessons: item?.lessons || '',
+    attachments: item?.attachments || [],
+  }
 
   return {
     id: item?.id,
     title: item?.title || '未命名案例',
-    customer: item?.customer || '待补充',
+    customer,
+    customerName: customer,
     industry: normalizedIndustry,
     amount: Number(item?.amount || 0),
     year: item?.year || (projectDate ? new Date(projectDate).getFullYear() : new Date().getFullYear()),
-    location: item?.location || '-',
-    period: item?.period || formatCasePeriod(projectDate),
+    location,
+    locationName: location,
+    period,
+    projectPeriod: period,
     tags: Array.isArray(item?.tags) ? item.tags : [],
     highlights: Array.isArray(item?.highlights) ? item.highlights : [],
-    description: item?.description || item?.summary || '暂无描述',
+    description,
+    summary: item?.summary || description,
+    technologies,
     viewCount: Number(item?.viewCount || 0),
     useCount: Number(item?.useCount || 0),
-    archivedInfo: item?.archivedInfo || {
-      techHighlights: item?.techHighlights || '',
-      priceStrategy: item?.priceStrategy || '',
-      successFactors: item?.successFactors || [],
-      lessons: item?.lessons || '',
-      attachments: item?.attachments || [],
-    },
+    archivedInfo,
   }
 }
 
@@ -181,7 +192,15 @@ function buildCasePayload(data = {}) {
     outcome: data.outcome || 'WON',
     amount: data.amount ?? 0,
     projectDate,
-    description: data.description || '',
+    description: data.description || data.summary || '',
+    customerName: data.customerName || data.customer || '',
+    locationName: data.locationName || data.location || '',
+    projectPeriod: data.projectPeriod || data.period || '',
+    tags: Array.isArray(data.tags) ? data.tags : [],
+    highlights: Array.isArray(data.highlights) ? data.highlights : [],
+    technologies: Array.isArray(data.technologies) ? data.technologies : [],
+    viewCount: Number(data.viewCount || 0),
+    useCount: Number(data.useCount || 0),
   }
 }
 
@@ -423,6 +442,69 @@ export const casesApi = {
     }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('case'))
     return httpClient.delete(`/api/knowledge/cases/${id}`)
+  },
+
+  async getShareRecords(id) {
+    if (isMockMode()) {
+      return Promise.resolve({ success: true, data: [] })
+    }
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('case'))
+    return httpClient.get(`/api/knowledge/cases/${id}/share-records`)
+  },
+
+  async createShareRecord(id, data = {}) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: {
+          id: `share_${Date.now()}`,
+          caseId: id,
+          url: `${data.baseUrl || window.location.origin}/knowledge/case/detail?id=${id}`,
+          createdBy: data.createdBy ?? null,
+          createdByName: data.createdByName || '演示用户',
+          createdAt: new Date().toISOString(),
+        },
+      })
+    }
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('case'))
+    return httpClient.post(`/api/knowledge/cases/${id}/share-records`, {
+      createdBy: data.createdBy ?? null,
+      createdByName: data.createdByName || '',
+      baseUrl: data.baseUrl || window.location.origin,
+      expiresAt: data.expiresAt ?? null,
+    })
+  },
+
+  async getReferenceRecords(id) {
+    if (isMockMode()) {
+      return Promise.resolve({ success: true, data: [] })
+    }
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('case'))
+    return httpClient.get(`/api/knowledge/cases/${id}/references`)
+  },
+
+  async createReferenceRecord(id, data = {}) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: {
+          id: `ref_${Date.now()}`,
+          caseId: id,
+          referencedBy: data.referencedBy ?? null,
+          referencedByName: data.referencedByName || '演示用户',
+          referenceTarget: data.referenceTarget || '未命名目标',
+          referenceContext: data.referenceContext || '',
+          referencedAt: new Date().toISOString(),
+        },
+      })
+    }
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('case'))
+    return httpClient.post(`/api/knowledge/cases/${id}/references`, {
+      referencedBy: data.referencedBy ?? null,
+      referencedByName: data.referencedByName || '',
+      referenceTarget: data.referenceTarget || '',
+      referenceContext: data.referenceContext || '',
+    })
   },
 }
 

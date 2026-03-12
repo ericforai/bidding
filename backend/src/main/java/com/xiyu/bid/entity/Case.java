@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 案例实体
@@ -44,6 +46,41 @@ public class Case {
 
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    @Column(name = "customer_name")
+    private String customerName;
+
+    @Column(name = "location_name")
+    private String locationName;
+
+    @Column(name = "project_period")
+    private String projectPeriod;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "case_tags", joinColumns = @JoinColumn(name = "case_id"))
+    @Column(name = "tag")
+    @Builder.Default
+    private List<String> tags = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "case_highlights", joinColumns = @JoinColumn(name = "case_id"))
+    @Column(name = "highlight")
+    @Builder.Default
+    private List<String> highlights = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "case_technologies", joinColumns = @JoinColumn(name = "case_id"))
+    @Column(name = "technology")
+    @Builder.Default
+    private List<String> technologies = new ArrayList<>();
+
+    @Column(name = "view_count", nullable = false)
+    @Builder.Default
+    private Long viewCount = 0L;
+
+    @Column(name = "use_count", nullable = false)
+    @Builder.Default
+    private Long useCount = 0L;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

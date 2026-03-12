@@ -194,6 +194,8 @@ const caseData = ref(null)
 const loading = ref(false)
 const relatedCasePool = ref([])
 const isEdited = ref(false)
+const shareRecords = ref([])
+const referenceRecords = ref([])
 
 // 相关案例推荐
 const relatedCases = computed(() => {
@@ -214,6 +216,9 @@ const relatedCases = computed(() => {
 const loadCasePersistence = () => loadDemoState(CASE_STORAGE_KEY, {})
 
 const applyCasePersistence = (data) => {
+  if (!isMockMode()) {
+    return data
+  }
   const persisted = loadCasePersistence()[String(data.id)]
   return persisted ? { ...data, ...persisted } : data
 }
@@ -225,6 +230,15 @@ const persistCasePatch = (caseId, patch) => {
     ...patch,
   }
   saveDemoState(CASE_STORAGE_KEY, state)
+}
+
+const getCurrentUser = () => {
+  try {
+    const raw = sessionStorage.getItem('user') || localStorage.getItem('user')
+    return raw ? JSON.parse(raw) : null
+  } catch (error) {
+    return null
+  }
 }
 
 onMounted(() => {
@@ -265,6 +279,18 @@ const loadCaseDetail = async (caseId) => {
     relatedCasePool.value = listResult?.success && Array.isArray(listResult.data)
       ? listResult.data
       : []
+
+    if (!isMockMode() && /^\d+$/.test(String(caseId))) {
+      const [shareResult, referenceResult] = await Promise.all([
+        knowledgeApi.cases.getShareRecords(caseId),
+        knowledgeApi.cases.getReferenceRecords(caseId)
+      ])
+      shareRecords.value = shareResult?.success && Array.isArray(shareResult.data) ? shareResult.data : []
+      referenceRecords.value = referenceResult?.success && Array.isArray(referenceResult.data) ? referenceResult.data : []
+    } else {
+      shareRecords.value = []
+      referenceRecords.value = []
+    }
   } catch (error) {
     console.error('Failed to load case detail:', error)
     ElMessage.error('加载案例详情失败')
@@ -276,31 +302,97 @@ const loadCaseDetail = async (caseId) => {
 }
 
 const handleUseCase = () => {
-  ElMessage.success('案例已添加到引用列表')
-  // 可以在这里添加将案例添加到项目引用的逻辑
+  if (!caseData.value) return
+
+  const currentUser = getCurrentUser()
+  const payload = {
+    referencedBy: currentUser?.id ?? null,
+    referencedByName: currentUser?.name || currentUser?.username || '当前用户',
+    referenceTarget: '案例详情页手动引用',
+    referenceContext: '从案例详情页发起引用'
+  }
+
+  knowledgeApi.cases.createReferenceRecord(caseData.value.id, payload).then((result) => {
+    if (!result?.success) {
+      ElMessage.error(result?.message || '案例引用失败')
+      return
+    }
+
+    referenceRecords.value = [result.data, ...referenceRecords.value]
+    caseData.value = {
+      ...caseData.value,
+      useCount: Number(caseData.value.useCount || 0) + 1
+    }
+    if (isMockMode()) {
+      persistCasePatch(caseData.value.id, { useCount: caseData.value.useCount })
+    }
+    ElMessage.success('案例已添加到引用列表')
+  }).catch(() => {
+    ElMessage.error('案例引用失败')
+  })
 }
 
 const handleEdit = () => {
   if (!caseData.value) return
   isEdited.value = true
-  caseData.value = {
+  const nextTitle = caseData.value.title.includes('（已编辑）') ? caseData.value.title : `${caseData.value.title}（已编辑）`
+  const nextSummary = `${caseData.value.summary}\n\n[演示更新] 已补充客户价值、实施路径与关键交付成果。`
+  const nextData = {
     ...caseData.value,
-    title: caseData.value.title.includes('（已编辑）') ? caseData.value.title : `${caseData.value.title}（已编辑）`,
-    summary: `${caseData.value.summary}\n\n[演示更新] 已补充客户价值、实施路径与关键交付成果。`
+    title: nextTitle,
+    summary: nextSummary,
+    description: nextSummary
   }
-  persistCasePatch(caseData.value.id, {
-    title: caseData.value.title,
-    summary: caseData.value.summary,
+
+  knowledgeApi.cases.update(caseData.value.id, {
+    ...nextData,
+    customerName: nextData.customer,
+    locationName: nextData.location,
+    projectPeriod: nextData.period
+  }).then((result) => {
+    if (!result?.success || !result?.data) {
+      ElMessage.error(result?.message || '案例更新失败')
+      return
+    }
+
+    caseData.value = applyCasePersistence({
+      ...result.data,
+      summary: result.data.summary || nextSummary
+    })
+    if (isMockMode()) {
+      persistCasePatch(caseData.value.id, {
+        title: caseData.value.title,
+        summary: caseData.value.summary,
+        description: caseData.value.description
+      })
+    }
+    ElMessage.success('案例内容已更新')
+  }).catch(() => {
+    ElMessage.error('案例更新失败')
   })
-  ElMessage.success('案例内容已写入演示编辑结果')
 }
 
 const handleShare = () => {
-  const shareLink = `${window.location.origin}/knowledge/case/detail?id=${caseData.value?.id || ''}`
-  navigator.clipboard.writeText(shareLink).then(() => {
-    ElMessage.success('分享链接已复制到剪贴板')
+  if (!caseData.value) return
+  const currentUser = getCurrentUser()
+  knowledgeApi.cases.createShareRecord(caseData.value.id, {
+    createdBy: currentUser?.id ?? null,
+    createdByName: currentUser?.name || currentUser?.username || '当前用户',
+    baseUrl: window.location.origin
+  }).then((result) => {
+    if (!result?.success || !result?.data?.url) {
+      ElMessage.error(result?.message || '分享失败')
+      return
+    }
+
+    shareRecords.value = [result.data, ...shareRecords.value]
+    navigator.clipboard.writeText(result.data.url).then(() => {
+      ElMessage.success('分享链接已复制到剪贴板')
+    }).catch(() => {
+      ElMessage.success(result.data.url)
+    })
   }).catch(() => {
-    ElMessage.success(shareLink)
+    ElMessage.error('分享失败')
   })
 }
 

@@ -1,6 +1,10 @@
 package com.xiyu.bid.controller;
 
 import com.xiyu.bid.annotation.Auditable;
+import com.xiyu.bid.casework.dto.CaseReferenceRecordCreateRequest;
+import com.xiyu.bid.casework.dto.CaseReferenceRecordDTO;
+import com.xiyu.bid.casework.dto.CaseShareRecordCreateRequest;
+import com.xiyu.bid.casework.dto.CaseShareRecordDTO;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.dto.CaseDTO;
 import com.xiyu.bid.entity.Case;
@@ -94,6 +98,51 @@ public class CaseController {
         return ResponseEntity.ok(ApiResponse.success("Cases retrieved successfully", cases));
     }
 
+    @GetMapping("/{id}/share-records")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "READ", entityType = "Case", description = "获取案例分享记录")
+    public ResponseEntity<ApiResponse<List<CaseShareRecordDTO>>> getCaseShareRecords(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Case share records retrieved successfully",
+                caseService.getCaseShareRecords(id)));
+    }
+
+    @PostMapping("/{id}/share-records")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "CREATE", entityType = "Case", description = "创建案例分享记录")
+    public ResponseEntity<ApiResponse<CaseShareRecordDTO>> createCaseShareRecord(
+            @PathVariable Long id,
+            @Valid @RequestBody CaseShareRecordCreateRequest request) {
+        request.setCreatedByName(InputSanitizer.sanitizeString(request.getCreatedByName(), 100));
+        request.setBaseUrl(InputSanitizer.sanitizeString(request.getBaseUrl(), 500));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Case share record created successfully",
+                        caseService.createCaseShareRecord(id, request)));
+    }
+
+    @GetMapping("/{id}/references")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "READ", entityType = "Case", description = "获取案例引用记录")
+    public ResponseEntity<ApiResponse<List<CaseReferenceRecordDTO>>> getCaseReferenceRecords(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Case reference records retrieved successfully",
+                caseService.getCaseReferenceRecords(id)));
+    }
+
+    @PostMapping("/{id}/references")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "CREATE", entityType = "Case", description = "创建案例引用记录")
+    public ResponseEntity<ApiResponse<CaseReferenceRecordDTO>> createCaseReferenceRecord(
+            @PathVariable Long id,
+            @Valid @RequestBody CaseReferenceRecordCreateRequest request) {
+        request.setReferencedByName(InputSanitizer.sanitizeString(request.getReferencedByName(), 100));
+        request.setReferenceTarget(InputSanitizer.sanitizeString(request.getReferenceTarget(), 255));
+        request.setReferenceContext(InputSanitizer.sanitizeString(request.getReferenceContext(), 1000));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Case reference record created successfully",
+                        caseService.createCaseReferenceRecord(id, request)));
+    }
+
     /**
      * 清洗案例DTO中的用户输入
      */
@@ -103,6 +152,24 @@ public class CaseController {
         }
         if (dto.getDescription() != null) {
             dto.setDescription(InputSanitizer.sanitizeString(dto.getDescription(), 2000));
+        }
+        if (dto.getCustomerName() != null) {
+            dto.setCustomerName(InputSanitizer.sanitizeString(dto.getCustomerName(), 255));
+        }
+        if (dto.getLocationName() != null) {
+            dto.setLocationName(InputSanitizer.sanitizeString(dto.getLocationName(), 255));
+        }
+        if (dto.getProjectPeriod() != null) {
+            dto.setProjectPeriod(InputSanitizer.sanitizeString(dto.getProjectPeriod(), 255));
+        }
+        if (dto.getTags() != null) {
+            dto.setTags(dto.getTags().stream().map(tag -> InputSanitizer.sanitizeString(tag, 50)).toList());
+        }
+        if (dto.getHighlights() != null) {
+            dto.setHighlights(dto.getHighlights().stream().map(item -> InputSanitizer.sanitizeString(item, 1000)).toList());
+        }
+        if (dto.getTechnologies() != null) {
+            dto.setTechnologies(dto.getTechnologies().stream().map(item -> InputSanitizer.sanitizeString(item, 255)).toList());
         }
     }
 }
