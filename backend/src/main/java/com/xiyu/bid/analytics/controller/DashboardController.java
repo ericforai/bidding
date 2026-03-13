@@ -80,6 +80,21 @@ public class DashboardController {
         return ResponseEntity.ok(ApiResponse.success(regions));
     }
 
+    @GetMapping("/product-lines")
+    public ResponseEntity<ApiResponse<List<ProductLineData>>> getProductLines() {
+        List<ProductLineData> productLines = dashboardAnalyticsService.getProductLinePerformance();
+        return ResponseEntity.ok(ApiResponse.success(productLines));
+    }
+
+    @GetMapping("/drill-down")
+    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponse>> getDrillDown(
+            @RequestParam String type,
+            @RequestParam String key
+    ) {
+        AnalyticsDrillDownResponse response = dashboardAnalyticsService.getDrillDown(type, key);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
     /**
      * Get status distribution
      */

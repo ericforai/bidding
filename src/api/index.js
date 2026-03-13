@@ -30,6 +30,7 @@ export { default as aiApi } from './modules/ai.js'
 export { default as resourcesApi } from './modules/resources.js'
 export { default as collaborationApi } from './modules/collaboration.js'
 export { dashboardApi } from './modules/dashboard.js'
+export { auditApi } from './modules/audit.js'
 
 // 统一导出对象 (方便解构使用)
 export default {
@@ -58,5 +59,8 @@ export default {
   collaboration: () => import('./modules/collaboration.js').then(m => m.default),
 
   // 看板
-  dashboard: () => import('./modules/dashboard.js').then(m => m.default)
+  dashboard: () => import('./modules/dashboard.js').then(m => m.default),
+
+  // 审计
+  audit: () => import('./modules/audit.js').then(m => m.default)
 }

@@ -44,6 +44,16 @@ function normalizeRegionItem(item) {
   }
 }
 
+function normalizeProductLineItem(item) {
+  return {
+    name: item?.name || '综合解决方案',
+    revenue: Number(item?.revenue || 0),
+    cost: Number(item?.cost || 0),
+    bids: Number(item?.bids || 0),
+    rate: Number(item?.rate || 0),
+  }
+}
+
 function buildMockOverview() {
   return {
     ...mockData.dashboard,
@@ -101,10 +111,22 @@ export const dashboardApi = {
       return Promise.resolve({ success: true, data: buildMockOverview() })
     }
 
-    const response = await httpClient.get('/api/analytics/overview')
-    const data = hasApiOverviewData(response?.data) ? buildApiOverview(response?.data) : buildMockOverview()
+    const [overviewResponse, productLineResponse] = await Promise.all([
+      httpClient.get('/api/analytics/overview'),
+      httpClient.get('/api/analytics/product-lines'),
+    ])
+
+    const data = hasApiOverviewData(overviewResponse?.data)
+      ? {
+          ...buildApiOverview(overviewResponse?.data),
+          productLines: Array.isArray(productLineResponse?.data) && productLineResponse.data.length > 0
+            ? productLineResponse.data.map(normalizeProductLineItem)
+            : (mockData.dashboard?.productLines || []),
+        }
+      : buildMockOverview()
+
     return {
-      ...response,
+      ...overviewResponse,
       data,
     }
   },
@@ -174,10 +196,25 @@ export const dashboardApi = {
       })
     }
 
-    return Promise.resolve({
-      success: true,
-      message: '使用演示产品线数据',
-      data: mockData.dashboard?.productLines || [],
+    const response = await httpClient.get('/api/analytics/product-lines')
+    const apiData = Array.isArray(response?.data) ? response.data.map(normalizeProductLineItem) : []
+    return {
+      ...response,
+      data: apiData.length > 0 ? apiData : (mockData.dashboard?.productLines || []),
+    }
+  },
+
+  async getDrillDown(type, key) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: false,
+        message: 'Mock 模式下不使用真实下钻接口',
+        data: null,
+      })
+    }
+
+    return httpClient.get('/api/analytics/drill-down', {
+      params: { type, key },
     })
   },
 }

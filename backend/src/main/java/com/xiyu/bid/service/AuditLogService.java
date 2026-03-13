@@ -7,10 +7,16 @@ package com.xiyu.bid.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiyu.bid.audit.dto.AuditLogItemDTO;
+import com.xiyu.bid.audit.dto.AuditLogQueryResponse;
+import com.xiyu.bid.audit.dto.AuditLogSummaryDTO;
 import com.xiyu.bid.entity.AuditLog;
+import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.AuditLogRepository;
+import com.xiyu.bid.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -18,8 +24,12 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 /**
  * 审计日志服务
@@ -31,7 +41,9 @@ import java.util.concurrent.CompletableFuture;
 public class AuditLogService implements IAuditLogService {
 
     private final AuditLogRepository auditLogRepository;
+    private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private static final DateTimeFormatter AUDIT_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
      * 异步记录审计日志
@@ -189,6 +201,41 @@ public class AuditLogService implements IAuditLogService {
         log.info("Deleted {} old audit logs (older than {} days)", deletedCount, daysToKeep);
     }
 
+    public AuditLogQueryResponse queryLogs(String keyword,
+                                           String action,
+                                           String module,
+                                           String operator,
+                                           LocalDateTime start,
+                                           LocalDateTime end,
+                                           Boolean success) {
+        List<AuditLogItemDTO> items = auditLogRepository.findAll(Sort.by(Sort.Direction.DESC, "timestamp")).stream()
+                .filter(auditLog -> matchesKeyword(auditLog, keyword))
+                .filter(auditLog -> matchesAction(auditLog, action))
+                .filter(auditLog -> matchesOperator(auditLog, operator))
+                .filter(auditLog -> matchesStart(auditLog, start))
+                .filter(auditLog -> matchesEnd(auditLog, end))
+                .filter(auditLog -> matchesSuccess(auditLog, success))
+                .map(this::toItemDto)
+                .filter(item -> module == null || module.isBlank() || module.equalsIgnoreCase(item.getModule()))
+                .collect(Collectors.toList());
+
+        LocalDateTime todayStart = LocalDateTime.now().toLocalDate().atStartOfDay();
+        LocalDateTime weekStart = LocalDateTime.now().minusDays(6).toLocalDate().atStartOfDay();
+
+        AuditLogSummaryDTO summary = AuditLogSummaryDTO.builder()
+                .todayCount(items.stream().filter(item -> parseAuditTime(item.getTime()).isAfter(todayStart.minusSeconds(1))).count())
+                .weekCount(items.stream().filter(item -> parseAuditTime(item.getTime()).isAfter(weekStart.minusSeconds(1))).count())
+                .failedCount(items.stream().filter(item -> "failed".equals(item.getStatus())).count())
+                .activeUserCount(items.stream().map(AuditLogItemDTO::getOperator).filter(Objects::nonNull).distinct().count())
+                .totalCount(items.size())
+                .build();
+
+        return AuditLogQueryResponse.builder()
+                .items(items)
+                .summary(summary)
+                .build();
+    }
+
     /**
      * 构建审计日志实体
      */
@@ -275,6 +322,144 @@ public class AuditLogService implements IAuditLogService {
             return value;
         }
         return value.substring(0, maxLength);
+    }
+
+    private AuditLogItemDTO toItemDto(AuditLog auditLog) {
+        User user = resolveUser(auditLog);
+        return AuditLogItemDTO.builder()
+                .id(auditLog.getId())
+                .time(auditLog.getTimestamp() == null ? null : auditLog.getTimestamp().format(AUDIT_TIME_FORMATTER))
+                .operator(resolveOperator(auditLog, user))
+                .department("-")
+                .role(resolveRole(user))
+                .actionType(normalizeAction(auditLog.getAction()))
+                .module(normalizeModule(auditLog.getEntityType()))
+                .target(resolveTarget(auditLog))
+                .detail(auditLog.getDescription())
+                .ip(auditLog.getIpAddress())
+                .status(auditLog.getSuccess() ? "success" : "failed")
+                .build();
+    }
+
+    private User resolveUser(AuditLog auditLog) {
+        if (auditLog.getUserId() != null && auditLog.getUserId().chars().allMatch(Character::isDigit)) {
+            return userRepository.findById(Long.parseLong(auditLog.getUserId())).orElse(null);
+        }
+        if (auditLog.getUsername() != null && !auditLog.getUsername().isBlank()) {
+            return userRepository.findByUsername(auditLog.getUsername()).orElse(null);
+        }
+        return null;
+    }
+
+    private String resolveOperator(AuditLog auditLog, User user) {
+        if (user != null && user.getFullName() != null && !user.getFullName().isBlank()) {
+            return user.getFullName();
+        }
+        if (auditLog.getUsername() != null && !auditLog.getUsername().isBlank()) {
+            return auditLog.getUsername();
+        }
+        return "未知用户";
+    }
+
+    private String resolveRole(User user) {
+        if (user == null || user.getRole() == null) {
+            return "unknown";
+        }
+        return user.getRole().name().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeAction(String action) {
+        return action == null ? "unknown" : action.toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeModule(String entityType) {
+        if (entityType == null || entityType.isBlank()) {
+            return "system";
+        }
+        String normalized = entityType.toLowerCase(Locale.ROOT);
+        if (normalized.contains("project")) {
+            return "project";
+        }
+        if (normalized.contains("tender") || normalized.contains("bidding")) {
+            return "bidding";
+        }
+        if (normalized.contains("qualification")) {
+            return "qualification";
+        }
+        if (normalized.contains("expense")) {
+            return "expense";
+        }
+        if (normalized.contains("account") || normalized.contains("bar")) {
+            return "account";
+        }
+        if (normalized.contains("template") || normalized.contains("case")) {
+            return "knowledge";
+        }
+        if (normalized.contains("analytics") || normalized.contains("ai")) {
+            return "analytics";
+        }
+        if (normalized.contains("document") || normalized.contains("archive") || normalized.contains("export")) {
+            return "document";
+        }
+        return "system";
+    }
+
+    private String resolveTarget(AuditLog auditLog) {
+        if (auditLog.getEntityId() != null && !auditLog.getEntityId().isBlank()) {
+            return auditLog.getEntityId();
+        }
+        if (auditLog.getEntityType() != null && !auditLog.getEntityType().isBlank()) {
+            return auditLog.getEntityType();
+        }
+        return "-";
+    }
+
+    private LocalDateTime parseAuditTime(String time) {
+        if (time == null || time.isBlank()) {
+            return LocalDateTime.MIN;
+        }
+        return LocalDateTime.parse(time, AUDIT_TIME_FORMATTER);
+    }
+
+    private boolean matchesKeyword(AuditLog auditLog, String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return true;
+        }
+        String normalizedKeyword = keyword.toLowerCase(Locale.ROOT);
+        return containsIgnoreCase(auditLog.getDescription(), normalizedKeyword)
+                || containsIgnoreCase(auditLog.getEntityId(), normalizedKeyword)
+                || containsIgnoreCase(auditLog.getEntityType(), normalizedKeyword)
+                || containsIgnoreCase(auditLog.getUsername(), normalizedKeyword);
+    }
+
+    private boolean matchesAction(AuditLog auditLog, String action) {
+        if (action == null || action.isBlank()) {
+            return true;
+        }
+        return action.equalsIgnoreCase(auditLog.getAction());
+    }
+
+    private boolean matchesOperator(AuditLog auditLog, String operator) {
+        if (operator == null || operator.isBlank()) {
+            return true;
+        }
+        return operator.equalsIgnoreCase(auditLog.getUsername());
+    }
+
+    private boolean matchesStart(AuditLog auditLog, LocalDateTime start) {
+        return start == null || (auditLog.getTimestamp() != null && !auditLog.getTimestamp().isBefore(start));
+    }
+
+    private boolean matchesEnd(AuditLog auditLog, LocalDateTime end) {
+        return end == null || (auditLog.getTimestamp() != null && !auditLog.getTimestamp().isAfter(end));
+    }
+
+    private boolean matchesSuccess(AuditLog auditLog, Boolean success) {
+        return success == null || Objects.equals(auditLog.getSuccess(), success);
+    }
+
+    private boolean containsIgnoreCase(String source, String normalizedKeyword) {
+        return source != null && source.toLowerCase(Locale.ROOT).contains(normalizedKeyword);
     }
 
     /**

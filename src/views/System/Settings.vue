@@ -896,11 +896,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Key, Document, Menu, Operation, Lock, User, OfficeBuilding, Folder, InfoFilled, Search, Download } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { API_CONFIG, isMockMode } from '@/api'
+import { API_CONFIG, auditApi, isMockMode } from '@/api'
 
 const activeTab = ref('user')
 const userStore = useUserStore()
@@ -1067,6 +1067,8 @@ const auditLogs = ref([
   { id: 27, time: '2026-03-04 11:00:00', operator: '张经理', department: '管理部', role: 'manager', actionType: 'view', module: 'analytics', target: '数据报表', detail: '查看销售统计', ip: '192.168.1.101', status: 'success' },
 ])
 
+const auditSummary = ref(null)
+
 // 审计分页
 const auditPagination = ref({
   page: 1,
@@ -1076,6 +1078,10 @@ const auditPagination = ref({
 
 // 过滤后的审计日志
 const filteredAuditLogs = computed(() => {
+  if (!isMockMode()) {
+    return auditLogs.value
+  }
+
   let result = [...auditLogs.value]
 
   // 关键字搜索
@@ -1122,19 +1128,31 @@ const filteredAuditLogs = computed(() => {
 
 // 统计数据
 const todayAuditCount = computed(() => {
+  if (!isMockMode() && auditSummary.value) {
+    return auditSummary.value.todayCount || 0
+  }
   const today = new Date().toISOString().split('T')[0]
   return auditLogs.value.filter(log => log.time.startsWith(today)).length
 })
 
 const weekAuditCount = computed(() => {
+  if (!isMockMode() && auditSummary.value) {
+    return auditSummary.value.weekCount || 0
+  }
   return auditLogs.value.length
 })
 
 const failedAuditCount = computed(() => {
+  if (!isMockMode() && auditSummary.value) {
+    return auditSummary.value.failedCount || 0
+  }
   return auditLogs.value.filter(log => log.status === 'failed').length
 })
 
 const activeUserCount = computed(() => {
+  if (!isMockMode() && auditSummary.value) {
+    return auditSummary.value.activeUserCount || 0
+  }
   const users = new Set(auditLogs.value.map(log => log.operator))
   return users.size
 })
@@ -1183,6 +1201,10 @@ const getModuleLabel = (module) => {
 // 审计搜索
 const handleAuditSearch = () => {
   auditPagination.value.page = 1
+  if (!isMockMode()) {
+    loadAuditLogs()
+    return
+  }
   ElMessage.success('搜索完成')
 }
 
@@ -1196,12 +1218,24 @@ const handleAuditReset = () => {
     department: '',
     dateRange: []
   }
+  if (!isMockMode()) {
+    loadAuditLogs()
+    return
+  }
   ElMessage.info('搜索条件已重置')
 }
 
 // 导出审计日志
 const handleExportAudit = () => {
-  ElMessage.success('审计日志导出中...')
+  const payload = JSON.stringify(filteredAuditLogs.value, null, 2)
+  const blob = new Blob([payload], { type: 'application/json;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.json`
+  link.click()
+  URL.revokeObjectURL(url)
+  ElMessage.success('审计日志导出成功')
 }
 
 // 查看操作对象
@@ -1212,6 +1246,39 @@ const handleViewTarget = (row) => {
 // 查看审计详情
 const handleViewAuditDetail = (row) => {
   ElMessage.info(`查看详情: ${row.detail}`)
+}
+
+const buildAuditQuery = () => {
+  const params = {}
+  if (auditSearch.value.keyword) params.keyword = auditSearch.value.keyword
+  if (auditSearch.value.actionType) params.action = auditSearch.value.actionType
+  if (auditSearch.value.module) params.module = auditSearch.value.module
+  if (auditSearch.value.operator) params.operator = auditSearch.value.operator
+  if (auditSearch.value.dateRange?.length === 2) {
+    params.start = `${auditSearch.value.dateRange[0]}T00:00:00`
+    params.end = `${auditSearch.value.dateRange[1]}T23:59:59`
+  }
+  return params
+}
+
+const loadAuditLogs = async () => {
+  if (isMockMode()) {
+    auditPagination.value.total = auditLogs.value.length
+    return
+  }
+
+  try {
+    const response = await auditApi.getLogs(buildAuditQuery())
+    if (!response?.success) {
+      throw new Error(response?.message || '加载审计日志失败')
+    }
+
+    auditLogs.value = Array.isArray(response?.data?.items) ? response.data.items : []
+    auditSummary.value = response?.data?.summary || null
+    auditPagination.value.total = auditLogs.value.length
+  } catch (error) {
+    ElMessage.error(error?.message || '加载审计日志失败')
+  }
 }
 
 // 获取数据权限文本
@@ -1259,6 +1326,10 @@ const handleUserProjectChange = (row) => {
 const handleDeptDataScopeChange = (row) => {
   // 部门数据权限变更事件
 }
+
+onMounted(() => {
+  loadAuditLogs()
+})
 
 const handleDeptCrossAccessChange = (row) => {
   // 部门跨部门访问变更事件

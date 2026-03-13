@@ -44,6 +44,29 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
      */
     List<AuditLog> findBySuccessFalseOrderByTimestampDesc();
 
+    @Query("""
+        SELECT a FROM AuditLog a
+        WHERE (:keyword IS NULL OR
+               LOWER(COALESCE(a.description, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               LOWER(COALESCE(a.entityId, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               LOWER(COALESCE(a.entityType, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+               LOWER(COALESCE(a.username, '')) LIKE LOWER(CONCAT('%', :keyword, '%')))
+          AND (:action IS NULL OR UPPER(a.action) = UPPER(:action))
+          AND (:username IS NULL OR LOWER(COALESCE(a.username, '')) = LOWER(:username))
+          AND (:start IS NULL OR a.timestamp >= :start)
+          AND (:end IS NULL OR a.timestamp <= :end)
+          AND (:success IS NULL OR a.success = :success)
+        ORDER BY a.timestamp DESC
+        """)
+    List<AuditLog> searchLogs(
+            @Param("keyword") String keyword,
+            @Param("action") String action,
+            @Param("username") String username,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end,
+            @Param("success") Boolean success
+    );
+
     /**
      * 统计用户在指定时间内的操作次数
      */

@@ -324,7 +324,7 @@ import { ref, computed, onMounted, markRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Download, Document, FolderOpened, User, Loading } from '@element-plus/icons-vue'
-import { dashboardApi, projectsApi, mockData, isMockMode } from '@/api'
+import { dashboardApi, mockData, isMockMode } from '@/api'
 import LineChart from '@/components/charts/LineChart.vue'
 import PieChart from '@/components/charts/PieChart.vue'
 import BarChart from '@/components/charts/BarChart.vue'
@@ -828,30 +828,11 @@ const buildAggregateOnlyDrillDown = (stats) => ({
 const loadTrendDrillDownData = async (monthData) => {
   if (!isDemoMode) {
     try {
-      const projectResult = await projectsApi.getList()
-      const projects = projectResult?.success && Array.isArray(projectResult.data)
-        ? projectResult.data.map((project) => ({
-          id: project.id,
-          name: project.name,
-          customer: project.customer || '-',
-          budget: project.budget || 0,
-          status: project.status || '-',
-          manager: project.manager || '-',
-          result: project.status === 'won' ? 'won' : project.status === 'lost' ? 'lost' : null
-        }))
-        : []
-
-      drillDownData.value = {
-        projects,
-        team: [],
-        files: [],
-        stats: {
-          totalParticipation: monthData.bids,
-          wonCount: monthData.wins,
-          teamWinRate: monthData.rate,
-          totalAmount: monthData.amount
-        }
+      const result = await dashboardApi.getDrillDown('trend', monthData.month)
+      if (!result?.success || !result?.data) {
+        throw new Error(result?.message || '趋势下钻加载失败')
       }
+      drillDownData.value = result.data
       return
     } catch (error) {
       ElMessage.warning('真实项目明细加载失败，当前仅展示聚合统计')
@@ -887,13 +868,22 @@ const loadTrendDrillDownData = async (monthData) => {
 // 加载竞争对手下钻数据
 const loadCompetitorDrillDownData = (competitorData) => {
   if (!isDemoMode) {
-    drillDownData.value = buildAggregateOnlyDrillDown({
-      totalParticipation: competitorData.bids,
-      wonCount: Math.floor(competitorData.bids * (competitorData.share / 100)),
-      teamWinRate: Math.floor(competitorData.share),
-      totalAmount: competitorData.amount
-    })
-    return
+    return dashboardApi.getDrillDown('competitor', competitorData.name)
+      .then((result) => {
+        if (result?.success && result?.data) {
+          drillDownData.value = result.data
+          return
+        }
+        throw new Error(result?.message || '竞争对手下钻加载失败')
+      })
+      .catch(() => {
+        drillDownData.value = buildAggregateOnlyDrillDown({
+          totalParticipation: competitorData.bids,
+          wonCount: Math.floor(competitorData.bids * (competitorData.share / 100)),
+          teamWinRate: Math.floor(competitorData.share),
+          totalAmount: competitorData.amount
+        })
+      })
   }
 
   drillDownData.value = {
@@ -912,13 +902,22 @@ const loadCompetitorDrillDownData = (competitorData) => {
 // 加载产品线下钻数据
 const loadProductDrillDownData = (productData) => {
   if (!isDemoMode) {
-    drillDownData.value = buildAggregateOnlyDrillDown({
-      totalParticipation: productData.bids,
-      wonCount: Math.floor(productData.bids * (productData.rate / 100)),
-      teamWinRate: productData.rate,
-      totalAmount: productData.revenue
-    })
-    return
+    return dashboardApi.getDrillDown('product', productData.name)
+      .then((result) => {
+        if (result?.success && result?.data) {
+          drillDownData.value = result.data
+          return
+        }
+        throw new Error(result?.message || '产品线下钻加载失败')
+      })
+      .catch(() => {
+        drillDownData.value = buildAggregateOnlyDrillDown({
+          totalParticipation: productData.bids,
+          wonCount: Math.floor(productData.bids * (productData.rate / 100)),
+          teamWinRate: productData.rate,
+          totalAmount: productData.revenue
+        })
+      })
   }
 
   drillDownData.value = {
@@ -937,13 +936,22 @@ const loadProductDrillDownData = (productData) => {
 // 加载区域下钻数据
 const loadRegionDrillDownData = (regionData) => {
   if (!isDemoMode) {
-    drillDownData.value = buildAggregateOnlyDrillDown({
-      totalParticipation: regionData.bids,
-      wonCount: Math.floor(regionData.bids * (regionData.rate / 100)),
-      teamWinRate: regionData.rate,
-      totalAmount: regionData.amount
-    })
-    return
+    return dashboardApi.getDrillDown('region', regionData.name)
+      .then((result) => {
+        if (result?.success && result?.data) {
+          drillDownData.value = result.data
+          return
+        }
+        throw new Error(result?.message || '区域下钻加载失败')
+      })
+      .catch(() => {
+        drillDownData.value = buildAggregateOnlyDrillDown({
+          totalParticipation: regionData.bids,
+          wonCount: Math.floor(regionData.bids * (regionData.rate / 100)),
+          teamWinRate: regionData.rate,
+          totalAmount: regionData.amount
+        })
+      })
   }
 
   drillDownData.value = {
