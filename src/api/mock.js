@@ -151,6 +151,8 @@ export const mockData = {
     }
   ],
 
+  projectScoreDrafts: {},
+
   // 资质库
   qualifications: [
     { id: 'Q001', name: 'ISO9001质量管理体系认证', type: '企业资质', expiry: '2026-12-31', status: 'valid', warning: false },

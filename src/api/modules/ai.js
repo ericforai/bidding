@@ -5,16 +5,20 @@
 import httpClient from '../client.js'
 import { mockData } from '../mock.js'
 import { isMockMode } from '../config.js'
+import { buildFeatureUnavailableResponse } from '../featureAvailability.js'
 
 function isNumericId(id) {
   return /^\d+$/.test(String(id))
 }
 
 function invalidIdMessage(entityName) {
-  return {
-    success: false,
+  return buildFeatureUnavailableResponse({
+    feature: `${entityName}-numeric-id`,
+    title: '当前 ID 格式暂未接入',
     message: `Current backend only supports numeric ${entityName} IDs in API mode`,
-  }
+    hint: '请使用真实后端返回的数字 ID 访问该资源。',
+    scope: 'action',
+  })
 }
 
 function normalizeBidAnalysis(data = {}) {
@@ -246,7 +250,16 @@ export const scoreAnalysisApi = {
       budget: Number(context?.budget || 0),
       tags: Array.isArray(context?.tags) ? context.tags : [],
     })
-    return { ...response, data: response?.data || buildScorePreview(context) }
+    if (!response?.data) {
+      return buildFeatureUnavailableResponse({
+        feature: 'project-score-preview',
+        title: '评分预览暂未接入',
+        message: 'Score preview endpoint returned no preview payload',
+        hint: '你仍然可以继续创建项目，并在后续环节手动补充评分分析。',
+        scope: 'section',
+      })
+    }
+    return { ...response, data: response.data }
   },
 }
 

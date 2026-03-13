@@ -29,9 +29,12 @@
 
 /* Subtle pulse for critical actions */
 @keyframes subtle-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(3, 105, 161, 0.4);
   }
+
   50% {
     box-shadow: 0 0 0 8px rgba(3, 105, 161, 0);
   }
@@ -56,38 +59,43 @@
 }
 
 /* Primary action in table - bigger and more visible */
+/* Primary action in table - High Contrast */
 .el-table .btn-participate {
-  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%);
-  color: #fff;
+  background: linear-gradient(135deg, #0066CC 0%, #004499 100%) !important;
+  color: #FFFFFF !important;
   border: none;
-  padding: 6px 16px;
-  border-radius: 6px;
+  padding: 8px 18px;
+  border-radius: 8px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(3, 105, 161, 0.2);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 102, 204, 0.3);
 }
 
 .el-table .btn-participate:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(3, 105, 161, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 102, 204, 0.45);
+  opacity: 0.95;
 }
 
 /* Secondary action in table */
 .el-table .btn-view {
-  color: #0369A1;
-  background: #E0F2FE;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
+  color: #0066CC !important;
+  background: #F0F9FF !important;
+  border: 1px solid #BAE6FD !important;
+  padding: 7px 14px;
+  border-radius: 8px;
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
 }
 
 .el-table .btn-view:hover {
-  background: #BAE6FD;
+  background: #E0F2FE !important;
+  border-color: #0066CC !important;
+  color: #004499 !important;
 }
 
 /* ==================== Important Info Highlights ==================== */
@@ -151,9 +159,12 @@
 
 /* New item indicator */
 @keyframes new-badge-bounce {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.1);
   }
@@ -398,9 +409,12 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -530,9 +544,11 @@
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
@@ -559,7 +575,7 @@
   background: #F0F9FF !important;
 }
 
-.el-table .row-important:hover > td {
+.el-table .row-important:hover>td {
   background: #E0F2FE !important;
 }
 
@@ -767,6 +783,7 @@
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
@@ -836,9 +853,11 @@
   0% {
     transform: scale(0);
   }
+
   50% {
     transform: scale(1.1);
   }
+
   100% {
     transform: scale(1);
   }
@@ -1332,15 +1351,19 @@
   0% {
     border-color: #0369A1;
   }
+
   25% {
     border-color: #8B5CF6;
   }
+
   50% {
     border-color: #EC4899;
   }
+
   75% {
     border-color: #0369A1;
   }
+
   100% {
     border-color: #8B5CF6;
   }
@@ -1349,6 +1372,7 @@
 /* ==================== Reduced Motion ==================== */
 
 @media (prefers-reduced-motion: reduce) {
+
   .action-critical,
   .new-badge,
   .status-step.current .step-dot,

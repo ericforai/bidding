@@ -5,16 +5,20 @@
 import httpClient from '../client.js'
 import { mockData } from '../mock.js'
 import { isMockMode } from '../config.js'
+import { buildFeatureUnavailableResponse } from '../featureAvailability.js'
 
 function isNumericId(id) {
   return /^\d+$/.test(String(id))
 }
 
 function invalidIdMessage(entityName) {
-  return {
-    success: false,
+  return buildFeatureUnavailableResponse({
+    feature: `${entityName}-numeric-id`,
+    title: '当前 ID 格式暂未接入',
     message: `Current backend only supports numeric ${entityName} IDs in API mode`,
-  }
+    hint: '请使用真实后端返回的数字 ID 访问该资源。',
+    scope: 'action',
+  })
 }
 
 function formatDate(value) {
@@ -394,20 +398,10 @@ export const accountsApi = {
       return mockDelay(data)
     }
 
-    try {
-      const response = await httpClient.get('/api/platform/accounts')
-      const accounts = Array.isArray(response?.data) ? response.data.map(normalizeAccount) : []
-      const filtered = filterAccounts(accounts, params)
-      const data = accounts.length > 0 ? filtered : getMockAccounts(params)
-      return { success: true, data, total: data.length }
-    } catch (error) {
-      return {
-        success: true,
-        data: getMockAccounts(params),
-        total: getMockAccounts(params).length,
-        message: '使用演示账户数据',
-      }
-    }
+    const response = await httpClient.get('/api/platform/accounts')
+    const accounts = Array.isArray(response?.data) ? response.data.map(normalizeAccount) : []
+    const filtered = filterAccounts(accounts, params)
+    return { success: true, data: filtered, total: filtered.length }
   },
 
   async getDetail(id) {
@@ -415,23 +409,10 @@ export const accountsApi = {
       const item = mockData.accounts.find((account) => String(account.id) === String(id))
       return Promise.resolve({ success: true, data: item ? normalizeAccount(item) : null })
     }
-    if (!isNumericId(id)) {
-      const item = mockData.accounts.find((account) => String(account.id) === String(id))
-      return Promise.resolve({ success: Boolean(item), data: item ? normalizeAccount(item) : null })
-    }
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('account'))
 
-    try {
-      const response = await httpClient.get(`/api/platform/accounts/${id}`)
-      return response?.data
-        ? { ...response, data: normalizeAccount(response?.data) }
-        : { ...response, data: mockData.accounts.find((account) => String(account.id) === String(id)) ? normalizeAccount(mockData.accounts.find((account) => String(account.id) === String(id))) : null }
-    } catch (error) {
-      const item = mockData.accounts.find((account) => String(account.id) === String(id))
-      if (item) {
-        return { success: true, data: normalizeAccount(item), message: '使用演示账户数据' }
-      }
-      throw error
-    }
+    const response = await httpClient.get(`/api/platform/accounts/${id}`)
+    return { ...response, data: normalizeAccount(response?.data) }
   },
 
   async create(data) {
@@ -513,8 +494,7 @@ export const barSitesApi = {
     const page = response?.data
     const content = Array.isArray(page?.content) ? page.content : Array.isArray(response?.data) ? response.data : []
     const sites = filterBarSites(content.map(normalizeBarSite), params)
-    const data = content.length > 0 ? sites : getMockBarSites(params)
-    return { success: true, data, total: page?.totalElements ?? data.length }
+    return { success: true, data: sites, total: page?.totalElements ?? sites.length }
   },
 
   async getDetail(id) {
@@ -522,23 +502,10 @@ export const barSitesApi = {
       const site = mockData.barSites?.find((item) => String(item.id) === String(id))
       return Promise.resolve({ success: true, data: site || null })
     }
-    if (!isNumericId(id)) {
-      const site = mockData.barSites?.find((item) => String(item.id) === String(id))
-      return Promise.resolve({ success: Boolean(site), data: site || null })
-    }
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('bar asset'))
 
-    try {
-      const response = await httpClient.get(`/api/resources/bar-assets/${id}`)
-      return response?.data
-        ? { ...response, data: normalizeBarSite(response?.data) }
-        : { ...response, data: null }
-    } catch (error) {
-      const site = mockData.barSites?.find((item) => String(item.id) === String(id))
-      if (site) {
-        return { success: true, data: site, message: '使用演示站点数据' }
-      }
-      throw error
-    }
+    const response = await httpClient.get(`/api/resources/bar-assets/${id}`)
+    return { ...response, data: response?.data ? normalizeBarSite(response.data) : null }
   },
 
   async create(data) {
@@ -644,10 +611,7 @@ export const barSiteAccountsApi = {
       const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
       return Promise.resolve({ success: true, data: site?.accounts || [] })
     }
-    if (!isNumericId(siteId)) {
-      const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
-      return Promise.resolve({ success: true, data: site?.accounts || [] })
-    }
+    if (!isNumericId(siteId)) return Promise.resolve(invalidIdMessage('bar asset'))
 
     const response = await httpClient.get(`/api/resources/bar-assets/${siteId}/accounts`)
     return {
@@ -695,10 +659,7 @@ export const barSiteSopApi = {
       const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
       return Promise.resolve({ success: true, data: site?.sop || null })
     }
-    if (!isNumericId(siteId)) {
-      const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
-      return Promise.resolve({ success: true, data: site?.sop || null })
-    }
+    if (!isNumericId(siteId)) return Promise.resolve(invalidIdMessage('bar asset'))
 
     const response = await httpClient.get(`/api/resources/bar-assets/${siteId}/sop`)
     return { ...response, data: normalizeBarSop(response?.data || {}) }
@@ -721,10 +682,7 @@ export const barSiteAttachmentsApi = {
       const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
       return Promise.resolve({ success: true, data: site?.attachments || [] })
     }
-    if (!isNumericId(siteId)) {
-      const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
-      return Promise.resolve({ success: true, data: site?.attachments || [] })
-    }
+    if (!isNumericId(siteId)) return Promise.resolve(invalidIdMessage('bar asset'))
 
     const response = await httpClient.get(`/api/resources/bar-assets/${siteId}/attachments`)
     return {
@@ -759,13 +717,11 @@ export const barCertificatesApi = {
       const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
       return Promise.resolve({ success: true, data: site?.uks || [] })
     }
-    if (!isNumericId(siteId)) {
-      return Promise.resolve({ success: true, data: getMockCertificates(siteId) })
-    }
+    if (!isNumericId(siteId)) return Promise.resolve(invalidIdMessage('bar asset'))
 
     const response = await httpClient.get(`/api/resources/bar-assets/${siteId}/certificates`)
     const list = Array.isArray(response?.data) ? response.data.map(normalizeCertificate) : []
-    return { ...response, data: list.length > 0 ? list : getMockCertificates(siteId) }
+    return { ...response, data: list }
   },
 
   async create(siteId, data) {
@@ -870,8 +826,7 @@ export const expensesApi = {
     const content = Array.isArray(page?.content) ? page.content : Array.isArray(response?.data) ? response.data : []
     const expenses = content.map(normalizeExpense)
     const filtered = filterExpenses(expenses, params)
-    const data = content.length > 0 ? filtered : getMockExpenses(params)
-    return { success: true, data, total: page?.totalElements ?? data.length }
+    return { success: true, data: filtered, total: page?.totalElements ?? filtered.length }
   },
 
   async create(data) {
@@ -890,23 +845,12 @@ export const expensesApi = {
       const item = mockData.fees.find((fee) => String(fee.id) === String(id))
       return Promise.resolve({ success: true, data: item ? normalizeExpense(item) : null })
     }
-    if (!isNumericId(id)) {
-      const item = mockData.fees.find((fee) => String(fee.id) === String(id))
-      return Promise.resolve({ success: Boolean(item), data: item ? normalizeExpense(item) : null })
-    }
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('expense'))
 
-    try {
-      const response = await httpClient.get(`/api/resources/expenses/${id}`)
-      return response?.data
-        ? { ...response, data: normalizeExpense(response?.data) }
-        : { ...response, data: null }
-    } catch (error) {
-      const item = mockData.fees.find((fee) => String(fee.id) === String(id))
-      if (item) {
-        return { success: true, data: normalizeExpense(item), message: '使用演示费用数据' }
-      }
-      throw error
-    }
+    const response = await httpClient.get(`/api/resources/expenses/${id}`)
+    return response?.data
+      ? { ...response, data: normalizeExpense(response.data) }
+      : { ...response, data: null }
   },
 
   async getApprovalRecords(projectId) {

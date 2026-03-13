@@ -198,7 +198,7 @@ const handleViewSOP = () => emit('view-sop', props.site)
 }
 
 .site-link:hover {
-  color: #409eff;
+  color: #0066CC;
 }
 
 .site-link-muted {
@@ -266,18 +266,50 @@ const handleViewSOP = () => emit('view-sop', props.site)
 
 .card-footer {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   padding-top: 16px;
   border-top: 1px solid #f0f0f0;
 }
 
 .card-footer .el-button {
   flex: 1;
-  min-width: 80px;
+  min-width: 90px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.card-footer .el-button {
-  flex: 1;
-  min-width: 100px;
+.card-footer .el-button--primary {
+  background: linear-gradient(135deg, #0066CC 0%, #004499 100%) !important;
+  border: none !important;
+  color: #FFFFFF !important;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.15);
+}
+
+.card-footer .el-button--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 102, 204, 0.25);
+  opacity: 0.95;
+}
+
+.card-footer .el-button:not(.el-button--primary):not(.el-button--link) {
+  background: #f0f9ff;
+  color: #0066CC;
+  border: 1px solid #bae6fd;
+}
+
+.card-footer .el-button:not(.el-button--primary):not(.el-button--link):hover {
+  background: #e0f2fe;
+  border-color: #0066CC;
+  transform: translateY(-1px);
+}
+
+.card-footer .el-button--link {
+  color: #64748B;
+  font-weight: 500;
+}
+
+.card-footer .el-button--link:hover {
+  color: #0066CC;
+  text-decoration: underline;
 }
 </style>

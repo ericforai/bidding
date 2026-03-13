@@ -5,6 +5,7 @@
 import httpClient from '../client.js'
 import { mockData } from '../mock.js'
 import { isMockMode } from '../config.js'
+import { buildFeatureUnavailableResponse } from '../featureAvailability.js'
 
 const normalizeUser = (authPayload) => ({
   id: authPayload?.id,
@@ -61,10 +62,13 @@ export const authApi = {
     if (isMockMode()) {
       return Promise.resolve({ success: true })
     }
-    return Promise.resolve({
-      success: false,
-      message: 'Logout endpoint is not implemented on backend'
-    })
+    return Promise.resolve(buildFeatureUnavailableResponse({
+      feature: 'auth-logout',
+      title: '退出登录接口暂未接入',
+      message: 'Logout endpoint is not implemented on backend',
+      hint: '当前前端仍会清理本地会话，但不会调用后端登出接口。',
+      scope: 'action',
+    }))
   },
 
   /**
@@ -97,10 +101,13 @@ export const authApi = {
         data: { token: 'new-mock-token-' + Date.now() }
       })
     }
-    return Promise.resolve({
-      success: false,
-      message: 'Refresh token endpoint is not implemented on backend'
-    })
+    return Promise.resolve(buildFeatureUnavailableResponse({
+      feature: 'auth-refresh-token',
+      title: '刷新令牌接口暂未接入',
+      message: 'Refresh token endpoint is not implemented on backend',
+      hint: '当前真实联调依赖重新登录获取新会话。',
+      scope: 'action',
+    }))
   }
 }
 

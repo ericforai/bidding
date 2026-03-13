@@ -5,6 +5,7 @@
 import httpClient from '../client.js'
 import { mockData } from '../mock.js'
 import { isMockMode } from '../config.js'
+import { buildFeatureUnavailableResponse } from '../featureAvailability.js'
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000
 
@@ -296,36 +297,26 @@ function filterTemplates(items, params = {}) {
   })
 }
 
-function getMockQualifications(params = {}) {
-  return filterQualifications(mockData.qualifications.map(normalizeQualification), params)
-}
-
-function getMockCases(params = {}) {
-  return filterCases(mockData.cases.map(normalizeCase), params)
-}
-
-function getMockTemplates(params = {}) {
-  return filterTemplates(mockData.templates.map(normalizeTemplate), params)
-}
-
-async function fetchAndFilter(path, params, normalizer, filterFn, fallbackFactory) {
+async function fetchAndFilter(path, params, normalizer, filterFn) {
   const response = await httpClient.get(path)
   const normalized = Array.isArray(response?.data) ? response.data.map(normalizer) : []
   const filtered = filterFn(normalized, params)
-  const data = normalized.length > 0 ? filtered : fallbackFactory(params)
 
   return {
     ...response,
-    data,
-    total: data.length,
+    data: filtered,
+    total: filtered.length,
   }
 }
 
 function invalidIdMessage(entityName) {
-  return {
-    success: false,
+  return buildFeatureUnavailableResponse({
+    feature: `${entityName}-numeric-id`,
+    title: '当前 ID 格式暂未接入',
     message: `Current backend only supports numeric ${entityName} IDs in API mode`,
-  }
+    hint: '请使用真实后端返回的数字 ID 访问该资源。',
+    scope: 'action',
+  })
 }
 
 export const qualificationsApi = {
@@ -335,7 +326,7 @@ export const qualificationsApi = {
       return Promise.resolve({ success: true, data, total: data.length })
     }
 
-    return fetchAndFilter('/api/knowledge/qualifications', params, normalizeQualification, filterQualifications, getMockQualifications)
+    return fetchAndFilter('/api/knowledge/qualifications', params, normalizeQualification, filterQualifications)
   },
 
   async getDetail(id) {
@@ -391,7 +382,7 @@ export const casesApi = {
       return Promise.resolve({ success: true, data, total: data.length })
     }
 
-    return fetchAndFilter('/api/knowledge/cases', params, normalizeCase, filterCases, getMockCases)
+    return fetchAndFilter('/api/knowledge/cases', params, normalizeCase, filterCases)
   },
 
   async getDetail(id) {
@@ -399,10 +390,7 @@ export const casesApi = {
       const item = mockData.cases.find((caseItem) => String(caseItem.id) === String(id))
       return Promise.resolve({ success: true, data: item ? normalizeCase(item) : null })
     }
-    if (!isNumericId(id)) {
-      const item = mockData.cases.find((caseItem) => String(caseItem.id) === String(id))
-      return Promise.resolve({ success: true, data: item ? normalizeCase(item) : null })
-    }
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('case'))
 
     const response = await httpClient.get(`/api/knowledge/cases/${id}`)
     return { ...response, data: normalizeCase(response?.data) }
@@ -515,7 +503,7 @@ export const templatesApi = {
       return Promise.resolve({ success: true, data, total: data.length })
     }
 
-    return fetchAndFilter('/api/knowledge/templates', params, normalizeTemplate, filterTemplates, getMockTemplates)
+    return fetchAndFilter('/api/knowledge/templates', params, normalizeTemplate, filterTemplates)
   },
 
   async getDetail(id) {

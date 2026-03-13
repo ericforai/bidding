@@ -1,51 +1,43 @@
-# Compliance Check Module
+# Analytics Module
 
 > 一旦我所属的文件夹有所变化，请更新我。
 
 ## 目录功能
 
-合规检查服务模块，提供项目/标讯的合规性检查、风险评估功能。
+数据分析模块，提供 dashboard 汇总统计、趋势分析以及 drill-down 下钻明细能力。
 
 ## 文件清单
 
-### Entity (实体层)
-- `entity/ComplianceRule.java` - 合规规则实体
-- `entity/ComplianceCheckResult.java` - 合规检查结果实体
-
-### Repository (数据访问层)
-- `repository/ComplianceRuleRepository.java` - 合规规则数据访问
-- `repository/ComplianceCheckResultRepository.java` - 检查结果数据访问
-
 ### Service (业务层)
-- `service/ComplianceCheckService.java` - 合规检查业务逻辑
+- `service/DashboardAnalyticsService.java` - Dashboard 聚合统计与 drill-down 业务逻辑
 
 ### Controller (控制器层)
-- `controller/ComplianceController.java` - 合规检查 REST API 端点
+- `controller/DashboardController.java` - Dashboard REST API 端点
 
 ### DTO (数据传输对象)
-- `dto/ComplianceCheckResultDTO.java` - 检查结果传输对象
-- `dto/ComplianceIssue.java` - 合规问题
-- `dto/RiskAssessmentDTO.java` - 风险评估结果
+- `dto/DashboardOverviewDTO.java` - Dashboard 汇总视图
+- `dto/SummaryStats.java` - 汇总统计
+- `dto/TrendData.java` - 趋势数据
+- `dto/CompetitorData.java` - 竞争对手数据
+- `dto/RegionalData.java` - 区域数据
+- `dto/AnalyticsDrillDownResponseDTO.java` - drill-down 响应体
+- `dto/AnalyticsDrillDownRowDTO.java` - drill-down 行数据
+- `dto/AnalyticsDrillDownSummaryDTO.java` - drill-down 汇总数据
+- `dto/AnalyticsDrillDownFiltersDTO.java` - drill-down 过滤器
+- `dto/AnalyticsFilterDimensionDTO.java` - 过滤维度
+- `dto/AnalyticsFilterOptionDTO.java` - 过滤选项
+- `dto/AnalyticsPaginationDTO.java` - 分页元数据
 
 ## API 端点
 
-- `POST /api/compliance/check/project/{projectId}` - 检查项目合规性
-- `POST /api/compliance/check/tender/{tenderId}` - 检查标讯合规性
-- `GET /api/compliance/results/{resultId}` - 获取检查结果
-- `GET /api/compliance/project/{projectId}/results` - 项目检查历史
-- `GET /api/compliance/assess-risk/{projectId}` - 风险评估
-
-## 规则类型
-
-- QUALIFICATION - 资质要求
-- DOCUMENT - 文档完整性
-- FINANCIAL - 财务要求
-- EXPERIENCE - 经验要求
-- DEADLINE - 时间要求
-
-## 检查状态
-
-- COMPLIANT - 合规
-- NON_COMPLIANT - 不合规
-- PARTIAL_COMPLIANT - 部分合规
-- WARNING - 警告
+- `GET /api/analytics/overview` - 获取 dashboard 汇总
+- `GET /api/analytics/summary` - 获取核心统计
+- `GET /api/analytics/trends` - 获取趋势数据
+- `GET /api/analytics/competitors` - 获取竞争对手分析
+- `GET /api/analytics/regions` - 获取区域分布
+- `GET /api/analytics/status-distribution` - 获取状态分布
+- `GET /api/analytics/drilldown/revenue` - 获取金额下钻明细
+- `GET /api/analytics/drilldown/win-rate` - 获取中标率下钻明细
+- `GET /api/analytics/drilldown/team` - 获取团队下钻明细
+- `GET /api/analytics/drilldown/projects` - 获取项目下钻明细
+- `POST /api/analytics/cache/clear` - 清理 dashboard 缓存

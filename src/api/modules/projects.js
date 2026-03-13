@@ -5,6 +5,7 @@
 import httpClient from '../client.js'
 import { mockData } from '../mock.js'
 import { isMockMode } from '../config.js'
+import { buildFeatureUnavailableResponse } from '../featureAvailability.js'
 
 function matchesProjectStatus(projectStatus, filterStatus) {
   return String(projectStatus || '').toLowerCase() === String(filterStatus || '').toLowerCase()
@@ -47,6 +48,98 @@ function getMockProject(id) {
   return mockData.projects.find((project) => String(project.id) === String(id)) || null
 }
 
+function invalidApiModeId(entityName) {
+  return buildFeatureUnavailableResponse({
+    feature: `${entityName}-numeric-id`,
+    title: '当前 ID 格式暂未接入',
+    message: `Current backend only supports numeric ${entityName} IDs in API mode`,
+    hint: '请使用真实后端返回的数字 ID 访问该资源。',
+    scope: 'action',
+  })
+}
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value))
+}
+
+function buildMockScoreDrafts(projectId, fileName = '评分标准示例.docx') {
+  return [
+    {
+      id: `SD_${projectId}_001`,
+      projectId,
+      sourceFileName: fileName,
+      category: 'technical',
+      scoreItemTitle: '项目经理资质',
+      scoreRuleText: '提供一级建造师证书得3分',
+      scoreValueText: '3分',
+      taskAction: '准备',
+      generatedTaskTitle: '准备项目经理资质（3分）',
+      generatedTaskDescription: '评分目标：项目经理资质\n分值规则：3分\n评分原文：提供一级建造师证书得3分\n执行要求：请准备对应证书及支撑材料。\n完成标准：材料齐全、可直接支撑该项得分判断。\n来源定位：评分标准示例.docx / technical / 表1 / 行2',
+      suggestedDeliverables: ['证书扫描件', '有效期说明'],
+      assigneeId: null,
+      assigneeName: '',
+      dueDate: '',
+      status: 'DRAFT',
+      skipReason: '',
+      sourcePage: null,
+      sourceTableIndex: 0,
+      sourceRowIndex: 1,
+      generatedTaskId: null,
+    },
+    {
+      id: `SD_${projectId}_002`,
+      projectId,
+      sourceFileName: fileName,
+      category: 'business',
+      scoreItemTitle: '同类项目业绩',
+      scoreRuleText: '每提供1个同类项目业绩得2分，最高6分',
+      scoreValueText: '最高6分',
+      taskAction: '整理',
+      generatedTaskTitle: '整理同类项目业绩（最高6分）',
+      generatedTaskDescription: '评分目标：同类项目业绩\n分值规则：最高6分\n评分原文：每提供1个同类项目业绩得2分，最高6分\n执行要求：请整理业绩合同和验收证明。\n完成标准：材料齐全、可直接支撑该项得分判断。\n来源定位：评分标准示例.docx / business / 表1 / 行3',
+      suggestedDeliverables: ['合同关键页', '验收证明', '项目简介'],
+      assigneeId: null,
+      assigneeName: '',
+      dueDate: '',
+      status: 'DRAFT',
+      skipReason: '',
+      sourcePage: null,
+      sourceTableIndex: 0,
+      sourceRowIndex: 2,
+      generatedTaskId: null,
+    },
+    {
+      id: `SD_${projectId}_003`,
+      projectId,
+      sourceFileName: fileName,
+      category: 'price',
+      scoreItemTitle: '报价得分',
+      scoreRuleText: '按报价偏差率公式计算得分',
+      scoreValueText: '10分',
+      taskAction: '复核',
+      generatedTaskTitle: '复核报价得分（10分）',
+      generatedTaskDescription: '评分目标：报价得分\n分值规则：10分\n评分原文：按报价偏差率公式计算得分\n执行要求：请复核报价表、测算依据与公式说明。\n完成标准：材料齐全、可直接支撑该项得分判断。\n来源定位：评分标准示例.docx / price / 表1 / 行4',
+      suggestedDeliverables: ['报价表', '测算依据', '公式说明'],
+      assigneeId: null,
+      assigneeName: '',
+      dueDate: '',
+      status: 'DRAFT',
+      skipReason: '',
+      sourcePage: null,
+      sourceTableIndex: 0,
+      sourceRowIndex: 3,
+      generatedTaskId: null,
+    }
+  ]
+}
+
+function ensureMockScoreDrafts(projectId, fileName) {
+  if (!mockData.projectScoreDrafts[projectId]) {
+    mockData.projectScoreDrafts[projectId] = buildMockScoreDrafts(projectId, fileName)
+  }
+  return mockData.projectScoreDrafts[projectId]
+}
+
 export const projectsApi = {
   /**
    * 获取项目列表
@@ -64,9 +157,7 @@ export const projectsApi = {
     const response = await httpClient.get('/api/projects')
     const projects = Array.isArray(response?.data) ? response.data : []
     const filteredData = applyProjectFilters(projects, params)
-    const data = filteredData.length > 0 || projects.length > 0
-      ? filteredData
-      : getMockProjects(params)
+    const data = filteredData
 
     return {
       ...response,
@@ -89,26 +180,10 @@ export const projectsApi = {
     }
 
     if (!isNumericId(id)) {
-      const mockProject = mockData.projects.find((project) => String(project.id) === String(id))
-      return {
-        success: Boolean(mockProject),
-        data: mockProject || null,
-        message: mockProject ? '使用演示项目数据' : 'Current backend only supports numeric project IDs in API mode'
-      }
+      return invalidApiModeId('project')
     }
 
-    try {
-      const response = await httpClient.get(`/api/projects/${id}`)
-      return response?.data
-        ? response
-        : { ...response, data: mockData.projects.find((project) => String(project.id) === String(id)) || null }
-    } catch (error) {
-      const mockProject = mockData.projects.find((project) => String(project.id) === String(id))
-      if (mockProject) {
-        return { success: true, data: mockProject, message: '使用演示项目数据' }
-      }
-      throw error
-    }
+    return httpClient.get(`/api/projects/${id}`)
   },
 
   /**
@@ -133,10 +208,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(id)) {
-      return {
-        success: false,
-        message: 'Current backend only supports numeric project IDs in API mode'
-      }
+      return invalidApiModeId('project')
     }
 
     return httpClient.put(`/api/projects/${id}`, data)
@@ -151,10 +223,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(id)) {
-      return {
-        success: false,
-        message: 'Current backend only supports numeric project IDs in API mode'
-      }
+      return invalidApiModeId('project')
     }
 
     return httpClient.delete(`/api/projects/${id}`)
@@ -170,12 +239,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(projectId)) {
-      const project = getMockProject(projectId)
-      return Promise.resolve({
-        success: true,
-        data: project?.tasks || [],
-        message: '使用演示项目任务数据'
-      })
+      return Promise.resolve(invalidApiModeId('project'))
     }
 
     return httpClient.get(`/api/projects/${projectId}/tasks`)
@@ -194,10 +258,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(projectId)) {
-      return Promise.resolve({
-        success: false,
-        message: 'Current backend only supports numeric project IDs in API mode'
-      })
+      return Promise.resolve(invalidApiModeId('project'))
     }
 
     return httpClient.post(`/api/projects/${projectId}/tasks`, data)
@@ -212,10 +273,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(projectId) || !isNumericId(taskId)) {
-      return Promise.resolve({
-        success: false,
-        message: 'Current backend only supports numeric task IDs in API mode'
-      })
+      return Promise.resolve(invalidApiModeId('task'))
     }
 
     return httpClient.patch(`/api/projects/${projectId}/tasks/${taskId}/status`, { status })
@@ -231,12 +289,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(projectId)) {
-      const project = getMockProject(projectId)
-      return Promise.resolve({
-        success: true,
-        data: project?.documents || [],
-        message: '使用演示项目文档数据'
-      })
+      return Promise.resolve(invalidApiModeId('project'))
     }
 
     return httpClient.get(`/api/projects/${projectId}/documents`)
@@ -254,10 +307,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(projectId)) {
-      return Promise.resolve({
-        success: false,
-        message: 'Current backend only supports numeric project IDs in API mode'
-      })
+      return Promise.resolve(invalidApiModeId('project'))
     }
 
     return httpClient.post(`/api/projects/${projectId}/documents`, {
@@ -275,10 +325,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(projectId) || !isNumericId(documentId)) {
-      return Promise.resolve({
-        success: false,
-        message: 'Current backend only supports numeric document IDs in API mode'
-      })
+      return Promise.resolve(invalidApiModeId('document'))
     }
 
     return httpClient.delete(`/api/projects/${projectId}/documents/${documentId}`)
@@ -293,10 +340,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(projectId)) {
-      return Promise.resolve({
-        success: false,
-        message: 'Current backend only supports numeric project IDs in API mode'
-      })
+      return Promise.resolve(invalidApiModeId('project'))
     }
 
     return httpClient.post(`/api/projects/${projectId}/reminders`, data)
@@ -317,13 +361,183 @@ export const projectsApi = {
     }
 
     if (!isNumericId(projectId)) {
-      return Promise.resolve({
-        success: false,
-        message: 'Current backend only supports numeric project IDs in API mode'
-      })
+      return Promise.resolve(invalidApiModeId('project'))
     }
 
     return httpClient.post(`/api/projects/${projectId}/share-links`, data)
+  },
+
+  async parseScoreDrafts(projectId, formData) {
+    if (isMockMode()) {
+      const fileName = formData.get('file')?.name || '评分标准示例.docx'
+      const drafts = buildMockScoreDrafts(projectId, fileName)
+      mockData.projectScoreDrafts[projectId] = drafts
+      return Promise.resolve({
+        success: true,
+        data: {
+          drafts: clone(drafts),
+          totalCount: drafts.length,
+          draftCount: drafts.filter((item) => item.status === 'DRAFT').length,
+          readyCount: drafts.filter((item) => item.status === 'READY').length,
+          skippedCount: drafts.filter((item) => item.status === 'SKIPPED').length,
+        }
+      })
+    }
+
+    if (!isNumericId(projectId)) {
+      return Promise.resolve(invalidApiModeId('project'))
+    }
+
+    return httpClient.post(`/api/projects/${projectId}/score-drafts/parse`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+
+  async getScoreDrafts(projectId) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: clone(ensureMockScoreDrafts(projectId))
+      })
+    }
+
+    if (!isNumericId(projectId)) {
+      return Promise.resolve(invalidApiModeId('project'))
+    }
+
+    return httpClient.get(`/api/projects/${projectId}/score-drafts`)
+  },
+
+  async updateScoreDraft(projectId, draftId, payload) {
+    if (isMockMode()) {
+      const drafts = ensureMockScoreDrafts(projectId)
+      const draft = drafts.find((item) => String(item.id) === String(draftId))
+      if (!draft) {
+        return Promise.resolve({ success: false, message: '未找到评分草稿项' })
+      }
+      Object.assign(draft, payload)
+      if (!payload.status) {
+        draft.status = draft.assigneeId || draft.assigneeName ? 'READY' : 'DRAFT'
+      }
+      return Promise.resolve({ success: true, data: clone(draft) })
+    }
+
+    if (!isNumericId(projectId) || !isNumericId(draftId)) {
+      return Promise.resolve(invalidApiModeId('draft'))
+    }
+
+    return httpClient.patch(`/api/projects/${projectId}/score-drafts/${draftId}`, payload)
+  },
+
+  async generateScoreDraftTasks(projectId, draftIds) {
+    if (isMockMode()) {
+      const drafts = ensureMockScoreDrafts(projectId)
+      const generatedTasks = drafts
+        .filter((item) => draftIds.includes(item.id))
+        .map((draft) => {
+          draft.status = 'GENERATED'
+          draft.generatedTaskId = `TASK_${Date.now()}_${draft.id}`
+          return {
+            id: draft.generatedTaskId,
+            projectId,
+            name: draft.generatedTaskTitle,
+            description: draft.generatedTaskDescription,
+            owner: draft.assigneeName || '未分配',
+            assignee: draft.assigneeName || '未分配',
+            department: '投标管理部',
+            status: 'todo',
+            priority: draft.category === 'price' ? 'high' : 'medium',
+            dueDate: draft.dueDate || '',
+            deliverables: draft.suggestedDeliverables.map((name, index) => ({
+              id: `${draft.id}_DEL_${index + 1}`,
+              name,
+              url: '#',
+              uploader: '',
+              time: ''
+            })),
+            hasDeliverable: draft.suggestedDeliverables.length > 0
+          }
+        })
+
+      return Promise.resolve({ success: true, data: clone(generatedTasks) })
+    }
+
+    if (!isNumericId(projectId)) {
+      return Promise.resolve(invalidApiModeId('project'))
+    }
+
+    return httpClient.post(`/api/projects/${projectId}/score-drafts/generate-tasks`, { draftIds })
+  },
+
+  async clearScoreDrafts(projectId) {
+    if (isMockMode()) {
+      mockData.projectScoreDrafts[projectId] = []
+      return Promise.resolve({ success: true })
+    }
+
+    if (!isNumericId(projectId)) {
+      return Promise.resolve(invalidApiModeId('project'))
+    }
+
+    return httpClient.delete(`/api/projects/${projectId}/score-drafts`)
+  },
+
+  /**
+   * 批量删除项目
+   */
+  async batchDelete(projectIds) {
+    if (isMockMode()) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const deletedIds = []
+          projectIds.forEach(id => {
+            const index = mockData.projects.findIndex(p => String(p.id) === String(id))
+            if (index !== -1) {
+              mockData.projects.splice(index, 1)
+              deletedIds.push(id)
+            }
+          })
+          resolve({
+            success: true,
+            data: {
+              deleted: deletedIds.length,
+              failed: projectIds.length - deletedIds.length,
+              projectIds: deletedIds
+            }
+          })
+        }, 300)
+      })
+    }
+
+    return httpClient.post('/api/projects/batch/delete', { projectIds })
+  },
+
+  /**
+   * 批量更新项目状态
+   */
+  async batchUpdateStatus(projectIds, status) {
+    if (isMockMode()) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          projectIds.forEach(id => {
+            const project = mockData.projects.find(p => String(p.id) === String(id))
+            if (project) {
+              project.status = status
+            }
+          })
+          resolve({
+            success: true,
+            data: {
+              updated: projectIds.length,
+              failed: 0,
+              projectIds
+            }
+          })
+        }, 300)
+      })
+    }
+
+    return httpClient.post('/api/projects/batch/status', { projectIds, status })
   }
 }
 

@@ -6,6 +6,8 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { API_CONFIG, getApiUrl } from './config'
 
+export const getAccessToken = () => localStorage.getItem('token') || sessionStorage.getItem('token')
+
 // 创建 axios 实例
 const httpClient = axios.create({
   baseURL: API_CONFIG.baseURL,
@@ -17,7 +19,7 @@ const httpClient = axios.create({
 httpClient.interceptors.request.use(
   (config) => {
     // 添加 Token
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+    const token = getAccessToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }

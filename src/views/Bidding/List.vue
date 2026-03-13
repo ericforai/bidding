@@ -173,6 +173,10 @@
               <el-icon><TrendCharts /></el-icon>
               市场洞察
             </el-button>
+            <el-button size="small" @click="handleExport">
+              <el-icon><Download /></el-icon>
+              导出
+            </el-button>
             <el-radio-group v-model="viewMode" size="small">
               <el-radio-button value="all">全部 ({{ filteredTenders.length }})</el-radio-button>
               <el-radio-button value="new">新建 ({{ newTendersCount }})</el-radio-button>
@@ -1282,6 +1286,8 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBiddingStore } from '@/stores/bidding'
+import { useUserStore } from '@/stores/user'
+import { tendersApi } from '@/api'
 import {
   Search, Plus, Download, Star, TrendCharts, List, Share, CircleCheck,
   MoreFilled, Check, User, Calendar, Flag, Briefcase, ChatDotRound,
@@ -1299,9 +1305,12 @@ import {
   generateInsight,
   generateForecastTips
 } from '@/api/trendradar'
+import { useExport } from '@/composables/useExport'
+import { ExportType } from '@/api'
 
 const router = useRouter()
 const biddingStore = useBiddingStore()
+const userStore = useUserStore()
 const showTenderAiEntry = true
 
 // 表格引用
@@ -1729,10 +1738,10 @@ const forecastTips = ref([
 // ========== 外部标讯源配置 ==========
 const showSourceConfig = ref(false)
 const sourceConfig = ref({
-  platforms: [],
+  platforms: ['中国政府采购网'],
   apiEndpoint: '',
   apiKey: '',
-  keywords: ['劳保', '安全消防', '工具耗材'],
+  keywords: [],
   regions: ['北京', '上海', '广州', '深圳'],
   minBudget: 0,
   maxBudget: 1000,
@@ -1998,6 +2007,21 @@ const handleSearch = () => {
   pagination.value.currentPage = 1
 }
 
+// 导出标讯列表
+const handleExport = () => {
+  const { exportExcel } = useExport()
+
+  const params = {
+    keyword: searchForm.value.keyword || undefined,
+    region: searchForm.value.region || undefined,
+    industry: searchForm.value.industry || undefined,
+    status: searchForm.value.status || undefined,
+    source: searchForm.value.source || undefined
+  }
+
+  exportExcel(ExportType.TENDERS, params, '标讯列表导出成功')
+}
+
 const handleReset = () => {
   searchForm.value = {
     keyword: '',
@@ -2217,6 +2241,11 @@ const handleDistribute = async () => {
 // ========== 批量操作相关 ==========
 
 const handleBatchClaim = async () => {
+  if (selectedTenders.value.length === 0) {
+    ElMessage.warning('请先选择要领取的标讯')
+    return
+  }
+
   try {
     await ElMessageBox.confirm(
       `确定要领取选中的 ${selectedTenders.value.length} 条标讯吗？领取后将由您跟进此标讯。`,
@@ -2228,17 +2257,38 @@ const handleBatchClaim = async () => {
       }
     )
 
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const tenderIds = selectedTenders.value.map(t => t.id)
+    const userId = userStore.user?.id || 'U001'
 
-    ElMessage.success(`成功领取 ${selectedTenders.value.length} 条标讯`)
-    handleClearSelection()
-  } catch {
-    // 用户取消
+    const result = await tendersApi.batchClaim(tenderIds, userId)
+
+    if (result.success) {
+      // 更新本地数据状态
+      selectedTenders.value.forEach(tender => {
+        tender.status = 'following'
+        tender.assignee = userId
+      })
+
+      ElMessage.success(`成功领取 ${result.data?.claimed || tenderIds.length} 条标讯`)
+      handleClearSelection()
+      // 刷新列表数据
+      await biddingStore.getTenders()
+    } else {
+      ElMessage.error(result.message || '领取失败，请重试')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('领取失败，请重试')
+    }
   }
 }
 
 const handleBatchFollow = async () => {
+  if (selectedTenders.value.length === 0) {
+    ElMessage.warning('请先选择要关注的标讯')
+    return
+  }
+
   const newFollows = selectedTenders.value
     .filter(t => !followedTenders.value.includes(t.id))
     .map(t => t.id)
@@ -2248,9 +2298,24 @@ const handleBatchFollow = async () => {
     return
   }
 
-  followedTenders.value.push(...newFollows)
-  ElMessage.success(`已关注 ${newFollows.length} 条标讯`)
-  handleClearSelection()
+  // 使用批量更新状态API
+  const tenderIds = selectedTenders.value.map(t => t.id)
+  const result = await tendersApi.batchUpdateStatus(tenderIds, 'following')
+
+  if (result.success) {
+    followedTenders.value.push(...newFollows)
+    // 更新本地数据状态
+    selectedTenders.value.forEach(tender => {
+      tender.status = 'following'
+    })
+
+    ElMessage.success(`已关注 ${result.data?.updated || newFollows.length} 条标讯`)
+    handleClearSelection()
+    // 刷新列表数据
+    await biddingStore.getTenders()
+  } else {
+    ElMessage.error(result.message || '关注失败，请重试')
+  }
 }
 
 // ========== 行操作相关 ==========
@@ -2327,26 +2392,42 @@ const handleAssign = async () => {
   assignLoading.value = true
 
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 800))
+    // 使用批量分配API
+    const result = await tendersApi.batchAssign(
+      [assignForm.value.tenderId],
+      assignForm.value.assignee
+    )
 
-    // 添加到分发记录
-    distributeRecords.value.unshift({
-      tenderTitle: assignForm.value.tenderTitle,
-      assignee: salesMap[assignForm.value.assignee],
-      type: 'manual',
-      time: new Date().toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      operator: '当前用户'
-    })
+    if (result.success) {
+      // 更新本地数据
+      const tender = biddingStore.tenders?.find(t => t.id === assignForm.value.tenderId)
+      if (tender) {
+        tender.assignee = assignForm.value.assignee
+        tender.status = 'contacted'
+      }
 
-    ElMessage.success(`已将"${assignForm.value.tenderTitle}"指派给${salesMap[assignForm.value.assignee]}`)
-    showAssignDialog.value = false
+      // 添加到分发记录
+      distributeRecords.value.unshift({
+        tenderTitle: assignForm.value.tenderTitle,
+        assignee: salesMap[assignForm.value.assignee],
+        type: 'manual',
+        time: new Date().toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        operator: '当前用户'
+      })
+
+      ElMessage.success(`已将"${assignForm.value.tenderTitle}"指派给${salesMap[assignForm.value.assignee]}`)
+      showAssignDialog.value = false
+      // 刷新列表数据
+      await biddingStore.getTenders()
+    } else {
+      ElMessage.error(result.message || '指派失败，请重试')
+    }
   } catch (error) {
     ElMessage.error('指派失败，请重试')
   } finally {
@@ -2691,6 +2772,9 @@ const loadTrendRadarData = async () => {
       getStatsSummary()
     ])
 
+    // 如果没有真实数据且在 mock 模式下，直接使用默认 fallback 数据
+    const isMock = isMockMode()
+
     // 只有在有真实数据且经过过滤后仍有数据时才更新
     if (topics && topics.length > 0) {
       const filteredTopics = topics.filter(t => {
@@ -2721,21 +2805,38 @@ const loadTrendRadarData = async () => {
 
         trendDataLoaded.value = true
 
-        ElMessage.success({
-          message: `已加载 ${filteredTopics.length} 条跨平台热点数据`,
-          duration: 2000
-        })
+        // Mock 模式下提示信息更友好
+        if (isMock) {
+          ElMessage.success({
+            message: '已加载 AI 模型模拟的市场分析数据',
+            duration: 2000
+          })
+        } else {
+          ElMessage.success({
+            message: `已从 TrendRadar 加载 ${filteredTopics.length} 条热点趋势数据`,
+            duration: 2000
+          })
+        }
       } else {
-        // 过滤后没有数据，使用 mock 数据
-        ElMessage.info('当前热点均为非工业相关内容，展示默认MRO分类数据')
+        // 过滤后没有数据
+        if (isMock) {
+          trendDataLoaded.value = true
+        } else {
+          ElMessage.info('当前实时热点均为非工业相关内容，已展示推荐 MRO 趋势')
+        }
       }
     } else {
-      ElMessage.info('TrendRadar 暂无数据，展示默认MRO分类数据')
+      // 完全没有返回数据
+      if (isMock) {
+        trendDataLoaded.value = true
+      } else {
+        ElMessage.info('TrendRadar 暂时无法返回实时数据，已加载基准市场洞察')
+      }
     }
   } catch (error) {
     console.error('加载 TrendRadar 数据失败:', error)
-    // 连接失败时保留 mock 数据，不提示错误
-    ElMessage.warning('趋势分析服务暂时不可用，展示默认MRO分类数据')
+    // 连接失败时静默保留 mock 数据，不弹出警告干扰用户
+    trendDataLoaded.value = true
   } finally {
     loadingTrendData.value = false
   }
@@ -3805,91 +3906,95 @@ const handleOpportunityAction = (id) => {
   transform: translateY(0);
 }
 
-/* 查看详情按钮 */
+/* 查看详情按钮 - High Contrast */
 .action-btn.btn-view {
-  color: #0369A1;
+  color: #0066CC;
   border-color: #BAE6FD;
   background: #F0F9FF;
+  font-weight: 500;
 }
 
 .action-btn.btn-view:hover {
   background: #E0F2FE !important;
-  border-color: #7DD3FC !important;
-  color: #0284C7 !important;
-  box-shadow: 0 4px 8px rgba(3, 105, 161, 0.2);
+  border-color: #0066CC !important;
+  color: #004499 !important;
+  box-shadow: 0 4px 8px rgba(0, 102, 204, 0.15);
 }
 
 /* AI分析按钮 */
 .action-btn.btn-analyze {
-  color: #7C3AED;
+  color: #6D28D9;
   border-color: #DDD6FE;
   background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%);
+  font-weight: 500;
 }
 
 .action-btn.btn-analyze:hover {
   background: linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%) !important;
-  border-color: #C4B5FD !important;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  border-color: #6D28D9 !important;
+  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.2);
 }
 
-/* 参与投标按钮 - 主操作 */
+/* 参与投标按钮 - Primary Action with High Legibility */
 .action-btn.btn-participate {
-  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%) !important;
-  color: #fff !important;
+  background: linear-gradient(135deg, #0066CC 0%, #004499 100%) !important;
+  color: #FFFFFF !important;
   border: none !important;
-  box-shadow: 0 2px 6px rgba(3, 105, 161, 0.25);
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 102, 204, 0.3);
 }
 
 .action-btn.btn-participate:hover {
-  background: linear-gradient(135deg, #0479b8 0%, #09a8c9 100%) !important;
-  box-shadow: 0 6px 14px rgba(3, 105, 161, 0.4);
-  transform: translateY(-2px) scale(1.05);
+  background: linear-gradient(135deg, #0055BB 0%, #003388 100%) !important;
+  box-shadow: 0 6px 16px rgba(0, 102, 204, 0.45);
+  transform: translateY(-2px);
 }
 
 /* 更多按钮 */
 .action-btn.btn-more {
-  color: #94A3B8;
+  color: #64748B;
   border-color: #E2E8F0;
 }
 
 .action-btn.btn-more:hover {
-  background: #F8FAFC !important;
+  background: #F1F5F9 !important;
   border-color: #CBD5E1 !important;
-  color: #64748B !important;
+  color: #334155 !important;
 }
 
 /* ==================== Dropdown Menu Styles ==================== */
 
 .bidding-action-menu {
-  min-width: 160px;
-  padding: 6px 0;
-  border-radius: 10px;
+  min-width: 180px;
+  padding: 8px 0;
+  border-radius: 12px;
   border: 1px solid #E2E8F0;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
 }
 
 .bidding-action-menu .el-dropdown-menu__item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
+  gap: 12px;
+  padding: 12px 20px;
   font-size: 14px;
-  color: #475569;
-  transition: all 0.2s;
+  color: #334155;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .bidding-action-menu .el-dropdown-menu__item:hover {
-  background: #F8FAFC;
-  color: #0369A1;
+  background: #F0F9FF;
+  color: #0066CC;
 }
 
 .bidding-action-menu .el-dropdown-menu__item .el-icon {
   font-size: 16px;
   color: #94A3B8;
+  transition: color 0.2s;
 }
 
 .bidding-action-menu .el-dropdown-menu__item:hover .el-icon {
-  color: #0369A1;
+  color: #0066CC;
 }
 
 .bidding-action-menu .el-dropdown-menu__item.status-icon {

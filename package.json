@@ -4,7 +4,9 @@
   "description": "西域数智化投标管理平台POC",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "npm run dev:mock",
+    "dev:mock": "bash scripts/start-fixed-port.sh mock",
+    "dev:api": "bash scripts/start-fixed-port.sh api",
     "build": "vite build",
     "preview": "vite preview",
     "test:e2e:commercial": "npx playwright test --config playwright.config.js",

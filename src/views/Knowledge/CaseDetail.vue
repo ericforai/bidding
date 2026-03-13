@@ -158,7 +158,13 @@
 
     <!-- 空状态 -->
     <div v-if="!caseData && !loading" class="empty-container">
-      <el-empty description="案例不存在或已删除">
+      <FeaturePlaceholder
+        v-if="featurePlaceholder"
+        :title="featurePlaceholder.title"
+        :message="featurePlaceholder.message"
+        :hint="featurePlaceholder.hint"
+      />
+      <el-empty v-else description="案例不存在或已删除">
         <el-button type="primary" @click="router.push('/knowledge/case')">
           返回案例列表
         </el-button>
@@ -183,8 +189,10 @@ import {
   CircleCheckFilled
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { knowledgeApi, isMockMode } from '@/api'
+import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
+import { getFeaturePlaceholder, isFeatureUnavailableResponse, knowledgeApi, isMockMode } from '@/api'
 import { loadDemoState, saveDemoState } from '@/utils/demoPersistence'
+import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 
 const router = useRouter()
 const route = useRoute()
@@ -196,6 +204,7 @@ const relatedCasePool = ref([])
 const isEdited = ref(false)
 const shareRecords = ref([])
 const referenceRecords = ref([])
+const featurePlaceholder = ref(null)
 
 // 相关案例推荐
 const relatedCases = computed(() => {
@@ -262,10 +271,17 @@ const loadCaseDetail = async (caseId) => {
     if (!detailResult?.success || !detailResult?.data) {
       caseData.value = null
       relatedCasePool.value = []
+      featurePlaceholder.value = notifyFeatureUnavailable(detailResult, {
+        fallback: {
+          title: '案例详情暂未接入',
+          hint: '请等待真实后端开放案例详情接口，或返回案例库查看已接入列表。',
+        },
+      })
       return
     }
 
     const found = detailResult.data
+    featurePlaceholder.value = null
     caseData.value = applyCasePersistence({
       ...found,
       location: found.location || '北京',
@@ -296,6 +312,7 @@ const loadCaseDetail = async (caseId) => {
     ElMessage.error('加载案例详情失败')
     caseData.value = null
     relatedCasePool.value = []
+    featurePlaceholder.value = null
   } finally {
     loading.value = false
   }

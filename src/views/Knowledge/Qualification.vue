@@ -3,6 +3,9 @@
     <div class="page-header">
       <h2 class="page-title">资质库</h2>
       <div class="header-actions">
+        <el-button :icon="Download" @click="handleExportList">
+          导出列表
+        </el-button>
         <el-button type="primary" :icon="Upload" @click="handleUpload">
           上传资质
         </el-button>
@@ -44,7 +47,14 @@
     </el-card>
 
     <el-card class="table-card">
+      <FeaturePlaceholder
+        v-if="featurePlaceholder"
+        :title="featurePlaceholder.title"
+        :message="featurePlaceholder.message"
+        :hint="featurePlaceholder.hint"
+      />
       <el-table
+        v-else
         v-loading="loading"
         :data="filteredQualifications"
         stripe
@@ -61,7 +71,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="type" label="类型" width="120">
+        <el-table-column prop="type" label="类型" width="160">
           <template #default="{ row }">
             <el-tag :type="getTypeTagType(row.type)" size="small">
               {{ getTypeLabel(row.type) }}
@@ -87,7 +97,7 @@
 
         <el-table-column prop="issuer" label="发证机关" min-width="150" />
 
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" label="状态" width="140">
           <template #default="{ row }">
             <el-tag
               :type="getStatusTagType(row.status)"
@@ -99,7 +109,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
             <el-button
               type="primary"
@@ -111,7 +121,7 @@
               查看
             </el-button>
             <el-button
-              type="success"
+              type="primary"
               link
               :icon="Share"
               size="small"
@@ -364,7 +374,10 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-import { knowledgeApi, isMockMode } from '@/api'
+import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
+import { getFeaturePlaceholder, isFeatureUnavailableResponse, knowledgeApi, isMockMode } from '@/api'
+import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
+import { triggerDownload } from '@/api/modules/export'
 
 const userStore = useUserStore()
 const isAdmin = computed(() => userStore.currentUser?.role === 'admin')
@@ -459,6 +472,7 @@ const uploadForm = reactive({
 })
 
 const qualifications = ref([])
+const featurePlaceholder = ref(null)
 
 const loadQualifications = async () => {
   loading.value = true
@@ -467,6 +481,19 @@ const loadQualifications = async () => {
     if (result?.success) {
       qualifications.value = result.data || []
       pagination.total = qualifications.value.length
+      featurePlaceholder.value = null
+    } else {
+      qualifications.value = []
+      pagination.total = 0
+      featurePlaceholder.value = notifyFeatureUnavailable(result, {
+        fallback: {
+          title: '资质库暂未接入',
+          hint: '请先在 mock 环境演示，或等待真实后端提供资质列表接口。',
+        },
+      })
+      if (!featurePlaceholder.value && result?.message) {
+        ElMessage.error(result.message)
+      }
     }
   } finally {
     loading.value = false
@@ -602,6 +629,20 @@ const handleSearch = () => {
   pagination.page = 1
 }
 
+// 导出列表
+const handleExportList = () => {
+  const { exportExcel } = require('@/composables/useExport').useExport()
+  const { ExportType } = require('@/api')
+
+  const params = {
+    name: searchForm.name || undefined,
+    type: searchForm.type || undefined,
+    status: searchForm.status || undefined
+  }
+
+  exportExcel(ExportType.QUALIFICATIONS, params, '资质列表导出成功')
+}
+
 // 重置
 const handleReset = () => {
   searchForm.name = ''
@@ -665,7 +706,31 @@ const handleView = (row) => {
 
 // 下载
 const handleDownload = (row) => {
-  ElMessage.success(`开始下载：${row.name}`)
+  if (isMockMode() || !row.fileUrl) {
+    // Mock 模式或无文件URL时模拟下载
+    ElMessage.success(`开始下载：${row.name}`)
+    return
+  }
+
+  // API 模式：处理文件下载
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+  const filename = `${row.name}.${row.fileUrl.split('.').pop() || 'pdf'}`
+
+  fetch(row.fileUrl, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  })
+    .then(response => {
+      if (!response.ok) throw new Error('下载失败')
+      return response.blob()
+    })
+    .then(blob => {
+      triggerDownload(blob, filename)
+      ElMessage.success(`下载成功：${row.name}`)
+    })
+    .catch(error => {
+      console.error('Download error:', error)
+      ElMessage.error(`下载失败：${error.message}`)
+    })
 }
 
 // 删除

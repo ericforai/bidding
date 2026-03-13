@@ -1,5 +1,5 @@
 // Input: DashboardAnalyticsService
-// Output: REST API Endpoints
+// Output: Dashboard overview and drill-down REST API endpoints
 // Pos: Controller/控制器层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.time.LocalDate;
 import java.util.Map;
 
 /**
@@ -87,6 +88,54 @@ public class DashboardController {
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStatusDistribution() {
         Map<String, Long> distribution = dashboardAnalyticsService.getStatusDistribution();
         return ResponseEntity.ok(ApiResponse.success(distribution));
+    }
+
+    @GetMapping("/drilldown/revenue")
+    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponseDTO>> getRevenueDrillDown(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "10") Integer size
+    ) {
+        AnalyticsDrillDownResponseDTO response = dashboardAnalyticsService.getRevenueDrillDown(status, startDate, endDate, page, size);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/drilldown/win-rate")
+    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponseDTO>> getWinRateDrillDown(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "10") Integer size
+    ) {
+        AnalyticsDrillDownResponseDTO response = dashboardAnalyticsService.getWinRateDrillDown(status, startDate, endDate, page, size);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/drilldown/team")
+    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponseDTO>> getTeamDrillDown(
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "10") Integer size
+    ) {
+        AnalyticsDrillDownResponseDTO response = dashboardAnalyticsService.getTeamDrillDown(role, startDate, endDate, page, size);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/drilldown/projects")
+    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponseDTO>> getProjectDrillDown(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "10") Integer size
+    ) {
+        AnalyticsDrillDownResponseDTO response = dashboardAnalyticsService.getProjectDrillDown(status, startDate, endDate, page, size);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     /**

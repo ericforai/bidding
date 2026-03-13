@@ -5,6 +5,7 @@
 import httpClient from '../client.js'
 import { mockData } from '../mock.js'
 import { isMockMode } from '../config.js'
+import { buildFeatureUnavailableResponse } from '../featureAvailability.js'
 
 function matchesTenderField(actualValue, expectedValue) {
   return String(actualValue || '').toLowerCase() === String(expectedValue || '').toLowerCase()
@@ -43,6 +44,16 @@ function getMockTenders(params = {}) {
   return applyTenderFilters([...mockData.tenders], params)
 }
 
+function invalidApiModeId(entityName) {
+  return buildFeatureUnavailableResponse({
+    feature: `${entityName}-numeric-id`,
+    title: '当前 ID 格式暂未接入',
+    message: `Current backend only supports numeric ${entityName} IDs in API mode`,
+    hint: '请使用真实后端返回的数字 ID 访问该资源。',
+    scope: 'action',
+  })
+}
+
 export const tendersApi = {
   /**
    * 获取标讯列表
@@ -60,9 +71,7 @@ export const tendersApi = {
     const response = await httpClient.get('/api/tenders')
     const tenders = Array.isArray(response?.data) ? response.data : []
     const filteredData = applyTenderFilters(tenders, params)
-    const data = filteredData.length > 0 || tenders.length > 0
-      ? filteredData
-      : getMockTenders(params)
+    const data = filteredData
 
     return {
       ...response,
@@ -85,26 +94,10 @@ export const tendersApi = {
     }
 
     if (!isNumericId(id)) {
-      const mockTender = mockData.tenders.find((tender) => String(tender.id) === String(id))
-      return {
-        success: Boolean(mockTender),
-        data: mockTender || null,
-        message: mockTender ? '使用演示标讯数据' : 'Current backend only supports numeric tender IDs in API mode'
-      }
+      return invalidApiModeId('tender')
     }
 
-    try {
-      const response = await httpClient.get(`/api/tenders/${id}`)
-      return response?.data
-        ? response
-        : { ...response, data: mockData.tenders.find((tender) => String(tender.id) === String(id)) || null }
-    } catch (error) {
-      const mockTender = mockData.tenders.find((tender) => String(tender.id) === String(id))
-      if (mockTender) {
-        return { success: true, data: mockTender, message: '使用演示标讯数据' }
-      }
-      throw error
-    }
+    return httpClient.get(`/api/tenders/${id}`)
   },
 
   /**
@@ -129,10 +122,7 @@ export const tendersApi = {
     }
 
     if (!isNumericId(id)) {
-      return {
-        success: false,
-        message: 'Current backend only supports numeric tender IDs in API mode'
-      }
+      return invalidApiModeId('tender')
     }
 
     return httpClient.put(`/api/tenders/${id}`, data)
@@ -147,10 +137,7 @@ export const tendersApi = {
     }
 
     if (!isNumericId(id)) {
-      return {
-        success: false,
-        message: 'Current backend only supports numeric tender IDs in API mode'
-      }
+      return invalidApiModeId('tender')
     }
 
     return httpClient.delete(`/api/tenders/${id}`)
@@ -172,9 +159,130 @@ export const tendersApi = {
     }
 
     return Promise.resolve({
-      success: false,
-      message: 'Tender AI analysis payload is not aligned with the backend response yet'
+      ...buildFeatureUnavailableResponse({
+        feature: 'tender-ai-analysis',
+        title: '标讯 AI 分析暂未接入',
+        message: 'Tender AI analysis payload is not aligned with the backend response yet',
+        hint: '请先使用项目级 AI 分析能力，或等待后端补齐标讯分析接口。',
+        scope: 'section',
+      }),
     })
+  },
+
+  /**
+   * 批量认领标讯
+   */
+  async batchClaim(tenderIds, userId) {
+    if (isMockMode()) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const claimedTenders = tenderIds.map(id => {
+            const tender = mockData.tenders.find(t => t.id === id)
+            if (tender) {
+              tender.status = 'following'
+              tender.assignee = userId
+            }
+            return id
+          })
+          resolve({
+            success: true,
+            data: {
+              claimed: claimedTenders.length,
+              failed: 0,
+              tenderIds: claimedTenders
+            }
+          })
+        }, 300)
+      })
+    }
+
+    return httpClient.post('/api/tenders/batch/claim', { tenderIds, userId })
+  },
+
+  /**
+   * 批量分配标讯
+   */
+  async batchAssign(tenderIds, assigneeId) {
+    if (isMockMode()) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const assignedTenders = tenderIds.map(id => {
+            const tender = mockData.tenders.find(t => t.id === id)
+            if (tender) {
+              tender.assignee = assigneeId
+              tender.status = 'contacted'
+            }
+            return id
+          })
+          resolve({
+            success: true,
+            data: {
+              assigned: assignedTenders.length,
+              failed: 0,
+              tenderIds: assignedTenders
+            }
+          })
+        }, 300)
+      })
+    }
+
+    return httpClient.post('/api/tenders/batch/assign', { tenderIds, assigneeId })
+  },
+
+  /**
+   * 批量更新标讯状态
+   */
+  async batchUpdateStatus(tenderIds, status) {
+    if (isMockMode()) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          tenderIds.forEach(id => {
+            const tender = mockData.tenders.find(t => t.id === id)
+            if (tender) {
+              tender.status = status
+            }
+          })
+          resolve({
+            success: true,
+            data: {
+              updated: tenderIds.length,
+              failed: 0,
+              tenderIds
+            }
+          })
+        }, 300)
+      })
+    }
+
+    return httpClient.post('/api/tenders/batch/status', { tenderIds, status })
+  },
+
+  /**
+   * 批量删除标讯
+   */
+  async batchDelete(tenderIds) {
+    if (isMockMode()) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          tenderIds.forEach(id => {
+            const index = mockData.tenders.findIndex(t => t.id === id)
+            if (index !== -1) {
+              mockData.tenders.splice(index, 1)
+            }
+          })
+          resolve({
+            success: true,
+            data: {
+              deleted: tenderIds.length,
+              failed: 0,
+              tenderIds
+            }
+          })
+        }, 300)
+      })
+    }
+
+    return httpClient.post('/api/tenders/batch/delete', { tenderIds })
   }
 }
 

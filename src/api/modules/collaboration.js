@@ -5,16 +5,20 @@
 import httpClient from '../client.js'
 import { mockData } from '../mock.js'
 import { isMockMode } from '../config.js'
+import { buildFeatureUnavailableResponse, isFeatureUnavailableResponse } from '../featureAvailability.js'
 
 function isNumericId(id) {
   return /^\d+$/.test(String(id))
 }
 
 function invalidIdMessage(entityName) {
-  return {
-    success: false,
+  return buildFeatureUnavailableResponse({
+    feature: `${entityName}-numeric-id`,
+    title: '当前 ID 格式暂未接入',
     message: `Current backend only supports numeric ${entityName} IDs in API mode`,
-  }
+    hint: '请使用真实后端返回的数字 ID 访问该资源。',
+    scope: 'action',
+  })
 }
 
 function formatDateTime(value) {
@@ -235,7 +239,14 @@ export const collaborationApi = {
     }
 
     if (!isNumericId(params.projectId)) {
-      return Promise.resolve({ success: true, data: getMockThreads(), message: '使用演示协作数据' })
+      return Promise.resolve(buildFeatureUnavailableResponse({
+        feature: 'collaboration-threads',
+        title: '协作讨论暂未接入',
+        message: 'Current backend only supports numeric project IDs for collaboration threads in API mode',
+        hint: '请使用真实项目 ID 获取协作讨论。',
+        scope: 'section',
+        data: getMockThreads(),
+      }))
     }
 
     const response = await httpClient.get('/api/collaboration/threads', {
@@ -246,7 +257,7 @@ export const collaborationApi = {
 
     return {
       ...response,
-      data: apiData.length > 0 ? apiData : getMockThreads(),
+      data: apiData,
     }
   },
 
@@ -365,14 +376,21 @@ export const documentVersionsApi = {
       return Promise.resolve({ success: true, data: getMockVersions(projectId) })
     }
     if (!isNumericId(projectId)) {
-      return Promise.resolve({ success: true, data: getMockVersions(projectId), message: '使用演示版本数据' })
+      return Promise.resolve(buildFeatureUnavailableResponse({
+        feature: 'document-versions',
+        title: '文档版本暂未接入',
+        message: 'Current backend only supports numeric project IDs for document versions in API mode',
+        hint: '请使用真实项目 ID 查看文档版本。',
+        scope: 'section',
+        data: getMockVersions(projectId),
+      }))
     }
 
     const response = await httpClient.get(`/api/documents/${projectId}/versions`)
     const apiData = Array.isArray(response?.data) ? response.data.map(normalizeVersion) : []
     return {
       ...response,
-      data: apiData.length > 0 ? apiData : getMockVersions(projectId),
+      data: apiData,
     }
   },
 
@@ -399,8 +417,12 @@ export const documentVersionsApi = {
       const versions = getMockVersions(projectId)
       const version1 = versions.find((item) => String(item.id) === String(version1Id)) || versions[0] || null
       const version2 = versions.find((item) => String(item.id) === String(version2Id)) || versions[1] || versions[0] || null
-      return Promise.resolve({
-        success: true,
+      return Promise.resolve(buildFeatureUnavailableResponse({
+        feature: 'document-version-compare',
+        title: '版本对比暂未接入',
+        message: 'Current backend only supports numeric IDs for version comparison in API mode',
+        hint: '请使用真实项目与版本 ID 进行版本对比。',
+        scope: 'section',
         data: {
           version1,
           version2,
@@ -411,8 +433,7 @@ export const documentVersionsApi = {
           content1: version1?.content || '',
           content2: version2?.content || '',
         },
-        message: '使用演示版本对比数据',
-      })
+      }))
     }
 
     const versionsResponse = await documentVersionsApi.getVersions(projectId)
@@ -429,7 +450,14 @@ export const documentVersionsApi = {
       return Promise.resolve({ success: true, data: { projectId, versionId, userId } })
     }
     if (!isNumericId(projectId) || !isNumericId(versionId) || !isNumericId(userId)) {
-      return Promise.resolve({ success: true, data: { projectId, versionId, userId }, message: '使用演示版本回滚结果' })
+      return Promise.resolve(buildFeatureUnavailableResponse({
+        feature: 'document-version-rollback',
+        title: '版本回滚暂未接入',
+        message: 'Current backend only supports numeric IDs for version rollback in API mode',
+        hint: '请使用真实项目、版本和用户 ID 执行版本回滚。',
+        scope: 'action',
+        data: { projectId, versionId, userId },
+      }))
     }
 
     return httpClient.post(`/api/documents/${projectId}/versions/${versionId}/rollback`, null, {
@@ -454,8 +482,12 @@ export const documentVersionsApi = {
       })
     }
     if (!isNumericId(projectId)) {
-      return Promise.resolve({
-        success: true,
+      return Promise.resolve(buildFeatureUnavailableResponse({
+        feature: 'document-version-create',
+        title: '版本创建暂未接入',
+        message: 'Current backend only supports numeric project IDs for version creation in API mode',
+        hint: '请使用真实项目 ID 创建文档版本。',
+        scope: 'action',
         data: normalizeVersion({
           id: `v${Date.now()}`,
           version: 'new',
@@ -466,8 +498,7 @@ export const documentVersionsApi = {
           changes: [data?.changeSummary || '创建新版本'],
           content: data?.content || '',
         }),
-        message: '使用演示版本创建结果',
-      })
+      }))
     }
 
     return httpClient.post(`/api/documents/${projectId}/versions`, {
@@ -483,41 +514,55 @@ export const documentEditorApi = {
       return Promise.resolve({ success: true, data: buildMockEditorDocument(projectId) })
     }
     if (!isNumericId(projectId)) {
-      return Promise.resolve({
-        success: true,
+      return Promise.resolve(buildFeatureUnavailableResponse({
+        feature: 'document-editor',
+        title: '文档编辑暂未接入',
+        message: 'Current backend only supports numeric project IDs for document editor in API mode',
+        hint: '请使用真实项目 ID 访问文档编辑器。',
+        scope: 'section',
         data: buildMockEditorDocument(projectId),
-        message: '使用演示文档编辑数据',
+      }))
+    }
+
+    const [structureResponse, treeResponse] = await Promise.all([
+      documentEditorApi.getStructure(projectId),
+      documentEditorApi.getTree(projectId),
+    ])
+
+    if (isFeatureUnavailableResponse(structureResponse) || isFeatureUnavailableResponse(treeResponse)) {
+      const fallback = buildMockEditorDocument(projectId)
+      return buildFeatureUnavailableResponse({
+        feature: 'document-editor',
+        title: '文档编辑暂未接入',
+        message: 'Document editor depends on structure/tree endpoints that are not fully available in API mode',
+        hint: '后端文档编辑相关接口未完全接入，当前展示的是占位数据。',
+        scope: 'section',
+        data: {
+          ...fallback,
+          structureId: structureResponse?.data?.id ?? fallback.structureId,
+          templateId: structureResponse?.data?.name || fallback.templateId,
+          templateName: structureResponse?.data?.name || fallback.templateName,
+          sections: Array.isArray(treeResponse?.data)
+            ? treeResponse.data.map(normalizeApiEditorSection)
+            : fallback.sections,
+        },
       })
     }
 
-    try {
-      const [structureResponse, treeResponse] = await Promise.all([
-        documentEditorApi.getStructure(projectId),
-        documentEditorApi.getTree(projectId),
-      ])
+    const sections = Array.isArray(treeResponse?.data)
+      ? treeResponse.data.map(normalizeApiEditorSection)
+      : []
 
-      const sections = Array.isArray(treeResponse?.data)
-        ? treeResponse.data.map(normalizeApiEditorSection)
-        : []
-
-      return {
-        success: true,
-        data: {
-          structureId: structureResponse?.data?.id ?? null,
-          projectId: Number(projectId),
-          projectName: '',
-          templateId: structureResponse?.data?.name || 'API_DOCUMENT',
-          templateName: structureResponse?.data?.name || '文档结构',
-          sections,
-        },
-      }
-    } catch (error) {
-      const fallback = buildMockEditorDocument(projectId)
-      return {
-        success: true,
-        data: fallback,
-        message: '使用演示文档编辑数据',
-      }
+    return {
+      success: true,
+      data: {
+        structureId: structureResponse?.data?.id ?? null,
+        projectId: Number(projectId),
+        projectName: '',
+        templateId: structureResponse?.data?.name || 'API_DOCUMENT',
+        templateName: structureResponse?.data?.name || '文档结构',
+        sections,
+      },
     }
   },
 
@@ -528,7 +573,14 @@ export const documentEditorApi = {
     }
     if (!isNumericId(projectId)) {
       const editor = mockData.documentEditor?.[resolveMockProjectId(projectId)]
-      return Promise.resolve({ success: true, data: editor || null, message: '使用演示文档结构数据' })
+      return Promise.resolve(buildFeatureUnavailableResponse({
+        feature: 'document-structure',
+        title: '文档结构暂未接入',
+        message: 'Current backend only supports numeric project IDs for document structure in API mode',
+        hint: '请使用真实项目 ID 获取文档结构。',
+        scope: 'section',
+        data: editor || null,
+      }))
     }
 
     return httpClient.get(`/api/documents/${projectId}/editor/structure`)
@@ -697,14 +749,21 @@ export const documentEditorApi = {
       return Promise.resolve({ success: true, data: getMockSections(projectId) })
     }
     if (!isNumericId(projectId)) {
-      return Promise.resolve({ success: true, data: getMockSections(projectId), message: '使用演示章节树数据' })
+      return Promise.resolve(buildFeatureUnavailableResponse({
+        feature: 'document-section-tree',
+        title: '章节树暂未接入',
+        message: 'Current backend only supports numeric project IDs for section tree in API mode',
+        hint: '请使用真实项目 ID 获取章节树。',
+        scope: 'section',
+        data: getMockSections(projectId),
+      }))
     }
 
     const response = await httpClient.get(`/api/documents/${projectId}/editor/sections/tree`)
     const apiData = Array.isArray(response?.data) ? response.data.map(normalizeSection) : []
     return {
       ...response,
-      data: apiData.length > 0 ? apiData : getMockSections(projectId),
+      data: apiData,
     }
   },
 
@@ -713,11 +772,14 @@ export const documentEditorApi = {
       return Promise.resolve({ success: true, data: buildMockEditorDocument(projectId).sections })
     }
     if (!isNumericId(projectId)) {
-      return Promise.resolve({
-        success: true,
+      return Promise.resolve(buildFeatureUnavailableResponse({
+        feature: 'document-editor-tree',
+        title: '编辑章节树暂未接入',
+        message: 'Current backend only supports numeric project IDs for editor section tree in API mode',
+        hint: '请使用真实项目 ID 获取编辑章节树。',
+        scope: 'section',
         data: buildMockEditorDocument(projectId).sections,
-        message: '使用演示章节树数据',
-      })
+      }))
     }
 
     const response = await httpClient.get(`/api/documents/${projectId}/editor/sections/tree`)
@@ -735,7 +797,14 @@ export const documentExportApi = {
       return Promise.resolve({ success: true, data: [] })
     }
     if (!isNumericId(projectId)) {
-      return Promise.resolve({ success: true, data: [], message: '使用演示导出记录' })
+      return Promise.resolve(buildFeatureUnavailableResponse({
+        feature: 'document-export-records',
+        title: '导出记录暂未接入',
+        message: 'Current backend only supports numeric project IDs for export records in API mode',
+        hint: '请使用真实项目 ID 查看导出记录。',
+        scope: 'section',
+        data: [],
+      }))
     }
 
     return httpClient.get(`/api/documents/${projectId}/exports`)
@@ -777,7 +846,14 @@ export const documentExportApi = {
       return Promise.resolve({ success: true, data: [] })
     }
     if (!isNumericId(projectId)) {
-      return Promise.resolve({ success: true, data: [], message: '使用演示归档记录' })
+      return Promise.resolve(buildFeatureUnavailableResponse({
+        feature: 'document-archive-records',
+        title: '归档记录暂未接入',
+        message: 'Current backend only supports numeric project IDs for archive records in API mode',
+        hint: '请使用真实项目 ID 查看归档记录。',
+        scope: 'section',
+        data: [],
+      }))
     }
 
     return httpClient.get(`/api/documents/${projectId}/archive-records`)

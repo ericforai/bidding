@@ -17,6 +17,16 @@
       </div>
     </div>
 
+    <el-alert
+      v-if="editorFeaturePlaceholder"
+      :title="editorFeaturePlaceholder.title"
+      :description="editorFeaturePlaceholder.hint || editorFeaturePlaceholder.message"
+      type="warning"
+      :closable="false"
+      show-icon
+      class="feature-alert"
+    />
+
     <!-- 三栏布局 -->
     <div class="editor-container">
       <!-- 左侧章节树 -->
@@ -287,7 +297,8 @@ import {
   Loading
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { collaborationApi, projectsApi } from '@/api'
+import { buildFeatureUnavailableResponse, collaborationApi, projectsApi } from '@/api'
+import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 
 const router = useRouter()
 const route = useRoute()
@@ -433,6 +444,7 @@ const assemblySteps = ref([
 const assemblyHistory = ref([])
 const exportHistory = ref([])
 const archiveHistory = ref([])
+const editorFeaturePlaceholder = ref(null)
 
 // 章节对话框
 const showSectionDialog = ref(false)
@@ -582,7 +594,16 @@ const loadEditorData = async () => {
     }
   } catch (error) {
     console.warn('加载文档编辑器真实数据失败，保留演示数据:', error.message)
-    ElMessage.warning('文档结构加载失败，已保留演示数据')
+    editorFeaturePlaceholder.value = notifyFeatureUnavailable(
+      buildFeatureUnavailableResponse({
+        feature: 'document-editor-remote-structure',
+        title: '文档编辑真实结构暂未接入',
+        message: '文档结构加载失败，已保留演示数据',
+        hint: '当前仍可继续编辑演示章节，但不会写入真实后端结构。',
+        scope: 'section',
+      }),
+      { level: 'warning' }
+    )
     const fallbackSection = findFirstEditableSection(sectionData.value.sections)
     if (fallbackSection) {
       selectSectionById(fallbackSection.id)
@@ -1059,6 +1080,17 @@ const handleGoBack = () => {
 }
 
 const handlePreview = () => {
+  if (editorFeaturePlaceholder.value) {
+    notifyFeatureUnavailable(
+      buildFeatureUnavailableResponse({
+        feature: 'document-editor-preview',
+        title: '文档预览暂为演示模式',
+        message: '当前仅能生成演示预览',
+        hint: '真实结构接入后，这里会输出真实标书预览。',
+        scope: 'action',
+      })
+    )
+  }
   const previewContent = sectionData.value.sections
     .map((section) => `${section.name}\n${section.content || ''}`)
     .join('\n\n')
@@ -1068,6 +1100,15 @@ const handlePreview = () => {
 
 const handleExport = () => {
   if (!isRemoteProjectId.value) {
+    notifyFeatureUnavailable(
+      buildFeatureUnavailableResponse({
+        feature: 'document-export',
+        title: '文档导出暂为演示模式',
+        message: '当前仅支持导出演示文档包',
+        hint: '真实项目接入后，这里会调用后端导出正式文档。',
+        scope: 'action',
+      })
+    )
     const exportContent = JSON.stringify({
       project: projectInfo.value,
       document: documentInfo.value,
@@ -1102,6 +1143,15 @@ const handleExport = () => {
 
 const handleArchive = () => {
   if (!isRemoteProjectId.value) {
+    notifyFeatureUnavailable(
+      buildFeatureUnavailableResponse({
+        feature: 'document-archive',
+        title: '文档归档暂为演示模式',
+        message: '当前仅支持演示归档',
+        hint: '真实项目接入后，这里会生成正式归档记录。',
+        scope: 'action',
+      })
+    )
     ElMessage.success('已完成演示归档')
     return
   }

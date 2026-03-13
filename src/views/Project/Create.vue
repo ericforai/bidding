@@ -384,13 +384,12 @@
             <el-icon><MagicStick /></el-icon>
             AI建议
           </el-divider>
-          <el-alert
-            v-if="scorePreviewUnavailable"
-            :title="scorePreviewMessage"
-            type="warning"
-            :closable="false"
-            show-icon
-            class="mb-12"
+          <FeaturePlaceholder
+            v-if="scorePreviewPlaceholder"
+            compact
+            :title="scorePreviewPlaceholder.title"
+            :message="scorePreviewPlaceholder.message"
+            :hint="scorePreviewPlaceholder.hint"
           />
           <ul class="suggestion-list">
             <li v-for="(suggestion, index) in aiSummary.suggestions" :key="index">
@@ -553,7 +552,9 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ScoreCoverage from '@/components/ai/ScoreCoverage.vue'
-import { aiApi, isMockMode } from '@/api'
+import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
+import { aiApi, isMockMode, tendersApi } from '@/api'
+import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 
 const router = useRouter()
 const route = useRoute()
@@ -572,10 +573,11 @@ const submitting = ref(false)
 const analyzing = ref(false)
 const showAssetCheckDialog = ref(false)
 const assetCheckResult = ref(null)
-const scorePreviewUnavailable = ref(false)
-const scorePreviewMessage = ref('')
+const scorePreviewPlaceholder = ref(null)
 const hasAiStep = true
 const lastStepIndex = hasAiStep ? 3 : 2
+const availableTenders = ref([])
+const selectedTenderId = ref(null)
 
 // 计算页面标题
 const pageTitle = computed(() => isEditMode.value ? '编辑项目' : '创建项目')
@@ -661,6 +663,47 @@ const detailRules = {
   description: [{ required: true, message: '请输入项目描述', trigger: 'blur' }]
 }
 
+const formatDateTime = (value, fallbackTime = '00:00:00') => {
+  if (!value) return ''
+  if (String(value).includes('T')) return String(value)
+  return `${value}T${fallbackTime}`
+}
+
+const resolveApiTenderId = () => {
+  const routeTenderId = route.query.tenderId
+  if (routeTenderId && /^\d+$/.test(String(routeTenderId))) {
+    return Number(routeTenderId)
+  }
+  return selectedTenderId.value || Number(availableTenders.value[0]?.id || 0) || null
+}
+
+const buildApiProjectPayload = () => {
+  const managerId = Number(userStore.currentUser?.id || 0)
+  const tenderId = resolveApiTenderId()
+  const startDate = formatDateTime(detailForm.startDate || new Date().toISOString().slice(0, 10))
+  const endDate = formatDateTime(detailForm.endDate || basicForm.deadline, '23:59:59')
+
+  if (!managerId) {
+    throw new Error('当前登录用户无有效ID，无法创建项目')
+  }
+  if (!tenderId) {
+    throw new Error('当前没有可关联的真实标讯，请先从标讯中心进入或确认 demo tenders 已加载')
+  }
+  if (!endDate) {
+    throw new Error('请填写投标截止日期或预计完工日期')
+  }
+
+  return {
+    name: basicForm.name,
+    tenderId,
+    managerId,
+    teamMembers: [managerId],
+    startDate,
+    endDate,
+    status: 'INITIATED',
+  }
+}
+
 const disabledDate = (time) => {
   return time.getTime() < Date.now() - 24 * 60 * 60 * 1000
 }
@@ -729,8 +772,7 @@ const runAIAnalysis = async () => {
       aiSummary.value = response.data.aiSummary
       scoreAnalysis.value = response.data.scoreAnalysis
       aiGeneratedTasks.value = response.data.generatedTasks
-      scorePreviewUnavailable.value = false
-      scorePreviewMessage.value = ''
+      scorePreviewPlaceholder.value = null
       ElMessage.success('AI分析完成')
     } else {
       aiSummary.value = {
@@ -744,9 +786,19 @@ const runAIAnalysis = async () => {
         gapItems: [],
       }
       aiGeneratedTasks.value = []
-      scorePreviewUnavailable.value = true
-      scorePreviewMessage.value = response?.message || '当前场景未生成评分结果，已保留后续演示分析入口'
-      ElMessage.info(scorePreviewMessage.value)
+      scorePreviewPlaceholder.value = notifyFeatureUnavailable(response, {
+        fallback: {
+          title: '评分预览暂未接入',
+          hint: '当前会继续保留项目创建流程，评分建议可在后续人工补充。',
+        },
+      }) || {
+        title: '评分预览不可用',
+        message: response?.message || '当前场景未生成评分结果',
+        hint: '项目创建流程不受影响。',
+      }
+      if (!scorePreviewPlaceholder.value.feature) {
+        ElMessage.info(scorePreviewPlaceholder.value.message)
+      }
     }
   } catch (error) {
     ElMessage.error('AI分析失败')
@@ -818,22 +870,28 @@ const handleSubmit = async () => {
           }))
       : []
 
-    const projectData = {
-      ...basicForm,
-      ...detailForm,
-      tasks: [...userTasks, ...aiTasks],
-      competitorAnalysis: competitorAnalysis.value,
-      aiAnalysis: hasAiStep
-        ? {
-            ...aiSummary.value,
-            scoreCoverage: scoreAnalysis.value
-          }
-        : null
-    }
+    const projectData = isMockMode()
+      ? {
+          ...basicForm,
+          ...detailForm,
+          tasks: [...userTasks, ...aiTasks],
+          competitorAnalysis: competitorAnalysis.value,
+          aiAnalysis: hasAiStep
+            ? {
+                ...aiSummary.value,
+                scoreCoverage: scoreAnalysis.value
+              }
+            : null
+        }
+      : buildApiProjectPayload()
 
-    await projectStore.createProject(projectData)
+    const createdProject = await projectStore.createProject(projectData)
 
     ElMessage.success('项目创建成功')
+    if (createdProject?.id) {
+      router.push(`/project/${createdProject.id}`)
+      return
+    }
     router.push('/project')
   } catch (error) {
     ElMessage.error('项目创建失败')
@@ -892,6 +950,23 @@ const goToAssetManagement = () => {
 
 // 检测编辑模式并加载项目数据
 onMounted(async () => {
+  if (!isMockMode()) {
+    if (!basicForm.manager && userStore.currentUser?.name) {
+      basicForm.manager = userStore.currentUser.name
+    }
+
+    const tenderResult = await tendersApi.getList()
+    if (tenderResult?.success) {
+      availableTenders.value = Array.isArray(tenderResult.data) ? tenderResult.data : []
+    }
+
+    if (/^\d+$/.test(String(route.query.tenderId || ''))) {
+      selectedTenderId.value = Number(route.query.tenderId)
+    } else if (availableTenders.value.length > 0) {
+      selectedTenderId.value = Number(availableTenders.value[0].id)
+    }
+  }
+
   const editId = route.query.editId
   if (editId) {
     isEditMode.value = true

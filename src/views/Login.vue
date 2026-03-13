@@ -210,7 +210,7 @@ const displayAccounts = computed(() => (
 const accountHint = computed(() => (
   isMockMode()
     ? '密码：任意输入即可'
-    : 'API 模式默认密码：XiyuDemo!2026'
+    : 'API 模式默认密码：123456'
 ))
 
 const handleLogin = async () => {

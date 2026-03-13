@@ -188,7 +188,13 @@
     </div>
 
     <el-card v-else class="empty-card" shadow="never">
-      <el-empty description="当前模式下暂无可用的 AI 分析报告" />
+      <FeaturePlaceholder
+        v-if="analysisPlaceholder"
+        :title="analysisPlaceholder.title"
+        :message="analysisPlaceholder.message"
+        :hint="analysisPlaceholder.hint"
+      />
+      <el-empty v-else description="当前模式下暂无可用的 AI 分析报告" />
     </el-card>
 
     <!-- 底部操作栏 -->
@@ -246,7 +252,9 @@ import {
   Plus
 } from '@element-plus/icons-vue'
 import WinScoreChart from '@/components/ai/WinScoreChart.vue'
+import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
 import { aiApi, isMockMode, tendersApi } from '@/api'
+import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 
 const router = useRouter()
 const route = useRoute()
@@ -283,6 +291,7 @@ const dimensionDetailsMap = {
 const tenderId = ref(route.params.id || 'T001')
 const analysisData = ref(null)
 const tenderInfo = ref(null)
+const analysisPlaceholder = ref(null)
 const expandAll = ref(false)
 const activeDimensions = ref([])
 const showParsingDialog = ref(false)
@@ -431,14 +440,21 @@ const loadAnalysis = async () => {
   const response = await aiApi.bid.getAnalysis(tenderId.value)
   if (response?.success && response.data) {
     analysisData.value = response.data
+    analysisPlaceholder.value = null
     return
   }
 
   analysisData.value = null
+  analysisPlaceholder.value = notifyFeatureUnavailable(response, {
+    fallback: {
+      title: 'AI 分析暂未接入',
+      hint: '当前仅支持查看标讯详情，AI 报告生成尚未完成真实后端接入。',
+    },
+  })
 
-  if (isApiMode) {
-    ElMessage.warning('该标讯 AI 分析尚未纳入正式交付范围，已返回标讯详情')
-    router.replace(`/bidding/${tenderId.value}`)
+  if (analysisPlaceholder.value) {
+  } else if (isApiMode) {
+    ElMessage.warning(response?.message || '该标讯 AI 分析暂不可用')
   } else {
     ElMessage.error(response?.message || 'AI 分析数据加载失败')
   }

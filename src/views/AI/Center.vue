@@ -94,6 +94,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import FeatureCard from './components/FeatureCard.vue'
 import ConfigDialog from '@/components/ai/ConfigDialog.vue'
 import { aiConfigs, getConfigById } from '@/config/ai-prompts'
+import { useExport } from '@/composables/useExport'
 
 // 图标映射表
 const iconMap = {
@@ -306,12 +307,23 @@ const handleReset = async () => {
 
 // 导出配置
 const handleExport = () => {
+  const { exportExcel } = useExport()
+
   const config = {
     prepare: prepareFeatures.value.map(f => ({ id: f.id, enabled: f.enabled })),
     compile: compileFeatures.value.map(f => ({ id: f.id, enabled: f.enabled })),
     collab: collabFeatures.value.map(f => ({ id: f.id, enabled: f.enabled }))
   }
-  console.log('Export config:', config)
+
+  // 导出配置为 JSON
+  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `AI配置_${new Date().toISOString().slice(0, 10)}.json`
+  link.click()
+  URL.revokeObjectURL(url)
+
   ElMessage.success('配置导出成功')
 }
 </script>

@@ -1,8 +1,4 @@
-/**
- * TrendRadar API 调用模块
- * 用于获取跨平台热点趋势和市场洞察数据
- * 支持 MRO 工业品分类监控
- */
+import { isMockMode } from './config'
 
 const API_BASE_URL = 'http://localhost:8080/api'
 
@@ -100,6 +96,12 @@ export async function getHealth() {
  * @param {number} minPlatforms - 最少跨平台数
  */
 export async function getBreakoutTopics(limit = 20, minPlatforms = 2) {
+  // Mock 模式直接返回模拟数据
+  if (isMockMode()) {
+    console.log('TrendRadar: 使用 Mock 模式返回热点数据')
+    return getMockTopics(limit)
+  }
+
   try {
     const response = await fetch(
       `${API_BASE_URL}/trends/breakout?limit=${limit}&min_platforms=${minPlatforms}`
@@ -200,6 +202,14 @@ export async function getPlatformMatrix() {
  * 获取统计摘要
  */
 export async function getStatsSummary() {
+  if (isMockMode()) {
+    return {
+      total_topics: 1250,
+      total_platforms: 12,
+      last_updated: new Date().toISOString()
+    }
+  }
+
   try {
     const response = await fetch(`${API_BASE_URL}/stats/summary`)
     if (!response.ok) throw new Error('获取统计失败')
@@ -208,6 +218,60 @@ export async function getStatsSummary() {
     console.error('获取统计摘要失败:', error)
     return null
   }
+}
+
+/**
+ * 获取 Mock 话题数据
+ */
+function getMockTopics(limit) {
+  const topics = [
+    {
+      normalized_title: '耐克与阿迪达斯在华供应链调整，本地采购需求激增',
+      sample_titles: ['耐克扩大在华采购', '阿迪达斯供应链向中国倾斜'],
+      platform_count: 5,
+      platforms: ['微博', '知乎', '百度', '抖音', '今日头条'],
+      momentum_score: 0.85,
+      breakout_score: 92,
+      total_appearances: 450
+    },
+    {
+      normalized_title: '工业自动化转型加速，PLC及伺服电机需求月环比增长25%',
+      sample_titles: ['PLC招标量创新高', '伺服系统国产化替代趋势'],
+      platform_count: 4,
+      platforms: ['知乎', '今日头条', '百度', '雪球'],
+      momentum_score: 0.92,
+      breakout_score: 88,
+      total_appearances: 320
+    },
+    {
+      normalized_title: '夏季防暑降温物资采购进入高峰期，劳保鞋、防护服需求旺盛',
+      sample_titles: ['劳保用品集采项目公示', '工厂夏季福利物资招标'],
+      platform_count: 3,
+      platforms: ['微博', '百度', '今日头条'],
+      momentum_score: 0.78,
+      breakout_score: 85,
+      total_appearances: 600
+    },
+    {
+      normalized_title: '新能源电池包PACK自动化产线建设热度不减',
+      sample_titles: ['锂电池自动化生产线招标', 'PACK线集成商寻觅中'],
+      platform_count: 5,
+      platforms: ['雪球', '知乎', '百度', '抖音', '今日头条'],
+      momentum_score: 0.95,
+      breakout_score: 96,
+      total_appearances: 280
+    },
+    {
+      normalized_title: '智慧物流仓储项目在二线城市加速落地，AGV搬运设备需求猛增',
+      sample_titles: ['某电商物流中心AGV招标', '智能仓储货架集采'],
+      platform_count: 4,
+      platforms: ['今日头条', '知乎', '百度', '抖音'],
+      momentum_score: 0.82,
+      breakout_score: 82,
+      total_appearances: 210
+    }
+  ]
+  return topics.slice(0, limit)
 }
 
 /**

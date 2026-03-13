@@ -86,6 +86,60 @@
           </div>
         </el-card>
 
+        <!-- 审批状态 -->
+        <el-card class="approval-status-card" v-if="approvalHistory.length > 0 || project?.status === 'reviewing'">
+          <template #header>
+            <div class="card-title">
+              <el-icon><Select /></el-icon>
+              <span>审批状态</span>
+              <el-tag v-if="currentApproval" :type="getApprovalStatusType(currentApproval.status)" size="small">
+                {{ getApprovalStatusText(currentApproval.status) }}
+              </el-tag>
+            </div>
+          </template>
+
+          <div v-if="currentApproval" class="current-approval">
+            <div class="approval-info">
+              <div class="approval-item-info">
+                <span class="label">审批类型：</span>
+                <el-tag size="small">{{ currentApproval.typeName }}</el-tag>
+              </div>
+              <div class="approval-item-info">
+                <span class="label">申请人：</span>
+                <span>{{ currentApproval.applicantName }}（{{ currentApproval.applicantDept }}）</span>
+              </div>
+              <div class="approval-item-info">
+                <span class="label">申请时间：</span>
+                <span>{{ currentApproval.submitTime }}</span>
+              </div>
+              <div class="approval-item-info" v-if="currentApproval.status === 'pending'">
+                <span class="label">当前审批人：</span>
+                <span class="approver">{{ currentApproval.currentApproverName }}</span>
+              </div>
+            </div>
+
+            <!-- 审批流程进度 -->
+            <div v-if="currentApproval.approvalNodes && currentApproval.approvalNodes.length > 0" class="approval-flow">
+              <el-steps :active="getApprovalStepIndex(currentApproval)" finish-status="success" align-center>
+                <el-step
+                  v-for="(node, index) in currentApproval.approvalNodes"
+                  :key="index"
+                  :title="node.nodeName"
+                  :description="getApprovalNodeDescription(node)"
+                />
+              </el-steps>
+            </div>
+
+            <!-- 审批操作 -->
+            <div class="approval-actions" v-if="currentApproval.status === 'pending' && canApproveCurrent">
+              <el-button type="success" :icon="CircleCheck" @click="handleQuickApprove">通过</el-button>
+              <el-button type="danger" :icon="CircleClose" @click="handleQuickReject">驳回</el-button>
+            </div>
+          </div>
+
+          <el-empty v-else description="暂无审批记录" :image-size="60" />
+        </el-card>
+
         <!-- 费用汇总 -->
         <el-card class="expense-card">
           <template #header>
@@ -888,6 +942,13 @@
               <span>{{ draftForm.preparer || userStore.userName }}</span>
             </el-form-item>
             <el-form-item label="使用模板">
+              <FeaturePlaceholder
+                v-if="templateFeaturePlaceholder"
+                compact
+                :title="templateFeaturePlaceholder.title"
+                :message="templateFeaturePlaceholder.message"
+                :hint="templateFeaturePlaceholder.hint"
+              />
               <el-select v-model="draftForm.templateId" placeholder="请选择模板" style="width: 300px;">
                 <el-option
                   v-for="tpl in templates"
@@ -1175,6 +1236,16 @@
         <el-button type="primary" @click="handleConfirmAddReviewer">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 审批对话框 -->
+    <ApprovalDialog
+      v-model:visible="approvalDialogVisible"
+      :mode="approvalMode"
+      :project-id="project?.id"
+      :project-name="project?.name"
+      :approval-type="approvalType"
+      @success="handleApprovalSuccess"
+    />
     </el-container>
   </div>
 </template>
@@ -1185,14 +1256,17 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
 import { useBarStore } from '@/stores/bar'
-import { knowledgeApi, isMockMode, projectsApi, collaborationApi } from '@/api'
+import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
+import ApprovalDialog from '@/components/common/ApprovalDialog.vue'
+import { getFeaturePlaceholder, isFeatureUnavailableResponse, knowledgeApi, isMockMode, projectsApi, collaborationApi, approvalApi } from '@/api'
 import { mockData } from '@/api/mock'
+import { triggerDownload } from '@/api/modules/export'
 import {
   Edit, DocumentChecked, Coin, InfoFilled, List, Folder, Upload, Plus,
   MagicStick, Operation, DocumentAdd, Share, Download, Bell, Clock,
   Document, CircleCheckFilled, MoreFilled, Delete, UploadFilled, VideoPlay,
   WarningFilled, QuestionFilled, ArrowRight, CircleCheck, CircleClose, Warning, User,
-  DataAnalysis
+  DataAnalysis, Select
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import TaskBoard from '@/components/common/TaskBoard.vue'
@@ -1204,6 +1278,7 @@ import CollaborationCenter from '@/components/ai/CollaborationCenter.vue'
 import ROIAnalysis from '@/components/ai/ROIAnalysis.vue'
 import AutoTasks from '@/components/ai/AutoTasks.vue'
 import MobileCard from '@/components/ai/MobileCard.vue'
+import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 
 const route = useRoute()
 const router = useRouter()
@@ -1228,6 +1303,14 @@ const downloadTextFile = (filename, content, mimeType = 'text/plain;charset=utf-
 
 // 加载状态
 const loading = ref(true)
+
+// 审批历史
+const approvalHistory = ref([])
+const approvalStatistics = ref({
+  pendingCount: 0,
+  approvedCount: 0,
+  rejectedCount: 0
+})
 
 // 资产检查结果
 const assetCheckResult = ref(null)
@@ -1341,6 +1424,7 @@ const submitForm = ref({
 
 // 模板数据
 const templates = ref([])
+const templateFeaturePlaceholder = ref(null)
 
 // 任务模板 - 根据不同项目类型自动生成任务
 const taskTemplates = {
@@ -1806,18 +1890,25 @@ const handleEdit = () => {
   router.push(`/document/editor/${route.params.id}`)
 }
 
-const handleSubmitApproval = async () => {
-  try {
-    await ElMessageBox.confirm('确认提交审批？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    await projectStore.updateProject(route.params.id, { status: 'reviewing' })
-    ElMessage.success('已提交审批')
-  } catch {
-    // 用户取消
-  }
+// ========== 审批相关 ==========
+const approvalDialogVisible = ref(false)
+const approvalMode = ref('submit')
+const currentApprovalItem = ref({})
+const approvalType = ref({
+  type: 'project_review',
+  typeId: 'project_review',
+  typeName: '立项审批'
+})
+
+const handleSubmitApproval = () => {
+  approvalMode.value = 'submit'
+  approvalDialogVisible.value = true
+}
+
+const handleApprovalSuccess = async (data) => {
+  // 更新项目状态
+  await projectStore.updateProject(route.params.id, { status: 'reviewing' })
+  ElMessage.success('审批申请已提交')
 }
 
 const handleRecordResult = () => {
@@ -2726,6 +2817,12 @@ onMounted(async () => {
   templates.value = templateResult?.success && Array.isArray(templateResult.data)
     ? templateResult.data
     : []
+  templateFeaturePlaceholder.value = notifyFeatureUnavailable(templateResult, {
+    fallback: {
+      title: '模板库暂未接入',
+      hint: '初稿编制仍可上传文件，但暂时无法从真实模板库选择模板。',
+    },
+  })
 
   if (!projectStore.currentProject) {
     projectStore.currentProject = mockData.projects.find((item) => String(item.id) === String(projectId)) || null
@@ -2754,8 +2851,82 @@ onMounted(async () => {
     }
   }
 
+  // 加载审批历史
+  await loadApprovalHistory(projectId)
+
   loading.value = false
 })
+
+// ========== 审批相关函数 ==========
+async function loadApprovalHistory(projectId) {
+  try {
+    const result = await approvalApi.getProjectApprovals(projectId)
+    if (result.success && result.data) {
+      approvalHistory.value = result.data
+    }
+
+    // 加载审批统计
+    const statsResult = await approvalApi.getApprovalStatistics()
+    if (statsResult.success && statsResult.data) {
+      approvalStatistics.value = statsResult.data
+    }
+  } catch (error) {
+    console.error('加载审批历史失败:', error)
+  }
+}
+
+// 当前进行中的审批
+const currentApproval = computed(() => {
+  return approvalHistory.value.find(a => a.status === 'pending') || approvalHistory.value[0] || null
+})
+
+// 是否可以审批当前项目
+const canApproveCurrent = computed(() => {
+  if (!currentApproval.value || currentApproval.value.status !== 'pending') return false
+  const userRole = userStore.userRole
+  // 管理员和经理可以审批
+  return userRole === 'admin' || userRole === 'manager'
+})
+
+function getApprovalStatusType(status) {
+  const map = { pending: 'warning', approved: 'success', rejected: 'danger', cancelled: 'info' }
+  return map[status] || 'info'
+}
+
+function getApprovalStatusText(status) {
+  const map = { pending: '待审批', approved: '已通过', rejected: '已驳回', cancelled: '已取消' }
+  return map[status] || status
+}
+
+function getApprovalStepIndex(approval) {
+  if (!approval.approvalNodes) return 0
+  const pendingIndex = approval.approvalNodes.findIndex(n => n.status === 'pending')
+  return pendingIndex === -1 ? approval.approvalNodes.length : pendingIndex
+}
+
+function getApprovalNodeDescription(node) {
+  if (node.status === 'approved') {
+    return `已通过 - ${node.approverName}`
+  }
+  if (node.status === 'rejected') {
+    return `已驳回 - ${node.opinion || '无'}`
+  }
+  return `待审批 - ${node.approverName}`
+}
+
+function handleQuickApprove() {
+  if (!currentApproval.value) return
+  approvalMode.value = 'approve'
+  currentApprovalItem.value = currentApproval.value
+  approvalDialogVisible.value = true
+}
+
+function handleQuickReject() {
+  if (!currentApproval.value) return
+  approvalMode.value = 'reject'
+  currentApprovalItem.value = currentApproval.value
+  approvalDialogVisible.value = true
+}
 </script>
 
 <style scoped>
@@ -2825,7 +2996,8 @@ onMounted(async () => {
 .document-card,
 .ai-card,
 .action-card,
-.timeline-card {
+.timeline-card,
+.approval-status-card {
   margin-bottom: 20px;
 }
 
@@ -3439,5 +3611,51 @@ onMounted(async () => {
 .asset-check-content .check-actions .el-button {
   flex: 1;
   min-width: 100px;
+}
+
+/* 审批状态卡片 */
+.approval-status-card .current-approval {
+  padding: 16px 0;
+}
+
+.approval-info {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 24px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.approval-item-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.approval-item-info .label {
+  color: #606266;
+  font-size: 14px;
+}
+
+.approval-item-info .approver {
+  color: #409eff;
+  font-weight: 500;
+}
+
+.approval-flow {
+  margin: 20px 0;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.approval-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
 }
 </style>

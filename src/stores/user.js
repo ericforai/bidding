@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { mockData } from '@/api/mock'
 import { authApi } from '@/api'
+import { isMockMode } from '@/api/config'
 
 // 从 localStorage 恢复用户状态
 const getSavedUser = () => {
@@ -53,8 +54,13 @@ export const useUserStore = defineStore('user', {
         return null
       }
 
-      if (this.currentUser) {
+      if (isMockMode() && this.currentUser) {
         return this.currentUser
+      }
+
+      if (!isMockMode() && String(this.token).startsWith('mock-token-')) {
+        this.logout()
+        return null
       }
 
       const result = await authApi.getCurrentUser()

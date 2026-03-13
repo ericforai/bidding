@@ -31,6 +31,7 @@
         :key="metric.key"
         class="b2b-metric-card"
         :class="'metric-' + getMetricColorClass(metric.key)"
+        @click="handleMetricOverviewClick(metric.key)"
       >
         <div class="b2b-metric-content">
           <div class="b2b-metric-label">{{ metric.label }}</div>
@@ -80,7 +81,13 @@
             <el-radio-button label="roi">ROI</el-radio-button>
           </el-radio-group>
         </div>
-        <BarChart :option="productChartOption" height="300px" @chart-click="handleProductClick" />
+        <FeaturePlaceholder
+          v-if="productLinesPlaceholder"
+          :title="productLinesPlaceholder.title"
+          :message="productLinesPlaceholder.message"
+          :hint="productLinesPlaceholder.hint"
+        />
+        <BarChart v-else :option="productChartOption" height="300px" @chart-click="handleProductClick" />
       </div>
     </div>
 
@@ -316,20 +323,143 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <el-drawer
+      v-model="metricDrawerVisible"
+      :title="metricDrawerTitle"
+      size="70%"
+      destroy-on-close
+      @close="handleMetricDrawerClose"
+    >
+      <div class="metric-drawer">
+        <FeaturePlaceholder
+          v-if="metricDrillDownPlaceholder"
+          compact
+          :title="metricDrillDownPlaceholder.title"
+          :message="metricDrillDownPlaceholder.message"
+          :hint="metricDrillDownPlaceholder.hint"
+        />
+        <template v-else>
+        <div class="metric-drawer-toolbar">
+          <div class="metric-drawer-filters">
+            <el-select
+              v-for="dimension in metricDrillDownDimensions"
+              :key="dimension.key"
+              :model-value="metricFilterValues[dimension.key] || 'ALL'"
+              size="small"
+              style="width: 180px"
+              @change="(value) => handleMetricFilterChange(dimension.key, value)"
+            >
+              <el-option
+                v-for="option in dimension.options"
+                :key="`${dimension.key}-${option.value}`"
+                :label="`${option.label}${option.count != null ? ` (${option.count})` : ''}`"
+                :value="option.value"
+              />
+            </el-select>
+          </div>
+          <el-button size="small" @click="reloadMetricDrillDown">刷新明细</el-button>
+        </div>
+
+        <div class="metric-summary-grid">
+          <div class="metric-summary-card">
+            <span class="summary-label">记录数</span>
+            <span class="summary-value">{{ metricDrillDownSummary.totalCount ?? 0 }}</span>
+          </div>
+          <div class="metric-summary-card">
+            <span class="summary-label">金额</span>
+            <span class="summary-value">{{ formatMetricAmount(metricDrillDownSummary.totalAmount) }}</span>
+          </div>
+          <div class="metric-summary-card" v-if="metricDrillDownSummary.wonCount != null">
+            <span class="summary-label">中标数</span>
+            <span class="summary-value">{{ metricDrillDownSummary.wonCount }}</span>
+          </div>
+          <div class="metric-summary-card" v-if="metricDrillDownSummary.winRate != null">
+            <span class="summary-label">中标率</span>
+            <span class="summary-value">{{ formatMetricRate(metricDrillDownSummary.winRate) }}</span>
+          </div>
+          <div class="metric-summary-card" v-if="metricDrillDownSummary.activeCount != null">
+            <span class="summary-label">进行中</span>
+            <span class="summary-value">{{ metricDrillDownSummary.activeCount }}</span>
+          </div>
+          <div class="metric-summary-card" v-if="metricDrillDownSummary.totalTeamMembers != null">
+            <span class="summary-label">成员数</span>
+            <span class="summary-value">{{ metricDrillDownSummary.totalTeamMembers }}</span>
+          </div>
+          <div class="metric-summary-card" v-if="metricDrillDownSummary.totalCompletedTasks != null">
+            <span class="summary-label">已完成任务</span>
+            <span class="summary-value">{{ metricDrillDownSummary.totalCompletedTasks }}</span>
+          </div>
+          <div class="metric-summary-card" v-if="metricDrillDownSummary.totalOverdueTasks != null">
+            <span class="summary-label">逾期任务</span>
+            <span class="summary-value">{{ metricDrillDownSummary.totalOverdueTasks }}</span>
+          </div>
+          <div class="metric-summary-card" v-if="metricDrillDownSummary.averageTaskCompletionRate != null">
+            <span class="summary-label">平均完成率</span>
+            <span class="summary-value">{{ formatMetricRate(metricDrillDownSummary.averageTaskCompletionRate) }}</span>
+          </div>
+        </div>
+
+        <el-table v-loading="metricDrillDownLoading" :data="metricDrillDownItems" stripe>
+          <el-table-column
+            v-for="column in metricDrillDownColumns"
+            :key="column.key"
+            :prop="column.key"
+            :label="column.label"
+            :min-width="column.minWidth || 120"
+            :width="column.width"
+            :show-overflow-tooltip="column.overflow !== false"
+          >
+            <template #default="{ row }">
+              <el-tag v-if="column.type === 'status'" size="small" :type="getMetricStatusTagType(row[column.key], metricDrawerType)">
+                {{ formatMetricCell(column, row[column.key]) }}
+              </el-tag>
+              <span v-else>
+                {{ formatMetricCell(column, row[column.key], row) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="hasMetricDrillDownAction" label="操作" width="100" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="primary" size="small" @click="handleMetricRowAction(row)">
+                查看详情
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div class="metric-drawer-pagination">
+          <el-pagination
+            background
+            layout="total, prev, pager, next"
+            :current-page="metricPagination.page || 1"
+            :page-size="metricPagination.size || 10"
+            :total="metricPagination.total || 0"
+            @current-change="handleMetricPageChange"
+          />
+        </div>
+        </template>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, markRaw } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Download, Document, FolderOpened, User, Loading } from '@element-plus/icons-vue'
-import { dashboardApi, projectsApi, mockData, isMockMode } from '@/api'
+import { dashboardApi, projectsApi, mockData, isMockMode, getFeaturePlaceholder, isFeatureUnavailableResponse } from '@/api'
 import LineChart from '@/components/charts/LineChart.vue'
 import PieChart from '@/components/charts/PieChart.vue'
 import BarChart from '@/components/charts/BarChart.vue'
+import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
+import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
+import { useExport } from '@/composables/useExport'
+import { ExportType } from '@/api'
 
 const router = useRouter()
+const route = useRoute()
 
 // Data
 const loading = ref(true)
@@ -356,6 +486,15 @@ const drillDownData = ref({
 })
 const currentDrillDownContext = ref(null)
 const isDemoMode = isMockMode()
+const metricDrawerVisible = ref(false)
+const metricDrawerType = ref('')
+const metricDrawerTitle = ref('')
+const metricDrillDownLoading = ref(false)
+const metricDrillDownResponse = ref(null)
+const metricDrillDownPlaceholder = ref(null)
+const metricFilterValues = ref({})
+const metricPaginationState = ref({ page: 1, size: 10 })
+const pageFeaturePlaceholders = ref({})
 
 // Metrics configuration
 const metrics = computed(() => {
@@ -398,12 +537,125 @@ const metrics = computed(() => {
   ]
 })
 
+const metricTypeByCardKey = {
+  bids: 'projects',
+  winRate: 'win-rate',
+  amount: 'revenue',
+  cost: 'projects',
+}
+
+const metricTitleMap = {
+  revenue: '中标金额明细',
+  'win-rate': '中标率明细',
+  team: '人员绩效明细',
+  projects: '进行中项目明细',
+}
+
+const metricDrillDownItems = computed(() => metricDrillDownResponse.value?.items || [])
+const metricDrillDownSummary = computed(() => metricDrillDownResponse.value?.summary || {})
+const metricDrillDownDimensions = computed(() => metricDrillDownResponse.value?.filters?.dimensions || [])
+const metricPagination = computed(() => metricDrillDownResponse.value?.pagination || metricPaginationState.value)
+const hasMetricDrillDownAction = computed(() => ['revenue', 'win-rate', 'projects'].includes(metricDrawerType.value))
+const productLinesPlaceholder = computed(() => pageFeaturePlaceholders.value.productLines || null)
+
+const buildEmptyDashboardData = () => ({
+  totalBids: 0,
+  totalBidsChange: '--',
+  inProgress: 0,
+  wonThisYear: 0,
+  winRate: 0,
+  winRateChange: '--',
+  totalAmount: 0,
+  totalAmountChange: '--',
+  totalCost: 0,
+  totalCostChange: '--',
+  trendData: [],
+  competitors: [],
+  productLines: [],
+  regionData: [],
+  statusDistribution: {},
+  backendSummary: {
+    activeProjects: 0,
+    pendingTasks: 0,
+  },
+})
+
+const buildEmptyMetricDrillDownResponse = () => ({
+  items: [],
+  summary: { totalCount: 0, totalAmount: 0 },
+  filters: { dimensions: [] },
+  pagination: { page: 1, size: metricPaginationState.value.size || 10, total: 0, totalPages: 0, hasNext: false },
+})
+
+const metricDrillDownColumns = computed(() => {
+  const columnMap = {
+    revenue: [
+      { key: 'title', label: '标讯名称', minWidth: 240 },
+      { key: 'subtitle', label: '来源/区域', minWidth: 120 },
+      { key: 'status', label: '状态', width: 120, type: 'status' },
+      { key: 'ownerName', label: '关联项目', minWidth: 200 },
+      { key: 'score', label: 'AI评分', width: 100 },
+      { key: 'amount', label: '金额(万)', width: 120, type: 'amount' },
+      { key: 'createdAt', label: '创建时间', minWidth: 140, type: 'datetime' },
+      { key: 'deadline', label: '截止时间', minWidth: 140, type: 'datetime' },
+    ],
+    'win-rate': [
+      { key: 'title', label: '标讯名称', minWidth: 220 },
+      { key: 'subtitle', label: '关联项目', minWidth: 200 },
+      { key: 'outcome', label: '结果', width: 120, type: 'status' },
+      { key: 'ownerName', label: '负责人', width: 120 },
+      { key: 'amount', label: '金额(万)', width: 120, type: 'amount' },
+      { key: 'rate', label: '命中率', width: 100, type: 'rate' },
+      { key: 'createdAt', label: '创建时间', minWidth: 140, type: 'datetime' },
+    ],
+    team: [
+      { key: 'title', label: '成员', width: 120 },
+      { key: 'subtitle', label: '邮箱/部门', minWidth: 180 },
+      { key: 'role', label: '角色', width: 120, type: 'status' },
+      { key: 'count', label: '参与项目', width: 100 },
+      { key: 'wonCount', label: '中标项目', width: 100 },
+      { key: 'activeProjectCount', label: '进行中项目', width: 110 },
+      { key: 'managedProjectCount', label: '负责项目', width: 100 },
+      { key: 'completedTaskCount', label: '已完成任务', width: 110 },
+      { key: 'overdueTaskCount', label: '逾期任务', width: 100 },
+      { key: 'taskCompletionRate', label: '任务完成率', width: 110, type: 'rate' },
+      { key: 'rate', label: '中标率', width: 100, type: 'rate' },
+      { key: 'score', label: '绩效分', width: 90 },
+      { key: 'amount', label: '累计金额(万)', width: 140, type: 'amount' },
+    ],
+    projects: [
+      { key: 'title', label: '项目名称', minWidth: 220 },
+      { key: 'subtitle', label: '标讯/客户', minWidth: 220 },
+      { key: 'status', label: '状态', width: 120, type: 'status' },
+      { key: 'ownerName', label: '负责人', width: 120 },
+      { key: 'teamSize', label: '团队规模', width: 100 },
+      { key: 'amount', label: '预算(万)', width: 120, type: 'amount' },
+      { key: 'createdAt', label: '开始时间', minWidth: 140, type: 'datetime' },
+      { key: 'deadline', label: '截止时间', minWidth: 140, type: 'datetime' },
+    ],
+  }
+
+  return columnMap[metricDrawerType.value] || []
+})
+
 // Format amount to display
 const formatAmount = (amount) => {
   if (amount >= 10000) {
     return (amount / 10000).toFixed(1) + '亿'
   }
   return amount + '万'
+}
+
+const formatMetricAmount = (amount) => {
+  const numeric = Number(amount || 0)
+  return `${numeric.toLocaleString('zh-CN')}万`
+}
+
+const formatMetricRate = (rate) => `${Number(rate || 0).toFixed(1)}%`
+
+const formatMetricDateTime = (value) => {
+  if (!value) return '-'
+  return String(value).replace('T', ' ').slice(0, 16)
 }
 
 // Helper function for metric color class
@@ -720,22 +972,288 @@ const regionChartOption = computed(() => {
 // Load data
 const loadData = async () => {
   loading.value = true
+  pageFeaturePlaceholders.value = {}
   try {
     const response = await dashboardApi.getOverview()
     if (!response?.success) {
       throw new Error(response?.message || '加载数据失败')
     }
-    dashboardData.value = response.data
+    const nextData = {
+      ...buildEmptyDashboardData(),
+      ...(response.data || {}),
+    }
+
+    const productLinesResponse = await dashboardApi.getProductLines()
+    if (productLinesResponse?.success) {
+      nextData.productLines = Array.isArray(productLinesResponse.data) ? productLinesResponse.data : []
+    } else if (isFeatureUnavailableResponse(productLinesResponse)) {
+      const placeholder = notifyFeatureUnavailable(productLinesResponse, {
+        fallback: {
+          title: '产品线分析暂未接入',
+          hint: '当前页其余指标仍基于真实后端数据加载。',
+        },
+        level: 'warning',
+      })
+      pageFeaturePlaceholders.value = {
+        ...pageFeaturePlaceholders.value,
+        productLines: placeholder || getFeaturePlaceholder(productLinesResponse),
+      }
+      nextData.productLines = []
+    } else if (productLinesResponse?.message) {
+      ElMessage.warning(productLinesResponse.message)
+      nextData.productLines = []
+    }
+
+    dashboardData.value = nextData
   } catch (error) {
+    dashboardData.value = buildEmptyDashboardData()
     ElMessage.error(error?.message || '加载数据失败')
   } finally {
     loading.value = false
   }
 }
 
+const buildMetricDrillDownParams = () => {
+  const [startDate, endDate] = Array.isArray(dateRange.value) ? dateRange.value : []
+  const params = {
+    page: metricPaginationState.value.page,
+    size: metricPaginationState.value.size,
+  }
+
+  if (startDate) {
+    params.startDate = new Date(startDate).toISOString().slice(0, 10)
+  }
+  if (endDate) {
+    params.endDate = new Date(endDate).toISOString().slice(0, 10)
+  }
+
+  Object.entries(metricFilterValues.value).forEach(([key, value]) => {
+    if (value && value !== 'ALL') {
+      if (key === 'status' && metricDrawerType.value === 'projects') {
+        params.status = value
+        return
+      }
+      params[key] = value
+    }
+  })
+
+  return params
+}
+
+const openMetricDrillDown = async (type, options = {}) => {
+  metricDrawerType.value = type
+  metricDrawerTitle.value = metricTitleMap[type] || '明细'
+  metricDrawerVisible.value = true
+  metricDrillDownLoading.value = true
+  metricDrillDownPlaceholder.value = null
+
+  if (options.resetPaging !== false) {
+    metricPaginationState.value = { page: 1, size: metricPaginationState.value.size || 10 }
+  }
+  if (options.filters) {
+    metricFilterValues.value = { ...options.filters }
+  }
+
+  try {
+    const response = await dashboardApi.getDrillDown(type, buildMetricDrillDownParams())
+    if (isFeatureUnavailableResponse(response)) {
+      metricDrillDownResponse.value = buildEmptyMetricDrillDownResponse()
+      metricDrillDownPlaceholder.value = notifyFeatureUnavailable(response, {
+        fallback: {
+          title: '下钻明细暂未接入',
+          hint: '请从已接入的指标卡片进入真实明细。',
+        },
+      }) || getFeaturePlaceholder(response)
+      return
+    }
+    if (!response?.success) {
+      throw new Error(response?.message || '加载下钻明细失败')
+    }
+    metricDrillDownResponse.value = response.data
+
+    const nextFilters = {}
+    ;(response.data?.filters?.dimensions || []).forEach((dimension) => {
+      nextFilters[dimension.key] = metricFilterValues.value[dimension.key] || dimension.selectedValue || 'ALL'
+    })
+    metricFilterValues.value = nextFilters
+  } catch (error) {
+    ElMessage.error(error?.message || '加载下钻明细失败')
+  } finally {
+    metricDrillDownLoading.value = false
+  }
+}
+
+const syncMetricQuery = async (type, extraQuery = {}) => {
+  if (!type) return
+  await router.replace({
+    path: '/analytics/dashboard',
+    query: {
+      ...route.query,
+      drilldown: type,
+      ...extraQuery,
+    },
+  })
+}
+
+const clearMetricQuery = async () => {
+  const nextQuery = { ...route.query }
+  delete nextQuery.drilldown
+  delete nextQuery.status
+  delete nextQuery.role
+  await router.replace({ path: '/analytics/dashboard', query: nextQuery })
+}
+
+const handleMetricOverviewClick = async (metricKey) => {
+  const type = metricTypeByCardKey[metricKey]
+  if (!type) return
+  await syncMetricQuery(type)
+}
+
+const handleMetricFilterChange = async (key, value) => {
+  metricFilterValues.value = {
+    ...metricFilterValues.value,
+    [key]: value,
+  }
+  metricPaginationState.value = {
+    ...metricPaginationState.value,
+    page: 1,
+  }
+
+  const extraQuery = {}
+  if (key === 'status') extraQuery.status = value === 'ALL' ? undefined : value
+  if (key === 'role') extraQuery.role = value === 'ALL' ? undefined : value
+  await syncMetricQuery(metricDrawerType.value, extraQuery)
+}
+
+const reloadMetricDrillDown = async () => {
+  if (!metricDrawerType.value) return
+  await openMetricDrillDown(metricDrawerType.value, { resetPaging: false })
+}
+
+const handleMetricPageChange = async (page) => {
+  metricPaginationState.value = {
+    ...metricPaginationState.value,
+    page,
+  }
+  await openMetricDrillDown(metricDrawerType.value, { resetPaging: false })
+}
+
+const handleMetricDrawerClose = async () => {
+  metricDrillDownResponse.value = null
+  metricDrillDownPlaceholder.value = null
+  metricDrawerType.value = ''
+  metricDrawerTitle.value = ''
+  metricFilterValues.value = {}
+  metricPaginationState.value = { page: 1, size: 10 }
+  await clearMetricQuery()
+}
+
+const formatMetricCell = (column, value, row = {}) => {
+  if (value == null || value === '') return '-'
+
+  if (column.type === 'amount') {
+    return formatMetricAmount(value)
+  }
+  if (column.type === 'rate') {
+    return formatMetricRate(value)
+  }
+  if (column.type === 'datetime') {
+    return formatMetricDateTime(value)
+  }
+  if (column.type === 'status') {
+    if (metricDrawerType.value === 'revenue' && column.key === 'status') {
+      return getStatusText(String(value).toLowerCase())
+    }
+    if (metricDrawerType.value === 'projects' && column.key === 'status') {
+      return {
+        INITIATED: '已启动',
+        PREPARING: '准备中',
+        REVIEWING: '审核中',
+        SEALING: '封装中',
+        BIDDING: '投标中',
+        ARCHIVED: '已归档',
+      }[value] || value
+    }
+    if (metricDrawerType.value === 'win-rate' && column.key === 'outcome') {
+      return {
+        WON: '已中标',
+        LOST: '未中标',
+        IN_PROGRESS: '进行中',
+      }[value] || value
+    }
+    if (metricDrawerType.value === 'team' && column.key === 'role') {
+      return {
+        ADMIN: '管理员',
+        MANAGER: '经理',
+        STAFF: '员工',
+      }[value] || value
+    }
+  }
+
+  if (column.key === 'subtitle' && metricDrawerType.value === 'projects' && row.relatedId) {
+    return `${value}`
+  }
+
+  return value
+}
+
+const getMetricStatusTagType = (value, type) => {
+  if (type === 'revenue') {
+    return {
+      PENDING: 'info',
+      TRACKING: 'warning',
+      BIDDED: 'success',
+      ABANDONED: 'danger',
+    }[value] || 'info'
+  }
+  if (type === 'projects') {
+    return {
+      INITIATED: 'info',
+      PREPARING: 'warning',
+      REVIEWING: 'primary',
+      SEALING: 'warning',
+      BIDDING: 'success',
+      ARCHIVED: 'info',
+    }[value] || 'info'
+  }
+  if (type === 'win-rate') {
+    return {
+      WON: 'success',
+      LOST: 'danger',
+      IN_PROGRESS: 'warning',
+    }[value] || 'info'
+  }
+  if (type === 'team') {
+    return {
+      ADMIN: 'danger',
+      MANAGER: 'primary',
+      STAFF: 'success',
+    }[value] || 'info'
+  }
+  return 'info'
+}
+
+const handleMetricRowAction = (row) => {
+  if (metricDrawerType.value === 'projects') {
+    router.push({ name: 'ProjectDetail', params: { id: row.id } })
+    return
+  }
+
+  const projectId = row.relatedId || row.id
+  if (projectId) {
+    router.push({ name: 'ProjectDetail', params: { id: projectId } })
+  }
+}
+
 // Event handlers
 const handleDateChange = () => {
-  // Filter data by date range
+  if (metricDrawerVisible.value && metricDrawerType.value) {
+    metricPaginationState.value = {
+      ...metricPaginationState.value,
+      page: 1,
+    }
+    openMetricDrillDown(metricDrawerType.value, { resetPaging: false })
+  }
   ElMessage.info('日期范围已更新')
 }
 
@@ -745,7 +1263,15 @@ const refreshData = async () => {
 }
 
 const exportData = () => {
-  ElMessage.success('数据导出中...')
+  const { exportExcel } = useExport()
+
+  // 构建导出参数
+  const params = {
+    startDate: dateRange.value?.[0] || null,
+    endDate: dateRange.value?.[1] || null
+  }
+
+  exportExcel(ExportType.DASHBOARD_OVERVIEW, params, '数据看板导出成功')
 }
 
 const updateTrendChart = () => {
@@ -773,7 +1299,12 @@ const handleCompetitorClick = (params) => {
 }
 
 const handleProductClick = (params) => {
+  if (productLinesPlaceholder.value) {
+    ElMessage.info(productLinesPlaceholder.value.message)
+    return
+  }
   const product = dashboardData.value.productLines[params.dataIndex]
+  if (!product) return
   // 使用下钻对话框
   openDrillDownDialog('product', product)
 }
@@ -1117,7 +1648,10 @@ const getStatusText = (status) => {
     'reviewing': '评审中',
     'won': '已中标',
     'lost': '未中标',
-    'pending': '待处理'
+    'pending': '待处理',
+    'tracking': '跟踪中',
+    'bidded': '已投标',
+    'abandoned': '已放弃'
   }
   return statusMap[status] || status
 }
@@ -1221,11 +1755,10 @@ const downloadFile = (file) => {
       URL.revokeObjectURL(downloadUrl)
     } else {
       // 实际 API 模式 - 使用 fetch 下载并添加认证头
+      const token = getAccessToken()
       fetch(downloadUrl, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-        }
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
       })
         .then(response => {
           if (!response.ok) throw new Error('下载失败')
@@ -1255,29 +1788,19 @@ const downloadFile = (file) => {
 
 // 导出下钻数据
 const exportDrillDownData = () => {
-  const { type, data } = currentDrillDownContext.value
+  const { exportExcel } = useExport()
+  const { type } = currentDrillDownContext.value
 
-  // 构造导出数据
-  const exportData = {
-    title: drillDownTitle.value,
-    context: { type, data },
-    projects: drillDownData.value.projects,
-    team: drillDownData.value.team,
-    files: drillDownData.value.files,
-    stats: drillDownData.value.stats,
-    exportTime: new Date().toISOString()
+  // 构建导出参数
+  const params = {
+    metricType: type,
+    startDate: dateRange.value?.[0] || null,
+    endDate: dateRange.value?.[1] || null,
+    status: metricFilters.value?.status || null,
+    role: metricFilters.value?.role || null
   }
 
-  // 模拟导出
-  ElMessage.success('数据导出成功，请查看下载列表')
-
-  // 实际项目中可以使用以下代码下载为JSON或Excel
-  // const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
-  // const url = URL.createObjectURL(blob)
-  // const a = document.createElement('a')
-  // a.href = url
-  // a.download = `${drillDownTitle.value}_数据导出.json`
-  // a.click()
+  exportExcel(ExportType.DASHBOARD_DRILLDOWN, params, '数据明细导出成功')
 }
 
 const viewMore = () => {
@@ -1285,8 +1808,27 @@ const viewMore = () => {
   detailDialogVisible.value = false
 }
 
-onMounted(() => {
-  loadData()
+watch(
+  () => [route.query.drilldown, route.query.status, route.query.role],
+  async ([drilldown, status, role]) => {
+    if (!drilldown || loading.value) return
+
+    const nextFilters = {}
+    if (status) nextFilters.status = String(status).toUpperCase()
+    if (role) nextFilters.role = String(role).toUpperCase()
+
+    await openMetricDrillDown(String(drilldown), { filters: nextFilters })
+  }
+)
+
+onMounted(async () => {
+  await loadData()
+  if (route.query.drilldown) {
+    const nextFilters = {}
+    if (route.query.status) nextFilters.status = String(route.query.status).toUpperCase()
+    if (route.query.role) nextFilters.role = String(route.query.role).toUpperCase()
+    await openMetricDrillDown(String(route.query.drilldown), { filters: nextFilters })
+  }
 })
 </script>
 
@@ -1343,6 +1885,67 @@ onMounted(() => {
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
   margin-bottom: 20px;
+}
+
+.b2b-metric-card {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.b2b-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.metric-drawer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.metric-drawer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.metric-drawer-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.metric-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.metric-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #E5E7EB;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+}
+
+.summary-label {
+  font-size: 12px;
+  color: #64748B;
+}
+
+.summary-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.metric-drawer-pagination {
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* Chart Cards */
@@ -1409,6 +2012,11 @@ onMounted(() => {
   .metric-cards {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  .metric-drawer-toolbar {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .charts-row {

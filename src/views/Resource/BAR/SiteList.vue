@@ -248,11 +248,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBarStore } from '@/stores/bar'
-import { isMockMode } from '@/api'
+import { buildFeatureUnavailableResponse, isMockMode } from '@/api'
 import {
   Back, Plus, Upload, Search, RefreshLeft, View, Edit, Delete, CopyDocument, MoreFilled, Link, Setting
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 
 const router = useRouter()
 const barStore = useBarStore()
@@ -419,7 +420,15 @@ const handleSaveSite = async () => {
 }
 
 const handleImport = () => {
-  ElMessage.success('已执行演示导入，站点台账数据保持当前 mock 集')
+  notifyFeatureUnavailable(
+    buildFeatureUnavailableResponse({
+      feature: 'bar-site-import',
+      title: '站点导入暂为演示入口',
+      message: '已执行演示导入，站点台账数据保持当前 mock 集',
+      hint: '真实后端导入接口接入后，这里会导入正式站点数据。',
+      scope: 'action',
+    })
+  )
 }
 
 const handleVisitSite = (site) => {

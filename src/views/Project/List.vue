@@ -39,11 +39,42 @@
       <template #header>
         <div class="card-header">
           <span class="title">投标项目列表</span>
-          <el-button type="primary" :icon="Plus" @click="goToCreate">创建项目</el-button>
+          <div class="header-actions">
+            <el-button :icon="Download" @click="handleExport">导出</el-button>
+            <el-button type="primary" :icon="Plus" @click="goToCreate">创建项目</el-button>
+          </div>
         </div>
       </template>
 
-      <el-table :data="filteredProjects" stripe style="width: 100%" v-loading="loading">
+      <!-- 批量操作栏 -->
+      <div v-if="selectedProjects.length > 0" class="batch-actions">
+        <div class="batch-info">
+          <el-checkbox
+            v-model="selectAllChecked"
+            :indeterminate="isIndeterminate"
+            @change="handleSelectAll"
+          >
+            已选择 {{ selectedProjects.length }} 个项目
+          </el-checkbox>
+        </div>
+        <div class="batch-buttons">
+          <el-button type="danger" @click="handleBatchDelete">
+            <el-icon><Delete /></el-icon>
+            批量删除
+          </el-button>
+          <el-button @click="handleClearSelection">取消选择</el-button>
+        </div>
+      </div>
+
+      <el-table
+        ref="tableRef"
+        :data="filteredProjects"
+        stripe
+        style="width: 100%"
+        v-loading="loading"
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="50" />
         <el-table-column prop="name" label="项目名称" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
             <el-link type="primary" @click="goToDetail(row.id)">{{ row.name }}</el-link>
@@ -67,7 +98,7 @@
         </el-table-column>
         <el-table-column prop="manager" label="负责人" width="100" />
         <el-table-column prop="deadline" label="截止日期" width="120" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" :icon="View" @click="goToDetail(row.id)">
               查看详情
@@ -104,14 +135,23 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
-import { Search, Refresh, Plus, View, Edit } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { projectsApi } from '@/api'
+import { Search, Refresh, Plus, View, Edit, Delete, Download } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useExport } from '@/composables/useExport'
+import { ExportType } from '@/api'
 
 const router = useRouter()
 const projectStore = useProjectStore()
 const userStore = useUserStore()
 
+const tableRef = ref(null)
 const loading = ref(false)
+
+// 批量选择相关
+const selectedProjects = ref([])
+const selectAllChecked = ref(false)
+const isIndeterminate = ref(false)
 const searchForm = ref({
   name: '',
   customer: '',
@@ -200,6 +240,20 @@ const handleSizeChange = () => {
 
 const handlePageChange = () => {}
 
+// 导出列表
+const handleExport = () => {
+  const { exportExcel } = useExport()
+
+  const params = {
+    name: searchForm.value.name || undefined,
+    customer: searchForm.value.customer || undefined,
+    status: searchForm.value.status || undefined,
+    manager: searchForm.value.manager || undefined
+  }
+
+  exportExcel(ExportType.PROJECTS, params, '项目列表导出成功')
+}
+
 const goToCreate = () => {
   router.push('/project/create')
 }
@@ -222,6 +276,66 @@ const handleEdit = async (id) => {
     })
   } catch (error) {
     ElMessage.error(`跳转失败: ${error.message}`)
+  }
+}
+
+// ========== 批量操作相关 ==========
+
+const handleSelectionChange = (selection) => {
+  selectedProjects.value = selection
+  selectAllChecked.value = selection.length > 0
+  isIndeterminate.value = selection.length > 0 && selection.length < filteredProjects.value.length
+}
+
+const handleSelectAll = (val) => {
+  if (val) {
+    filteredProjects.value.forEach(row => {
+      tableRef.value?.toggleRowSelection(row, true)
+    })
+  } else {
+    tableRef.value?.clearSelection()
+  }
+}
+
+const handleClearSelection = () => {
+  tableRef.value?.clearSelection()
+  selectedProjects.value = []
+  selectAllChecked.value = false
+  isIndeterminate.value = false
+}
+
+const handleBatchDelete = async () => {
+  if (selectedProjects.value.length === 0) {
+    ElMessage.warning('请先选择要删除的项目')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedProjects.value.length} 个项目吗？删除后不可恢复。`,
+      '批量删除确认',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    const projectIds = selectedProjects.value.map(p => p.id)
+    const result = await projectsApi.batchDelete(projectIds)
+
+    if (result.success) {
+      ElMessage.success(`成功删除 ${result.data?.deleted || projectIds.length} 个项目`)
+      handleClearSelection()
+      // 刷新列表数据
+      await projectStore.getProjects()
+    } else {
+      ElMessage.error(result.message || '删除失败，请重试')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败，请重试')
+    }
   }
 }
 
@@ -262,6 +376,29 @@ onMounted(async () => {
   font-size: 16px;
   font-weight: 600;
   color: #1a1a1a;
+}
+
+/* 批量操作栏 */
+.batch-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.batch-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.batch-buttons {
+  display: flex;
+  gap: 8px;
 }
 
 .pagination {

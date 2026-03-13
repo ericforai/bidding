@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { isMockMode } from '@/api/config'
 
 const routes = [
   {
@@ -174,7 +175,7 @@ router.beforeEach(async (to, from, next) => {
     localStorage.getItem('user') ||
     sessionStorage.getItem('user')
 
-  if (hasAuthState && !userStore.currentUser && userStore.token) {
+  if (hasAuthState && userStore.token && (!userStore.currentUser || !isMockMode())) {
     await userStore.restoreSession()
     hasAuthState =
       userStore.token ||

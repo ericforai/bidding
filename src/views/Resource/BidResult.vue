@@ -95,7 +95,7 @@
         <el-table-column type="selection" width="55" />
         <el-table-column prop="source" label="来源" width="150" />
         <el-table-column prop="projectName" label="项目名称" min-width="200" />
-        <el-table-column prop="result" label="结果" width="100">
+        <el-table-column prop="result" label="结果" width="140">
           <template #default="{ row }">
             <el-tag :type="row.result === 'won' ? 'success' : 'info'" size="small">
               {{ row.result === 'won' ? '中标' : '未中标' }}
@@ -103,8 +103,8 @@
           </template>
         </el-table-column>
         <el-table-column prop="amount" label="金额" width="120" />
-        <el-table-column prop="fetchTime" label="抓取时间" width="180" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column prop="fetchTime" label="抓取时间" width="220" />
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <el-button size="small" type="primary" link @click="handleConfirm(row)">确认</el-button>
             <el-button size="small" type="danger" link @click="handleIgnore(row)">忽略</el-button>
@@ -125,7 +125,7 @@
       <el-table :data="reminderRecords" stripe>
         <el-table-column prop="projectName" label="项目名称" min-width="180" />
         <el-table-column prop="owner" label="负责人" width="100" />
-        <el-table-column prop="type" label="提醒类型" width="120">
+        <el-table-column prop="type" label="提醒类型" width="180">
           <template #default="{ row }">
             <el-tag v-if="row.type === 'notice'" type="warning" size="small">中标通知书</el-tag>
             <el-tag v-else type="info" size="small">分析报告</el-tag>
@@ -138,7 +138,7 @@
             <el-tag v-else type="info" size="small">已提醒</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="remindTime" label="提醒时间" width="180" />
+        <el-table-column prop="remindTime" label="提醒时间" width="220" />
         <el-table-column label="操作" width="120">
           <template #default="{ row }">
             <el-button v-if="row.status === 'pending'" size="small" type="primary" link @click="handleRemindAgain(row)">

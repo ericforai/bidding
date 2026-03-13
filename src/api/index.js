@@ -13,6 +13,7 @@
 
 // 导出配置
 export { API_CONFIG, isMockMode, isCommercialMode, getApiUrl } from './config.js'
+export { buildFeatureUnavailableResponse, getFeaturePlaceholder, isFeatureUnavailableResponse } from './featureAvailability.js'
 
 // 导出 HTTP 客户端
 export { default as httpClient } from './client.js'
@@ -30,6 +31,8 @@ export { default as aiApi } from './modules/ai.js'
 export { default as resourcesApi } from './modules/resources.js'
 export { default as collaborationApi } from './modules/collaboration.js'
 export { dashboardApi } from './modules/dashboard.js'
+export { approvalApi } from './modules/approval.js'
+export { exportApi, ExportType, ExportFormat, ExportStatus } from './modules/export.js'
 
 // 统一导出对象 (方便解构使用)
 export default {
@@ -58,5 +61,11 @@ export default {
   collaboration: () => import('./modules/collaboration.js').then(m => m.default),
 
   // 看板
-  dashboard: () => import('./modules/dashboard.js').then(m => m.default)
+  dashboard: () => import('./modules/dashboard.js').then(m => m.default),
+
+  // 审批
+  approval: () => import('./modules/approval.js').then(m => m.approvalApi),
+
+  // 导出
+  export: () => import('./modules/export.js').then(m => m.default)
 }

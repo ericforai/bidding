@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -106,6 +107,50 @@ public class ProjectWorkflowController {
                         projectWorkflowService.createProjectShareLink(projectId, request)));
     }
 
+    @PostMapping(value = "/score-drafts/parse", consumes = "multipart/form-data")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<ProjectScoreDraftParseResponse>> parseProjectScoreDrafts(
+            @PathVariable Long projectId,
+            @RequestPart("file") MultipartFile file) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Project score drafts parsed successfully",
+                        projectWorkflowService.parseProjectScoreDrafts(projectId, file)));
+    }
+
+    @GetMapping("/score-drafts")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<List<ProjectScoreDraftDTO>>> getProjectScoreDrafts(@PathVariable Long projectId) {
+        return ResponseEntity.ok(ApiResponse.success(projectWorkflowService.getProjectScoreDrafts(projectId)));
+    }
+
+    @PatchMapping("/score-drafts/{draftId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<ProjectScoreDraftDTO>> updateProjectScoreDraft(
+            @PathVariable Long projectId,
+            @PathVariable Long draftId,
+            @RequestBody ProjectScoreDraftUpdateRequest request) {
+        sanitizeScoreDraftRequest(request);
+        return ResponseEntity.ok(ApiResponse.success("Project score draft updated successfully",
+                projectWorkflowService.updateProjectScoreDraft(projectId, draftId, request)));
+    }
+
+    @PostMapping("/score-drafts/generate-tasks")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<List<ProjectTaskViewDTO>>> generateProjectTasksFromScoreDrafts(
+            @PathVariable Long projectId,
+            @Valid @RequestBody ProjectScoreDraftGenerateRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Project tasks generated from score drafts successfully",
+                        projectWorkflowService.generateTasksFromScoreDrafts(projectId, request)));
+    }
+
+    @DeleteMapping("/score-drafts")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<Void>> clearProjectScoreDrafts(@PathVariable Long projectId) {
+        projectWorkflowService.clearNonGeneratedDrafts(projectId);
+        return ResponseEntity.ok(ApiResponse.success("Project score drafts cleared successfully", null));
+    }
+
     private void sanitizeTaskRequest(ProjectTaskCreateRequest request) {
         request.setTitle(InputSanitizer.sanitizeString(request.getTitle(), 200));
         if (request.getDescription() != null) {
@@ -146,6 +191,21 @@ public class ProjectWorkflowController {
         request.setBaseUrl(InputSanitizer.sanitizeString(request.getBaseUrl(), 500));
         if (request.getCreatedByName() != null) {
             request.setCreatedByName(InputSanitizer.sanitizeString(request.getCreatedByName(), 100));
+        }
+    }
+
+    private void sanitizeScoreDraftRequest(ProjectScoreDraftUpdateRequest request) {
+        if (request.getAssigneeName() != null) {
+            request.setAssigneeName(InputSanitizer.sanitizeString(request.getAssigneeName(), 100));
+        }
+        if (request.getGeneratedTaskTitle() != null) {
+            request.setGeneratedTaskTitle(InputSanitizer.sanitizeString(request.getGeneratedTaskTitle(), 255));
+        }
+        if (request.getGeneratedTaskDescription() != null) {
+            request.setGeneratedTaskDescription(InputSanitizer.sanitizeString(request.getGeneratedTaskDescription(), 2000));
+        }
+        if (request.getSkipReason() != null) {
+            request.setSkipReason(InputSanitizer.sanitizeString(request.getSkipReason(), 255));
         }
     }
 }

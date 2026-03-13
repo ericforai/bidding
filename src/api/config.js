@@ -7,6 +7,7 @@
 // 兼容 Node.js 和 Vite 环境
 const viteEnv = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {}
 const API_MODE = viteEnv.VITE_API_MODE || process.env.VITE_API_MODE || 'mock' // 'mock' | 'api'
+const APP_PORT = viteEnv.VITE_APP_PORT || process.env.VITE_APP_PORT || (API_MODE === 'api' ? '1818' : '1314')
 
 // 后端 API 基础地址
 export const API_BASE_URL = viteEnv.VITE_API_BASE_URL || process.env.VITE_API_BASE_URL || 'http://localhost:8080'
@@ -14,6 +15,7 @@ export const API_BASE_URL = viteEnv.VITE_API_BASE_URL || process.env.VITE_API_BA
 // API 模式
 export const API_CONFIG = {
   mode: API_MODE, // mock | api
+  appPort: APP_PORT,
   baseURL: API_BASE_URL,
   timeout: 30000,
   headers: {

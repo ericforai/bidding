@@ -318,8 +318,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Plus, Download, Bell, WarningFilled } from '@element-plus/icons-vue'
-import { projectsApi, resourcesApi, isMockMode } from '@/api'
+import { buildFeatureUnavailableResponse, projectsApi, resourcesApi, isMockMode } from '@/api'
 import { useUserStore } from '@/stores/user'
+import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 
 const searchForm = ref({
   project: '',
@@ -603,7 +604,15 @@ const handleReturn = (row) => {
 
 const handleSubmitApply = async () => {
   if (!isMockMode()) {
-    ElMessage.info('真实后端创建费用记录还需要项目ID和分类映射，当前表单暂未接入')
+    notifyFeatureUnavailable(
+      buildFeatureUnavailableResponse({
+        feature: 'resource-expense-create',
+        title: '费用申请暂未接入',
+        message: '真实后端创建费用记录还需要项目ID和分类映射，当前表单暂未接入',
+        hint: '当前仅支持在 mock 环境演示费用申请提交流程。',
+        scope: 'action',
+      })
+    )
     return
   }
 

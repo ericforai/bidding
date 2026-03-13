@@ -158,7 +158,8 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Platform, View, Edit, Delete, CopyDocument, MoreFilled, Key, RefreshLeft, Hide } from '@element-plus/icons-vue'
-import { resourcesApi, isMockMode } from '@/api'
+import { buildFeatureUnavailableResponse, resourcesApi, isMockMode } from '@/api'
+import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 import { useUserStore } from '@/stores/user'
 
 const searchForm = ref({
@@ -272,7 +273,15 @@ const handleDelete = (row) => {
 }
 
 const handleCreate = () => {
-  ElMessage.success('新增账户演示入口已开启，可继续使用现有表单流程')
+  notifyFeatureUnavailable(
+    buildFeatureUnavailableResponse({
+      feature: 'resource-account-create',
+      title: '新增账户暂为演示入口',
+      message: '新增账户演示入口已开启，可继续使用现有表单流程',
+      hint: '真实后端创建账户接口接入后，这里会切换成正式创建流程。',
+      scope: 'action',
+    })
+  )
 }
 
 const handleSubmitBorrow = async () => {
