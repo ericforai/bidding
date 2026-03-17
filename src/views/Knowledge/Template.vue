@@ -119,7 +119,14 @@
 
     <!-- 模板列表 -->
     <el-card class="table-card">
+      <FeaturePlaceholder
+        v-if="featurePlaceholder"
+        :title="featurePlaceholder.title"
+        :message="featurePlaceholder.message"
+        :hint="featurePlaceholder.hint"
+      />
       <el-table
+        v-else
         v-loading="loading"
         :data="filteredTemplates"
         stripe
@@ -450,7 +457,14 @@
       title="版本历史"
       width="700px"
     >
-      <el-timeline v-if="versionHistory.length > 0">
+      <FeaturePlaceholder
+        v-if="versionPlaceholder"
+        compact
+        :title="versionPlaceholder.title"
+        :message="versionPlaceholder.message"
+        :hint="versionPlaceholder.hint"
+      />
+      <el-timeline v-else-if="versionHistory.length > 0">
         <el-timeline-item
           v-for="version in versionHistory"
           :key="version.id"
@@ -504,8 +518,11 @@ import {
   InfoFilled
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { knowledgeApi, isMockMode } from '@/api'
+import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
+import { getFeaturePlaceholder, isFeatureUnavailableResponse, knowledgeApi, isMockMode } from '@/api'
 import { loadDemoState, saveDemoState } from '@/utils/demoPersistence'
+import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
+import { triggerDownload } from '@/api/modules/export'
 
 const router = useRouter()
 const projectStore = useProjectStore()
@@ -553,6 +570,8 @@ const useTemplateForm = reactive({
 // 版本历史对话框
 const versionDialogVisible = ref(false)
 const versionHistory = ref([])
+const featurePlaceholder = ref(null)
+const versionPlaceholder = ref(null)
 
 const downloadTextFile = (filename, content, mimeType = 'text/plain;charset=utf-8') => {
   const blob = new Blob([content], { type: mimeType })
@@ -1709,6 +1728,19 @@ const loadTemplates = async () => {
     if (result?.success) {
       templates.value = applyTemplatePersistence(result.data || [])
       pagination.total = templates.value.length
+      featurePlaceholder.value = null
+    } else {
+      templates.value = []
+      pagination.total = 0
+      featurePlaceholder.value = notifyFeatureUnavailable(result, {
+        fallback: {
+          title: '模板库暂未接入',
+          hint: '模板相关页面已切换为统一占位态，不再把未接入能力当成空数据。',
+        },
+      })
+      if (!featurePlaceholder.value && result?.message) {
+        ElMessage.error(result.message)
+      }
     }
   } finally {
     loading.value = false
@@ -2107,8 +2139,20 @@ const handleMoreAction = async (command, row) => {
       ElMessage.success(`已复制模板：${row.name}`)
       break
     case 'version':
+      versionPlaceholder.value = null
       if (isPersistentTemplateId(row.id)) {
         const versionResult = await knowledgeApi.templates.getVersions(row.id)
+        if (isFeatureUnavailableResponse(versionResult)) {
+          versionHistory.value = []
+          versionPlaceholder.value = notifyFeatureUnavailable(versionResult, {
+            fallback: {
+              title: '版本历史暂未接入',
+              hint: '后端补齐模板版本接口后，这里会展示真实版本轨迹。',
+            },
+          })
+          versionDialogVisible.value = true
+          break
+        }
         if (!versionResult?.success) {
           ElMessage.error(versionResult?.message || '获取版本历史失败')
           break
@@ -2121,6 +2165,7 @@ const handleMoreAction = async (command, row) => {
           isCurrent: index === 0,
         }))
       } else {
+        versionPlaceholder.value = null
         versionHistory.value = [
           {
             id: 1,
