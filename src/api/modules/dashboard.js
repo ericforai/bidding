@@ -110,7 +110,7 @@ function buildMockMetricDimensions(type) {
   if (type === 'win-rate') {
     return [
       {
-        key: 'role',
+        key: 'outcome',
         label: '结果',
         options: [
           { label: '全部', value: 'ALL' },
@@ -207,33 +207,45 @@ function buildMockDrillDown(type, params = {}) {
   }
 
   if (type === 'team') {
-    let items = users.map((user, index) => {
-      const relatedProjects = projects.filter((project) => project.manager === user.name)
+    let items = users.map((user) => {
+      const relatedProjects = projects.filter((project) =>
+        project.manager === user.name || (project.tasks || []).some((task) => task.owner === user.name)
+      )
       const wonCount = relatedProjects.filter((project) => project.status === 'won').length
       const activeProjectCount = relatedProjects.filter((project) => ['drafting', 'reviewing', 'bidding'].includes(project.status)).length
-      const completedTaskCount = relatedProjects.reduce((sum, project) => sum + (project.tasks || []).filter((task) => task.status === 'done').length, 0)
-      const totalTaskCount = relatedProjects.reduce((sum, project) => sum + (project.tasks || []).length, 0)
-      const overdueTaskCount = relatedProjects.reduce((sum, project) => sum + (project.tasks || []).filter((task) => task.status !== 'done' && task.priority === 'high').length, 0)
+      const managedProjectCount = relatedProjects.filter((project) => project.manager === user.name).length
+      const relatedTasks = relatedProjects.flatMap((project) => (project.tasks || []).filter((task) => task.owner === user.name))
+      const completedTaskCount = relatedTasks.filter((task) => task.status === 'done').length
+      const overdueTaskCount = relatedTasks.filter((task) => task.status !== 'done' && task.deadline && task.deadline < '2026-03-11').length
+      const totalTaskCount = relatedTasks.length
+      const taskCompletionRate = totalTaskCount > 0 ? Number(((completedTaskCount / totalTaskCount) * 100).toFixed(1)) : 0
+      const winRate = relatedProjects.length > 0 ? Number(((wonCount / relatedProjects.length) * 100).toFixed(1)) : 0
       const amount = relatedProjects.reduce((sum, project) => sum + Number(project.budget || 0), 0)
       const role = String(user.role || 'staff').toUpperCase()
+      const performanceScore = Math.round(
+        winRate * 0.45 +
+        taskCompletionRate * 0.4 +
+        Math.max(0, 100 - (totalTaskCount > 0 ? (overdueTaskCount / totalTaskCount) * 100 : 0)) * 0.15
+      )
 
       return {
         id: user.id,
         title: user.name,
-        subtitle: `${user.name.toLowerCase()}@xiyu.local / ${user.dept || '-'}`,
+        subtitle: user.dept || '-',
         role,
         count: relatedProjects.length,
         wonCount,
         activeProjectCount,
-        managedProjectCount: relatedProjects.length,
+        managedProjectCount,
+        totalTaskCount,
         completedTaskCount,
         overdueTaskCount,
-        taskCompletionRate: totalTaskCount > 0 ? Number(((completedTaskCount / totalTaskCount) * 100).toFixed(1)) : 0,
-        rate: relatedProjects.length > 0 ? Number(((wonCount / relatedProjects.length) * 100).toFixed(1)) : 0,
-        score: 78 + index * 4,
+        taskCompletionRate,
+        rate: winRate,
+        score: performanceScore,
         amount,
       }
-    })
+    }).sort((a, b) => Number(b.score || 0) - Number(a.score || 0))
 
     if (params?.role && params.role !== 'ALL') {
       items = items.filter((item) => item.role === params.role)
@@ -241,10 +253,16 @@ function buildMockDrillDown(type, params = {}) {
 
     const { items: paged, pagination } = paginateMockItems(items, params)
     return {
+      metricLabel: '人员绩效明细',
       items: paged,
       summary: {
         totalCount: items.length,
         totalAmount: items.reduce((sum, item) => sum + item.amount, 0),
+        totalTeamMembers: items.length,
+        totalCompletedTasks: items.reduce((sum, item) => sum + Number(item.completedTaskCount || 0), 0),
+        totalOverdueTasks: items.reduce((sum, item) => sum + Number(item.overdueTaskCount || 0), 0),
+        winRate: items.length > 0 ? Number((items.reduce((sum, item) => sum + Number(item.rate || 0), 0) / items.length).toFixed(1)) : 0,
+        averageTaskCompletionRate: items.length > 0 ? Number((items.reduce((sum, item) => sum + Number(item.taskCompletionRate || 0), 0) / items.length).toFixed(1)) : 0,
       },
       filters: { dimensions: buildMockMetricDimensions(type) },
       pagination,

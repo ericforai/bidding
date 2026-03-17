@@ -5,6 +5,7 @@
 import httpClient from '../client.js'
 import { mockData } from '../mock.js'
 import { isMockMode } from '../config.js'
+import { loadDemoState, saveDemoState } from '@/utils/demoPersistence'
 
 function matchesProjectStatus(projectStatus, filterStatus) {
   return String(projectStatus || '').toLowerCase() === String(filterStatus || '').toLowerCase()
@@ -40,10 +41,16 @@ function isNumericId(id) {
 }
 
 function getMockProjects(params = {}) {
+  if (isMockMode()) {
+    mockData.projects = loadDemoState('projects', mockData.projects)
+  }
   return applyProjectFilters([...mockData.projects], params)
 }
 
 function getMockProject(id) {
+  if (isMockMode()) {
+    mockData.projects = loadDemoState('projects', mockData.projects)
+  }
   return mockData.projects.find((project) => String(project.id) === String(id)) || null
 }
 
@@ -135,6 +142,7 @@ export const projectsApi = {
    */
   async getList(params) {
     if (isMockMode()) {
+      mockData.projects = loadDemoState('projects', mockData.projects)
       return new Promise((resolve) => {
         setTimeout(() => {
           const data = applyProjectFilters([...mockData.projects], params)
@@ -162,6 +170,7 @@ export const projectsApi = {
    */
   async getDetail(id) {
     if (isMockMode()) {
+      mockData.projects = loadDemoState('projects', mockData.projects)
       return new Promise((resolve) => {
         setTimeout(() => {
           const project = mockData.projects.find(p => p.id === id)
@@ -198,9 +207,40 @@ export const projectsApi = {
    */
   async create(data) {
     if (isMockMode()) {
+      mockData.projects = loadDemoState('projects', mockData.projects)
+      mockData.customerInsights = loadDemoState('customer-insights', mockData.customerInsights || [])
+      mockData.customerPredictions = loadDemoState('customer-predictions', mockData.customerPredictions || [])
+
+      const newProject = {
+        ...data,
+        id: 'P' + Date.now(),
+        createTime: new Date().toISOString().split('T')[0]
+      }
+      mockData.projects.unshift(newProject)
+
+      if (newProject.sourceModule === 'customer-opportunity-center' && newProject.sourceOpportunityId) {
+        const prediction = (mockData.customerPredictions || []).find(
+          item => item.opportunityId === newProject.sourceOpportunityId
+        )
+        if (prediction) {
+          prediction.convertedProjectId = newProject.id
+        }
+
+        const insight = (mockData.customerInsights || []).find(
+          item => item.customerId === newProject.sourceCustomerId || item.customerName === newProject.sourceCustomer
+        )
+        if (insight) {
+          insight.status = 'converted'
+        }
+      }
+
+      saveDemoState('projects', mockData.projects)
+      saveDemoState('customer-insights', mockData.customerInsights || [])
+      saveDemoState('customer-predictions', mockData.customerPredictions || [])
+
       return Promise.resolve({
         success: true,
-        data: { ...data, id: 'P' + Date.now(), createTime: new Date().toISOString().split('T')[0] }
+        data: newProject
       })
     }
     return httpClient.post('/api/projects', data)

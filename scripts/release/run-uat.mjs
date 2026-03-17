@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const apiBaseUrl = process.env.UAT_API_BASE_URL || 'http://127.0.0.1:18080'
-const webBaseUrl = process.env.UAT_WEB_BASE_URL || 'http://127.0.0.1:14173'
+const webBaseUrl = process.env.UAT_WEB_BASE_URL || 'http://127.0.0.1:1314'
 const reportDir = process.env.REPORT_DIR || path.resolve(process.cwd(), 'docs/reports')
 const runId = new Date().toISOString().replace(/[:.]/g, '-')
 const suffix = Date.now().toString().slice(-6)

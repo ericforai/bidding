@@ -56,6 +56,14 @@ spring:
 ai:
   provider: ${AI_PROVIDER:mock}  # Options: mock, openai
 
+app:
+  export:
+    max-records: ${APP_EXPORT_MAX_RECORDS:10000}  # Maximum records per export
+    max-file-size-bytes: ${APP_EXPORT_MAX_SIZE:52428800}  # 50MB default
+    audit-enabled: ${APP_EXPORT_AUDIT:true}
+    max-exports-per-hour: ${APP_EXPORT_RATE_LIMIT:10}
+    query-timeout-seconds: ${APP_EXPORT_QUERY_TIMEOUT:60}  # Maximum query execution time for exports
+
 server:
   port: 8080
   error:

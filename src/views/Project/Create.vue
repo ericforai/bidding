@@ -634,6 +634,14 @@ const taskForm = reactive({
   ]
 })
 
+const sourceInfo = reactive({
+  module: '',
+  customerId: '',
+  customerName: '',
+  opportunityId: '',
+  reasoningSummary: ''
+})
+
 // AI分析数据
 const aiSummary = ref({
   winScore: 0,
@@ -669,6 +677,56 @@ const formatDateTime = (value, fallbackTime = '00:00:00') => {
   return `${value}T${fallbackTime}`
 }
 
+const decodeQueryValue = (value) => {
+  if (Array.isArray(value)) return decodeQueryValue(value[0])
+  if (value === undefined || value === null) return ''
+  return String(value)
+}
+
+const decodeNumericQuery = (value) => {
+  const normalized = decodeQueryValue(value)
+  if (!normalized) return null
+  const numericValue = Number(normalized)
+  return Number.isFinite(numericValue) ? numericValue : null
+}
+
+const splitTags = (value) => {
+  const normalized = decodeQueryValue(value)
+  if (!normalized) return []
+  return normalized
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean)
+}
+
+const applyOpportunityPrefill = () => {
+  const projectName = decodeQueryValue(route.query.projectName)
+  const customerName = decodeQueryValue(route.query.customerName)
+  const industry = decodeQueryValue(route.query.industry)
+  const region = decodeQueryValue(route.query.region)
+  const predictedBudget = decodeNumericQuery(route.query.budget)
+  const deadline = decodeQueryValue(route.query.deadline)
+  const description = decodeQueryValue(route.query.description)
+  const remark = decodeQueryValue(route.query.remark)
+  const tags = splitTags(route.query.tags)
+
+  if (projectName) basicForm.name = projectName
+  if (customerName) basicForm.customer = customerName
+  if (industry) basicForm.industry = industry
+  if (region) basicForm.region = region
+  if (predictedBudget !== null) basicForm.budget = predictedBudget
+  if (deadline) basicForm.deadline = deadline
+  if (description) detailForm.description = description
+  if (tags.length > 0) detailForm.tags = tags
+  if (remark) detailForm.remark = remark
+
+  sourceInfo.module = decodeQueryValue(route.query.sourceModule)
+  sourceInfo.customerId = decodeQueryValue(route.query.sourceCustomerId)
+  sourceInfo.customerName = decodeQueryValue(route.query.sourceCustomerName || customerName)
+  sourceInfo.opportunityId = decodeQueryValue(route.query.sourceOpportunityId)
+  sourceInfo.reasoningSummary = decodeQueryValue(route.query.sourceReasoningSummary)
+}
+
 const resolveApiTenderId = () => {
   const routeTenderId = route.query.tenderId
   if (routeTenderId && /^\d+$/.test(String(routeTenderId))) {
@@ -701,6 +759,11 @@ const buildApiProjectPayload = () => {
     startDate,
     endDate,
     status: 'INITIATED',
+    sourceModule: sourceInfo.module || '',
+    sourceCustomerId: sourceInfo.customerId || '',
+    sourceCustomer: sourceInfo.customerName || '',
+    sourceOpportunityId: sourceInfo.opportunityId || '',
+    sourceReasoningSummary: sourceInfo.reasoningSummary || ''
   }
 }
 
@@ -874,6 +937,11 @@ const handleSubmit = async () => {
       ? {
           ...basicForm,
           ...detailForm,
+          sourceModule: sourceInfo.module || '',
+          sourceCustomerId: sourceInfo.customerId || '',
+          sourceCustomer: sourceInfo.customerName || '',
+          sourceOpportunityId: sourceInfo.opportunityId || '',
+          sourceReasoningSummary: sourceInfo.reasoningSummary || '',
           tasks: [...userTasks, ...aiTasks],
           competitorAnalysis: competitorAnalysis.value,
           aiAnalysis: hasAiStep
@@ -950,11 +1018,11 @@ const goToAssetManagement = () => {
 
 // 检测编辑模式并加载项目数据
 onMounted(async () => {
-  if (!isMockMode()) {
-    if (!basicForm.manager && userStore.currentUser?.name) {
-      basicForm.manager = userStore.currentUser.name
-    }
+  if (!basicForm.manager && userStore.currentUser?.name) {
+    basicForm.manager = userStore.currentUser.name
+  }
 
+  if (!isMockMode()) {
     const tenderResult = await tendersApi.getList()
     if (tenderResult?.success) {
       availableTenders.value = Array.isArray(tenderResult.data) ? tenderResult.data : []
@@ -972,6 +1040,8 @@ onMounted(async () => {
     isEditMode.value = true
     editProjectId.value = editId
     await loadProjectData(editId)
+  } else {
+    applyOpportunityPrefill()
   }
 })
 

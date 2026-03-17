@@ -192,6 +192,11 @@ const menuConfig = [
     meta: { title: '标讯中心', icon: 'bidding' }
   },
   {
+    path: '/bidding/customer-opportunities',
+    name: 'CustomerOpportunityCenter',
+    meta: { title: '客户商机中心', icon: 'bidding' }
+  },
+  {
     path: '/project',
     name: 'Project',
     meta: { title: '投标项目', icon: 'project' },

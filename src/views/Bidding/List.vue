@@ -8,6 +8,10 @@
           <p class="page-subtitle">AI智能匹配，发现优质商机</p>
         </div>
         <div class="header-actions">
+          <el-button @click="handleOpenCustomerOpportunityCenter">
+            <el-icon><UserFilled /></el-icon>
+            客户商机中心
+          </el-button>
           <el-button type="primary" @click="showSourceConfig = true">
             <el-icon><Setting /></el-icon>
             标讯源配置
@@ -2101,6 +2105,10 @@ const handleViewAllRecommend = () => {
     status: ''
   }
   viewMode.value = 'all'
+}
+
+const handleOpenCustomerOpportunityCenter = () => {
+  router.push('/bidding/customer-opportunities')
 }
 
 // ========== 表格选择相关 ==========

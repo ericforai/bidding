@@ -30,6 +30,12 @@ const routes = [
         meta: { title: '标讯中心' }
       },
       {
+        path: 'bidding/customer-opportunities',
+        name: 'CustomerOpportunityCenter',
+        component: () => import('@/views/Bidding/CustomerOpportunityCenter.vue'),
+        meta: { title: '客户商机中心', icon: 'bidding' }
+      },
+      {
         path: 'bidding/:id',
         name: 'BiddingDetail',
         component: () => import('@/views/Bidding/Detail.vue'),
