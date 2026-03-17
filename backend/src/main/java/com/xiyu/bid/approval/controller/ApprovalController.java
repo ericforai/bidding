@@ -7,6 +7,8 @@ import com.xiyu.bid.approval.dto.ApprovalSubmitRequest;
 import com.xiyu.bid.approval.enums.ApprovalStatus;
 import com.xiyu.bid.approval.service.ApprovalWorkflowService;
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.entity.User;
+import com.xiyu.bid.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +36,7 @@ import java.util.UUID;
 public class ApprovalController {
 
     private final ApprovalWorkflowService approvalWorkflowService;
+    private final UserRepository userRepository;
 
     /**
      * 提交审批
@@ -45,7 +48,7 @@ public class ApprovalController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         Long userId = getUserIdFromDetails(userDetails);
-        String userName = userDetails.getUsername();
+        String userName = getCurrentUser(userDetails).getUsername();
 
         ApprovalDetailDTO result = approvalWorkflowService.submitForApproval(request, userId, userName);
 
@@ -68,7 +71,7 @@ public class ApprovalController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         Long userId = getUserIdFromDetails(userDetails);
-        String userName = userDetails.getUsername();
+        String userName = getCurrentUser(userDetails).getUsername();
 
         ApprovalDetailDTO result = approvalWorkflowService.approve(id, userId, userName, request.getComment());
 
@@ -91,7 +94,7 @@ public class ApprovalController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         Long userId = getUserIdFromDetails(userDetails);
-        String userName = userDetails.getUsername();
+        String userName = getCurrentUser(userDetails).getUsername();
 
         ApprovalDetailDTO result = approvalWorkflowService.reject(id, userId, userName, request.getComment());
 
@@ -114,7 +117,7 @@ public class ApprovalController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         Long userId = getUserIdFromDetails(userDetails);
-        String userName = userDetails.getUsername();
+        String userName = getCurrentUser(userDetails).getUsername();
 
         approvalWorkflowService.cancel(id, userId, userName);
 
@@ -129,10 +132,17 @@ public class ApprovalController {
     public ApiResponse<Page<ApprovalDetailDTO>> getPendingApprovals(
             @RequestParam(required = false) Long approverId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal UserDetails userDetails) {
 
+        User currentUser = getCurrentUser(userDetails);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "submittedAt"));
-        Page<ApprovalDetailDTO> result = approvalWorkflowService.getPendingApprovals(approverId, pageable);
+        Page<ApprovalDetailDTO> result = approvalWorkflowService.getPendingApprovals(
+                currentUser.getId(),
+                currentUser.getRole(),
+                approverId,
+                pageable
+        );
 
         return ApiResponse.success(result);
     }
@@ -152,8 +162,11 @@ public class ApprovalController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ApiResponse<ApprovalDetailDTO> getApprovalDetail(@PathVariable UUID id) {
-        ApprovalDetailDTO detail = approvalWorkflowService.getApprovalDetail(id);
+    public ApiResponse<ApprovalDetailDTO> getApprovalDetail(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = getCurrentUser(userDetails);
+        ApprovalDetailDTO detail = approvalWorkflowService.getApprovalDetail(id, currentUser.getId(), currentUser.getRole());
         return ApiResponse.success(detail);
     }
 
@@ -204,7 +217,7 @@ public class ApprovalController {
         String comment = (String) requestBody.getOrDefault("comment", "批量通过");
 
         Long userId = getUserIdFromDetails(userDetails);
-        String userName = userDetails.getUsername();
+        String userName = getCurrentUser(userDetails).getUsername();
 
         Map<UUID, String> results = approvalWorkflowService.batchApprove(ids, userId, userName, comment);
 
@@ -225,7 +238,7 @@ public class ApprovalController {
         String comment = (String) requestBody.getOrDefault("comment", "批量驳回");
 
         Long userId = getUserIdFromDetails(userDetails);
-        String userName = userDetails.getUsername();
+        String userName = getCurrentUser(userDetails).getUsername();
 
         Map<UUID, String> results = approvalWorkflowService.batchReject(ids, userId, userName, comment);
 
@@ -243,7 +256,7 @@ public class ApprovalController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         Long userId = getUserIdFromDetails(userDetails);
-        String userName = userDetails.getUsername();
+        String userName = getCurrentUser(userDetails).getUsername();
         String newDescription = requestBody.get("description");
 
         ApprovalDetailDTO result = approvalWorkflowService.resubmit(id, userId, userName, newDescription);
@@ -254,12 +267,14 @@ public class ApprovalController {
     /**
      * 从UserDetails获取用户ID
      *
-     * SECURITY: 验证用户ID格式并拒绝无效值
-     * - 拒绝非数字用户名 (防止认证绕过)
-     * - 拒绝负数和零值用户ID (防止权限提升)
-     * - 抛出异常而非返回默认值 (确保审计跟踪)
+     * SECURITY: 认证主体中的 username 是登录名，不是数值 userId。
+     * 这里显式查库解析当前用户，避免控制器把 username 错当成 userId。
      */
     private Long getUserIdFromDetails(UserDetails userDetails) {
+        return getCurrentUser(userDetails).getId();
+    }
+
+    private User getCurrentUser(UserDetails userDetails) {
         if (userDetails == null) {
             throw new org.springframework.security.authentication.AuthenticationServiceException(
                     "UserDetails cannot be null");
@@ -271,16 +286,8 @@ public class ApprovalController {
                     "Username cannot be null or empty");
         }
 
-        try {
-            Long userId = Long.parseLong(username.trim());
-            if (userId <= 0) {
-                throw new org.springframework.security.authentication.AuthenticationServiceException(
-                        "Invalid user identifier: must be positive");
-            }
-            return userId;
-        } catch (NumberFormatException e) {
-            throw new org.springframework.security.authentication.AuthenticationServiceException(
-                    "Invalid user identifier: username must be numeric", e);
-        }
+        return userRepository.findByUsername(username.trim())
+                .orElseThrow(() -> new org.springframework.security.authentication.AuthenticationServiceException(
+                        "Authenticated user not found: " + username));
     }
 }

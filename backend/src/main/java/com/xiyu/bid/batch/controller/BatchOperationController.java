@@ -6,6 +6,8 @@ import com.xiyu.bid.batch.dto.BatchDeleteRequest;
 import com.xiyu.bid.batch.dto.BatchOperationResponse;
 import com.xiyu.bid.batch.service.BatchOperationService;
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.entity.User;
+import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.util.InputSanitizer;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +28,7 @@ import java.util.List;
 public class BatchOperationController {
 
     private final BatchOperationService batchOperationService;
+    private final UserRepository userRepository;
     private static final int MAX_REMARK_LENGTH = 500;
 
     @PostMapping("/tenders/claim")
@@ -73,22 +78,22 @@ public class BatchOperationController {
     @DeleteMapping("/projects")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<BatchOperationResponse>> batchDeleteProjects(
-            @Valid @RequestBody BatchDeleteRequest request) {
+            @Valid @RequestBody BatchDeleteRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
 
+        User currentUser = getCurrentUser(userDetails);
         log.info("DELETE /api/batch/projects - Deleting {} projects by user: {}",
-                request.getItemIds().size(), request.getUserId());
+                request.getItemIds().size(), currentUser.getId());
 
         if (request.getItemIds() == null || request.getItemIds().isEmpty()) {
             return ResponseEntity.badRequest().body(
                     ApiResponse.error(400, "Item IDs list cannot be empty"));
         }
-        if (request.getUserId() == null) {
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "User ID cannot be null"));
-        }
-
         sanitizeRequestReason(request);
-        BatchOperationResponse response = batchOperationService.batchDeleteProjects(request);
+        BatchOperationResponse response = batchOperationService.batchDeleteProjects(
+                request.getItemIds(),
+                currentUser.getId(),
+                currentUser.getRole());
 
         String message = buildSuccessMessage("deleted", "project", response.getSuccessCount());
         return ResponseEntity.ok(ApiResponse.success(message, response));
@@ -98,7 +103,10 @@ public class BatchOperationController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<BatchOperationResponse>> batchDeleteItems(
             @PathVariable String type,
-            @Valid @RequestBody BatchDeleteRequest request) {
+            @Valid @RequestBody BatchDeleteRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        User currentUser = getCurrentUser(userDetails);
 
         log.info("DELETE /api/batch/{} - Deleting {} items", type, request.getItemIds().size());
 
@@ -110,7 +118,11 @@ public class BatchOperationController {
         sanitizeRequestReason(request);
 
         try {
-            BatchOperationResponse response = batchOperationService.batchDeleteItems(type, request.getItemIds());
+            BatchOperationResponse response = batchOperationService.batchDeleteItems(
+                    type,
+                    request.getItemIds(),
+                    currentUser.getId(),
+                    currentUser.getRole());
             String message = buildSuccessMessage("deleted", type, response.getSuccessCount());
             return ResponseEntity.ok(ApiResponse.success(message, response));
 
@@ -174,6 +186,17 @@ public class BatchOperationController {
         if (request.getReason() != null && !request.getReason().isEmpty()) {
             request.setReason(InputSanitizer.sanitizeString(request.getReason(), MAX_REMARK_LENGTH));
         }
+    }
+
+    private User getCurrentUser(UserDetails userDetails) {
+        if (userDetails == null || userDetails.getUsername() == null || userDetails.getUsername().trim().isEmpty()) {
+            throw new org.springframework.security.authentication.AuthenticationServiceException(
+                    "Authenticated user is required");
+        }
+
+        return userRepository.findByUsername(userDetails.getUsername().trim())
+                .orElseThrow(() -> new org.springframework.security.authentication.AuthenticationServiceException(
+                        "Authenticated user not found: " + userDetails.getUsername()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

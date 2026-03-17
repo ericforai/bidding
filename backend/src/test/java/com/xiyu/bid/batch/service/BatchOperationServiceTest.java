@@ -3,6 +3,7 @@ package com.xiyu.bid.batch.service;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.entity.Task;
+import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TaskRepository;
 import com.xiyu.bid.repository.TenderRepository;
@@ -207,7 +208,7 @@ class BatchOperationServiceTest {
             when(projectRepository.findById(2L)).thenReturn(Optional.of(testProject2));
             doNothing().when(projectRepository).deleteAll(anyList());
 
-            var response = batchOperationService.batchDeleteProjects(projectIds, userId);
+            var response = batchOperationService.batchDeleteProjects(projectIds, userId, User.Role.MANAGER);
 
             assertTrue(response.getSuccess());
             assertEquals(2, response.getSuccessCount());
@@ -223,7 +224,7 @@ class BatchOperationServiceTest {
 
             when(projectRepository.findById(1L)).thenReturn(Optional.of(testProject1));
 
-            var response = batchOperationService.batchDeleteProjects(projectIds, userId);
+            var response = batchOperationService.batchDeleteProjects(projectIds, userId, User.Role.MANAGER);
 
             assertFalse(response.getSuccess());
             assertEquals(0, response.getSuccessCount());
@@ -239,7 +240,7 @@ class BatchOperationServiceTest {
             Long userId = 100L;
 
             assertThrows(IllegalArgumentException.class, () -> {
-                batchOperationService.batchDeleteProjects(projectIds, userId);
+                batchOperationService.batchDeleteProjects(projectIds, userId, User.Role.MANAGER);
             });
         }
     }
@@ -255,7 +256,7 @@ class BatchOperationServiceTest {
             when(tenderRepository.findById(1L)).thenReturn(Optional.of(testTender1));
             doNothing().when(tenderRepository).deleteAll(anyList());
 
-            var response = batchOperationService.batchDeleteItems(itemType, ids);
+            var response = batchOperationService.batchDeleteItems(itemType, ids, 1L, User.Role.MANAGER);
 
             assertTrue(response.getSuccess());
             assertEquals(1, response.getSuccessCount());
@@ -270,7 +271,7 @@ class BatchOperationServiceTest {
             when(taskRepository.findById(1L)).thenReturn(Optional.of(testTask1));
             doNothing().when(taskRepository).deleteAll(anyList());
 
-            var response = batchOperationService.batchDeleteItems(itemType, ids);
+            var response = batchOperationService.batchDeleteItems(itemType, ids, 1L, User.Role.MANAGER);
 
             assertTrue(response.getSuccess());
             assertEquals(1, response.getSuccessCount());
@@ -284,7 +285,7 @@ class BatchOperationServiceTest {
             when(projectRepository.findById(1L)).thenReturn(Optional.of(testProject1));
             doNothing().when(projectRepository).deleteAll(anyList());
 
-            var response = batchOperationService.batchDeleteItems(itemType, ids);
+            var response = batchOperationService.batchDeleteItems(itemType, ids, 1L, User.Role.MANAGER);
 
             assertTrue(response.getSuccess());
             assertEquals(1, response.getSuccessCount());
@@ -296,7 +297,7 @@ class BatchOperationServiceTest {
             List<Long> ids = Collections.singletonList(1L);
 
             assertThrows(IllegalArgumentException.class, () -> {
-                batchOperationService.batchDeleteItems(itemType, ids);
+                batchOperationService.batchDeleteItems(itemType, ids, 1L, User.Role.MANAGER);
             });
         }
 
@@ -308,10 +309,43 @@ class BatchOperationServiceTest {
             when(tenderRepository.findById(1L)).thenReturn(Optional.of(testTender1));
             doNothing().when(tenderRepository).deleteAll(anyList());
 
-            var response = batchOperationService.batchDeleteItems(itemType, ids);
+            var response = batchOperationService.batchDeleteItems(itemType, ids, 1L, User.Role.MANAGER);
 
             assertTrue(response.getSuccess());
             assertEquals(1, response.getSuccessCount());
+        }
+
+        @Test
+        void batchDeleteItems_ProjectTypeHonorsProjectOwnershipForManagers() {
+            String itemType = "project";
+            List<Long> ids = Collections.singletonList(1L);
+            testProject1.setManagerId(999L);
+
+            when(projectRepository.findById(1L)).thenReturn(Optional.of(testProject1));
+
+            var response = batchOperationService.batchDeleteItems(itemType, ids, 1L, User.Role.MANAGER);
+
+            assertFalse(response.getSuccess());
+            assertEquals(0, response.getSuccessCount());
+            assertEquals(1, response.getFailureCount());
+            assertEquals("PERMISSION_DENIED", response.getErrors().get(0).getErrorCode());
+            verify(projectRepository, never()).deleteAll(anyList());
+        }
+
+        @Test
+        void batchDeleteItems_ProjectTypeAllowsAdminsAcrossProjects() {
+            String itemType = "project";
+            List<Long> ids = Collections.singletonList(1L);
+            testProject1.setManagerId(999L);
+
+            when(projectRepository.findById(1L)).thenReturn(Optional.of(testProject1));
+            doNothing().when(projectRepository).deleteAll(anyList());
+
+            var response = batchOperationService.batchDeleteItems(itemType, ids, 1L, User.Role.ADMIN);
+
+            assertTrue(response.getSuccess());
+            assertEquals(1, response.getSuccessCount());
+            verify(projectRepository).deleteAll(anyList());
         }
     }
 

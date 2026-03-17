@@ -1,8 +1,10 @@
-package com.xiyu.bid.approval.controller;
+package com.xiyu.bid.export.controller;
 
-import com.xiyu.bid.approval.service.ApprovalWorkflowService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiyu.bid.config.ExportConfig;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.service.RateLimitService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -17,19 +19,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ExtendWith(MockitoExtension.class)
-class ApprovalControllerSecurityTest {
+class ExportControllerSecurityTest {
 
     @Mock
     private UserRepository userRepository;
 
     @Test
-    void getUserIdFromDetails_ResolvesPersistedUserByUsername() throws Exception {
+    void extractUserId_ResolvesPersistedUserByUsername() throws Exception {
         UserDetails userDetails = org.springframework.security.core.userdetails.User.withUsername("alice")
                 .password("password")
                 .authorities("ROLE_STAFF")
                 .build();
         User user = User.builder()
-                .id(42L)
+                .id(7L)
                 .username("alice")
                 .role(User.Role.STAFF)
                 .email("alice@example.com")
@@ -40,21 +42,24 @@ class ApprovalControllerSecurityTest {
 
         org.mockito.Mockito.when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
 
-        Method method = ApprovalController.class.getDeclaredMethod(
-                "getUserIdFromDetails",
-                UserDetails.class
-        );
+        Method method = ExportController.class.getDeclaredMethod("extractUserId", UserDetails.class);
         method.setAccessible(true);
 
-        ApprovalController controller = new ApprovalController((ApprovalWorkflowService) null, userRepository);
+        ExportController controller = new ExportController(
+                null,
+                (ExportConfig) null,
+                (RateLimitService) null,
+                new ObjectMapper(),
+                userRepository
+        );
 
         Long userId = (Long) method.invoke(controller, userDetails);
 
-        assertThat(userId).isEqualTo(42L);
+        assertThat(userId).isEqualTo(7L);
     }
 
     @Test
-    void getUserIdFromDetails_RejectsUnknownAuthenticatedUser() throws Exception {
+    void extractUserId_RejectsUnknownAuthenticatedUser() throws Exception {
         UserDetails userDetails = org.springframework.security.core.userdetails.User.withUsername("ghost")
                 .password("password")
                 .authorities("ROLE_STAFF")
@@ -62,13 +67,16 @@ class ApprovalControllerSecurityTest {
 
         org.mockito.Mockito.when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
 
-        Method method = ApprovalController.class.getDeclaredMethod(
-                "getUserIdFromDetails",
-                UserDetails.class
-        );
+        Method method = ExportController.class.getDeclaredMethod("extractUserId", UserDetails.class);
         method.setAccessible(true);
 
-        ApprovalController controller = new ApprovalController((ApprovalWorkflowService) null, userRepository);
+        ExportController controller = new ExportController(
+                null,
+                (ExportConfig) null,
+                (RateLimitService) null,
+                new ObjectMapper(),
+                userRepository
+        );
 
         assertThatThrownBy(() -> method.invoke(controller, userDetails))
                 .hasCauseExactlyInstanceOf(AuthenticationServiceException.class)

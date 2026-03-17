@@ -7,6 +7,7 @@ import com.xiyu.bid.approval.enums.ApprovalActionType;
 import com.xiyu.bid.approval.enums.ApprovalStatus;
 import com.xiyu.bid.approval.repository.ApprovalActionRepository;
 import com.xiyu.bid.approval.repository.ApprovalRequestRepository;
+import com.xiyu.bid.entity.User;
 import com.xiyu.bid.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -218,14 +219,25 @@ public class ApprovalWorkflowService {
     /**
      * 获取待审批列表
      */
-    public Page<ApprovalDetailDTO> getPendingApprovals(Long approverId, Pageable pageable) {
+    public Page<ApprovalDetailDTO> getPendingApprovals(
+            Long currentUserId,
+            User.Role currentUserRole,
+            Long approverId,
+            Pageable pageable) {
         List<ApprovalRequest> requests;
+        boolean privileged = isPrivileged(currentUserRole);
 
         if (approverId != null) {
+            if (!privileged && !approverId.equals(currentUserId)) {
+                throw new BusinessException("只能查看自己的待审批列表");
+            }
             requests = requestRepository.findByStatusAndCurrentApproverIdOrderByPriorityDescCreatedAtDesc(
                     ApprovalStatus.PENDING, approverId);
-        } else {
+        } else if (privileged) {
             requests = requestRepository.findByStatusOrderByPriorityDescCreatedAtDesc(ApprovalStatus.PENDING);
+        } else {
+            requests = requestRepository.findByStatusAndCurrentApproverIdOrderByPriorityDescCreatedAtDesc(
+                    ApprovalStatus.PENDING, currentUserId);
         }
 
         List<ApprovalDetailDTO> dtos = requests.stream()
@@ -322,8 +334,11 @@ public class ApprovalWorkflowService {
     /**
      * 获取审批详情
      */
-    public ApprovalDetailDTO getApprovalDetail(UUID requestId) {
+    public ApprovalDetailDTO getApprovalDetail(UUID requestId, Long currentUserId, User.Role currentUserRole) {
         ApprovalRequest request = getApprovalRequestEntity(requestId);
+        if (!canViewApprovalRequest(request, currentUserId, currentUserRole)) {
+            throw new BusinessException("无权查看该审批");
+        }
         return toDetailDTO(request);
     }
 
@@ -454,6 +469,18 @@ public class ApprovalWorkflowService {
         // Future enhancement: More complex permission logic can be added here
         // such as role-based approval chains, delegation rules, etc.
         return true;
+    }
+
+    private boolean canViewApprovalRequest(ApprovalRequest request, Long currentUserId, User.Role currentUserRole) {
+        if (isPrivileged(currentUserRole)) {
+            return true;
+        }
+        return Objects.equals(request.getRequesterId(), currentUserId)
+                || Objects.equals(request.getCurrentApproverId(), currentUserId);
+    }
+
+    private boolean isPrivileged(User.Role role) {
+        return role == User.Role.ADMIN || role == User.Role.MANAGER;
     }
 
     /**

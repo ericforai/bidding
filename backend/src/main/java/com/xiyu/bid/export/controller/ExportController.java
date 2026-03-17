@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.config.ExportConfig;
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.entity.User;
 import com.xiyu.bid.export.dto.ExportRequest;
 import com.xiyu.bid.export.dto.ExportResponse;
 import com.xiyu.bid.export.service.ExcelExportService;
+import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.service.RateLimitService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +39,7 @@ public class ExportController {
     private final ExportConfig exportConfig;
     private final RateLimitService rateLimitService;
     private final ObjectMapper objectMapper;
+    private final UserRepository userRepository;
 
     private static final String EXPORT_TEMP_DIR = System.getProperty("java.io.tmpdir") + "/xiyu-exports/";
 
@@ -191,12 +194,16 @@ public class ExportController {
     }
 
     /**
-     * Extract and validate user ID from UserDetails
+     * Extract the persisted user from UserDetails.
      *
-     * SECURITY: Validates the user ID and throws exception for invalid values
-     * instead of returning null or a default value.
+     * SECURITY: username in Spring Security is the login name, not a numeric userId.
+     * Always resolve the current user from the repository before authorizing exports.
      */
     private Long extractUserId(UserDetails userDetails) {
+        return getCurrentUser(userDetails).getId();
+    }
+
+    private User getCurrentUser(UserDetails userDetails) {
         if (userDetails == null) {
             throw new org.springframework.security.authentication.AuthenticationServiceException(
                     "UserDetails cannot be null");
@@ -208,17 +215,9 @@ public class ExportController {
                     "Username cannot be null or empty");
         }
 
-        try {
-            Long userId = Long.parseLong(username.trim());
-            if (userId <= 0) {
-                throw new org.springframework.security.authentication.AuthenticationServiceException(
-                        "Invalid user identifier: must be positive");
-            }
-            return userId;
-        } catch (NumberFormatException e) {
-            throw new org.springframework.security.authentication.AuthenticationServiceException(
-                    "Invalid user identifier: username must be numeric", e);
-        }
+        return userRepository.findByUsername(username.trim())
+                .orElseThrow(() -> new org.springframework.security.authentication.AuthenticationServiceException(
+                        "Authenticated user not found: " + username));
     }
 
     private String sanitizeFilename(String filename) {

@@ -7,6 +7,7 @@ import com.xiyu.bid.batch.dto.BatchOperationResponse;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.entity.Task;
+import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TaskRepository;
 import com.xiyu.bid.repository.TenderRepository;
@@ -174,9 +175,10 @@ public class BatchOperationService {
         isolation = Isolation.READ_COMMITTED
     )
     @PreAuthorize("hasAuthority('DELETE_PROJECT')")
-    public BatchOperationResponse batchDeleteProjects(List<Long> projectIds, Long userId) {
+    public BatchOperationResponse batchDeleteProjects(List<Long> projectIds, Long userId, User.Role userRole) {
         validateBatchInput(projectIds, "Project IDs");
         validateUserId(userId);
+        validateUserRole(userRole);
         log.info("Batch deleting projects: count={}, userId={}", projectIds.size(), userId);
 
         BatchOperationResponse response = BatchOperationResponse.builder()
@@ -194,7 +196,7 @@ public class BatchOperationService {
                     continue;
                 }
                 Project project = projectOpt.get();
-                if (!hasDeletePermission(project, userId)) {
+                if (!hasDeletePermission(project, userId, userRole)) {
                     response.addError(projectId, "Permission denied: you must be the project manager or admin", "PERMISSION_DENIED");
                     continue;
                 }
@@ -226,7 +228,7 @@ public class BatchOperationService {
         if (request == null) {
             throw new IllegalArgumentException("Batch delete request cannot be null");
         }
-        return batchDeleteProjects(request.getItemIds(), request.getUserId());
+        throw new IllegalStateException("Use the authenticated batchDeleteProjects overload with the current user context");
     }
 
     /**
@@ -238,22 +240,23 @@ public class BatchOperationService {
         rollbackFor = Exception.class,
         isolation = Isolation.READ_COMMITTED
     )
-    @PreAuthorize("hasAnyAuthority('DELETE_TENDER', 'DELETE_TASK', 'DELETE_PROJECT')")
-    public BatchOperationResponse batchDeleteItems(String itemType, List<Long> ids) {
+    public BatchOperationResponse batchDeleteItems(String itemType, List<Long> ids, Long userId, User.Role userRole) {
         if (itemType == null || itemType.trim().isEmpty()) {
             throw new IllegalArgumentException("Item type cannot be null or empty");
         }
         validateBatchInput(ids, "Item IDs");
+        validateUserId(userId);
+        validateUserRole(userRole);
         log.info("Batch deleting items: type={}, count={}", itemType, ids.size());
 
         String normalizedType = itemType.trim().toUpperCase();
         switch (normalizedType) {
             case "TENDER":
-                return batchDeleteTenders(ids);
+                return batchDeleteTenders(ids, userId);
             case "TASK":
-                return batchDeleteTasks(ids);
+                return batchDeleteTasks(ids, userId);
             case "PROJECT":
-                return batchDeleteProjectsDirect(ids);
+                return batchDeleteProjects(ids, userId, userRole);
             default:
                 throw new IllegalArgumentException("Unsupported item type: " + itemType);
         }
@@ -268,8 +271,7 @@ public class BatchOperationService {
         rollbackFor = Exception.class,
         isolation = Isolation.READ_COMMITTED
     )
-    @PreAuthorize("hasAuthority('DELETE_TENDER')")
-    private BatchOperationResponse batchDeleteTenders(List<Long> tenderIds) {
+    private BatchOperationResponse batchDeleteTenders(List<Long> tenderIds, Long userId) {
         BatchOperationResponse response = BatchOperationResponse.builder()
                 .operationType("DELETE")
                 .operationTime(LocalDateTime.now())
@@ -291,7 +293,7 @@ public class BatchOperationService {
         if (!toDelete.isEmpty()) {
             tenderRepository.deleteAll(toDelete);
         }
-        recordBatchOperationLog(response, "TENDER", "DELETE", null);
+        recordBatchOperationLog(response, "TENDER", "DELETE", userId);
         response.setSuccess(response.getFailureCount() == 0);
         return response;
     }
@@ -305,8 +307,7 @@ public class BatchOperationService {
         rollbackFor = Exception.class,
         isolation = Isolation.READ_COMMITTED
     )
-    @PreAuthorize("hasAuthority('DELETE_TASK')")
-    private BatchOperationResponse batchDeleteTasks(List<Long> taskIds) {
+    private BatchOperationResponse batchDeleteTasks(List<Long> taskIds, Long userId) {
         BatchOperationResponse response = BatchOperationResponse.builder()
                 .operationType("DELETE")
                 .operationTime(LocalDateTime.now())
@@ -328,54 +329,17 @@ public class BatchOperationService {
         if (!toDelete.isEmpty()) {
             taskRepository.deleteAll(toDelete);
         }
-        recordBatchOperationLog(response, "TASK", "DELETE", null);
-        response.setSuccess(response.getFailureCount() == 0);
-        return response;
-    }
-
-    /**
-     * Batch delete projects directly.
-     * Requires DELETE_PROJECT permission.
-     */
-    @Auditable(action = "BATCH_DELETE_PROJECT_DIRECT", entityType = "PROJECT", description = "Batch delete projects direct")
-    @Transactional(
-        rollbackFor = Exception.class,
-        isolation = Isolation.READ_COMMITTED
-    )
-    @PreAuthorize("hasAuthority('DELETE_PROJECT')")
-    private BatchOperationResponse batchDeleteProjectsDirect(List<Long> projectIds) {
-        BatchOperationResponse response = BatchOperationResponse.builder()
-                .operationType("DELETE")
-                .operationTime(LocalDateTime.now())
-                .build();
-        response.setTotalCount(projectIds.size());
-
-        List<Project> toDelete = new ArrayList<>();
-        for (Long id : projectIds) {
-            try {
-                projectRepository.findById(id).ifPresent(p -> {
-                    toDelete.add(p);
-                    response.addSuccess(id);
-                });
-            } catch (Exception e) {
-                response.addError(id, e.getMessage(), "DELETE_ERROR");
-            }
-        }
-
-        if (!toDelete.isEmpty()) {
-            projectRepository.deleteAll(toDelete);
-        }
-        recordBatchOperationLog(response, "PROJECT", "DELETE", null);
+        recordBatchOperationLog(response, "TASK", "DELETE", userId);
         response.setSuccess(response.getFailureCount() == 0);
         return response;
     }
 
     /**
      * Check if user has delete permission for the project.
-     * User must be the project manager.
+     * User must be the project manager or admin.
      */
-    private boolean hasDeletePermission(Project project, Long userId) {
-        return project.getManagerId().equals(userId);
+    private boolean hasDeletePermission(Project project, Long userId, User.Role userRole) {
+        return userRole == User.Role.ADMIN || project.getManagerId().equals(userId);
     }
 
     /**
@@ -404,6 +368,12 @@ public class BatchOperationService {
         }
         if (userId <= 0) {
             throw new IllegalArgumentException("User ID must be positive");
+        }
+    }
+
+    private void validateUserRole(User.Role userRole) {
+        if (userRole == null) {
+            throw new IllegalArgumentException("User role cannot be null");
         }
     }
 
