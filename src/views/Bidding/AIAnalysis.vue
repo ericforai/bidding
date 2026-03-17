@@ -187,6 +187,10 @@
       </div>
     </div>
 
+    <el-card v-else class="empty-card" shadow="never">
+      <el-empty description="当前模式下暂无可用的 AI 分析报告" />
+    </el-card>
+
     <!-- 底部操作栏 -->
     <div class="bottom-actions">
       <el-button size="large" @click="handleAddToPool">
@@ -242,39 +246,10 @@ import {
   Plus
 } from '@element-plus/icons-vue'
 import WinScoreChart from '@/components/ai/WinScoreChart.vue'
-import { mockData } from '@/api/mock'
+import { aiApi, isMockMode, tendersApi } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
-
-// 添加 AI 分析数据到 mockData
-if (!mockData.aiAnalysis) {
-  mockData.aiAnalysis = {
-    T001: {
-      winScore: 75,
-      suggestion: '有把握投，建议补齐智慧城市类案例',
-      dimensionScores: [
-        { name: '客户关系', score: 80 },
-        { name: '需求匹配', score: 70 },
-        { name: '资质满足', score: 60 },
-        { name: '交付能力', score: 85 },
-        { name: '竞争态势', score: 50 }
-      ],
-      risks: [
-        { level: 'high', desc: '缺智慧城市类案例(权重15分)', action: '推荐使用上海XX项目案例' },
-        { level: 'medium', desc: 'CMMI 5级资质即将过期(30天)', action: '需更新资质文件' },
-        { level: 'medium', desc: '客户关系强度: 中', action: '建议安排高层拜访' }
-      ],
-      autoTasks: [
-        { id: 1, title: '准备资质文件', owner: '张三', dueDate: '2024-03-15', priority: 'high', completed: false },
-        { id: 2, title: '编写技术方案', owner: '李四', dueDate: '2024-03-20', priority: 'high', completed: false },
-        { id: 3, title: '商务报价测算', owner: '王五', dueDate: '2024-03-25', priority: 'medium', completed: false },
-        { id: 4, title: '案例素材整理', owner: '赵六', dueDate: '2024-03-18', priority: 'high', completed: false },
-        { id: 5, title: '投标保证金办理', owner: '钱七', dueDate: '2024-03-28', priority: 'medium', completed: false }
-      ]
-    }
-  }
-}
 
 // 维度详情数据
 const dimensionDetailsMap = {
@@ -320,12 +295,17 @@ const progressColors = [
   { color: '#67c23a', percentage: 100 }
 ]
 
+const isApiMode = !isMockMode()
+
 const dimensionDetails = computed(() => {
   if (!analysisData.value) return []
   return analysisData.value.dimensionScores.map(dim => ({
     name: dim.name,
     score: dim.score,
-    ...dimensionDetailsMap[dim.name]
+    ...(dimensionDetailsMap[dim.name] || {
+      description: '暂无维度说明',
+      suggestion: '暂无改进建议'
+    })
   }))
 })
 
@@ -436,20 +416,52 @@ const startParsingAnimation = () => {
   }, 800)
 }
 
-onMounted(() => {
-  // 获取标讯信息
-  const tender = mockData.tenders.find(t => t.id === tenderId.value)
-  tenderInfo.value = tender
+const loadTenderInfo = async () => {
+  const response = await tendersApi.getDetail(tenderId.value)
+  if (response?.success && response.data) {
+    tenderInfo.value = response.data
+    return
+  }
 
-  // 模拟从后端获取AI分析数据
-  // 如果是新进入页面，显示解析动画
-  if (!route.params.fromList) {
+  tenderInfo.value = null
+  ElMessage.error(response?.message || '标讯信息加载失败')
+}
+
+const loadAnalysis = async () => {
+  const response = await aiApi.bid.getAnalysis(tenderId.value)
+  if (response?.success && response.data) {
+    analysisData.value = response.data
+    return
+  }
+
+  analysisData.value = null
+
+  if (isApiMode) {
+    ElMessage.warning('该标讯 AI 分析尚未纳入正式交付范围，已返回标讯详情')
+    router.replace(`/bidding/${tenderId.value}`)
+  } else {
+    ElMessage.error(response?.message || 'AI 分析数据加载失败')
+  }
+}
+
+const initializePage = async () => {
+  const showParsing = !route.params.fromList
+
+  if (showParsing) {
     startParsingAnimation()
   }
 
-  setTimeout(() => {
-    analysisData.value = mockData.aiAnalysis[tenderId.value] || mockData.aiAnalysis.T001
-  }, 1000)
+  await loadTenderInfo()
+
+  if (showParsing) {
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+  }
+
+  await loadAnalysis()
+}
+
+onMounted(() => {
+  initializePage()
 })
 </script>
 
@@ -499,6 +511,10 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 400px 1fr;
   gap: 20px;
+}
+
+.empty-card {
+  min-height: 320px;
 }
 
 /* 左侧区域 */

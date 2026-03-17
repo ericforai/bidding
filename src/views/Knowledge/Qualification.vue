@@ -3,6 +3,9 @@
     <div class="page-header">
       <h2 class="page-title">资质库</h2>
       <div class="header-actions">
+        <el-button :icon="Download" @click="handleExportList">
+          导出列表
+        </el-button>
         <el-button type="primary" :icon="Upload" @click="handleUpload">
           上传资质
         </el-button>
@@ -44,7 +47,14 @@
     </el-card>
 
     <el-card class="table-card">
+      <FeaturePlaceholder
+        v-if="featurePlaceholder"
+        :title="featurePlaceholder.title"
+        :message="featurePlaceholder.message"
+        :hint="featurePlaceholder.hint"
+      />
       <el-table
+        v-else
         v-loading="loading"
         :data="filteredQualifications"
         stripe
@@ -61,7 +71,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="type" label="类型" width="120">
+        <el-table-column prop="type" label="类型" width="160">
           <template #default="{ row }">
             <el-tag :type="getTypeTagType(row.type)" size="small">
               {{ getTypeLabel(row.type) }}
@@ -87,7 +97,7 @@
 
         <el-table-column prop="issuer" label="发证机关" min-width="150" />
 
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" label="状态" width="140">
           <template #default="{ row }">
             <el-tag
               :type="getStatusTagType(row.status)"
@@ -99,7 +109,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
             <el-button
               type="primary"
@@ -113,6 +123,15 @@
             <el-button
               type="primary"
               link
+              :icon="Share"
+              size="small"
+              @click="handleBorrow(row)"
+            >
+              借阅
+            </el-button>
+            <el-button
+              type="primary"
+              link
               :icon="Download"
               size="small"
               @click="handleDownload(row)"
@@ -120,6 +139,7 @@
               下载
             </el-button>
             <el-button
+              v-if="isAdmin"
               type="danger"
               link
               :icon="Delete"
@@ -255,6 +275,83 @@
         </el-descriptions-item>
       </el-descriptions>
     </el-dialog>
+
+    <!-- 借阅对话框 -->
+    <el-dialog v-model="borrowDialogVisible" title="资质借阅申请" width="500px">
+      <el-form :model="borrowForm" label-width="100px">
+        <el-form-item label="资质名称">
+          <el-input :value="currentQualification?.name" disabled />
+        </el-form-item>
+        <el-form-item label="借用人" required>
+          <el-input v-model="borrowForm.borrower" placeholder="请输入借用人姓名" />
+        </el-form-item>
+        <el-form-item label="所属部门">
+          <el-input v-model="borrowForm.department" placeholder="请输入所属部门" />
+        </el-form-item>
+        <el-form-item label="借阅用途" required>
+          <el-select v-model="borrowForm.purpose" placeholder="请选择用途" style="width: 100%">
+            <el-option label="投标使用" value="bidding" />
+            <el-option label="资质审核" value="audit" />
+            <el-option label="客户展示" value="presentation" />
+            <el-option label="其他" value="other" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="预计归还">
+          <el-date-picker
+            v-model="borrowForm.returnDate"
+            type="date"
+            placeholder="选择日期"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="borrowForm.remark" type="textarea" :rows="2" placeholder="请输入备注信息" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="borrowDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleConfirmBorrow">提交申请</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 借阅记录 -->
+    <el-card class="borrow-history-card">
+      <template #header>
+        <div class="card-header">
+          <span>借阅记录</span>
+          <el-button type="primary" size="small" @click="borrowDialogVisible = true; currentQualification = null">
+            新增借阅
+          </el-button>
+        </div>
+      </template>
+      <el-table :data="borrowRecords" stripe>
+        <el-table-column prop="qualificationName" label="资质名称" min-width="180" />
+        <el-table-column prop="borrower" label="借用人" width="100" />
+        <el-table-column prop="department" label="部门" width="120" />
+        <el-table-column prop="purpose" label="用途" width="100">
+          <template #default="{ row }">
+            <el-tag size="small">{{ getPurposeLabel(row.purpose) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="borrowDate" label="借阅日期" width="120" />
+        <el-table-column prop="returnDate" label="应归还日期" width="120" />
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="getBorrowStatusType(row.status)" size="small">
+              {{ getBorrowStatusLabel(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="120">
+          <template #default="{ row }">
+            <el-button v-if="row.status === 'borrowed'" size="small" type="primary" link @click="handleReturn(row)">
+              归还
+            </el-button>
+            <el-button v-else size="small" link disabled>已归还</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
   </div>
 </template>
 
@@ -272,9 +369,18 @@ import {
   OfficeBuilding,
   User,
   Box,
-  Medal
+  Medal,
+  Share
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useUserStore } from '@/stores/user'
+import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
+import { getFeaturePlaceholder, isFeatureUnavailableResponse, knowledgeApi, isMockMode } from '@/api'
+import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
+import { triggerDownload } from '@/api/modules/export'
+
+const userStore = useUserStore()
+const isAdmin = computed(() => userStore.currentUser?.role === 'admin')
 
 // 搜索表单
 const searchForm = reactive({
@@ -296,9 +402,63 @@ const loading = ref(false)
 // 对话框
 const uploadDialogVisible = ref(false)
 const detailDialogVisible = ref(false)
+const borrowDialogVisible = ref(false)
 
 // 当前查看的资质
 const currentQualification = ref(null)
+
+// 借阅表单
+const borrowForm = reactive({
+  borrower: '',
+  department: '',
+  purpose: '',
+  returnDate: '',
+  remark: ''
+})
+
+// 借阅记录 Mock 数据
+const borrowRecords = ref([
+  {
+    id: 1,
+    qualificationName: '高新技术企业证书',
+    borrower: '小王',
+    department: '销售部',
+    purpose: 'bidding',
+    borrowDate: '2025-02-20',
+    returnDate: '2025-03-05',
+    status: 'borrowed'
+  },
+  {
+    id: 2,
+    qualificationName: 'ISO9001质量管理体系认证',
+    borrower: '张经理',
+    department: '商务部',
+    purpose: 'audit',
+    borrowDate: '2025-02-15',
+    returnDate: '2025-02-28',
+    status: 'returned'
+  },
+  {
+    id: 3,
+    qualificationName: '涉密信息系统集成资质',
+    borrower: '李工',
+    department: '技术部',
+    purpose: 'bidding',
+    borrowDate: '2025-02-25',
+    returnDate: '2025-03-10',
+    status: 'borrowed'
+  },
+  {
+    id: 4,
+    qualificationName: 'CMMI5级认证证书',
+    borrower: '小王',
+    department: '销售部',
+    purpose: 'presentation',
+    borrowDate: '2025-01-20',
+    returnDate: '2025-02-05',
+    status: 'returned'
+  }
+])
 
 // 上传表单
 const uploadForm = reactive({
@@ -311,143 +471,34 @@ const uploadForm = reactive({
   file: null
 })
 
-// Mock 数据
-const mockQualifications = [
-  {
-    id: 1,
-    name: '高新技术企业证书',
-    type: 'enterprise',
-    certificateNo: 'GR202311000123',
-    issueDate: '2023-06-15',
-    expiryDate: '2026-06-14',
-    issuer: '科学技术部',
-    status: 'valid',
-    remainingDays: 890
-  },
-  {
-    id: 2,
-    name: 'ISO9001质量管理体系认证',
-    type: 'industry',
-    certificateNo: 'QMS2023-01-001',
-    issueDate: '2023-03-20',
-    expiryDate: '2026-03-19',
-    issuer: '中国质量认证中心',
-    status: 'valid',
-    remainingDays: 750
-  },
-  {
-    id: 3,
-    name: '建筑工程施工总承包壹级',
-    type: 'enterprise',
-    certificateNo: 'D144007891',
-    issueDate: '2021-08-10',
-    expiryDate: '2026-08-09',
-    issuer: '住房和城乡建设部',
-    status: 'valid',
-    remainingDays: 890
-  },
-  {
-    id: 4,
-    name: '软件能力成熟度CMMI5级',
-    type: 'industry',
-    certificateNo: 'CMMI-5-2023-001',
-    issueDate: '2023-05-01',
-    expiryDate: '2025-05-01',
-    issuer: 'CMMI Institute',
-    status: 'expiring',
-    remainingDays: 430
-  },
-  {
-    id: 5,
-    name: '安全生产许可证',
-    type: 'enterprise',
-    certificateNo: '（浙）JZ安许证字〔2023〕000123',
-    issueDate: '2023-01-15',
-    expiryDate: '2026-01-14',
-    issuer: '浙江省应急管理厅',
-    status: 'valid',
-    remainingDays: 690
-  },
-  {
-    id: 6,
-    name: 'PMP项目管理专业人士认证',
-    type: 'personnel',
-    certificateNo: '3889123',
-    issueDate: '2023-09-01',
-    expiryDate: '2026-09-01',
-    issuer: 'PMI',
-    status: 'valid',
-    remainingDays: 920
-  },
-  {
-    id: 7,
-    name: '信息安全等级保护三级认证',
-    type: 'industry',
-    certificateNo: 'DJCP2023-330100-001',
-    issueDate: '2023-07-20',
-    expiryDate: '2026-07-19',
-    issuer: '公安部网络安全保卫局',
-    status: 'valid',
-    remainingDays: 870
-  },
-  {
-    id: 8,
-    name: '环保工程专项设计资质乙级',
-    type: 'enterprise',
-    certificateNo: 'A233001234',
-    issueDate: '2020-03-15',
-    expiryDate: '2025-03-14',
-    issuer: '环境保护部',
-    status: 'expiring',
-    remainingDays: 22
-  },
-  {
-    id: 9,
-    name: '系统集成及服务资质二级',
-    type: 'enterprise',
-    certificateNo: 'XZ2023-001-0056',
-    issueDate: '2023-02-10',
-    expiryDate: '2025-02-09',
-    issuer: '中国电子信息行业联合会',
-    status: 'expiring',
-    remainingDays: 18
-  },
-  {
-    id: 10,
-    name: '注册建造师一级证书',
-    type: 'personnel',
-    certificateNo: '浙133202301234',
-    issueDate: '2020-05-20',
-    expiryDate: '2024-05-19',
-    issuer: '人力资源和社会保障部',
-    status: 'expired',
-    remainingDays: -280
-  },
-  {
-    id: 11,
-    name: '3C强制性产品认证',
-    type: 'product',
-    certificateNo: '2023010101234567',
-    issueDate: '2023-01-10',
-    expiryDate: '2028-01-09',
-    issuer: '中国强制性产品认证中心',
-    status: 'valid',
-    remainingDays: 2150
-  },
-  {
-    id: 12,
-    name: '环境管理体系认证ISO14001',
-    type: 'industry',
-    certificateNo: 'EMS2023-01-002',
-    issueDate: '2023-04-15',
-    expiryDate: '2026-04-14',
-    issuer: '中国质量认证中心',
-    status: 'valid',
-    remainingDays: 780
-  }
-]
-
 const qualifications = ref([])
+const featurePlaceholder = ref(null)
+
+const loadQualifications = async () => {
+  loading.value = true
+  try {
+    const result = await knowledgeApi.qualifications.getList()
+    if (result?.success) {
+      qualifications.value = result.data || []
+      pagination.total = qualifications.value.length
+      featurePlaceholder.value = null
+    } else {
+      qualifications.value = []
+      pagination.total = 0
+      featurePlaceholder.value = notifyFeatureUnavailable(result, {
+        fallback: {
+          title: '资质库暂未接入',
+          hint: '请先在 mock 环境演示，或等待真实后端提供资质列表接口。',
+        },
+      })
+      if (!featurePlaceholder.value && result?.message) {
+        ElMessage.error(result.message)
+      }
+    }
+  } finally {
+    loading.value = false
+  }
+}
 
 // 过滤后的数据
 const filteredQualifications = computed(() => {
@@ -578,6 +629,20 @@ const handleSearch = () => {
   pagination.page = 1
 }
 
+// 导出列表
+const handleExportList = () => {
+  const { exportExcel } = require('@/composables/useExport').useExport()
+  const { ExportType } = require('@/api')
+
+  const params = {
+    name: searchForm.name || undefined,
+    type: searchForm.type || undefined,
+    status: searchForm.status || undefined
+  }
+
+  exportExcel(ExportType.QUALIFICATIONS, params, '资质列表导出成功')
+}
+
 // 重置
 const handleReset = () => {
   searchForm.name = ''
@@ -606,28 +671,31 @@ const handleFileChange = (file) => {
 }
 
 // 确认上传
-const handleConfirmUpload = () => {
+const handleConfirmUpload = async () => {
   if (!uploadForm.name || !uploadForm.type || !uploadForm.expiryDate) {
     ElMessage.warning('请填写必填项')
     return
   }
 
-  ElMessage.success('上传成功')
-  uploadDialogVisible.value = false
-
-  // 模拟添加数据
-  const newQualification = {
-    id: Date.now(),
+  const payload = {
     name: uploadForm.name,
     type: uploadForm.type,
-    certificateNo: uploadForm.certificateNo || '-',
-    issueDate: uploadForm.issueDate || '-',
+    certificateNo: uploadForm.certificateNo,
+    issueDate: uploadForm.issueDate,
     expiryDate: uploadForm.expiryDate,
-    issuer: uploadForm.issuer || '-',
-    status: 'valid',
-    remainingDays: Math.ceil((new Date(uploadForm.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))
+    issuer: uploadForm.issuer,
+    fileUrl: uploadForm.file?.name || ''
   }
-  qualifications.value.unshift(newQualification)
+
+  const result = await knowledgeApi.qualifications.create(payload)
+  if (!result?.success) {
+    ElMessage.error(result?.message || '上传失败')
+    return
+  }
+
+  qualifications.value.unshift(result.data)
+  uploadDialogVisible.value = false
+  ElMessage.success(isMockMode() ? '上传成功' : '资质元数据已创建，文件上传后端暂未接入')
 }
 
 // 查看
@@ -638,7 +706,31 @@ const handleView = (row) => {
 
 // 下载
 const handleDownload = (row) => {
-  ElMessage.success(`开始下载：${row.name}`)
+  if (isMockMode() || !row.fileUrl) {
+    // Mock 模式或无文件URL时模拟下载
+    ElMessage.success(`开始下载：${row.name}`)
+    return
+  }
+
+  // API 模式：处理文件下载
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+  const filename = `${row.name}.${row.fileUrl.split('.').pop() || 'pdf'}`
+
+  fetch(row.fileUrl, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  })
+    .then(response => {
+      if (!response.ok) throw new Error('下载失败')
+      return response.blob()
+    })
+    .then(blob => {
+      triggerDownload(blob, filename)
+      ElMessage.success(`下载成功：${row.name}`)
+    })
+    .catch(error => {
+      console.error('Download error:', error)
+      ElMessage.error(`下载失败：${error.message}`)
+    })
 }
 
 // 删除
@@ -651,13 +743,104 @@ const handleDelete = (row) => {
       cancelButtonText: '取消',
       type: 'warning'
     }
-  ).then(() => {
+  ).then(async () => {
+    const result = await knowledgeApi.qualifications.delete(row.id)
+    if (!result?.success && result !== undefined) {
+      ElMessage.error(result?.message || '删除失败')
+      return
+    }
     const index = qualifications.value.findIndex(item => item.id === row.id)
     if (index > -1) {
       qualifications.value.splice(index, 1)
-      ElMessage.success('删除成功')
+    }
+    ElMessage.success('删除成功')
+  }).catch(() => {})
+}
+
+// 借阅
+const handleBorrow = (row) => {
+  currentQualification.value = row
+  // 重置表单
+  borrowForm.borrower = ''
+  borrowForm.department = ''
+  borrowForm.purpose = ''
+  borrowForm.returnDate = ''
+  borrowForm.remark = ''
+  borrowDialogVisible.value = true
+}
+
+// 确认借阅
+const handleConfirmBorrow = () => {
+  if (!borrowForm.borrower || !borrowForm.purpose) {
+    ElMessage.warning('请填写必填项')
+    return
+  }
+
+  // 添加借阅记录
+  const newRecord = {
+    id: Date.now(),
+    qualificationName: currentQualification.value?.name || '资质文件',
+    borrower: borrowForm.borrower,
+    department: borrowForm.department || '-',
+    purpose: borrowForm.purpose,
+    borrowDate: new Date().toISOString().split('T')[0],
+    returnDate: borrowForm.returnDate || '-',
+    status: 'borrowed'
+  }
+
+  borrowRecords.value.unshift(newRecord)
+  ElMessage.success('借阅申请已提交')
+  borrowDialogVisible.value = false
+}
+
+// 归还
+const handleReturn = (row) => {
+  ElMessageBox.confirm(
+    `确认「${row.qualificationName}」已归还吗？`,
+    '归还确认',
+    {
+      confirmButtonText: '确认归还',
+      cancelButtonText: '取消',
+      type: 'success'
+    }
+  ).then(() => {
+    const record = borrowRecords.value.find(r => r.id === row.id)
+    if (record) {
+      record.status = 'returned'
+      ElMessage.success('归还成功')
     }
   }).catch(() => {})
+}
+
+// 用途标签
+const getPurposeLabel = (purpose) => {
+  const map = {
+    'bidding': '投标使用',
+    'audit': '资质审核',
+    'presentation': '客户展示',
+    'other': '其他'
+  }
+  return map[purpose] || purpose
+}
+
+// 借阅状态类型
+const getBorrowStatusType = (status) => {
+  const map = {
+    'borrowed': 'warning',
+    'returned': 'success',
+    'overdue': 'danger'
+  }
+  return map[status] || ''
+}
+
+// 借阅状态标签
+const getBorrowStatusLabel = (status) => {
+  const map = {
+    'borrowed': '借阅中',
+    'returned': '已归还',
+    'overdue': '逾期'
+  }
+  return map[status] || status
 }
 
 // 分页变化
@@ -671,8 +854,7 @@ const handleSizeChange = (size) => {
 }
 
 onMounted(() => {
-  qualifications.value = mockQualifications
-  pagination.total = mockQualifications.length
+  loadQualifications()
 })
 </script>
 
@@ -830,6 +1012,16 @@ onMounted(() => {
   @media (hover: none) and (pointer: coarse) {
     .el-button {
       min-height: 44px;
+    }
+  }
+
+  .borrow-history-card {
+    margin-top: 20px;
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
   }
 }

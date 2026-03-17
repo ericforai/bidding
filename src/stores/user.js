@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import { mockData } from '@/api/mock'
+import { authApi } from '@/api'
 
 // 从 localStorage 恢复用户状态
 const getSavedUser = () => {
   try {
-    const saved = localStorage.getItem('user')
+    const saved = localStorage.getItem('user') || sessionStorage.getItem('user')
     if (saved) {
       return JSON.parse(saved)
     }
@@ -14,48 +15,86 @@ const getSavedUser = () => {
   return null
 }
 
+const getSavedToken = () => localStorage.getItem('token') || sessionStorage.getItem('token')
+
 export const useUserStore = defineStore('user', {
   state: () => {
-    // 企业内部系统，默认登录为小王账号
-    const defaultUser = mockData.users.find(u => u.name === '小王') || mockData.users[0]
     const savedUser = getSavedUser()
 
     return {
-      // 如果有保存的用户则使用保存的，否则使用默认的小王账号
-      currentUser: savedUser || defaultUser,
+      currentUser: savedUser,
+      token: getSavedToken(),
       users: mockData.users
     }
   },
 
   getters: {
-    isLoggedIn: (state) => !!state.currentUser,
+    isLoggedIn: (state) => !!state.currentUser && !!state.token,
     userRole: (state) => state.currentUser?.role || 'staff',
     userName: (state) => state.currentUser?.name || '用户'
   },
 
   actions: {
-    login(username, password) {
-      this.currentUser = this.users.find(u => u.name === username) || this.users[0]
-      // 保存到 localStorage
-      this.persistUser()
-      return Promise.resolve(this.currentUser)
+    async login(username, password, remember = true) {
+      const result = await authApi.login(username, password)
+
+      if (!result?.success || !result?.data?.user || !result?.data?.token) {
+        throw new Error(result?.message || 'Login failed')
+      }
+
+      this.currentUser = result.data.user
+      this.token = result.data.token
+      this.persistSession(remember)
+      return this.currentUser
+    },
+
+    async restoreSession() {
+      if (!this.token) {
+        return null
+      }
+
+      if (this.currentUser) {
+        return this.currentUser
+      }
+
+      const result = await authApi.getCurrentUser()
+      if (!result?.success || !result?.data) {
+        this.logout()
+        return null
+      }
+
+      this.currentUser = result.data
+      this.persistSession(Boolean(localStorage.getItem('token')))
+      return this.currentUser
     },
 
     logout() {
       this.currentUser = null
+      this.token = null
       localStorage.removeItem('user')
+      localStorage.removeItem('token')
+      sessionStorage.removeItem('user')
+      sessionStorage.removeItem('token')
     },
 
     switchUser(userId) {
       this.currentUser = this.users.find(u => u.id === userId)
-      this.persistUser()
+      if (this.currentUser && this.token) {
+        this.persistSession(true)
+      }
     },
 
-    // 持久化用户状态到 localStorage
-    persistUser() {
-      if (this.currentUser) {
-        localStorage.setItem('user', JSON.stringify(this.currentUser))
-      }
+    // 持久化用户状态到 storage
+    persistSession(remember = true) {
+      if (!this.currentUser || !this.token) return
+
+      const storage = remember ? localStorage : sessionStorage
+      const otherStorage = remember ? sessionStorage : localStorage
+
+      otherStorage.removeItem('user')
+      otherStorage.removeItem('token')
+      storage.setItem('user', JSON.stringify(this.currentUser))
+      storage.setItem('token', this.token)
     }
   }
 })

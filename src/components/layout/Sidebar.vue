@@ -192,6 +192,11 @@ const menuConfig = [
     meta: { title: '标讯中心', icon: 'bidding' }
   },
   {
+    path: '/bidding/customer-opportunities',
+    name: 'CustomerOpportunityCenter',
+    meta: { title: '客户商机中心', icon: 'bidding' }
+  },
+  {
     path: '/project',
     name: 'Project',
     meta: { title: '投标项目', icon: 'project' },
@@ -236,6 +241,16 @@ const menuConfig = [
     meta: { title: '资源管理', icon: 'resource' },
     children: [
       {
+        path: '/resource/bar',
+        name: 'BAR',
+        meta: { title: '资产台账' }
+      },
+      {
+        path: '/resource/bar/sites',
+        name: 'BAR_SiteList',
+        meta: { title: '站点台账' }
+      },
+      {
         path: '/resource/expense',
         name: 'Expense',
         meta: { title: '费用管理' }
@@ -244,6 +259,11 @@ const menuConfig = [
         path: '/resource/account',
         name: 'Account',
         meta: { title: '账户管理' }
+      },
+      {
+        path: '/resource/bid-result',
+        name: 'BidResult',
+        meta: { title: '结果闭环' }
       }
     ]
   },

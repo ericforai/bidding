@@ -8,6 +8,10 @@
           <p class="page-subtitle">AI智能匹配，发现优质商机</p>
         </div>
         <div class="header-actions">
+          <el-button @click="handleOpenCustomerOpportunityCenter">
+            <el-icon><UserFilled /></el-icon>
+            客户商机中心
+          </el-button>
           <el-button type="primary" @click="showSourceConfig = true">
             <el-icon><Setting /></el-icon>
             标讯源配置
@@ -59,8 +63,11 @@
         <el-form-item label="状态">
           <el-select v-model="searchForm.status" placeholder="全部状态" clearable style="width: 130px">
             <el-option label="新建" value="new" />
+            <el-option label="已联系" value="contacted" />
             <el-option label="跟进中" value="following" />
+            <el-option label="报价中" value="quoting" />
             <el-option label="投标中" value="bidding" />
+            <el-option label="已放弃" value="abandoned" />
           </el-select>
         </el-form-item>
         <el-form-item label="标讯来源">
@@ -123,7 +130,7 @@
           <div class="b2b-project-header">
             <h4 class="b2b-project-name">{{ tender.title }}</h4>
             <div class="ai-score" :class="getScoreClass(tender.aiScore)">
-              {{ tender.aiScore }}
+              {{ tender.aiScore }}分
             </div>
           </div>
           <div class="card-info">
@@ -170,10 +177,16 @@
               <el-icon><TrendCharts /></el-icon>
               市场洞察
             </el-button>
+            <el-button size="small" @click="handleExport">
+              <el-icon><Download /></el-icon>
+              导出
+            </el-button>
             <el-radio-group v-model="viewMode" size="small">
               <el-radio-button value="all">全部 ({{ filteredTenders.length }})</el-radio-button>
               <el-radio-button value="new">新建 ({{ newTendersCount }})</el-radio-button>
+              <el-radio-button value="contacted">已联系 ({{ contactedTendersCount }})</el-radio-button>
               <el-radio-button value="following">跟进中 ({{ followingTendersCount }})</el-radio-button>
+              <el-radio-button value="quoting">报价中 ({{ quotingTendersCount }})</el-radio-button>
               <el-radio-button value="bidding">投标中 ({{ biddingTendersCount }})</el-radio-button>
             </el-radio-group>
           </div>
@@ -255,38 +268,64 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="280" align="center" fixed="right">
+          <el-table-column label="操作" width="320" align="center" fixed="right">
             <template #default="{ row }">
               <div class="table-actions">
-                <button class="btn-view" @click="handleViewDetail(row.id)">
-                  <el-icon><View /></el-icon>
-                  详情
-                </button>
-                <button class="btn-analyze" @click="handleAIAnalysis(row.id)">
-                  <el-icon><MagicStick /></el-icon>
-                  AI分析
-                </button>
-                <button class="btn-participate" @click="handleParticipate(row.id)">
-                  <el-icon><Document /></el-icon>
-                  参与投标
-                </button>
-                <el-dropdown trigger="click" @command="(cmd) => handleRowAction(cmd, row)">
-                  <button class="btn-more">
-                    <el-icon><MoreFilled /></el-icon>
-                  </button>
+                <el-tooltip content="查看详情" placement="top">
+                  <el-button class="action-btn btn-view" size="small" :icon="View" @click="handleViewDetail(row.id)" />
+                </el-tooltip>
+                <el-tooltip v-if="showTenderAiEntry" content="AI分析" placement="top">
+                  <el-button class="action-btn btn-analyze" size="small" :icon="MagicStick" @click="handleAIAnalysis(row.id)" />
+                </el-tooltip>
+                <el-tooltip content="参与投标" placement="top">
+                  <el-button class="action-btn btn-participate" size="small" :icon="Document" @click="handleParticipate(row.id)" />
+                </el-tooltip>
+                <el-dropdown trigger="click" class="action-dropdown">
+                  <el-button class="action-btn btn-more" size="small" :icon="MoreFilled" />
                   <template #dropdown>
-                    <el-dropdown-menu>
-                      <el-dropdown-item command="distribute">
-                        <el-icon><Share /></el-icon>分发
+                    <el-dropdown-menu class="bidding-action-menu">
+                      <!-- 分组：操作 -->
+                      <el-dropdown-item @click="handleSingleDistribute(row)">
+                        <el-icon><Share /></el-icon>
+                        <span>分发</span>
                       </el-dropdown-item>
-                      <el-dropdown-item command="claim">
-                        <el-icon><CircleCheck /></el-icon>领取
+                      <el-dropdown-item @click="handleSingleClaim(row)">
+                        <el-icon><CircleCheck /></el-icon>
+                        <span>领取</span>
                       </el-dropdown-item>
-                      <el-dropdown-item command="assign">
-                        <el-icon><User /></el-icon>指派
+                      <el-dropdown-item @click="handleSingleAssign(row)">
+                        <el-icon><User /></el-icon>
+                        <span>指派</span>
                       </el-dropdown-item>
-                      <el-dropdown-item command="delete" divided>
-                        <el-icon><Delete /></el-icon>删除
+                      <!-- 分隔线 -->
+                      <el-dropdown-item divided />
+                      <!-- 分组：状态 -->
+                      <el-dropdown-item @click="handleUpdateStatus(row, 'contacted')">
+                        <el-icon class="status-icon"><Phone /></el-icon>
+                        <span>已联系</span>
+                      </el-dropdown-item>
+                      <el-dropdown-item @click="handleUpdateStatus(row, 'following')">
+                        <el-icon class="status-icon"><Star /></el-icon>
+                        <span>跟进中</span>
+                      </el-dropdown-item>
+                      <el-dropdown-item @click="handleUpdateStatus(row, 'quoting')">
+                        <el-icon class="status-icon"><EditPen /></el-icon>
+                        <span>报价中</span>
+                      </el-dropdown-item>
+                      <el-dropdown-item @click="handleUpdateStatus(row, 'bidding')">
+                        <el-icon class="status-icon"><Briefcase /></el-icon>
+                        <span>参与投标</span>
+                      </el-dropdown-item>
+                      <el-dropdown-item @click="handleUpdateStatus(row, 'abandoned')">
+                        <el-icon class="status-icon status-abandon"><Close /></el-icon>
+                        <span>放弃跟进</span>
+                      </el-dropdown-item>
+                      <!-- 分隔线 -->
+                      <el-dropdown-item divided />
+                      <!-- 分组：删除 -->
+                      <el-dropdown-item @click="handleDeleteTender(row)" class="danger-item">
+                        <el-icon class="delete-icon"><Delete /></el-icon>
+                        <span>删除</span>
                       </el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
@@ -330,7 +369,7 @@
             <div class="mobile-card-row">
               <span class="mobile-label">AI评分:</span>
               <el-tag :type="getScoreTagType(row.aiScore)" size="small">
-                {{ row.aiScore }}分
+                {{ row.aiScore }}
               </el-tag>
             </div>
             <div class="mobile-card-row">
@@ -348,7 +387,7 @@
             <el-button type="primary" size="small" @click="handleViewDetail(row.id)">
               查看详情
             </el-button>
-            <el-button type="success" size="small" @click="handleAIAnalysis(row.id)">
+            <el-button v-if="showTenderAiEntry" type="success" size="small" @click="handleAIAnalysis(row.id)">
               AI分析
             </el-button>
             <el-button size="small" @click="handleParticipate(row.id)">
@@ -369,106 +408,230 @@
       </div>
     </el-card>
 
-    <!-- 分发对话框 -->
-    <el-dialog v-model="showDistributeDialog" title="标讯分发" width="580px" @close="resetDistributeForm">
-      <el-form ref="distributeFormRef" :model="distributeForm" label-width="120px">
-        <el-form-item label="分发标讯数量">
-          <el-text type="info">
-            共 {{ selectedTenders.length }} 条标讯待分发
-          </el-text>
-        </el-form-item>
-        <el-form-item label="分发方式" required>
-          <el-radio-group v-model="distributeForm.type">
-            <el-radio value="auto">
-              <div class="radio-content">
-                <span class="radio-label">智能分发</span>
-                <span class="radio-desc">根据规则自动分配</span>
-              </div>
-            </el-radio>
-            <el-radio value="manual">
-              <div class="radio-content">
-                <span class="radio-label">手动指定</span>
-                <span class="radio-desc">手动选择销售人员</span>
-              </div>
-            </el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="分发规则" v-if="distributeForm.type === 'auto'" required>
-          <el-select v-model="distributeForm.rule" placeholder="选择分发规则" style="width: 100%">
-            <el-option label="按区域自动分发" value="region">
-              <div class="option-content">
-                <span class="option-label">按区域自动分发</span>
-                <span class="option-desc">根据标讯地区自动分配给对应区域销售</span>
-              </div>
-            </el-option>
-            <el-option label="按产品线自动分发" value="product">
-              <div class="option-content">
-                <span class="option-label">按产品线自动分发</span>
-                <span class="option-desc">根据标讯行业类型自动分配给对应产品线销售</span>
-              </div>
-            </el-option>
-            <el-option label="按AI评分分发" value="ai">
-              <div class="option-content">
-                <span class="option-label">按AI评分分发</span>
-                <span class="option-desc">高评分标讯优先分配给资深销售</span>
-              </div>
-            </el-option>
-            <el-option label="平均分配" value="average">
-              <div class="option-content">
-                <span class="option-label">平均分配</span>
-                <span class="option-desc">平均分配给所有可用销售人员</span>
-              </div>
-            </el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="指派给" v-if="distributeForm.type === 'manual'" required>
-          <el-select
-            v-model="distributeForm.assignees"
-            multiple
-            placeholder="选择销售人员"
-            style="width: 100%"
-          >
-            <el-option-group label="华东区">
-              <el-option label="小王" value="U001" />
-              <el-option label="李经理" value="U002" />
-            </el-option-group>
-            <el-option-group label="华南区">
-              <el-option label="张销售" value="U003" />
-              <el-option label="陈专员" value="U004" />
-            </el-option-group>
-            <el-option-group label="华北区">
-              <el-option label="刘主管" value="U005" />
-              <el-option label="赵经理" value="U006" />
-            </el-option-group>
-          </el-select>
-          <div class="form-tip">
-            <el-icon><InfoFilled /></el-icon>
-            多选时将按顺序轮询分配
+    <!-- 分发对话框 - B2B优化版 -->
+    <el-dialog
+      v-model="showDistributeDialog"
+      title=""
+      width="900px"
+      class="distribute-dialog"
+      @close="resetDistributeForm"
+      :close-on-click-modal="false"
+    >
+      <template #header>
+        <div class="distribute-header">
+          <div class="header-left">
+            <div class="header-icon">
+              <el-icon><Share /></el-icon>
+            </div>
+            <div class="header-info">
+              <h3 class="header-title">标讯分发</h3>
+              <p class="header-subtitle">智能分配销售资源，提升跟进效率</p>
+            </div>
           </div>
-        </el-form-item>
-        <el-form-item label="截止时间" v-if="distributeForm.type === 'manual'">
-          <el-date-picker
-            v-model="distributeForm.deadline"
-            type="datetime"
-            placeholder="选择跟进截止时间"
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="备注说明">
-          <el-input
-            v-model="distributeForm.remark"
-            type="textarea"
-            :rows="3"
-            placeholder="填写分发说明、注意事项等"
-          />
-        </el-form-item>
-      </el-form>
+          <div class="header-stats">
+            <div class="stat-item">
+              <span class="stat-value">{{ selectedTenders.length }}</span>
+              <span class="stat-label">待分发</span>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <div class="distribute-content">
+        <!-- 左侧配置区 -->
+        <div class="config-section">
+          <!-- 待分发标讯预览 -->
+          <div class="tenders-preview">
+            <div class="preview-header">
+              <span class="preview-title">待分发标讯</span>
+              <el-tag size="small">{{ selectedTenders.length }} 条</el-tag>
+            </div>
+            <div class="preview-list">
+              <div v-for="tender in selectedTenders.slice(0, 3)" :key="tender.id" class="preview-item">
+                <div class="item-dot"></div>
+                <span class="item-title">{{ tender.title }}</span>
+                <el-tag size="small" type="info">{{ tender.region }}</el-tag>
+              </div>
+              <div v-if="selectedTenders.length > 3" class="preview-more">
+                +{{ selectedTenders.length - 3 }} 条更多...
+              </div>
+            </div>
+          </div>
+
+          <!-- 分发方式选择 -->
+          <div class="distribute-type-section">
+            <div class="section-label">分发方式</div>
+            <div class="type-cards">
+              <div
+                class="type-card"
+                :class="{ active: distributeForm.type === 'auto' }"
+                @click="distributeForm.type = 'auto'"
+              >
+                <div class="type-icon auto-icon">
+                  <el-icon><MagicStick /></el-icon>
+                </div>
+                <div class="type-info">
+                  <span class="type-name">智能分发</span>
+                  <span class="type-desc">根据规则自动分配</span>
+                </div>
+              </div>
+              <div
+                class="type-card"
+                :class="{ active: distributeForm.type === 'manual' }"
+                @click="distributeForm.type = 'manual'"
+              >
+                <div class="type-icon manual-icon">
+                  <el-icon><UserFilled /></el-icon>
+                </div>
+                <div class="type-info">
+                  <span class="type-name">手动指定</span>
+                  <span class="type-desc">手动选择销售人员</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 智能规则选择 -->
+          <div v-if="distributeForm.type === 'auto'" class="rules-section">
+            <div class="section-label">分发规则</div>
+            <div class="rule-cards">
+              <div
+                class="rule-card"
+                :class="{ active: distributeForm.rule === 'region' }"
+                @click="distributeForm.rule = 'region'"
+              >
+                <div class="rule-icon region-icon">
+                  <el-icon><Location /></el-icon>
+                </div>
+                <div class="rule-info">
+                  <span class="rule-name">按区域分发</span>
+                  <span class="rule-desc">根据标讯地区自动分配</span>
+                </div>
+              </div>
+              <div
+                class="rule-card"
+                :class="{ active: distributeForm.rule === 'product' }"
+                @click="distributeForm.rule = 'product'"
+              >
+                <div class="rule-icon product-icon">
+                  <el-icon><Box /></el-icon>
+                </div>
+                <div class="rule-info">
+                  <span class="rule-name">按产品线</span>
+                  <span class="rule-desc">根据行业类型分配</span>
+                </div>
+              </div>
+              <div
+                class="rule-card"
+                :class="{ active: distributeForm.rule === 'ai' }"
+                @click="distributeForm.rule = 'ai'"
+              >
+                <div class="rule-icon ai-icon">
+                  <el-icon><TrendCharts /></el-icon>
+                </div>
+                <div class="rule-info">
+                  <span class="rule-name">按AI评分</span>
+                  <span class="rule-desc">高分优先给资深销售</span>
+                </div>
+              </div>
+              <div
+                class="rule-card"
+                :class="{ active: distributeForm.rule === 'average' }"
+                @click="distributeForm.rule = 'average'"
+              >
+                <div class="rule-icon average-icon">
+                  <el-icon><Grid /></el-icon>
+                </div>
+                <div class="rule-info">
+                  <span class="rule-name">平均分配</span>
+                  <span class="rule-desc">均匀分配所有人</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 手动选择人员 -->
+          <div v-if="distributeForm.type === 'manual'" class="assignees-section">
+            <div class="section-label">指派给</div>
+            <div class="sales-grid">
+              <div
+                v-for="sales in salesStaff"
+                :key="sales.id"
+                class="sales-card"
+                :class="{ selected: distributeForm.assignees.includes(sales.id) }"
+                @click="toggleSalesAssign(sales.id)"
+              >
+                <div class="sales-avatar">{{ sales.name.charAt(0) }}</div>
+                <div class="sales-info">
+                  <span class="sales-name">{{ sales.name }}</span>
+                  <span class="sales-role">{{ sales.role }}</span>
+                </div>
+                <div class="sales-check">
+                  <el-icon v-if="distributeForm.assignees.includes(sales.id)"><Check /></el-icon>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 截止时间 -->
+          <div v-if="distributeForm.type === 'manual'" class="deadline-section">
+            <div class="section-label">跟进截止时间</div>
+            <el-date-picker
+              v-model="distributeForm.deadline"
+              type="datetime"
+              placeholder="选择截止时间"
+              format="YYYY-MM-DD HH:mm"
+              style="width: 100%"
+            />
+          </div>
+
+          <!-- 备注 -->
+          <div class="remark-section">
+            <div class="section-label">备注说明</div>
+            <el-input
+              v-model="distributeForm.remark"
+              type="textarea"
+              :rows="2"
+              placeholder="填写分发说明、注意事项等（选填）"
+            />
+          </div>
+        </div>
+
+        <!-- 右侧预览区 -->
+        <div class="preview-section">
+          <div class="preview-header">
+            <span class="preview-title">分配预览</span>
+          </div>
+          <div class="preview-content">
+            <div v-if="!distributeForm.type || (distributeForm.type === 'auto' && !distributeForm.rule)" class="preview-empty">
+              <el-icon class="empty-icon"><Document /></el-icon>
+              <p>请选择分发方式和规则</p>
+            </div>
+            <div v-else class="preview-distribution">
+              <div v-for="preview in distributionPreview" :key="preview.salesId" class="preview-group">
+                <div class="preview-header">
+                  <div class="preview-sales">{{ preview.salesName }}</div>
+                  <el-tag size="small" type="primary">{{ preview.count }} 条</el-tag>
+                </div>
+                <div class="preview-tenders">
+                  <div v-for="tender in preview.tenders" :key="tender.id" class="preview-tender-item">
+                    {{ tender.title }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <template #footer>
-        <el-button @click="showDistributeDialog = false">取消</el-button>
-        <el-button type="primary" @click="handleDistribute" :loading="distributeLoading">
-          <el-icon><Share /></el-icon>
-          确认分发
-        </el-button>
+        <div class="distribute-footer">
+          <el-button @click="showDistributeDialog = false">取消</el-button>
+          <el-button type="primary" @click="handleDistribute" :loading="distributeLoading">
+            <el-icon><Share /></el-icon>
+            确认分发 {{ selectedTenders.length }} 条标讯
+          </el-button>
+        </div>
       </template>
     </el-dialog>
 
@@ -589,13 +752,52 @@
             placeholder="选择或输入关键字"
             style="width: 100%"
           >
-            <el-option label="智慧办公" value="智慧办公" />
-            <el-option label="信息化建设" value="信息化建设" />
-            <el-option label="系统集成" value="系统集成" />
-            <el-option label="软件开发" value="软件开发" />
-            <el-option label="云计算" value="云计算" />
-            <el-option label="大数据" value="大数据" />
-            <el-option label="人工智能" value="人工智能" />
+            <!-- MRO 工具类 -->
+            <el-option label="MRO 工具" value="MRO 工具" />
+            <el-option label="工具耗材" value="工具耗材" />
+            <el-option label="焊接" value="焊接" />
+            <el-option label="刀具" value="刀具" />
+            <el-option label="量具" value="量具" />
+            <el-option label="机床" value="机床" />
+            <el-option label="磨具" value="磨具" />
+            <!-- 化学材料 -->
+            <el-option label="润滑" value="润滑" />
+            <el-option label="胶粘" value="胶粘" />
+            <el-option label="车间化学品" value="车间化学品" />
+            <!-- 安全防护 -->
+            <el-option label="劳保" value="劳保" />
+            <el-option label="安全消防" value="安全消防" />
+            <!-- 物料存储 -->
+            <el-option label="搬运存储" value="搬运存储" />
+            <el-option label="工位" value="工位" />
+            <el-option label="包材" value="包材" />
+            <!-- 环境设备 -->
+            <el-option label="清洁" value="清洁" />
+            <el-option label="办公" value="办公" />
+            <el-option label="制冷暖通" value="制冷暖通" />
+            <!-- 电气工控 -->
+            <el-option label="工控" value="工控" />
+            <el-option label="低压" value="低压" />
+            <el-option label="电工" value="电工" />
+            <el-option label="照明" value="照明" />
+            <!-- 机械传动 -->
+            <el-option label="轴承" value="轴承" />
+            <el-option label="皮带" value="皮带" />
+            <el-option label="机械" value="机械" />
+            <el-option label="电子" value="电子" />
+            <el-option label="气动" value="气动" />
+            <el-option label="液压" value="液压" />
+            <el-option label="管阀" value="管阀" />
+            <el-option label="泵" value="泵" />
+            <!-- 建工检测 -->
+            <el-option label="紧固" value="紧固" />
+            <el-option label="密封" value="密封" />
+            <el-option label="建工材料" value="建工材料" />
+            <el-option label="工业检测" value="工业检测" />
+            <el-option label="实验室产品" value="实验室产品" />
+            <!-- 其他 -->
+            <el-option label="企业福礼" value="企业福礼" />
+            <el-option label="紧急救护" value="紧急救护" />
           </el-select>
           <div class="form-tip">
             <el-icon><InfoFilled /></el-icon>
@@ -815,7 +1017,25 @@
 
     <!-- 市场洞察对话框 -->
     <el-dialog v-model="showMarketInsight" title="市场洞察与趋势预测" width="900px">
-      <el-tabs v-model="activeInsightTab">
+      <template #header>
+        <div class="market-insight-header">
+          <span>市场洞察与趋势预测</span>
+          <el-button
+            :icon="Refresh"
+            :loading="loadingTrendData"
+            @click="refreshTrendData"
+            size="small"
+            text
+          >
+            刷新数据
+          </el-button>
+        </div>
+      </template>
+      <div v-if="loadingTrendData" class="trend-loading">
+        <el-icon class="is-loading"><Loading /></el-icon>
+        <span>正在加载趋势数据...</span>
+      </div>
+      <el-tabs v-else v-model="activeInsightTab">
         <!-- 行业趋势 -->
         <el-tab-pane label="行业趋势" name="industry">
           <div class="insight-content">
@@ -1067,38 +1287,35 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBiddingStore } from '@/stores/bidding'
+import { useUserStore } from '@/stores/user'
+import { tendersApi } from '@/api'
 import {
-  Search,
-  MagicStick,
-  ArrowRight,
-  ArrowDown,
-  Location,
-  Wallet,
-  Calendar,
-  InfoFilled,
-  Star,
-  StarFilled,
-  Share,
-  CircleCheck,
-  User,
-  List,
-  TrendCharts,
-  Plus,
-  Download,
-  Setting,
-  Upload,
-  Check,
-  Delete,
-  Connection,
-  Refresh
+  Search, Plus, Download, Star, TrendCharts, List, Share, CircleCheck,
+  MoreFilled, Check, User, Calendar, Flag, Briefcase, ChatDotRound,
+  InfoFilled, Document, MagicStick, UserFilled, Location, Box, Grid, View,
+  ArrowRight, ArrowDown, Wallet, Setting, Upload, Delete, Connection, Refresh,
+  Phone, Close, EditPen, Loading
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { isMockMode } from '@/api'
+import {
+  getBreakoutTopics,
+  getStatsSummary,
+  transformToIndustryTrends,
+  transformToOpportunities,
+  generateInsight,
+  generateForecastTips
+} from '@/api/trendradar'
+import { useExport } from '@/composables/useExport'
+import { ExportType } from '@/api'
 
 const router = useRouter()
 const biddingStore = useBiddingStore()
+const userStore = useUserStore()
+const showTenderAiEntry = true
 
 // 表格引用
 const tableRef = ref(null)
@@ -1152,6 +1369,119 @@ const distributeForm = ref({
   remark: ''
 })
 
+// 销售人员数据
+const salesStaff = ref([
+  { id: 'U001', name: '小王', role: '销售经理', region: '华东', workload: 3, avatar: '' },
+  { id: 'U002', name: '李经理', role: '资深销售', region: '华东', workload: 2, avatar: '' },
+  { id: 'U003', name: '张销售', role: '销售专员', region: '华南', workload: 4, avatar: '' },
+  { id: 'U004', name: '陈专员', role: '销售专员', region: '华南', workload: 2, avatar: '' },
+  { id: 'U005', name: '刘主管', role: '销售主管', region: '华北', workload: 3, avatar: '' },
+  { id: 'U006', name: '赵经理', role: '区域经理', region: '华北', workload: 2, avatar: '' }
+])
+
+// 分配预览
+const distributionPreview = computed(() => {
+  if (!distributeForm.value.type) return []
+  if (distributeForm.value.type === 'auto' && !distributeForm.value.rule) return []
+
+  const selected = selectedTenders.value
+  const preview = []
+
+  if (distributeForm.value.type === 'auto') {
+    // 智能分发预览
+    switch (distributeForm.value.rule) {
+      case 'region':
+        // 按区域分组预览
+        const regionMap = { '华东': ['U001', 'U002'], '华南': ['U003', 'U004'], '华北': ['U005', 'U006'] }
+        Object.entries(regionMap).forEach(([region, salesIds]) => {
+          const regionTenders = selected.filter(t => t.region === region)
+          if (regionTenders.length > 0) {
+            salesIds.forEach(salesId => {
+              const sales = salesStaff.value.find(s => s.id === salesId)
+              preview.push({
+                salesId,
+                salesName: sales?.name || '',
+                count: Math.ceil(regionTenders.length / salesIds.length),
+                tenders: regionTenders.slice(0, Math.ceil(regionTenders.length / salesIds.length))
+              })
+            })
+          }
+        })
+        break
+      case 'product':
+        // 按产品线预览
+        preview.push({
+          salesId: 'U001',
+          salesName: '小王',
+          count: Math.ceil(selected.length / 3),
+          tenders: selected.slice(0, Math.ceil(selected.length / 3))
+        })
+        preview.push({
+          salesId: 'U003',
+          salesName: '张销售',
+          count: Math.ceil(selected.length / 3),
+          tenders: selected.slice(Math.ceil(selected.length / 3), Math.ceil(selected.length * 2 / 3))
+        })
+        preview.push({
+          salesId: 'U005',
+          salesName: '刘主管',
+          count: selected.length - Math.ceil(selected.length * 2 / 3),
+          tenders: selected.slice(Math.ceil(selected.length * 2 / 3))
+        })
+        break
+      case 'ai':
+        preview.push({
+          salesId: 'U002',
+          salesName: '李经理',
+          count: selected.filter(t => t.aiScore >= 90).length,
+          tenders: selected.filter(t => t.aiScore >= 90)
+        })
+        preview.push({
+          salesId: 'U001',
+          salesName: '小王',
+          count: selected.filter(t => t.aiScore < 90).length,
+          tenders: selected.filter(t => t.aiScore < 90)
+        })
+        break
+      case 'average':
+        const perSales = Math.ceil(selected.length / salesStaff.value.length)
+        salesStaff.value.forEach((sales, index) => {
+          const start = index * perSales
+          const end = start + perSales
+          preview.push({
+            salesId: sales.id,
+            salesName: sales.name,
+            count: selected.slice(start, end).length,
+            tenders: selected.slice(start, end)
+          })
+        })
+        break
+    }
+  } else {
+    // 手动指定预览
+      distributeForm.value.assignees.forEach(salesId => {
+        const sales = salesStaff.value.find(s => s.id === salesId)
+        preview.push({
+          salesId,
+          salesName: sales?.name || '',
+          count: Math.ceil(selected.length / distributeForm.value.assignees.length),
+          tenders: selected.slice(0, Math.ceil(selected.length / distributeForm.value.assignees.length))
+        })
+      })
+    }
+    return preview.filter(p => p.count > 0)
+})
+
+// 切换销售人员选择
+const toggleSalesAssign = (salesId) => {
+  const index = distributeForm.value.assignees.indexOf(salesId)
+  if (index > -1) {
+    distributeForm.value.assignees.splice(index, 1)
+  } else {
+    distributeForm.value.assignees.push(salesId)
+  }
+}
+
 // 指派对话框
 const showAssignDialog = ref(false)
 const assignLoading = ref(false)
@@ -1186,159 +1516,236 @@ const distributeRecords = ref([
 // 市场洞察
 const showMarketInsight = ref(false)
 const activeInsightTab = ref('industry')
+const loadingTrendData = ref(false)
+const trendDataLoaded = ref(false)
 
-// 行业趋势数据
+// 行业趋势数据（MRO工业品分类 - 严格按照指定分类）
 const industryTrends = ref([
-  { industry: '数据中心', count: 156, amount: 45800, growth: 45, trend: 'up', hotLevel: 5, color: 'blue' },
-  { industry: '智慧城市', count: 132, amount: 38600, growth: 32, trend: 'up', hotLevel: 5, color: 'green' },
-  { industry: '能源管理', count: 98, amount: 28500, growth: 18, trend: 'up', hotLevel: 4, color: 'orange' },
-  { industry: '交通信息化', count: 87, amount: 23400, growth: 12, trend: 'up', hotLevel: 4, color: 'purple' },
-  { industry: '医疗数字化', count: 76, amount: 19800, growth: 8, trend: 'stable', hotLevel: 3, color: 'red' },
-  { industry: '教育信息化', count: 65, amount: 15600, growth: -5, trend: 'down', hotLevel: 3, color: 'cyan' },
-  { industry: '金融科技', count: 54, amount: 32500, growth: 22, trend: 'up', hotLevel: 4, color: 'yellow' }
+  // 1. 工具、工具耗材、焊接
+  { industry: '工具', count: 331, amount: 21100, growth: 32, trend: 'up', hotLevel: 5, color: 'blue' },
+  { industry: '工具耗材', count: 268, amount: 8600, growth: 18, trend: 'up', hotLevel: 4, color: 'blue' },
+  { industry: '焊接', count: 98, amount: 15800, growth: 22, trend: 'up', hotLevel: 4, color: 'blue' },
+  // 2. 刀具、量具、机床、磨具
+  { industry: '刀具', count: 112, amount: 18600, growth: 18, trend: 'up', hotLevel: 4, color: 'green' },
+  { industry: '量具', count: 87, amount: 12400, growth: 15, trend: 'stable', hotLevel: 3, color: 'green' },
+  { industry: '机床', count: 76, amount: 38500, growth: 42, trend: 'up', hotLevel: 5, color: 'green' },
+  { industry: '磨具', count: 94, amount: 9800, growth: 12, trend: 'stable', hotLevel: 3, color: 'green' },
+  // 3. 润滑胶粘、车间化学品
+  { industry: '润滑胶粘', count: 284, amount: 19800, growth: 15, trend: 'up', hotLevel: 4, color: 'orange' },
+  { industry: '车间化学品', count: 72, amount: 6400, growth: 5, trend: 'stable', hotLevel: 3, color: 'orange' },
+  // 4. 劳保安全、消防
+  { industry: '劳保安全', count: 413, amount: 37600, growth: 42, trend: 'up', hotLevel: 5, color: 'red' },
+  { industry: '消防', count: 134, amount: 18500, growth: 32, trend: 'up', hotLevel: 4, color: 'red' },
+  // 5. 搬运、存储、工位、包材
+  { industry: '搬运', count: 92, amount: 28600, growth: 25, trend: 'up', hotLevel: 4, color: 'purple' },
+  { industry: '存储', count: 178, amount: 16800, growth: 20, trend: 'up', hotLevel: 4, color: 'purple' },
+  { industry: '工位', count: 115, amount: 8900, growth: 12, trend: 'stable', hotLevel: 3, color: 'purple' },
+  { industry: '包材', count: 203, amount: 12400, growth: 15, trend: 'up', hotLevel: 4, color: 'purple' },
+  // 6. 清洁、办公、制冷暖通
+  { industry: '清洁', count: 167, amount: 7800, growth: 10, trend: 'stable', hotLevel: 3, color: 'cyan' },
+  { industry: '办公', count: 289, amount: 18600, growth: 8, trend: 'stable', hotLevel: 3, color: 'cyan' },
+  { industry: '制冷暖通', count: 223, amount: 53300, growth: 25, trend: 'up', hotLevel: 4, color: 'cyan' },
+  // 7. 工控低压电工照明
+  { industry: '工控低压', count: 333, amount: 57600, growth: 30, trend: 'up', hotLevel: 5, color: 'yellow' },
+  { industry: '电工照明', count: 410, amount: 36300, growth: 24, trend: 'up', hotLevel: 4, color: 'yellow' },
+  // 8. 轴承、皮带、机械、电子
+  { industry: '轴承', count: 142, amount: 24500, growth: 20, trend: 'up', hotLevel: 4, color: 'pink' },
+  { industry: '皮带', count: 98, amount: 11200, growth: 12, trend: 'stable', hotLevel: 3, color: 'pink' },
+  { industry: '机械电子', count: 268, amount: 32000, growth: 28, trend: 'up', hotLevel: 4, color: 'pink' },
+  // 9. 气动、液压管阀、泵
+  { industry: '气动', count: 126, amount: 18500, growth: 22, trend: 'up', hotLevel: 4, color: 'indigo' },
+  { industry: '液压管阀', count: 264, amount: 60500, growth: 26, trend: 'up', hotLevel: 4, color: 'indigo' },
+  { industry: '泵', count: 145, amount: 22000, growth: 18, trend: 'up', hotLevel: 4, color: 'indigo' },
+  // 10. 紧固、密封、建工材料
+  { industry: '紧固', count: 268, amount: 14500, growth: 12, trend: 'stable', hotLevel: 3, color: 'lime' },
+  { industry: '密封', count: 135, amount: 9800, growth: 10, trend: 'stable', hotLevel: 3, color: 'lime' },
+  { industry: '建工材料', count: 178, amount: 22000, growth: 18, trend: 'up', hotLevel: 4, color: 'lime' },
+  // 11. 工业检测、实验室产品
+  { industry: '工业检测', count: 86, amount: 28600, growth: 30, trend: 'up', hotLevel: 4, color: 'teal' },
+  { industry: '实验室产品', count: 72, amount: 24500, growth: 25, trend: 'up', hotLevel: 4, color: 'teal' },
+  // 12. 企业福礼、紧急救护
+  { industry: '企业福礼', count: 312, amount: 9600, growth: 5, trend: 'stable', hotLevel: 3, color: 'grey' },
+  { industry: '紧急救护', count: 145, amount: 12800, growth: 15, trend: 'up', hotLevel: 3, color: 'grey' }
 ])
 
-// 行业洞察总结
+// 行业洞察总结（MRO工业品相关）
 const industryInsight = ref(
-  '数据中心行业持续火热，近3个月标讯数量同比增长45%，主要集中在华东和华南地区。智慧城市建设需求旺盛，建议重点关注云服务、大数据相关项目。'
+  '劳保安全类产品需求持续增长，近3个月标讯数量同比增长38%，主要集中在华东和华南地区。制造业升级带动电动工具、焊接设备需求旺盛，工控低压类产品在新能源行业应用广泛。建议重点关注工控产品、搬运设备等高增长品类。'
 )
 
-// 采购方规律数据
+// 采购方规律数据（MRO工业品客户）
 const purchaserPatterns = ref([
   {
-    name: '某省政府采购中心',
-    industry: '政府',
-    frequency: 24,
-    period: '3月、6月、9月',
-    avgBudget: 280,
-    opportunity: 5
-  },
-  {
     name: '国家电网某分公司',
-    industry: '能源',
+    industry: '能源电力',
     frequency: 18,
-    period: '4月、8月、11月',
+    period: '3月、6月、9月',
     avgBudget: 450,
     opportunity: 5
   },
   {
-    name: '某市交通投资集团',
-    industry: '交通',
+    name: '某大型制造集团',
+    industry: '制造业',
+    frequency: 24,
+    period: '1月、4月、7月、10月',
+    avgBudget: 680,
+    opportunity: 5
+  },
+  {
+    name: '某汽车制造企业',
+    industry: '汽车',
     frequency: 12,
-    period: '5月、10月',
+    period: '2月、5月、8月、11月',
+    avgBudget: 520,
+    opportunity: 4
+  },
+  {
+    name: '某化工园区管委会',
+    industry: '化工',
+    frequency: 8,
+    period: '3月、9月',
+    avgBudget: 380,
+    opportunity: 4
+  },
+  {
+    name: '某电子科技公司',
+    industry: '电子',
+    frequency: 15,
+    period: '每季度',
     avgBudget: 320,
     opportunity: 4
   },
   {
-    name: '某大型银行总行',
-    industry: '金融',
-    frequency: 15,
-    period: '2月、7月、12月',
+    name: '某物流集团',
+    industry: '物流仓储',
+    frequency: 10,
+    period: '4月、10月',
     avgBudget: 580,
     opportunity: 5
   },
   {
-    name: '某市教育局',
-    industry: '教育',
-    frequency: 8,
-    period: '1月、8月',
-    avgBudget: 120,
+    name: '某三甲医院',
+    industry: '医疗',
+    frequency: 6,
+    period: '6月、12月',
+    avgBudget: 280,
     opportunity: 3
   },
   {
-    name: '某市卫健委',
-    industry: '医疗',
-    frequency: 10,
-    period: '4月、9月',
-    avgBudget: 180,
-    opportunity: 3
+    name: '某建筑工程公司',
+    industry: '建筑',
+    frequency: 20,
+    period: '3月、8月',
+    avgBudget: 890,
+    opportunity: 5
   }
 ])
 
 // 采购方洞察总结
 const purchaserInsight = ref(
-  '国家电网及大型银行项目预算高、机会大，建议提前布局。政府客户采购周期性强，建议在招标月份前2个月开始跟进。'
+  '制造业和物流仓储类客户采购频次高、预算充足，建议建立长期合作关系。国家电网、大型建筑工程等项目机会大但竞争激烈，建议提前布局。'
 )
 
-// 高潜力机会数据
+// 高潜力机会数据（MRO工业品相关）
 const potentialOpportunities = ref([
   {
     id: 'op001',
-    title: '某省政务云平台升级项目',
-    purchaser: '某省政府采购中心',
-    budget: 1200,
+    title: '某制造业工厂劳保用品年度采购',
+    purchaser: '某大型制造企业',
+    budget: 680,
     region: '华东',
     priority: 'high',
     match: 95,
-    reason: '历史数据显示该客户年均采购2400万，近期有云服务相关需求释放，与我方产品线高度匹配。'
+    reason: '历史数据显示该客户年均采购劳保用品1200万，近期有年度招标计划，与我方劳保用品产品线高度匹配。'
   },
   {
     id: 'op002',
-    title: '国家电网数字化运维系统',
+    title: '国家电网变电站检修工具采购',
     purchaser: '国家电网某分公司',
-    budget: 850,
+    budget: 520,
     region: '华北',
     priority: 'high',
     match: 92,
-    reason: '该客户近期频繁发布相关标讯，预算充足，我方有成功案例可参考。'
+    reason: '该客户近期发布变电站检修项目，需要电动工具、手动工具等，预算充足，我方有成功案例可参考。'
   },
   {
     id: 'op003',
-    title: '某市智慧交通平台建设',
-    purchaser: '某市交通投资集团',
-    budget: 680,
+    title: '某汽车厂生产线搬运设备升级',
+    purchaser: '某汽车制造集团',
+    budget: 1280,
     region: '华南',
-    priority: 'medium',
-    match: 88,
-    reason: '符合我方交通行业解决方案优势区域，竞争压力较小。'
+    priority: 'high',
+    match: 90,
+    reason: '客户计划升级自动化生产线，需要叉车、AGV等搬运设备，符合我方优势产品区域。'
   },
   {
     id: 'op004',
-    title: '某银行核心系统改造',
-    purchaser: '某大型银行总行',
-    budget: 1500,
+    title: '某化工企业安全消防设备采购',
+    purchaser: '某化工园区管委会',
+    budget: 450,
     region: '华东',
     priority: 'high',
-    match: 90,
-    reason: '高预算项目，客户资金实力强，我方在金融行业有技术积累。'
+    match: 88,
+    reason: '化工行业安全要求提升，客户急需更新消防器材和安全设备，项目资金已到位。'
   },
   {
     id: 'op005',
-    title: '某市医院信息系统集成',
-    purchaser: '某市卫健委',
-    budget: 320,
+    title: '某电子厂工控系统改造项目',
+    purchaser: '某电子科技公司',
+    budget: 850,
     region: '西南',
     priority: 'medium',
-    match: 82,
-    reason: '医疗数字化趋势明显，该地区项目竞争相对较少。'
+    match: 85,
+    reason: '客户生产线自动化改造需要PLC、传感器等工控产品，我方有完整解决方案。'
   },
   {
     id: 'op006',
-    title: '某工业园区能源管理平台',
-    purchaser: '某工业园区管委会',
-    budget: 280,
+    title: '某医院实验室检测设备采购',
+    purchaser: '某三甲医院',
+    budget: 620,
+    region: '华北',
+    priority: 'medium',
+    match: 82,
+    reason: '医院新建检验科需要显微镜、离心机等实验室产品，该地区竞争相对较少。'
+  },
+  {
+    id: 'op007',
+    title: '某食品厂包装材料年度采购',
+    purchaser: '某食品集团公司',
+    budget: 380,
     region: '华东',
     priority: 'medium',
-    match: 85,
-    reason: '绿色能源政策支持，项目成功率较高。'
+    match: 80,
+    reason: '客户需要包装箱、缠绕膜、封箱胶带等包材，年采购量大，合作稳定。'
+  },
+  {
+    id: 'op008',
+    title: '某物流仓储货架系统扩建',
+    purchaser: '某物流集团',
+    budget: 960,
+    region: '华南',
+    priority: 'high',
+    match: 88,
+    reason: '客户扩建仓储中心需要大量货架、托盘、周转箱等存储设备，预算充足。'
   }
 ])
 
-// 预测建议
+// 预测建议（MRO工业品相关）
 const forecastTips = ref([
-  { text: '数据中心行业预计未来3个月将持续增长，建议加大技术储备', color: '#67c23a' },
-  { text: '华东地区政府客户Q1采购需求集中，建议提前安排销售资源', color: '#409eff' },
-  { text: '能源行业客户预算充足，建议优先跟进国家电网相关项目', color: '#e6a23c' },
-  { text: '智慧城市项目逐渐向二三线城市下沉，可拓展新的市场区域', color: '#909399' }
+  { text: '劳保安全类产品预计Q2需求旺盛，建议提前备货安全帽、防护眼镜等', color: '#67c23a' },
+  { text: '制造业升级带动电动工具、焊接设备需求增长，华东地区机会明显', color: '#409eff' },
+  { text: '工控低压类产品在新能源行业需求强劲，建议重点跟进', color: '#e6a23c' },
+  { text: '企业福礼采购季节即将到来，建议提前对接企业客户', color: '#909399' },
+  { text: '清洁办公类产品需求稳定，建议维护现有客户关系', color: '#67c23a' }
 ])
 
 // ========== 外部标讯源配置 ==========
 const showSourceConfig = ref(false)
 const sourceConfig = ref({
-  platforms: [],
+  platforms: ['中国政府采购网'],
   apiEndpoint: '',
   apiKey: '',
-  keywords: ['智慧办公', '信息化建设'],
+  keywords: [],
   regions: ['北京', '上海', '广州', '深圳'],
   minBudget: 0,
   maxBudget: 1000,
@@ -1526,8 +1933,16 @@ const newTendersCount = computed(() =>
   tenders.value.filter(t => t.status === 'new').length
 )
 
+const contactedTendersCount = computed(() =>
+  tenders.value.filter(t => t.status === 'contacted').length
+)
+
 const followingTendersCount = computed(() =>
   tenders.value.filter(t => t.status === 'following').length
+)
+
+const quotingTendersCount = computed(() =>
+  tenders.value.filter(t => t.status === 'quoting').length
 )
 
 const biddingTendersCount = computed(() =>
@@ -1548,18 +1963,24 @@ const getScoreTagType = (score) => {
 
 const getStatusType = (status) => {
   const map = {
-    new: '',
+    new: 'info',
+    contacted: '',
     following: 'warning',
-    bidding: 'primary'
+    quoting: 'primary',
+    bidding: 'success',
+    abandoned: 'danger'
   }
-  return map[status] || ''
+  return map[status] || 'info'
 }
 
 const getStatusText = (status) => {
   const map = {
     new: '新建',
+    contacted: '已联系',
     following: '跟进中',
-    bidding: '投标中'
+    quoting: '报价中',
+    bidding: '投标中',
+    abandoned: '已放弃'
   }
   return map[status] || status
 }
@@ -1588,6 +2009,21 @@ const isFollowed = (id) => {
 
 const handleSearch = () => {
   pagination.value.currentPage = 1
+}
+
+// 导出标讯列表
+const handleExport = () => {
+  const { exportExcel } = useExport()
+
+  const params = {
+    keyword: searchForm.value.keyword || undefined,
+    region: searchForm.value.region || undefined,
+    industry: searchForm.value.industry || undefined,
+    status: searchForm.value.status || undefined,
+    source: searchForm.value.source || undefined
+  }
+
+  exportExcel(ExportType.TENDERS, params, '标讯列表导出成功')
 }
 
 const handleReset = () => {
@@ -1627,6 +2063,9 @@ const progressColors = [
 ]
 
 const handleAIAnalysis = (id) => {
+  if (!showTenderAiEntry) {
+    return
+  }
   parsingTenderId.value = id
   parseProgress.value = 0
   showParsingDialog.value = true
@@ -1666,6 +2105,10 @@ const handleViewAllRecommend = () => {
     status: ''
   }
   viewMode.value = 'all'
+}
+
+const handleOpenCustomerOpportunityCenter = () => {
+  router.push('/bidding/customer-opportunities')
 }
 
 // ========== 表格选择相关 ==========
@@ -1806,6 +2249,11 @@ const handleDistribute = async () => {
 // ========== 批量操作相关 ==========
 
 const handleBatchClaim = async () => {
+  if (selectedTenders.value.length === 0) {
+    ElMessage.warning('请先选择要领取的标讯')
+    return
+  }
+
   try {
     await ElMessageBox.confirm(
       `确定要领取选中的 ${selectedTenders.value.length} 条标讯吗？领取后将由您跟进此标讯。`,
@@ -1817,17 +2265,38 @@ const handleBatchClaim = async () => {
       }
     )
 
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const tenderIds = selectedTenders.value.map(t => t.id)
+    const userId = userStore.user?.id || 'U001'
 
-    ElMessage.success(`成功领取 ${selectedTenders.value.length} 条标讯`)
-    handleClearSelection()
-  } catch {
-    // 用户取消
+    const result = await tendersApi.batchClaim(tenderIds, userId)
+
+    if (result.success) {
+      // 更新本地数据状态
+      selectedTenders.value.forEach(tender => {
+        tender.status = 'following'
+        tender.assignee = userId
+      })
+
+      ElMessage.success(`成功领取 ${result.data?.claimed || tenderIds.length} 条标讯`)
+      handleClearSelection()
+      // 刷新列表数据
+      await biddingStore.getTenders()
+    } else {
+      ElMessage.error(result.message || '领取失败，请重试')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('领取失败，请重试')
+    }
   }
 }
 
 const handleBatchFollow = async () => {
+  if (selectedTenders.value.length === 0) {
+    ElMessage.warning('请先选择要关注的标讯')
+    return
+  }
+
   const newFollows = selectedTenders.value
     .filter(t => !followedTenders.value.includes(t.id))
     .map(t => t.id)
@@ -1837,9 +2306,24 @@ const handleBatchFollow = async () => {
     return
   }
 
-  followedTenders.value.push(...newFollows)
-  ElMessage.success(`已关注 ${newFollows.length} 条标讯`)
-  handleClearSelection()
+  // 使用批量更新状态API
+  const tenderIds = selectedTenders.value.map(t => t.id)
+  const result = await tendersApi.batchUpdateStatus(tenderIds, 'following')
+
+  if (result.success) {
+    followedTenders.value.push(...newFollows)
+    // 更新本地数据状态
+    selectedTenders.value.forEach(tender => {
+      tender.status = 'following'
+    })
+
+    ElMessage.success(`已关注 ${result.data?.updated || newFollows.length} 条标讯`)
+    handleClearSelection()
+    // 刷新列表数据
+    await biddingStore.getTenders()
+  } else {
+    ElMessage.error(result.message || '关注失败，请重试')
+  }
 }
 
 // ========== 行操作相关 ==========
@@ -1916,26 +2400,42 @@ const handleAssign = async () => {
   assignLoading.value = true
 
   try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 800))
+    // 使用批量分配API
+    const result = await tendersApi.batchAssign(
+      [assignForm.value.tenderId],
+      assignForm.value.assignee
+    )
 
-    // 添加到分发记录
-    distributeRecords.value.unshift({
-      tenderTitle: assignForm.value.tenderTitle,
-      assignee: salesMap[assignForm.value.assignee],
-      type: 'manual',
-      time: new Date().toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      operator: '当前用户'
-    })
+    if (result.success) {
+      // 更新本地数据
+      const tender = biddingStore.tenders?.find(t => t.id === assignForm.value.tenderId)
+      if (tender) {
+        tender.assignee = assignForm.value.assignee
+        tender.status = 'contacted'
+      }
 
-    ElMessage.success(`已将"${assignForm.value.tenderTitle}"指派给${salesMap[assignForm.value.assignee]}`)
-    showAssignDialog.value = false
+      // 添加到分发记录
+      distributeRecords.value.unshift({
+        tenderTitle: assignForm.value.tenderTitle,
+        assignee: salesMap[assignForm.value.assignee],
+        type: 'manual',
+        time: new Date().toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        operator: '当前用户'
+      })
+
+      ElMessage.success(`已将"${assignForm.value.tenderTitle}"指派给${salesMap[assignForm.value.assignee]}`)
+      showAssignDialog.value = false
+      // 刷新列表数据
+      await biddingStore.getTenders()
+    } else {
+      ElMessage.error(result.message || '指派失败，请重试')
+    }
   } catch (error) {
     ElMessage.error('指派失败，请重试')
   } finally {
@@ -1980,10 +2480,79 @@ const handleStatusChange = async (row, newStatus) => {
       }
     )
 
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // 更新状态
+    const index = biddingStore.tenders?.findIndex(t => t.id === row.id)
+    if (index !== undefined && index > -1) {
+      biddingStore.tenders[index].status = newStatus
+    }
 
-    ElMessage.success('状态已更新')
+    ElMessage.success(`状态已更新为"${getStatusText(newStatus)}"`)
+  } catch {
+    // 用户取消
+  }
+}
+
+// 更新标讯状态（用于快捷操作）
+const handleUpdateStatus = async (row, newStatus) => {
+  const statusText = getStatusText(newStatus)
+  let confirmMessage = ''
+
+  // 根据不同状态显示不同的确认信息
+  switch (newStatus) {
+    case 'contacted':
+      confirmMessage = `标记"${row.title}"为已联系状态？`
+      break
+    case 'following':
+      confirmMessage = `将"${row.title}"设为跟进中？`
+      break
+    case 'quoting':
+      confirmMessage = `开始为"${row.title}"准备报价？`
+      break
+    case 'bidding':
+      confirmMessage = `确认参与"${row.title}"投标？这将创建投标项目。`
+      break
+    case 'abandoned':
+      confirmMessage = `确定放弃跟进"${row.title}"吗？此操作可撤销。`
+      break
+    default:
+      confirmMessage = `确定要将"${row.title}"状态变更为"${statusText}"吗？`
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      confirmMessage,
+      '状态变更',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: newStatus === 'abandoned' ? 'error' : 'warning'
+      }
+    )
+
+    // 更新状态
+    const index = biddingStore.tenders?.findIndex(t => t.id === row.id)
+    if (index !== undefined && index > -1) {
+      biddingStore.tenders[index].status = newStatus
+
+      // 如果是参与投标，可以引导用户创建项目
+      if (newStatus === 'bidding') {
+        ElMessage({
+          message: `状态已更新为"${statusText}"，是否立即创建投标项目？`,
+          type: 'success',
+          duration: 3000,
+          showClose: true
+        })
+        // 可以延迟跳转到项目创建页
+        setTimeout(() => {
+          router.push({
+            path: '/project/create',
+            query: { tenderId: row.id }
+          })
+        }, 1000)
+      } else {
+        ElMessage.success(`状态已更新为"${statusText}"`)
+      }
+    }
   } catch {
     // 用户取消
   }
@@ -2198,6 +2767,101 @@ const saveManualTender = async () => {
 }
 
 // ========== 市场洞察相关 ==========
+
+// 加载 TrendRadar 数据
+const loadTrendRadarData = async () => {
+  if (trendDataLoaded.value) return // 避免重复加载
+
+  loadingTrendData.value = true
+  try {
+    // 并行获取热点数据和统计信息
+    const [topics, stats] = await Promise.all([
+      getBreakoutTopics(50, 2),
+      getStatsSummary()
+    ])
+
+    // 如果没有真实数据且在 mock 模式下，直接使用默认 fallback 数据
+    const isMock = isMockMode()
+
+    // 只有在有真实数据且经过过滤后仍有数据时才更新
+    if (topics && topics.length > 0) {
+      const filteredTopics = topics.filter(t => {
+        // 过滤政治敏感内容
+        const text = (t.normalized_title + ' ' + (t.sample_titles || []).join(' ')).toLowerCase()
+        const politicsKeywords = ['空袭', '袭击', '战争', '东部战区', '战区', '导弹', '俄乌', '巴以', '哈马斯', '以色列', '伊朗', '朝鲜']
+        return !politicsKeywords.some(kw => text.includes(kw.toLowerCase()))
+      })
+
+      if (filteredTopics.length > 0) {
+        // 更新行业趋势数据
+        const transformed = transformToIndustryTrends(filteredTopics)
+        if (transformed.length > 0) {
+          industryTrends.value = transformed
+        }
+
+        // 更新高潜力机会数据
+        const opportunities = transformToOpportunities(filteredTopics)
+        if (opportunities.length > 0) {
+          potentialOpportunities.value = opportunities
+        }
+
+        // 更新洞察文本
+        industryInsight.value = generateInsight(filteredTopics, stats)
+
+        // 更新预测建议
+        forecastTips.value = generateForecastTips(filteredTopics)
+
+        trendDataLoaded.value = true
+
+        // Mock 模式下提示信息更友好
+        if (isMock) {
+          ElMessage.success({
+            message: '已加载 AI 模型模拟的市场分析数据',
+            duration: 2000
+          })
+        } else {
+          ElMessage.success({
+            message: `已从 TrendRadar 加载 ${filteredTopics.length} 条热点趋势数据`,
+            duration: 2000
+          })
+        }
+      } else {
+        // 过滤后没有数据
+        if (isMock) {
+          trendDataLoaded.value = true
+        } else {
+          ElMessage.info('当前实时热点均为非工业相关内容，已展示推荐 MRO 趋势')
+        }
+      }
+    } else {
+      // 完全没有返回数据
+      if (isMock) {
+        trendDataLoaded.value = true
+      } else {
+        ElMessage.info('TrendRadar 暂时无法返回实时数据，已加载基准市场洞察')
+      }
+    }
+  } catch (error) {
+    console.error('加载 TrendRadar 数据失败:', error)
+    // 连接失败时静默保留 mock 数据，不弹出警告干扰用户
+    trendDataLoaded.value = true
+  } finally {
+    loadingTrendData.value = false
+  }
+}
+
+// 刷新趋势数据
+const refreshTrendData = async () => {
+  trendDataLoaded.value = false
+  await loadTrendRadarData()
+}
+
+// 监听对话框打开
+watch(showMarketInsight, (newVal) => {
+  if (newVal) {
+    loadTrendRadarData()
+  }
+})
 
 const getOpportunityText = (score) => {
   if (score >= 5) return '高价值'
@@ -2438,13 +3102,13 @@ const handleOpportunityAction = (id) => {
 }
 
 .ai-score {
-  width: 48px;
+  width: 65px;
   height: 48px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -2719,6 +3383,27 @@ const handleOpportunityAction = (id) => {
 }
 
 /* ========== 市场洞察样式 ========== */
+.market-insight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.trend-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  gap: 12px;
+  color: #909399;
+  font-size: 14px;
+}
+
+.trend-loading .el-icon {
+  font-size: 24px;
+}
+
 .insight-content {
   padding: 4px;
 }
@@ -3198,75 +3883,180 @@ const handleOpportunityAction = (id) => {
 
 .table-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   justify-content: center;
 }
 
-.table-actions button {
+/* 图标按钮基础样式 */
+.table-actions .action-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  font-size: 16px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid transparent;
-  background: #F8FAFC;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid #E2E8F0;
+  background: #fff;
   color: #64748B;
 }
 
-.table-actions button:hover {
-  transform: translateY(-1px);
+.table-actions .action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* 查看详情按钮 */
-.btn-view {
-  color: #0369A1;
+.table-actions .action-btn:active {
+  transform: translateY(0);
 }
 
-.btn-view:hover {
+/* 查看详情按钮 - High Contrast */
+.action-btn.btn-view {
+  color: #0066CC;
+  border-color: #BAE6FD;
+  background: #F0F9FF;
+  font-weight: 500;
+}
+
+.action-btn.btn-view:hover {
   background: #E0F2FE !important;
-  color: #0369A1 !important;
-  box-shadow: 0 2px 4px rgba(3, 105, 161, 0.2);
+  border-color: #0066CC !important;
+  color: #004499 !important;
+  box-shadow: 0 4px 8px rgba(0, 102, 204, 0.15);
 }
 
 /* AI分析按钮 */
-.btn-analyze {
-  color: #7C3AED;
+.action-btn.btn-analyze {
+  color: #6D28D9;
+  border-color: #DDD6FE;
+  background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%);
+  font-weight: 500;
+}
+
+.action-btn.btn-analyze:hover {
   background: linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%) !important;
+  border-color: #6D28D9 !important;
+  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.2);
 }
 
-.btn-analyze:hover {
-  background: linear-gradient(135deg, #DDD6FE 0%, #C7D2FE 100%) !important;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
-}
-
-/* 参与投标按钮 - 主操作 */
-.btn-participate {
-  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%) !important;
-  color: #fff !important;
+/* 参与投标按钮 - Primary Action with High Legibility */
+.action-btn.btn-participate {
+  background: linear-gradient(135deg, #0066CC 0%, #004499 100%) !important;
+  color: #FFFFFF !important;
   border: none !important;
-  box-shadow: 0 2px 6px rgba(3, 105, 161, 0.25);
   font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 102, 204, 0.3);
 }
 
-.btn-participate:hover {
-  background: linear-gradient(135deg, #0479b8 0%, #09a8c9 100%) !important;
-  box-shadow: 0 4px 10px rgba(3, 105, 161, 0.35);
+.action-btn.btn-participate:hover {
+  background: linear-gradient(135deg, #0055BB 0%, #003388 100%) !important;
+  box-shadow: 0 6px 16px rgba(0, 102, 204, 0.45);
   transform: translateY(-2px);
 }
 
 /* 更多按钮 */
-.btn-more {
+.action-btn.btn-more {
+  color: #64748B;
+  border-color: #E2E8F0;
+}
+
+.action-btn.btn-more:hover {
+  background: #F1F5F9 !important;
+  border-color: #CBD5E1 !important;
+  color: #334155 !important;
+}
+
+/* ==================== Dropdown Menu Styles ==================== */
+
+.bidding-action-menu {
+  min-width: 180px;
+  padding: 8px 0;
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+.bidding-action-menu .el-dropdown-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  font-size: 14px;
+  color: #334155;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bidding-action-menu .el-dropdown-menu__item:hover {
+  background: #F0F9FF;
+  color: #0066CC;
+}
+
+.bidding-action-menu .el-dropdown-menu__item .el-icon {
+  font-size: 16px;
+  color: #94A3B8;
+  transition: color 0.2s;
+}
+
+.bidding-action-menu .el-dropdown-menu__item:hover .el-icon {
+  color: #0066CC;
+}
+
+.bidding-action-menu .el-dropdown-menu__item.status-icon {
+  color: #64748B;
+}
+
+.bidding-action-menu .el-dropdown-menu__item--danger {
+  color: #EF4444;
+}
+
+.bidding-action-menu .el-dropdown-menu__item--danger:hover {
+  background: #FEF2F2;
+  color: #DC2626;
+}
+
+.bidding-action-menu .el-dropdown-menu__item--danger .el-icon {
+  color: #EF4444;
+}
+
+/* 菜单分组标题 */
+.bidding-action-menu .menu-group-title {
+  padding: 8px 16px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* 自定义危险项样式 */
+.bidding-action-menu .danger-item {
+  color: #EF4444 !important;
+}
+
+.bidding-action-menu .danger-item:hover {
+  background: #FEF2F2 !important;
+  color: #DC2626 !important;
+}
+
+.bidding-action-menu .danger-item .delete-icon {
+  color: #EF4444 !important;
+}
+
+.bidding-action-menu .danger-item:hover .delete-icon {
+  color: #DC2626 !important;
+}
+
+/* 放弃状态图标 */
+.bidding-action-menu .status-abandon {
   color: #94A3B8;
 }
 
-.btn-more:hover {
-  background: #F1F5F9 !important;
-  color: #64748B !important;
+.bidding-action-menu .el-dropdown-menu__item:hover .status-abandon {
+  color: #DC2626;
 }
 
 /* ==================== AI Score Highlight ==================== */
@@ -3318,13 +4108,28 @@ const handleOpportunityAction = (id) => {
   color: #fff;
 }
 
+.status-badge.status-contacted {
+  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+  color: #fff;
+}
+
 .status-badge.status-following {
   background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
   color: #fff;
 }
 
+.status-badge.status-quoting {
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  color: #fff;
+}
+
 .status-badge.status-bidding {
   background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #fff;
+}
+
+.status-badge.status-abandoned {
+  background: linear-gradient(135deg, #9CA3AF 0%, #6B7280 100%);
   color: #fff;
 }
 
@@ -3632,15 +4437,29 @@ const handleOpportunityAction = (id) => {
   border-radius: 8px;
   overflow: hidden;
   border: 1.5px solid #e5e7eb;
+  display: inline-flex !important;
+  flex-direction: row !important;
+}
+
+.card-actions :deep(.el-radio-button) {
+  display: inline-flex !important;
 }
 
 .card-actions :deep(.el-radio-button__inner) {
-  border: none;
-  border-radius: 0;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 500;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 8px 12px !important;
+  min-width: 70px !important;
+  min-height: 32px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .card-actions :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
@@ -3687,5 +4506,479 @@ const handleOpportunityAction = (id) => {
 
 .el-link:hover .el-icon {
   transform: translateX(4px);
+}
+
+/* ==================== B2B 分发对话框样式 ==================== */
+.distribute-dialog :deep(.el-dialog__header) {
+  padding: 0;
+  margin-bottom: 0;
+}
+
+.distribute-dialog :deep(.el-dialog__body) {
+  padding: 0;
+}
+
+.distribute-dialog :deep(.el-dialog__headerbtn) {
+  top: 16px;
+  right: 16px;
+}
+
+.distribute-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
+  color: #fff;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+}
+
+.header-icon .el-icon {
+  font-size: 20px;
+}
+
+.header-info {
+  flex: 1;
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: #fff;
+}
+
+.header-subtitle {
+  font-size: 13px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.header-stats {
+  display: flex;
+  gap: 20px;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.distribute-content {
+  display: flex;
+  min-height: 400px;
+}
+
+.config-section {
+  flex: 1;
+  padding: 24px;
+  border-right: 1px solid #E5E7EB;
+}
+
+.preview-section {
+  width: 320px;
+  background: #F9FAFB;
+  padding: 20px;
+}
+
+.tenders-preview {
+  margin-bottom: 20px;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.preview-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6B7280;
+}
+
+.preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.preview-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+}
+
+.item-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3B82F6;
+  flex-shrink: 0;
+}
+
+.item-title {
+  flex: 1;
+  font-size: 12px;
+  color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-more {
+  font-size: 12px;
+  color: #6B7280;
+  text-align: center;
+  padding: 8px;
+}
+
+/* 分发方式卡片 */
+.distribute-type-section {
+  margin-bottom: 20px;
+}
+
+.section-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.type-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.type-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #fff;
+  border: 2px solid #E5E7EB;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.type-card:hover {
+  border-color: #3B82F6;
+  background: #F0F9FF;
+}
+
+.type-card.active {
+  border-color: #3B82F6;
+  background: #EFF6FF;
+}
+
+.type-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.type-icon.auto-icon { background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); }
+.type-icon.manual-icon { background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%); }
+
+.type-info {
+  flex: 1;
+}
+
+.type-name {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.type-desc {
+  font-size: 12px;
+  color: #6B7280;
+}
+
+/* 规则卡片 */
+.rule-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.rule-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #fff;
+  border: 2px solid #E5E7EB;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rule-card:hover {
+  border-color: #10B981;
+}
+
+.rule-card.active {
+  border-color: #10B981;
+  background: #ECFDF5;
+}
+
+.rule-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.rule-icon.region-icon { background: #EF4444; }
+.rule-icon.product-icon { background: #F59E0B; }
+.rule-icon.ai-icon { background: #8B5CF6; }
+.rule-icon.average-icon { background: #10B981; }
+
+.rule-info {
+  flex: 1;
+}
+
+.rule-name {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.rule-desc {
+  font-size: 11px;
+  color: #6B7280;
+}
+
+/* 销售人员网格 */
+.sales-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.sales-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: #fff;
+  border: 2px solid #E5E7EB;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sales-card:hover {
+  border-color: #3B82F6;
+}
+
+.sales-card.selected {
+  border-color: #3B82F6;
+  background: #EFF6FF;
+}
+
+.sales-avatar {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sales-info {
+  flex: 1;
+}
+
+.sales-name {
+  display: block;
+  font-size: 13px;
+  font-weight:  500;
+  color: #111827;
+}
+
+.sales-role {
+  font-size: 11px;
+  color: #6B7280;
+}
+
+.sales-check {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #10B981;
+  color: #fff;
+}
+
+.sales-check .el-icon {
+  font-size: 12px;
+}
+
+/* 其他区域 */
+.rules-section,
+.assignees-section,
+.deadline-section,
+.remark-section {
+  margin-bottom: 20px;
+}
+
+.remark-section {
+  margin-bottom: 0;
+}
+
+/* 预览区 */
+.preview-section .preview-header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.preview-content {
+  min-height: 280px;
+}
+
+.preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 280px;
+  color: #9CA3AF;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.preview-distribution {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.preview-group {
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+  overflow: hidden;
+}
+
+.preview-group .preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #F9FAFB;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.preview-sales {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.preview-tenders {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preview-tender-item {
+  font-size: 11px;
+  color: #6B7280;
+  padding: 4px 8px;
+  background: #F3F4F6;
+  border-radius: 4px;
+}
+
+/* 底部按钮 */
+.distribute-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #F9FAFB;
+  border-top: 1px solid #E5E7EB;
+}
+
+/* 强制横排显示 - 覆盖所有可能的竖版文字样式 */
+.card-actions .el-radio-button__inner,
+.card-actions :deep(.el-radio-button__inner) {
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  direction: ltr !important;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* 移动端响应式 */
+@media (max-width: 768px) {
+  .card-actions .el-radio-button__inner,
+  .card-actions :deep(.el-radio-button__inner) {
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    direction: ltr !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+  }
 }
 </style>

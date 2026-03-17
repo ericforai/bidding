@@ -119,7 +119,14 @@
 
     <!-- 模板列表 -->
     <el-card class="table-card">
+      <FeaturePlaceholder
+        v-if="featurePlaceholder"
+        :title="featurePlaceholder.title"
+        :message="featurePlaceholder.message"
+        :hint="featurePlaceholder.hint"
+      />
       <el-table
+        v-else
         v-loading="loading"
         :data="filteredTemplates"
         stripe
@@ -172,7 +179,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="downloads" label="下载量" width="100" sortable>
+        <el-table-column prop="downloads" label="下载量" width="150" sortable>
           <template #default="{ row }">
             <span class="download-count">
               <el-icon><Download /></el-icon>
@@ -187,7 +194,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="version" label="版本" width="80">
+        <el-table-column prop="version" label="版本" width="100">
           <template #default="{ row }">
             <el-tag type="info" size="small">v{{ row.version }}</el-tag>
           </template>
@@ -450,7 +457,14 @@
       title="版本历史"
       width="700px"
     >
-      <el-timeline v-if="versionHistory.length > 0">
+      <FeaturePlaceholder
+        v-if="versionPlaceholder"
+        compact
+        :title="versionPlaceholder.title"
+        :message="versionPlaceholder.message"
+        :hint="versionPlaceholder.hint"
+      />
+      <el-timeline v-else-if="versionHistory.length > 0">
         <el-timeline-item
           v-for="version in versionHistory"
           :key="version.id"
@@ -480,6 +494,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
+import { useUserStore } from '@/stores/user'
 import {
   Plus,
   Search,
@@ -503,9 +518,16 @@ import {
   InfoFilled
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
+import { getFeaturePlaceholder, isFeatureUnavailableResponse, knowledgeApi, isMockMode } from '@/api'
+import { loadDemoState, saveDemoState } from '@/utils/demoPersistence'
+import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
+import { triggerDownload } from '@/api/modules/export'
 
 const router = useRouter()
 const projectStore = useProjectStore()
+const userStore = useUserStore()
+const TEMPLATE_STORAGE_KEY = 'knowledge-template-overrides'
 
 // 进行中的项目
 const inProgressProjects = computed(() => projectStore.inProgressProjects)
@@ -548,6 +570,37 @@ const useTemplateForm = reactive({
 // 版本历史对话框
 const versionDialogVisible = ref(false)
 const versionHistory = ref([])
+const featurePlaceholder = ref(null)
+const versionPlaceholder = ref(null)
+
+const downloadTextFile = (filename, content, mimeType = 'text/plain;charset=utf-8') => {
+  const blob = new Blob([content], { type: mimeType })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(link.href)
+}
+
+const isPersistentTemplateId = (templateId) => /^\d+$/.test(String(templateId))
+
+const getCurrentUserId = () => {
+  const rawId = userStore.currentUser?.id
+  if (rawId === undefined || rawId === null || rawId === '') return null
+  const numericId = Number(rawId)
+  return Number.isFinite(numericId) ? numericId : null
+}
+
+const upsertTemplate = (template) => {
+  const index = templates.value.findIndex((item) => String(item.id) === String(template.id))
+  if (index > -1) {
+    templates.value.splice(index, 1, template)
+  } else {
+    templates.value.unshift(template)
+  }
+}
 
 // 分类配置
 const categories = {
@@ -1615,6 +1668,85 @@ const mockTemplates = [
 
 const templates = ref([])
 
+const loadTemplatePersistence = () => loadDemoState(TEMPLATE_STORAGE_KEY, {
+  patches: {},
+  copies: [],
+})
+
+const saveTemplatePersistence = (state) => {
+  saveDemoState(TEMPLATE_STORAGE_KEY, state)
+}
+
+const applyTemplatePersistence = (list) => {
+  const state = loadTemplatePersistence()
+  const patchedTemplates = list.map((item) => ({
+    ...item,
+    ...(state.patches?.[String(item.id)] || {}),
+  }))
+  const copyIds = new Set(patchedTemplates.map((item) => String(item.id)))
+  const copies = Array.isArray(state.copies)
+    ? state.copies.filter((item) => !copyIds.has(String(item.id)))
+    : []
+  return [...copies, ...patchedTemplates]
+}
+
+const persistTemplatePatch = (templateId, patch) => {
+  const state = loadTemplatePersistence()
+  state.patches = state.patches || {}
+  state.patches[String(templateId)] = {
+    ...(state.patches[String(templateId)] || {}),
+    ...patch,
+  }
+  saveTemplatePersistence(state)
+}
+
+const persistTemplateCopy = (template) => {
+  const state = loadTemplatePersistence()
+  state.copies = Array.isArray(state.copies) ? state.copies : []
+  state.copies = [
+    template,
+    ...state.copies.filter((item) => String(item.id) !== String(template.id)),
+  ]
+  saveTemplatePersistence(state)
+}
+
+const removeTemplatePersistence = (templateId) => {
+  const state = loadTemplatePersistence()
+  if (state.patches) {
+    delete state.patches[String(templateId)]
+  }
+  if (Array.isArray(state.copies)) {
+    state.copies = state.copies.filter((item) => String(item.id) !== String(templateId))
+  }
+  saveTemplatePersistence(state)
+}
+
+const loadTemplates = async () => {
+  loading.value = true
+  try {
+    const result = await knowledgeApi.templates.getList()
+    if (result?.success) {
+      templates.value = applyTemplatePersistence(result.data || [])
+      pagination.total = templates.value.length
+      featurePlaceholder.value = null
+    } else {
+      templates.value = []
+      pagination.total = 0
+      featurePlaceholder.value = notifyFeatureUnavailable(result, {
+        fallback: {
+          title: '模板库暂未接入',
+          hint: '模板相关页面已切换为统一占位态，不再把未接入能力当成空数据。',
+        },
+      })
+      if (!featurePlaceholder.value && result?.message) {
+        ElMessage.error(result.message)
+      }
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
 // 所有标签
 const allTags = computed(() => {
   const tagSet = new Set()
@@ -1727,13 +1859,38 @@ const handleReset = () => {
 }
 
 // 新增
-const handleAdd = () => {
-  ElMessage.info('新建模板功能开发中')
+const handleAdd = async () => {
+  try {
+    const { value } = await ElMessageBox.prompt('请输入模板名称', '新建模板', {
+      confirmButtonText: '创建',
+      cancelButtonText: '取消',
+      inputPlaceholder: '例如：智慧办公技术方案模板'
+    })
+
+    const category = activeCategory.value === 'all' ? 'technical' : activeCategory.value
+    const result = await knowledgeApi.templates.create({
+      name: value,
+      category,
+      tags: [],
+      description: '新建模板',
+    })
+
+    if (!result?.success) {
+      ElMessage.error(result?.message || '创建失败')
+      return
+    }
+
+    templates.value.unshift(result.data)
+    ElMessage.success('模板创建成功')
+  } catch {
+    // 用户取消
+  }
 }
 
 // 预览
-const handlePreview = (row) => {
-  previewTemplate.value = row
+const handlePreview = async (row) => {
+  const result = await knowledgeApi.templates.getDetail(row.id)
+  previewTemplate.value = result?.success && result.data ? result.data : row
   previewDialogVisible.value = true
   activePreviewTab.value = 'content'
 }
@@ -1755,7 +1912,7 @@ const useTemplateFromPreview = () => {
 }
 
 // 确认使用模板
-const confirmUseTemplate = () => {
+const confirmUseTemplate = async () => {
   if (!useTemplateForm.docName.trim()) {
     ElMessage.warning('请输入文档名称')
     return
@@ -1775,68 +1932,285 @@ const confirmUseTemplate = () => {
     message += `，关联项目：${project?.name}`
   }
 
+  if (isPersistentTemplateId(selectedTemplate.value.id)) {
+    const useResult = await knowledgeApi.templates.recordUse(selectedTemplate.value.id, {
+      documentName: useTemplateForm.docName,
+      docType: useTemplateForm.docType,
+      projectId: useTemplateForm.projectId || null,
+      applyOptions: useTemplateForm.applyOptions,
+      usedBy: getCurrentUserId(),
+    })
+    if (!useResult?.success) {
+      ElMessage.error(useResult?.message || '模板使用记录失败')
+      return
+    }
+  } else {
+    const templateIndex = templates.value.findIndex(t => t.id === selectedTemplate.value.id)
+    if (templateIndex > -1) {
+      const nextUseCount = (templates.value[templateIndex].useCount || 0) + 1
+      templates.value[templateIndex].useCount = nextUseCount
+      persistTemplatePatch(templates.value[templateIndex].id, {
+        useCount: nextUseCount,
+      })
+    }
+  }
+
   ElMessage.success(message)
   useTemplateDialogVisible.value = false
 
-  // 增加模板下载量
-  const templateIndex = templates.value.findIndex(t => t.id === selectedTemplate.value.id)
-  if (templateIndex > -1) {
-    templates.value[templateIndex].downloads++
+  // 实际创建文档并跳转到编辑页面
+  await createDocumentFromTemplate()
+}
+
+// 根据模板创建文档
+const createDocumentFromTemplate = async () => {
+  try {
+    // 构造新文档数据
+    const newDocument = {
+      id: `doc_${Date.now()}`, // 生成唯一ID
+      name: useTemplateForm.docName,
+      templateId: selectedTemplate.value.id,
+      templateName: selectedTemplate.value.name,
+      docType: useTemplateForm.docType,
+      projectId: useTemplateForm.projectId || null,
+      content: selectedTemplate.value.content || generateTemplateContent(),
+      createdAt: new Date().toISOString(),
+      createdBy: userStore.currentUser?.name || '当前用户',
+      status: 'draft'
+    }
+
+    // 保存到本地存储（用于 mock 模式）
+    const savedDocs = JSON.parse(localStorage.getItem('draftDocuments') || '[]')
+    savedDocs.push(newDocument)
+    localStorage.setItem('draftDocuments', JSON.stringify(savedDocs))
+
+    // 跳转到文档编辑页面
+    await router.push({
+      name: 'DocumentEditor',
+      params: { id: newDocument.id }
+    })
+
+    ElMessage.success(`文档「${useTemplateForm.docName}」创建成功`)
+  } catch (error) {
+    console.error('创建文档失败:', error)
+    ElMessage.error(`创建文档失败: ${error.message}`)
+  }
+}
+
+// 根据模板类型生成默认内容
+const generateTemplateContent = () => {
+  const docType = useTemplateForm.docType
+  const template = selectedTemplate.value
+
+  const baseContent = {
+    sections: [],
+    metadata: {
+      templateId: template.id,
+      templateName: template.name,
+      createdAt: new Date().toISOString()
+    }
   }
 
-  // TODO: 实际创建文档并跳转到编辑页面
-  // router.push({ name: 'DocumentEdit', params: { id: newDocId } })
+  // 根据文档类型生成不同的章节结构
+  switch (docType) {
+    case 'tech':
+      baseContent.sections = [
+        { id: '1', type: 'chapter', title: '1. 项目概述', content: '', level: 1 },
+        { id: '2', type: 'chapter', title: '2. 技术方案', content: '', level: 1 },
+        { id: '2-1', type: 'section', title: '2.1 系统架构', content: '', level: 2, parentId: '2' },
+        { id: '2-2', type: 'section', title: '2.2 功能设计', content: '', level: 2, parentId: '2' },
+        { id: '2-3', type: 'section', title: '2.3 技术优势', content: '', level: 2, parentId: '2' },
+        { id: '3', type: 'chapter', title: '3. 实施方案', content: '', level: 1 },
+        { id: '4', type: 'chapter', title: '4. 售后服务', content: '', level: 1 }
+      ]
+      break
+    case 'business':
+      baseContent.sections = [
+        { id: '1', type: 'chapter', title: '1. 应答说明', content: '', level: 1 },
+        { id: '2', type: 'chapter', title: '2. 商务条款响应', content: '', level: 1 },
+        { id: '3', type: 'chapter', title: '3. 报价明细', content: '', level: 1 },
+        { id: '4', type: 'chapter', title: '4. 付款方式', content: '', level: 1 },
+        { id: '5', type: 'chapter', title: '5. 交付周期', content: '', level: 1 }
+      ]
+      break
+    case 'contract':
+      baseContent.sections = [
+        { id: '1', type: 'chapter', title: '1. 合同主体', content: '', level: 1 },
+        { id: '2', type: 'chapter', title: '2. 合同标的', content: '', level: 1 },
+        { id: '3', type: 'chapter', title: '3. 合同金额', content: '', level: 1 },
+        { id: '4', type: 'chapter', title: '4. 履约条款', content: '', level: 1 },
+        { id: '5', type: 'chapter', title: '5. 违约责任', content: '', level: 1 }
+      ]
+      break
+    default:
+      baseContent.sections = [
+        { id: '1', type: 'chapter', title: '第一章', content: '', level: 1 },
+        { id: '2', type: 'chapter', title: '第二章', content: '', level: 1 },
+        { id: '3', type: 'chapter', title: '第三章', content: '', level: 1 }
+      ]
+  }
+
+  return JSON.stringify(baseContent)
 }
 
 // 下载模板
 const handleDownloadTemplate = () => {
   if (previewTemplate.value) {
+    downloadTextFile(
+      `${previewTemplate.value.name}.md`,
+      previewTemplate.value.content || previewTemplate.value.description || previewTemplate.value.name,
+      'text/markdown;charset=utf-8'
+    )
     ElMessage.success(`开始下载：${previewTemplate.value.name}`)
-    // 增加下载量
-    const templateIndex = templates.value.findIndex(t => t.id === previewTemplate.value.id)
-    if (templateIndex > -1) {
-      templates.value[templateIndex].downloads++
+    if (isPersistentTemplateId(previewTemplate.value.id)) {
+      knowledgeApi.templates.recordDownload(previewTemplate.value.id, {
+        downloadedBy: getCurrentUserId(),
+      }).then((result) => {
+        if (result?.success && result.data) {
+          upsertTemplate(result.data)
+          previewTemplate.value = result.data
+        }
+      }).catch(() => {})
+    } else {
+      const templateIndex = templates.value.findIndex(t => t.id === previewTemplate.value.id)
+      if (templateIndex > -1) {
+        templates.value[templateIndex].downloads++
+        persistTemplatePatch(templates.value[templateIndex].id, {
+          downloads: templates.value[templateIndex].downloads,
+        })
+        previewTemplate.value = { ...previewTemplate.value, downloads: templates.value[templateIndex].downloads }
+      }
     }
   }
 }
 
 // 更多操作
-const handleMoreAction = (command, row) => {
+const handleMoreAction = async (command, row) => {
   switch (command) {
     case 'edit':
-      ElMessage.info(`编辑模板：${row.name}`)
+      ElMessageBox.prompt('请输入新的模板名称', '编辑模板', {
+        confirmButtonText: '保存',
+        cancelButtonText: '取消',
+        inputValue: row.name
+      }).then(async ({ value }) => {
+        const result = await knowledgeApi.templates.update(row.id, {
+          ...row,
+          name: value,
+        })
+
+        if (!result?.success) {
+          ElMessage.error(result?.message || '更新失败')
+          return
+        }
+
+        const index = templates.value.findIndex(t => t.id === row.id)
+        if (index > -1) {
+          templates.value.splice(index, 1, result.data)
+        }
+        persistTemplatePatch(row.id, result.data)
+        ElMessage.success('模板更新成功')
+      }).catch(() => {})
       break
     case 'copy':
+      if (isPersistentTemplateId(row.id)) {
+        const copyResult = await knowledgeApi.templates.copy(row.id, {
+          name: `${row.name}（副本）`,
+          createdBy: getCurrentUserId(),
+        })
+        if (!copyResult?.success) {
+          ElMessage.error(copyResult?.message || '复制失败')
+          break
+        }
+        templates.value.unshift(copyResult.data)
+      } else {
+        const copiedTemplate = {
+          ...row,
+          id: `TPL_COPY_${Date.now()}`,
+          name: `${row.name}（副本）`,
+          version: row.version || '1.0',
+          downloads: 0,
+          useCount: 0,
+          updateTime: new Date().toISOString().split('T')[0],
+        }
+        templates.value.unshift(copiedTemplate)
+        persistTemplateCopy(copiedTemplate)
+      }
+      pagination.total = templates.value.length
       ElMessage.success(`已复制模板：${row.name}`)
       break
     case 'version':
-      // 模拟版本历史数据
-      versionHistory.value = [
-        {
-          id: 1,
-          version: row.version,
-          date: row.updateTime,
-          description: '当前版本，优化了文档结构，增加了新功能',
-          isCurrent: true
-        },
-        {
-          id: 2,
-          version: (parseFloat(row.version) - 0.1).toFixed(1),
-          date: '2023-12-01',
-          description: '上一版本，修复了若干问题',
-          isCurrent: false
-        },
-        {
-          id: 3,
-          version: (parseFloat(row.version) - 0.2).toFixed(1),
-          date: '2023-10-15',
-          description: '初始版本',
-          isCurrent: false
+      versionPlaceholder.value = null
+      if (isPersistentTemplateId(row.id)) {
+        const versionResult = await knowledgeApi.templates.getVersions(row.id)
+        if (isFeatureUnavailableResponse(versionResult)) {
+          versionHistory.value = []
+          versionPlaceholder.value = notifyFeatureUnavailable(versionResult, {
+            fallback: {
+              title: '版本历史暂未接入',
+              hint: '后端补齐模板版本接口后，这里会展示真实版本轨迹。',
+            },
+          })
+          versionDialogVisible.value = true
+          break
         }
-      ]
+        if (!versionResult?.success) {
+          ElMessage.error(versionResult?.message || '获取版本历史失败')
+          break
+        }
+        versionHistory.value = (versionResult.data || []).map((version, index) => ({
+          id: version.id,
+          version: version.version,
+          date: String(version.createdAt || '').slice(0, 10) || row.updateTime,
+          description: version.description || '版本变更',
+          isCurrent: index === 0,
+        }))
+      } else {
+        versionPlaceholder.value = null
+        versionHistory.value = [
+          {
+            id: 1,
+            version: row.version,
+            date: row.updateTime,
+            description: '当前版本，优化了文档结构，增加了新功能',
+            isCurrent: true
+          },
+          {
+            id: 2,
+            version: (parseFloat(row.version) - 0.1).toFixed(1),
+            date: '2023-12-01',
+            description: '上一版本，修复了若干问题',
+            isCurrent: false
+          },
+          {
+            id: 3,
+            version: (parseFloat(row.version) - 0.2).toFixed(1),
+            date: '2023-10-15',
+            description: '初始版本',
+            isCurrent: false
+          }
+        ]
+      }
       versionDialogVisible.value = true
       break
     case 'download':
+      downloadTextFile(
+        `${row.name}.md`,
+        row.content || row.description || row.name,
+        'text/markdown;charset=utf-8'
+      )
+      if (isPersistentTemplateId(row.id)) {
+        const downloadResult = await knowledgeApi.templates.recordDownload(row.id, {
+          downloadedBy: getCurrentUserId(),
+        })
+        if (downloadResult?.success && downloadResult.data) {
+          upsertTemplate(downloadResult.data)
+        }
+      } else {
+        row.downloads = (row.downloads || 0) + 1
+        persistTemplatePatch(row.id, {
+          downloads: row.downloads,
+        })
+      }
       ElMessage.success(`开始下载：${row.name}`)
       break
     case 'delete':
@@ -1848,12 +2222,18 @@ const handleMoreAction = (command, row) => {
           cancelButtonText: '取消',
           type: 'warning'
         }
-      ).then(() => {
+      ).then(async () => {
+        const result = await knowledgeApi.templates.delete(row.id)
+        if (!result?.success && result !== undefined) {
+          ElMessage.error(result?.message || '删除失败')
+          return
+        }
         const index = templates.value.findIndex(t => t.id === row.id)
         if (index > -1) {
           templates.value.splice(index, 1)
-          ElMessage.success('删除成功')
         }
+        removeTemplatePersistence(row.id)
+        ElMessage.success('删除成功')
       }).catch(() => {})
       break
   }
@@ -1870,8 +2250,7 @@ const handleSizeChange = (size) => {
 }
 
 onMounted(() => {
-  templates.value = mockTemplates
-  pagination.total = mockTemplates.length
+  loadTemplates()
 })
 </script>
 
@@ -2413,5 +2792,48 @@ onMounted(() => {
 .pagination-wrapper :deep(.el-pager li.is-active) {
   background: linear-gradient(135deg, #0369a1, #0284c7);
   color: #ffffff;
+}
+
+/* 修复表格排序箭头位置 - 与文字同行 */
+:deep(.el-table th .cell) {
+  display: inline-flex;
+  align-items: center;
+}
+
+:deep(.el-table .caret-wrapper) {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  height: auto;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+:deep(.el-table .sort-caret) {
+  width: 0;
+  height: 0;
+  border: 0;
+  margin: 0 2px;
+}
+
+:deep(.el-table .sort-caret.ascending) {
+  border-bottom: 4px solid #c0c4cc;
+}
+
+:deep(.el-table .sort-caret.descending) {
+  border-top: 4px solid #c0c4cc;
+}
+
+/* 修复版本列 el-tag 省略号问题 */
+:deep(.el-table .el-tag) {
+  max-width: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+}
+
+:deep(.el-table .cell) {
+  overflow: visible !important;
+  text-overflow: clip !important;
 }
 </style>

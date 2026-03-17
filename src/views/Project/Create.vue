@@ -3,7 +3,7 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span class="title">创建投标项目</span>
+          <span class="title">{{ pageTitle }}</span>
           <el-button @click="goBack">返回</el-button>
         </div>
       </template>
@@ -12,7 +12,7 @@
         <el-step title="基本信息" description="从CRM同步或手动输入" />
         <el-step title="项目详情" description="完善项目信息" />
         <el-step title="任务分解" description="添加项目任务" />
-        <el-step title="智能辅助" description="AI分析与建议" />
+        <el-step v-if="hasAiStep" title="智能辅助" description="AI分析与建议" />
       </el-steps>
 
       <div class="step-content">
@@ -69,6 +69,28 @@
 
             <el-form-item label="地区" prop="region">
               <el-input v-model="basicForm.region" placeholder="请输入地区" clearable />
+            </el-form-item>
+
+            <el-form-item label="招标平台" prop="platform">
+              <el-select
+                v-model="basicForm.platform"
+                placeholder="请选择招标平台"
+                filterable
+                allow-create
+                clearable
+                @change="handlePlatformChange"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="site in platformOptions"
+                  :key="site.id"
+                  :label="site.name"
+                  :value="site.name"
+                >
+                  <span>{{ site.name }}</span>
+                  <span style="float: right; color: #8492a6; font-size: 12px">{{ site.region }}</span>
+                </el-option>
+              </el-select>
             </el-form-item>
 
             <el-form-item label="投标截止日期" prop="deadline">
@@ -302,7 +324,7 @@
         </div>
 
         <!-- 步骤4: 智能辅助 -->
-        <div v-show="currentStep === 3" class="step-panel">
+        <div v-if="hasAiStep" v-show="currentStep === 3" class="step-panel">
           <el-alert
             title="AI智能分析"
             type="success"
@@ -362,6 +384,13 @@
             <el-icon><MagicStick /></el-icon>
             AI建议
           </el-divider>
+          <FeaturePlaceholder
+            v-if="scorePreviewPlaceholder"
+            compact
+            :title="scorePreviewPlaceholder.title"
+            :message="scorePreviewPlaceholder.message"
+            :hint="scorePreviewPlaceholder.hint"
+          />
           <ul class="suggestion-list">
             <li v-for="(suggestion, index) in aiSummary.suggestions" :key="index">
               {{ suggestion }}
@@ -419,35 +448,144 @@
 
       <div class="step-actions">
         <el-button v-if="currentStep > 0" @click="prevStep">上一步</el-button>
-        <el-button v-if="currentStep < 3" type="primary" @click="nextStep">下一步</el-button>
-        <el-button v-if="currentStep === 3" type="primary" :loading="submitting" @click="handleSubmit">
+        <el-button v-if="currentStep < lastStepIndex" type="primary" @click="nextStep">下一步</el-button>
+        <el-button v-if="currentStep === lastStepIndex" type="primary" :loading="submitting" @click="handleSubmit">
           确认并创建项目
         </el-button>
       </div>
     </el-card>
+
+    <!-- 资产检查弹窗 -->
+    <el-dialog
+      v-model="showAssetCheckDialog"
+      title="投标资产检查"
+      width="500px"
+      :close-on-click-modal="false"
+    >
+      <div v-if="assetCheckResult" class="asset-check-result">
+        <div class="check-header">
+          <span class="site-name">{{ assetCheckResult.site?.name }}</span>
+          <el-tag
+            v-if="assetCheckResult.capability?.status === 'available'"
+            type="success"
+            size="large"
+          >
+            可投标
+          </el-tag>
+          <el-tag
+            v-else-if="assetCheckResult.capability?.status === 'risk'"
+            type="warning"
+            size="large"
+          >
+            有风险
+          </el-tag>
+          <el-tag v-else type="danger" size="large">
+            不可投标
+          </el-tag>
+        </div>
+
+        <div class="check-items">
+          <div class="check-item">
+            <el-icon
+              :class="assetCheckResult.capability?.hasAccount ? 'icon-success' : 'icon-error'"
+            >
+              <component :is="assetCheckResult.capability?.hasAccount ? 'CircleCheck' : 'CircleClose'" />
+            </el-icon>
+            <span>账号：{{ assetCheckResult.capability?.hasAccount ? '已注册' : '未注册' }}</span>
+          </div>
+          <div class="check-item">
+            <el-icon
+              :class="assetCheckResult.capability?.hasAvailableUK ? 'icon-success' : 'icon-error'"
+            >
+              <component :is="assetCheckResult.capability?.hasAvailableUK ? 'CircleCheck' : 'CircleClose'" />
+            </el-icon>
+            <span>UK：{{ assetCheckResult.capability?.ukCount > 0 ? (assetCheckResult.capability?.hasAvailableUK ? '在库' : '已借出') : '不需要' }}</span>
+          </div>
+          <div v-if="assetCheckResult.capability?.primaryOwner" class="check-item">
+            <el-icon class="icon-user"><User /></el-icon>
+            <span>责任人：{{ assetCheckResult.capability?.primaryOwner }} ({{ assetCheckResult.capability?.primaryPhone }})</span>
+          </div>
+        </div>
+
+        <el-alert
+          v-if="assetCheckResult.capability?.hasRisk"
+          type="warning"
+          :closable="false"
+          show-icon
+        >
+          存在风险项，请确认后继续
+        </el-alert>
+      </div>
+
+      <el-empty v-else description="未找到该站点的资产信息" :image-size="80" />
+
+      <template #footer>
+        <el-button @click="showAssetCheckDialog = false">取消</el-button>
+        <el-button
+          v-if="assetCheckResult?.capability?.status !== 'unavailable'"
+          type="primary"
+          @click="confirmAssetCheck"
+        >
+          继续创建
+        </el-button>
+        <el-button
+          v-else
+          type="primary"
+          @click="goToAssetManagement"
+        >
+          前去管理资产
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
-import { Refresh, Plus, Delete, Loading, Warning, WarningFilled, MagicStick, DataAnalysis, List } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { useBarStore } from '@/stores/bar'
+import {
+  Refresh, Plus, Delete, Loading, Warning, WarningFilled,
+  MagicStick, DataAnalysis, List, CircleCheck, CircleClose, User
+} from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import ScoreCoverage from '@/components/ai/ScoreCoverage.vue'
+import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
+import { aiApi, isMockMode, tendersApi } from '@/api'
+import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 
 const router = useRouter()
+const route = useRoute()
 const projectStore = useProjectStore()
 const userStore = useUserStore()
+const barStore = useBarStore()
+
+// 编辑模式
+const isEditMode = ref(false)
+const editProjectId = ref(null)
 
 const currentStep = ref(0)
 const syncing = ref(false)
 const syncedFromCRM = ref(false)
 const submitting = ref(false)
 const analyzing = ref(false)
+const showAssetCheckDialog = ref(false)
+const assetCheckResult = ref(null)
+const scorePreviewPlaceholder = ref(null)
+const hasAiStep = true
+const lastStepIndex = hasAiStep ? 3 : 2
+const availableTenders = ref([])
+const selectedTenderId = ref(null)
+
+// 计算页面标题
+const pageTitle = computed(() => isEditMode.value ? '编辑项目' : '创建项目')
 
 const userList = computed(() => userStore.users)
+
+// 平台选项（从 BAR store 获取）
+const platformOptions = computed(() => barStore.sites || [])
 
 const basicFormRef = ref()
 const detailFormRef = ref()
@@ -459,6 +597,7 @@ const basicForm = reactive({
   budget: null,
   industry: '',
   region: '',
+  platform: '',
   deadline: '',
   manager: '',
   competitors: []
@@ -495,44 +634,30 @@ const taskForm = reactive({
   ]
 })
 
+const sourceInfo = reactive({
+  module: '',
+  customerId: '',
+  customerName: '',
+  opportunityId: '',
+  reasoningSummary: ''
+})
+
 // AI分析数据
 const aiSummary = ref({
-  winScore: 72,
-  winLevel: 'medium',
-  risks: [
-    { level: 'high', content: '技术方案中物联网架构缺失，可能扣15分' },
-    { level: 'medium', content: '智慧城市同类案例储备不足' }
-  ],
-  suggestions: [
-    '优先补充物联网架构方案，建议参考某省政府IoT项目',
-    '尽快完善智慧城市案例材料，可使用西部智慧园区项目作为类似案例',
-    '商务条件较好，建议继续保持'
-  ]
+  winScore: 0,
+  winLevel: 'low',
+  risks: [],
+  suggestions: []
 })
 
 // 评分分析数据
 const scoreAnalysis = ref({
-  scoreCategories: [
-    { name: '技术', weight: 40, covered: 28, total: 40, percentage: 70, gaps: ['物联网架构方案', '大数据平台'] },
-    { name: '商务', weight: 30, covered: 25, total: 30, percentage: 83, gaps: [] },
-    { name: '案例', weight: 20, covered: 8, total: 20, percentage: 40, gaps: ['智慧城市案例'] },
-    { name: '服务', weight: 10, covered: 7, total: 10, percentage: 70, gaps: ['运维承诺'] }
-  ],
-  gapItems: [
-    { category: '技术', scorePoint: '物联网架构', required: '架构图+技术说明', status: 'missing' },
-    { category: '技术', scorePoint: '大数据平台', required: '平台架构+性能指标', status: 'missing' },
-    { category: '案例', scorePoint: '智慧城市案例', required: '至少1个同类案例', status: 'missing' },
-    { category: '服务', scorePoint: '运维承诺', required: '3年免费运维承诺', status: 'missing' }
-  ]
+  scoreCategories: [],
+  gapItems: []
 })
 
 // AI生成的任务清单
-const aiGeneratedTasks = ref([
-  { name: '补充物联网架构方案', priority: 'high', suggestion: '参考某省政府IoT项目架构', selected: true },
-  { name: '完善大数据平台方案', priority: 'high', suggestion: '需包含性能指标说明', selected: true },
-  { name: '准备智慧城市案例材料', priority: 'medium', suggestion: '使用西部智慧园区作为类似案例', selected: true },
-  { name: '编制运维承诺文件', priority: 'medium', suggestion: '明确3年免费运维条款', selected: true }
-])
+const aiGeneratedTasks = ref([])
 
 const basicRules = {
   name: [{ required: true, message: '请输入项目名称', trigger: 'blur' }],
@@ -544,6 +669,102 @@ const basicRules = {
 
 const detailRules = {
   description: [{ required: true, message: '请输入项目描述', trigger: 'blur' }]
+}
+
+const formatDateTime = (value, fallbackTime = '00:00:00') => {
+  if (!value) return ''
+  if (String(value).includes('T')) return String(value)
+  return `${value}T${fallbackTime}`
+}
+
+const decodeQueryValue = (value) => {
+  if (Array.isArray(value)) return decodeQueryValue(value[0])
+  if (value === undefined || value === null) return ''
+  return String(value)
+}
+
+const decodeNumericQuery = (value) => {
+  const normalized = decodeQueryValue(value)
+  if (!normalized) return null
+  const numericValue = Number(normalized)
+  return Number.isFinite(numericValue) ? numericValue : null
+}
+
+const splitTags = (value) => {
+  const normalized = decodeQueryValue(value)
+  if (!normalized) return []
+  return normalized
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean)
+}
+
+const applyOpportunityPrefill = () => {
+  const projectName = decodeQueryValue(route.query.projectName)
+  const customerName = decodeQueryValue(route.query.customerName)
+  const industry = decodeQueryValue(route.query.industry)
+  const region = decodeQueryValue(route.query.region)
+  const predictedBudget = decodeNumericQuery(route.query.budget)
+  const deadline = decodeQueryValue(route.query.deadline)
+  const description = decodeQueryValue(route.query.description)
+  const remark = decodeQueryValue(route.query.remark)
+  const tags = splitTags(route.query.tags)
+
+  if (projectName) basicForm.name = projectName
+  if (customerName) basicForm.customer = customerName
+  if (industry) basicForm.industry = industry
+  if (region) basicForm.region = region
+  if (predictedBudget !== null) basicForm.budget = predictedBudget
+  if (deadline) basicForm.deadline = deadline
+  if (description) detailForm.description = description
+  if (tags.length > 0) detailForm.tags = tags
+  if (remark) detailForm.remark = remark
+
+  sourceInfo.module = decodeQueryValue(route.query.sourceModule)
+  sourceInfo.customerId = decodeQueryValue(route.query.sourceCustomerId)
+  sourceInfo.customerName = decodeQueryValue(route.query.sourceCustomerName || customerName)
+  sourceInfo.opportunityId = decodeQueryValue(route.query.sourceOpportunityId)
+  sourceInfo.reasoningSummary = decodeQueryValue(route.query.sourceReasoningSummary)
+}
+
+const resolveApiTenderId = () => {
+  const routeTenderId = route.query.tenderId
+  if (routeTenderId && /^\d+$/.test(String(routeTenderId))) {
+    return Number(routeTenderId)
+  }
+  return selectedTenderId.value || Number(availableTenders.value[0]?.id || 0) || null
+}
+
+const buildApiProjectPayload = () => {
+  const managerId = Number(userStore.currentUser?.id || 0)
+  const tenderId = resolveApiTenderId()
+  const startDate = formatDateTime(detailForm.startDate || new Date().toISOString().slice(0, 10))
+  const endDate = formatDateTime(detailForm.endDate || basicForm.deadline, '23:59:59')
+
+  if (!managerId) {
+    throw new Error('当前登录用户无有效ID，无法创建项目')
+  }
+  if (!tenderId) {
+    throw new Error('当前没有可关联的真实标讯，请先从标讯中心进入或确认 demo tenders 已加载')
+  }
+  if (!endDate) {
+    throw new Error('请填写投标截止日期或预计完工日期')
+  }
+
+  return {
+    name: basicForm.name,
+    tenderId,
+    managerId,
+    teamMembers: [managerId],
+    startDate,
+    endDate,
+    status: 'INITIATED',
+    sourceModule: sourceInfo.module || '',
+    sourceCustomerId: sourceInfo.customerId || '',
+    sourceCustomer: sourceInfo.customerName || '',
+    sourceOpportunityId: sourceInfo.opportunityId || '',
+    sourceReasoningSummary: sourceInfo.reasoningSummary || ''
+  }
 }
 
 const disabledDate = (time) => {
@@ -589,7 +810,7 @@ const nextStep = async () => {
   } else if (currentStep.value === 1) {
     const valid = await detailFormRef.value?.validate().catch(() => false)
     if (!valid) return
-  } else if (currentStep.value === 2) {
+  } else if (currentStep.value === 2 && hasAiStep) {
     // 进入智能辅助步骤时，执行AI分析
     await runAIAnalysis()
   }
@@ -604,31 +825,44 @@ const prevStep = () => {
 const runAIAnalysis = async () => {
   analyzing.value = true
   try {
-    // 模拟AI分析
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    const response = await aiApi.score.generatePreview({
+      industry: basicForm.industry,
+      tags: detailForm.tags,
+      budget: basicForm.budget,
+    })
 
-    // 根据项目信息动态生成分析结果
-    const industry = basicForm.industry
-    const tags = detailForm.tags || []
-
-    // 动态调整赢面分数
-    let winScore = 60
-    if (industry === '政府') winScore += 10
-    if (tags.includes('信创')) winScore += 5
-    if (basicForm.budget > 500) winScore -= 5
-
-    aiSummary.value.winScore = Math.min(100, winScore)
-
-    // 根据赢面分数确定等级
-    if (winScore >= 80) {
-      aiSummary.value.winLevel = 'high'
-    } else if (winScore >= 60) {
-      aiSummary.value.winLevel = 'medium'
+    if (response?.success && response.data) {
+      aiSummary.value = response.data.aiSummary
+      scoreAnalysis.value = response.data.scoreAnalysis
+      aiGeneratedTasks.value = response.data.generatedTasks
+      scorePreviewPlaceholder.value = null
+      ElMessage.success('AI分析完成')
     } else {
-      aiSummary.value.winLevel = 'low'
+      aiSummary.value = {
+        winScore: 0,
+        winLevel: 'low',
+        risks: [],
+        suggestions: [],
+      }
+      scoreAnalysis.value = {
+        scoreCategories: [],
+        gapItems: [],
+      }
+      aiGeneratedTasks.value = []
+      scorePreviewPlaceholder.value = notifyFeatureUnavailable(response, {
+        fallback: {
+          title: '评分预览暂未接入',
+          hint: '当前会继续保留项目创建流程，评分建议可在后续人工补充。',
+        },
+      }) || {
+        title: '评分预览不可用',
+        message: response?.message || '当前场景未生成评分结果',
+        hint: '项目创建流程不受影响。',
+      }
+      if (!scorePreviewPlaceholder.value.feature) {
+        ElMessage.info(scorePreviewPlaceholder.value.message)
+      }
     }
-
-    ElMessage.success('AI分析完成')
   } catch (error) {
     ElMessage.error('AI分析失败')
   } finally {
@@ -688,29 +922,44 @@ const handleSubmit = async () => {
   try {
     // 合并用户任务和AI生成的任务
     const userTasks = taskForm.tasks.filter(t => t.name)
-    const aiTasks = aiGeneratedTasks.value
-      .filter(t => t.selected)
-      .map(t => ({
-        name: t.name,
-        priority: t.priority,
-        status: 'todo',
-        owner: basicForm.manager
-      }))
+    const aiTasks = hasAiStep
+      ? aiGeneratedTasks.value
+          .filter(t => t.selected)
+          .map(t => ({
+            name: t.name,
+            priority: t.priority,
+            status: 'todo',
+            owner: basicForm.manager
+          }))
+      : []
 
-    const projectData = {
-      ...basicForm,
-      ...detailForm,
-      tasks: [...userTasks, ...aiTasks],
-      competitorAnalysis: competitorAnalysis.value,
-      aiAnalysis: {
-        ...aiSummary.value,
-        scoreCoverage: scoreAnalysis.value
-      }
-    }
+    const projectData = isMockMode()
+      ? {
+          ...basicForm,
+          ...detailForm,
+          sourceModule: sourceInfo.module || '',
+          sourceCustomerId: sourceInfo.customerId || '',
+          sourceCustomer: sourceInfo.customerName || '',
+          sourceOpportunityId: sourceInfo.opportunityId || '',
+          sourceReasoningSummary: sourceInfo.reasoningSummary || '',
+          tasks: [...userTasks, ...aiTasks],
+          competitorAnalysis: competitorAnalysis.value,
+          aiAnalysis: hasAiStep
+            ? {
+                ...aiSummary.value,
+                scoreCoverage: scoreAnalysis.value
+              }
+            : null
+        }
+      : buildApiProjectPayload()
 
-    await projectStore.createProject(projectData)
+    const createdProject = await projectStore.createProject(projectData)
 
     ElMessage.success('项目创建成功')
+    if (createdProject?.id) {
+      router.push(`/project/${createdProject.id}`)
+      return
+    }
     router.push('/project')
   } catch (error) {
     ElMessage.error('项目创建失败')
@@ -740,6 +989,103 @@ const handleCompetitorsChange = (value) => {
   competitorAnalysis.value = competitorAnalysis.value.filter(
     c => value.includes(c.name)
   )
+}
+
+// 处理招标平台变化
+const handlePlatformChange = async (platformName) => {
+  if (!platformName) return
+
+  // 触发资产检查
+  const result = await barStore.checkSiteCapability(platformName)
+
+  if (result.found) {
+    assetCheckResult.value = result
+    showAssetCheckDialog.value = true
+  }
+}
+
+// 确认资产检查，继续创建
+const confirmAssetCheck = () => {
+  showAssetCheckDialog.value = false
+  ElMessage.success('已确认资产状态，请继续完善项目信息')
+}
+
+// 前往资产管理
+const goToAssetManagement = () => {
+  showAssetCheckDialog.value = false
+  router.push('/resource/bar')
+}
+
+// 检测编辑模式并加载项目数据
+onMounted(async () => {
+  if (!basicForm.manager && userStore.currentUser?.name) {
+    basicForm.manager = userStore.currentUser.name
+  }
+
+  if (!isMockMode()) {
+    const tenderResult = await tendersApi.getList()
+    if (tenderResult?.success) {
+      availableTenders.value = Array.isArray(tenderResult.data) ? tenderResult.data : []
+    }
+
+    if (/^\d+$/.test(String(route.query.tenderId || ''))) {
+      selectedTenderId.value = Number(route.query.tenderId)
+    } else if (availableTenders.value.length > 0) {
+      selectedTenderId.value = Number(availableTenders.value[0].id)
+    }
+  }
+
+  const editId = route.query.editId
+  if (editId) {
+    isEditMode.value = true
+    editProjectId.value = editId
+    await loadProjectData(editId)
+  } else {
+    applyOpportunityPrefill()
+  }
+})
+
+// 加载项目数据用于编辑
+const loadProjectData = async (id) => {
+  try {
+    // 从 store 中获取项目数据
+    await projectStore.getProjects()
+    const project = projectStore.projects.find(p => p.id === id)
+
+    if (project) {
+      // 填充基本信息
+      basicForm.name = project.name || ''
+      basicForm.customer = project.customer || ''
+      basicForm.budget = project.budget || null
+      basicForm.industry = project.industry || ''
+      basicForm.region = project.region || ''
+      basicForm.platform = project.platform || ''
+      basicForm.deadline = project.deadline || ''
+      basicForm.manager = project.manager || ''
+      basicForm.competitors = project.competitors || []
+
+      // 填充详细信息
+      detailForm.description = project.description || ''
+      detailForm.tags = project.tags || []
+      detailForm.startDate = project.startDate || ''
+      detailForm.endDate = project.endDate || ''
+      detailForm.remark = project.remark || ''
+
+      // 填充任务信息
+      if (project.tasks && project.tasks.length > 0) {
+        taskForm.tasks = project.tasks
+      }
+
+      ElMessage.success('项目数据加载成功')
+    } else {
+      ElMessage.error('未找到该项目')
+      // 返回列表页
+      router.push('/project')
+    }
+  } catch (error) {
+    console.error('加载项目数据失败:', error)
+    ElMessage.error('加载项目数据失败')
+  }
 }
 </script>
 
@@ -1104,5 +1450,52 @@ const handleCompetitorsChange = (value) => {
   .task-item:active {
     background: #f5f7fa;
   }
+}
+
+/* 资产检查弹窗样式 */
+.asset-check-result {
+  padding: 16px 0;
+}
+
+.asset-check-result .check-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.asset-check-result .site-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.asset-check-result .check-items {
+  margin-bottom: 20px;
+}
+
+.asset-check-result .check-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  font-size: 15px;
+}
+
+.asset-check-result .check-item .icon-success {
+  color: #67c23a;
+  font-size: 22px;
+}
+
+.asset-check-result .check-item .icon-error {
+  color: #f56c6c;
+  font-size: 22px;
+}
+
+.asset-check-result .check-item .icon-user {
+  color: #909399;
+  font-size: 20px;
 }
 </style>

@@ -29,7 +29,7 @@
             <div class="metric-value" :class="getWinRateClass(currentData.winRate)">
               {{ currentData.winRate }}%
             </div>
-            <div class="metric-label">预计赢面</div>
+            <div class="metric-label">{{ currentData.winRateLabel || '预计赢面' }}</div>
           </div>
         </div>
         <div class="metric-card">
@@ -91,6 +91,7 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
 import BarChart from '@/components/charts/BarChart.vue'
+import { aiApi } from '@/api'
 
 const props = defineProps({
   modelValue: {
@@ -115,6 +116,7 @@ const dialogVisible = computed({
 })
 
 const chartRef = ref(null)
+const loadedData = ref(null)
 
 // 对话框打开后调整图表大小
 watch(() => props.modelValue, (newVal) => {
@@ -127,30 +129,60 @@ watch(() => props.modelValue, (newVal) => {
   }
 })
 
-const mockData = {
-  P001: {
-    totalManDays: 45,
-    totalCost: 180000,
-    winRate: 75,
-    expectedProfit: 2000000,
-    expectedRevenue: 11800000,
+function normalizeRoiView(payload) {
+  if (!payload) return null
+
+  if (payload.totalCost !== undefined || payload.expectedRevenue !== undefined) {
+    return {
+      totalManDays: Number(payload.totalManDays || 0),
+      totalCost: Number(payload.totalCost || 0),
+      winRate: Number(payload.winRate || payload.profitMargin || 0),
+      winRateLabel: payload.winRate !== undefined ? '预计赢面' : '毛利率',
+      expectedProfit: Number(payload.expectedProfit || payload.netProfit || 0),
+      expectedRevenue: Number(payload.expectedRevenue || payload.estimatedRevenue || 0),
+      costBreakdown: Array.isArray(payload.costBreakdown)
+        ? payload.costBreakdown.map((item) => ({
+            category: item.category,
+            amount: Number(item.amount || 0),
+            manDays: Number(item.manDays || 0),
+            note: item.note || item.description || '',
+          }))
+        : [],
+      historyComparison: Array.isArray(payload.historyComparison)
+        ? payload.historyComparison
+        : Array.isArray(payload.comparison)
+          ? payload.comparison.map((item) => ({
+              name: item.name,
+              manDays: Number(item.manDays || 0),
+              cost: Number(item.cost || 0),
+              winRate: Number(item.winRate || item.roi || 0),
+              result: item.result || '',
+            }))
+          : [],
+    }
+  }
+
+  return {
+    totalManDays: 0,
+    totalCost: Number(payload.estimatedCost || 0),
+    winRate: Number(payload.roiPercentage || 0),
+    winRateLabel: 'ROI',
+    expectedProfit: Number(payload.estimatedProfit || 0),
+    expectedRevenue: Number(payload.estimatedRevenue || 0),
     costBreakdown: [
-      { category: '人力成本', amount: 135000, manDays: 45, note: '6人*7.5天' },
-      { category: '保证金', amount: 200000, manDays: 0, note: '投标保证金' },
-      { category: '标书费', amount: 5000, manDays: 0, note: '购买招标文件' },
-      { category: '差旅费', amount: 8000, manDays: 0, note: '现场踏勘2次' }
+      {
+        category: '预估成本',
+        amount: Number(payload.estimatedCost || 0),
+        manDays: 0,
+        note: payload.assumptions || '后端暂未返回成本拆分明细',
+      },
     ],
-    historyComparison: [
-      { name: 'XX市智慧交通', manDays: 38, cost: 150000, winRate: 60, result: '未中标' },
-      { name: 'XX区数字政府', manDays: 52, cost: 200000, winRate: 80, result: '中标' },
-      { name: 'XX县智慧社区', manDays: 30, cost: 120000, winRate: 70, result: '中标' },
-      { name: 'XX市政务云', manDays: 48, cost: 190000, winRate: 55, result: '未中标' }
-    ]
+    historyComparison: [],
   }
 }
 
 const currentData = computed(() => {
-  return props.data?.[props.projectId] || mockData[props.projectId] || null
+  return loadedData.value || normalizeRoiView(props.data) || null
 })
 
 const historyChartOption = computed(() => {
@@ -211,7 +243,7 @@ const historyChartOption = computed(() => {
 })
 
 const formatCurrency = (value) => {
-  return '¥' + value.toLocaleString('zh-CN')
+  return '¥' + Number(value || 0).toLocaleString('zh-CN')
 }
 
 const getWinRateClass = (rate) => {
@@ -221,7 +253,8 @@ const getWinRateClass = (rate) => {
 }
 
 const handleChartClick = (params) => {
-  console.log('Chart clicked:', params)
+  // 图表点击事件处理
+  emit('chart-click', params)
 }
 
 const handleClose = () => {
@@ -231,6 +264,35 @@ const handleClose = () => {
 const handleExport = () => {
   emit('export', currentData.value)
 }
+
+const loadData = async () => {
+  if (!props.projectId) return
+
+  const response = await aiApi.roi.getAnalysis(props.projectId)
+  if (response?.success && response.data) {
+    loadedData.value = normalizeRoiView(response.data)
+    return
+  }
+
+  loadedData.value = normalizeRoiView(props.data)
+}
+
+watch(
+  () => props.projectId,
+  () => {
+    loadedData.value = null
+  }
+)
+
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    if (newVal) {
+      loadData()
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>

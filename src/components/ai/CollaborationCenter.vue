@@ -6,7 +6,10 @@
     :close-on-click-modal="false"
     @close="handleClose"
   >
-    <el-tabs v-model="activeTab" class="collaboration-tabs">
+    <div v-if="loading" class="loading-state">
+      正在加载协作数据...
+    </div>
+    <el-tabs v-else v-model="activeTab" class="collaboration-tabs">
       <!-- Tab1: 章节分配 -->
       <el-tab-pane label="章节分配" name="chapters">
         <div class="chapters-content">
@@ -139,9 +142,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Bell } from '@element-plus/icons-vue'
+import { collaborationApi, isMockMode } from '@/api'
+import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
   modelValue: {
@@ -155,6 +160,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'save', 'remind', 'toggle-lock', 'owner-change'])
+const userStore = useUserStore()
 
 const dialogVisible = computed({
   get: () => props.modelValue,
@@ -162,49 +168,71 @@ const dialogVisible = computed({
 })
 
 const activeTab = ref('chapters')
+const loading = ref(false)
+const isApiMode = computed(() => !isMockMode())
 
-// 用户选项（Mock数据）
-const users = [
-  { value: '张三', label: '张三' },
-  { value: '李四', label: '李四' },
-  { value: '王五', label: '王五' },
-  { value: '赵六', label: '赵六' },
-  { value: '孙七', label: '孙七' }
-]
-
-// Mock 数据
-const collaborationData = {
-  P001: {
-    chapters: [
-      { id: '1', chapter: '1. 项目背景', owner: '张三', status: 'completed', dueDate: '2024-03-08', locked: true },
-      { id: '2', chapter: '2. 技术方案', owner: '李四', status: 'editing', dueDate: '2024-03-12', locked: true },
-      { id: '3', chapter: '3. 案例展示', owner: '王五', status: 'pending', dueDate: '2024-03-15', locked: false },
-      { id: '4', chapter: '4. 商务报价', owner: '赵六', status: 'pending', dueDate: '2024-03-18', locked: false },
-      { id: '5', chapter: '5. 服务承诺', owner: '孙七', status: 'editing', dueDate: '2024-03-20', locked: false }
-    ],
-    changeHistory: [
-      { type: 'edit', author: '李四', avatar: '李', timestamp: '2小时前', description: '修改了技术方案章节的架构图' },
-      { type: 'comment', author: '张三', avatar: '张', timestamp: '5小时前', description: '评论: 技术方案需要补充性能指标' },
-      { type: 'conflict', author: '王五', avatar: '王', timestamp: '昨天', description: '与李四在案例章节有冲突，已解决' },
-      { type: 'edit', author: '张三', avatar: '张', timestamp: '昨天', description: '完成了项目背景章节的编写' },
-      { type: 'comment', author: '赵六', avatar: '赵', timestamp: '2天前', description: '评论: 商务报价部分需要确认折扣率' },
-      { type: 'edit', author: '孙七', avatar: '孙', timestamp: '3天前', description: '更新了服务承诺章节的内容' }
-    ]
-  }
-}
+const users = computed(() =>
+  (userStore.users || []).map((user) => ({
+    value: user.name,
+    label: user.name,
+  }))
+)
 
 const chapters = ref([])
-const changeHistory = computed(() => {
-  return collaborationData[props.projectId]?.changeHistory || []
+const changeHistory = ref([])
+
+const flattenSections = (sections = []) => sections.flatMap((section) => {
+  const normalized = {
+    ...section,
+    chapter: section.chapter || section.title || section.name || '未命名章节',
+    owner: section.owner || '',
+    dueDate: section.dueDate || '',
+    locked: Boolean(section.locked),
+    status: section.status || (section.owner ? 'editing' : 'pending'),
+  }
+  return [normalized, ...flattenSections(section.children || [])]
 })
 
-// 初始化章节数据
-const initChapters = () => {
-  const data = collaborationData[props.projectId]?.chapters || []
-  chapters.value = JSON.parse(JSON.stringify(data))
+const resolveUserIdByName = (name) => {
+  const matchedUser = (userStore.users || []).find((user) => user.name === name)
+  return matchedUser?.id ?? userStore.currentUser?.id ?? null
 }
 
-initChapters()
+const loadData = async () => {
+  if (!props.projectId) return
+
+  loading.value = true
+
+  try {
+    const [treeResponse, threadResponse] = await Promise.all([
+      collaborationApi.editor.getTree(props.projectId),
+      collaborationApi.collaboration.getThreads({ projectId: props.projectId }),
+    ])
+
+    chapters.value = treeResponse?.success && Array.isArray(treeResponse.data)
+      ? flattenSections(treeResponse.data).map((item, index) => ({
+          ...item,
+          chapter: item.chapter || `${index + 1}. ${item.title || item.name || '未命名章节'}`,
+        }))
+      : []
+
+    changeHistory.value = threadResponse?.success && Array.isArray(threadResponse.data)
+      ? threadResponse.data.map((item) => ({
+          type: item.type === 'thread' ? 'edit' : item.type || 'comment',
+          author: item.author || '未知用户',
+          avatar: item.avatar || '协',
+          timestamp: item.timestamp || '',
+          description: item.content || item.title || '暂无内容',
+        }))
+      : []
+
+    if (!treeResponse?.success && !threadResponse?.success) {
+      ElMessage.info(treeResponse?.message || threadResponse?.message || '当前项目暂无协作数据')
+    }
+  } finally {
+    loading.value = false
+  }
+}
 
 const getRowClassName = ({ row }) => {
   if (row.status === 'completed') return 'row-completed'
@@ -269,35 +297,99 @@ const getPendingCount = () => {
   return chapters.value.filter(c => c.status === 'pending').length
 }
 
-const handleOwnerChange = (row) => {
-  emit('owner-change', row)
+const handleOwnerChange = async (row) => {
+  const assignedBy = resolveUserIdByName(userStore.userName)
+
+  if (isApiMode.value && !assignedBy) {
+    ElMessage.warning('当前用户缺少真实用户 ID，无法提交章节分配')
+    await loadData()
+    return
+  }
+
+  const response = await collaborationApi.editor.assignSection(props.projectId, {
+    sectionId: row.id,
+    owner: row.owner,
+    assignedBy,
+    dueDate: row.dueDate || null,
+  })
+
+  if (!response?.success) {
+    await loadData()
+    ElMessage.error(response?.message || '章节分配失败')
+    return
+  }
+
+  row.owner = response?.data?.owner || row.owner
+  row.dueDate = response?.data?.dueDate || row.dueDate
+  row.status = row.owner ? 'editing' : 'pending'
+  emit('owner-change', { ...row, response: response.data })
   ElMessage.success(`已将 ${row.chapter} 分配给 ${row.owner}`)
 }
 
-const handleRemind = (row) => {
-  ElMessageBox.confirm(
+const handleRemind = async (row) => {
+  try {
+    await ElMessageBox.confirm(
     `确定要提醒 ${row.owner} 完成章节「${row.chapter}」吗？`,
     '发送提醒',
     {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'info'
-    }
-  ).then(() => {
-    emit('remind', row)
-    ElMessage.success(`已向 ${row.owner} 发送提醒`)
-  }).catch(() => {
-    // 用户取消
+    })
+  } catch {
+    return
+  }
+
+  const remindedBy = resolveUserIdByName(userStore.userName)
+  if (isApiMode.value && !remindedBy) {
+    ElMessage.warning('当前用户缺少真实用户 ID，无法发送提醒')
+    return
+  }
+
+  const response = await collaborationApi.editor.createReminder(props.projectId, {
+    sectionId: row.id,
+    recipient: row.owner,
+    remindedBy,
+    message: `请尽快完成章节「${row.chapter}」`,
   })
+
+  if (!response?.success) {
+    ElMessage.error(response?.message || '发送提醒失败')
+    return
+  }
+
+  emit('remind', { ...row, reminder: response.data })
+  ElMessage.success(`已向 ${row.owner} 发送提醒`)
 }
 
-const handleToggleLock = (row) => {
+const handleToggleLock = async (row) => {
+  const previousLocked = row.locked
+  const userId = resolveUserIdByName(userStore.userName)
+  if (isApiMode.value && !userId) {
+    ElMessage.warning('当前用户缺少真实用户 ID，无法变更锁定状态')
+    return
+  }
+
   row.locked = !row.locked
-  emit('toggle-lock', row)
+  const response = await collaborationApi.editor.updateLock(props.projectId, {
+    sectionId: row.id,
+    locked: row.locked,
+    userId,
+  })
+
+  if (!response?.success) {
+    row.locked = previousLocked
+    ElMessage.error(response?.message || '锁定状态更新失败')
+    return
+  }
+
+  row.locked = Boolean(response?.data?.locked)
+  emit('toggle-lock', { ...row, response: response.data })
   ElMessage.success(`${row.chapter} 已${row.locked ? '锁定' : '解锁'}`)
 }
 
-const handleSave = () => {
+const handleSave = async () => {
+  await loadData()
   emit('save', chapters.value)
   ElMessage.success('章节分配保存成功')
 }
@@ -305,9 +397,24 @@ const handleSave = () => {
 const handleClose = () => {
   dialogVisible.value = false
 }
+
+watch(
+  () => props.modelValue,
+  (visible) => {
+    if (visible) {
+      loadData()
+    }
+  }
+)
 </script>
 
 <style scoped>
+.loading-state {
+  padding: 48px 0;
+  text-align: center;
+  color: #909399;
+}
+
 .collaboration-tabs {
   min-height: 400px;
 }
@@ -320,6 +427,10 @@ const handleClose = () => {
 .table-actions {
   display: flex;
   gap: 8px;
+}
+
+.readonly-owner {
+  color: #606266;
 }
 
 :deep(.el-table .row-completed) {

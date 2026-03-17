@@ -22,7 +22,7 @@
             </div>
             <div class="header-right">
               <div class="ai-score-large" :class="getScoreClass(tender.aiScore)">
-                <div class="score-value">{{ tender.aiScore }}</div>
+                <div class="score-value">{{ tender.aiScore }}分</div>
                 <div class="score-label">AI评分</div>
               </div>
             </div>
@@ -80,7 +80,7 @@
       </el-card>
 
       <!-- AI分析卡片 -->
-      <el-card class="ai-analysis-card" shadow="never">
+      <el-card v-if="showTenderAiSection" class="ai-analysis-card" shadow="never">
         <template #header>
           <div class="card-title-with-icon">
             <el-icon class="ai-icon"><MagicStick /></el-icon>
@@ -226,10 +226,12 @@ import {
   ArrowRight
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { isMockMode } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
 const biddingStore = useBiddingStore()
+const showTenderAiSection = true
 
 const tender = ref(null)
 const isFollowed = ref(false)
@@ -385,8 +387,10 @@ const handleShare = () => {
 }
 
 const handleViewCase = (caseId) => {
-  ElMessage.info('查看案例详情: ' + caseId)
-  router.push(`/knowledge/case?id=${caseId}`)
+  router.push({
+    path: '/knowledge/case/detail',
+    query: { id: caseId }
+  })
 }
 </script>
 

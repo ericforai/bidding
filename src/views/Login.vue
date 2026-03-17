@@ -156,12 +156,15 @@
             <span>测试账号</span>
           </div>
           <div class="account-list">
-            <span class="account-tag">小王</span>
-            <span class="account-tag">张经理</span>
-            <span class="account-tag">李总</span>
-            <span class="account-tag">李工</span>
+            <span
+              v-for="account in displayAccounts"
+              :key="account"
+              class="account-tag"
+            >
+              {{ account }}
+            </span>
           </div>
-          <p class="test-hint">密码：任意输入即可</p>
+          <p class="test-hint">{{ accountHint }}</p>
         </div>
       </div>
     </div>
@@ -169,11 +172,12 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { computed, ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import { isMockMode } from '@/api/config'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -197,6 +201,18 @@ const loginRules = {
   ]
 }
 
+const displayAccounts = computed(() => (
+  isMockMode()
+    ? ['小王', '张经理', '李总', '李工']
+    : ['lizong（李总）', 'zhangjingli（张经理）', 'xiaowang（小王）']
+))
+
+const accountHint = computed(() => (
+  isMockMode()
+    ? '密码：任意输入即可'
+    : 'API 模式默认密码：123456'
+))
+
 const handleLogin = async () => {
   if (!loginFormRef.value) return
 
@@ -204,7 +220,7 @@ const handleLogin = async () => {
     await loginFormRef.value.validate()
     loading.value = true
 
-    await userStore.login(loginForm.username, loginForm.password)
+    await userStore.login(loginForm.username, loginForm.password, loginForm.remember)
 
     ElMessage.success('登录成功')
     router.push('/dashboard')

@@ -1,0 +1,120 @@
+package com.xiyu.bid.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+/**
+ * 标讯实体
+ * 管理招标信息的基础数据
+ */
+@Entity
+@Table(name = "tenders", indexes = {
+    @Index(name = "idx_tender_status", columnList = "status"),
+    @Index(name = "idx_tender_source", columnList = "source"),
+    @Index(name = "idx_tender_deadline", columnList = "deadline"),
+    @Index(name = "idx_tender_ai_score", columnList = "ai_score")
+})
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Tender {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    /**
+     * 标题
+     */
+    @Column(nullable = false, length = 500)
+    private String title;
+
+    /**
+     * 来源
+     */
+    @Column(length = 200)
+    private String source;
+
+    /**
+     * 预算金额
+     */
+    @Column(precision = 19, scale = 2)
+    private BigDecimal budget;
+
+    /**
+     * 截止日期
+     */
+    @Column(name = "deadline")
+    private LocalDateTime deadline;
+
+    /**
+     * 状态
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Tender.Status status = Tender.Status.PENDING;
+
+    /**
+     * AI评分（0-100）
+     */
+    @Column(name = "ai_score")
+    private Integer aiScore;
+
+    /**
+     * 风险等级
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "risk_level", length = 20)
+    private Tender.RiskLevel riskLevel;
+
+    /**
+     * 创建时间
+     */
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    /**
+     * 更新时间
+     */
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 标讯状态枚举
+     */
+    public enum Status {
+        PENDING,      // 待处理
+        TRACKING,     // 跟踪中
+        BIDDED,       // 已投标
+        ABANDONED     // 已放弃
+    }
+
+    /**
+     * 风险等级枚举
+     */
+    public enum RiskLevel {
+        LOW,      // 低风险
+        MEDIUM,   // 中风险
+        HIGH      // 高风险
+    }
+}

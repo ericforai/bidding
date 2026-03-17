@@ -1,0 +1,34 @@
+package com.xiyu.bid.dto;
+
+import com.xiyu.bid.entity.Template;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * 模板数据传输对象
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class TemplateDTO {
+
+    private Long id;
+    private String name;
+    private Template.Category category;
+    private String fileUrl;
+    private String description;
+    private String currentVersion;
+    private String fileSize;
+    private Long downloads;
+    private Long useCount;
+    private List<String> tags;
+    private Long createdBy;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+}

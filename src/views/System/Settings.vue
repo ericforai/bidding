@@ -38,21 +38,188 @@
 
         <el-tab-pane label="角色权限" name="role">
           <div class="tab-header">
-            <el-button type="primary">
+            <el-button type="primary" @click="showAddRoleDialog = true">
               <el-icon><Plus /></el-icon> 添加角色
             </el-button>
           </div>
           <el-table :data="roles" stripe>
             <el-table-column prop="name" label="角色名称" width="150" />
+            <el-table-column prop="code" label="角色代码" width="120" />
             <el-table-column prop="description" label="描述" />
             <el-table-column prop="userCount" label="用户数" width="100" />
+            <el-table-column prop="dataScope" label="数据范围" width="120">
+              <template #default="{ row }">
+                <el-tag size="small">{{ getDataScopeText(row.dataScope) }}</el-tag>
+              </template>
+            </el-table-column>
             <el-table-column label="操作" width="150">
               <template #default="{ row }">
-                <el-button link type="primary" size="small">权限配置</el-button>
+                <el-button link type="primary" size="small" @click="handleConfigPermission(row)">
+                  权限配置
+                </el-button>
                 <el-button link type="primary" size="small">编辑</el-button>
+                <el-button link type="danger" size="small">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
+        </el-tab-pane>
+
+        <el-tab-pane label="数据权限" name="dataScope">
+          <div class="data-scope-container">
+            <el-tabs v-model="dataScopeTab" type="card">
+              <!-- 按用户配置 -->
+              <el-tab-pane name="user">
+                <template #label>
+                  <div class="tab-label-with-icon">
+                    <el-icon><User /></el-icon>
+                    <span>按用户配置</span>
+                    <el-badge :value="userDataScope.length" class="tab-badge" />
+                  </div>
+                </template>
+                <el-table :data="userDataScope" size="small" border>
+                  <el-table-column prop="userName" label="用户" width="120" />
+                  <el-table-column prop="dept" label="部门" width="140" />
+                  <el-table-column prop="role" label="角色" width="100">
+                    <template #default="{ row }">
+                      <el-tag size="small">{{ row.role || '-' }}</el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="dataScope" label="数据权限" width="140">
+                    <template #default="{ row }">
+                      <el-select v-model="row.dataScope" size="small" @change="handleUserDataScopeChange(row)">
+                        <el-option label="全部数据" value="all" />
+                        <el-option label="本部门" value="dept" />
+                        <el-option label="本部门及下级" value="deptAndSub" />
+                        <el-option label="仅本人" value="self" />
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="allowedProjects" label="可访问项目组" min-width="220">
+                    <template #default="{ row }">
+                      <el-select v-model="row.allowedProjects" multiple size="small" style="width: 100%" @change="handleUserProjectChange(row)">
+                        <el-option label="央企项目组" value="pg1" />
+                        <el-option label="政府项目组" value="pg2" />
+                        <el-option label="军队项目组" value="pg3" />
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </el-tab-pane>
+
+              <!-- 按部门配置 -->
+              <el-tab-pane name="dept">
+                <template #label>
+                  <div class="tab-label-with-icon">
+                    <el-icon><OfficeBuilding /></el-icon>
+                    <span>按部门配置</span>
+                    <el-badge :value="deptDataScope.length" class="tab-badge" />
+                  </div>
+                </template>
+                <el-table :data="deptDataScope" size="small" border>
+                  <el-table-column prop="deptName" label="部门" width="150" />
+                  <el-table-column prop="dataScope" label="数据权限" width="140">
+                    <template #default="{ row }">
+                      <el-select v-model="row.dataScope" size="small" @change="handleDeptDataScopeChange(row)">
+                        <el-option label="全部数据" value="all" />
+                        <el-option label="本部门" value="dept" />
+                        <el-option label="本部门及下级" value="deptAndSub" />
+                        <el-option label="仅本部门" value="self" />
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="canViewOtherDepts" label="跨部门访问" width="120">
+                    <template #default="{ row }">
+                      <el-switch v-model="row.canViewOtherDepts" @change="handleDeptCrossAccessChange(row)" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="allowedDepts" label="可访问部门" min-width="220">
+                    <template #default="{ row }">
+                      <el-select v-model="row.allowedDepts" multiple size="small" style="width: 100%" :disabled="!row.canViewOtherDepts">
+                        <el-option label="华南销售部" value="dept1" />
+                        <el-option label="华东销售部" value="dept2" />
+                        <el-option label="技术部" value="dept3" />
+                        <el-option label="商务部" value="dept4" />
+                        <el-option label="投标管理部" value="dept5" />
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="100">
+                    <template #default="{ row }">
+                      <el-button type="primary" size="small" @click="saveDeptConfig(row)">保存</el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </el-tab-pane>
+
+              <!-- 按项目组配置 -->
+              <el-tab-pane name="project">
+                <template #label>
+                  <div class="tab-label-with-icon">
+                    <el-icon><Folder /></el-icon>
+                    <span>按项目组配置</span>
+                    <el-badge :value="projectGroupScope.length" class="tab-badge" />
+                  </div>
+                </template>
+                <el-table :data="projectGroupScope" size="small" border>
+                  <el-table-column prop="groupName" label="项目组" width="150" />
+                  <el-table-column prop="manager" label="负责人" width="100" />
+                  <el-table-column prop="memberCount" label="成员数" width="80" align="center" />
+                  <el-table-column prop="visibility" label="可见范围" width="140">
+                    <template #default="{ row }">
+                      <el-select v-model="row.visibility" size="small" @change="handleProjectVisibilityChange(row)">
+                        <el-option label="全员可见" value="all" />
+                        <el-option label="项目组成员" value="members" />
+                        <el-option label="仅负责人" value="manager" />
+                        <el-option label="自定义角色" value="custom" />
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="allowedRoles" label="可访问角色" min-width="240">
+                    <template #default="{ row }">
+                      <el-select v-model="row.allowedRoles" multiple size="small" style="width: 100%" :disabled="row.visibility === 'manager'">
+                        <el-option label="管理员" value="admin" />
+                        <el-option label="经理" value="manager" />
+                        <el-option label="销售" value="sales" />
+                        <el-option label="技术人员" value="tech" />
+                        <el-option label="财务" value="finance" />
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="100">
+                    <template #default="{ row }">
+                      <el-button type="primary" size="small" @click="saveProjectConfig(row)">保存</el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </el-tab-pane>
+
+              <!-- 权限规则说明 -->
+              <el-tab-pane name="rules">
+                <template #label>
+                  <div class="tab-label-with-icon">
+                    <el-icon><InfoFilled /></el-icon>
+                    <span>权限规则说明</span>
+                  </div>
+                </template>
+                <el-alert type="info" :closable="false" show-icon>
+                  <div class="rules-content">
+                    <h4>数据权限优先级（从高到低）</h4>
+                    <ol>
+                      <li><strong>用户级权限</strong> > 部门级权限 > 角色级权限（默认）</li>
+                      <li>当用户同时拥有多种权限配置时，以最高权限为准</li>
+                    </ol>
+                    <h4 style="margin-top: 16px;">数据范围说明</h4>
+                    <ul>
+                      <li><strong>全部数据</strong>：可查看系统中所有数据</li>
+                      <li><strong>本部门</strong>：仅查看本部门创建的数据</li>
+                      <li><strong>本部门及下级</strong>：查看本部门及下级部门的数据</li>
+                      <li><strong>仅本人</strong>：只能查看自己创建的数据</li>
+                    </ul>
+                  </div>
+                </el-alert>
+              </el-tab-pane>
+            </el-tabs>
+          </div>
         </el-tab-pane>
 
         <el-tab-pane label="系统配置" name="config">
@@ -77,14 +244,156 @@
           </el-form>
         </el-tab-pane>
 
-        <el-tab-pane label="日志管理" name="log">
-          <el-table :data="logs" stripe>
-            <el-table-column prop="time" label="时间" width="180" />
-            <el-table-column prop="user" label="用户" width="100" />
-            <el-table-column prop="action" label="操作" width="150" />
-            <el-table-column prop="detail" label="详情" min-width="200" />
-            <el-table-column prop="ip" label="IP地址" width="140" />
-          </el-table>
+        <el-tab-pane label="审计日志" name="audit">
+          <div class="audit-container">
+            <!-- 搜索筛选区域 -->
+            <el-card class="audit-search-card" shadow="never">
+              <el-form :model="auditSearch" inline>
+                <el-form-item label="关键字">
+                  <el-input
+                    v-model="auditSearch.keyword"
+                    placeholder="搜索操作内容/对象"
+                    clearable
+                    :prefix-icon="Search"
+                    style="width: 200px"
+                  />
+                </el-form-item>
+                <el-form-item label="操作类型">
+                  <el-select v-model="auditSearch.actionType" placeholder="全部" clearable style="width: 130px">
+                    <el-option label="登录" value="login" />
+                    <el-option label="创建" value="create" />
+                    <el-option label="修改" value="update" />
+                    <el-option label="删除" value="delete" />
+                    <el-option label="审批" value="approve" />
+                    <el-option label="导出" value="export" />
+                    <el-option label="查看" value="view" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="模块">
+                  <el-select v-model="auditSearch.module" placeholder="全部" clearable style="width: 130px">
+                    <el-option label="项目管理" value="project" />
+                    <el-option label="标讯中心" value="bidding" />
+                    <el-option label="资质管理" value="qualification" />
+                    <el-option label="费用管理" value="expense" />
+                    <el-option label="账户管理" value="account" />
+                    <el-option label="系统设置" value="system" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="操作人">
+                  <el-select v-model="auditSearch.operator" placeholder="全部" clearable style="width: 120px">
+                    <el-option v-for="user in users" :key="user.id" :label="user.name" :value="user.name" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="部门">
+                  <el-select v-model="auditSearch.department" placeholder="全部" clearable style="width: 130px">
+                    <el-option label="销售部" value="销售部" />
+                    <el-option label="技术部" value="技术部" />
+                    <el-option label="商务部" value="商务部" />
+                    <el-option label="管理部" value="管理部" />
+                  </el-select>
+                </el-form-item>
+                <el-form-item label="时间范围">
+                  <el-date-picker
+                    v-model="auditSearch.dateRange"
+                    type="daterange"
+                    range-separator="至"
+                    start-placeholder="开始日期"
+                    end-placeholder="结束日期"
+                    format="YYYY-MM-DD"
+                    value-format="YYYY-MM-DD"
+                    style="width: 240px"
+                  />
+                </el-form-item>
+                <el-form-item>
+                  <el-button type="primary" @click="handleAuditSearch">
+                    <el-icon><Search /></el-icon> 搜索
+                  </el-button>
+                  <el-button @click="handleAuditReset">重置</el-button>
+                  <el-button type="success" @click="handleExportAudit">
+                    <el-icon><Download /></el-icon> 导出
+                  </el-button>
+                </el-form-item>
+              </el-form>
+            </el-card>
+
+            <!-- 统计概览 -->
+            <div class="audit-stats">
+              <div class="stat-item">
+                <div class="stat-label">今日操作</div>
+                <div class="stat-value">{{ todayAuditCount }}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">本周操作</div>
+                <div class="stat-value">{{ weekAuditCount }}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">异常操作</div>
+                <div class="stat-value danger">{{ failedAuditCount }}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">活跃用户</div>
+                <div class="stat-value">{{ activeUserCount }}</div>
+              </div>
+            </div>
+
+            <!-- 审计日志表格 -->
+            <el-table :data="filteredAuditLogs" stripe class="audit-table">
+              <el-table-column prop="time" label="时间" width="170" sortable />
+              <el-table-column prop="operator" label="操作人" width="100">
+                <template #default="{ row }">
+                  <div class="operator-cell">
+                    <span>{{ row.operator }}</span>
+                    <el-tag v-if="row.role === 'admin'" size="small" type="warning">管理员</el-tag>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column prop="department" label="部门" width="100" />
+              <el-table-column prop="actionType" label="操作类型" width="90">
+                <template #default="{ row }">
+                  <el-tag :type="getActionTypeTag(row.actionType)" size="small">
+                    {{ getActionTypeLabel(row.actionType) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="module" label="模块" width="100">
+                <template #default="{ row }">
+                  <el-tag size="small" type="info">{{ getModuleLabel(row.module) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="target" label="操作对象" min-width="150">
+                <template #default="{ row }">
+                  <span class="target-name" @click="handleViewTarget(row)">{{ row.target }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="detail" label="操作详情" min-width="180" />
+              <el-table-column prop="ip" label="IP地址" width="160" />
+              <el-table-column prop="status" label="状态" width="120">
+                <template #default="{ row }">
+                  <el-tag :type="row.status === 'success' ? 'success' : 'danger'" size="small">
+                    {{ row.status === 'success' ? '成功' : '失败' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="100" fixed="right">
+                <template #default="{ row }">
+                  <el-button link type="primary" size="small" @click="handleViewAuditDetail(row)">
+                    详情
+                  </el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+
+            <!-- 分页 -->
+            <div class="audit-pagination">
+              <el-pagination
+                v-model:current-page="auditPagination.page"
+                v-model:page-size="auditPagination.pageSize"
+                :page-sizes="[20, 50, 100, 200]"
+                :total="auditPagination.total"
+                layout="total, sizes, prev, pager, next, jumper"
+              />
+            </div>
+          </div>
         </el-tab-pane>
 
         <el-tab-pane label="系统集成" name="integration">
@@ -242,6 +551,32 @@
                   </div>
                 </div>
               </template>
+
+              <!-- API 层测试 -->
+              <div class="api-test-section" style="margin-bottom: 20px; padding: 15px; background: #f5f7fa; border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <strong>🧪 API 层测试</strong>
+                  <el-tag size="small">{{ apiMode === 'mock' ? 'Mock 模式' : 'API 模式' }}</el-tag>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <el-button size="small" type="primary" @click="testApiLayer" :loading="apiTesting">
+                    运行测试
+                  </el-button>
+                  <el-button size="small" @click="clearApiTestResult">
+                    清除结果
+                  </el-button>
+                  <el-select v-model="apiMode" size="small" style="width: 120px">
+                    <el-option label="Mock 模式" value="mock" />
+                    <el-option label="API 模式" value="api" />
+                  </el-select>
+                </div>
+                <div v-if="apiTestResult.length > 0" style="margin-top: 12px; font-size: 13px;">
+                  <div v-for="(item, index) in apiTestResult" :key="index"
+                       :style="{ color: item.success ? '#67c23a' : '#f56c6c', marginBottom: '4px' }">
+                    {{ item.success ? '✅' : '❌' }} {{ item.name }}: {{ item.message }}
+                  </div>
+                </div>
+              </div>
               <div class="api-key-section">
                 <el-form label-width="120px">
                   <el-form-item label="API密钥">
@@ -455,24 +790,216 @@
         <el-button type="primary" @click="saveFlowMapping">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 权限配置对话框 -->
+    <el-dialog v-model="showPermissionDialog" title="权限配置" width="600px" class="permission-dialog">
+      <div class="permission-content">
+        <div class="permission-header">
+          <span>角色：{{ currentRole?.name }}</span>
+          <el-tag size="small">{{ currentRole?.code }}</el-tag>
+        </div>
+        <el-divider />
+        <el-tabs v-model="permissionTab" type="border-card">
+          <!-- 菜单权限 -->
+          <el-tab-pane name="menu">
+            <template #label>
+              <span><el-icon><Menu /></el-icon> 菜单权限</span>
+            </template>
+            <el-tree
+              ref="menuTreeRef"
+              :data="menuPermissions"
+              :props="{ children: 'children', label: 'label' }"
+              show-checkbox
+              node-key="id"
+              :default-checked-keys="currentRole?.menuPermissions || []"
+            />
+          </el-tab-pane>
+          <!-- 操作权限 -->
+          <el-tab-pane name="action">
+            <template #label>
+              <span><el-icon><Operation /></el-icon> 操作权限</span>
+            </template>
+            <el-table :data="actionPermissions" size="small" border>
+              <el-table-column type="selection" width="55" />
+              <el-table-column prop="module" label="模块" width="120" />
+              <el-table-column prop="action" label="操作" />
+              <el-table-column prop="description" label="说明" />
+            </el-table>
+          </el-tab-pane>
+          <!-- 数据权限 -->
+          <el-tab-pane name="data">
+            <template #label>
+              <span><el-icon><Lock /></el-icon> 数据权限</span>
+            </template>
+            <el-form label-width="100px">
+              <el-form-item label="数据范围">
+                <el-radio-group v-model="dataScopeForm.scope">
+                  <el-radio label="all">全部数据</el-radio>
+                  <el-radio label="custom">自定义</el-radio>
+                  <el-radio label="dept">本部门</el-radio>
+                  <el-radio label="deptAndSub">本部门及下级</el-radio>
+                  <el-radio label="self">仅本人</el-radio>
+                </el-radio-group>
+              </el-form-item>
+              <el-form-item label="自定义部门" v-if="dataScopeForm.scope === 'custom'">
+                <el-select v-model="dataScopeForm.depts" multiple placeholder="请选择部门" style="width: 100%">
+                  <el-option label="华南销售部" value="dept1" />
+                  <el-option label="华东销售部" value="dept2" />
+                  <el-option label="技术部" value="dept3" />
+                  <el-option label="商务部" value="dept4" />
+                  <el-option label="投标管理部" value="dept5" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="项目组权限">
+                <el-select v-model="dataScopeForm.projects" multiple placeholder="请选择可访问的项目组" style="width: 100%">
+                  <el-option label="央企项目组" value="pg1" />
+                  <el-option label="政府项目组" value="pg2" />
+                  <el-option label="军队项目组" value="pg3" />
+                </el-select>
+              </el-form-item>
+            </el-form>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
+      <template #footer>
+        <el-button @click="showPermissionDialog = false">取消</el-button>
+        <el-button type="primary" @click="savePermissionConfig">保存配置</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 添加角色对话框 -->
+    <el-dialog v-model="showAddRoleDialog" title="添加角色" width="500px">
+      <el-form :model="roleForm" label-width="100px">
+        <el-form-item label="角色名称" required>
+          <el-input v-model="roleForm.name" placeholder="请输入角色名称" />
+        </el-form-item>
+        <el-form-item label="角色代码" required>
+          <el-input v-model="roleForm.code" placeholder="如: sales_manager" />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="roleForm.description" type="textarea" :rows="3" />
+        </el-form-item>
+        <el-form-item label="数据权限">
+          <el-select v-model="roleForm.dataScope" placeholder="请选择">
+            <el-option label="全部数据" value="all" />
+            <el-option label="本部门" value="dept" />
+            <el-option label="本人" value="self" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showAddRoleDialog = false">取消</el-button>
+        <el-button type="primary" @click="saveRole">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Key, Document } from '@element-plus/icons-vue'
-import { mockData } from '@/api/mock'
+import { Plus, Key, Document, Menu, Operation, Lock, User, OfficeBuilding, Folder, InfoFilled, Search, Download } from '@element-plus/icons-vue'
+import { useUserStore } from '@/stores/user'
+import { API_CONFIG, auditApi, isMockMode } from '@/api'
 
 const activeTab = ref('user')
-const users = ref(mockData.users)
+const userStore = useUserStore()
+const users = computed(() => userStore.users || [])
 
 const roles = ref([
-  { name: '管理员', description: '系统管理员，拥有所有权限', userCount: 1 },
-  { name: '经理', description: '部门经理，可查看报表和审批', userCount: 1 },
-  { name: '销售', description: '销售人员，可创建项目和查看数据', userCount: 5 },
-  { name: '技术人员', description: '技术人员，可参与项目任务', userCount: 10 }
+  { code: 'admin', name: '管理员', description: '系统管理员，拥有所有权限', userCount: 1, dataScope: 'all', menuPermissions: ['all'] },
+  { code: 'manager', name: '经理', description: '部门经理，可查看报表和审批', userCount: 1, dataScope: 'dept', menuPermissions: ['dashboard', 'project', 'analytics'] },
+  { code: 'sales', name: '销售', description: '销售人员，可创建项目和查看数据', userCount: 5, dataScope: 'self', menuPermissions: ['dashboard', 'project', 'bidding'] },
+  { code: 'tech', name: '技术人员', description: '技术人员，可参与项目任务', userCount: 10, dataScope: 'self', menuPermissions: ['dashboard', 'project'] }
 ])
+
+// 权限配置相关
+const showPermissionDialog = ref(false)
+const showAddRoleDialog = ref(false)
+const permissionTab = ref('menu')
+const dataScopeTab = ref('user') // 数据权限 Tab 的当前子 tab
+const currentRole = ref(null)
+
+// 菜单权限树
+const menuPermissions = ref([
+  { id: 'dashboard', label: '工作台' },
+  { id: 'bidding', label: '标讯中心', children: [
+    { id: 'bidding-list', label: '标讯列表' },
+    { id: 'bidding-detail', label: '标讯详情' }
+  ]},
+  { id: 'project', label: '投标项目', children: [
+    { id: 'project-list', label: '项目列表' },
+    { id: 'project-create', label: '创建项目' },
+    { id: 'project-detail', label: '项目详情' }
+  ]},
+  { id: 'analytics', label: '数据分析', children: [
+    { id: 'analytics-dashboard', label: '数据仪表盘' }
+  ]},
+  { id: 'knowledge', label: '知识库', children: [
+    { id: 'knowledge-qualification', label: '资质库' },
+    { id: 'knowledge-case', label: '案例库' },
+    { id: 'knowledge-template', label: '模板库' }
+  ]},
+  { id: 'resource', label: '资源管理', children: [
+    { id: 'resource-expense', label: '费用管理' },
+    { id: 'resource-account', label: '账户管理' },
+    { id: 'resource-bar', label: '资产台账' }
+  ]}
+])
+
+// 操作权限列表
+const actionPermissions = ref([
+  { module: '项目管理', action: '创建项目', description: '可以创建新的投标项目' },
+  { module: '项目管理', action: '编辑项目', description: '可以编辑项目基本信息' },
+  { module: '项目管理', action: '删除项目', description: '可以删除投标项目' },
+  { module: '项目管理', action: '提交审批', description: '可以提交项目审批' },
+  { module: '费用管理', action: '申请费用', description: '可以申请投标费用' },
+  { module: '费用管理', action: '审批费用', description: '可以审批费用申请' },
+  { module: '费用管理', action: '查看费用', description: '可以查看费用明细' },
+  { module: '标讯管理', action: '查看标讯', description: '可以查看标讯信息' },
+  { module: '标讯管理', action: '收藏标讯', description: '可以收藏标讯' },
+  { module: '数据分析', action: '查看报表', description: '可以查看数据分析报表' },
+  { module: '数据分析', action: '导出数据', description: '可以导出分析数据' }
+])
+
+// 数据权限表单
+const dataScopeForm = ref({
+  scope: 'all',
+  depts: [],
+  projects: []
+})
+
+// 用户数据权限 Mock
+const userDataScope = ref([
+  { userName: '小王', dept: '华南销售部', role: '销售', dataScope: 'dept', allowedProjects: ['pg1', 'pg2'] },
+  { userName: '张经理', dept: '投标管理部', role: '经理', dataScope: 'all', allowedProjects: ['pg1', 'pg2', 'pg3'] },
+  { userName: '李工', dept: '技术部', role: '技术人员', dataScope: 'self', allowedProjects: ['pg2'] },
+  { userName: '王销售', dept: '华东销售部', role: '销售', dataScope: 'dept', allowedProjects: ['pg1'] },
+  { userName: '赵财务', dept: '财务部', role: '财务', dataScope: 'dept', allowedProjects: ['pg1', 'pg2', 'pg3'] }
+])
+
+// 部门数据权限 Mock
+const deptDataScope = ref([
+  { deptName: '华南销售部', dataScope: 'dept', canViewOtherDepts: false, allowedDepts: ['dept1'] },
+  { deptName: '华东销售部', dataScope: 'dept', canViewOtherDepts: false, allowedDepts: ['dept2'] },
+  { deptName: '技术部', dataScope: 'dept', canViewOtherDepts: false, allowedDepts: ['dept3'] },
+  { deptName: '投标管理部', dataScope: 'all', canViewOtherDepts: true, allowedDepts: [] }
+])
+
+// 项目组数据权限 Mock
+const projectGroupScope = ref([
+  { groupName: '央企项目组', manager: '张经理', memberCount: 5, visibility: 'members', allowedRoles: ['admin', 'manager', 'sales'] },
+  { groupName: '政府项目组', manager: '李经理', memberCount: 3, visibility: 'members', allowedRoles: ['admin', 'manager', 'sales'] },
+  { groupName: '军队项目组', manager: '王经理', memberCount: 2, visibility: 'manager', allowedRoles: ['admin', 'manager'] }
+])
+
+// 角色表单
+const roleForm = ref({
+  name: '',
+  code: '',
+  description: '',
+  dataScope: 'all'
+})
 
 const config = ref({
   sysName: '西域数智化投标管理平台',
@@ -488,6 +1015,360 @@ const logs = ref([
   { time: '2025-02-26 14:20:15', user: '小王', action: '创建项目', detail: '创建投标项目', ip: '192.168.1.100' },
   { time: '2025-02-26 14:15:08', user: '李总', action: '查看报表', detail: '查看数据分析', ip: '192.168.1.103' }
 ])
+
+// ========== 审计系统 ==========
+// 审计搜索条件
+const auditSearch = ref({
+  keyword: '',
+  actionType: '',
+  module: '',
+  operator: '',
+  department: '',
+  dateRange: []
+})
+
+// 审计日志数据
+const auditLogs = ref([
+  // 登录相关
+  { id: 1, time: '2026-03-04 09:30:25', operator: '小王', department: '销售部', role: 'sales', actionType: 'login', module: 'system', target: '系统登录', detail: '用户登录系统', ip: '192.168.1.100', status: 'success' },
+  { id: 2, time: '2026-03-04 09:28:10', operator: '张经理', department: '管理部', role: 'manager', actionType: 'login', module: 'system', target: '系统登录', detail: '用户登录系统', ip: '192.168.1.101', status: 'success' },
+  { id: 3, time: '2026-03-04 09:15:33', operator: '李工', department: '技术部', role: 'staff', actionType: 'login', module: 'system', target: '系统登录', detail: '用户登录系统', ip: '192.168.1.102', status: 'success' },
+  // 项目相关
+  { id: 4, time: '2026-03-04 10:20:15', operator: '小王', department: '销售部', role: 'sales', actionType: 'create', module: 'project', target: '某央企智慧办公平台采购', detail: '创建投标项目', ip: '192.168.1.100', status: 'success' },
+  { id: 5, time: '2026-03-04 11:15:08', operator: '张经理', department: '管理部', role: 'manager', actionType: 'approve', module: 'project', target: '深圳地铁自动化系统', detail: '审批通过投标申请', ip: '192.168.1.101', status: 'success' },
+  { id: 6, time: '2026-03-04 14:30:22', operator: '小王', department: '销售部', role: 'sales', actionType: 'update', module: 'project', target: '西部云数据中心建设', detail: '修改项目预算', ip: '192.168.1.100', status: 'success' },
+  { id: 7, time: '2026-03-04 15:45:30', operator: '李工', department: '技术部', role: 'staff', actionType: 'delete', module: 'project', target: '测试项目A', detail: '删除项目', ip: '192.168.1.102', status: 'success' },
+  // 标讯相关
+  { id: 8, time: '2026-03-04 08:50:15', operator: '小王', department: '销售部', role: 'sales', actionType: 'create', module: 'bidding', target: '中国政府采购网-智慧办公项目', detail: '从外部标讯源同步标讯', ip: '192.168.1.100', status: 'success' },
+  { id: 9, time: '2026-03-04 09:30:45', operator: '小王', department: '销售部', role: 'sales', actionType: 'update', module: 'bidding', target: '华南电力集团集采项目', detail: '分配标讯给技术部', ip: '192.168.1.100', status: 'success' },
+  { id: 10, time: '2026-03-04 10:15:20', operator: '张经理', department: '管理部', role: 'manager', actionType: 'approve', module: 'bidding', target: 'XX区政府数字平台', detail: '审批标讯分发', ip: '192.168.1.101', status: 'success' },
+  // 资质相关
+  { id: 11, time: '2026-03-04 13:20:10', operator: '李工', department: '技术部', role: 'staff', actionType: 'create', module: 'qualification', target: 'ISO9001质量管理体系认证', detail: '上传资质文件', ip: '192.168.1.102', status: 'success' },
+  { id: 12, time: '2026-03-04 14:00:30', operator: '小王', department: '销售部', role: 'sales', actionType: 'view', module: 'qualification', target: '营业执照', detail: '查看资质详情', ip: '192.168.1.100', status: 'success' },
+  { id: 13, time: '2026-03-04 16:30:45', operator: '小王', department: '销售部', role: 'sales', actionType: 'update', module: 'qualification', target: 'ISO14001环境管理体系认证', detail: '更新有效期', ip: '192.168.1.100', status: 'success' },
+  // 费用相关
+  { id: 14, time: '2026-03-04 10:45:15', operator: '小王', department: '销售部', role: 'sales', actionType: 'create', module: 'expense', target: '某央企项目保证金', detail: '申请保证金50000元', ip: '192.168.1.100', status: 'success' },
+  { id: 15, time: '2026-03-04 11:30:20', operator: '张经理', department: '管理部', role: 'manager', actionType: 'approve', module: 'expense', target: '深圳地铁项目标书费', detail: '审批标书费申请', ip: '192.168.1.101', status: 'success' },
+  { id: 16, time: '2026-03-04 13:15:40', operator: '小王', department: '销售部', role: 'sales', actionType: 'export', module: 'expense', target: '费用明细表', detail: '导出3月份费用报表', ip: '192.168.1.100', status: 'success' },
+  // 账户相关
+  { id: 17, time: '2026-03-04 08:30:25', operator: '李工', department: '技术部', role: 'staff', actionType: 'update', module: 'account', target: '中国政府采购网账号', detail: '修改账号密码', ip: '192.168.1.102', status: 'success' },
+  { id: 18, time: '2026-03-04 09:45:30', operator: '小王', department: '销售部', role: 'sales', actionType: 'create', module: 'account', target: '各省招标网账号', detail: '添加新账号', ip: '192.168.1.100', status: 'success' },
+  { id: 19, time: '2026-03-04 15:20:15', operator: '张经理', department: '管理部', role: 'manager', actionType: 'delete', module: 'account', target: '过期测试账号', detail: '删除无效账号', ip: '192.168.1.101', status: 'success' },
+  // 系统设置
+  { id: 20, time: '2026-03-04 08:00:10', operator: '李总', department: '管理部', role: 'admin', actionType: 'update', module: 'system', target: '系统配置', detail: '修改系统参数', ip: '192.168.1.103', status: 'success' },
+  { id: 21, time: '2026-03-04 12:00:25', operator: '李总', department: '管理部', role: 'admin', actionType: 'create', module: 'system', target: '销售部-小王', detail: '添加用户角色', ip: '192.168.1.103', status: 'success' },
+  { id: 22, time: '2026-03-04 17:30:40', operator: '李总', department: '管理部', role: 'admin', actionType: 'export', module: 'system', target: '审计日志', detail: '导出系统日志', ip: '192.168.1.103', status: 'success' },
+  // 异常操作
+  { id: 23, time: '2026-03-04 10:30:15', operator: '未知用户', department: '-', role: 'unknown', actionType: 'login', module: 'system', target: '系统登录', detail: '密码错误3次', ip: '192.168.1.200', status: 'failed' },
+  { id: 24, time: '2026-03-04 14:15:30', operator: '小王', department: '销售部', role: 'sales', actionType: 'delete', module: 'project', target: '某央企项目', detail: '无权限删除项目', ip: '192.168.1.100', status: 'failed' },
+  // 更多今日操作
+  { id: 25, time: '2026-03-04 09:00:00', operator: '李工', department: '技术部', role: 'staff', actionType: 'login', module: 'system', target: '系统登录', detail: '用户登录系统', ip: '192.168.1.102', status: 'success' },
+  { id: 26, time: '2026-03-04 10:00:00', operator: '小王', department: '销售部', role: 'sales', actionType: 'view', module: 'project', target: '西部云数据中心建设', detail: '查看项目详情', ip: '192.168.1.100', status: 'success' },
+  { id: 27, time: '2026-03-04 11:00:00', operator: '张经理', department: '管理部', role: 'manager', actionType: 'view', module: 'analytics', target: '数据报表', detail: '查看销售统计', ip: '192.168.1.101', status: 'success' },
+])
+
+const auditSummary = ref(null)
+
+// 审计分页
+const auditPagination = ref({
+  page: 1,
+  pageSize: 20,
+  total: auditLogs.value.length
+})
+
+// 过滤后的审计日志
+const filteredAuditLogs = computed(() => {
+  if (!isMockMode()) {
+    return auditLogs.value
+  }
+
+  let result = [...auditLogs.value]
+
+  // 关键字搜索
+  if (auditSearch.value.keyword) {
+    const keyword = auditSearch.value.keyword.toLowerCase()
+    result = result.filter(log =>
+      log.detail?.toLowerCase().includes(keyword) ||
+      log.target?.toLowerCase().includes(keyword) ||
+      log.operator?.toLowerCase().includes(keyword)
+    )
+  }
+
+  // 操作类型筛选
+  if (auditSearch.value.actionType) {
+    result = result.filter(log => log.actionType === auditSearch.value.actionType)
+  }
+
+  // 模块筛选
+  if (auditSearch.value.module) {
+    result = result.filter(log => log.module === auditSearch.value.module)
+  }
+
+  // 操作人筛选
+  if (auditSearch.value.operator) {
+    result = result.filter(log => log.operator === auditSearch.value.operator)
+  }
+
+  // 部门筛选
+  if (auditSearch.value.department) {
+    result = result.filter(log => log.department === auditSearch.value.department)
+  }
+
+  // 时间范围筛选
+  if (auditSearch.value.dateRange && auditSearch.value.dateRange.length === 2) {
+    const [start, end] = auditSearch.value.dateRange
+    result = result.filter(log => {
+      const logDate = log.time.split(' ')[0]
+      return logDate >= start && logDate <= end
+    })
+  }
+
+  return result
+})
+
+// 统计数据
+const todayAuditCount = computed(() => {
+  if (!isMockMode() && auditSummary.value) {
+    return auditSummary.value.todayCount || 0
+  }
+  const today = new Date().toISOString().split('T')[0]
+  return auditLogs.value.filter(log => log.time.startsWith(today)).length
+})
+
+const weekAuditCount = computed(() => {
+  if (!isMockMode() && auditSummary.value) {
+    return auditSummary.value.weekCount || 0
+  }
+  return auditLogs.value.length
+})
+
+const failedAuditCount = computed(() => {
+  if (!isMockMode() && auditSummary.value) {
+    return auditSummary.value.failedCount || 0
+  }
+  return auditLogs.value.filter(log => log.status === 'failed').length
+})
+
+const activeUserCount = computed(() => {
+  if (!isMockMode() && auditSummary.value) {
+    return auditSummary.value.activeUserCount || 0
+  }
+  const users = new Set(auditLogs.value.map(log => log.operator))
+  return users.size
+})
+
+// 获取操作类型标签
+const getActionTypeLabel = (type) => {
+  const map = {
+    'login': '登录',
+    'create': '创建',
+    'update': '修改',
+    'delete': '删除',
+    'approve': '审批',
+    'export': '导出',
+    'view': '查看'
+  }
+  return map[type] || type
+}
+
+const getActionTypeTag = (type) => {
+  const map = {
+    'login': 'info',
+    'create': 'success',
+    'update': 'warning',
+    'delete': 'danger',
+    'approve': 'primary',
+    'export': '',
+    'view': 'info'
+  }
+  return map[type] || ''
+}
+
+// 获取模块标签
+const getModuleLabel = (module) => {
+  const map = {
+    'project': '项目',
+    'bidding': '标讯',
+    'qualification': '资质',
+    'expense': '费用',
+    'account': '账户',
+    'system': '系统',
+    'analytics': '报表'
+  }
+  return map[module] || module
+}
+
+// 审计搜索
+const handleAuditSearch = () => {
+  auditPagination.value.page = 1
+  if (!isMockMode()) {
+    loadAuditLogs()
+    return
+  }
+  ElMessage.success('搜索完成')
+}
+
+// 审计重置
+const handleAuditReset = () => {
+  auditSearch.value = {
+    keyword: '',
+    actionType: '',
+    module: '',
+    operator: '',
+    department: '',
+    dateRange: []
+  }
+  if (!isMockMode()) {
+    loadAuditLogs()
+    return
+  }
+  ElMessage.info('搜索条件已重置')
+}
+
+// 导出审计日志
+const handleExportAudit = () => {
+  const payload = JSON.stringify(filteredAuditLogs.value, null, 2)
+  const blob = new Blob([payload], { type: 'application/json;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.json`
+  link.click()
+  URL.revokeObjectURL(url)
+  ElMessage.success('审计日志导出成功')
+}
+
+// 查看操作对象
+const handleViewTarget = (row) => {
+  ElMessage.info(`跳转到: ${row.target}`)
+}
+
+// 查看审计详情
+const handleViewAuditDetail = (row) => {
+  ElMessage.info(`查看详情: ${row.detail}`)
+}
+
+const buildAuditQuery = () => {
+  const params = {}
+  if (auditSearch.value.keyword) params.keyword = auditSearch.value.keyword
+  if (auditSearch.value.actionType) params.action = auditSearch.value.actionType
+  if (auditSearch.value.module) params.module = auditSearch.value.module
+  if (auditSearch.value.operator) params.operator = auditSearch.value.operator
+  if (auditSearch.value.dateRange?.length === 2) {
+    params.start = `${auditSearch.value.dateRange[0]}T00:00:00`
+    params.end = `${auditSearch.value.dateRange[1]}T23:59:59`
+  }
+  return params
+}
+
+const loadAuditLogs = async () => {
+  if (isMockMode()) {
+    auditPagination.value.total = auditLogs.value.length
+    return
+  }
+
+  try {
+    const response = await auditApi.getLogs(buildAuditQuery())
+    if (!response?.success) {
+      throw new Error(response?.message || '加载审计日志失败')
+    }
+
+    auditLogs.value = Array.isArray(response?.data?.items) ? response.data.items : []
+    auditSummary.value = response?.data?.summary || null
+    auditPagination.value.total = auditLogs.value.length
+  } catch (error) {
+    ElMessage.error(error?.message || '加载审计日志失败')
+  }
+}
+
+// 获取数据权限文本
+const getDataScopeText = (scope) => {
+  const map = {
+    'all': '全部数据',
+    'dept': '本部门',
+    'deptAndSub': '本部门及下级',
+    'self': '仅本人'
+  }
+  return map[scope] || scope
+}
+
+// 配置权限
+const handleConfigPermission = (role) => {
+  currentRole.value = role
+  permissionTab.value = 'menu'
+  dataScopeForm.value = {
+    scope: role.dataScope || 'all',
+    depts: [],
+    projects: []
+  }
+  showPermissionDialog.value = true
+}
+
+// 保存权限配置
+const savePermissionConfig = () => {
+  if (currentRole.value) {
+    currentRole.value.dataScope = dataScopeForm.value.scope
+    currentRole.value.menuPermissions = []
+  }
+  ElMessage.success('权限配置已保存')
+  showPermissionDialog.value = false
+}
+
+// 数据权限变更处理
+const handleUserDataScopeChange = (row) => {
+  // 用户数据权限变更事件
+}
+
+const handleUserProjectChange = (row) => {
+  // 用户项目权限变更事件
+}
+
+const handleDeptDataScopeChange = (row) => {
+  // 部门数据权限变更事件
+}
+
+onMounted(() => {
+  loadAuditLogs()
+})
+
+const handleDeptCrossAccessChange = (row) => {
+  // 部门跨部门访问变更事件
+}
+
+const saveDeptConfig = (row) => {
+  ElMessage.success(`部门"${row.deptName}"数据权限配置已保存`)
+}
+
+const handleProjectVisibilityChange = (row) => {
+  // 项目组可见范围变更事件
+}
+
+const saveProjectConfig = (row) => {
+  ElMessage.success(`项目组"${row.groupName}"权限配置已保存`)
+}
+
+// 保存角色
+const saveRole = () => {
+  if (!roleForm.value.name || !roleForm.value.code) {
+    ElMessage.warning('请填写角色名称和代码')
+    return
+  }
+  roles.value.push({
+    ...roleForm.value,
+    userCount: 0,
+    menuPermissions: [],
+    dataScope: roleForm.value.dataScope
+  })
+  ElMessage.success('角色添加成功')
+  showAddRoleDialog.value = false
+  // 重置表单
+  roleForm.value = {
+    name: '',
+    code: '',
+    description: '',
+    dataScope: 'all'
+  }
+}
 
 // 系统集成配置
 const integrationConfig = ref({
@@ -536,43 +1417,128 @@ const currentFlowMapping = ref({
 
 // API列表
 const apiList = ref([
-  { name: '获取项目列表', path: '/api/v1/projects', method: 'GET', description: '查询投标项目列表', status: 'enabled', enabled: true },
-  { name: '创建项目', path: '/api/v1/projects', method: 'POST', description: '创建新的投标项目', status: 'enabled', enabled: true },
-  { name: '获取项目详情', path: '/api/v1/projects/{id}', method: 'GET', description: '获取指定项目详情', status: 'enabled', enabled: true },
-  { name: '更新项目', path: '/api/v1/projects/{id}', method: 'PUT', description: '更新项目信息', status: 'enabled', enabled: true },
-  { name: '提交审批', path: '/api/v1/approvals/submit', method: 'POST', description: '提交审批申请', status: 'enabled', enabled: true },
-  { name: '查询审批状态', path: '/api/v1/approvals/{id}/status', method: 'GET', description: '查询审批进度', status: 'enabled', enabled: true },
-  { name: '同步组织架构', path: '/api/v1/sync/org', method: 'POST', description: '同步组织架构数据', status: 'enabled', enabled: true },
-  { name: '获取资质列表', path: '/api/v1/qualifications', method: 'GET', description: '查询企业资质信息', status: 'enabled', enabled: true },
-  { name: '上传附件', path: '/api/v1/files/upload', method: 'POST', description: '上传项目附件', status: 'enabled', enabled: true }
+  { name: '获取项目列表', path: '/api/projects', method: 'GET', description: '查询投标项目列表', status: 'enabled', enabled: true },
+  { name: '创建项目', path: '/api/projects', method: 'POST', description: '创建新的投标项目', status: 'enabled', enabled: true },
+  { name: '获取项目详情', path: '/api/projects/{id}', method: 'GET', description: '获取指定项目详情', status: 'enabled', enabled: true },
+  { name: '更新项目', path: '/api/projects/{id}', method: 'PUT', description: '更新项目信息', status: 'enabled', enabled: true },
+  { name: '获取标讯列表', path: '/api/tenders', method: 'GET', description: '查询标讯列表', status: 'enabled', enabled: true },
+  { name: '获取资质列表', path: '/api/knowledge/qualifications', method: 'GET', description: '查询企业资质信息', status: 'enabled', enabled: true },
+  { name: '获取案例列表', path: '/api/knowledge/cases', method: 'GET', description: '查询案例库', status: 'enabled', enabled: true },
+  { name: '获取模板列表', path: '/api/knowledge/templates', method: 'GET', description: '查询模板库', status: 'enabled', enabled: true },
+  { name: '数据看板总览', path: '/api/analytics/overview', method: 'GET', description: '获取核心看板指标', status: 'enabled', enabled: true }
 ])
 
 // API文档
 const showApiDoc = ref(false)
 const apiDocTab = ref('overview')
 const baseUrl = computed(() => {
-  return window.location.origin + '/api/v1'
+  return `${API_CONFIG.baseURL}/api`
 })
+
+// API 层测试
+const apiMode = ref('mock')
+const apiTesting = ref(false)
+const apiTestResult = ref([])
+
+async function testApiLayer() {
+  apiTesting.value = true
+  apiTestResult.value = []
+
+  const addResult = (name, success, message) => {
+    apiTestResult.value.push({ name, success, message })
+  }
+
+  try {
+    addResult('配置检查', true, `${isMockMode() ? 'Mock' : 'API'} 模式, 地址: ${API_CONFIG.baseURL}`)
+    addResult('正式上线范围', true, '以统一 API 层和真实 /api/* 契约为准，Mock 仅用于演示模式')
+
+    // 测试 API 模块导入
+    try {
+      await import('@/api/modules/auth.js')
+      addResult('authApi 模块', true, '导入成功')
+    } catch (e) {
+      addResult('authApi 模块', false, e.message)
+    }
+
+    try {
+      await import('@/api/modules/tenders.js')
+      addResult('tendersApi 模块', true, '导入成功')
+    } catch (e) {
+      addResult('tendersApi 模块', false, e.message)
+    }
+
+    try {
+      await import('@/api/modules/projects.js')
+      addResult('projectsApi 模块', true, '导入成功')
+    } catch (e) {
+      addResult('projectsApi 模块', false, e.message)
+    }
+
+    // 测试 API 调用
+    try {
+      const { authApi } = await import('@/api/modules/auth.js')
+      const result = await authApi.login('小王', '123456')
+      if (result.success) {
+        addResult('authApi.login()', true, `用户 ${result.data.user.name} 登录成功`)
+      } else {
+        addResult('authApi.login()', false, '登录失败')
+      }
+    } catch (e) {
+      addResult('authApi.login()', false, e.message)
+    }
+
+    try {
+      const { tendersApi } = await import('@/api/modules/tenders.js')
+      const result = await tendersApi.getList()
+      if (result.success && result.data.length > 0) {
+        addResult('tendersApi.getList()', true, `返回 ${result.data.length} 条标讯`)
+      } else {
+        addResult('tendersApi.getList()', false, '数据格式不正确')
+      }
+    } catch (e) {
+      addResult('tendersApi.getList()', false, e.message)
+    }
+
+    try {
+      const { projectsApi } = await import('@/api/modules/projects.js')
+      const result = await projectsApi.getList()
+      if (result.success && result.data.length > 0) {
+        addResult('projectsApi.getList()', true, `返回 ${result.data.length} 个项目`)
+      } else {
+        addResult('projectsApi.getList()', false, '数据格式不正确')
+      }
+    } catch (e) {
+      addResult('projectsApi.getList()', false, e.message)
+    }
+
+  } catch (e) {
+    addResult('测试框架', false, e.message)
+  }
+
+  apiTesting.value = false
+}
+
+function clearApiTestResult() {
+  apiTestResult.value = []
+}
 
 // 项目接口文档
 const projectApis = [
   {
     name: '获取项目列表',
-    path: 'GET /api/v1/projects',
+    path: 'GET /api/projects',
     method: 'GET',
-    description: '分页查询投标项目列表，支持按状态、日期等条件筛选',
+    description: '查询投标项目列表，筛选在统一 API 层完成兼容',
     params: [
-      { name: 'page', type: 'number', required: true, description: '页码，从1开始' },
-      { name: 'pageSize', type: 'number', required: true, description: '每页数量，最大100' },
-      { name: 'status', type: 'string', required: false, description: '项目状态：draft/submitting/approved/rejected/completed' },
-      { name: 'startDate', type: 'string', required: false, description: '开始日期，格式：YYYY-MM-DD' },
-      { name: 'endDate', type: 'string', required: false, description: '结束日期，格式：YYYY-MM-DD' }
+      { name: 'status', type: 'string', required: false, description: '项目状态筛选' },
+      { name: 'managerId', type: 'string', required: false, description: '项目经理筛选' },
+      { name: 'name', type: 'string', required: false, description: '项目名称关键字' }
     ],
-    example: `GET /api/v1/projects?page=1&pageSize=20&status=approved`
+    example: `GET /api/projects?status=bidding`
   },
   {
     name: '创建项目',
-    path: 'POST /api/v1/projects',
+    path: 'POST /api/projects',
     method: 'POST',
     description: '创建新的投标项目',
     params: [
@@ -582,7 +1548,7 @@ const projectApis = [
       { name: 'bidDeadline', type: 'string', required: true, description: '投标截止时间，格式：YYYY-MM-DD HH:mm:ss' },
       { name: 'description', type: 'string', required: false, description: '项目描述' }
     ],
-    example: `POST /api/v1/projects
+    example: `POST /api/projects
 {
   "name": "某某系统集成项目",
   "customerId": "CUST_001",
@@ -593,26 +1559,26 @@ const projectApis = [
   },
   {
     name: '获取项目详情',
-    path: 'GET /api/v1/projects/{id}',
+    path: 'GET /api/projects/{id}',
     method: 'GET',
     description: '获取指定项目的详细信息',
     params: [
       { name: 'id', type: 'string', required: true, description: '项目ID' }
     ],
-    example: `GET /api/v1/projects/P001`
+    example: `GET /api/projects/1001`
   },
   {
     name: '更新项目',
-    path: 'PUT /api/v1/projects/{id}',
+    path: 'PUT /api/projects/{id}',
     method: 'PUT',
     description: '更新项目信息',
     params: [
-      { name: 'id', type: 'string', required: true, description: '项目ID（路径参数）' },
+      { name: 'id', type: 'number', required: true, description: '项目ID（路径参数）' },
       { name: 'name', type: 'string', required: false, description: '项目名称' },
       { name: 'bidAmount', type: 'number', required: false, description: '投标金额' },
       { name: 'status', type: 'string', required: false, description: '项目状态' }
     ],
-    example: `PUT /api/v1/projects/P001
+    example: `PUT /api/projects/1001
 {
   "bidAmount": 550000,
   "status": "submitting"
@@ -623,99 +1589,28 @@ const projectApis = [
 // 审批接口文档
 const approvalApis = [
   {
-    name: '提交审批',
-    path: 'POST /api/v1/approvals/submit',
-    method: 'POST',
-    description: '提交审批申请，支持项目立项、投标、合同等类型',
+    name: '上线范围说明',
+    path: 'N/A',
+    method: 'INFO',
+    description: '审批流、回调流未纳入当前正式上线范围，不应按演示文档联调。',
     params: [
-      { name: 'type', type: 'string', required: true, description: '审批类型：project_start/bidding/contract/seal' },
-      { name: 'businessId', type: 'string', required: true, description: '业务ID' },
-      { name: 'title', type: 'string', required: true, description: '审批标题' },
-      { name: 'content', type: 'string', required: true, description: '审批内容描述' },
-      { name: 'approvers', type: 'array', required: true, description: '审批人ID列表' }
+      { name: 'status', type: 'string', required: false, description: '仅保留说明，不提供联调参数' }
     ],
-    example: `POST /api/v1/approvals/submit
-{
-  "type": "project_start",
-  "businessId": "P001",
-  "title": "某某项目立项审批",
-  "content": "项目概况、预算、计划等说明",
-  "approvers": ["USER_001", "USER_002"]
-}`
-  },
-  {
-    name: '查询审批状态',
-    path: 'GET /api/v1/approvals/{id}/status',
-    method: 'GET',
-    description: '查询审批流程的当前状态和进度',
-    params: [
-      { name: 'id', type: 'string', required: true, description: '审批ID' }
-    ],
-    example: `GET /api/v1/approvals/APR_001/status`
-  },
-  {
-    name: '审批操作',
-    path: 'POST /api/v1/approvals/{id}/action',
-    method: 'POST',
-    description: '对审批进行通过、驳回等操作',
-    params: [
-      { name: 'id', type: 'string', required: true, description: '审批ID（路径参数）' },
-      { name: 'action', type: 'string', required: true, description: '操作类型：approve/reject/transfer' },
-      { name: 'comment', type: 'string', required: false, description: '审批意见' },
-      { name: 'toUser', type: 'string', required: false, description: '转交用户ID（action为transfer时必填）' }
-    ],
-    example: `POST /api/v1/approvals/APR_001/action
-{
-  "action": "approve",
-  "comment": "同意，请财务复核"
-}`
+    example: `正式上线版本不提供审批接口文档，避免传播错误契约`
   }
 ]
 
 // 回调接口文档
 const callbackApis = [
   {
-    name: 'OA审批回调',
-    path: 'POST /api/v1/callback/oa/approval',
-    method: 'POST',
-    description: 'OA系统审批完成后回调通知本系统',
+    name: '回调接口说明',
+    path: 'N/A',
+    method: 'INFO',
+    description: '第三方回调链路未纳入当前正式上线范围，需单独立项后提供正式契约。',
     params: [
-      { name: 'approvalId', type: 'string', required: true, description: '本系统审批ID' },
-      { name: 'oaFlowId', type: 'string', required: true, description: 'OA系统流程ID' },
-      { name: 'status', type: 'string', required: true, description: '审批结果：approved/rejected' },
-      { name: 'approver', type: 'string', required: true, description: '最后审批人' },
-      { name: 'comment', type: 'string', required: false, description: '审批意见' },
-      { name: 'timestamp', type: 'string', required: true, description: '审批时间戳' }
+      { name: 'status', type: 'string', required: false, description: '仅保留说明，不提供联调参数' }
     ],
-    example: `POST /api/v1/callback/oa/approval
-{
-  "approvalId": "APR_001",
-  "oaFlowId": "OA_FLOW_12345",
-  "status": "approved",
-  "approver": "张经理",
-  "comment": "同意该项目立项",
-  "timestamp": "2025-02-26T14:30:00Z"
-}`
-  },
-  {
-    name: '组织架构同步回调',
-    path: 'POST /api/v1/callback/org/sync',
-    method: 'POST',
-    description: '组织架构系统同步完成后的回调通知',
-    params: [
-      { name: 'taskId', type: 'string', required: true, description: '同步任务ID' },
-      { name: 'status', type: 'string', required: true, description: '同步结果：success/partial/failed' },
-      { name: 'syncedCount', type: 'number', required: true, description: '同步成功数量' },
-      { name: 'failedCount', type: 'number', required: false, description: '同步失败数量' },
-      { name: 'errors', type: 'array', required: false, description: '错误详情列表' }
-    ],
-    example: `POST /api/v1/callback/org/sync
-{
-  "taskId": "SYNC_001",
-  "status": "success",
-  "syncedCount": 150,
-  "failedCount": 0
-}`
+    example: `正式上线版本不提供回调接口文档，避免传播错误契约`
   }
 ]
 
@@ -1244,5 +2139,118 @@ const toggleApiStatus = (row) => {
 
 :deep(.el-switch__core) {
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==================== 数据权限 Tab 样式 ==================== */
+.data-scope-container {
+  padding: 10px 0;
+}
+
+.tab-label-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-label-with-icon .el-badge {
+  margin-left: 4px;
+}
+
+.rules-content {
+  line-height: 1.8;
+}
+
+.rules-content h4 {
+  margin: 12px 0 8px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.rules-content ol {
+  padding-left: 18px;
+  margin: 0;
+}
+
+.rules-content ul {
+  padding-left: 18px;
+  margin: 0;
+}
+
+.rules-content li {
+  margin: 4px 0;
+}
+
+// 审计系统样式
+.audit-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.audit-search-card {
+  :deep(.el-card__body) {
+    padding: 16px;
+  }
+
+  :deep(.el-form--inline .el-form-item) {
+    margin-right: 12px;
+    margin-bottom: 12px;
+  }
+}
+
+.audit-stats {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: #f5f7fa;
+  border-radius: 4px;
+
+  .stat-item {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    background: white;
+    border-radius: 4px;
+
+    .stat-label {
+      font-size: 13px;
+      color: #909399;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 600;
+      color: #409eff;
+
+      &.danger {
+        color: #f56c6c;
+      }
+    }
+  }
+}
+
+.audit-table {
+  .operator-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .target-name {
+    color: #409eff;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.audit-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 0;
 }
 </style>

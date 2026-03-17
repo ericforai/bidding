@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
 const routes = [
   {
@@ -27,6 +28,12 @@ const routes = [
         name: 'Bidding',
         component: () => import('@/views/Bidding/List.vue'),
         meta: { title: '标讯中心' }
+      },
+      {
+        path: 'bidding/customer-opportunities',
+        name: 'CustomerOpportunityCenter',
+        component: () => import('@/views/Bidding/CustomerOpportunityCenter.vue'),
+        meta: { title: '客户商机中心', icon: 'bidding' }
       },
       {
         path: 'bidding/:id',
@@ -77,6 +84,12 @@ const routes = [
         meta: { title: '案例库' }
       },
       {
+        path: 'knowledge/case/detail',
+        name: 'CaseDetail',
+        component: () => import('@/views/Knowledge/CaseDetail.vue'),
+        meta: { title: '案例详情' }
+      },
+      {
         path: 'knowledge/template',
         name: 'Template',
         component: () => import('@/views/Knowledge/Template.vue'),
@@ -93,6 +106,37 @@ const routes = [
         name: 'Account',
         component: () => import('@/views/Resource/Account.vue'),
         meta: { title: '账户管理' }
+      },
+      {
+        path: 'resource/bid-result',
+        name: 'BidResult',
+        component: () => import('@/views/Resource/BidResult.vue'),
+        meta: { title: '投标结果闭环' }
+      },
+      // BAR 投标资产台账
+      {
+        path: 'resource/bar',
+        name: 'BAR',
+        component: () => import('@/views/Resource/BAR/CheckPanel.vue'),
+        meta: { title: '可投标能力检查' }
+      },
+      {
+        path: 'resource/bar/sites',
+        name: 'BAR_SiteList',
+        component: () => import('@/views/Resource/BAR/SiteList.vue'),
+        meta: { title: '站点台账' }
+      },
+      {
+        path: 'resource/bar/site/:id',
+        name: 'BAR_SiteDetail',
+        component: () => import('@/views/Resource/BAR/SiteDetail.vue'),
+        meta: { title: '站点详情' }
+      },
+      {
+        path: 'resource/bar/sop/:siteId',
+        name: 'BAR_SOPDetail',
+        component: () => import('@/views/Resource/BAR/SOPDetail.vue'),
+        meta: { title: '找回SOP' }
       },
       {
         path: 'analytics/dashboard',
@@ -126,13 +170,30 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
-  // 从 localStorage 获取登录状态
-  const hasToken = localStorage.getItem('user') || sessionStorage.getItem('user')
+router.beforeEach(async (to, from, next) => {
+  const userStore = useUserStore()
+  let hasAuthState =
+    userStore.token ||
+    localStorage.getItem('token') ||
+    sessionStorage.getItem('token') ||
+    userStore.currentUser ||
+    localStorage.getItem('user') ||
+    sessionStorage.getItem('user')
 
-  if (to.meta.requiresAuth && !hasToken) {
+  if (hasAuthState && !userStore.currentUser && userStore.token) {
+    await userStore.restoreSession()
+    hasAuthState =
+      userStore.token ||
+      localStorage.getItem('token') ||
+      sessionStorage.getItem('token') ||
+      userStore.currentUser ||
+      localStorage.getItem('user') ||
+      sessionStorage.getItem('user')
+  }
+
+  if (to.meta.requiresAuth && !hasAuthState) {
     next('/login')
-  } else if (to.path === '/login' && hasToken) {
+  } else if (to.path === '/login' && hasAuthState) {
     next('/dashboard')
   } else {
     next()

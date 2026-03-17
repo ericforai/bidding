@@ -1,0 +1,31 @@
+# Utils Directory (工具目录)
+
+> 一旦我所属的文件夹有所变化，请更新我。
+
+## 功能作用
+
+存放通用工具函数，提供跨组件的辅助功能。
+
+## 常见工具类型
+
+| 类型 | 说明 |
+|------|------|
+| 格式化 | 日期、数字、货币格式化 |
+| 验证 | 表单验证、输入校验 |
+| 转换 | 数据转换、类型转换 |
+| 存储 | localStorage 封装 |
+| HTTP | 请求封装 |
+
+## 添加新工具
+
+```javascript
+// 格式化工具
+export function formatDate(date) {
+  // ...
+}
+
+// 验证工具
+export function validateEmail(email) {
+  // ...
+}
+```

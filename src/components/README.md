@@ -1,0 +1,47 @@
+# Components Directory (组件目录)
+
+> 一旦我所属的文件夹有所变化，请更新我。
+
+## 功能作用
+
+存放可复用的 Vue 组件，按功能分类组织。
+
+## 文件清单
+
+| 子目录 | 内容 |
+|--------|------|
+| `layout/` | 布局组件 (MainLayout, Header, Sidebar) |
+| `charts/` | 图表组件 (LineChart, BarChart, PieChart) |
+| `common/` | 通用组件 (TaskBoard, AnimatedNumber) |
+| `ai/` | AI 相关组件 (合规检查、版本管理等) |
+
+## layout 组件
+
+| 文件 | 功能 |
+|------|------|
+| `MainLayout.vue` | 主布局容器 |
+| `Header.vue` | 顶部导航栏 |
+| `Sidebar.vue` | 侧边菜单 |
+
+## charts 组件
+
+| 文件 | 功能 |
+|------|------|
+| `LineChart.vue` | 折线图 |
+| `BarChart.vue` | 柱状图 |
+| `PieChart.vue` | 饼图 |
+
+## common 组件
+
+| 文件 | 功能 |
+|------|------|
+| `TaskBoard.vue` | 任务看板 |
+| `AnimatedNumber.vue` | 数字动画 |
+
+## ai 组件
+
+| 文件 | 功能 |
+|------|------|
+| `ComplianceCheck.vue` | 合规检查 |
+| `VersionManager.vue` | 版本管理 |
+| `CollaborationCenter.vue` | 协作中心 |

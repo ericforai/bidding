@@ -93,6 +93,12 @@
   </div>
 </template>
 
+<!--
+ Input: useProjectStore, useUserStore (from @/stores), vue-router
+ Output: ProjectList component - 投标项目列表页面
+ Pos: src/views/Project/ - 视图层
+ 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+-->
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -198,17 +204,34 @@ const goToCreate = () => {
   router.push('/project/create')
 }
 
-const goToDetail = (id) => {
-  router.push(`/project/${id}`)
+const goToDetail = async (id) => {
+  ElMessage.success(`正在跳转到项目详情: ${id}`)
+  try {
+    await router.push(`/project/${id}`)
+  } catch (error) {
+    ElMessage.error(`跳转失败: ${error.message}`)
+  }
 }
 
-const handleEdit = (id) => {
-  ElMessage.info('编辑功能开发中')
-  // TODO: 实现编辑功能
+const handleEdit = async (id) => {
+  try {
+    // 跳转到创建页面，带上编辑 ID 参数
+    await router.push({
+      name: 'ProjectCreate',
+      query: { editId: id }
+    })
+  } catch (error) {
+    ElMessage.error(`跳转失败: ${error.message}`)
+  }
 }
 
-onMounted(() => {
-  projectStore.getProjects()
+onMounted(async () => {
+  loading.value = true
+  try {
+    await projectStore.getProjects()
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 

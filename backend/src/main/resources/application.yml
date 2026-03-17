@@ -1,0 +1,117 @@
+spring:
+  mvc:
+    problemdetails:
+      enabled: true  # RFC 7807 错误响应格式
+  application:
+    name: xiyu-bid-poc
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    url: jdbc:postgresql://localhost:5432/xiyu_bid
+    username: xiyu_user
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false  # 性能优化：禁止 Open-in-View
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+
+  data:
+    redis:
+      repositories:
+        enabled: false
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000  # 5 minutes TTL for dashboard cache
+      cache-null-values: false
+      key-prefix: "xiyu-bid:"
+      use-key-prefix: true
+
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+ai:
+  provider: ${AI_PROVIDER:mock}  # Options: mock, openai
+
+app:
+  export:
+    max-records: ${APP_EXPORT_MAX_RECORDS:10000}  # Maximum records per export
+    max-file-size-bytes: ${APP_EXPORT_MAX_SIZE:52428800}  # 50MB default
+    audit-enabled: ${APP_EXPORT_AUDIT:true}
+    max-exports-per-hour: ${APP_EXPORT_RATE_LIMIT:10}
+    query-timeout-seconds: ${APP_EXPORT_QUERY_TIMEOUT:60}  # Maximum query execution time for exports
+
+server:
+  port: 8080
+  error:
+    include-message: on_param
+    include-binding-errors: on_param
+    include-stacktrace: on_param  # 开发环境显示堆栈
+  forward-headers-strategy: NATIVE  # 云平台自动处理转发头
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:86400000}
+  refresh-expiration: 604800000
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:3000}
+
+rate:
+  limit:
+    login:
+      max-attempts: ${RATE_LIMIT_LOGIN_MAX:5}
+      window-minutes: ${RATE_LIMIT_LOGIN_WINDOW:15}
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+logging:
+  level:
+    com.xiyu: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.springframework.data.redis: WARN
+    io.lettuce.core: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

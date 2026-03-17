@@ -1,0 +1,307 @@
+package com.xiyu.bid.fees.service;
+
+import com.xiyu.bid.annotation.Auditable;
+import com.xiyu.bid.exception.ResourceNotFoundException;
+import com.xiyu.bid.fees.dto.FeeCreateRequest;
+import com.xiyu.bid.fees.dto.FeeDTO;
+import com.xiyu.bid.fees.dto.FeeStatisticsDTO;
+import com.xiyu.bid.fees.dto.FeeUpdateRequest;
+import com.xiyu.bid.fees.entity.Fee;
+import com.xiyu.bid.fees.repository.FeeRepository;
+import com.xiyu.bid.service.IAuditLogService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * 费用服务
+ * 处理费用相关的业务逻辑
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class FeeService {
+
+    private final FeeRepository feeRepository;
+    private final IAuditLogService auditLogService;
+
+    /**
+     * 创建费用
+     */
+    @Auditable(action = "CREATE", entityType = "Fee", description = "Create new fee")
+    @Transactional
+    public FeeDTO createFee(FeeCreateRequest request) {
+        log.info("Creating fee for project: {}", request.getProjectId());
+
+        // Validate input
+        validateFeeRequest(request);
+
+        Fee fee = Fee.builder()
+                .projectId(request.getProjectId())
+                .feeType(request.getFeeType())
+                .amount(request.getAmount())
+                .feeDate(request.getFeeDate())
+                .status(Fee.Status.PENDING)
+                .remarks(request.getRemarks())
+                .build();
+
+        Fee savedFee = feeRepository.save(fee);
+        log.info("Created fee with id: {}", savedFee.getId());
+
+        return convertToDTO(savedFee);
+    }
+
+    /**
+     * 根据ID获取费用
+     */
+    @Transactional(readOnly = true)
+    public FeeDTO getFeeById(Long id) {
+        log.debug("Fetching fee by id: {}", id);
+        Fee fee = feeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Fee not found with id: " + id));
+        return convertToDTO(fee);
+    }
+
+    /**
+     * 获取所有费用（分页）
+     */
+    @Transactional(readOnly = true)
+    public Page<FeeDTO> getAllFees(Pageable pageable) {
+        log.debug("Fetching all fees with pagination");
+        return feeRepository.findAll(pageable)
+                .map(this::convertToDTO);
+    }
+
+    /**
+     * 根据项目ID获取费用列表
+     */
+    @Transactional(readOnly = true)
+    public List<FeeDTO> getFeesByProjectId(Long projectId) {
+        log.debug("Fetching fees for project: {}", projectId);
+        return feeRepository.findByProjectId(projectId).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 根据状态获取费用列表
+     */
+    @Transactional(readOnly = true)
+    public List<FeeDTO> getFeesByStatus(Fee.Status status) {
+        log.debug("Fetching fees with status: {}", status);
+        return feeRepository.findByStatus(status).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 更新费用
+     */
+    @Auditable(action = "UPDATE", entityType = "Fee", description = "Update fee")
+    @Transactional
+    public FeeDTO updateFee(Long id, FeeUpdateRequest request) {
+        log.info("Updating fee with id: {}", id);
+
+        Fee fee = feeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Fee not found with id: " + id));
+
+        // Only allow updates to pending or cancelled fees
+        if (fee.getStatus() == Fee.Status.PAID || fee.getStatus() == Fee.Status.RETURNED) {
+            throw new IllegalStateException("Cannot update fee with status: " + fee.getStatus());
+        }
+
+        if (request.getAmount() != null) {
+            if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Amount must be greater than zero");
+            }
+            fee.setAmount(request.getAmount());
+        }
+
+        if (request.getFeeDate() != null) {
+            fee.setFeeDate(request.getFeeDate());
+        }
+
+        if (request.getRemarks() != null) {
+            fee.setRemarks(request.getRemarks());
+        }
+
+        Fee updatedFee = feeRepository.save(fee);
+        log.info("Updated fee with id: {}", updatedFee.getId());
+
+        return convertToDTO(updatedFee);
+    }
+
+    /**
+     * 删除费用
+     */
+    @Auditable(action = "DELETE", entityType = "Fee", description = "Delete fee")
+    @Transactional
+    public void deleteFee(Long id) {
+        log.info("Deleting fee with id: {}", id);
+
+        Fee fee = feeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Fee not found with id: " + id));
+
+        // Only allow deletion of pending or cancelled fees
+        if (fee.getStatus() == Fee.Status.PAID || fee.getStatus() == Fee.Status.RETURNED) {
+            throw new IllegalStateException("Cannot delete fee with status: " + fee.getStatus());
+        }
+
+        feeRepository.deleteById(id);
+        log.info("Deleted fee with id: {}", id);
+    }
+
+    /**
+     * 标记费用为已支付
+     */
+    @Auditable(action = "PAY", entityType = "Fee", description = "Mark fee as paid")
+    @Transactional
+    public FeeDTO markAsPaid(Long id, String paidBy) {
+        log.info("Marking fee {} as paid by: {}", id, paidBy);
+
+        Fee fee = feeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Fee not found with id: " + id));
+
+        if (fee.getStatus() != Fee.Status.PENDING) {
+            throw new IllegalStateException("Only pending fees can be marked as paid. Current status: " + fee.getStatus());
+        }
+
+        fee.setStatus(Fee.Status.PAID);
+        fee.setPaymentDate(LocalDateTime.now());
+        fee.setPaidBy(paidBy);
+
+        Fee updatedFee = feeRepository.save(fee);
+        log.info("Marked fee {} as paid", id);
+
+        return convertToDTO(updatedFee);
+    }
+
+    /**
+     * 标记费用为已退还
+     */
+    @Auditable(action = "RETURN", entityType = "Fee", description = "Mark fee as returned")
+    @Transactional
+    public FeeDTO markAsReturned(Long id, String returnTo) {
+        log.info("Marking fee {} as returned to: {}", id, returnTo);
+
+        Fee fee = feeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Fee not found with id: " + id));
+
+        if (fee.getStatus() != Fee.Status.PAID) {
+            throw new IllegalStateException("Only paid fees can be marked as returned. Current status: " + fee.getStatus());
+        }
+
+        fee.setStatus(Fee.Status.RETURNED);
+        fee.setReturnDate(LocalDateTime.now());
+        fee.setReturnTo(returnTo);
+
+        Fee updatedFee = feeRepository.save(fee);
+        log.info("Marked fee {} as returned", id);
+
+        return convertToDTO(updatedFee);
+    }
+
+    /**
+     * 取消费用
+     */
+    @Auditable(action = "CANCEL", entityType = "Fee", description = "Cancel fee")
+    @Transactional
+    public FeeDTO cancelFee(Long id) {
+        log.info("Cancelling fee with id: {}", id);
+
+        Fee fee = feeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Fee not found with id: " + id));
+
+        if (fee.getStatus() != Fee.Status.PENDING) {
+            throw new IllegalStateException("Only pending fees can be cancelled. Current status: " + fee.getStatus());
+        }
+
+        fee.setStatus(Fee.Status.CANCELLED);
+
+        Fee updatedFee = feeRepository.save(fee);
+        log.info("Cancelled fee with id: {}", id);
+
+        return convertToDTO(updatedFee);
+    }
+
+    /**
+     * 获取费用统计
+     */
+    @Transactional(readOnly = true)
+    public FeeStatisticsDTO getStatistics(Long projectId) {
+        log.debug("Fetching fee statistics for project: {}", projectId);
+
+        BigDecimal totalPending = feeRepository.sumAmountByProjectIdAndStatus(projectId, Fee.Status.PENDING);
+        BigDecimal totalPaid = feeRepository.sumAmountByProjectIdAndStatus(projectId, Fee.Status.PAID);
+        BigDecimal totalReturned = feeRepository.sumAmountByProjectIdAndStatus(projectId, Fee.Status.RETURNED);
+        BigDecimal totalCancelled = feeRepository.sumAmountByProjectIdAndStatus(projectId, Fee.Status.CANCELLED);
+
+        // Handle null values
+        totalPending = totalPending != null ? totalPending : BigDecimal.ZERO;
+        totalPaid = totalPaid != null ? totalPaid : BigDecimal.ZERO;
+        totalReturned = totalReturned != null ? totalReturned : BigDecimal.ZERO;
+        totalCancelled = totalCancelled != null ? totalCancelled : BigDecimal.ZERO;
+
+        BigDecimal grandTotal = totalPending.add(totalPaid).add(totalReturned).add(totalCancelled);
+
+        return FeeStatisticsDTO.builder()
+                .projectId(projectId)
+                .totalPending(totalPending)
+                .totalPaid(totalPaid)
+                .totalReturned(totalReturned)
+                .totalCancelled(totalCancelled)
+                .grandTotal(grandTotal)
+                .build();
+    }
+
+    /**
+     * 验证费用请求
+     */
+    private void validateFeeRequest(FeeCreateRequest request) {
+        if (request.getProjectId() == null) {
+            throw new IllegalArgumentException("Project ID is required");
+        }
+
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Amount must be greater than zero");
+        }
+
+        if (request.getFeeType() == null) {
+            throw new IllegalArgumentException("Fee type is required");
+        }
+
+        if (request.getFeeDate() == null) {
+            throw new IllegalArgumentException("Fee date is required");
+        }
+    }
+
+    /**
+     * 转换实体为DTO
+     */
+    private FeeDTO convertToDTO(Fee fee) {
+        return FeeDTO.builder()
+                .id(fee.getId())
+                .projectId(fee.getProjectId())
+                .feeType(fee.getFeeType())
+                .amount(fee.getAmount())
+                .feeDate(fee.getFeeDate())
+                .status(fee.getStatus())
+                .paymentDate(fee.getPaymentDate())
+                .returnDate(fee.getReturnDate())
+                .paidBy(fee.getPaidBy())
+                .returnTo(fee.getReturnTo())
+                .remarks(fee.getRemarks())
+                .createdAt(fee.getCreatedAt())
+                .updatedAt(fee.getUpdatedAt())
+                .build();
+    }
+}

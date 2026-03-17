@@ -32,6 +32,9 @@
           <el-button type="success" :icon="Coin" @click="handleRecordResult" v-if="canRecordResult">
             录入结果
           </el-button>
+          <el-button type="warning" :icon="DataAnalysis" @click="goToResultPage">
+            结果闭环
+          </el-button>
           <el-button
             type="info"
             :icon="MagicStick"
@@ -83,6 +86,83 @@
           </div>
         </el-card>
 
+        <el-card class="approval-status-card" v-if="approvalHistory.length > 0 || project?.status === 'reviewing'">
+          <template #header>
+            <div class="card-title">
+              <el-icon><Select /></el-icon>
+              <span>审批状态</span>
+              <el-tag v-if="currentApproval" :type="getApprovalStatusType(currentApproval.status)" size="small">
+                {{ getApprovalStatusText(currentApproval.status) }}
+              </el-tag>
+            </div>
+          </template>
+
+          <div v-if="currentApproval" class="current-approval">
+            <div class="approval-info-grid">
+              <div class="approval-info-item">
+                <span class="label">审批类型</span>
+                <span>{{ currentApproval.typeName }}</span>
+              </div>
+              <div class="approval-info-item">
+                <span class="label">申请人</span>
+                <span>{{ currentApproval.applicantName }}（{{ currentApproval.applicantDept }}）</span>
+              </div>
+              <div class="approval-info-item">
+                <span class="label">提交时间</span>
+                <span>{{ currentApproval.submitTime }}</span>
+              </div>
+              <div class="approval-info-item" v-if="currentApproval.currentApproverName">
+                <span class="label">当前审批人</span>
+                <span class="approver">{{ currentApproval.currentApproverName }}</span>
+              </div>
+            </div>
+
+            <div class="approval-actions" v-if="currentApproval.status === 'PENDING' && canApproveCurrent">
+              <el-button type="success" :icon="CircleCheck" @click="handleQuickApprove">通过</el-button>
+              <el-button type="danger" :icon="CircleClose" @click="handleQuickReject">驳回</el-button>
+            </div>
+          </div>
+
+          <el-empty v-else description="暂无审批记录" :image-size="60" />
+        </el-card>
+
+        <!-- 费用汇总 -->
+        <el-card class="expense-card">
+          <template #header>
+            <div class="card-title">
+              <el-icon><Coin /></el-icon>
+              <span>费用汇总</span>
+              <el-button link type="primary" @click="goToExpensePage">费用管理</el-button>
+            </div>
+          </template>
+          <el-table :data="projectExpenses" stripe size="small">
+            <el-table-column prop="type" label="费用类型" width="120">
+              <template #default="{ row }">
+                <el-tag size="small" :type="getExpenseTypeColor(row.type)">
+                  {{ row.type }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="amount" label="金额" width="130" align="right">
+              <template #default="{ row }">
+                ¥{{ row.amount }}万
+              </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag size="small" :type="getExpenseStatusType(row.status)">
+                  {{ getExpenseStatusLabel(row.status) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="date" label="日期" width="160" />
+            <el-table-column prop="remark" label="说明" min-width="150" />
+          </el-table>
+          <div class="expense-total">
+            <span>合计：¥{{ expenseTotal }}万元</span>
+          </div>
+        </el-card>
+
         <!-- 任务看板 -->
         <el-card class="task-card">
           <template #header>
@@ -90,12 +170,19 @@
               <el-icon><List /></el-icon>
               <span>任务看板</span>
               <el-button link type="primary" :icon="Plus" @click="handleAddTask">添加任务</el-button>
+              <el-button link type="warning" @click="handleResetTasks">重置任务</el-button>
             </div>
           </template>
           <TaskBoard
             :tasks="project?.tasks || []"
+            :project-id="project?.id"
+            :can-generate="!project?.tasks || project.tasks.length === 0"
             @task-click="handleTaskClick"
             @status-change="handleTaskStatusChange"
+            @generate-tasks="handleGenerateTasks"
+            @add-deliverable="handleAddDeliverable"
+            @remove-deliverable="handleRemoveDeliverable"
+            @submit-to-document="handleSubmitToDocument"
           />
         </el-card>
 
@@ -209,6 +296,9 @@
             <div class="card-title">
               <el-icon><Folder /></el-icon>
               <span>项目文档</span>
+              <el-button link type="success" :icon="DocumentChecked" @click="handleArchiveDocuments">
+                归档资料
+              </el-button>
               <el-upload
                 :show-file-list="false"
                 :before-upload="handleUpload"
@@ -307,6 +397,117 @@
                   </el-table>
                 </div>
                 <el-empty v-else description="点击开始检查进行AI分析" :image-size="80" />
+              </div>
+            </el-tab-pane>
+
+            <!-- 可投标能力检查 -->
+            <el-tab-pane name="asset-check">
+              <template #label>
+                <div class="tab-label">
+                  <span>可投标能力</span>
+                  <el-badge
+                    v-if="assetCheckResult"
+                    :value="assetCheckResult.capability?.status === 'available' ? 1 : 0"
+                    :type="assetCheckResult.capability?.status === 'available' ? 'success' : 'warning'"
+                  />
+                </div>
+              </template>
+
+              <div class="asset-check-tab">
+                <div v-if="assetCheckResult && assetCheckResult.found" class="asset-check-content">
+                  <div class="check-header">
+                    <div class="site-info">
+                      <h3>{{ assetCheckResult.site?.name }}</h3>
+                      <el-tag
+                        v-if="assetCheckResult.capability?.status === 'available'"
+                        type="success"
+                        size="large"
+                      >
+                        可投标
+                      </el-tag>
+                      <el-tag
+                        v-else-if="assetCheckResult.capability?.status === 'risk'"
+                        type="warning"
+                        size="large"
+                      >
+                        有风险
+                      </el-tag>
+                      <el-tag v-else type="danger" size="large">
+                        不可投标
+                      </el-tag>
+                    </div>
+                    <a :href="assetCheckResult.site?.url" target="_blank" class="site-link">
+                      {{ assetCheckResult.site?.url }}
+                    </a>
+                  </div>
+
+                  <div class="check-items-grid">
+                    <div class="check-item-card">
+                      <div class="item-icon">
+                        <el-icon v-if="assetCheckResult.capability?.hasAccount" class="icon-success">
+                          <CircleCheck />
+                        </el-icon>
+                        <el-icon v-else class="icon-error"><CircleClose /></el-icon>
+                      </div>
+                      <div class="item-content">
+                        <div class="item-label">账号状态</div>
+                        <div class="item-value">
+                          {{ assetCheckResult.capability?.hasAccount ? '已注册' : '未注册' }}
+                          <span v-if="assetCheckResult.capability?.accountCount > 0">
+                            ({{ assetCheckResult.capability?.accountCount }}个)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="check-item-card">
+                      <div class="item-icon">
+                        <el-icon v-if="assetCheckResult.capability?.hasAvailableUK" class="icon-success">
+                          <CircleCheck />
+                        </el-icon>
+                        <el-icon v-else-if="assetCheckResult.capability?.ukCount > 0" class="icon-warning">
+                          <Warning />
+                        </el-icon>
+                        <el-icon v-else class="icon-success"><CircleCheck /></el-icon>
+                      </div>
+                      <div class="item-content">
+                        <div class="item-label">UK状态</div>
+                        <div class="item-value">
+                          <span v-if="assetCheckResult.capability?.ukCount === 0">不需要</span>
+                          <span v-else-if="assetCheckResult.capability?.hasAvailableUK">在库</span>
+                          <span v-else>已借出</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="check-item-card" v-if="assetCheckResult.capability?.primaryOwner">
+                      <div class="item-icon">
+                        <el-icon class="icon-user"><User /></el-icon>
+                      </div>
+                      <div class="item-content">
+                        <div class="item-label">责任人</div>
+                        <div class="item-value">
+                          {{ assetCheckResult.capability?.primaryOwner }}
+                          <span class="phone">({{ assetCheckResult.capability?.primaryPhone }})</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="check-actions">
+                    <el-button type="primary" @click="goToSiteDetail">
+                      查看详情
+                    </el-button>
+                    <el-button v-if="assetCheckResult.capability?.ukCount > 0" @click="borrowUK">
+                      借用UK
+                    </el-button>
+                    <el-button @click="viewSOP">查看SOP</el-button>
+                  </div>
+                </div>
+
+                <el-empty v-else description="未找到该站点的资产信息" :image-size="100">
+                  <el-button type="primary" @click="goToAssetManagement">前往资产管理</el-button>
+                </el-empty>
               </div>
             </el-tab-pane>
 
@@ -488,7 +689,8 @@
     <!-- 智能助手抽屉 -->
     <SmartAssistantPanel
       v-model:visible="assistantPanelVisible"
-      :project-id="route.params.id"
+      :project-id="dialogProjectId"
+      :show-demo-features="isDemoMode"
       @open-competition-intel="handleOpenCompetitionIntel"
       @open-roi-analysis="handleOpenRoiAnalysis"
       @open-score-coverage="handleOpenScoreCoverage"
@@ -555,6 +757,7 @@
             <el-upload
               :action="uploadAction"
               :headers="uploadHeaders"
+              :before-upload="ensureDemoUpload"
               :on-success="handleUploadSuccess"
               :on-remove="handleUploadRemove"
               :file-list="noticeFileList"
@@ -681,43 +884,38 @@
     <CompetitionIntel
       v-model="showCompetitionIntel"
       :project-id="route.params.id"
-      :data="mockData.competitionIntel[route.params.id]"
     />
 
     <ComplianceCheck
       v-model="showComplianceCheck"
       :project-id="route.params.id"
-      :data="mockData.complianceCheck[route.params.id]"
     />
 
     <VersionControl
       v-model="showVersionControl"
-      :project-id="route.params.id"
-      :data="mockData.versionHistory[route.params.id]"
+      :project-id="dialogProjectId"
     />
 
     <CollaborationCenter
       v-model="showCollaboration"
-      :project-id="route.params.id"
-      :data="mockData.collaboration[route.params.id]"
+      :project-id="dialogProjectId"
     />
 
     <ROIAnalysis
       v-model="showROIAnalysis"
       :project-id="route.params.id"
-      :data="mockData.roiAnalysis[route.params.id]"
     />
 
     <AutoTasks
       v-model="showAutoTasks"
       :project-id="route.params.id"
-      :data="mockData.autoTasks"
+      :data="demoAutoTasks"
     />
 
     <MobileCard
       v-model="showMobileCard"
       :project-id="route.params.id"
-      :data="mockData.mobileCard[route.params.id]"
+      :data="demoMobileCard"
     />
 
     <!-- 标书编制流程对话框 -->
@@ -748,6 +946,7 @@
               <el-upload
                 :action="uploadAction"
                 :headers="uploadHeaders"
+                :before-upload="ensureDemoUpload"
                 :on-success="handleDraftFileSuccess"
                 :file-list="draftFileList"
                 :limit="3"
@@ -879,6 +1078,7 @@
               <el-upload
                 :action="uploadAction"
                 :headers="uploadHeaders"
+                :before-upload="ensureDemoUpload"
                 :on-success="handleSealFileSuccess"
                 :file-list="sealFileList"
                 :limit="5"
@@ -1015,6 +1215,22 @@
         <el-button type="primary" @click="handleConfirmAddReviewer">确定</el-button>
       </template>
     </el-dialog>
+
+    <ScoreDraftDialog
+      v-model:visible="scoreDraftDialogVisible"
+      :project-id="route.params.id"
+      @generated="handleScoreDraftGenerated"
+    />
+
+    <ApprovalDialog
+      v-model:visible="approvalDialogVisible"
+      :mode="approvalMode"
+      :project-id="project?.id"
+      :project-name="project?.name"
+      :approval-type="approvalType"
+      :approval-info="currentApprovalItem"
+      @success="handleApprovalSuccess"
+    />
     </el-container>
   </div>
 </template>
@@ -1024,12 +1240,15 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
+import { useBarStore } from '@/stores/bar'
+import { knowledgeApi, isMockMode, projectsApi, collaborationApi, approvalApi } from '@/api'
 import { mockData } from '@/api/mock'
 import {
   Edit, DocumentChecked, Coin, InfoFilled, List, Folder, Upload, Plus,
   MagicStick, Operation, DocumentAdd, Share, Download, Bell, Clock,
   Document, CircleCheckFilled, MoreFilled, Delete, UploadFilled, VideoPlay,
-  WarningFilled, QuestionFilled, ArrowRight
+  WarningFilled, QuestionFilled, ArrowRight, CircleCheck, CircleClose, Warning, User,
+  DataAnalysis, Select
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import TaskBoard from '@/components/common/TaskBoard.vue'
@@ -1041,14 +1260,36 @@ import CollaborationCenter from '@/components/ai/CollaborationCenter.vue'
 import ROIAnalysis from '@/components/ai/ROIAnalysis.vue'
 import AutoTasks from '@/components/ai/AutoTasks.vue'
 import MobileCard from '@/components/ai/MobileCard.vue'
+import ApprovalDialog from '@/components/common/ApprovalDialog.vue'
+import ScoreDraftDialog from '@/components/project/ScoreDraftDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
 const projectStore = useProjectStore()
 const userStore = useUserStore()
+const barStore = useBarStore()
+const isDemoMode = isMockMode()
+const demoAutoTasks = ref([])
+const demoMobileCard = ref(null)
+const isApiProject = computed(() => !isDemoMode && /^\d+$/.test(String(route.params.id || '')))
+
+const downloadTextFile = (filename, content, mimeType = 'text/plain;charset=utf-8') => {
+  const blob = new Blob([content], { type: mimeType })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(link.href)
+}
 
 // 加载状态
 const loading = ref(true)
+const approvalHistory = ref([])
+
+// 资产检查结果
+const assetCheckResult = ref(null)
 
 // 对话框状态
 const taskDialogVisible = ref(false)
@@ -1056,7 +1297,12 @@ const resultDialogVisible = ref(false)
 const competitorDialogVisible = ref(false)
 const processDialogVisible = ref(false)
 const reviewerDialogVisible = ref(false)
+const scoreDraftDialogVisible = ref(false)
+const approvalDialogVisible = ref(false)
 const currentTask = ref(null)
+const currentApprovalItem = ref({})
+const approvalMode = ref('submit')
+const approvalType = ref({ type: 'project_review', typeName: '立项审批' })
 
 // AI功能弹窗状态
 const showCompetitionIntel = ref(false)
@@ -1069,7 +1315,7 @@ const showMobileCard = ref(false)
 
 // 结果录入表单
 const noticeFileList = ref([])
-const uploadAction = ref('/api/upload')
+const uploadAction = ref(isDemoMode ? '/api/upload' : '')
 const uploadHeaders = ref({
   Authorization: `Bearer ${localStorage.getItem('token') || ''}`
 })
@@ -1133,8 +1379,15 @@ const reviewerForm = ref({
 
 const availableReviewers = computed(() => {
   const existingIds = reviewers.value.map(r => r.id)
-  return mockData.users.filter(u => !existingIds.includes(u.id))
+  return (userStore.users || []).filter(u => !existingIds.includes(u.id))
 })
+
+const currentApproval = computed(() => approvalHistory.value[0] || null)
+const canApproveCurrent = computed(() => {
+  const currentName = userStore.userName || userStore.currentUser?.name || ''
+  return currentApproval.value?.currentApproverName === currentName || currentUserRole.value === 'admin'
+})
+const currentUserRole = computed(() => userStore.currentUser?.role || '')
 
 // 用印表单
 const sealFileList = ref([])
@@ -1158,7 +1411,61 @@ const submitForm = ref({
 })
 
 // 模板数据
-const templates = ref(mockData.templates || [])
+const templates = ref([])
+
+// 任务模板 - 根据不同项目类型自动生成任务
+const taskTemplates = {
+  // 政府类项目
+  government: [
+    { id: 'GT01', name: '招标文件研读', description: '仔细阅读招标文件，标记关键要求', owner: '项目经理', priority: 'high', deadlineOffset: 1, needsDeliverable: false },
+    { id: 'GT02', name: '资质文件准备', description: '准备营业执照、ISO认证、相关资质证书', owner: '行政专员', priority: 'high', deadlineOffset: 3, needsDeliverable: true, deliverableType: 'qualification' },
+    { id: 'GT03', name: '技术方案编制', description: '根据招标要求编制技术方案', owner: '技术负责人', priority: 'high', deadlineOffset: 7, needsDeliverable: true, deliverableType: 'technical' },
+    { id: 'GT04', name: '商务应答编制', description: '编制商务条款应答文件', owner: '商务负责人', priority: 'high', deadlineOffset: 7, needsDeliverable: true, deliverableType: 'document' },
+    { id: 'GT05', name: '报价单制作', description: '根据招标要求制作报价单', owner: '财务', priority: 'high', deadlineOffset: 5, needsDeliverable: true, deliverableType: 'quotation' },
+    { id: 'GT06', name: '合同条款审核', description: '法务审核合同条款', owner: '法务', priority: 'medium', deadlineOffset: 5, needsDeliverable: false },
+    { id: 'GT07', name: '内部评审', description: '组织内部评审会议', owner: '项目经理', priority: 'high', deadlineOffset: 8, needsDeliverable: false },
+    { id: 'GT08', name: '标书装订封装', description: '按招标要求装订封装标书', owner: '行政专员', priority: 'medium', deadlineOffset: 9, needsDeliverable: false }
+  ],
+  // 能源类项目
+  energy: [
+    { id: 'ET01', name: '招标文件分析', description: '分析技术要求和评分标准', owner: '项目经理', priority: 'high', deadlineOffset: 1, needsDeliverable: false },
+    { id: 'ET02', name: '资质文件审核', description: '确认相关行业资质', owner: '行政专员', priority: 'high', deadlineOffset: 2, needsDeliverable: true, deliverableType: 'qualification' },
+    { id: 'ET03', name: '技术方案设计', description: '设计符合能源行业要求的技术方案', owner: '技术总监', priority: 'high', deadlineOffset: 6, needsDeliverable: true, deliverableType: 'technical' },
+    { id: 'ET04', name: '产品选型', description: '确定投标产品型号和参数', owner: '产品经理', priority: 'high', deadlineOffset: 4, needsDeliverable: true, deliverableType: 'document' },
+    { id: 'ET05', name: '报价测算', description: '测算项目成本和投标报价', owner: '财务', priority: 'high', deadlineOffset: 5, needsDeliverable: true, deliverableType: 'quotation' },
+    { id: 'ET06', name: '技术偏离表编制', description: '编制技术响应偏离表', owner: '技术负责人', priority: 'medium', deadlineOffset: 6, needsDeliverable: false },
+    { id: 'ET07', name: '商务偏离表编制', description: '编制商务条款偏离表', owner: '商务负责人', priority: 'medium', deadlineOffset: 6, needsDeliverable: false },
+    { id: 'ET08', name: '内部评审', description: '组织技术和商务联合评审', owner: '项目经理', priority: 'high', deadlineOffset: 7, needsDeliverable: false }
+  ],
+  // 交通类项目
+  traffic: [
+    { id: 'TT01', name: '招标文件解读', description: '解读招标文件技术规范', owner: '项目经理', priority: 'high', deadlineOffset: 1, needsDeliverable: false },
+    { id: 'TT02', name: '行业资质确认', description: '确认交通行业相关资质', owner: '行政专员', priority: 'high', deadlineOffset: 2, needsDeliverable: true, deliverableType: 'qualification' },
+    { id: 'TT03', name: '系统方案设计', description: '设计自动化系统整体方案', owner: '技术总监', priority: 'high', deadlineOffset: 7, needsDeliverable: true, deliverableType: 'technical' },
+    { id: 'TT04', name: '设备清单编制', description: '编制设备材料清单', owner: '技术负责人', priority: 'medium', deadlineOffset: 5, needsDeliverable: true, deliverableType: 'document' },
+    { id: 'TT05', name: '项目实施计划', description: '编制项目实施进度计划', owner: '项目助理', priority: 'medium', deadlineOffset: 5, needsDeliverable: false },
+    { id: 'TT06', name: '报价分析', description: '分析竞争对手报价策略', owner: '商务经理', priority: 'high', deadlineOffset: 4, needsDeliverable: true, deliverableType: 'quotation' },
+    { id: 'TT07', name: '综合评审', description: '组织综合评审', owner: '项目经理', priority: 'high', deadlineOffset: 8, needsDeliverable: false }
+  ],
+  // 默认模板
+  default: [
+    { id: 'DT01', name: '招标文件研读', description: '仔细阅读招标文件', owner: '项目经理', priority: 'high', deadlineOffset: 1, needsDeliverable: false },
+    { id: 'DT02', name: '资质文件准备', description: '准备相关资质文件', owner: '行政专员', priority: 'high', deadlineOffset: 3, needsDeliverable: true, deliverableType: 'qualification' },
+    { id: 'DT03', name: '技术方案编制', description: '编制技术方案', owner: '技术负责人', priority: 'high', deadlineOffset: 6, needsDeliverable: true, deliverableType: 'technical' },
+    { id: 'DT04', name: '商务应答编制', description: '编制商务应答文件', owner: '商务负责人', priority: 'high', deadlineOffset: 6, needsDeliverable: true, deliverableType: 'document' },
+    { id: 'DT05', name: '报价单制作', description: '制作报价单', owner: '财务', priority: 'high', deadlineOffset: 4, needsDeliverable: true, deliverableType: 'quotation' },
+    { id: 'DT06', name: '内部评审', description: '组织内部评审', owner: '项目经理', priority: 'medium', deadlineOffset: 7, needsDeliverable: false }
+  ]
+}
+
+// 交付物类型映射
+const deliverableTypeMap = {
+  qualification: '资质文件',
+  technical: '技术方案',
+  document: '文档',
+  quotation: '报价单',
+  other: '其他'
+}
 
 // 项目动态
 const activities = ref([
@@ -1216,7 +1523,63 @@ const handleOpenMobileCard = () => {
   showMobileCard.value = true
 }
 
-const project = computed(() => projectStore.currentProject)
+// 项目费用 Mock 数据
+const projectExpenses = ref([
+  { type: '保证金', amount: 10, status: 'paid', date: '2025-02-20', remark: '投标保证金' },
+  { type: '标书费', amount: 0.05, status: 'paid', date: '2025-02-18', remark: '购买招标文件' },
+  { type: '差旅费', amount: 0.35, status: 'paid', date: '2025-02-22', remark: '现场踏勘（往返交通+住宿）' },
+  { type: '制作费', amount: 0.25, status: 'paid', date: '2025-02-25', remark: '标书打印装订' },
+  { type: '制作费', amount: 0.15, status: 'pending', date: '2025-03-01', remark: '技术方案绘制' },
+  { type: '公证费', amount: 0.08, status: 'pending', date: '2025-03-05', remark: '投标公证' },
+  { type: '其他', amount: 0.12, status: 'paid', date: '2025-02-28', remark: '快递费用' }
+])
+
+const expenseTotal = computed(() => {
+  return projectExpenses.value.reduce((sum, item) => sum + item.amount, 0).toFixed(2)
+})
+
+const getExpenseTypeColor = (type) => {
+  const map = {
+    '保证金': 'warning',
+    '标书费': 'success',
+    '差旅费': 'info',
+    '制作费': 'primary',
+    '公证费': 'danger',
+    '其他': ''
+  }
+  return map[type] || ''
+}
+
+const getExpenseStatusType = (status) => {
+  const map = {
+    'paid': 'success',
+    'pending': 'warning'
+  }
+  return map[status] || ''
+}
+
+const getExpenseStatusLabel = (status) => {
+  const map = {
+    'paid': '已支付',
+    'pending': '待支付'
+  }
+  return map[status] || status
+}
+
+const goToExpensePage = () => {
+  router.push('/resource/expense')
+}
+
+const project = computed(() => {
+  if (projectStore.currentProject) {
+    return projectStore.currentProject
+  }
+
+  const routeProjectId = String(route.params.id || '')
+  return mockData.projects.find((item) => String(item.id) === routeProjectId) || null
+})
+
+const dialogProjectId = computed(() => project.value?.id ?? route.params.id)
 
 const canSubmit = computed(() => {
   return project.value?.status === 'drafting' || project.value?.status === 'reviewing'
@@ -1487,24 +1850,61 @@ const goBack = () => {
   router.push('/project')
 }
 
+// 资产检查相关方法
+const goToSiteDetail = () => {
+  if (assetCheckResult.value?.site?.id) {
+    router.push(`/resource/bar/site/${assetCheckResult.value.site.id}`)
+  }
+}
+
+const borrowUK = () => {
+  ElMessage.info('借用功能请在站点详情页操作')
+}
+
+const viewSOP = () => {
+  if (assetCheckResult.value?.site?.id) {
+    router.push(`/resource/bar/sop/${assetCheckResult.value.site.id}`)
+  }
+}
+
+const goToAssetManagement = () => {
+  router.push('/resource/bar')
+}
+
 // 处理函数
 const handleEdit = () => {
   // 跳转到标书编辑器
   router.push(`/document/editor/${route.params.id}`)
 }
 
-const handleSubmitApproval = async () => {
-  try {
-    await ElMessageBox.confirm('确认提交审批？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    await projectStore.updateProject(route.params.id, { status: 'reviewing' })
-    ElMessage.success('已提交审批')
-  } catch {
-    // 用户取消
+const handleSubmitApproval = () => {
+  approvalMode.value = 'submit'
+  currentApprovalItem.value = {
+    projectId: project.value?.id,
+    projectName: project.value?.name,
+    title: `${project.value?.name || '当前项目'} - ${approvalType.value.typeName}`,
+    description: `发起 ${project.value?.name || '当前项目'} 的审批流程。`,
   }
+  approvalDialogVisible.value = true
+}
+
+const handleApprovalSuccess = async () => {
+  if (approvalMode.value === 'submit') {
+    await projectStore.updateProject(route.params.id, { status: 'reviewing' })
+  }
+  await loadApprovalHistory(route.params.id)
+}
+
+const handleQuickApprove = () => {
+  approvalMode.value = 'approve'
+  currentApprovalItem.value = currentApproval.value || {}
+  approvalDialogVisible.value = true
+}
+
+const handleQuickReject = () => {
+  approvalMode.value = 'reject'
+  currentApprovalItem.value = currentApproval.value || {}
+  approvalDialogVisible.value = true
 }
 
 const handleRecordResult = () => {
@@ -1522,6 +1922,10 @@ const handleRecordResult = () => {
   }
   noticeFileList.value = []
   resultDialogVisible.value = true
+}
+
+const goToResultPage = () => {
+  router.push('/resource/bid-result')
 }
 
 const handleUploadSuccess = (response, file) => {
@@ -1595,8 +1999,173 @@ const handleSaveResult = async () => {
   }
 }
 
+// 根据项目类型获取任务模板
+const getTaskTemplateByProject = (project) => {
+  const industry = project?.industry?.toLowerCase() || ''
+  if (industry.includes('政府') || industry.includes('gov')) {
+    return taskTemplates.government
+  } else if (industry.includes('能源') || industry.includes('电力') || industry.includes('energy')) {
+    return taskTemplates.energy
+  } else if (industry.includes('交通') || industry.includes('地铁') || industry.includes('traffic')) {
+    return taskTemplates.traffic
+  }
+  return taskTemplates.default
+}
+
+// 自动生成任务
+const handleGenerateTasks = () => {
+  if (!project.value) {
+    ElMessage.warning('项目信息未加载')
+    return
+  }
+
+  if (isApiProject.value) {
+    scoreDraftDialogVisible.value = true
+    return
+  }
+
+  const template = getTaskTemplateByProject(project.value)
+  const deadline = new Date(project.value.deadline)
+
+  const newTasks = template.map((taskTemplate, index) => {
+    const taskDeadline = new Date(deadline)
+    taskDeadline.setDate(taskDeadline.getDate() - taskTemplate.deadlineOffset)
+
+    return {
+      id: `${project.value.id}_T${String(index + 1).padStart(3, '0')}`,
+      name: taskTemplate.name,
+      description: taskTemplate.description,
+      owner: taskTemplate.owner,
+      status: 'todo',
+      priority: taskTemplate.priority,
+      deadline: taskDeadline.toISOString().split('T')[0],
+      hasDeliverable: taskTemplate.needsDeliverable,
+      deliverableType: taskTemplate.deliverableType || 'other',
+      deliverables: []
+    }
+  })
+
+  // 更新项目任务
+  project.value.tasks = newTasks
+
+  // 添加动态记录
+  activities.value.unshift({
+    id: Date.now(),
+    user: userStore.userName,
+    action: `根据项目模板自动生成了 ${newTasks.length} 个任务`,
+    time: new Date().toLocaleString('zh-CN', { hour12: false })
+  })
+
+  ElMessage.success(`已自动生成 ${newTasks.length} 个任务`)
+}
+
+const handleScoreDraftGenerated = (tasks) => {
+  if (!project.value) return
+
+  project.value.tasks = tasks.map((task) => ({
+    ...task,
+    deliverables: Array.isArray(task.deliverables) ? task.deliverables : [],
+    hasDeliverable: Boolean(task.hasDeliverable),
+  }))
+
+  activities.value.unshift({
+    id: Date.now(),
+    user: userStore.userName,
+    action: `根据评分标准生成了 ${tasks.length} 个正式任务`,
+    time: new Date().toLocaleString('zh-CN', { hour12: false })
+  })
+}
+
 const handleAddTask = () => {
-  ElMessage.info('添加任务功能开发中')
+  if (!project.value) return
+
+  const nextIndex = (project.value.tasks?.length || 0) + 1
+  const dueDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+  const newTask = {
+    name: `新增任务 ${nextIndex}`,
+    owner: userStore.userName,
+    assignee: userStore.userName,
+    department: '投标管理部',
+    dueDate: dueDate.toISOString().split('T')[0],
+    priority: 'medium',
+    status: 'todo',
+    deliverables: [],
+    hasDeliverable: false,
+  }
+
+  if (!isApiProject.value) {
+    if (!Array.isArray(project.value.tasks)) {
+      project.value.tasks = []
+    }
+    project.value.tasks.unshift({ id: `TASK_${Date.now()}`, ...newTask })
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `新增了任务「${newTask.name}」`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success('已新增演示任务')
+    return
+  }
+
+  projectsApi.createTask(route.params.id, {
+    title: newTask.name,
+    description: '',
+    assigneeId: userStore.currentUser?.id || null,
+    assigneeName: userStore.userName,
+    priority: 'MEDIUM',
+    dueDate: dueDate.toISOString(),
+  }).then((result) => {
+    if (!result?.success || !result?.data) {
+      throw new Error(result?.message || '新增任务失败')
+    }
+    if (!Array.isArray(project.value.tasks)) {
+      project.value.tasks = []
+    }
+    project.value.tasks.unshift({
+      ...result.data,
+      deliverables: [],
+      hasDeliverable: false,
+    })
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `新增了任务「${result.data.name}」`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success('任务已新增')
+  }).catch((error) => {
+    ElMessage.error(error.message || '新增任务失败')
+  })
+}
+
+// 重置任务（用于演示）
+const handleResetTasks = () => {
+  ElMessageBox.confirm(
+    '确认重置所有任务？这将清空当前项目的所有任务数据。',
+    '重置确认',
+    {
+      confirmButtonText: '确认重置',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(() => {
+    if (project.value) {
+      project.value.tasks = []
+
+      // 添加动态记录
+      activities.value.unshift({
+        id: Date.now(),
+        user: userStore.userName,
+        action: '重置了项目任务',
+        time: new Date().toLocaleString('zh-CN', { hour12: false })
+      })
+
+      ElMessage.success('任务已重置，可以重新拆解任务')
+    }
+  }).catch(() => {
+    // 用户取消
+  })
 }
 
 const handleTaskClick = (task) => {
@@ -1604,18 +2173,200 @@ const handleTaskClick = (task) => {
   taskDialogVisible.value = true
 }
 
-const handleTaskStatusChange = async (taskId, newStatus) => {
-  await projectStore.updateTaskStatus(route.params.id, taskId, newStatus)
-  ElMessage.success('任务状态已更新')
+const handleTaskStatusChange = async (task, newStatus) => {
+  // 更新任务状态
+  if (task) {
+    task.status = newStatus
+
+    // 添加动态记录
+    const statusText = { todo: '待办', doing: '进行中', review: '待审核', done: '已完成' }
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `将任务"${task.name}"状态更新为${statusText[newStatus] || newStatus}`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false })
+    })
+  }
+
+  if (!isApiProject.value) {
+    await projectStore.updateTaskStatus(route.params.id, task?.id, newStatus)
+    ElMessage.success('任务状态已更新')
+    return
+  }
+
+  try {
+    const statusMap = {
+      todo: 'TODO',
+      doing: 'IN_PROGRESS',
+      done: 'COMPLETED',
+      review: 'CANCELLED'
+    }
+    const result = await projectsApi.updateTaskStatus(route.params.id, task?.id, statusMap[newStatus] || 'TODO')
+    if (!result?.success || !result?.data) {
+      throw new Error(result?.message || '任务状态更新失败')
+    }
+    Object.assign(task, result.data)
+    ElMessage.success('任务状态已更新')
+  } catch (error) {
+    ElMessage.error(error.message || '任务状态更新失败')
+  }
 }
 
-const handleUpload = (file) => {
-  ElMessage.success(`上传 ${file.name} 成功`)
+// 添加交付物
+const handleAddDeliverable = (taskId, deliverable) => {
+  if (!project.value?.tasks) return
+
+  const task = project.value.tasks.find(t => t.id === taskId)
+  if (task) {
+    if (!task.deliverables) {
+      task.deliverables = []
+    }
+    task.deliverables.push(deliverable)
+    task.hasDeliverable = true
+
+    // 添加动态记录
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `为任务"${task.name}"上传了交付物: ${deliverable.name}`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false })
+    })
+
+    ElMessage.success('交付物已添加')
+  }
+}
+
+// 删除交付物
+const handleRemoveDeliverable = (taskId, deliverableId) => {
+  if (!project.value?.tasks) return
+
+  const task = project.value.tasks.find(t => t.id === taskId)
+  if (task && task.deliverables) {
+    const deliverable = task.deliverables.find(d => d.id === deliverableId)
+    task.deliverables = task.deliverables.filter(d => d.id !== deliverableId)
+
+    if (task.deliverables.length === 0) {
+      task.hasDeliverable = false
+    }
+
+    // 添加动态记录
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `删除了任务"${task.name}"的交付物: ${deliverable?.name}`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false })
+    })
+
+    ElMessage.success('交付物已删除')
+  }
+}
+
+// 提交至标书编写流程
+const handleSubmitToDocument = (projectId) => {
+  if (!project.value?.tasks) return
+
+  // 检查所有任务是否完成
+  const allCompleted = project.value.tasks.every(t => t.status === 'done')
+
+  if (!allCompleted) {
+    ElMessage.warning('请先完成所有任务后再提交至标书编写流程')
+    return
+  }
+
+  // 检查是否已有交付物
+  const tasksWithDeliverables = project.value.tasks.filter(t => t.deliverables && t.deliverables.length > 0)
+
+  if (tasksWithDeliverables.length === 0) {
+    ElMessage.warning('请至少上传一个任务的交付物后再提交')
+    return
+  }
+
+  ElMessageBox.confirm(
+    `所有任务已完成，确认提交至标书编写流程？\n\n已完成任务数: ${project.value.tasks.length}\n已上传交付物: ${tasksWithDeliverables.length} 个任务`,
+    '提交确认',
+    {
+      confirmButtonText: '确认提交',
+      cancelButtonText: '取消',
+      type: 'success'
+    }
+  ).then(() => {
+    // 发起标书编制流程
+    handleInitiateProcess()
+
+    // 添加动态记录
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: '所有任务已完成，提交至标书编写流程',
+      time: new Date().toLocaleString('zh-CN', { hour12: false })
+    })
+
+    ElMessage.success('已提交至标书编写流程，可开始编制标书')
+  }).catch(() => {
+    // 用户取消
+  })
+}
+
+const handleUpload = async (file) => {
+  if (!project.value) return false
+
+  const docPayload = {
+    name: file.name,
+    uploader: userStore.userName,
+    time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    size: `${Math.max(1, Math.round((file.size || 1024 * 1024) / 1024 / 1024))}MB`,
+  }
+
+  if (!isApiProject.value) {
+    if (!Array.isArray(project.value.documents)) {
+      project.value.documents = []
+    }
+    project.value.documents.unshift({
+      id: `DOC_${Date.now()}`,
+      ...docPayload,
+    })
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `上传了文档「${file.name}」`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success(`已上传演示文档：${file.name}`)
+    return false
+  }
+
+  try {
+    const formData = new FormData()
+    formData.set('file', file)
+    formData.set('name', file.name)
+    formData.set('size', docPayload.size)
+    formData.set('fileType', file.type || 'application/octet-stream')
+    formData.set('uploaderId', String(userStore.currentUser?.id || ''))
+    formData.set('uploaderName', userStore.userName)
+    const result = await projectsApi.uploadDocument(route.params.id, formData)
+    if (!result?.success || !result?.data) {
+      throw new Error(result?.message || '上传文档失败')
+    }
+    if (!Array.isArray(project.value.documents)) {
+      project.value.documents = []
+    }
+    project.value.documents.unshift(result.data)
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `上传了文档「${result.data.name}」`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success(`已上传文档：${result.data.name}`)
+  } catch (error) {
+    ElMessage.error(error.message || '上传文档失败')
+  }
   return false
 }
 
 const handleDownload = (doc) => {
-  ElMessage.info(`下载 ${doc.name}`)
+  downloadTextFile(doc.name, `演示文档：${doc.name}\n项目：${project.value?.name || ''}\n上传者：${doc.uploader || ''}`)
+  ElMessage.success(`已下载 ${doc.name}`)
 }
 
 const handleDeleteDoc = async (doc) => {
@@ -1625,26 +2376,254 @@ const handleDeleteDoc = async (doc) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
+
+    if (isApiProject.value && /^\d+$/.test(String(doc?.id))) {
+      const result = await projectsApi.deleteDocument(route.params.id, doc.id)
+      if (!result?.success) {
+        throw new Error(result?.message || '删除文档失败')
+      }
+    }
+
+    if (Array.isArray(project.value?.documents)) {
+      project.value.documents = project.value.documents.filter(item => String(item.id) !== String(doc.id))
+    }
     ElMessage.success('删除成功')
   } catch {
     // 用户取消
   }
 }
 
-const handleAddDocument = () => {
-  ElMessage.info('添加文档功能开发中')
+const handleCreateDocument = async (docName, size = '1.2MB') => {
+  const formData = new FormData()
+  formData.set('name', docName)
+  formData.set('size', size)
+  formData.set('fileType', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+  formData.set('uploaderId', String(userStore.currentUser?.id || ''))
+  formData.set('uploaderName', userStore.userName)
+  const result = await projectsApi.uploadDocument(route.params.id, formData)
+  if (!result?.success || !result?.data) {
+    throw new Error(result?.message || '新增项目文档失败')
+  }
+  if (!Array.isArray(project.value.documents)) {
+    project.value.documents = []
+  }
+  project.value.documents.unshift(result.data)
+  activities.value.unshift({
+    id: Date.now(),
+    user: userStore.userName,
+    action: `新增了项目文档「${result.data.name}」`,
+    time: new Date().toLocaleString('zh-CN', { hour12: false }),
+  })
+  ElMessage.success('项目文档已新增')
 }
 
-const handleShare = () => {
-  ElMessage.info('分享功能开发中')
+const handleAddDocument = async () => {
+  if (!project.value) return
+  const docName = `项目文档_${new Date().toLocaleDateString('zh-CN').replaceAll('/', '')}.docx`
+
+  if (!isApiProject.value) {
+    const mockDoc = {
+      id: `DOC_${Date.now()}`,
+      name: docName,
+      uploader: userStore.userName,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+      size: '1.2MB',
+    }
+    if (!Array.isArray(project.value.documents)) {
+      project.value.documents = []
+    }
+    project.value.documents.unshift(mockDoc)
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `新增了项目文档「${mockDoc.name}」`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success('已新增演示文档')
+    return
+  }
+
+  try {
+    await handleCreateDocument(docName)
+  } catch (error) {
+    ElMessage.error(error.message || '新增项目文档失败')
+  }
+}
+
+const handleShare = async () => {
+  const fallbackLink = `${window.location.origin}/project/${route.params.id}`
+
+  if (!isApiProject.value) {
+    navigator.clipboard.writeText(fallbackLink).then(() => {
+      ElMessage.success('项目链接已复制到剪贴板')
+    }).catch(() => {
+      ElMessage.success(`分享链接：${fallbackLink}`)
+    })
+    return
+  }
+
+  try {
+    const result = await projectsApi.createShareLink(route.params.id, {
+      createdBy: userStore.currentUser?.id || null,
+      createdByName: userStore.userName,
+      baseUrl: window.location.origin,
+    })
+    const shareLink = result?.data?.url || fallbackLink
+    await navigator.clipboard.writeText(shareLink)
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: '生成了项目分享链接',
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success('项目分享链接已复制到剪贴板')
+  } catch (error) {
+    ElMessage.error(error.message || '生成分享链接失败')
+  }
 }
 
 const handleExport = () => {
-  ElMessage.info('导出功能开发中')
+  if (isApiProject.value) {
+    collaborationApi.exports.createExport(route.params.id, {
+      format: 'json',
+      exportedBy: userStore.currentUser?.id || null,
+      exportedByName: userStore.userName,
+    }).then((result) => {
+      if (!result?.success || !result?.data) {
+        ElMessage.error(result?.message || '导出资料失败')
+        return
+      }
+      downloadTextFile(
+        result.data.fileName,
+        result.data.content || '',
+        result.data.contentType || 'application/json;charset=utf-8'
+      )
+      activities.value.unshift({
+        id: Date.now(),
+        user: userStore.userName,
+        action: `导出了项目资料「${result.data.fileName}」`,
+        time: new Date().toLocaleString('zh-CN', { hour12: false }),
+      })
+      ElMessage.success(`已导出 ${result.data.fileName}`)
+    }).catch(() => {
+      ElMessage.error('导出资料失败')
+    })
+    return
+  }
+
+  const payload = {
+    project: project.value,
+    expenses: projectExpenses.value,
+    activities: activities.value,
+    exportedAt: new Date().toISOString(),
+  }
+  downloadTextFile(
+    `${project.value?.name || '项目资料'}_导出.json`,
+    JSON.stringify(payload, null, 2),
+    'application/json;charset=utf-8'
+  )
+  ElMessage.success(`已生成演示导出包：${project.value?.name || '项目资料'}.zip`)
 }
 
-const handleSetReminder = () => {
-  ElMessage.info('设置提醒功能开发中')
+const handleArchiveDocuments = async () => {
+  if (!project.value) return
+
+  if (!isApiProject.value) {
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: '归档了项目资料',
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success('已完成演示归档')
+    return
+  }
+
+  try {
+    const result = await collaborationApi.exports.archive(route.params.id, {
+      archivedBy: userStore.currentUser?.id || null,
+      archivedByName: userStore.userName,
+      archiveReason: '项目资料整理完成，归档留存',
+    })
+    if (!result?.success || !result?.data) {
+      throw new Error(result?.message || '归档资料失败')
+    }
+    if (project.value) {
+      project.value.status = 'archived'
+    }
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `归档了项目资料（${result.data.archiveReason}）`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success('项目资料归档成功')
+  } catch (error) {
+    ElMessage.error(error.message || '归档资料失败')
+  }
+}
+
+const handleSetReminder = async () => {
+  const remindAt = new Date()
+  remindAt.setDate(remindAt.getDate() + 1)
+  remindAt.setHours(9, 0, 0, 0)
+
+  if (!isApiProject.value) {
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: '设置了项目跟进提醒',
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success('已设置演示提醒，默认明天 09:00 提醒')
+    return
+  }
+
+  try {
+    const result = await projectsApi.createReminder(route.params.id, {
+      title: '项目跟进提醒',
+      message: `请跟进项目「${project.value?.name || ''}」`,
+      remindAt: remindAt.toISOString(),
+      createdBy: userStore.currentUser?.id || null,
+      createdByName: userStore.userName,
+      recipient: '项目负责人',
+    })
+    if (!result?.success || !result?.data) {
+      throw new Error(result?.message || '设置提醒失败')
+    }
+    activities.value.unshift({
+      id: Date.now(),
+      user: userStore.userName,
+      action: `设置了项目提醒：${result.data.title}`,
+      time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+    ElMessage.success('项目提醒已创建')
+  } catch (error) {
+    ElMessage.error(error.message || '设置提醒失败')
+  }
+}
+
+const loadProjectWorkflowData = async (projectId) => {
+  if (!project.value || !isApiProject.value) {
+    return
+  }
+
+  const [taskResult, documentResult] = await Promise.all([
+    projectsApi.getTasks(projectId),
+    projectsApi.getDocuments(projectId),
+  ])
+
+  project.value.tasks = taskResult?.success && Array.isArray(taskResult.data)
+    ? taskResult.data.map((task) => ({
+      ...task,
+      deliverables: task.deliverables || [],
+      hasDeliverable: Boolean(task.hasDeliverable),
+    }))
+    : []
+
+  project.value.documents = documentResult?.success && Array.isArray(documentResult.data)
+    ? documentResult.data
+    : []
 }
 
 // 标书编制流程相关处理函数
@@ -1677,6 +2656,10 @@ const handleDraftFileSuccess = (response, file) => {
     name: file.name,
     url: response.data?.url || file.url
   })
+}
+
+const ensureDemoUpload = () => {
+  return true
 }
 
 const handleSaveDraft = () => {
@@ -1724,7 +2707,11 @@ const handleConfirmAddReviewer = () => {
     return
   }
 
-  const user = mockData.users.find(u => u.id === reviewerForm.value.userId)
+  const user = (userStore.users || []).find(u => u.id === reviewerForm.value.userId)
+  if (!user) {
+    ElMessage.warning('未找到评审人信息')
+    return
+  }
   reviewers.value.push({
     id: user.id,
     name: user.name,
@@ -1833,33 +2820,73 @@ const handleSubmitPackage = () => {
 }
 
 const handleDownloadDeliverable = (item) => {
-  ElMessage.info(`下载 ${item.name}`)
+  downloadTextFile(item.name, `演示交付物：${item.name}\n类型：${item.type || ''}\n上传者：${item.uploader || ''}`)
+  ElMessage.success(`已下载 ${item.name}`)
 }
 
 onMounted(async () => {
   loading.value = true
   const projectId = route.params.id
-  console.log('加载项目详情，ID:', projectId)
 
   // 从store获取项目
   await projectStore.getProjectById(projectId)
 
-  // 如果store中没有找到，直接从mock数据中查找
+  const templateResult = await knowledgeApi.templates.getList()
+  templates.value = templateResult?.success && Array.isArray(templateResult.data)
+    ? templateResult.data
+    : []
+
   if (!projectStore.currentProject) {
-    console.log('Store中未找到项目，直接从mock数据查找')
-    const project = mockData.projects.find(p => p.id === projectId)
-    if (project) {
-      projectStore.currentProject = project
-      console.log('找到项目:', project.name)
-    } else {
-      console.error('未找到项目，ID:', projectId)
-      console.log('可用项目列表:', mockData.projects.map(p => ({ id: p.id, name: p.name })))
+    projectStore.currentProject = mockData.projects.find((item) => String(item.id) === String(projectId)) || null
+  }
+  await loadProjectWorkflowData(projectId)
+  demoAutoTasks.value = mockData.autoTasks || []
+  demoMobileCard.value = mockData.mobileCard?.[projectId] || mockData.mobileCard?.P001 || null
+
+  // 加载资产台账数据
+  await barStore.getSites()
+
+  // 尝试根据项目信息匹配站点
+  const currentProject = projectStore.currentProject
+  if (currentProject) {
+    // 根据客户名称或地区匹配站点
+    const matchedSite = barStore.sites.find(site => {
+      return site.region === currentProject.region ||
+             currentProject.customer?.includes(site.name?.substring(0, 4))
+    })
+
+    if (matchedSite) {
+      const result = await barStore.checkSiteCapability(matchedSite.name)
+      if (result.found) {
+        assetCheckResult.value = result
+      }
     }
   }
 
+  await loadApprovalHistory(projectId)
+
   loading.value = false
-  console.log('当前项目:', projectStore.currentProject?.name, '状态:', projectStore.currentProject?.status)
 })
+
+async function loadApprovalHistory(projectId) {
+  try {
+    const result = await approvalApi.getProjectApprovals(projectId)
+    approvalHistory.value = Array.isArray(result?.data) ? result.data : []
+  } catch (error) {
+    console.error('加载审批历史失败:', error)
+    approvalHistory.value = []
+  }
+}
+
+function getApprovalStatusType(status) {
+  const map = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger', CANCELLED: 'info' }
+  return map[String(status || '').toUpperCase()] || 'info'
+}
+
+function getApprovalStatusText(status) {
+  const map = { PENDING: '待审批', APPROVED: '已通过', REJECTED: '已驳回', CANCELLED: '已取消' }
+  return map[String(status || '').toUpperCase()] || (status || '未知状态')
+}
 </script>
 
 <style scoped>
@@ -1923,7 +2950,9 @@ onMounted(async () => {
 }
 
 .info-card,
+.approval-status-card,
 .task-card,
+.expense-card,
 .process-card,
 .document-card,
 .ai-card,
@@ -1967,6 +2996,44 @@ onMounted(async () => {
   color: #409eff;
 }
 
+.current-approval {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.approval-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.approval-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.approval-info-item .label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.approval-info-item .approver {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.approval-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 .file-name {
   display: flex;
   align-items: center;
@@ -1999,6 +3066,17 @@ onMounted(async () => {
 
 .deliverables-section {
   margin-top: 16px;
+}
+
+/* 费用汇总样式 */
+.expense-total {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 0;
+  border-top: 1px solid #ebeef5;
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
 }
 
 .section-title {
@@ -2419,5 +3497,117 @@ onMounted(async () => {
   .info-card:active {
     background: #f5f7fa;
   }
+}
+
+/* 资产检查 Tab 样式 */
+.asset-check-tab {
+  padding: 16px 0;
+}
+
+.asset-check-content {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.asset-check-content .check-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.asset-check-content .site-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.asset-check-content .site-link {
+  color: #909399;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.asset-check-content .site-link:hover {
+  color: #409eff;
+}
+
+.asset-check-content .check-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.asset-check-content .check-item-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.asset-check-content .check-item-card .item-icon {
+  flex-shrink: 0;
+}
+
+.asset-check-content .check-item-card .icon-success {
+  color: #67c23a;
+  font-size: 28px;
+}
+
+.asset-check-content .check-item-card .icon-error {
+  color: #f56c6c;
+  font-size: 28px;
+}
+
+.asset-check-content .check-item-card .icon-warning {
+  color: #e6a23c;
+  font-size: 28px;
+}
+
+.asset-check-content .check-item-card .icon-user {
+  color: #909399;
+  font-size: 24px;
+}
+
+.asset-check-content .check-item-card .item-content {
+  flex: 1;
+}
+
+.asset-check-content .check-item-card .item-label {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 4px;
+}
+
+.asset-check-content .check-item-card .item-value {
+  font-size: 14px;
+  color: #303133;
+  font-weight: 500;
+}
+
+.asset-check-content .check-item-card .item-value .phone {
+  color: #909399;
+  font-size: 12px;
+}
+
+.asset-check-content .check-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.asset-check-content .check-actions .el-button {
+  flex: 1;
+  min-width: 100px;
 }
 </style>
