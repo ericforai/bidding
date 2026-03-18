@@ -204,13 +204,13 @@ const loginRules = {
 const displayAccounts = computed(() => (
   isMockMode()
     ? ['小王', '张经理', '李总', '李工']
-    : ['lizong（李总）', 'zhangjingli（张经理）', 'xiaowang（小王）', 'ligong（李工）']
+    : ['lizong（李总）', 'zhangjingli（张经理）', 'xiaowang（小王）']
 ))
 
 const accountHint = computed(() => (
   isMockMode()
     ? '密码：任意输入即可'
-    : 'API 模式默认密码：XiyuDemo!2026'
+    : 'API 模式默认密码：123456'
 ))
 
 const handleLogin = async () => {

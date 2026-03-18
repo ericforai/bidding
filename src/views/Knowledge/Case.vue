@@ -76,7 +76,14 @@
 
     <!-- 案例卡片列表 -->
     <div class="case-list" v-loading="loading">
+      <FeaturePlaceholder
+        v-if="featurePlaceholder"
+        :title="featurePlaceholder.title"
+        :message="featurePlaceholder.message"
+        :hint="featurePlaceholder.hint"
+      />
       <div
+        v-else
         v-for="item in filteredCases"
         :key="item.id"
         class="case-card"
@@ -161,7 +168,7 @@
 
       <!-- 空状态 -->
       <el-empty
-        v-if="filteredCases.length === 0"
+        v-if="!featurePlaceholder && filteredCases.length === 0"
         description="暂无案例数据"
         :image-size="120"
       />
@@ -569,7 +576,9 @@ import {
   Check
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { knowledgeApi } from '@/api'
+import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
+import { getFeaturePlaceholder, isFeatureUnavailableResponse, knowledgeApi } from '@/api'
+import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 
 // 搜索表单
 const searchForm = reactive({
@@ -1317,6 +1326,7 @@ const mockCases = [
 ]
 
 const cases = ref([])
+const featurePlaceholder = ref(null)
 
 const loadCases = async () => {
   loading.value = true
@@ -1325,6 +1335,19 @@ const loadCases = async () => {
     if (result?.success) {
       cases.value = result.data || []
       pagination.total = cases.value.length
+      featurePlaceholder.value = null
+    } else {
+      cases.value = []
+      pagination.total = 0
+      featurePlaceholder.value = notifyFeatureUnavailable(result, {
+        fallback: {
+          title: '案例库暂未接入',
+          hint: '真实后端尚未返回案例列表时，这里会显式展示占位态。',
+        },
+      })
+      if (!featurePlaceholder.value && result?.message) {
+        ElMessage.error(result.message)
+      }
     }
   } finally {
     loading.value = false

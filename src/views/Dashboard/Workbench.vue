@@ -51,74 +51,177 @@
     <div class="content-grid">
       <!-- 左侧主栏 -->
       <div class="main-column">
-        <!-- ========== 管理层专属内容 ========== -->
-        <template v-if="currentUserRole === 'admin'">
-          <!-- 团队绩效概览 -->
-          <div class="section-card team-performance-card">
-            <div class="section-header">
-              <h3 class="section-title">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
-                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-                  <path d="M16 3.13a4 4 0 010 7.75"/>
-                </svg>
-                团队绩效
-              </h3>
+        <div class="section-card calendar-card calendar-card--hero">
+          <div class="section-header">
+            <h3 class="section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              投标日历
+            </h3>
+            <el-tag size="small" type="primary">{{ visibleCalendarEvents.length }} 个节点</el-tag>
+          </div>
+          <div class="calendar-topbar">
+            <div class="calendar-summary-strip">
+              <div class="summary-pill">
+                <span class="summary-label">本月节点</span>
+                <strong>{{ monthCalendarSummary.total }}</strong>
+              </div>
+              <div class="summary-pill risk">
+                <span class="summary-label">高风险</span>
+                <strong>{{ monthCalendarSummary.urgent }}</strong>
+              </div>
+              <div class="summary-pill accent">
+                <span class="summary-label">最近截止</span>
+                <strong>{{ monthCalendarSummary.nextDeadlineLabel }}</strong>
+              </div>
             </div>
-            <div class="team-performance-grid">
-              <div v-for="team in teamPerformance" :key="team.dept" class="team-performance-item">
-                <div class="team-info">
-                  <span class="team-name">{{ team.dept }}</span>
-                  <span class="team-size">{{ team.size }}人</span>
-                </div>
-                <div class="team-progress">
-                  <div class="progress-bar">
-                    <div class="progress-fill" :style="{ width: team.progress + '%', background: team.color }"></div>
+            <div class="calendar-filter-bar">
+              <div class="calendar-filter-copy">
+                <span class="filter-eyebrow">节点筛选</span>
+                <span class="filter-hint">按类型或风险切换主舞台视图</span>
+              </div>
+              <div class="calendar-filter-row">
+                <button
+                  v-for="filter in calendarFilters"
+                  :key="filter.value"
+                  type="button"
+                  class="calendar-filter-chip"
+                  :class="{ active: activeCalendarFilter === filter.value }"
+                  @click="activeCalendarFilter = filter.value"
+                >
+                  <span class="chip-dot" :class="'dot-' + filter.value"></span>
+                  {{ filter.label }}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="calendar-hero-grid">
+            <div class="calendar-hero-main">
+              <div class="calendar-wrapper">
+                <el-calendar v-model="calendarDate">
+                  <template #date-cell="{ data }">
+                    <div
+                      class="calendar-day-cell"
+                      :class="calendarCellClass(data)"
+                      @click="handleDateClick(data.date)"
+                    >
+                      <span class="calendar-day-number">{{ data.day.split('-')[2] }}</span>
+                      <div class="calendar-day-marker" v-if="getEventsForDate(data.date).length > 0">
+                        <div class="calendar-day-dots">
+                          <span
+                            v-for="event in getEventsForDate(data.date).slice(0, 3)"
+                            :key="event.id"
+                            class="calendar-event-dot"
+                            :class="'event-' + event.type"
+                          ></span>
+                        </div>
+                        <span class="calendar-day-count">{{ getEventsForDate(data.date).length }}</span>
+                        <span v-if="getEventsForDate(data.date).some((event) => event.urgent)" class="calendar-day-alert">!</span>
+                      </div>
+                    </div>
+                  </template>
+                </el-calendar>
+              </div>
+              <div class="calendar-legend">
+                <span class="legend-item"><span class="legend-dot event-deadline"></span>截止</span>
+                <span class="legend-item"><span class="legend-dot event-bid"></span>投标</span>
+                <span class="legend-item"><span class="legend-dot event-opening"></span>开标</span>
+                <span class="legend-item"><span class="legend-dot event-review"></span>评审</span>
+              </div>
+            </div>
+            <div class="calendar-hero-side">
+              <div class="calendar-panel">
+                <div class="calendar-panel-header">
+                  <div>
+                    <div class="calendar-panel-eyebrow">选中日期</div>
+                    <h4 class="calendar-panel-title">{{ selectedDateLabel }}</h4>
                   </div>
-                  <span class="progress-label">{{ team.progress }}%</span>
+                  <el-tag size="small" :type="selectedDateEvents.length > 0 ? 'danger' : 'info'">
+                    {{ selectedDateEvents.length > 0 ? `${selectedDateEvents.length} 个事项` : '无事项' }}
+                  </el-tag>
                 </div>
-                <div class="team-metrics">
-                  <span class="team-metric">中标: {{ team.wins }}</span>
-                  <span class="team-metric">进行: {{ team.active }}</span>
+                <div v-if="selectedDateEvents.length > 0" class="selected-events-list">
+                  <div
+                    v-for="event in selectedDateEvents"
+                    :key="event.id"
+                    class="selected-event-card"
+                    :class="['event-' + event.type, event.priorityLevel]"
+                  >
+                    <div class="selected-event-main">
+                      <div class="selected-event-topline">
+                        <span class="selected-event-type">{{ getEventTypeTag(event.type).label }}</span>
+                        <span class="selected-event-countdown">{{ event.countdownLabel }}</span>
+                      </div>
+                      <h5 class="selected-event-title">{{ event.shortTitle || event.title }}</h5>
+                      <p class="selected-event-project">{{ event.project }}</p>
+                      <div class="selected-event-meta">
+                        <span>{{ event.fieldSummary.owner }}</span>
+                        <span>{{ event.fieldSummary.stage }}</span>
+                        <span>{{ event.fieldSummary.blocker }}</span>
+                      </div>
+                    </div>
+                    <div class="selected-event-actions">
+                      <el-tag size="small" :type="event.riskTagType" :class="['risk-tag', event.priorityLevel]">{{ event.riskLabel }}</el-tag>
+                      <el-button size="small" text type="primary" @click="handleCalendarAction(event)">
+                        {{ event.actionLabel }}
+                      </el-button>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="calendar-empty-state">
+                  当前筛选条件下，这一天没有投标节点。
+                </div>
+              </div>
+              <div class="upcoming-panel">
+                <div class="calendar-panel-header">
+                  <div>
+                    <div class="calendar-panel-eyebrow">未来 7 天</div>
+                    <h4 class="calendar-panel-title">关键执行清单</h4>
+                  </div>
+                  <el-link type="primary" :underline="false" @click="activeCalendarFilter = 'all'">清除筛选</el-link>
+                </div>
+                <div class="upcoming-events-list">
+                  <div
+                    v-for="event in upcomingCalendarEvents"
+                    :key="event.id"
+                    class="upcoming-event-item"
+                    :class="['event-' + event.type, event.priorityLevel]"
+                    @click="selectCalendarEventDate(event)"
+                  >
+                    <div class="upcoming-event-rail">
+                      <span class="upcoming-rail-countdown">{{ event.countdownLabel }}</span>
+                      <span class="upcoming-rail-type">{{ getEventTypeTag(event.type).label }}</span>
+                    </div>
+                    <div class="upcoming-event-body">
+                      <div class="upcoming-event-title-row">
+                        <span class="upcoming-event-title">{{ event.project }}</span>
+                        <span class="upcoming-event-date-label">{{ event.dayLabel }} {{ event.weekdayLabel }}</span>
+                      </div>
+                      <div class="upcoming-event-subline execution-meta">
+                        <span class="execution-chip">{{ event.shortTitle || event.title }}</span>
+                        <span class="execution-chip muted">{{ event.fieldSummary.stage }}</span>
+                        <span class="execution-chip blocker">{{ event.fieldSummary.blocker }}</span>
+                      </div>
+                    </div>
+                    <div class="upcoming-event-side">
+                      <span class="upcoming-event-owner">{{ event.fieldSummary.owner }}</span>
+                      <el-button size="small" text type="primary" @click.stop="handleCalendarAction(event)">
+                        {{ event.actionLabel }}
+                      </el-button>
+                    </div>
+                  </div>
+                </div>
+                <div v-if="upcomingCalendarEvents.length === 0" class="calendar-empty-state compact">
+                  当前筛选下未来 7 天没有待执行节点。
                 </div>
               </div>
             </div>
           </div>
-
-          <!-- 待审批事项 -->
-          <div class="section-card approvals-card">
-            <div class="section-header">
-              <h3 class="section-title">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
-                  <path d="M9 11l3 3L22 4"/>
-                  <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-                </svg>
-                待审批事项
-              </h3>
-              <el-tag size="small" type="danger">{{ pendingApprovals.length }}</el-tag>
-            </div>
-            <div class="approvals-list">
-              <div
-                v-for="item in pendingApprovals"
-                :key="item.id"
-                class="approval-item"
-              >
-                <div class="approval-icon" :class="'type-' + item.type">
-                  <el-icon><Document /></el-icon>
-                </div>
-                <div class="approval-content">
-                  <span class="approval-title">{{ item.title }}</span>
-                  <span class="approval-meta">{{ item.department }} · {{ item.time }}</span>
-                </div>
-                <div class="approval-actions">
-                  <el-button size="small" type="success" @click="handleApprove(item)">通过</el-button>
-                  <el-button size="small" @click="handleReject(item)">驳回</el-button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </template>
+        </div>
 
         <!-- ========== 销售经理专属内容 (小王) ========== -->
         <template v-if="currentUserName === '小王'">
@@ -528,78 +631,73 @@
 
       <!-- 右侧边栏 -->
       <div class="side-column">
-        <!-- 投标日历 -->
-        <div class="section-card calendar-card">
-          <div class="section-header">
-            <h3 class="section-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-              投标日历
-            </h3>
-            <el-tag size="small" type="primary">{{ calendarEvents.length }} 个日程</el-tag>
-          </div>
-          <div class="calendar-wrapper">
-            <el-calendar v-model="calendarDate">
-              <template #date-cell="{ data }">
-                <div
-                  class="calendar-day-cell"
-                  :class="calendarCellClass(data)"
-                  @click="handleDateClick(data.date)"
-                >
-                  <span class="calendar-day-number">{{ data.day.split('-')[2] }}</span>
-                  <div class="calendar-day-events" v-if="getEventsForDate(data.date).length > 0">
-                    <div
-                      v-for="event in getEventsForDate(data.date).slice(0, 3)"
-                      :key="event.id"
-                      class="calendar-event-item"
-                      :class="'event-' + event.type"
-                      :title="event.title"
-                    >
-                      <span class="event-title-short">{{ event.title }}</span>
+        <template v-if="currentUserRole === 'admin'">
+          <div class="side-summary-grid">
+            <div class="section-card team-performance-card side-balance-card">
+              <div class="section-header">
+                <h3 class="section-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 010 7.75"/>
+                  </svg>
+                  团队绩效
+                </h3>
+              </div>
+              <div class="team-performance-grid compact">
+                <div v-for="team in teamPerformance" :key="team.dept" class="team-performance-item">
+                  <div class="team-info">
+                    <span class="team-name">{{ team.dept }}</span>
+                    <span class="team-size">{{ team.size }}人</span>
+                  </div>
+                  <div class="team-progress">
+                    <div class="progress-bar">
+                      <div class="progress-fill" :style="{ width: team.progress + '%', background: team.color }"></div>
                     </div>
-                    <div v-if="getEventsForDate(data.date).length > 3" class="event-more">
-                      +{{ getEventsForDate(data.date).length - 3 }}
-                    </div>
+                    <span class="progress-label">{{ team.progress }}%</span>
+                  </div>
+                  <div class="team-metrics">
+                    <span class="team-metric">中标: {{ team.wins }}</span>
+                    <span class="team-metric">进行: {{ team.active }}</span>
                   </div>
                 </div>
-              </template>
-            </el-calendar>
-          </div>
-        </div>
-
-        <!-- 今日日程 -->
-        <div class="section-card today-events-card" v-if="todayCalendarEvents.length > 0">
-          <div class="section-header">
-            <h3 class="section-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
-                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                <path d="M13.73 21a2 2 0 01-3.46 0"/>
-              </svg>
-              今日日程
-            </h3>
-          </div>
-          <div class="today-events-list">
-            <div
-              v-for="event in todayCalendarEvents"
-              :key="event.id"
-              class="today-event-item"
-              :class="'event-' + event.type"
-            >
-              <div class="event-dot"></div>
-              <div class="event-content">
-                <span class="event-title">{{ event.title }}</span>
-                <span class="event-project">{{ event.project }}</span>
               </div>
-              <el-tag :type="getEventTypeTag(event.type).type" size="small">
-                {{ getEventTypeTag(event.type).label }}
-              </el-tag>
+            </div>
+
+            <div class="section-card approvals-card side-balance-card">
+              <div class="section-header">
+                <h3 class="section-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+                    <path d="M9 11l3 3L22 4"/>
+                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                  </svg>
+                  待审批事项
+                </h3>
+                <el-tag size="small" type="danger">{{ pendingApprovals.length }}</el-tag>
+              </div>
+              <div class="approvals-list compact">
+                <div
+                  v-for="item in pendingApprovals"
+                  :key="item.id"
+                  class="approval-item"
+                >
+                  <div class="approval-icon" :class="'type-' + item.type">
+                    <el-icon><Document /></el-icon>
+                  </div>
+                  <div class="approval-content">
+                    <span class="approval-title">{{ item.title }}</span>
+                    <span class="approval-meta">{{ item.department }} · {{ item.time }}</span>
+                  </div>
+                  <div class="approval-actions">
+                    <el-button size="small" type="success" @click="handleApprove(item)">通过</el-button>
+                    <el-button size="small" @click="handleReject(item)">驳回</el-button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </template>
 
         <!-- 流程跟踪 -->
         <div class="section-card process-card">
@@ -707,51 +805,27 @@
       </div>
     </div>
 
-    <!-- 日历事件详情弹窗 -->
-    <el-dialog
-      v-model="calendarEventDialogVisible"
-      :title="`${selectedDateEvents[0]?.date || ''} 的日程`"
-      width="500px"
-      class="calendar-event-dialog"
-    >
-      <div class="event-dialog-list">
-        <div
-          v-for="event in selectedDateEvents"
-          :key="event.id"
-          class="event-dialog-item"
-          :class="'event-' + event.type"
-        >
-          <div class="event-dialog-header">
-            <div class="event-dialog-icon" :class="'icon-' + event.type">
-              <el-icon><Calendar /></el-icon>
-            </div>
-            <div class="event-dialog-info">
-              <h4 class="event-dialog-title">{{ event.title }}</h4>
-              <p class="event-dialog-project">{{ event.project }}</p>
-            </div>
-          </div>
-          <el-tag :type="getEventTypeTag(event.type).type" size="small">
-            {{ getEventTypeTag(event.type).label }}
-          </el-tag>
-        </div>
-      </div>
-      <template #footer>
-        <el-button @click="calendarEventDialogVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
+    <ApprovalDialog
+      v-model:visible="approvalDialogVisible"
+      :mode="approvalMode"
+      :approval-info="currentApprovalItem"
+      @success="handleApprovalSuccess"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, h } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useBiddingStore } from '@/stores/bidding'
+import { approvalApi } from '@/api'
 import {
   Plus, DataAnalysis, ArrowRight, Calendar, User, Clock, Check,
   Document, Briefcase, TrendCharts, Flag, FolderOpened, Wallet
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import ApprovalDialog from '@/components/common/ApprovalDialog.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -1109,11 +1183,10 @@ const teamPerformance = ref([
   { dept: '商务部', size: 7, progress: 65, color: '#EF4444', wins: 2, active: 3 }
 ])
 
-const pendingApprovals = ref([
-  { id: 1, title: '某央企项目 - 投标预算审批', type: 'budget', department: '投标管理部', time: '2小时前' },
-  { id: 2, title: '西部云项目 - 立项申请', type: 'project', department: '华南销售部', time: '今天 09:30' },
-  { id: 3, title: '新员工入职审批 - 李工', type: 'hr', department: '技术部', time: '昨天 16:45' }
-])
+const pendingApprovals = ref([])
+const approvalDialogVisible = ref(false)
+const approvalMode = ref('approve')
+const currentApprovalItem = ref({})
 
 // ========== 销售经理数据 (小王) ==========
 const hotTenders = ref([
@@ -1205,13 +1278,35 @@ const pendingReviews = ref([
 
 // ========== 处理函数 ==========
 const handleApprove = (item) => {
-  ElMessage.success(`已通过: ${item.title}`)
-  pendingApprovals.value = pendingApprovals.value.filter(i => i.id !== item.id)
+  approvalMode.value = 'approve'
+  currentApprovalItem.value = item
+  approvalDialogVisible.value = true
 }
 
 const handleReject = (item) => {
-  ElMessage.info(`已驳回: ${item.title}`)
-  pendingApprovals.value = pendingApprovals.value.filter(i => i.id !== item.id)
+  approvalMode.value = 'reject'
+  currentApprovalItem.value = item
+  approvalDialogVisible.value = true
+}
+
+const handleApprovalSuccess = async () => {
+  await loadPendingApprovals()
+}
+
+async function loadPendingApprovals() {
+  try {
+    const result = await approvalApi.getPendingApprovals({ page: 0, size: 8 })
+    pendingApprovals.value = Array.isArray(result?.data) ? result.data.map((item) => ({
+      ...item,
+      title: item.title || `${item.projectName} - ${item.typeName}`,
+      type: item.approvalType || 'project_review',
+      department: item.applicantDept || '投标管理部',
+      time: item.time || item.submitTime || '',
+    })) : []
+  } catch (error) {
+    console.error('加载待审批事项失败:', error)
+    pendingApprovals.value = []
+  }
 }
 
 const handleTenderClick = (tender) => {
@@ -1281,19 +1376,23 @@ const activities = ref([
 
 // ========== 投标日历相关 ==========
 const calendarDate = ref(new Date())
-const selectedDateEvents = ref([])
-const calendarEventDialogVisible = ref(false)
+const activeCalendarFilter = ref('all')
+const selectedDateKey = ref('')
+
+const calendarFilters = [
+  { label: '全部', value: 'all' },
+  { label: '截止', value: 'deadline' },
+  { label: '投标', value: 'bid' },
+  { label: '开标', value: 'opening' },
+  { label: '评审', value: 'review' },
+  { label: '高风险', value: 'urgent' }
+]
 
 // 从 store 获取日历数据
 const calendarEvents = computed(() => biddingStore.calendar || [])
 
-// 获取指定日期的事件
-const getEventsForDate = (date) => {
-  const dateStr = formatDateKey(date)
-  return calendarEvents.value.filter(event => event.date === dateStr)
-}
+const parseDate = (dateStr) => new Date(`${dateStr}T00:00:00`)
 
-// 格式化日期为 YYYY-MM-DD
 const formatDateKey = (date) => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -1301,24 +1400,108 @@ const formatDateKey = (date) => {
   return `${year}-${month}-${day}`
 }
 
+const startOfToday = () => parseDate(formatDateKey(new Date()))
+
+const getDaysUntil = (dateStr) => {
+  const oneDay = 24 * 60 * 60 * 1000
+  return Math.round((parseDate(dateStr) - startOfToday()) / oneDay)
+}
+
+const getEventOwner = (event) => {
+  const ownerMap = {
+    deadline: '商务专员',
+    bid: '投标经理',
+    opening: '销售经理',
+    review: '技术负责人'
+  }
+  return ownerMap[event.type] || '项目负责人'
+}
+
+const getEventStage = (event) => {
+  const stageMap = {
+    deadline: '资料收口',
+    bid: '递交前确认',
+    opening: '现场准备',
+    review: '评审跟进'
+  }
+  return stageMap[event.type] || '节点处理中'
+}
+
+const getEventBlocker = (event) => {
+  const blockerMap = {
+    deadline: '待确认最终材料',
+    bid: '待核对报价与盖章',
+    opening: '待确认授权与签到',
+    review: '待准备答疑材料'
+  }
+  return blockerMap[event.type] || '待补充信息'
+}
+
+const getEventActionLabel = (event) => {
+  const actionMap = {
+    deadline: '去补材料',
+    bid: '去检查递交',
+    opening: '看开标准备',
+    review: '看评审清单'
+  }
+  return actionMap[event.type] || '查看详情'
+}
+
+const decorateCalendarEvent = (event) => {
+  const diffDays = getDaysUntil(event.date)
+  const isExpired = diffDays < 0
+  const isCritical = event.urgent || diffDays <= 1
+  const isWarning = !isCritical && diffDays <= 3
+
+  return {
+    ...event,
+    diffDays,
+    countdownLabel: isExpired ? '已逾期' : diffDays === 0 ? '今天' : `D-${diffDays}`,
+    riskLabel: isExpired ? '已逾期' : isCritical ? '高风险' : isWarning ? '需关注' : '常规',
+    riskTagType: isExpired ? 'danger' : isCritical ? 'info' : isWarning ? 'warning' : 'info',
+    priorityLevel: isExpired || isCritical ? 'priority-critical' : isWarning ? 'priority-warning' : 'priority-normal',
+    actionLabel: getEventActionLabel(event),
+    dayLabel: event.date.slice(5),
+    weekdayLabel: parseDate(event.date).toLocaleDateString('zh-CN', { weekday: 'short' }).replace('周', ''),
+    fieldSummary: {
+      owner: `负责人 ${getEventOwner(event)}`,
+      stage: `阶段 ${getEventStage(event)}`,
+      blocker: `阻塞 ${getEventBlocker(event)}`
+    }
+  }
+}
+
+const normalizedCalendarEvents = computed(() => calendarEvents.value.map(decorateCalendarEvent))
+
+const eventMatchesFilter = (event, filterValue = activeCalendarFilter.value) => {
+  if (filterValue === 'all') return true
+  if (filterValue === 'urgent') return event.urgent || event.priorityLevel === 'priority-critical'
+  return event.type === filterValue
+}
+
+const visibleCalendarEvents = computed(() => normalizedCalendarEvents.value.filter((event) => eventMatchesFilter(event)))
+
+// 获取指定日期的事件
+const getEventsForDate = (date) => {
+  const dateStr = formatDateKey(date)
+  return visibleCalendarEvents.value.filter(event => event.date === dateStr)
+}
+
 // 日历单元格自定义渲染
 const calendarCellClass = ({ date, viewType }) => {
   if (viewType !== 'month') return ''
-  const dateStr = formatDateKey(date)
   const events = getEventsForDate(date)
   if (events.length === 0) return ''
 
-  const hasUrgent = events.some(e => e.urgent)
-  return hasUrgent ? 'calendar-day-urgent' : 'calendar-day-has-event'
+  if (events.some((event) => event.priorityLevel === 'priority-critical')) return 'calendar-day-urgent'
+  if (events.length >= 3) return 'calendar-day-crowded'
+  return 'calendar-day-has-event'
 }
 
 // 点击日期
 const handleDateClick = (date) => {
-  const events = getEventsForDate(date)
-  if (events.length > 0) {
-    selectedDateEvents.value = events
-    calendarEventDialogVisible.value = true
-  }
+  selectedDateKey.value = formatDateKey(date)
+  calendarDate.value = date
 }
 
 // 获取事件类型标签
@@ -1332,26 +1515,65 @@ const getEventTypeTag = (type) => {
   return map[type] || { type: 'info', label: '其他' }
 }
 
-// 获取事件图标
-const getEventIcon = (type) => {
-  const map = {
-    'deadline': '📅',
-    'bid': '📝',
-    'opening': '📌',
-    'review': '👁'
+const selectedDateEvents = computed(() =>
+  visibleCalendarEvents.value.filter((event) => event.date === selectedDateKey.value)
+)
+
+const selectedDateLabel = computed(() => {
+  const date = parseDate(selectedDateKey.value || formatDateKey(new Date()))
+  return date.toLocaleDateString('zh-CN', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long'
+  })
+})
+
+const monthCalendarSummary = computed(() => {
+  const currentYear = calendarDate.value.getFullYear()
+  const currentMonth = calendarDate.value.getMonth()
+  const monthEvents = visibleCalendarEvents.value.filter((event) => {
+    const eventDate = parseDate(event.date)
+    return eventDate.getFullYear() === currentYear && eventDate.getMonth() === currentMonth
+  })
+  const nextDeadline = monthEvents
+    .filter((event) => event.type === 'deadline' && event.diffDays >= 0)
+    .sort((a, b) => a.diffDays - b.diffDays)[0]
+
+  return {
+    total: monthEvents.length,
+    urgent: monthEvents.filter((event) => event.urgent || event.priorityLevel === 'priority-critical').length,
+    nextDeadlineLabel: nextDeadline ? nextDeadline.countdownLabel : '暂无'
   }
-  return map[type] || '📌'
+})
+
+const upcomingCalendarEvents = computed(() =>
+  visibleCalendarEvents.value
+    .filter((event) => event.diffDays >= 0 && event.diffDays <= 7)
+    .sort((a, b) => a.diffDays - b.diffDays || a.date.localeCompare(b.date))
+)
+
+const selectCalendarEventDate = (event) => {
+  selectedDateKey.value = event.date
+  calendarDate.value = parseDate(event.date)
+}
+
+const handleCalendarAction = (event) => {
+  ElMessage.info(`${event.actionLabel}：${event.project}`)
 }
 
 // 日历加载
 onMounted(async () => {
   await biddingStore.getCalendar()
-})
+  await loadPendingApprovals()
+  selectedDateKey.value = formatDateKey(new Date())
+  const firstUpcomingEvent = normalizedCalendarEvents.value
+    .filter((event) => event.diffDays >= 0)
+    .sort((a, b) => a.diffDays - b.diffDays)[0]
 
-// 今日日程事件
-const todayCalendarEvents = computed(() => {
-  const today = formatDateKey(new Date())
-  return calendarEvents.value.filter(e => e.date === today)
+  if (firstUpcomingEvent) {
+    selectedDateKey.value = firstUpcomingEvent.date
+    calendarDate.value = parseDate(firstUpcomingEvent.date)
+  }
 })
 
 // 获取进度条颜色
@@ -1410,8 +1632,34 @@ const handleAnalysis = () => {
   router.push('/analytics/dashboard')
 }
 
+const metricDrilldownRouteMap = {
+  totalRevenue: { path: '/analytics/dashboard', query: { drilldown: 'revenue' } },
+  winRate: { path: '/analytics/dashboard', query: { drilldown: 'win-rate' } },
+  teamSize: { path: '/analytics/dashboard', query: { drilldown: 'team' } },
+  activeProjects: { path: '/analytics/dashboard', query: { drilldown: 'projects', status: 'in_progress' } },
+  newTenders: '/bidding',
+  myOpportunities: '/bidding',
+  customerVisits: '/project',
+  pendingProposals: '/project/create',
+  myProjects: '/project',
+  urgentTasks: '/project',
+  teamWorkload: '/project',
+  resourceStatus: '/settings',
+  myTasks: '/project',
+  completedThisWeek: '/project',
+  pendingReviews: '/project',
+  workHours: '/project'
+}
+
 const handleMetricClick = (metric) => {
-  ElMessage.info(`查看 ${metric.label} 详情`)
+  const targetRoute = metricDrilldownRouteMap[metric.key]
+
+  if (targetRoute) {
+    router.push(targetRoute)
+    return
+  }
+
+  ElMessage.info(`${metric.label} 暂无详情页`)
 }
 
 const handleProjectClick = (project) => {
@@ -1618,7 +1866,7 @@ export default {
 /* ==================== 内容网格 ==================== */
 .content-grid {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: minmax(0, 1.28fr) minmax(340px, 0.92fr);
   gap: 20px;
 }
 
@@ -1626,11 +1874,19 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-width: 0;
 }
 
 .side-column {
   display: flex;
   flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.side-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 20px;
 }
 
@@ -2821,9 +3077,554 @@ export default {
   margin: 0;
 }
 
+/* ==================== 投标日历重构覆盖 ==================== */
+.calendar-card--hero {
+  border-color: #D7E3F8;
+  box-shadow: 0 16px 40px rgba(30, 64, 175, 0.08);
+}
+
+.calendar-topbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 16px 16px;
+}
+
+.calendar-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0;
+}
+
+.summary-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #FBFDFF 0%, #F3F7FF 100%);
+  border: 1px solid #E2E8F0;
+  box-shadow: none;
+}
+
+.calendar-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.95fr);
+  gap: 16px;
+  padding: 0 16px 16px;
+  align-items: start;
+}
+
+.calendar-hero-main,
+.calendar-hero-side {
+  min-width: 0;
+}
+
+.calendar-hero-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.summary-pill.risk {
+  background: linear-gradient(180deg, #FDF4FF 0%, #FAE8FF 100%);
+  border-color: #E9D5FF;
+}
+
+.summary-pill.accent {
+  background: linear-gradient(180deg, #EEF2FF 0%, #E0E7FF 100%);
+  border-color: #C7D2FE;
+}
+
+.summary-label {
+  font-size: 10px;
+  color: #64748B;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.summary-pill strong {
+  font-size: 16px;
+  line-height: 1;
+  color: #0F172A;
+  white-space: nowrap;
+}
+
+.calendar-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  border: 1px solid #E5E7EB;
+}
+
+.calendar-filter-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.filter-eyebrow {
+  font-size: 11px;
+  color: #64748B;
+  letter-spacing: 0.05em;
+}
+
+.filter-hint {
+  font-size: 12px;
+  color: #94A3B8;
+}
+
+.calendar-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 0;
+}
+
+.calendar-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 11px;
+  border: 1px solid #E5E7EB;
+  border-radius: 999px;
+  background: #fff;
+  color: #475569;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.calendar-filter-chip:hover,
+.calendar-filter-chip.active {
+  color: #1D4ED8;
+  border-color: #BFDBFE;
+  background: #EFF6FF;
+}
+
+.dot-all {
+  background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+}
+
+.dot-urgent {
+  background: #C026D3;
+  box-shadow: 0 0 0 2px rgba(192, 38, 211, 0.16);
+}
+
+.calendar-wrapper {
+  padding: 0;
+}
+
+.calendar-wrapper :deep(.el-calendar__header) {
+  margin-bottom: 12px;
+}
+
+.calendar-wrapper :deep(.el-calendar-table .el-calendar-day) {
+  height: 54px;
+  border-radius: 10px;
+}
+
+.calendar-wrapper :deep(.el-calendar-table .el-calendar-day:hover) {
+  background: #F8FAFC;
+}
+
+.calendar-wrapper :deep(.el-calendar-table .el-calendar-day.is-selected) {
+  background: linear-gradient(135deg, #E0ECFF 0%, #DBEAFE 100%) !important;
+  color: #1D4ED8 !important;
+}
+
+.calendar-wrapper :deep(.el-calendar-table .el-calendar-day.is-today) {
+  background: #F8FAFC;
+  color: #0F172A;
+}
+
+.calendar-day-cell {
+  min-height: 44px;
+  align-items: center;
+  padding: 5px 4px;
+  border-radius: 10px;
+}
+
+.calendar-day-cell.calendar-day-urgent {
+  background: #FDF4FF;
+  border-color: #E9D5FF;
+}
+
+.calendar-day-cell.calendar-day-crowded {
+  background: #FFFDF5;
+  border: 1px solid #FDE68A;
+}
+
+.calendar-day-number {
+  color: #0F172A;
+}
+
+.calendar-day-marker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.calendar-day-dots {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.calendar-event-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.calendar-event-dot.event-deadline,
+.legend-dot.event-deadline,
+.chip-dot.dot-deadline {
+  background: #EF4444;
+}
+
+.calendar-event-dot.event-bid,
+.legend-dot.event-bid,
+.chip-dot.dot-bid {
+  background: #3B82F6;
+}
+
+.calendar-event-dot.event-opening,
+.legend-dot.event-opening,
+.chip-dot.dot-opening {
+  background: #10B981;
+}
+
+.calendar-event-dot.event-review,
+.legend-dot.event-review,
+.chip-dot.dot-review {
+  background: #F59E0B;
+}
+
+.chip-dot,
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.calendar-day-count {
+  min-width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #E2E8F0;
+  color: #334155;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.calendar-day-alert {
+  font-size: 10px;
+  font-weight: 700;
+  color: #A21CAF;
+}
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 0 0;
+  color: #64748B;
+  font-size: 12px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.calendar-panel,
+.upcoming-panel {
+  margin: 0;
+  padding: 14px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  border: 1px solid #E5E7EB;
+}
+
+.calendar-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.calendar-panel-eyebrow {
+  font-size: 11px;
+  color: #94A3B8;
+  margin-bottom: 2px;
+}
+
+.calendar-panel-title {
+  margin: 0;
+  font-size: 15px;
+  color: #0F172A;
+}
+
+.selected-events-list,
+.upcoming-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.selected-event-card,
+.upcoming-event-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #E5E7EB;
+  background: #FFFFFF;
+  transition: all 0.2s ease;
+}
+
+.upcoming-event-item {
+  cursor: pointer;
+}
+
+.selected-event-card.priority-critical,
+.upcoming-event-item.priority-critical {
+  border-color: #E9D5FF;
+  background: linear-gradient(180deg, #FDF7FF 0%, #FAE8FF 100%);
+}
+
+.selected-event-card.priority-warning,
+.upcoming-event-item.priority-warning {
+  border-color: #FDE68A;
+  background: linear-gradient(180deg, #FFFDF5 0%, #FFFBEB 100%);
+}
+
+.selected-event-card.priority-normal,
+.upcoming-event-item.priority-normal {
+  border-color: #DBEAFE;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%);
+}
+
+.selected-event-main,
+.upcoming-event-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.selected-event-topline,
+.upcoming-event-title-row,
+.selected-event-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.selected-event-type,
+.upcoming-event-date-label,
+.upcoming-event-owner {
+  font-size: 11px;
+  color: #64748B;
+}
+
+.selected-event-countdown,
+.upcoming-rail-countdown {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.selected-event-title,
+.upcoming-event-title {
+  margin: 6px 0 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #0F172A;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-event-project,
+.upcoming-event-subline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  color: #64748B;
+}
+
+.selected-event-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.selected-event-meta span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.12);
+  color: #475569;
+  font-size: 11px;
+}
+
+.selected-event-actions {
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.selected-event-actions :deep(.el-button),
+.upcoming-event-side :deep(.el-button) {
+  margin: 0;
+  border: none;
+  background: linear-gradient(135deg, #1d4ed8 0%, #0f766e 100%);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 8px 18px rgba(29, 78, 216, 0.18);
+}
+
+.selected-event-actions :deep(.el-button:hover),
+.upcoming-event-side :deep(.el-button:hover) {
+  background: linear-gradient(135deg, #1e40af 0%, #115e59 100%);
+  color: #ffffff;
+}
+
+.selected-event-card.priority-critical .selected-event-actions :deep(.el-button),
+.upcoming-event-item.priority-critical .upcoming-event-side :deep(.el-button) {
+  background: linear-gradient(135deg, #a21caf 0%, #7e22ce 100%);
+  box-shadow: 0 8px 18px rgba(162, 28, 175, 0.2);
+}
+
+.selected-event-card.priority-critical .selected-event-actions :deep(.el-button:hover),
+.upcoming-event-item.priority-critical .upcoming-event-side :deep(.el-button:hover) {
+  background: linear-gradient(135deg, #86198f 0%, #6b21a8 100%);
+}
+
+.selected-event-card.priority-warning .selected-event-actions :deep(.el-button),
+.upcoming-event-item.priority-warning .upcoming-event-side :deep(.el-button) {
+  background: linear-gradient(135deg, #c2410c 0%, #ea580c 100%);
+  box-shadow: 0 8px 18px rgba(234, 88, 12, 0.18);
+}
+
+.selected-event-card.priority-warning .selected-event-actions :deep(.el-button:hover),
+.upcoming-event-item.priority-warning .upcoming-event-side :deep(.el-button:hover) {
+  background: linear-gradient(135deg, #9a3412 0%, #c2410c 100%);
+}
+
+.risk-tag.priority-critical {
+  --el-tag-bg-color: #FAE8FF;
+  --el-tag-border-color: #E9D5FF;
+  --el-tag-text-color: #A21CAF;
+}
+
+.upcoming-event-rail {
+  width: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 6px;
+  border-radius: 10px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  flex-shrink: 0;
+}
+
+.upcoming-rail-type {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #E2E8F0;
+  font-size: 10px;
+  color: #475569;
+}
+
+.execution-meta {
+  margin-top: 6px;
+}
+
+.execution-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #EEF2FF;
+  color: #4338CA;
+  font-size: 11px;
+}
+
+.execution-chip.muted {
+  background: #F1F5F9;
+  color: #475569;
+}
+
+.execution-chip.blocker {
+  background: #FFF7ED;
+  color: #C2410C;
+}
+
+.upcoming-event-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  min-width: 88px;
+  gap: 8px;
+}
+
+.calendar-empty-state {
+  padding: 24px 12px;
+  text-align: center;
+  border-radius: 12px;
+  background: #F8FAFC;
+  color: #94A3B8;
+  font-size: 13px;
+}
+
+.calendar-empty-state.compact {
+  padding: 14px 12px;
+  font-size: 12px;
+}
+
+.team-performance-grid.compact,
+.approvals-list.compact {
+  padding: 14px;
+}
+
 /* ==================== 响应式 ==================== */
 @media (max-width: 1200px) {
   .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .calendar-filter-row {
+    justify-content: flex-start;
+  }
+
+  .calendar-hero-grid {
     grid-template-columns: 1fr;
   }
 
@@ -2831,6 +3632,11 @@ export default {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
+  }
+
+  .side-summary-grid {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr 1fr;
   }
 
   /* 快速发起平板响应式 */
@@ -2876,6 +3682,14 @@ export default {
     grid-template-columns: 1fr;
   }
 
+  .side-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-summary-strip {
+    grid-template-columns: 1fr;
+  }
+
   /* 快速发起响应式 */
   .quick-actions-grid {
     grid-template-columns: repeat(3, 1fr);
@@ -2901,24 +3715,57 @@ export default {
 
   /* 日历响应式 */
   .calendar-wrapper :deep(.el-calendar-table .el-calendar-day) {
-    height: 32px;
+    height: 40px;
   }
 
   .calendar-day-number {
     font-size: 11px;
   }
 
-  .calendar-event-item {
-    font-size: 9px;
-    padding: 1px 2px;
+  .calendar-day-marker {
+    gap: 4px;
   }
 
-  .event-title-short {
+  .calendar-day-count {
+    min-width: 16px;
+    height: 16px;
     font-size: 9px;
   }
 
   .calendar-day-cell {
-    min-height: 50px;
+    min-height: 40px;
+    padding: 4px 2px;
+  }
+
+  .selected-event-card,
+  .upcoming-event-item,
+  .calendar-panel-header,
+  .selected-event-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .upcoming-event-rail {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .upcoming-event-side {
+    width: 100%;
+    min-width: 0;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .calendar-filter-row {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 14px;
+  }
+
+  .calendar-filter-copy {
+    min-width: 0;
   }
 }
 </style>

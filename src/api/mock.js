@@ -96,6 +96,10 @@ export const mockData = {
       description: '智慧办公平台建设，包括OA系统、会议系统、文档管理等',
       industry: '政府',
       region: '北京',
+      sourceModule: 'customer-opportunity-center',
+      sourceCustomer: '某央企集团',
+      sourceOpportunityId: 'CO_OPP_001',
+      sourceReasoningSummary: '基于2024-2025年3月/9月劳保类集中采购、预算稳定在500-550万',
       tasks: [
         { id: 'TK001', name: '技术方案编制', owner: '李工', status: 'doing', deadline: '2025-02-27', priority: 'high' },
         { id: 'TK002', name: '商务应答文件', owner: '王经理', status: 'doing', deadline: '2025-02-28', priority: 'high' },
@@ -125,6 +129,10 @@ export const mockData = {
       description: '电力集团信息化系统集中采购',
       industry: '能源',
       region: '广州',
+      sourceModule: 'manual',
+      sourceCustomer: '华南电力集团',
+      sourceOpportunityId: '',
+      sourceReasoningSummary: '从投标线索人工上报，未关联智能预测',
       tasks: [
         { id: 'TK006', name: '资质审核', owner: '小王', status: 'doing', deadline: '2025-02-27', priority: 'high' },
         { id: 'TK007', name: '技术方案', owner: '李工', status: 'todo', deadline: '2025-03-05', priority: 'high' }
@@ -145,11 +153,17 @@ export const mockData = {
       description: '地铁自动化控制系统建设',
       industry: '交通',
       region: '深圳',
+      sourceModule: 'crowd-sourced',
+      sourceCustomer: '深圳地铁集团',
+      sourceOpportunityId: '',
+      sourceReasoningSummary: '历史项目沉淀，在系统中视为标配来源',
       tasks: [],
       documents: [{ id: 'D003', name: '中标通知书.pdf', uploader: '小王', time: '2025-02-20', size: '0.5MB' }],
       aiCheck: null
     }
   ],
+
+  projectScoreDrafts: {},
 
   // 资质库
   qualifications: [
@@ -1002,6 +1016,366 @@ mockData.documentAssembly = {
     }
   }
 }
+
+// 客户商机中心数据
+mockData.customerInsights = [
+  {
+    customerId: 'CUST_001',
+    customerName: '宝武集团采购共享中心',
+    industry: '钢铁制造',
+    region: '华东',
+    mainCategories: ['劳保用品', '搬运设备', '工业耗材'],
+    purchaseFrequency12m: 26,
+    commonPurchaseMonths: ['1月', '4月', '7月', '10月'],
+    avgBudget: 660,
+    budgetRange: '520-780',
+    lastPurchaseDate: '2025-01-15',
+    cycleType: '季度',
+    opportunityScore: 92,
+    predictedNextWindow: '2025-04',
+    status: 'recommend',
+    predictionSummary: '季度性集采明显，劳保、搬运和工业耗材预算稳定，适合持续经营。'
+  },
+  {
+    customerId: 'CUST_002',
+    customerName: '国家电网江苏省电力有限公司',
+    industry: '能源电力',
+    region: '华东',
+    mainCategories: ['工具', '电缆', '测试仪器'],
+    purchaseFrequency12m: 18,
+    commonPurchaseMonths: ['3月', '9月'],
+    avgBudget: 480,
+    budgetRange: '380-540',
+    lastPurchaseDate: '2025-01-05',
+    cycleType: '半年',
+    opportunityScore: 88,
+    predictedNextWindow: '2025-03',
+    status: 'watch',
+    predictionSummary: '每年春秋两季有集中集采，预算集中在 380-540 万。'
+  },
+  {
+    customerId: 'CUST_003',
+    customerName: '中国石油天然气集团有限公司',
+    industry: '能源化工',
+    region: '西北',
+    mainCategories: ['安全防护', '阀门管件', '检维修工具'],
+    purchaseFrequency12m: 20,
+    commonPurchaseMonths: ['2月', '6月', '11月'],
+    avgBudget: 720,
+    budgetRange: '600-900',
+    lastPurchaseDate: '2024-11-20',
+    cycleType: '半年度',
+    opportunityScore: 90,
+    predictedNextWindow: '2025-06',
+    status: 'recommend',
+    predictionSummary: '炼化与检修体系采购规律稳定，安全防护和阀门管件需求持续。'
+  },
+  {
+    customerId: 'CUST_004',
+    customerName: '中国中铁股份有限公司',
+    industry: '基础建设',
+    region: '华北',
+    mainCategories: ['焊接设备', '测量仪器', '建工辅材'],
+    purchaseFrequency12m: 16,
+    commonPurchaseMonths: ['3月', '8月'],
+    avgBudget: 580,
+    budgetRange: '420-700',
+    lastPurchaseDate: '2025-02-18',
+    cycleType: '工程节点型',
+    opportunityScore: 84,
+    predictedNextWindow: '2025-08',
+    status: 'watch',
+    predictionSummary: '随重点工程节点释放设备采购，测量和施工辅材需求集中。'
+  },
+  {
+    customerId: 'CUST_005',
+    customerName: '中国移动通信集团浙江有限公司',
+    industry: '通信运营',
+    region: '华东',
+    mainCategories: ['机房耗材', '低压电气', '网络配套'],
+    purchaseFrequency12m: 14,
+    commonPurchaseMonths: ['5月', '11月'],
+    avgBudget: 430,
+    budgetRange: '300-520',
+    lastPurchaseDate: '2024-11-08',
+    cycleType: '半年',
+    opportunityScore: 81,
+    predictedNextWindow: '2025-05',
+    status: 'watch',
+    predictionSummary: '围绕机房改造和运维补货形成稳定半年度采购节奏。'
+  },
+  {
+    customerId: 'CUST_006',
+    customerName: '中国华能集团有限公司',
+    industry: '发电能源',
+    region: '华北',
+    mainCategories: ['检修工器具', '劳保用品', '仪器仪表'],
+    purchaseFrequency12m: 17,
+    commonPurchaseMonths: ['4月', '10月'],
+    avgBudget: 510,
+    budgetRange: '400-620',
+    lastPurchaseDate: '2024-10-16',
+    cycleType: '半年',
+    opportunityScore: 86,
+    predictedNextWindow: '2025-04',
+    status: 'recommend',
+    predictionSummary: '春秋检修季采购明显，发电侧劳保和检修设备体量稳定。'
+  },
+  {
+    customerId: 'CUST_007',
+    customerName: '中国建筑第八工程局有限公司',
+    industry: '建筑工程',
+    region: '华东',
+    mainCategories: ['电动工具', '安全消防', '建工材料'],
+    purchaseFrequency12m: 19,
+    commonPurchaseMonths: ['3月', '7月', '9月'],
+    avgBudget: 760,
+    budgetRange: '580-980',
+    lastPurchaseDate: '2025-01-26',
+    cycleType: '项目制',
+    opportunityScore: 89,
+    predictedNextWindow: '2025-07',
+    status: 'recommend',
+    predictionSummary: '大型工程项目带动年中集中补货，电动工具和安全材料需求突出。'
+  },
+  {
+    customerId: 'CUST_008',
+    customerName: '中国中车股份有限公司',
+    industry: '轨道交通装备',
+    region: '华中',
+    mainCategories: ['工业检测', '紧固密封', '液压气动'],
+    purchaseFrequency12m: 15,
+    commonPurchaseMonths: ['2月', '5月', '9月'],
+    avgBudget: 540,
+    budgetRange: '420-650',
+    lastPurchaseDate: '2025-02-10',
+    cycleType: '季度滚动',
+    opportunityScore: 83,
+    predictedNextWindow: '2025-05',
+    status: 'watch',
+    predictionSummary: '装备制造采购以季度滚动方式释放，检测与液压类采购持续性较强。'
+  }
+]
+
+mockData.customerPurchases = [
+  {
+    recordId: 'CPR_001',
+    customerId: 'CUST_001',
+    source: 'platform',
+    publishDate: '2025-01-15',
+    title: '宝武集团采购共享中心劳保用品年度集采',
+    category: '劳保用品',
+    budget: 560,
+    contentSummary: '包含防护服、安全帽、消防器材及工业清洁耗材',
+    extractedTags: ['劳保', '年度采购', '华东']
+  },
+  {
+    recordId: 'CPR_002',
+    customerId: 'CUST_001',
+    source: 'platform',
+    publishDate: '2024-10-10',
+    title: '宝武集团采购共享中心搬运及输送设备集中采购',
+    category: '搬运设备',
+    budget: 740,
+    contentSummary: '叉车、搬运机器人、AGV',
+    extractedTags: ['搬运', 'AGV', '华东']
+  },
+  {
+    recordId: 'CPR_003',
+    customerId: 'CUST_002',
+    source: 'platform',
+    publishDate: '2025-01-05',
+    title: '国家电网江苏省电力有限公司检修工具及检测仪器采购',
+    category: '检测工具',
+    budget: 450,
+    contentSummary: '电缆检测仪、变电站检修工具、绝缘测试设备',
+    extractedTags: ['检测', '工具', '华东']
+  },
+  {
+    recordId: 'CPR_004',
+    customerId: 'CUST_003',
+    source: 'platform',
+    publishDate: '2024-11-20',
+    title: '中国石油天然气集团有限公司炼化检维修工器具采购',
+    category: '检维修工具',
+    budget: 680,
+    contentSummary: '防爆工具、检修套装、油田作业安全防护物资',
+    extractedTags: ['炼化', '检修', '安全']
+  },
+  {
+    recordId: 'CPR_005',
+    customerId: 'CUST_003',
+    source: 'platform',
+    publishDate: '2024-06-18',
+    title: '中国石油天然气集团有限公司阀门管件框架采购',
+    category: '阀门管件',
+    budget: 860,
+    contentSummary: '阀门、法兰、密封件及管线检修配套物资',
+    extractedTags: ['阀门', '框架采购', '管件']
+  },
+  {
+    recordId: 'CPR_006',
+    customerId: 'CUST_004',
+    source: 'platform',
+    publishDate: '2025-02-18',
+    title: '中国中铁股份有限公司工程测量仪器及焊接设备采购',
+    category: '测量仪器',
+    budget: 520,
+    contentSummary: '全站仪、激光测距仪、焊接设备及建工辅材',
+    extractedTags: ['工程', '测量', '焊接']
+  },
+  {
+    recordId: 'CPR_007',
+    customerId: 'CUST_005',
+    source: 'platform',
+    publishDate: '2024-11-08',
+    title: '中国移动通信集团浙江有限公司机房低压配电及耗材采购',
+    category: '低压电气',
+    budget: 410,
+    contentSummary: '机房低压配电柜、PDU、线缆辅材及运维耗材',
+    extractedTags: ['机房', '低压电气', '通信']
+  },
+  {
+    recordId: 'CPR_008',
+    customerId: 'CUST_006',
+    source: 'platform',
+    publishDate: '2024-10-16',
+    title: '中国华能集团有限公司春检工器具及劳保用品采购',
+    category: '检修工器具',
+    budget: 530,
+    contentSummary: '检修工具箱、劳保用品及电厂运维仪表',
+    extractedTags: ['检修', '发电', '劳保']
+  },
+  {
+    recordId: 'CPR_009',
+    customerId: 'CUST_007',
+    source: 'platform',
+    publishDate: '2025-01-26',
+    title: '中国建筑第八工程局有限公司工程现场电动工具集采',
+    category: '电动工具',
+    budget: 820,
+    contentSummary: '冲击钻、切割机、安全消防器材及辅材',
+    extractedTags: ['工程', '电动工具', '安全']
+  },
+  {
+    recordId: 'CPR_010',
+    customerId: 'CUST_008',
+    source: 'platform',
+    publishDate: '2025-02-10',
+    title: '中国中车股份有限公司工业检测与液压气动配件采购',
+    category: '工业检测',
+    budget: 560,
+    contentSummary: '检测仪表、液压件、气动元件及密封紧固件',
+    extractedTags: ['轨交装备', '检测', '液压']
+  }
+]
+
+mockData.customerPredictions = [
+  {
+    opportunityId: 'CO_OPP_001',
+    customerId: 'CUST_001',
+    suggestedProjectName: '宝武集团采购共享中心劳保及搬运设备年度集采',
+    predictedCategory: '劳保用品+搬运设备',
+    predictedBudgetMin: 520,
+    predictedBudgetMax: 780,
+    predictedWindow: '2025-04',
+    confidence: 0.92,
+    reasoningSummary: '连续两年 4 月启动季度补货，预算稳定在 520-780 万，劳保与搬运类匹配度高。',
+    evidenceRecords: ['CPR_001', 'CPR_002'],
+    convertedProjectId: 'P001'
+  },
+  {
+    opportunityId: 'CO_OPP_002',
+    customerId: 'CUST_002',
+    suggestedProjectName: '国家电网江苏省电力有限公司春季检修工具采购',
+    predictedCategory: '检测仪器',
+    predictedBudgetMin: 380,
+    predictedBudgetMax: 540,
+    predictedWindow: '2025-03',
+    confidence: 0.86,
+    reasoningSummary: '近两年 3 月/9 月集采周期稳定，预算靠近 400-520 万，AI 判断工具+测试类需求集中。',
+    evidenceRecords: ['CPR_003'],
+    convertedProjectId: ''
+  },
+  {
+    opportunityId: 'CO_OPP_003',
+    customerId: 'CUST_003',
+    suggestedProjectName: '中国石油天然气集团有限公司夏季检维修物资框采',
+    predictedCategory: '安全防护+阀门管件',
+    predictedBudgetMin: 620,
+    predictedBudgetMax: 920,
+    predictedWindow: '2025-06',
+    confidence: 0.91,
+    reasoningSummary: '6 月前后连续出现炼化检修及阀门框采，预算稳定且需求和我司供货能力高度贴合。',
+    evidenceRecords: ['CPR_004', 'CPR_005'],
+    convertedProjectId: ''
+  },
+  {
+    opportunityId: 'CO_OPP_004',
+    customerId: 'CUST_004',
+    suggestedProjectName: '中国中铁股份有限公司下半年工程测量设备采购',
+    predictedCategory: '测量仪器+焊接设备',
+    predictedBudgetMin: 450,
+    predictedBudgetMax: 700,
+    predictedWindow: '2025-08',
+    confidence: 0.82,
+    reasoningSummary: '重点工程推进期会集中补充测量与施工设备，8 月窗口较明确。',
+    evidenceRecords: ['CPR_006'],
+    convertedProjectId: ''
+  },
+  {
+    opportunityId: 'CO_OPP_005',
+    customerId: 'CUST_005',
+    suggestedProjectName: '中国移动通信集团浙江有限公司机房配套低压物资采购',
+    predictedCategory: '低压电气+机房耗材',
+    predictedBudgetMin: 320,
+    predictedBudgetMax: 520,
+    predictedWindow: '2025-05',
+    confidence: 0.79,
+    reasoningSummary: '机房改造和运维补货以半年度触发，低压配套物资需求稳定。',
+    evidenceRecords: ['CPR_007'],
+    convertedProjectId: ''
+  },
+  {
+    opportunityId: 'CO_OPP_006',
+    customerId: 'CUST_006',
+    suggestedProjectName: '中国华能集团有限公司春检工器具与劳保集采',
+    predictedCategory: '检修工器具+劳保用品',
+    predictedBudgetMin: 420,
+    predictedBudgetMax: 620,
+    predictedWindow: '2025-04',
+    confidence: 0.87,
+    reasoningSummary: '发电企业春检窗口稳定，检修类工器具与劳保用品采购体量大。',
+    evidenceRecords: ['CPR_008'],
+    convertedProjectId: ''
+  },
+  {
+    opportunityId: 'CO_OPP_007',
+    customerId: 'CUST_007',
+    suggestedProjectName: '中国建筑第八工程局有限公司年中工程物资补货项目',
+    predictedCategory: '电动工具+安全消防',
+    predictedBudgetMin: 600,
+    predictedBudgetMax: 980,
+    predictedWindow: '2025-07',
+    confidence: 0.89,
+    reasoningSummary: '年中工程全面铺开，现场施工和安全配套物资采购将集中释放。',
+    evidenceRecords: ['CPR_009'],
+    convertedProjectId: ''
+  },
+  {
+    opportunityId: 'CO_OPP_008',
+    customerId: 'CUST_008',
+    suggestedProjectName: '中国中车股份有限公司季度检测与液压配件补货',
+    predictedCategory: '工业检测+液压气动',
+    predictedBudgetMin: 420,
+    predictedBudgetMax: 650,
+    predictedWindow: '2025-05',
+    confidence: 0.8,
+    reasoningSummary: '轨交装备制造场景下，季度性检测与液压配件采购持续滚动发生。',
+    evidenceRecords: ['CPR_010'],
+    convertedProjectId: ''
+  }
+]
 
 // ========== BAR 投标资产台账 Mock数据 ==========
 

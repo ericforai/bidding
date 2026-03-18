@@ -5,10 +5,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 开发命令
 
 ```bash
-npm run dev      # 启动开发服务器 (端口: 5173)
+npm run dev      # 启动开发服务器 (端口: 1314)
 npm run build    # 生产环境构建
 npm run preview  # 预览构建结果
 ```
+
+## 端口约定
+
+- Mock 数据前端默认开发端口固定为 `1314`
+- 默认访问地址固定为 `http://127.0.0.1:1314` 或 `http://localhost:1314`
+- `vite.config.js`、`playwright.config.js`、日常联调、截图和演示统一以 `1314` 为准
+- `14173` 这类端口仅允许用于临时排查；排查结束后必须关闭，不作为项目约定，不作为演示入口，不写入测试基线
+- 如果本机同时存在 `1314` 和其他临时 Vite 端口，优先保留 `1314`
 
 ## 项目架构
 
@@ -131,4 +139,5 @@ mockData.newEntity = [
 
 - 这是一个POC项目，使用Mock数据，无需后端服务
 - 默认登录用户为"小王"，用户信息会保存在localStorage
-- 开发服务器默认运行在 http://localhost:5173
+- 开发服务器默认运行在 http://localhost:1314
+- Mock 演示、联调记录、测试回放默认都使用 `1314` 端口
