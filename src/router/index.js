@@ -41,6 +41,34 @@ const hasRouteAccess = (to, role) => {
   return requiredRoles.length === 0 || requiredRoles.includes(role)
 }
 
+const DEFAULT_AUTHENTICATED_HOME = '/dashboard'
+
+const getStoredUser = () => {
+  const raw = localStorage.getItem('user') || sessionStorage.getItem('user')
+  if (!raw) return null
+
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+const getNormalizedRole = (userStore) => {
+  const role = userStore.currentUser?.role || getStoredUser()?.role || ''
+  return String(role).toLowerCase()
+}
+
+const getRequiredRoles = (to) => {
+  const roles = to.matched.flatMap((record) => record.meta?.roles || [])
+  return [...new Set(roles)]
+}
+
+const hasRouteAccess = (to, role) => {
+  const requiredRoles = getRequiredRoles(to)
+  return requiredRoles.length === 0 || requiredRoles.includes(role)
+}
+
 const routes = [
   {
     path: '/login',
