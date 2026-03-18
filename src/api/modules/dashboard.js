@@ -449,6 +449,21 @@ export const dashboardApi = {
 }
 
 export const tasksApi = {
+  async getMine(assigneeId) {
+    if (isMockMode()) {
+      let tasks = []
+      mockData.projects.forEach((project) => {
+        if (project.tasks) {
+          tasks.push(...project.tasks
+            .filter((task) => assigneeId == null || String(task.assigneeId) === String(assigneeId))
+            .map((task) => ({ ...task, projectName: project.name })))
+        }
+      })
+      return Promise.resolve({ success: true, data: tasks, total: tasks.length })
+    }
+    return httpClient.get('/api/tasks/my', { params: { assigneeId } })
+  },
+
   async getList(params) {
     if (isMockMode()) {
       let tasks = []
@@ -511,9 +526,10 @@ export const tasksApi = {
     if (isMockMode()) {
       return Promise.resolve({ success: true, data: { id, status: 'done' } })
     }
-    return Promise.resolve({
-      success: false,
-      message: 'Task completion shortcut is not aligned with the backend contract yet',
+    return httpClient.patch(`/api/tasks/${id}/status`, JSON.stringify('COMPLETED'), {
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
   },
 }
