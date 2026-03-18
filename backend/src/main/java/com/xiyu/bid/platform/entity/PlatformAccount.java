@@ -88,6 +88,42 @@ public class PlatformAccount {
         updatedAt = LocalDateTime.now();
     }
 
+    public void updateProfile(String username, String password, String accountName, PlatformType platformType) {
+        if (username != null && !username.trim().isEmpty()) {
+            this.username = username;
+        }
+        if (password != null && !password.trim().isEmpty()) {
+            this.password = password;
+        }
+        if (accountName != null && !accountName.trim().isEmpty()) {
+            this.accountName = accountName;
+        }
+        if (platformType != null) {
+            this.platformType = platformType;
+        }
+    }
+
+    public void borrow(Long borrowerId, LocalDateTime borrowedAt, LocalDateTime dueAt) {
+        if (status != AccountStatus.AVAILABLE) {
+            throw new IllegalStateException("Account is not available for borrowing. Current status: " + status.getDescription());
+        }
+        this.status = AccountStatus.IN_USE;
+        this.borrowedBy = borrowerId;
+        this.borrowedAt = borrowedAt;
+        this.dueAt = dueAt;
+    }
+
+    public void returnToPool() {
+        if (status != AccountStatus.IN_USE) {
+            throw new IllegalStateException("Account is not currently in use. Current status: " + status.getDescription());
+        }
+        this.status = AccountStatus.AVAILABLE;
+        this.borrowedBy = null;
+        this.borrowedAt = null;
+        this.dueAt = null;
+        this.returnCount = (returnCount == null ? 0 : returnCount) + 1;
+    }
+
     /**
      * Platform Type Enum
      */

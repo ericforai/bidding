@@ -7,8 +7,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -35,6 +37,31 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 @Slf4j
 public class ShadowInspector {
+
+    private static final Map<String, String> AUDIT_ENTITY_TYPE_MAP = new HashMap<>();
+
+    static {
+        AUDIT_ENTITY_TYPE_MAP.put("collaboration_threads", "CollaborationThread");
+        AUDIT_ENTITY_TYPE_MAP.put("comments", "Comment");
+        AUDIT_ENTITY_TYPE_MAP.put("projects", "Project");
+        AUDIT_ENTITY_TYPE_MAP.put("tasks", "Task");
+        AUDIT_ENTITY_TYPE_MAP.put("tenders", "Tender");
+        AUDIT_ENTITY_TYPE_MAP.put("qualifications", "Qualification");
+        AUDIT_ENTITY_TYPE_MAP.put("cases", "Case");
+        AUDIT_ENTITY_TYPE_MAP.put("templates", "Template");
+        AUDIT_ENTITY_TYPE_MAP.put("fees", "Fee");
+        AUDIT_ENTITY_TYPE_MAP.put("platform_accounts", "PlatformAccount");
+        AUDIT_ENTITY_TYPE_MAP.put("bar_assets", "BarAsset");
+        AUDIT_ENTITY_TYPE_MAP.put("calendar_events", "CalendarEvent");
+        AUDIT_ENTITY_TYPE_MAP.put("competitors", "Competitor");
+        AUDIT_ENTITY_TYPE_MAP.put("competition_analyses", "CompetitionAnalysis");
+        AUDIT_ENTITY_TYPE_MAP.put("score_analyses", "ScoreAnalysis");
+        AUDIT_ENTITY_TYPE_MAP.put("roi_analyses", "ROIAnalysis");
+        AUDIT_ENTITY_TYPE_MAP.put("document_versions", "DocumentVersion");
+        AUDIT_ENTITY_TYPE_MAP.put("document_sections", "DocumentSection");
+        AUDIT_ENTITY_TYPE_MAP.put("document_structures", "DocumentStructure");
+        AUDIT_ENTITY_TYPE_MAP.put("document_assemblies", "DocumentAssembly");
+    }
 
     private final JdbcTemplate jdbcTemplate;
     private final IAuditLogService auditLogService;
@@ -147,12 +174,13 @@ public class ShadowInspector {
      * 验证审计日志存在
      */
     public void verifyAuditLog(String entityType, Long entityId) {
+        String auditEntityType = resolveAuditEntityType(entityType);
         String sql = "SELECT COUNT(*) FROM audit_logs WHERE entity_type = ? AND entity_id = ?";
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, entityType, entityId);
+        Integer count = waitForAuditCount(sql, auditEntityType, String.valueOf(entityId));
 
         if (count == null || count == 0) {
             throw new AssertionError(
-                String.format("No audit log found for %s::%s", entityType, entityId));
+                String.format("No audit log found for %s::%s", auditEntityType, entityId));
         }
     }
 
@@ -160,12 +188,13 @@ public class ShadowInspector {
      * 验证审计日志操作类型
      */
     public void verifyAuditAction(String entityType, Long entityId, String action) {
+        String auditEntityType = resolveAuditEntityType(entityType);
         String sql = "SELECT COUNT(*) FROM audit_logs WHERE entity_type = ? AND entity_id = ? AND action = ?";
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, entityType, entityId, action);
+        Integer count = waitForAuditCount(sql, auditEntityType, String.valueOf(entityId), action);
 
         if (count == null || count == 0) {
             throw new AssertionError(
-                String.format("No %s audit log found for %s::%s", action, entityType, entityId));
+                String.format("No %s audit log found for %s::%s", action, auditEntityType, entityId));
         }
     }
 
@@ -178,8 +207,8 @@ public class ShadowInspector {
         String sql = String.format("SELECT created_at, updated_at FROM %s WHERE id = ?", tableName);
         Map<String, Object> result = jdbcTemplate.queryForMap(sql, entityId);
 
-        LocalDateTime createdAt = (LocalDateTime) result.get("created_at");
-        LocalDateTime updatedAt = (LocalDateTime) result.get("updated_at");
+        LocalDateTime createdAt = toLocalDateTime(result.get("created_at"));
+        LocalDateTime updatedAt = toLocalDateTime(result.get("updated_at"));
 
         if (createdAt == null) {
             throw new AssertionError(
@@ -253,6 +282,40 @@ public class ShadowInspector {
         if (a == null && b == null) return true;
         if (a == null || b == null) return false;
         return a.equals(b);
+    }
+
+    private String resolveAuditEntityType(String entityTypeOrTableName) {
+        return AUDIT_ENTITY_TYPE_MAP.getOrDefault(entityTypeOrTableName, entityTypeOrTableName);
+    }
+
+    private Integer waitForAuditCount(String sql, Object... args) {
+        Integer count = 0;
+        for (int i = 0; i < 20; i++) {
+            count = jdbcTemplate.queryForObject(sql, Integer.class, args);
+            if (count != null && count > 0) {
+                return count;
+            }
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        return count;
+    }
+
+    private LocalDateTime toLocalDateTime(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof LocalDateTime localDateTime) {
+            return localDateTime;
+        }
+        if (value instanceof Timestamp timestamp) {
+            return timestamp.toLocalDateTime();
+        }
+        throw new IllegalStateException("Unsupported timestamp type: " + value.getClass().getName());
     }
 
     /**

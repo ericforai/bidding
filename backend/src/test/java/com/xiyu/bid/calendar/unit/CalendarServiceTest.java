@@ -12,7 +12,6 @@ import com.xiyu.bid.calendar.entity.CalendarEvent;
 import com.xiyu.bid.calendar.entity.EventType;
 import com.xiyu.bid.calendar.repository.CalendarEventRepository;
 import com.xiyu.bid.calendar.service.CalendarService;
-import com.xiyu.bid.service.IAuditLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,9 +36,6 @@ class CalendarServiceTest {
 
     @Mock
     private CalendarEventRepository repository;
-
-    @Mock
-    private IAuditLogService auditLogService;
 
     @InjectMocks
     private CalendarService calendarService;
@@ -89,7 +85,6 @@ class CalendarServiceTest {
         assertThat(result.getId()).isEqualTo(1L);
         assertThat(result.getTitle()).isEqualTo("项目截止日期");
         verify(repository, times(1)).save(any(CalendarEvent.class));
-        verify(auditLogService, times(1)).log(any());
     }
 
     @Test
@@ -103,7 +98,6 @@ class CalendarServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Title is required");
         verify(repository, never()).save(any());
-        verify(auditLogService, never()).log(any());
     }
 
     @Test
@@ -117,7 +111,6 @@ class CalendarServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Event date is required");
         verify(repository, never()).save(any());
-        verify(auditLogService, never()).log(any());
     }
 
     @Test
@@ -131,7 +124,6 @@ class CalendarServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Event type is required");
         verify(repository, never()).save(any());
-        verify(auditLogService, never()).log(any());
     }
 
     @Test
@@ -150,7 +142,6 @@ class CalendarServiceTest {
         assertThat(result.getIsUrgent()).isFalse();
         verify(repository, times(1)).findById(1L);
         verify(repository, times(1)).save(any(CalendarEvent.class));
-        verify(auditLogService, times(1)).log(any());
     }
 
     @Test
@@ -165,7 +156,6 @@ class CalendarServiceTest {
                 .hasMessageContaining("CalendarEvent not found");
         verify(repository, times(1)).findById(999L);
         verify(repository, never()).save(any());
-        verify(auditLogService, never()).log(any());
     }
 
     @Test
@@ -181,7 +171,6 @@ class CalendarServiceTest {
         // Then
         verify(repository, times(1)).findById(1L);
         verify(repository, times(1)).deleteById(1L);
-        verify(auditLogService, times(1)).log(any());
     }
 
     @Test
@@ -196,7 +185,6 @@ class CalendarServiceTest {
                 .hasMessageContaining("CalendarEvent not found");
         verify(repository, times(1)).findById(999L);
         verify(repository, never()).deleteById(anyLong());
-        verify(auditLogService, never()).log(any());
     }
 
     @Test
@@ -388,11 +376,11 @@ class CalendarServiceTest {
 
         // When
         when(repository.findById(1L)).thenReturn(Optional.of(testEvent));
-        when(repository.save(any(CalendarEvent.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Then - 应该允许更新为空字符串（使用验证时才拒绝）
-        assertThatCode(() -> calendarService.updateEvent(1L, updateRequest))
-                .doesNotThrowAnyException();
+        // Then
+        assertThatThrownBy(() -> calendarService.updateEvent(1L, updateRequest))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Title cannot be empty");
     }
 
     @Test

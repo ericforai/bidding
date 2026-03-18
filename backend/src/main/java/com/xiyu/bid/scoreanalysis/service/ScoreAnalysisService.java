@@ -10,7 +10,6 @@ import com.xiyu.bid.scoreanalysis.entity.DimensionScore;
 import com.xiyu.bid.scoreanalysis.entity.ScoreAnalysis;
 import com.xiyu.bid.scoreanalysis.repository.DimensionScoreRepository;
 import com.xiyu.bid.scoreanalysis.repository.ScoreAnalysisRepository;
-import com.xiyu.bid.service.IAuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,8 +33,6 @@ public class ScoreAnalysisService {
 
     private final ScoreAnalysisRepository scoreAnalysisRepository;
     private final DimensionScoreRepository dimensionScoreRepository;
-    private final IAuditLogService auditLogService;
-
     /**
      * 创建评分分析
      * @param request 创建请求

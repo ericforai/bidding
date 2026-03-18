@@ -3,6 +3,7 @@ package com.xiyu.bid.project.integration;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.platform.util.PasswordEncryptionUtil;
 import com.xiyu.bid.repository.ProjectRepository;
+import com.xiyu.bid.support.TestPasswordEncryptionUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,26 +41,7 @@ class ProjectControllerIntegrationTest {
         @Bean(name = "passwordEncryptionUtil")
         @Primary
         PasswordEncryptionUtil passwordEncryptionUtil() {
-            return new PasswordEncryptionUtil() {
-                @Override
-                public void initialize() {
-                }
-
-                @Override
-                public String encrypt(String plainPassword) {
-                    return plainPassword;
-                }
-
-                @Override
-                public String decrypt(String encryptedPassword) {
-                    return encryptedPassword;
-                }
-
-                @Override
-                public boolean isKeyValid() {
-                    return true;
-                }
-            };
+            return new TestPasswordEncryptionUtil();
         }
     }
 

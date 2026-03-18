@@ -65,7 +65,7 @@ class CalendarIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ADMIN"})
     @DisplayName("应该成功完成创建-读取-更新-删除流程")
     void shouldSuccessfullyCompleteCRUDFlow() throws Exception {
         // 1. Create
@@ -119,7 +119,7 @@ class CalendarIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ADMIN"})
     @DisplayName("应该成功根据项目ID获取事件")
     void shouldSuccessfullyGetEventsByProject() throws Exception {
         mockMvc.perform(get("/api/calendar/project/100"))
@@ -131,7 +131,7 @@ class CalendarIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ADMIN"})
     @DisplayName("应该成功获取紧急事件")
     void shouldSuccessfullyGetUrgentEvents() throws Exception {
         mockMvc.perform(get("/api/calendar/urgent"))
@@ -142,7 +142,7 @@ class CalendarIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ADMIN"})
     @DisplayName("应该成功获取指定月份的事件")
     void shouldSuccessfullyGetEventsByMonth() throws Exception {
         mockMvc.perform(get("/api/calendar/month/2024/3"))
@@ -153,7 +153,7 @@ class CalendarIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ADMIN"})
     @DisplayName("应该正确处理多个事件")
     void shouldHandleMultipleEvents() throws Exception {
         // Create multiple events
@@ -183,7 +183,7 @@ class CalendarIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ADMIN"})
     @DisplayName("应该正确处理空项目ID")
     void shouldHandleNullProjectId() throws Exception {
         // Create event without project
@@ -203,7 +203,7 @@ class CalendarIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = {"ADMIN"})
     @DisplayName("应该正确处理日期边界")
     void shouldHandleDateBoundaries() throws Exception {
         // Create events at month boundaries

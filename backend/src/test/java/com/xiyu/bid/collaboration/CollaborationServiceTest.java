@@ -466,6 +466,7 @@ class CollaborationServiceTest {
                 .isDeleted(false)
                 .build();
 
+        when(threadRepository.findById(1L)).thenReturn(Optional.of(testThread));
         when(commentRepository.findByThreadIdAndIsDeletedFalseOrderByCreatedAtAsc(1L))
                 .thenReturn(Arrays.asList(testComment, comment2));
 
@@ -477,22 +478,25 @@ class CollaborationServiceTest {
         assertThat(result.get(0).getThreadId()).isEqualTo(1L);
         assertThat(result.get(1).getThreadId()).isEqualTo(1L);
 
+        verify(threadRepository).findById(1L);
         verify(commentRepository).findByThreadIdAndIsDeletedFalseOrderByCreatedAtAsc(1L);
     }
 
     @Test
     void getCommentsByThread_WithNoComments_ShouldReturnEmptyList() {
         // Given
-        when(commentRepository.findByThreadIdAndIsDeletedFalseOrderByCreatedAtAsc(999L))
+        when(threadRepository.findById(1L)).thenReturn(Optional.of(testThread));
+        when(commentRepository.findByThreadIdAndIsDeletedFalseOrderByCreatedAtAsc(1L))
                 .thenReturn(List.of());
 
         // When
-        List<CommentDTO> result = collaborationService.getCommentsByThread(999L);
+        List<CommentDTO> result = collaborationService.getCommentsByThread(1L);
 
         // Then
         assertThat(result).isEmpty();
 
-        verify(commentRepository).findByThreadIdAndIsDeletedFalseOrderByCreatedAtAsc(999L);
+        verify(threadRepository).findById(1L);
+        verify(commentRepository).findByThreadIdAndIsDeletedFalseOrderByCreatedAtAsc(1L);
     }
 
     // ========== getMentionsForUser Tests ==========

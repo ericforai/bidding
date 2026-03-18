@@ -39,19 +39,7 @@ public class PlatformAccountService {
      */
     @Transactional
     public PlatformAccountDTO createAccount(PlatformAccountCreateRequest request, User currentUser) {
-        // Validate input
-        if (request.getUsername() == null || request.getUsername().trim().isEmpty()) {
-            throw new IllegalArgumentException("Username cannot be null or empty");
-        }
-        if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
-            throw new IllegalArgumentException("Password cannot be null or empty");
-        }
-        if (request.getAccountName() == null || request.getAccountName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Account name cannot be null or empty");
-        }
-        if (request.getPlatformType() == null) {
-            throw new IllegalArgumentException("Platform type cannot be null");
-        }
+        validateRequest(request);
 
         // Check if username already exists
         if (repository.findByUsername(request.getUsername()).isPresent()) {
@@ -121,29 +109,22 @@ public class PlatformAccountService {
             .orElseThrow(() -> new IllegalArgumentException("Account not found with id: " + id));
 
         PlatformAccountDTO oldDTO = toDTO(account);
-
-        // Update fields
-        if (request.getUsername() != null && !request.getUsername().trim().isEmpty()) {
-            // Check if new username already exists (and it's not the same account)
-            if (!request.getUsername().equals(account.getUsername()) &&
-                repository.findByUsername(request.getUsername()).isPresent()) {
-                throw new IllegalArgumentException("Username already exists: " + request.getUsername());
-            }
-            account.setUsername(request.getUsername());
+        if (request.getUsername() != null
+                && !request.getUsername().trim().isEmpty()
+                && !request.getUsername().equals(account.getUsername())
+                && repository.findByUsername(request.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("Username already exists: " + request.getUsername());
         }
 
-        if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
-            String encryptedPassword = passwordEncryptionUtil.encrypt(request.getPassword());
-            account.setPassword(encryptedPassword);
-        }
-
-        if (request.getAccountName() != null && !request.getAccountName().trim().isEmpty()) {
-            account.setAccountName(request.getAccountName());
-        }
-
-        if (request.getPlatformType() != null) {
-            account.setPlatformType(request.getPlatformType());
-        }
+        String encryptedPassword = request.getPassword() != null && !request.getPassword().trim().isEmpty()
+                ? passwordEncryptionUtil.encrypt(request.getPassword())
+                : null;
+        account.updateProfile(
+                request.getUsername(),
+                encryptedPassword,
+                request.getAccountName(),
+                request.getPlatformType()
+        );
 
         PlatformAccount savedAccount = repository.save(account);
 
@@ -204,18 +185,7 @@ public class PlatformAccountService {
     public PlatformAccountDTO borrowAccount(Long id, BorrowAccountRequest request, User currentUser) {
         PlatformAccount account = repository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Account not found with id: " + id));
-
-        // Validate account status
-        if (account.getStatus() != AccountStatus.AVAILABLE) {
-            throw new IllegalStateException("Account is not available for borrowing. Current status: " +
-                account.getStatus().getDescription());
-        }
-
-        // Update account
-        account.setStatus(AccountStatus.IN_USE);
-        account.setBorrowedBy(request.getBorrowedBy());
-        account.setBorrowedAt(LocalDateTime.now());
-        account.setDueAt(LocalDateTime.now().plusHours(request.getDueHours()));
+        account.borrow(request.getBorrowedBy(), LocalDateTime.now(), LocalDateTime.now().plusHours(request.getDueHours()));
 
         PlatformAccount savedAccount = repository.save(account);
 
@@ -244,20 +214,8 @@ public class PlatformAccountService {
     public PlatformAccountDTO returnAccount(Long id, User currentUser) {
         PlatformAccount account = repository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Account not found with id: " + id));
-
-        // Validate account status
-        if (account.getStatus() != AccountStatus.IN_USE) {
-            throw new IllegalStateException("Account is not currently in use. Current status: " +
-                account.getStatus().getDescription());
-        }
-
-        // Update account
-        account.setStatus(AccountStatus.AVAILABLE);
         Long previousBorrower = account.getBorrowedBy();
-        account.setBorrowedBy(null);
-        account.setBorrowedAt(null);
-        account.setDueAt(null);
-        account.setReturnCount((account.getReturnCount() != null ? account.getReturnCount() : 0) + 1);
+        account.returnToPool();
 
         PlatformAccount savedAccount = repository.save(account);
 
@@ -370,6 +328,21 @@ public class PlatformAccountService {
             auditLogService.log(entry);
         } catch (Exception e) {
             log.error("Failed to log audit entry", e);
+        }
+    }
+
+    private void validateRequest(PlatformAccountCreateRequest request) {
+        if (request.getUsername() == null || request.getUsername().trim().isEmpty()) {
+            throw new IllegalArgumentException("Username cannot be null or empty");
+        }
+        if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be null or empty");
+        }
+        if (request.getAccountName() == null || request.getAccountName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Account name cannot be null or empty");
+        }
+        if (request.getPlatformType() == null) {
+            throw new IllegalArgumentException("Platform type cannot be null");
         }
     }
 }

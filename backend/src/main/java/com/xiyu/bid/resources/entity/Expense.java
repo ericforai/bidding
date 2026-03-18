@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Expense {
 
+    private static final String DEPOSIT_EXPENSE_TYPE = "保证金";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -81,6 +83,78 @@ public class Expense {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    public void updateDetails(ExpenseCategory category, BigDecimal amount, LocalDate date,
+                             String expenseType, String description) {
+        if (category != null) {
+            this.category = category;
+        }
+        if (amount != null) {
+            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Amount must be positive");
+            }
+            this.amount = amount;
+        }
+        if (date != null) {
+            if (date.isAfter(LocalDate.now())) {
+                throw new IllegalArgumentException("Date cannot be in the future");
+            }
+            this.date = date;
+        }
+        if (expenseType != null) {
+            this.expenseType = expenseType;
+        }
+        if (description != null) {
+            this.description = description;
+        }
+    }
+
+    public void markApproved(String approver, String comment, ExpenseStatus nextStatus) {
+        if (status != ExpenseStatus.PENDING_APPROVAL && status != ExpenseStatus.REJECTED) {
+            throw new IllegalStateException("Expense is not in an approvable state");
+        }
+
+        this.status = nextStatus;
+        this.approvedBy = approver;
+        this.approvalComment = comment;
+        this.approvedAt = LocalDateTime.now();
+    }
+
+    public void requestReturn(String actor, String comment) {
+        if (!isReturnable()) {
+            throw new IllegalStateException("Only deposit-like expenses can enter return flow");
+        }
+        if (status == ExpenseStatus.RETURNED) {
+            throw new IllegalStateException("Expense has already been returned");
+        }
+
+        this.status = ExpenseStatus.RETURN_REQUESTED;
+        this.approvedBy = actor;
+        this.returnComment = comment;
+        this.returnRequestedAt = LocalDateTime.now();
+    }
+
+    public void confirmReturn(String actor, String comment) {
+        if (!isReturnable()) {
+            throw new IllegalStateException("Only deposit-like expenses can enter return flow");
+        }
+        if (status != ExpenseStatus.RETURN_REQUESTED
+                && status != ExpenseStatus.PAID
+                && status != ExpenseStatus.APPROVED) {
+            throw new IllegalStateException("Expense is not awaiting return confirmation");
+        }
+
+        this.status = ExpenseStatus.RETURNED;
+        this.returnComment = comment;
+        this.returnConfirmedAt = LocalDateTime.now();
+        if (this.approvedBy == null || this.approvedBy.isBlank()) {
+            this.approvedBy = actor;
+        }
+    }
+
+    public boolean isReturnable() {
+        return DEPOSIT_EXPENSE_TYPE.equals(this.expenseType);
     }
 
     public enum ExpenseCategory {

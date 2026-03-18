@@ -33,25 +33,7 @@ public class ExpenseService {
 
     @Transactional
     public Expense createExpense(ExpenseCreateRequest request) {
-        // Validation
-        if (request.getProjectId() == null) {
-            throw new IllegalArgumentException("Project ID is required");
-        }
-        if (request.getCategory() == null) {
-            throw new IllegalArgumentException("Category is required");
-        }
-        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Amount must be positive");
-        }
-        if (request.getDate() == null) {
-            throw new IllegalArgumentException("Date is required");
-        }
-        if (request.getDate().isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("Date cannot be in the future");
-        }
-        if (request.getCreatedBy() == null || request.getCreatedBy().trim().isEmpty()) {
-            throw new IllegalArgumentException("Created by is required");
-        }
+        validateCreateRequest(request);
 
         Expense expense = Expense.builder()
                 .projectId(request.getProjectId())
@@ -91,29 +73,8 @@ public class ExpenseService {
     @Transactional
     public Expense updateExpense(Long id, ExpenseUpdateRequest request) {
         Expense expense = getExpenseById(id);
-
-        if (request.getCategory() != null) {
-            expense.setCategory(request.getCategory());
-        }
-        if (request.getAmount() != null) {
-            if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("Amount must be positive");
-            }
-            expense.setAmount(request.getAmount());
-        }
-        if (request.getDate() != null) {
-            if (request.getDate().isAfter(LocalDate.now())) {
-                throw new IllegalArgumentException("Date cannot be in the future");
-            }
-            expense.setDate(request.getDate());
-        }
-        if (request.getExpenseType() != null) {
-            expense.setExpenseType(request.getExpenseType());
-        }
-        if (request.getDescription() != null) {
-            expense.setDescription(request.getDescription());
-        }
-
+        expense.updateDetails(request.getCategory(), request.getAmount(), request.getDate(),
+                request.getExpenseType(), request.getDescription());
         return expenseRepository.save(expense);
     }
 
@@ -160,20 +121,10 @@ public class ExpenseService {
     @Transactional
     public Expense approveExpense(Long id, ExpenseApproveRequest request) {
         Expense expense = getExpenseById(id);
-
-        if (expense.getStatus() != Expense.ExpenseStatus.PENDING_APPROVAL
-                && expense.getStatus() != Expense.ExpenseStatus.REJECTED) {
-            throw new IllegalStateException("Expense is not in an approvable state");
-        }
-
         Expense.ExpenseStatus nextStatus = request.getResult() == ExpenseApproveRequest.ApprovalResult.APPROVED
                 ? Expense.ExpenseStatus.APPROVED
                 : Expense.ExpenseStatus.REJECTED;
-
-        expense.setStatus(nextStatus);
-        expense.setApprovalComment(request.getComment());
-        expense.setApprovedBy(request.getApprover());
-        expense.setApprovedAt(LocalDateTime.now());
+        expense.markApproved(request.getApprover(), request.getComment(), nextStatus);
 
         Expense saved = expenseRepository.save(expense);
 
@@ -193,44 +144,35 @@ public class ExpenseService {
     @Transactional
     public Expense requestReturn(Long id, ExpenseReturnActionRequest request) {
         Expense expense = getExpenseById(id);
-        validateReturnableExpense(expense);
-
-        if (expense.getStatus() == Expense.ExpenseStatus.RETURNED) {
-            throw new IllegalStateException("Expense has already been returned");
-        }
-
-        expense.setStatus(Expense.ExpenseStatus.RETURN_REQUESTED);
-        expense.setReturnComment(request.getComment());
-        expense.setReturnRequestedAt(LocalDateTime.now());
-        expense.setApprovedBy(request.getActor());
-
+        expense.requestReturn(request.getActor(), request.getComment());
         return expenseRepository.save(expense);
     }
 
     @Transactional
     public Expense confirmReturn(Long id, ExpenseReturnActionRequest request) {
         Expense expense = getExpenseById(id);
-        validateReturnableExpense(expense);
-
-        if (expense.getStatus() != Expense.ExpenseStatus.RETURN_REQUESTED
-                && expense.getStatus() != Expense.ExpenseStatus.PAID
-                && expense.getStatus() != Expense.ExpenseStatus.APPROVED) {
-            throw new IllegalStateException("Expense is not awaiting return confirmation");
-        }
-
-        expense.setStatus(Expense.ExpenseStatus.RETURNED);
-        expense.setReturnComment(request.getComment());
-        expense.setReturnConfirmedAt(LocalDateTime.now());
-        if (expense.getApprovedBy() == null || expense.getApprovedBy().isBlank()) {
-            expense.setApprovedBy(request.getActor());
-        }
-
+        expense.confirmReturn(request.getActor(), request.getComment());
         return expenseRepository.save(expense);
     }
 
-    private void validateReturnableExpense(Expense expense) {
-        if (!"保证金".equals(expense.getExpenseType())) {
-            throw new IllegalStateException("Only deposit-like expenses can enter return flow");
+    private void validateCreateRequest(ExpenseCreateRequest request) {
+        if (request.getProjectId() == null) {
+            throw new IllegalArgumentException("Project ID is required");
+        }
+        if (request.getCategory() == null) {
+            throw new IllegalArgumentException("Category is required");
+        }
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
+        if (request.getDate() == null) {
+            throw new IllegalArgumentException("Date is required");
+        }
+        if (request.getDate().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Date cannot be in the future");
+        }
+        if (request.getCreatedBy() == null || request.getCreatedBy().trim().isEmpty()) {
+            throw new IllegalArgumentException("Created by is required");
         }
     }
 }

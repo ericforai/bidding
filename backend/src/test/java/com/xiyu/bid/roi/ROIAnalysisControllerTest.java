@@ -1,6 +1,7 @@
 package com.xiyu.bid.roi;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiyu.bid.exception.GlobalExceptionHandler;
 import com.xiyu.bid.exception.ResourceNotFoundException;
 import com.xiyu.bid.roi.dto.ROIAnalysisCreateRequest;
 import com.xiyu.bid.roi.dto.ROIAnalysisDTO;
@@ -52,7 +53,9 @@ class ROIAnalysisControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(roiAnalysisController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(roiAnalysisController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
         objectMapper = new ObjectMapper();
 
         testDTO = ROIAnalysisDTO.builder()

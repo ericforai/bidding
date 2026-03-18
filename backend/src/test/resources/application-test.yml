@@ -3,7 +3,7 @@ spring:
     name: xiyu-bid-poc-test
 
   datasource:
-    url: jdbc:h2:mem:testdb
+    url: jdbc:h2:mem:testdb-${random.uuid};DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -33,6 +33,10 @@ jwt:
   secret: test-secret-key-for-jwt-token-generation-and-validation
   expiration: 3600000
   refresh-expiration: 7200000
+
+platform:
+  account:
+    encryption-key: test-platform-encryption-key-2026
 
 logging:
   level:

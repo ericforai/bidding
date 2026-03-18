@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 /**
  * 审计日志切面
@@ -67,7 +68,7 @@ public class AuditableAspect {
                     .username(username)
                     .action(auditable.action())
                     .entityType(auditable.entityType())
-                    .entityId(extractEntityId(joinPoint.getArgs()))
+                    .entityId(extractEntityId(joinPoint.getArgs(), result))
                     .description(auditable.description().isEmpty() ?
                         method.getName() : auditable.description())
                     .success(success)
@@ -85,21 +86,54 @@ public class AuditableAspect {
     /**
      * 从方法参数中提取实体ID
      */
-    private String extractEntityId(Object[] args) {
+    private String extractEntityId(Object[] args, Object result) {
+        String resultId = extractIdFromObject(result);
+        if (resultId != null) {
+            return resultId;
+        }
+
         if (args == null || args.length == 0) {
             return null;
         }
 
-        // 简单实现：取第一个参数的toString()
-        // 实际项目中可能需要更复杂的逻辑（如从实体对象中获取ID字段）
         for (Object arg : args) {
-            if (arg != null) {
+            String argId = extractIdFromObject(arg);
+            if (argId != null) {
+                return argId;
+            }
+            if (arg instanceof Number || arg instanceof CharSequence) {
                 String str = arg.toString();
                 if (str.length() <= 100) {
                     return str;
                 }
             }
         }
+        return null;
+    }
+
+    private String extractIdFromObject(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Number || value instanceof CharSequence) {
+            String str = value.toString();
+            return str.length() <= 100 ? str : null;
+        }
+
+        try {
+            Method getId = value.getClass().getMethod("getId");
+            if (Modifier.isPublic(getId.getModifiers()) && getId.getParameterCount() == 0) {
+                Object id = getId.invoke(value);
+                if (id != null) {
+                    String str = id.toString();
+                    return str.length() <= 100 ? str : null;
+                }
+            }
+        } catch (ReflectiveOperationException ignored) {
+            // Fall through to no ID extracted.
+        }
+
         return null;
     }
 }
