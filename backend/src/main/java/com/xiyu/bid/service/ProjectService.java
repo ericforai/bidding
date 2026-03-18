@@ -227,6 +227,11 @@ public class ProjectService {
                 .teamMembers(project.getTeamMembers() == null ? List.of() : new ArrayList<>(project.getTeamMembers()))
                 .startDate(project.getStartDate())
                 .endDate(project.getEndDate())
+                .sourceModule(project.getSourceModule())
+                .sourceCustomerId(project.getSourceCustomerId())
+                .sourceCustomer(project.getSourceCustomer())
+                .sourceOpportunityId(project.getSourceOpportunityId())
+                .sourceReasoningSummary(project.getSourceReasoningSummary())
                 .createdAt(project.getCreatedAt())
                 .updatedAt(project.getUpdatedAt())
                 .build();
@@ -245,6 +250,11 @@ public class ProjectService {
                 .teamMembers(dto.getTeamMembers() != null ? dto.getTeamMembers() : List.of())
                 .startDate(dto.getStartDate())
                 .endDate(dto.getEndDate())
+                .sourceModule(dto.getSourceModule())
+                .sourceCustomerId(dto.getSourceCustomerId())
+                .sourceCustomer(dto.getSourceCustomer())
+                .sourceOpportunityId(dto.getSourceOpportunityId())
+                .sourceReasoningSummary(dto.getSourceReasoningSummary())
                 .build();
     }
 
@@ -269,6 +279,21 @@ public class ProjectService {
         }
         if (updates.getTeamMembers() != null) {
             project.setTeamMembers(normalizeTeamMembers(updates.getTeamMembers()));
+        }
+        if (updates.getSourceModule() != null) {
+            project.setSourceModule(updates.getSourceModule());
+        }
+        if (updates.getSourceCustomerId() != null) {
+            project.setSourceCustomerId(updates.getSourceCustomerId());
+        }
+        if (updates.getSourceCustomer() != null) {
+            project.setSourceCustomer(updates.getSourceCustomer());
+        }
+        if (updates.getSourceOpportunityId() != null) {
+            project.setSourceOpportunityId(updates.getSourceOpportunityId());
+        }
+        if (updates.getSourceReasoningSummary() != null) {
+            project.setSourceReasoningSummary(updates.getSourceReasoningSummary());
         }
     }
 
@@ -302,6 +327,11 @@ public class ProjectService {
                         : (projectDTO.getTeamMembers() != null ? normalizeTeamMembers(projectDTO.getTeamMembers()) : null))
                 .startDate(projectDTO.getStartDate())
                 .endDate(projectDTO.getEndDate())
+                .sourceModule(trimToNull(projectDTO.getSourceModule()))
+                .sourceCustomerId(trimToNull(projectDTO.getSourceCustomerId()))
+                .sourceCustomer(trimToNull(projectDTO.getSourceCustomer()))
+                .sourceOpportunityId(trimToNull(projectDTO.getSourceOpportunityId()))
+                .sourceReasoningSummary(trimToNull(projectDTO.getSourceReasoningSummary()))
                 .build();
     }
 
@@ -334,5 +364,13 @@ public class ProjectService {
                         Collectors.toCollection(LinkedHashSet::new),
                         ArrayList::new
                 ));
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

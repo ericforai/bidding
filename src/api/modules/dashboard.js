@@ -426,16 +426,24 @@ export const dashboardApi = {
     }
   },
 
-  async getDrillDown(type, key) {
+  async getDrillDown(type, paramsOrKey) {
     if (isMockMode()) {
       return Promise.resolve({
         success: true,
-        data: buildMockDrillDown(type, key),
+        data: buildMockDrillDown(type, paramsOrKey),
       })
     }
 
+    const metricTypes = new Set(['revenue', 'win-rate', 'team', 'projects'])
+    if (metricTypes.has(type)) {
+      const params = (paramsOrKey && typeof paramsOrKey === 'object' && !Array.isArray(paramsOrKey))
+        ? paramsOrKey
+        : {}
+      return httpClient.get(`/api/analytics/drilldown/${type}`, { params })
+    }
+
     return httpClient.get('/api/analytics/drill-down', {
-      params: { type, key },
+      params: { type, key: paramsOrKey },
     })
   },
 }

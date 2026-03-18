@@ -77,6 +77,21 @@ public class Project {
     @Column(name = "end_date")
     private LocalDateTime endDate;
 
+    @Column(name = "source_module", length = 100)
+    private String sourceModule;
+
+    @Column(name = "source_customer_id", length = 100)
+    private String sourceCustomerId;
+
+    @Column(name = "source_customer", length = 255)
+    private String sourceCustomer;
+
+    @Column(name = "source_opportunity_id", length = 100)
+    private String sourceOpportunityId;
+
+    @Column(name = "source_reasoning_summary", columnDefinition = "TEXT")
+    private String sourceReasoningSummary;
+
     /**
      * 创建时间
      */

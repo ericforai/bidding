@@ -259,5 +259,21 @@ class AuditOperationalAnalyticsIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.stats.totalParticipation").value(2))
                 .andExpect(jsonPath("$.data.files[0].name").value("智慧办公实施项目_export.json"));
+
+        mockMvc.perform(get("/api/analytics/drilldown/projects")
+                        .param("status", "IN_PROGRESS"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.metricKey").value("projects"))
+                .andExpect(jsonPath("$.data.items[0].title").value("智慧办公实施项目"))
+                .andExpect(jsonPath("$.data.summary.activeCount").value(1));
+
+        mockMvc.perform(get("/api/analytics/drilldown/team")
+                        .param("role", "ADMIN"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.metricKey").value("team"))
+                .andExpect(jsonPath("$.data.items[0].title").value("审计管理员"))
+                .andExpect(jsonPath("$.data.items[0].count").value(1))
+                .andExpect(jsonPath("$.data.items[0].managedProjectCount").value(1))
+                .andExpect(jsonPath("$.data.summary.totalCompletedTasks").value(0));
     }
 }
