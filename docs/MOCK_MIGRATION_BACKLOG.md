@@ -1,6 +1,9 @@
 # Mock 直连页面迁移 Backlog
 
-本清单只记录“页面层仍直接依赖 `@/api/mock`”的剩余迁移点。
+参考总规则：`docs/FRONTEND_REAL_DATA_GOVERNANCE.md`  
+本清单只记录剩余迁移点，不再单独定义治理原则。
+
+本清单只记录“页面层仍直接依赖 `@/api/mock`”的剩余迁移点。  
 `src/api/mock.js` 继续作为长期 MVP 演示数据源保留，不在本清单中视为待删除资产。
 
 ## 已完成首批主链路

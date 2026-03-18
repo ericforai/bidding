@@ -1,3 +1,8 @@
+// Input: httpClient, API mode config, analytics normalizers and demo adapters
+// Output: dashboardApi - dashboard metrics, tasks, and drill-down accessors
+// Pos: src/api/modules/ - Frontend API module layer
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 /**
  * 数据看板与任务模块 API
  * 支持双模式切换，并在 API 模式下适配现有后端 analytics 契约
@@ -421,16 +426,24 @@ export const dashboardApi = {
     }
   },
 
-  async getDrillDown(type, key) {
+  async getDrillDown(type, paramsOrKey) {
     if (isMockMode()) {
       return Promise.resolve({
         success: true,
-        data: buildMockDrillDown(type, key),
+        data: buildMockDrillDown(type, paramsOrKey),
       })
     }
 
+    const metricTypes = new Set(['revenue', 'win-rate', 'team', 'projects'])
+    if (metricTypes.has(type)) {
+      const params = (paramsOrKey && typeof paramsOrKey === 'object' && !Array.isArray(paramsOrKey))
+        ? paramsOrKey
+        : {}
+      return httpClient.get(`/api/analytics/drilldown/${type}`, { params })
+    }
+
     return httpClient.get('/api/analytics/drill-down', {
-      params: { type, key },
+      params: { type, key: paramsOrKey },
     })
   },
 }

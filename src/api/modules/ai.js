@@ -1,3 +1,8 @@
+// Input: httpClient, API mode config, feature availability helpers
+// Output: aiApi - AI analysis accessors aligned with frontend contracts
+// Pos: src/api/modules/ - Frontend API module layer
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 /**
  * AI 智能分析模块 API
  * 支持双模式切换，并在 API 模式下对齐当前后端契约

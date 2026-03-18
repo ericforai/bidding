@@ -1,3 +1,5 @@
+一旦我所属的文件夹有所变化，请更新我。
+
 # 西域数智化投标管理平台
 
 ## 项目简介
@@ -8,6 +10,11 @@
 - `api` 模式：用于真实后端联调、上线准备和发布演练
 
 系统已经具备前后端统一 API 层、数据库 Flyway 基线、关键集成测试、最小可观测性基线，以及上线前演练所需的脚本和清单。
+
+## 开发治理
+
+- 前端真实数据源治理：[`docs/FRONTEND_REAL_DATA_GOVERNANCE.md`](docs/FRONTEND_REAL_DATA_GOVERNANCE.md)
+- 文档与注释治理规范：[`docs/DOCUMENTATION_GOVERNANCE.md`](docs/DOCUMENTATION_GOVERNANCE.md)
 
 ## 技术栈
 

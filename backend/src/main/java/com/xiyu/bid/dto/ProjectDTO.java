@@ -26,6 +26,11 @@ public class ProjectDTO {
     private List<Long> teamMembers;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
+    private String sourceModule;
+    private String sourceCustomerId;
+    private String sourceCustomer;
+    private String sourceOpportunityId;
+    private String sourceReasoningSummary;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

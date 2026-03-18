@@ -14,6 +14,7 @@
 | `config.js` | 配置 | API 基础配置，Mock 模式开关 |
 | `mock.js` | Mock 数据 | POC 项目所有静态 Mock 数据源 |
 | `index.js` | 导出入口 | 统一导出所有 API 模块 |
+| `mock-adapters/` | 目录 | 隔离 demo 数据读取和 demoPersistence 适配 |
 | `modules/` | 目录 | 按业务模块拆分的 API 调用函数 |
 | `examples.js` | 示例 | API 使用示例代码 |
 | `trendradar.js` | 趋势雷达 | 趋势雷达相关 API |
@@ -29,6 +30,12 @@
 | `fees.js` | 费用管理 |
 | `ai.js` | AI 智能分析 |
 | ... | 其他业务模块 |
+
+## 治理约束
+
+- 业务页面、组件、store 不得直接依赖 `mock.js`
+- demo 数据只能通过 `mock-adapters/` 或 API module 间接暴露
+- 目录和文件维护规则见 `docs/DOCUMENTATION_GOVERNANCE.md`
 
 ## 更新记录
 

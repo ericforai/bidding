@@ -1,3 +1,8 @@
+// Input: API config, HTTP client, feature availability helpers, business API modules
+// Output: @/api public exports and lazy module accessors
+// Pos: src/api/ - Frontend data access public entry
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 /**
  * API 统一导出
  * 支持双模式切换: Mock 数据 / 真实后端 API

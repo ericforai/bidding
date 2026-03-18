@@ -1,3 +1,8 @@
+// Input: authApi and demo user adapter for mock-mode session setup
+// Output: useUserStore - Pinia store for authentication and current user state
+// Pos: src/stores/ - State management layer
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 import { defineStore } from 'pinia'
 import { authApi } from '@/api'
 import { getDemoUsers } from '@/api/mock-adapters/frontendDemo.js'

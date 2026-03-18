@@ -16,6 +16,14 @@
 | 存储 | localStorage 封装 |
 | HTTP | 请求封装 |
 
+## 文件清单
+
+| 文件 | 地位 | 功能 |
+|------|------|------|
+| `demoPersistence.js` | 工具模块 | 封装 demo 模式下的本地持久化读写 |
+| `featureFeedback.js` | 工具模块 | 统一处理特性未开放、反馈提示等 UI 反馈逻辑 |
+| `icons.js` | 工具模块 | 统一导出图标映射和图标辅助函数 |
+
 ## 添加新工具
 
 ```javascript

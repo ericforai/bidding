@@ -20,7 +20,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -68,5 +70,35 @@ class ProjectControllerIntegrationTest {
                 .andExpect(jsonPath("$.data[0].name").value("真实项目列表回归"))
                 .andExpect(jsonPath("$.data[0].teamMembers[0]").value(601))
                 .andExpect(jsonPath("$.data[0].teamMembers[1]").value(602));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void createProject_ShouldPersistSourceMetadata() throws Exception {
+        mockMvc.perform(post("/api/projects")
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "来源线索项目",
+                                  "tenderId": 201,
+                                  "status": "INITIATED",
+                                  "managerId": 501,
+                                  "teamMembers": [501],
+                                  "startDate": "2026-03-18T09:00:00",
+                                  "endDate": "2026-03-28T18:00:00",
+                                  "sourceModule": "customer-opportunity-center",
+                                  "sourceCustomerId": "CUST-001",
+                                  "sourceCustomer": "华东某集团",
+                                  "sourceOpportunityId": "OPP-001",
+                                  "sourceReasoningSummary": "根据客户采购节奏建议提前立项"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.sourceModule").value("customer-opportunity-center"))
+                .andExpect(jsonPath("$.data.sourceCustomerId").value("CUST-001"))
+                .andExpect(jsonPath("$.data.sourceCustomer").value("华东某集团"))
+                .andExpect(jsonPath("$.data.sourceOpportunityId").value("OPP-001"))
+                .andExpect(jsonPath("$.data.sourceReasoningSummary").value("根据客户采购节奏建议提前立项"));
     }
 }
