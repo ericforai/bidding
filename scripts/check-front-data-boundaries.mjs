@@ -1,3 +1,8 @@
+// Input: repository source tree, guarded roots, forbidden dependency patterns
+// Output: violations when frontend business layers cross mock-data boundaries
+// Pos: scripts/ - Frontend architecture guardrail
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'

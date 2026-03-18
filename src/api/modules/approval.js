@@ -1,3 +1,8 @@
+// Input: httpClient and API mode switch for approval-related requests
+// Output: approvalApi - approval workflow accessors for frontend consumers
+// Pos: src/api/modules/ - Frontend API module layer
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 import httpClient from '../client.js'
 import { isMockMode } from '../config.js'
 

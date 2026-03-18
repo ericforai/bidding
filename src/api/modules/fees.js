@@ -1,3 +1,8 @@
+// Input: httpClient, API mode config, fee normalizers and mock sources
+// Output: feesApi - fee application, approval, and refund accessors
+// Pos: src/api/modules/ - Frontend API module layer
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 /**
  * 费用管理模块 API
  * 支持双模式切换

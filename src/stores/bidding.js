@@ -1,3 +1,8 @@
+// Input: tendersApi, API mode switch, and frontend demo adapters for bidding views
+// Output: useBiddingStore - Pinia store for tenders, todos, and calendar state
+// Pos: src/stores/ - State management layer
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 import { defineStore } from 'pinia'
 import { tendersApi, isMockMode } from '@/api'
 import { getDemoCalendar, getDemoTodos } from '@/api/mock-adapters/frontendDemo.js'

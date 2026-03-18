@@ -1,3 +1,8 @@
+// Input: Vue refs/computed, API mode switch, customer opportunity demo sources
+// Output: customer opportunity view-model adapters and feature-state helpers
+// Pos: src/api/modules/ - Feature adapter module for customer opportunity center
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 import { computed, ref } from 'vue'
 import { isMockMode } from '../config.js'
 import { mockData } from '../mock.js'

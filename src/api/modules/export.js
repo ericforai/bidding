@@ -1,3 +1,8 @@
+// Input: Element Plus messaging and export task payloads from business modules
+// Output: exportApi and export enums for frontend export workflows
+// Pos: src/api/modules/ - Frontend API module layer
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 import { ElMessage } from 'element-plus'
 
 export const ExportType = {

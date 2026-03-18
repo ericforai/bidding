@@ -1,3 +1,8 @@
+// Input: httpClient, API mode config, knowledge normalizers and demo adapters
+// Output: knowledgeApi - qualification, case, and template accessors
+// Pos: src/api/modules/ - Frontend API module layer
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 /**
  * 知识库模块 API (资质、案例、模板)
  * 支持双模式切换，并在 API 模式下对齐现有后端契约

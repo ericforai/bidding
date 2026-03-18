@@ -1,3 +1,8 @@
+// Input: mockData, API mode switch, demo persistence storage
+// Output: frontend demo adapter functions returning page-ready mock view models
+// Pos: src/api/mock-adapters/ - Demo data adapter layer
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 import { mockData } from '../mock.js'
 import { isMockMode } from '../config.js'
 import { loadDemoState, saveDemoState } from '@/utils/demoPersistence'

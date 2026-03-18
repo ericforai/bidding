@@ -1,3 +1,8 @@
+// Input: httpClient, API mode config, analytics normalizers and demo adapters
+// Output: dashboardApi - dashboard metrics, tasks, and drill-down accessors
+// Pos: src/api/modules/ - Frontend API module layer
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 /**
  * 数据看板与任务模块 API
  * 支持双模式切换，并在 API 模式下适配现有后端 analytics 契约

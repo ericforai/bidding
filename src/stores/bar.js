@@ -1,3 +1,8 @@
+// Input: resourcesApi, API mode switch, and BAR capability helpers
+// Output: useBarStore - Pinia store for BAR sites and certificates
+// Pos: src/stores/ - State management layer
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 import { defineStore } from 'pinia'
 import { isMockMode, resourcesApi } from '@/api'
 
