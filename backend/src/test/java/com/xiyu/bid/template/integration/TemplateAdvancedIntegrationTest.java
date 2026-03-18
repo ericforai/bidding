@@ -11,6 +11,7 @@ import com.xiyu.bid.repository.TemplateDownloadRecordRepository;
 import com.xiyu.bid.repository.TemplateRepository;
 import com.xiyu.bid.repository.TemplateUseRecordRepository;
 import com.xiyu.bid.repository.TemplateVersionRepository;
+import com.xiyu.bid.support.TestPasswordEncryptionUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,16 +66,7 @@ class TemplateAdvancedIntegrationTest {
         @Bean(name = "passwordEncryptionUtil")
         @Primary
         PasswordEncryptionUtil passwordEncryptionUtil() {
-            return new PasswordEncryptionUtil() {
-                @Override
-                public void initialize() {}
-                @Override
-                public String encrypt(String plainPassword) { return plainPassword; }
-                @Override
-                public String decrypt(String encryptedPassword) { return encryptedPassword; }
-                @Override
-                public boolean isKeyValid() { return true; }
-            };
+            return new TestPasswordEncryptionUtil();
         }
     }
 

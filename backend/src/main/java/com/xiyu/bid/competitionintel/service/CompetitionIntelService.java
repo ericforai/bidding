@@ -9,7 +9,6 @@ import com.xiyu.bid.competitionintel.entity.CompetitionAnalysis;
 import com.xiyu.bid.competitionintel.entity.Competitor;
 import com.xiyu.bid.competitionintel.repository.CompetitionAnalysisRepository;
 import com.xiyu.bid.competitionintel.repository.CompetitorRepository;
-import com.xiyu.bid.service.IAuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,8 +30,6 @@ public class CompetitionIntelService {
 
     private final CompetitorRepository competitorRepository;
     private final CompetitionAnalysisRepository analysisRepository;
-    private final IAuditLogService auditLogService;
-
     /**
      * 创建竞争对手
      */

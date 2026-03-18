@@ -16,8 +16,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -29,6 +32,15 @@ import java.util.stream.Collectors;
 @Slf4j
 @Transactional
 public class ProjectService {
+
+    private static final Map<Project.Status, Set<Project.Status>> ALLOWED_STATUS_TRANSITIONS = Map.of(
+            Project.Status.INITIATED, Set.of(Project.Status.PREPARING, Project.Status.REVIEWING, Project.Status.SEALING, Project.Status.BIDDING, Project.Status.ARCHIVED),
+            Project.Status.PREPARING, Set.of(Project.Status.REVIEWING, Project.Status.SEALING, Project.Status.BIDDING, Project.Status.ARCHIVED),
+            Project.Status.REVIEWING, Set.of(Project.Status.PREPARING, Project.Status.SEALING, Project.Status.BIDDING, Project.Status.ARCHIVED),
+            Project.Status.SEALING, Set.of(Project.Status.REVIEWING, Project.Status.BIDDING, Project.Status.ARCHIVED),
+            Project.Status.BIDDING, Set.of(Project.Status.ARCHIVED),
+            Project.Status.ARCHIVED, Set.of(Project.Status.ARCHIVED)
+    );
 
     private final ProjectRepository projectRepository;
 
@@ -59,7 +71,8 @@ public class ProjectService {
      */
     public ProjectDTO createProject(ProjectDTO projectDTO) {
         log.debug("Creating new project: {}", projectDTO.getName());
-        Project project = convertToEntity(projectDTO);
+        ProjectDTO normalized = validateAndNormalizeProjectDTO(projectDTO, true);
+        Project project = convertToEntity(normalized);
         Project savedProject = projectRepository.save(project);
         log.info("Created project with id: {}", savedProject.getId());
         return convertToDTO(savedProject);
@@ -73,28 +86,8 @@ public class ProjectService {
         Project existingProject = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", id.toString()));
 
-        // Update fields
-        if (projectDTO.getName() != null) {
-            existingProject.setName(projectDTO.getName());
-        }
-        if (projectDTO.getTenderId() != null) {
-            existingProject.setTenderId(projectDTO.getTenderId());
-        }
-        if (projectDTO.getStatus() != null) {
-            existingProject.setStatus(projectDTO.getStatus());
-        }
-        if (projectDTO.getManagerId() != null) {
-            existingProject.setManagerId(projectDTO.getManagerId());
-        }
-        if (projectDTO.getStartDate() != null) {
-            existingProject.setStartDate(projectDTO.getStartDate());
-        }
-        if (projectDTO.getEndDate() != null) {
-            existingProject.setEndDate(projectDTO.getEndDate());
-        }
-        if (projectDTO.getTeamMembers() != null) {
-            existingProject.setTeamMembers(projectDTO.getTeamMembers());
-        }
+        ProjectDTO normalized = validateAndNormalizeProjectDTO(projectDTO, false);
+        applyProjectUpdates(existingProject, normalized);
 
         Project updatedProject = projectRepository.save(existingProject);
         log.info("Updated project with id: {}", id);
@@ -125,7 +118,7 @@ public class ProjectService {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", id.toString()));
 
-        project.setStatus(status);
+        changeProjectStatus(project, status);
         Project updatedProject = projectRepository.save(project);
         log.info("Updated project {} status to {}", id, status);
         return convertToDTO(updatedProject);
@@ -144,7 +137,7 @@ public class ProjectService {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", id.toString()));
 
-        project.setTeamMembers(teamMembers);
+        project.setTeamMembers(normalizeTeamMembers(teamMembers));
         Project updatedProject = projectRepository.save(project);
         log.info("Updated project {} team members", id);
         return convertToDTO(updatedProject);
@@ -253,5 +246,93 @@ public class ProjectService {
                 .startDate(dto.getStartDate())
                 .endDate(dto.getEndDate())
                 .build();
+    }
+
+    private void applyProjectUpdates(Project project, ProjectDTO updates) {
+        if (updates.getName() != null) {
+            project.setName(updates.getName());
+        }
+        if (updates.getTenderId() != null) {
+            project.setTenderId(updates.getTenderId());
+        }
+        if (updates.getStatus() != null) {
+            changeProjectStatus(project, updates.getStatus());
+        }
+        if (updates.getManagerId() != null) {
+            project.setManagerId(updates.getManagerId());
+        }
+        if (updates.getStartDate() != null) {
+            project.setStartDate(updates.getStartDate());
+        }
+        if (updates.getEndDate() != null) {
+            project.setEndDate(updates.getEndDate());
+        }
+        if (updates.getTeamMembers() != null) {
+            project.setTeamMembers(normalizeTeamMembers(updates.getTeamMembers()));
+        }
+    }
+
+    private ProjectDTO validateAndNormalizeProjectDTO(ProjectDTO projectDTO, boolean creating) {
+        if (projectDTO == null) {
+            throw new IllegalArgumentException("Project payload is required");
+        }
+        if (projectDTO.getName() == null || projectDTO.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Project name is required");
+        }
+        if (projectDTO.getTenderId() == null) {
+            throw new IllegalArgumentException("Tender ID is required");
+        }
+        if (projectDTO.getManagerId() == null) {
+            throw new IllegalArgumentException("Manager ID is required");
+        }
+
+        Project.Status normalizedStatus = projectDTO.getStatus();
+        if (creating && normalizedStatus == Project.Status.ARCHIVED) {
+            throw new IllegalArgumentException("New projects cannot be created directly in ARCHIVED status");
+        }
+
+        return ProjectDTO.builder()
+                .id(projectDTO.getId())
+                .name(projectDTO.getName().trim())
+                .tenderId(projectDTO.getTenderId())
+                .status(creating ? (normalizedStatus != null ? normalizedStatus : Project.Status.INITIATED) : normalizedStatus)
+                .managerId(projectDTO.getManagerId())
+                .teamMembers(creating
+                        ? normalizeTeamMembers(projectDTO.getTeamMembers())
+                        : (projectDTO.getTeamMembers() != null ? normalizeTeamMembers(projectDTO.getTeamMembers()) : null))
+                .startDate(projectDTO.getStartDate())
+                .endDate(projectDTO.getEndDate())
+                .build();
+    }
+
+    private void changeProjectStatus(Project project, Project.Status nextStatus) {
+        if (nextStatus == null) {
+            return;
+        }
+
+        Project.Status currentStatus = project.getStatus();
+        if (currentStatus == nextStatus) {
+            return;
+        }
+
+        Set<Project.Status> allowedTargets = ALLOWED_STATUS_TRANSITIONS.getOrDefault(currentStatus, Set.of());
+        if (!allowedTargets.contains(nextStatus)) {
+            throw new IllegalArgumentException("Invalid project status transition from " + currentStatus + " to " + nextStatus);
+        }
+
+        project.setStatus(nextStatus);
+    }
+
+    private List<Long> normalizeTeamMembers(List<Long> teamMembers) {
+        if (teamMembers == null) {
+            return List.of();
+        }
+
+        return teamMembers.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toCollection(LinkedHashSet::new),
+                        ArrayList::new
+                ));
     }
 }

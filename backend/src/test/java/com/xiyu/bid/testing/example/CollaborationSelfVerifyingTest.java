@@ -134,6 +134,7 @@ class CollaborationSelfVerifyingTest extends SelfVerifyingTest {
     void auditLogs_shouldRecordAllActions() {
         // Given
         CollaborationThreadDTO thread = collaborationService.createThread(threadRequest);
+        awaitAsync(200);
 
         CommentCreateRequest commentRequest = CommentCreateRequest.builder()
                 .userId(10L)
@@ -142,12 +143,13 @@ class CollaborationSelfVerifyingTest extends SelfVerifyingTest {
 
         // When
         collaborationService.addComment(thread.getId(), commentRequest);
+        awaitAsync(200);
 
         // Then - 验证审计日志
         Integer threadAuditCount = queryForObject(
             "SELECT COUNT(*) FROM audit_logs WHERE entity_type = 'CollaborationThread' AND entity_id = ?",
             Integer.class,
-            thread.getId()
+            String.valueOf(thread.getId())
         );
 
         Integer commentAuditCount = queryForObject(

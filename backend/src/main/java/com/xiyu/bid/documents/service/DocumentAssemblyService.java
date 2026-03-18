@@ -207,7 +207,7 @@ public class DocumentAssemblyService {
             return false;
         }
         // Only allow alphanumeric characters, underscores, and hyphens
-        return variableName.matches("^[a-zA-Z0-9_-]+$");
+        return variableName.matches("^[\\p{L}\\p{N}_-]+$");
     }
 
     /**

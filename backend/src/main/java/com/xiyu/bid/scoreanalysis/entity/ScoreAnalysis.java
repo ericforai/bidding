@@ -15,9 +15,9 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "score_analyses", indexes = {
-    @Index(name = "idx_analysis_project", columnList = "project_id"),
-    @Index(name = "idx_analysis_date", columnList = "analysis_date"),
-    @Index(name = "idx_analysis_risk", columnList = "risk_level")
+    @Index(name = "idx_score_analysis_project", columnList = "project_id"),
+    @Index(name = "idx_score_analysis_date", columnList = "analysis_date"),
+    @Index(name = "idx_score_analysis_risk", columnList = "risk_level")
 })
 @Data
 @Builder

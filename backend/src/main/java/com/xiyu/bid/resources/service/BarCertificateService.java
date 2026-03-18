@@ -78,16 +78,13 @@ public class BarCertificateService {
     @Transactional
     public BarCertificate borrowCertificate(Long assetId, Long certificateId, BarCertificateBorrowRequest request) {
         BarCertificate certificate = getCertificate(assetId, certificateId);
-        if (certificate.getStatus() != BarCertificate.CertificateStatus.AVAILABLE) {
-            throw new IllegalStateException("Certificate is not available for borrowing");
-        }
-
-        certificate.setStatus(BarCertificate.CertificateStatus.BORROWED);
-        certificate.setCurrentBorrower(request.getBorrower());
-        certificate.setCurrentProjectId(request.getProjectId());
-        certificate.setBorrowPurpose(request.getPurpose());
-        certificate.setExpectedReturnDate(request.getExpectedReturnDate());
-        certificate.setRemark(request.getRemark());
+        certificate.borrow(
+                request.getBorrower(),
+                request.getProjectId(),
+                request.getPurpose(),
+                request.getExpectedReturnDate(),
+                request.getRemark()
+        );
         BarCertificate saved = barCertificateRepository.save(certificate);
 
         borrowRecordRepository.save(BarCertificateBorrowRecord.builder()
@@ -109,7 +106,6 @@ public class BarCertificateService {
         if (certificate.getStatus() != BarCertificate.CertificateStatus.BORROWED) {
             throw new IllegalStateException("Only borrowed certificates can be returned");
         }
-
         List<BarCertificateBorrowRecord> records = borrowRecordRepository.findByCertificateIdOrderByBorrowedAtDesc(certificate.getId());
         BarCertificateBorrowRecord latestBorrow = records.stream()
                 .filter(record -> record.getStatus() == BarCertificateBorrowRecord.BorrowStatus.BORROWED)
@@ -122,16 +118,7 @@ public class BarCertificateService {
             latestBorrow.setRemark(request.getRemark());
         }
         borrowRecordRepository.save(latestBorrow);
-
-        certificate.setStatus(BarCertificate.CertificateStatus.AVAILABLE);
-        certificate.setCurrentBorrower(null);
-        certificate.setCurrentProjectId(null);
-        certificate.setBorrowPurpose(null);
-        certificate.setExpectedReturnDate(null);
-        if (request.getRemark() != null && !request.getRemark().isBlank()) {
-            certificate.setRemark(request.getRemark());
-        }
-
+        certificate.returnToPool(request.getRemark());
         return barCertificateRepository.save(certificate);
     }
 

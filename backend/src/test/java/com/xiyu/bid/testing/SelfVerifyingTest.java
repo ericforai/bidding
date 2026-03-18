@@ -9,6 +9,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.Map;
 import java.util.Objects;
 
@@ -62,6 +64,9 @@ public abstract class SelfVerifyingTest {
     @Autowired
     protected ShadowInspector shadowInspector;
 
+    @PersistenceContext
+    protected EntityManager entityManager;
+
     /**
      * 开始三层一致性验证
      *
@@ -70,6 +75,7 @@ public abstract class SelfVerifyingTest {
      * @return 验证链
      */
     protected ShadowInspector.VerificationChain shadowVerify(String tableName, Long entityId) {
+        flushPersistenceContext();
         return shadowInspector.verify(tableName, entityId);
     }
 
@@ -81,6 +87,7 @@ public abstract class SelfVerifyingTest {
      * @return 查询结果
      */
     protected Map<String, Object> queryDatabase(String sql, Object... args) {
+        flushPersistenceContext();
         return jdbcTemplate.queryForMap(sql, args);
     }
 
@@ -93,6 +100,7 @@ public abstract class SelfVerifyingTest {
      * @return 查询结果
      */
     protected <T> T queryForObject(String sql, Class<T> type, Object... args) {
+        flushPersistenceContext();
         return jdbcTemplate.queryForObject(sql, type, args);
     }
 
@@ -106,6 +114,7 @@ public abstract class SelfVerifyingTest {
      * @throws IllegalArgumentException 如果whereCondition不是 "id = ?"
      */
     protected Integer count(String tableName, String whereCondition, Object... args) {
+        flushPersistenceContext();
         // 安全检查：只允许简单的id查询
         if (!"id = ?".equals(whereCondition) && !"project_id = ?".equals(whereCondition)) {
             throw new IllegalArgumentException(
@@ -126,6 +135,11 @@ public abstract class SelfVerifyingTest {
     protected boolean exists(String tableName, Long idValue) {
         Integer count = count(tableName, "id = ?", idValue);
         return count != null && count > 0;
+    }
+
+    protected void flushPersistenceContext() {
+        entityManager.flush();
+        entityManager.clear();
     }
 
     /**

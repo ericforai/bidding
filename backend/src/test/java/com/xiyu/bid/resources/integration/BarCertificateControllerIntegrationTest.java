@@ -11,6 +11,7 @@ import com.xiyu.bid.resources.entity.BarCertificateBorrowRecord;
 import com.xiyu.bid.resources.repository.BarAssetRepository;
 import com.xiyu.bid.resources.repository.BarCertificateBorrowRecordRepository;
 import com.xiyu.bid.resources.repository.BarCertificateRepository;
+import com.xiyu.bid.support.TestPasswordEncryptionUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,26 +65,7 @@ class BarCertificateControllerIntegrationTest {
         @Bean(name = "passwordEncryptionUtil")
         @Primary
         PasswordEncryptionUtil passwordEncryptionUtil() {
-            return new PasswordEncryptionUtil() {
-                @Override
-                public void initialize() {
-                }
-
-                @Override
-                public String encrypt(String plainPassword) {
-                    return plainPassword;
-                }
-
-                @Override
-                public String decrypt(String encryptedPassword) {
-                    return encryptedPassword;
-                }
-
-                @Override
-                public boolean isKeyValid() {
-                    return true;
-                }
-            };
+            return new TestPasswordEncryptionUtil();
         }
     }
 
