@@ -9,8 +9,6 @@ import com.xiyu.bid.competitionintel.entity.Competitor;
 import com.xiyu.bid.competitionintel.repository.CompetitionAnalysisRepository;
 import com.xiyu.bid.competitionintel.repository.CompetitorRepository;
 import com.xiyu.bid.competitionintel.service.CompetitionIntelService;
-import com.xiyu.bid.exception.ResourceNotFoundException;
-import com.xiyu.bid.service.IAuditLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,9 +39,6 @@ class CompetitionIntelServiceTest {
     @Mock
     private CompetitionAnalysisRepository analysisRepository;
 
-    @Mock
-    private IAuditLogService auditLogService;
-
     private CompetitionIntelService service;
 
     private Competitor testCompetitor;
@@ -53,7 +48,7 @@ class CompetitionIntelServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CompetitionIntelService(competitorRepository, analysisRepository, auditLogService);
+        service = new CompetitionIntelService(competitorRepository, analysisRepository);
 
         testCompetitor = Competitor.builder()
                 .id(1L)
@@ -128,7 +123,6 @@ class CompetitionIntelServiceTest {
         assertThat(result.getMarketShare()).isEqualByComparingTo("15.0");
 
         verify(competitorRepository).save(any(Competitor.class));
-        verify(auditLogService).log(any());
     }
 
     @Test
@@ -145,7 +139,6 @@ class CompetitionIntelServiceTest {
                 .hasMessageContaining("Competitor name is required");
 
         verify(competitorRepository, never()).save(any(Competitor.class));
-        verify(auditLogService, never()).log(any());
     }
 
     @Test
@@ -295,7 +288,6 @@ class CompetitionIntelServiceTest {
         assertThat(result.getWinProbability()).isEqualByComparingTo("70.0");
 
         verify(analysisRepository).save(any(CompetitionAnalysis.class));
-        verify(auditLogService).log(any());
     }
 
     @Test
@@ -312,7 +304,6 @@ class CompetitionIntelServiceTest {
                 .hasMessageContaining("Project ID is required");
 
         verify(analysisRepository, never()).save(any(CompetitionAnalysis.class));
-        verify(auditLogService, never()).log(any());
     }
 
     @Test
@@ -476,7 +467,6 @@ class CompetitionIntelServiceTest {
         assertThat(result.getAnalysisDate()).isNotNull();
 
         verify(analysisRepository).save(any(CompetitionAnalysis.class));
-        verify(auditLogService).log(any());
     }
 
     @Test
@@ -487,7 +477,6 @@ class CompetitionIntelServiceTest {
                 .hasMessageContaining("Project ID is required");
 
         verify(analysisRepository, never()).save(any(CompetitionAnalysis.class));
-        verify(auditLogService, never()).log(any());
     }
 
     @Test

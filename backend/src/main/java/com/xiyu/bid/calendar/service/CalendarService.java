@@ -12,7 +12,6 @@ import com.xiyu.bid.calendar.dto.CalendarEventUpdateRequest;
 import com.xiyu.bid.calendar.entity.CalendarEvent;
 import com.xiyu.bid.calendar.entity.EventType;
 import com.xiyu.bid.calendar.repository.CalendarEventRepository;
-import com.xiyu.bid.service.IAuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,8 +31,6 @@ import java.util.stream.Collectors;
 public class CalendarService {
 
     private final CalendarEventRepository repository;
-    private final IAuditLogService auditLogService;
-
     /**
      * 创建日历事件
      * @param request 创建请求

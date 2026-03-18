@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * ROI分析Repository测试类
@@ -72,10 +73,8 @@ class ROIAnalysisRepositoryTest {
         testAnalysis.setProjectId(null);
 
         // When & Then
-        org.junit.jupiter.api.Assertions.assertThrows(
-                org.hibernate.exception.ConstraintViolationException.class,
-                () -> roiAnalysisRepository.saveAndFlush(testAnalysis)
-        );
+        assertThatThrownBy(() -> roiAnalysisRepository.saveAndFlush(testAnalysis))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
     @Test
@@ -122,7 +121,7 @@ class ROIAnalysisRepositoryTest {
         roiAnalysisRepository.save(testAnalysis);
 
         // When
-        Optional<ROIAnalysis> found = roiAnalysisRepository.findByProjectId(100L);
+        Optional<ROIAnalysis> found = roiAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(100L);
 
         // Then
         assertThat(found).isPresent();
@@ -132,14 +131,14 @@ class ROIAnalysisRepositoryTest {
     @Test
     void findByProjectId_WithNonExistingProjectId_ShouldReturnEmpty() {
         // When
-        Optional<ROIAnalysis> found = roiAnalysisRepository.findByProjectId(999L);
+        Optional<ROIAnalysis> found = roiAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(999L);
 
         // Then
         assertThat(found).isEmpty();
     }
 
     @Test
-    void findByProjectId_WithMultipleAnalysesForSameProject_ShouldReturnOne() {
+    void findByProjectId_WithMultipleAnalysesForSameProject_ShouldReturnLatestAnalysis() {
         // Given - Save first analysis
         roiAnalysisRepository.save(testAnalysis);
 
@@ -157,12 +156,13 @@ class ROIAnalysisRepositoryTest {
 
         roiAnalysisRepository.save(secondAnalysis);
 
-        // When - Should return the most recent one
-        Optional<ROIAnalysis> found = roiAnalysisRepository.findByProjectId(100L);
+        // When
+        Optional<ROIAnalysis> found = roiAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(100L);
 
         // Then
         assertThat(found).isPresent();
-        // Repository returns first match, order depends on implementation
+        assertThat(found.get().getEstimatedCost()).isEqualByComparingTo("600000.00");
+        assertThat(found.get().getCreatedBy()).isEqualTo(2L);
     }
 
     // ==================== findAll Tests ====================
@@ -305,7 +305,7 @@ class ROIAnalysisRepositoryTest {
         roiAnalysisRepository.save(saved);
 
         // Then
-        Optional<ROIAnalysis> found = roiAnalysisRepository.findByProjectId(100L);
+        Optional<ROIAnalysis> found = roiAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(100L);
         assertThat(found).isPresent();
         assertThat(found.get().getEstimatedCost()).isEqualByComparingTo("600000.00");
         assertThat(found.get().getEstimatedRevenue()).isEqualByComparingTo("950000.00");

@@ -18,9 +18,6 @@ export { buildFeatureUnavailableResponse, getFeaturePlaceholder, isFeatureUnavai
 // 导出 HTTP 客户端
 export { default as httpClient } from './client.js'
 
-// 导出 Mock 数据 (保留原有数据源)
-export { mockData, api as mockApi } from './mock.js'
-
 // 导出各模块 API
 export { authApi } from './modules/auth.js'
 export { tendersApi } from './modules/tenders.js'

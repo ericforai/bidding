@@ -8,7 +8,6 @@ import com.xiyu.bid.roi.dto.SensitivityAnalysisResult;
 import com.xiyu.bid.roi.entity.ROIAnalysis;
 import com.xiyu.bid.roi.repository.ROIAnalysisRepository;
 import com.xiyu.bid.roi.service.ROIAnalysisService;
-import com.xiyu.bid.service.IAuditLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,9 +35,6 @@ class ROIAnalysisServiceTest {
     @Mock
     private ROIAnalysisRepository roiAnalysisRepository;
 
-    @Mock
-    private IAuditLogService auditLogService;
-
     private ROIAnalysisService roiAnalysisService;
 
     private ROIAnalysis testROIAnalysis;
@@ -47,7 +43,7 @@ class ROIAnalysisServiceTest {
 
     @BeforeEach
     void setUp() {
-        roiAnalysisService = new ROIAnalysisService(roiAnalysisRepository, auditLogService);
+        roiAnalysisService = new ROIAnalysisService(roiAnalysisRepository);
 
         testROIAnalysis = ROIAnalysis.builder()
                 .id(1L)
@@ -234,7 +230,7 @@ class ROIAnalysisServiceTest {
     @Test
     void getAnalysisByProject_WithValidProjectId_ShouldReturnAnalysis() {
         // Given
-        when(roiAnalysisRepository.findByProjectId(100L)).thenReturn(Optional.of(testROIAnalysis));
+        when(roiAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(100L)).thenReturn(Optional.of(testROIAnalysis));
 
         // When
         ROIAnalysisDTO result = roiAnalysisService.getAnalysisByProject(100L);
@@ -248,7 +244,7 @@ class ROIAnalysisServiceTest {
     @Test
     void getAnalysisByProject_WithInvalidProjectId_ShouldThrowException() {
         // Given
-        when(roiAnalysisRepository.findByProjectId(999L)).thenReturn(Optional.empty());
+        when(roiAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(999L)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> roiAnalysisService.getAnalysisByProject(999L))
@@ -269,7 +265,7 @@ class ROIAnalysisServiceTest {
     @Test
     void calculateROI_WithValidProjectId_ShouldReturnCalculatedROI() {
         // Given
-        when(roiAnalysisRepository.findByProjectId(100L)).thenReturn(Optional.empty());
+        when(roiAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(100L)).thenReturn(Optional.empty());
         when(roiAnalysisRepository.save(any(ROIAnalysis.class))).thenReturn(testROIAnalysis);
 
         // When
@@ -287,7 +283,7 @@ class ROIAnalysisServiceTest {
     @Test
     void calculateROI_WithExistingAnalysis_ShouldUpdateExisting() {
         // Given
-        when(roiAnalysisRepository.findByProjectId(100L)).thenReturn(Optional.of(testROIAnalysis));
+        when(roiAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(100L)).thenReturn(Optional.of(testROIAnalysis));
         when(roiAnalysisRepository.save(any(ROIAnalysis.class))).thenReturn(testROIAnalysis);
 
         // When
@@ -319,7 +315,7 @@ class ROIAnalysisServiceTest {
     @Test
     void performSensitivityAnalysis_WithValidData_ShouldReturnResults() {
         // Given
-        when(roiAnalysisRepository.findByProjectId(100L)).thenReturn(Optional.of(testROIAnalysis));
+        when(roiAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(100L)).thenReturn(Optional.of(testROIAnalysis));
 
         // When
         SensitivityAnalysisResult result = roiAnalysisService.performSensitivityAnalysis(100L, sensitivityRequest);
@@ -333,7 +329,7 @@ class ROIAnalysisServiceTest {
     @Test
     void performSensitivityAnalysis_WithNoExistingAnalysis_ShouldThrowException() {
         // Given
-        when(roiAnalysisRepository.findByProjectId(999L)).thenReturn(Optional.empty());
+        when(roiAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(999L)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> roiAnalysisService.performSensitivityAnalysis(999L, sensitivityRequest))
@@ -375,7 +371,7 @@ class ROIAnalysisServiceTest {
     @Test
     void performSensitivityAnalysis_ShouldCalculateCorrectROIForScenarios() {
         // Given
-        when(roiAnalysisRepository.findByProjectId(100L)).thenReturn(Optional.of(testROIAnalysis));
+        when(roiAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(100L)).thenReturn(Optional.of(testROIAnalysis));
 
         // When
         SensitivityAnalysisResult result = roiAnalysisService.performSensitivityAnalysis(100L, sensitivityRequest);
@@ -465,7 +461,7 @@ class ROIAnalysisServiceTest {
                 .revenueVariations(Arrays.asList(0.0))
                 .build();
 
-        when(roiAnalysisRepository.findByProjectId(100L)).thenReturn(Optional.of(testROIAnalysis));
+        when(roiAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(100L)).thenReturn(Optional.of(testROIAnalysis));
 
         // When
         SensitivityAnalysisResult result = roiAnalysisService.performSensitivityAnalysis(100L, singleVariation);

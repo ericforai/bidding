@@ -520,7 +520,7 @@ import {
 import { ElMessage, ElMessageBox } from 'element-plus'
 import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
 import { getFeaturePlaceholder, isFeatureUnavailableResponse, knowledgeApi, isMockMode } from '@/api'
-import { loadDemoState, saveDemoState } from '@/utils/demoPersistence'
+import { getTemplateDemoState, saveTemplateDemoState } from '@/api/mock-adapters/frontendDemo.js'
 import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 import { triggerDownload } from '@/api/modules/export'
 
@@ -1668,16 +1668,27 @@ const mockTemplates = [
 
 const templates = ref([])
 
-const loadTemplatePersistence = () => loadDemoState(TEMPLATE_STORAGE_KEY, {
-  patches: {},
-  copies: [],
-})
+const loadTemplatePersistence = () => {
+  if (!isMockMode()) {
+    return {
+      patches: {},
+      copies: [],
+    }
+  }
+  return getTemplateDemoState()
+}
 
 const saveTemplatePersistence = (state) => {
-  saveDemoState(TEMPLATE_STORAGE_KEY, state)
+  if (!isMockMode()) {
+    return
+  }
+  saveTemplateDemoState(state)
 }
 
 const applyTemplatePersistence = (list) => {
+  if (!isMockMode()) {
+    return list
+  }
   const state = loadTemplatePersistence()
   const patchedTemplates = list.map((item) => ({
     ...item,
@@ -1691,6 +1702,9 @@ const applyTemplatePersistence = (list) => {
 }
 
 const persistTemplatePatch = (templateId, patch) => {
+  if (!isMockMode()) {
+    return
+  }
   const state = loadTemplatePersistence()
   state.patches = state.patches || {}
   state.patches[String(templateId)] = {
@@ -1701,6 +1715,9 @@ const persistTemplatePatch = (templateId, patch) => {
 }
 
 const persistTemplateCopy = (template) => {
+  if (!isMockMode()) {
+    return
+  }
   const state = loadTemplatePersistence()
   state.copies = Array.isArray(state.copies) ? state.copies : []
   state.copies = [
@@ -1711,6 +1728,9 @@ const persistTemplateCopy = (template) => {
 }
 
 const removeTemplatePersistence = (templateId) => {
+  if (!isMockMode()) {
+    return
+  }
   const state = loadTemplatePersistence()
   if (state.patches) {
     delete state.patches[String(templateId)]
@@ -1726,7 +1746,7 @@ const loadTemplates = async () => {
   try {
     const result = await knowledgeApi.templates.getList()
     if (result?.success) {
-      templates.value = applyTemplatePersistence(result.data || [])
+      templates.value = isMockMode() ? applyTemplatePersistence(result.data || []) : (result.data || [])
       pagination.total = templates.value.length
       featurePlaceholder.value = null
     } else {
@@ -1979,10 +1999,12 @@ const createDocumentFromTemplate = async () => {
       status: 'draft'
     }
 
-    // 保存到本地存储（用于 mock 模式）
-    const savedDocs = JSON.parse(localStorage.getItem('draftDocuments') || '[]')
-    savedDocs.push(newDocument)
-    localStorage.setItem('draftDocuments', JSON.stringify(savedDocs))
+    if (isMockMode()) {
+      // 仅在 mock 模式下保留本地草稿，避免污染 API 模式的真实展示
+      const savedDocs = JSON.parse(localStorage.getItem('draftDocuments') || '[]')
+      savedDocs.push(newDocument)
+      localStorage.setItem('draftDocuments', JSON.stringify(savedDocs))
+    }
 
     // 跳转到文档编辑页面
     await router.push({

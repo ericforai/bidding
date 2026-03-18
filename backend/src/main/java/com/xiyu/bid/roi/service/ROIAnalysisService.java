@@ -8,7 +8,6 @@ import com.xiyu.bid.roi.dto.SensitivityAnalysisRequest;
 import com.xiyu.bid.roi.dto.SensitivityAnalysisResult;
 import com.xiyu.bid.roi.entity.ROIAnalysis;
 import com.xiyu.bid.roi.repository.ROIAnalysisRepository;
-import com.xiyu.bid.service.IAuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,8 +29,6 @@ import java.util.List;
 public class ROIAnalysisService {
 
     private final ROIAnalysisRepository roiAnalysisRepository;
-    private final IAuditLogService auditLogService;
-
     private static final int SCALE = 2;
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private static final int MAX_TEXT_FIELD_LENGTH = 5000;
@@ -75,7 +72,7 @@ public class ROIAnalysisService {
             throw new IllegalArgumentException("Project ID cannot be null");
         }
 
-        ROIAnalysis analysis = roiAnalysisRepository.findByProjectId(projectId)
+        ROIAnalysis analysis = roiAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "ROI analysis not found for project: " + projectId));
 
@@ -108,7 +105,9 @@ public class ROIAnalysisService {
         validateRequest(request);
 
         // 检查是否已存在分析
-        ROIAnalysis existingAnalysis = roiAnalysisRepository.findByProjectId(projectId).orElse(null);
+        ROIAnalysis existingAnalysis = roiAnalysisRepository
+                .findFirstByProjectIdOrderByAnalysisDateDesc(projectId)
+                .orElse(null);
 
         ROIAnalysis analysis;
         if (existingAnalysis != null) {
@@ -147,7 +146,7 @@ public class ROIAnalysisService {
         }
 
         // 获取基础ROI分析
-        ROIAnalysis baseAnalysis = roiAnalysisRepository.findByProjectId(projectId)
+        ROIAnalysis baseAnalysis = roiAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "ROI analysis not found for project: " + projectId));
 

@@ -12,7 +12,7 @@
           :auto-upload="false"
           :show-file-list="false"
           :on-change="handleFileChange"
-          accept=".doc,.docx,.pdf"
+          accept=".doc,.docx"
         >
           <el-button type="primary">选择评分文件</el-button>
         </el-upload>
@@ -39,7 +39,11 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="48" />
-        <el-table-column label="类别" prop="category" width="90" />
+        <el-table-column label="类别" width="90">
+          <template #default="{ row }">
+            {{ formatCategory(row.category) }}
+          </template>
+        </el-table-column>
         <el-table-column label="评分项" prop="scoreItemTitle" min-width="150" />
         <el-table-column label="评分规则" min-width="260">
           <template #default="{ row }">
@@ -47,6 +51,16 @@
           </template>
         </el-table-column>
         <el-table-column label="分值" prop="scoreValueText" width="110" />
+        <el-table-column label="建议交付物" min-width="180">
+          <template #default="{ row }">
+            <div class="deliverables-text">{{ formatDeliverables(row.suggestedDeliverables) }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column label="来源定位" min-width="170">
+          <template #default="{ row }">
+            <div class="source-text">{{ formatSource(row) }}</div>
+          </template>
+        </el-table-column>
         <el-table-column label="任务标题" min-width="200">
           <template #default="{ row }">
             <el-input v-model="row.generatedTaskTitle" />
@@ -140,6 +154,36 @@ watch(() => props.visible, async (visible) => {
 
 function countByStatus(status) {
   return drafts.value.filter((draft) => draft.status === status).length
+}
+
+function formatCategory(category) {
+  if (category === 'technical') return '技术'
+  if (category === 'business') return '商务'
+  if (category === 'price') return '价格'
+  return category || '-'
+}
+
+function formatDeliverables(deliverables) {
+  return Array.isArray(deliverables) && deliverables.length > 0
+    ? deliverables.join('、')
+    : '待补充'
+}
+
+function formatSource(row) {
+  const parts = []
+  if (row.sourceFileName) {
+    parts.push(row.sourceFileName)
+  }
+  if (Number.isInteger(row.sourcePage) && row.sourcePage > 0) {
+    parts.push(`第${row.sourcePage}页`)
+  }
+  if (Number.isInteger(row.sourceTableIndex) && row.sourceTableIndex >= 0) {
+    parts.push(`表${row.sourceTableIndex + 1}`)
+  }
+  if (Number.isInteger(row.sourceRowIndex) && row.sourceRowIndex >= 0) {
+    parts.push(`行${row.sourceRowIndex + 1}`)
+  }
+  return parts.length > 0 ? parts.join(' / ') : '待补充'
 }
 
 function handleFileChange(file) {
@@ -276,5 +320,13 @@ function handleClose() {
 .rule-text {
   white-space: pre-wrap;
   line-height: 1.5;
+}
+
+.deliverables-text,
+.source-text {
+  color: #606266;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
 </style>

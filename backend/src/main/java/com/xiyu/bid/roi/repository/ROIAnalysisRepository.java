@@ -18,5 +18,9 @@ public interface ROIAnalysisRepository extends JpaRepository<ROIAnalysis, Long> 
      * @param projectId 项目ID
      * @return ROI分析数据（如果存在）
      */
-    Optional<ROIAnalysis> findByProjectId(Long projectId);
+    Optional<ROIAnalysis> findFirstByProjectIdOrderByAnalysisDateDesc(Long projectId);
+
+    default Optional<ROIAnalysis> findByProjectId(Long projectId) {
+        return findFirstByProjectIdOrderByAnalysisDateDesc(projectId);
+    }
 }

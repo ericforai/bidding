@@ -9,7 +9,6 @@ import com.xiyu.bid.scoreanalysis.entity.DimensionScore;
 import com.xiyu.bid.scoreanalysis.repository.ScoreAnalysisRepository;
 import com.xiyu.bid.scoreanalysis.repository.DimensionScoreRepository;
 import com.xiyu.bid.scoreanalysis.service.ScoreAnalysisService;
-import com.xiyu.bid.service.IAuditLogService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -42,9 +41,6 @@ class ScoreAnalysisServiceTest {
 
     @Mock
     private DimensionScoreRepository dimensionScoreRepository;
-
-    @Mock
-    private IAuditLogService auditLogService;
 
     @InjectMocks
     private ScoreAnalysisService scoreAnalysisService;
@@ -116,7 +112,6 @@ class ScoreAnalysisServiceTest {
         assertEquals(100L, response.getData().getProjectId());
         verify(scoreAnalysisRepository, times(1)).save(any(ScoreAnalysis.class));
         verify(dimensionScoreRepository, times(1)).saveAll(anyList());
-        verify(auditLogService, times(1)).log(any());
     }
 
     @Test

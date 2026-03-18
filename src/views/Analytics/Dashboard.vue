@@ -449,7 +449,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Download, Document, FolderOpened, User, Loading } from '@element-plus/icons-vue'
-import { dashboardApi, projectsApi, mockData, isMockMode, getFeaturePlaceholder, isFeatureUnavailableResponse } from '@/api'
+import { dashboardApi, projectsApi, isMockMode, getFeaturePlaceholder, isFeatureUnavailableResponse } from '@/api'
+import { getDemoDashboardProjects } from '@/api/mock-adapters/frontendDemo.js'
 import LineChart from '@/components/charts/LineChart.vue'
 import PieChart from '@/components/charts/PieChart.vue'
 import BarChart from '@/components/charts/BarChart.vue'
@@ -1386,13 +1387,17 @@ const loadTrendDrillDownData = async (monthData) => {
       return
     } catch (error) {
       ElMessage.warning('真实项目明细加载失败，当前仅展示聚合统计')
+      drillDownData.value = buildAggregateOnlyDrillDown({
+        totalParticipation: monthData.bids,
+        wonCount: monthData.wins,
+        teamWinRate: monthData.rate,
+        totalAmount: monthData.amount
+      })
+      return
     }
   }
 
-  const mockProjects = mockData.projects.map(p => ({
-    ...p,
-    result: p.status === 'won' ? 'won' : p.status === 'lost' ? 'lost' : null
-  }))
+  const mockProjects = getDemoDashboardProjects()
 
   drillDownData.value = {
     projects: mockProjects.map(p => ({

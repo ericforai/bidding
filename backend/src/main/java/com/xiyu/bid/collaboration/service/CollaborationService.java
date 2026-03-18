@@ -69,9 +69,8 @@ public class CollaborationService {
     public CommentDTO addComment(Long threadId, CommentCreateRequest request) {
         log.info("Adding comment to thread: {}", threadId);
 
-        // Verify thread exists
-        CollaborationThread thread = threadRepository.findById(threadId)
-                .orElseThrow(() -> new ResourceNotFoundException("Thread not found with id: " + threadId));
+        CollaborationThread thread = loadThread(threadId);
+        ensureThreadCanAcceptComments(thread);
 
         // Validate input
         validateCommentRequest(request);
@@ -159,6 +158,7 @@ public class CollaborationService {
     @Transactional(readOnly = true)
     public List<CommentDTO> getCommentsByThread(Long threadId) {
         log.debug("Fetching comments for thread: {}", threadId);
+        loadThread(threadId);
         return commentRepository.findByThreadIdAndIsDeletedFalseOrderByCreatedAtAsc(threadId).stream()
                 .map(this::convertToCommentDTO)
                 .collect(Collectors.toList());
@@ -184,8 +184,7 @@ public class CollaborationService {
     public CollaborationThreadDTO updateThreadStatus(Long threadId, ThreadStatus status) {
         log.info("Updating thread {} status to: {}", threadId, status);
 
-        CollaborationThread thread = threadRepository.findById(threadId)
-                .orElseThrow(() -> new ResourceNotFoundException("Thread not found with id: " + threadId));
+        CollaborationThread thread = loadThread(threadId);
 
         // 转换DTO枚举到Entity枚举
         CollaborationThread.ThreadStatus entityStatus = convertToEntityStatus(status);
@@ -203,8 +202,7 @@ public class CollaborationService {
     @Transactional(readOnly = true)
     public CollaborationThreadDTO getThreadById(Long threadId) {
         log.debug("Fetching thread by id: {}", threadId);
-        CollaborationThread thread = threadRepository.findById(threadId)
-                .orElseThrow(() -> new ResourceNotFoundException("Thread not found with id: " + threadId));
+        CollaborationThread thread = loadThread(threadId);
         return convertToThreadDTO(thread);
     }
 
@@ -231,6 +229,17 @@ public class CollaborationService {
         if (request.getContent().length() > MAX_COMMENT_LENGTH) {
             throw new IllegalArgumentException(
                 "Content length exceeds maximum allowed length of " + MAX_COMMENT_LENGTH + " characters");
+        }
+    }
+
+    private CollaborationThread loadThread(Long threadId) {
+        return threadRepository.findById(threadId)
+                .orElseThrow(() -> new ResourceNotFoundException("Thread not found with id: " + threadId));
+    }
+
+    private void ensureThreadCanAcceptComments(CollaborationThread thread) {
+        if (thread.getStatus() == CollaborationThread.ThreadStatus.CLOSED) {
+            throw new IllegalStateException("Cannot add comments to a closed thread");
         }
     }
 

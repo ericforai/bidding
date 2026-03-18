@@ -52,6 +52,11 @@
             </el-table-column>
           </el-table>
 
+          <el-empty
+            v-if="rulesData.length === 0"
+            description="暂无自动化规则"
+          />
+
           <div class="rules-tip">
             <el-icon><InfoFilled /></el-icon>
             <span>自动化规则将在满足触发条件时自动执行相应的提醒动作</span>
@@ -186,8 +191,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Plus, InfoFilled, Clock } from '@element-plus/icons-vue'
+import { isMockMode } from '@/api'
+import { getDemoAutomationPanelData } from '@/api/mock-adapters/frontendDemo.js'
 
 const props = defineProps({
   modelValue: {
@@ -216,48 +223,36 @@ const urgencyFilter = ref('all')
 const ruleDialogVisible = ref(false)
 const editingRule = ref(null)
 
-const mockData = {
-  rules: [
-    { id: 1, trigger: '开标前3天', action: '提醒确认投标保证金', enabled: true },
-    { id: 2, trigger: '答疑截止前1天', action: '收集内部答疑问题', enabled: true },
-    { id: 3, trigger: '资质到期前30天', action: '提醒更新资质', enabled: true },
-    { id: 4, trigger: '中标后7天', action: '提醒保证金退还申请', enabled: false },
-    { id: 5, trigger: '开标前1天', action: '提醒检查标书盖章', enabled: true }
-  ],
-  pendingReminders: [
-    { id: 1, task: '智慧城市IOC - 投标保证金办理截止', dueTime: '2024-03-15 17:00', urgency: 'high' },
-    { id: 2, task: '智慧城市IOC - 技术方案终稿', dueTime: '2024-03-18 12:00', urgency: 'medium' },
-    { id: 3, task: 'ISO27001资质即将到期', dueTime: '2024-03-25 00:00', urgency: 'low' },
-    { id: 4, task: 'XX项目 - 提交答疑问题', dueTime: '2024-03-16 09:00', urgency: 'high' }
-  ],
-  executionHistory: [
-    {
-      id: 1,
-      action: '投标保证金提醒',
-      detail: '已通过企业微信发送给项目负责人李四',
-      timestamp: '2024-03-12 10:30',
-      status: 'success'
-    },
-    {
-      id: 2,
-      action: '资质更新提醒',
-      detail: 'ISO9001资质将于30天后到期',
-      timestamp: '2024-03-11 14:20',
-      status: 'success'
-    },
-    {
-      id: 3,
-      action: '开标提醒',
-      detail: 'XX市智慧交通项目今日开标',
-      timestamp: '2024-03-10 09:00',
-      status: 'warning'
-    }
-  ]
+const useDemoFallback = isMockMode()
+const demoPanelData = getDemoAutomationPanelData()
+
+const getSectionData = (key, demoValue = []) => {
+  const provided = props.data?.[key]
+
+  if (Array.isArray(provided)) {
+    return provided
+  }
+
+  return useDemoFallback ? demoValue : []
 }
 
-const rulesData = ref(props.data?.rules || mockData.rules)
-const pendingReminders = ref(props.data?.pendingReminders || mockData.pendingReminders)
-const executionHistory = ref(props.data?.executionHistory || mockData.executionHistory)
+const rulesData = ref([])
+const pendingReminders = ref([])
+const executionHistory = ref([])
+
+const syncAutoTaskData = () => {
+  rulesData.value = getSectionData('rules', demoPanelData.rules)
+  pendingReminders.value = getSectionData('pendingReminders', demoPanelData.pendingReminders)
+  executionHistory.value = getSectionData('executionHistory', demoPanelData.executionHistory)
+}
+
+watch(
+  () => props.data,
+  () => {
+    syncAutoTaskData()
+  },
+  { immediate: true, deep: true }
+)
 
 const ruleForm = ref({
   trigger: '',

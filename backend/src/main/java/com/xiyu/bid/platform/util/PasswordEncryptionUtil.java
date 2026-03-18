@@ -3,6 +3,7 @@ package com.xiyu.bid.platform.util;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
@@ -29,9 +30,14 @@ public class PasswordEncryptionUtil {
 
     private byte[] encryptionKey;
 
+    @Value("${platform.account.encryption-key:}")
+    private String configuredKey;
+
     @PostConstruct
     public void initialize() {
-        String keyFromEnv = System.getenv("PLATFORM_ACCOUNT_ENCRYPTION_KEY");
+        String keyFromEnv = configuredKey != null && !configuredKey.trim().isEmpty()
+                ? configuredKey
+                : System.getenv("PLATFORM_ACCOUNT_ENCRYPTION_KEY");
         if (keyFromEnv == null || keyFromEnv.trim().isEmpty()) {
             String errorMsg = "PLATFORM_ACCOUNT_ENCRYPTION_KEY environment variable is required for password encryption. " +
                            "This is a security requirement - hardcoded keys are not allowed.";

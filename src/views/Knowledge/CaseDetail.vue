@@ -184,11 +184,10 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { knowledgeApi, isMockMode } from '@/api'
-import { loadDemoState, saveDemoState } from '@/utils/demoPersistence'
+import { getCaseDemoOverride, saveCaseDemoPatch } from '@/api/mock-adapters/frontendDemo.js'
 
 const router = useRouter()
 const route = useRoute()
-const CASE_STORAGE_KEY = 'knowledge-case-overrides'
 
 const caseData = ref(null)
 const loading = ref(false)
@@ -213,23 +212,16 @@ const relatedCases = computed(() => {
     }))
 })
 
-const loadCasePersistence = () => loadDemoState(CASE_STORAGE_KEY, {})
-
 const applyCasePersistence = (data) => {
   if (!isMockMode()) {
     return data
   }
-  const persisted = loadCasePersistence()[String(data.id)]
+  const persisted = getCaseDemoOverride(data.id)
   return persisted ? { ...data, ...persisted } : data
 }
 
 const persistCasePatch = (caseId, patch) => {
-  const state = loadCasePersistence()
-  state[String(caseId)] = {
-    ...(state[String(caseId)] || {}),
-    ...patch,
-  }
-  saveDemoState(CASE_STORAGE_KEY, state)
+  saveCaseDemoPatch(caseId, patch)
 }
 
 const getCurrentUser = () => {

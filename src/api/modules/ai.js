@@ -4,6 +4,7 @@
  */
 import httpClient from '../client.js'
 import { mockData } from '../mock.js'
+import { buildFeatureUnavailableResponse } from '../featureAvailability.js'
 import { isMockMode } from '../config.js'
 
 function isNumericId(id) {
@@ -141,13 +142,37 @@ function normalizeRoiAnalysis(data = {}) {
 }
 
 function normalizeComplianceResult(data = {}) {
+  const parseIssues = () => {
+    if (Array.isArray(data?.issues)) {
+      return data.issues
+    }
+
+    if (typeof data?.checkDetails !== 'string' || data.checkDetails.trim() === '') {
+      return []
+    }
+
+    try {
+      const parsed = JSON.parse(data.checkDetails)
+      const issueList = Array.isArray(parsed) ? parsed : parsed ? [parsed] : []
+
+      return issueList.map((issue) => ({
+        category: issue?.ruleType || issue?.severity || '合规',
+        item: issue?.ruleName || issue?.description || '检查项',
+        status: issue?.passed === false ? 'fail' : 'pass',
+        suggestion: issue?.recommendation || issue?.description || '',
+      }))
+    } catch {
+      return []
+    }
+  }
+
   return {
     id: data?.id,
     projectId: data?.projectId,
     tenderId: data?.tenderId,
     overallStatus: data?.overallStatus || 'UNKNOWN',
     overallScore: Number(data?.riskScore || data?.overallScore || 0),
-    issues: Array.isArray(data?.issues) ? data.issues : [],
+    issues: parseIssues(),
     checkedAt: data?.checkedAt || '',
     checkedBy: data?.checkedBy || '',
   }
@@ -246,7 +271,7 @@ export const scoreAnalysisApi = {
       budget: Number(context?.budget || 0),
       tags: Array.isArray(context?.tags) ? context.tags : [],
     })
-    return { ...response, data: response?.data || buildScorePreview(context) }
+    return { ...response, data: response?.data ?? null }
   },
 }
 
@@ -263,10 +288,14 @@ export const projectAiApi = {
         },
       })
     }
-    if (!isNumericId(projectId)) return Promise.resolve(invalidIdMessage('project'))
+    if (!isNumericId(projectId)) {
+      return Promise.resolve(buildFeatureUnavailableResponse('project-ai-cards', {
+        message: 'Project ID must be numeric in API mode',
+      }))
+    }
 
     const response = await httpClient.get(`/api/projects/${projectId}/ai-cards`)
-    return { ...response, data: normalizeProjectAiCards(response?.data) }
+    return { ...response, data: response?.data ? normalizeProjectAiCards(response.data) : null }
   },
 }
 
@@ -278,12 +307,16 @@ export const competitionApi = {
         data: mockData.competitionIntel?.[projectId] || mockData.competitionIntel?.P001 || null,
       })
     }
-    if (!isNumericId(projectId)) return Promise.resolve(invalidIdMessage('project'))
+    if (!isNumericId(projectId)) {
+      return Promise.resolve(buildFeatureUnavailableResponse('competition-analysis', {
+        message: 'Project ID must be numeric in API mode',
+      }))
+    }
 
     const response = await httpClient.get(`/api/ai/competition/project/${projectId}`)
     return {
       ...response,
-      data: normalizeCompetitionAnalysis(response?.data),
+      data: response?.data ? normalizeCompetitionAnalysis(response.data) : [],
     }
   },
 
@@ -306,10 +339,14 @@ export const competitionApi = {
     if (isMockMode()) {
       return Promise.resolve({ success: true, data: mockData.competitionIntel?.P001 || null })
     }
-    if (!isNumericId(projectId)) return Promise.resolve(invalidIdMessage('project'))
+    if (!isNumericId(projectId)) {
+      return Promise.resolve(buildFeatureUnavailableResponse('competition-analysis', {
+        message: 'Project ID must be numeric in API mode',
+      }))
+    }
 
     const response = await httpClient.post(`/api/ai/competition/project/${projectId}/analyze`)
-    return { ...response, data: normalizeCompetitionAnalysis(response?.data)[0] || null }
+    return { ...response, data: response?.data ? normalizeCompetitionAnalysis(response.data)[0] || null : null }
   },
 }
 
@@ -321,10 +358,14 @@ export const roiApi = {
         data: mockData.roiAnalysis?.[projectId] || mockData.roiAnalysis?.P001 || null,
       })
     }
-    if (!isNumericId(projectId)) return Promise.resolve(invalidIdMessage('project'))
+    if (!isNumericId(projectId)) {
+      return Promise.resolve(buildFeatureUnavailableResponse('roi-analysis', {
+        message: 'Project ID must be numeric in API mode',
+      }))
+    }
 
     const response = await httpClient.get(`/api/ai/roi/project/${projectId}`)
-    return { ...response, data: normalizeRoiAnalysis(response?.data) }
+    return { ...response, data: response?.data ? normalizeRoiAnalysis(response.data) : null }
   },
 
   async calculate(data) {
@@ -342,7 +383,11 @@ export const roiApi = {
         },
       })
     }
-    if (!isNumericId(data?.projectId)) return Promise.resolve(invalidIdMessage('project'))
+    if (!isNumericId(data?.projectId)) {
+      return Promise.resolve(buildFeatureUnavailableResponse('roi-analysis', {
+        message: 'Project ID must be numeric in API mode',
+      }))
+    }
 
     return httpClient.post(`/api/ai/roi/project/${data.projectId}/calculate`, data)
   },
@@ -372,7 +417,11 @@ export const complianceApi = {
         data: mockData.complianceCheck?.[projectId] || mockData.complianceCheck?.P001 || null,
       })
     }
-    if (!isNumericId(projectId)) return Promise.resolve(invalidIdMessage('project'))
+    if (!isNumericId(projectId)) {
+      return Promise.resolve(buildFeatureUnavailableResponse('compliance-check', {
+        message: 'Project ID must be numeric in API mode',
+      }))
+    }
 
     const response = await httpClient.get(`/api/compliance/project/${projectId}/results`)
     const results = Array.isArray(response?.data) ? response.data.map(normalizeComplianceResult) : []
@@ -383,20 +432,28 @@ export const complianceApi = {
     if (isMockMode()) {
       return Promise.resolve({ success: true, data: mockData.complianceCheck?.P001 || null })
     }
-    if (!isNumericId(projectId)) return Promise.resolve(invalidIdMessage('project'))
+    if (!isNumericId(projectId)) {
+      return Promise.resolve(buildFeatureUnavailableResponse('compliance-check', {
+        message: 'Project ID must be numeric in API mode',
+      }))
+    }
 
     const response = await httpClient.post(`/api/compliance/check/project/${projectId}`)
-    return { ...response, data: normalizeComplianceResult(response?.data) }
+    return { ...response, data: response?.data ? normalizeComplianceResult(response.data) : null }
   },
 
   async performTenderCheck(tenderId) {
     if (isMockMode()) {
       return Promise.resolve({ success: true, data: mockData.complianceCheck?.P001 || null })
     }
-    if (!isNumericId(tenderId)) return Promise.resolve(invalidIdMessage('tender'))
+    if (!isNumericId(tenderId)) {
+      return Promise.resolve(buildFeatureUnavailableResponse('compliance-check', {
+        message: 'Tender ID must be numeric in API mode',
+      }))
+    }
 
     const response = await httpClient.post(`/api/compliance/check/tender/${tenderId}`)
-    return { ...response, data: normalizeComplianceResult(response?.data) }
+    return { ...response, data: response?.data ? normalizeComplianceResult(response.data) : null }
   },
 }
 

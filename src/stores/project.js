@@ -1,11 +1,11 @@
-// Input: mockData (from @/api/mock), projectsApi (from @/api)
+// Input: projectsApi (from @/api), demo project adapter (from @/api/mock-adapters)
 // Output: useProjectStore - Pinia store for project management
 // Pos: src/stores/ - State management layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 import { defineStore } from 'pinia'
-import { mockData } from '@/api/mock'
-import { projectsApi } from '@/api'
+import { isMockMode, projectsApi } from '@/api'
+import { getDemoProjectById } from '@/api/mock-adapters/frontendDemo.js'
 
 export const useProjectStore = defineStore('project', {
   state: () => ({
@@ -25,13 +25,14 @@ export const useProjectStore = defineStore('project', {
         const result = await projectsApi.getList(filters)
         if (result?.success) {
           this.projects = result.data || []
-        } else if (!this.projects.length) {
-          this.projects = [...mockData.projects]
+        } else if (!isMockMode()) {
+          this.projects = []
         }
       } catch (error) {
-        // API 调用失败时回退到 mock 数据
-        console.warn('API 调用失败，使用 mock 数据:', error.message)
-        this.projects = [...mockData.projects]
+        if (!isMockMode()) {
+          console.warn('API 调用失败，返回空项目列表:', error.message)
+          this.projects = []
+        }
       }
       return this.projects
     },
@@ -51,13 +52,20 @@ export const useProjectStore = defineStore('project', {
           return project
         }
       } catch (error) {
-        console.warn('API 获取项目详情失败，使用 mock 数据:', error.message)
+        if (isMockMode()) {
+          console.warn('API 获取项目详情失败，使用 mock 数据:', error.message)
+        } else {
+          console.warn('API 获取项目详情失败，返回空结果:', error.message)
+        }
       }
 
-      // API 失败时从 mock 数据获取
-      const mockProject = mockData.projects.find(p => String(p.id) === String(id))
-      this.currentProject = mockProject || null
-      return mockProject
+      if (isMockMode()) {
+        const mockProject = getDemoProjectById(id)
+        this.currentProject = mockProject || null
+        return mockProject
+      }
+      this.currentProject = null
+      return null
     },
 
     async createProject(data) {

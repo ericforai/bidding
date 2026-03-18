@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { mockData } from '@/api/mock'
 import { authApi } from '@/api'
+import { getDemoUsers } from '@/api/mock-adapters/frontendDemo.js'
 
 // 从 localStorage 恢复用户状态
 const getSavedUser = () => {
@@ -24,7 +24,7 @@ export const useUserStore = defineStore('user', {
     return {
       currentUser: savedUser,
       token: getSavedToken(),
-      users: mockData.users
+      users: getDemoUsers()
     }
   },
 
