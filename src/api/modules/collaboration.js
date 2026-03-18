@@ -17,6 +17,10 @@ function invalidIdMessage(entityName) {
   }
 }
 
+function failureForInvalidId(entityName) {
+  return Promise.resolve(invalidIdMessage(entityName))
+}
+
 function formatDateTime(value) {
   if (!value) return ''
   const date = new Date(value)
@@ -235,7 +239,7 @@ export const collaborationApi = {
     }
 
     if (!isNumericId(params.projectId)) {
-      return Promise.resolve({ success: true, data: getMockThreads(), message: '使用演示协作数据' })
+      return failureForInvalidId('project')
     }
 
     const response = await httpClient.get('/api/collaboration/threads', {
@@ -246,7 +250,7 @@ export const collaborationApi = {
 
     return {
       ...response,
-      data: apiData.length > 0 ? apiData : getMockThreads(),
+      data: apiData,
     }
   },
 
@@ -365,14 +369,14 @@ export const documentVersionsApi = {
       return Promise.resolve({ success: true, data: getMockVersions(projectId) })
     }
     if (!isNumericId(projectId)) {
-      return Promise.resolve({ success: true, data: getMockVersions(projectId), message: '使用演示版本数据' })
+      return failureForInvalidId('project')
     }
 
     const response = await httpClient.get(`/api/documents/${projectId}/versions`)
     const apiData = Array.isArray(response?.data) ? response.data.map(normalizeVersion) : []
     return {
       ...response,
-      data: apiData.length > 0 ? apiData : getMockVersions(projectId),
+      data: apiData,
     }
   },
 
@@ -396,23 +400,7 @@ export const documentVersionsApi = {
       })
     }
     if (!isNumericId(projectId) || !isNumericId(version1Id) || !isNumericId(version2Id)) {
-      const versions = getMockVersions(projectId)
-      const version1 = versions.find((item) => String(item.id) === String(version1Id)) || versions[0] || null
-      const version2 = versions.find((item) => String(item.id) === String(version2Id)) || versions[1] || versions[0] || null
-      return Promise.resolve({
-        success: true,
-        data: {
-          version1,
-          version2,
-          differences: [
-            ...(version1?.changes || []).map((item) => `- ${item}`),
-            ...(version2?.changes || []).map((item) => `+ ${item}`),
-          ],
-          content1: version1?.content || '',
-          content2: version2?.content || '',
-        },
-        message: '使用演示版本对比数据',
-      })
+      return failureForInvalidId('project')
     }
 
     const versionsResponse = await documentVersionsApi.getVersions(projectId)
@@ -429,7 +417,7 @@ export const documentVersionsApi = {
       return Promise.resolve({ success: true, data: { projectId, versionId, userId } })
     }
     if (!isNumericId(projectId) || !isNumericId(versionId) || !isNumericId(userId)) {
-      return Promise.resolve({ success: true, data: { projectId, versionId, userId }, message: '使用演示版本回滚结果' })
+      return failureForInvalidId('project')
     }
 
     return httpClient.post(`/api/documents/${projectId}/versions/${versionId}/rollback`, null, {
@@ -454,20 +442,7 @@ export const documentVersionsApi = {
       })
     }
     if (!isNumericId(projectId)) {
-      return Promise.resolve({
-        success: true,
-        data: normalizeVersion({
-          id: `v${Date.now()}`,
-          version: 'new',
-          isCurrent: true,
-          timestamp: new Date().toISOString(),
-          author: '当前用户',
-          avatar: '当',
-          changes: [data?.changeSummary || '创建新版本'],
-          content: data?.content || '',
-        }),
-        message: '使用演示版本创建结果',
-      })
+      return failureForInvalidId('project')
     }
 
     return httpClient.post(`/api/documents/${projectId}/versions`, {
@@ -483,41 +458,28 @@ export const documentEditorApi = {
       return Promise.resolve({ success: true, data: buildMockEditorDocument(projectId) })
     }
     if (!isNumericId(projectId)) {
-      return Promise.resolve({
-        success: true,
-        data: buildMockEditorDocument(projectId),
-        message: '使用演示文档编辑数据',
-      })
+      return failureForInvalidId('project')
     }
 
-    try {
-      const [structureResponse, treeResponse] = await Promise.all([
-        documentEditorApi.getStructure(projectId),
-        documentEditorApi.getTree(projectId),
-      ])
+    const [structureResponse, treeResponse] = await Promise.all([
+      documentEditorApi.getStructure(projectId),
+      documentEditorApi.getTree(projectId),
+    ])
 
-      const sections = Array.isArray(treeResponse?.data)
-        ? treeResponse.data.map(normalizeApiEditorSection)
-        : []
+    const sections = Array.isArray(treeResponse?.data)
+      ? treeResponse.data.map(normalizeApiEditorSection)
+      : []
 
-      return {
-        success: true,
-        data: {
-          structureId: structureResponse?.data?.id ?? null,
-          projectId: Number(projectId),
-          projectName: '',
-          templateId: structureResponse?.data?.name || 'API_DOCUMENT',
-          templateName: structureResponse?.data?.name || '文档结构',
-          sections,
-        },
-      }
-    } catch (error) {
-      const fallback = buildMockEditorDocument(projectId)
-      return {
-        success: true,
-        data: fallback,
-        message: '使用演示文档编辑数据',
-      }
+    return {
+      success: true,
+      data: {
+        structureId: structureResponse?.data?.id ?? null,
+        projectId: Number(projectId),
+        projectName: '',
+        templateId: structureResponse?.data?.name || 'API_DOCUMENT',
+        templateName: structureResponse?.data?.name || '文档结构',
+        sections,
+      },
     }
   },
 
@@ -527,8 +489,7 @@ export const documentEditorApi = {
       return Promise.resolve({ success: true, data: editor || null })
     }
     if (!isNumericId(projectId)) {
-      const editor = mockData.documentEditor?.[resolveMockProjectId(projectId)]
-      return Promise.resolve({ success: true, data: editor || null, message: '使用演示文档结构数据' })
+      return failureForInvalidId('project')
     }
 
     return httpClient.get(`/api/documents/${projectId}/editor/structure`)
@@ -697,14 +658,14 @@ export const documentEditorApi = {
       return Promise.resolve({ success: true, data: getMockSections(projectId) })
     }
     if (!isNumericId(projectId)) {
-      return Promise.resolve({ success: true, data: getMockSections(projectId), message: '使用演示章节树数据' })
+      return failureForInvalidId('project')
     }
 
     const response = await httpClient.get(`/api/documents/${projectId}/editor/sections/tree`)
     const apiData = Array.isArray(response?.data) ? response.data.map(normalizeSection) : []
     return {
       ...response,
-      data: apiData.length > 0 ? apiData : getMockSections(projectId),
+      data: apiData,
     }
   },
 
@@ -713,11 +674,7 @@ export const documentEditorApi = {
       return Promise.resolve({ success: true, data: buildMockEditorDocument(projectId).sections })
     }
     if (!isNumericId(projectId)) {
-      return Promise.resolve({
-        success: true,
-        data: buildMockEditorDocument(projectId).sections,
-        message: '使用演示章节树数据',
-      })
+      return failureForInvalidId('project')
     }
 
     const response = await httpClient.get(`/api/documents/${projectId}/editor/sections/tree`)
@@ -735,7 +692,7 @@ export const documentExportApi = {
       return Promise.resolve({ success: true, data: [] })
     }
     if (!isNumericId(projectId)) {
-      return Promise.resolve({ success: true, data: [], message: '使用演示导出记录' })
+      return failureForInvalidId('project')
     }
 
     return httpClient.get(`/api/documents/${projectId}/exports`)
@@ -777,7 +734,7 @@ export const documentExportApi = {
       return Promise.resolve({ success: true, data: [] })
     }
     if (!isNumericId(projectId)) {
-      return Promise.resolve({ success: true, data: [], message: '使用演示归档记录' })
+      return failureForInvalidId('project')
     }
 
     return httpClient.get(`/api/documents/${projectId}/archive-records`)

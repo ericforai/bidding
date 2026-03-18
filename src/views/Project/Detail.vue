@@ -1242,7 +1242,8 @@ import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
 import { useBarStore } from '@/stores/bar'
 import { knowledgeApi, isMockMode, projectsApi, collaborationApi, approvalApi } from '@/api'
-import { mockData } from '@/api/mock'
+import { complianceApi, scoreAnalysisApi } from '@/api/modules/ai.js'
+import { getDemoAutoTasks, getDemoMobileCard, getDemoProjectById } from '@/api/mock-adapters/frontendDemo.js'
 import {
   Edit, DocumentChecked, Coin, InfoFilled, List, Folder, Upload, Plus,
   MagicStick, Operation, DocumentAdd, Share, Download, Bell, Clock,
@@ -1575,8 +1576,12 @@ const project = computed(() => {
     return projectStore.currentProject
   }
 
+  if (!isDemoMode) {
+    return null
+  }
+
   const routeProjectId = String(route.params.id || '')
-  return mockData.projects.find((item) => String(item.id) === routeProjectId) || null
+  return getDemoProjectById(routeProjectId)
 })
 
 const dialogProjectId = computed(() => project.value?.id ?? route.params.id)
@@ -1680,77 +1685,138 @@ const getOverallScoreType = (score) => {
   return 'danger'
 }
 
-// 模拟AI检查
+const mapComplianceIssues = (issues = []) => issues.map((issue) => ({
+  category: issue?.ruleType || issue?.severity || '合规',
+  item: issue?.ruleName || issue?.description || '检查项',
+  status: issue?.passed === false ? 'fail' : 'pass',
+  suggestion: issue?.recommendation || issue?.description || ''
+}))
+
+const buildScorePanel = (analysis = {}) => {
+  const dimensions = Array.isArray(analysis?.dimensions) ? analysis.dimensions : []
+  const findScore = (candidates) => {
+    const matched = dimensions.find((dimension) =>
+      candidates.some((candidate) => String(dimension?.dimensionName || '').includes(candidate))
+    )
+    return Number(matched?.score || 0)
+  }
+
+  return {
+    total: Number(analysis?.overallScore || 0),
+    tech: findScore(['技术能力', '技术方案', '技术']),
+    business: findScore(['商务响应', '商务', '团队经验']),
+    price: findScore(['价格竞争力', '价格', '报价']),
+    qualification: findScore(['企业资质', '资质', '合规性']),
+    comment: analysis?.summary || '',
+    suggestions: dimensions.map((dimension) => dimension?.comments).filter(Boolean),
+  }
+}
+
+// AI检查相关函数
 const runAICheck = async () => {
   aiChecking.value = true
 
-  // 模拟异步检查过程
-  await new Promise(resolve => setTimeout(resolve, 1500))
+  if (isDemoMode) {
+    await new Promise((resolve) => setTimeout(resolve, 1500))
 
-  // 模拟合规性检查结果
-  const mockComplianceIssues = [
-    { category: '资质', item: '营业执照年检', status: 'pass', suggestion: '资质有效' },
-    { category: '资质', item: 'ISO认证有效期', status: 'pass', suggestion: '认证在有效期内' },
-    { category: '响应', item: '技术参数偏离表', status: 'fail', suggestion: '第3项技术参数未响应，建议补充说明' },
-    { category: '响应', item: '商务条款应答', status: 'pass', suggestion: '响应完整' },
-    { category: '格式', item: '目录页码', status: 'fail', suggestion: '第15页页码与目录不符' },
-    { category: '格式', item: '签署盖章', status: 'pass', suggestion: '签署完整' }
-  ]
-
-  const passCount = mockComplianceIssues.filter(i => i.status === 'pass').length
-  const complianceScore = Math.round((passCount / mockComplianceIssues.length) * 100)
-
-  // 模拟质量检查结果
-  const mockQualityErrors = [
-    { type: 'typo', original: '信产', suggestion: '信创', location: '技术方案 P.8' },
-    { type: 'grammar', original: '我公司拥有', suggestion: '我司具备', location: '商务应答 P.12' },
-    { type: 'format', original: '2024年', suggestion: '2025年', location: '封面页' },
-    { type: 'typo', original: '截止', suggestion: '截至', location: '技术方案 P.23' }
-  ]
-
-  const mockQualitySuggestions = [
-    { type: 'grammar', suggestion: '建议统一使用"我司"而非"我公司"', location: '全文' },
-    { type: 'format', suggestion: '建议增加目录超链接', location: '目录页' }
-  ]
-
-  // 模拟智能评分结果
-  const mockScore = {
-    tech: 4,
-    business: 5,
-    price: 3,
-    qualification: 5,
-    total: 85,
-    comment: '该项目在商务响应和资质方面表现优秀，技术方案较为完整。建议加强价格竞争力分析，补充更多技术实施细节。',
-    suggestions: [
-      '建议补充技术实施方案的时间节点和里程碑',
-      '价格部分可增加成本构成分析，提升说服力',
-      '建议增加同类项目案例对比',
-      '可补充风险应对措施'
+    const mockComplianceIssues = [
+      { category: '资质', item: '营业执照年检', status: 'pass', suggestion: '资质有效' },
+      { category: '资质', item: 'ISO认证有效期', status: 'pass', suggestion: '认证在有效期内' },
+      { category: '响应', item: '技术参数偏离表', status: 'fail', suggestion: '第3项技术参数未响应，建议补充说明' },
+      { category: '响应', item: '商务条款应答', status: 'pass', suggestion: '响应完整' },
+      { category: '格式', item: '目录页码', status: 'fail', suggestion: '第15页页码与目录不符' },
+      { category: '格式', item: '签署盖章', status: 'pass', suggestion: '签署完整' }
     ]
-  }
 
-  aiResult.value = {
-    compliance: {
-      score: complianceScore,
-      issues: mockComplianceIssues
-    },
-    quality: {
-      errors: mockQualityErrors,
-      suggestions: mockQualitySuggestions
-    },
-    score: mockScore
-  }
+    const passCount = mockComplianceIssues.filter((item) => item.status === 'pass').length
+    const complianceScore = Math.round((passCount / mockComplianceIssues.length) * 100)
 
-  // 更新项目数据
-  if (project.value) {
-    project.value.aiCheck = {
-      compliance: { score: complianceScore, issues: [], passed: complianceScore >= 80 },
-      quality: { score: 85, issues: mockQualityErrors.map(e => `${e.location}: ${e.original} → ${e.suggestion}`), passed: true }
+    const mockScore = {
+      total: 87,
+      tech: 90,
+      business: 85,
+      price: 82,
+      qualification: 95,
+      comment: '技术方案整体完整，商务应答较为充分，但部分技术参数与格式细节需进一步修订。\n建议优先修复技术偏离表和目录页码问题，确保投标文件质量。',
+      suggestions: [
+        '补充第3项技术参数的响应说明',
+        '修正目录页码与正文页码一致性',
+        '完善格式规范，统一字体和间距',
+        '加强项目案例的针对性描述'
+      ]
     }
+
+    aiResult.value = {
+      compliance: {
+        score: complianceScore,
+        issues: mockComplianceIssues
+      },
+      quality: null,
+      score: mockScore
+    }
+
+    if (project.value) {
+      project.value.aiCheck = {
+        compliance: { score: complianceScore, issues: [], passed: complianceScore >= 80 },
+        quality: null
+      }
+    }
+
+    aiChecking.value = false
+    ElMessage.success('AI检查完成')
+    return
   }
 
-  aiChecking.value = false
-  ElMessage.success('AI检查完成')
+  if (!isApiProject.value) {
+    aiResult.value = { compliance: null, quality: null, score: null }
+    ElMessage.warning('当前项目ID不是后端真实ID，无法执行AI检查')
+    aiChecking.value = false
+    return
+  }
+
+  try {
+    const [complianceResponse, scoreResponse] = await Promise.all([
+      complianceApi.getCheckResult(route.params.id),
+      scoreAnalysisApi.getAnalysis(route.params.id)
+    ])
+
+    if (complianceResponse?.success === false || scoreResponse?.success === false) {
+      const message = complianceResponse?.message || scoreResponse?.message || 'AI检查暂未接入真实结果'
+      aiResult.value = { compliance: null, quality: null, score: null }
+      ElMessage.warning(message)
+      return
+    }
+
+    const complianceRecord = Array.isArray(complianceResponse?.data)
+      ? complianceResponse.data[0]
+      : complianceResponse?.data
+
+    aiResult.value = {
+      compliance: complianceRecord
+        ? {
+            score: Number(complianceRecord.overallScore || complianceRecord.riskScore || 0),
+            issues: mapComplianceIssues(complianceRecord.issues || [])
+          }
+        : null,
+      quality: null,
+      score: scoreResponse?.data ? buildScorePanel(scoreResponse.data) : null
+    }
+
+    if (project.value) {
+      project.value.aiCheck = {
+        compliance: aiResult.value.compliance,
+        quality: null
+      }
+    }
+
+    ElMessage.success('AI检查完成')
+  } catch (error) {
+    console.error('AI检查失败:', error)
+    aiResult.value = { compliance: null, quality: null, score: null }
+    ElMessage.error(error?.response?.data?.message || error?.message || 'AI检查失败')
+  } finally {
+    aiChecking.value = false
+  }
 }
 
 // 采纳建议
@@ -2837,11 +2903,13 @@ onMounted(async () => {
     : []
 
   if (!projectStore.currentProject) {
-    projectStore.currentProject = mockData.projects.find((item) => String(item.id) === String(projectId)) || null
+    projectStore.currentProject = isDemoMode
+      ? getDemoProjectById(projectId)
+      : null
   }
   await loadProjectWorkflowData(projectId)
-  demoAutoTasks.value = mockData.autoTasks || []
-  demoMobileCard.value = mockData.mobileCard?.[projectId] || mockData.mobileCard?.P001 || null
+  demoAutoTasks.value = getDemoAutoTasks()
+  demoMobileCard.value = getDemoMobileCard(projectId)
 
   // 加载资产台账数据
   await barStore.getSites()

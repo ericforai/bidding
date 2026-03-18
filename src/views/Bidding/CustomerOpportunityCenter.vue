@@ -6,15 +6,35 @@
         <p class="animate-fade-in-delay">基于销售情报（Sales Intelligence）的客户经营视图，智能研判历史规律与潜在商机。</p>
       </div>
       <div class="header-actions">
-        <el-button @click="refreshPage" :loading="loading" class="btn-refresh">
+        <el-button
+          @click="refreshInsights"
+          :loading="isMockMode && isScanning"
+          :disabled="!isMockMode"
+          class="btn-refresh"
+        >
           <el-icon><Refresh /></el-icon>
-          刷新洞察
+          {{ isMockMode ? '刷新洞察' : '洞察未接入' }}
         </el-button>
         <el-button type="primary" class="btn-primary" @click="createProject" v-if="selectedCustomer">
           {{ selectedCustomer.prediction.convertedProjectId ? '查看项目' : '转为正式项目' }}
         </el-button>
       </div>
     </div>
+
+    <!-- AI Scanning Overlay -->
+    <transition name="fade">
+      <div v-if="isMockMode && isScanning" class="scanning-overlay">
+        <div class="scan-grid"></div>
+        <div class="scan-line"></div>
+        <div class="scan-content">
+          <div class="hologram-box">
+            <el-icon class="rotating"><Refresh /></el-icon>
+          </div>
+          <h3>AI 引擎正在分析全域数据...</h3>
+          <p>正在研判采购规律 · 识别机会评分 · 测算预算窗口</p>
+        </div>
+      </div>
+    </transition>
 
     <!-- Skeleton Screen for Top Board -->
     <template v-if="loading">
@@ -37,7 +57,21 @@
           <span>{{ item.label }}</span>
           <el-tag size="small" :type="item.tagType" effect="light" class="tag-glow">{{ item.tag }}</el-tag>
         </div>
-        <div class="card-value">{{ item.value }}</div>
+        <div class="card-main">
+          <div class="card-value">{{ item.value }}</div>
+          <div class="card-trend" :class="item.placeholder ? 'neutral' : (item.isUp ? 'up' : 'down')">
+            <template v-if="item.placeholder">
+              <el-tag size="small" type="info" effect="plain">{{ item.trendLabel || '未接入' }}</el-tag>
+            </template>
+            <template v-else>
+              <el-icon><CaretTop v-if="item.isUp" /><CaretBottom v-else /></el-icon>
+              {{ item.trend }}%
+            </template>
+          </div>
+        </div>
+        <div class="spark-box">
+          <div class="spark-line" :class="item.tagType"></div>
+        </div>
         <p class="card-note">{{ item.note }}</p>
       </div>
     </div>
@@ -56,25 +90,26 @@
                 placeholder="搜索名称..."
                 clearable
                 size="default"
+                :disabled="!isMockMode"
                 class="search-input"
               >
                 <template #prefix>
                   <el-icon><Search /></el-icon>
                 </template>
               </el-input>
-              <el-select v-model="filters.sales" placeholder="销售负责人" size="default" clearable class="filter-item">
+              <el-select v-model="filters.sales" placeholder="销售负责人" size="default" clearable :disabled="!isMockMode" class="filter-item">
                 <el-option label="全部销售" value="" />
                 <el-option v-for="user in salesUsers" :key="user.id" :label="user.name" :value="user.name" />
               </el-select>
             </div>
             <div class="filter-row">
-              <el-select v-model="filters.region" placeholder="全部地区" size="default" clearable class="filter-item">
+              <el-select v-model="filters.region" placeholder="全部地区" size="default" clearable :disabled="!isMockMode" class="filter-item">
                 <el-option v-for="region in regions" :key="region" :label="region" :value="region" />
               </el-select>
-              <el-select v-model="filters.industry" placeholder="全部行业" size="default" clearable class="filter-item">
+              <el-select v-model="filters.industry" placeholder="全部行业" size="default" clearable :disabled="!isMockMode" class="filter-item">
                 <el-option v-for="ind in industries" :key="ind" :label="ind" :value="ind" />
               </el-select>
-              <el-select v-model="filters.status" placeholder="全部分类" size="default" clearable class="filter-item">
+              <el-select v-model="filters.status" placeholder="全部分类" size="default" clearable :disabled="!isMockMode" class="filter-item">
                 <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
             </div>
@@ -90,6 +125,9 @@
             :row-class-name="rowClass"
             class="premium-table"
           >
+            <template #empty>
+              <el-empty :description="isMockMode ? '暂无符合条件的客户' : '客户商机数据源未接入，当前仅保留演示模式'" />
+            </template>
             <el-table-column prop="customerName" label="客户名称" min-width="220" show-overflow-tooltip>
               <template #default="{ row }">
                 <div class="customer-name-cell">
@@ -99,7 +137,7 @@
             </el-table-column>
             <el-table-column prop="region" label="地区" width="100" show-overflow-tooltip />
             <el-table-column prop="industry" label="行业" width="100" show-overflow-tooltip />
-            <el-table-column prop="salesRep" label="销售负责人" width="110" show-overflow-tooltip />
+            <el-table-column prop="salesRep" label="销售负责人" width="140" show-overflow-tooltip />
             <el-table-column prop="opportunityScore" label="机会评分" width="110" align="center">
               <template #default="{ row }">
                 <div class="score-container">
@@ -113,7 +151,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="predictedNextWindow" label="预测窗口" width="120" align="center">
+            <el-table-column prop="predictedNextWindow" label="预测窗口" width="140" align="center">
               <template #default="{ row }">
                 <span class="window-tag">{{ row.predictedNextWindow }}</span>
               </template>
@@ -230,30 +268,100 @@
               </p>
             </div>
           </div>
-          <div v-else class="empty-state">
-            <el-empty description="选择一个客户以查看深度洞察" />
+          <div v-else-if="isMockMode" class="smart-onboarding">
+            <div class="onboarding-content">
+              <div class="ai-avatar-large shadow-glow">
+                <el-icon><MagicStick /></el-icon>
+              </div>
+              <h2>欢迎访问商机中心</h2>
+              <p>我是您的 AI 销售助理。我已经为您分析了最新的市场动向与采购规律。</p>
+              
+              <div class="onboarding-suggestions">
+                <div class="suggest-title">您可以尝试：</div>
+                <div class="suggest-cards">
+                  <div class="s-card" @click="selectFirstHighValue">
+                    <el-icon><Star /></el-icon>
+                    <span>查看高价值潜力客户</span>
+                  </div>
+                  <div class="s-card" @click="filters.status = 'recommend'">
+                    <el-icon><TrendCharts /></el-icon>
+                    <span>筛选建议立项的机会</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-else class="api-empty-state">
+            <div class="api-empty-card">
+              <el-tag size="small" type="info" effect="light" class="api-empty-tag">API 模式</el-tag>
+              <h2>客户商机中心暂未接入真实数据源</h2>
+              <p>当前页面仅保留 mock 演示链路。真实模式下不会读取 demo 数据，也不会模拟 AI 洞察或扫描成功态。</p>
+              <div class="api-empty-actions">
+                <el-button disabled>刷新洞察</el-button>
+                <el-button link type="primary" @click="router.push('/bidding')">返回标讯中心</el-button>
+              </div>
+            </div>
           </div>
         </el-skeleton>
       </section>
     </div>
 
-    <el-drawer v-model="historyDrawer" title="历史采购全景图" size="500px" class="premium-drawer">
-      <div class="history-drawer-content" v-if="selectedCustomer">
-        <div class="history-card" v-for="record in selectedCustomer.purchaseHistory" :key="record.recordId">
-          <div class="h-card-header">
-            <strong>{{ record.title }}</strong>
-            <span class="h-date">{{ record.publishDate }}</span>
+    <el-drawer v-model="historyDrawer" title="历史采购全景图" size="600px" class="premium-drawer">
+      <div v-if="selectedCustomer && customerHistory.length" class="panoramic-view">
+        <!-- Dashboard Stats -->
+        <div class="panoramic-stats">
+          <div class="stat-card blue">
+            <span class="stat-label">累计采购项目</span>
+            <p class="stat-value">{{ drawerStats.totalCount }}</p>
           </div>
-          <div class="h-card-body">
-            <div class="h-info">
-              <el-tag size="small" effect="plain">{{ record.category }}</el-tag>
-              <span class="h-budget">¥{{ record.budget }}万</span>
-            </div>
-            <div class="h-tags">
-              <span v-for="tag in record.extractedTags" :key="tag" class="small-tag">#{{ tag }}</span>
+          <div class="stat-card purple">
+            <span class="stat-label">累计预算总额</span>
+            <p class="stat-value">¥{{ drawerStats.totalBudget }}<small>万</small></p>
+          </div>
+          <div class="stat-card green">
+            <span class="stat-label">首选品类</span>
+            <p class="stat-value">{{ drawerStats.topCategory }}</p>
+          </div>
+        </div>
+
+        <!-- Category Distribution Visualization -->
+        <div class="panoramic-section">
+          <h4 class="section-title">品类购买频率分布</h4>
+          <div class="category-bars">
+            <div v-for="cat in categoryStats" :key="cat.name" class="cat-bar-item">
+              <div class="cat-info">
+                <span>{{ cat.name }}</span>
+                <span>{{ cat.count }}次 ({{ cat.percent }}%)</span>
+              </div>
+              <div class="cat-progress-bg">
+                <div class="cat-progress-fill" :style="{ width: cat.percent + '%', backgroundColor: cat.color }"></div>
+              </div>
             </div>
           </div>
         </div>
+
+        <!-- History Timeline -->
+        <div class="panoramic-section">
+          <h4 class="section-title">采购历史全轨迹</h4>
+          <div class="history-scroll-list">
+            <div class="history-item-card" v-for="record in customerHistory" :key="record.recordId">
+              <div class="h-item-top">
+                <el-tag size="small" :type="record.budget > 500 ? 'danger' : 'info'" effect="light">¥{{ record.budget }}万</el-tag>
+                <span class="h-item-date">{{ record.publishDate }}</span>
+              </div>
+              <p class="h-item-title">{{ record.title }}</p>
+              <div class="h-item-footer">
+                <span class="h-item-cat"><el-icon><MagicStick /></el-icon> {{ record.category }}</span>
+                <div class="h-item-tags">
+                  <span v-for="tag in record.extractedTags" :key="tag" class="micro-tag">{{ tag }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-else class="panoramic-empty">
+        <el-empty description="该客户暂无更多历史记录" />
       </div>
     </el-drawer>
   </div>
@@ -263,22 +371,15 @@
 import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Refresh, User, InfoFilled, MagicStick } from '@element-plus/icons-vue'
-import { mockData } from '@/api/mock'
-import { loadDemoState } from '@/utils/demoPersistence'
+import { Refresh, User, InfoFilled, MagicStick, Search, CaretTop, CaretBottom, Star, TrendCharts } from '@element-plus/icons-vue'
+import { isMockMode as getIsMockMode } from '@/api/config.js'
+import { useCustomerOpportunityCenterData } from '@/api/modules/customerOpportunity.js'
 
 const router = useRouter()
 const loading = ref(true)
-
-const customerInsights = ref(loadDemoState('customer-insights', (mockData.customerInsights || []).map(item => ({
-  ...item,
-  salesRep: item.salesRep || (['小王', '张经理', '李工'][Math.floor(Math.random() * 3)])
-}))))
-const customerPurchases = ref(mockData.customerPurchases || [])
-const customerPredictions = ref(loadDemoState('customer-predictions', mockData.customerPredictions || []))
-
+const isMockMode = getIsMockMode()
+const { customerInsights, customerPurchases, customerPredictions, salesUsers } = useCustomerOpportunityCenterData()
 const filters = ref({ status: '', keyword: '', sales: '', region: '', industry: '' })
-const salesUsers = computed(() => mockData.users.filter(u => u.role !== 'admin'))
 
 const regions = computed(() => [...new Set(customerInsights.value.map(c => c.region))].filter(Boolean))
 const industries = computed(() => [...new Set(customerInsights.value.map(c => c.industry))].filter(Boolean))
@@ -287,17 +388,67 @@ const statusOptions = [
   { label: '建议转项目', value: 'recommend' },
   { label: '已转化项目', value: 'converted' }
 ]
-const activeCustomerId = ref(customerInsights.value[0]?.customerId || '')
+const activeCustomerId = ref('')
 const historyDrawer = ref(false)
+const isScanning = ref(false)
 
 onMounted(() => {
-  // Simulate initial loading
+  const delay = isMockMode ? 800 : 220
   setTimeout(() => {
     loading.value = false
-  }, 800)
+  }, delay)
+})
+
+const customerHistory = computed(() => {
+  if (!selectedCustomer.value) return []
+  return customerPurchases.value.filter((p) => p.customerId === selectedCustomer.value.customerId)
+    .sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate))
+})
+
+const drawerStats = computed(() => {
+  const history = customerHistory.value
+  const totalCount = history.length
+  const totalBudget = history.reduce((sum, item) => sum + (item.budget || 0), 0)
+  
+  const cats = {}
+  history.forEach(item => {
+    cats[item.category] = (cats[item.category] || 0) + 1
+  })
+  const topCategory = Object.entries(cats).sort((a, b) => b[1] - a[1])[0]?.[0] || '未知'
+  
+  return { totalCount, totalBudget, topCategory }
+})
+
+const categoryStats = computed(() => {
+  const history = customerHistory.value
+  const total = history.length
+  if (!total) return []
+  
+  const cats = {}
+  history.forEach(item => {
+    cats[item.category] = (cats[item.category] || 0) + 1
+  })
+  
+  const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#64748b']
+  return Object.entries(cats)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, count], index) => ({
+      name,
+      count,
+      percent: Math.round((count / total) * 100),
+      color: colors[index % colors.length]
+    }))
 })
 
 const boardSummaries = computed(() => {
+  if (!isMockMode) {
+    return [
+      { label: '客户池', value: '--', note: '真实客户数据源未接入', tag: '未接入', tagType: 'info', placeholder: true, trendLabel: 'API' },
+      { label: '采购记录', value: '--', note: '历史采购服务仅在演示模式可见', tag: '未接入', tagType: 'info', placeholder: true, trendLabel: 'API' },
+      { label: '预测商机', value: '--', note: '预测结果不会在真实模式下伪造', tag: '未接入', tagType: 'info', placeholder: true, trendLabel: 'API' },
+      { label: '项目转化', value: '--', note: '转项目链路需在 mock 模式体验', tag: '未接入', tagType: 'info', placeholder: true, trendLabel: 'API' }
+    ]
+  }
   const customers = customerInsights.value
   const predictions = customerPredictions.value
   const highValueCount = customers.filter(item => item.opportunityScore >= 85).length
@@ -306,10 +457,10 @@ const boardSummaries = computed(() => {
   const convertedCount = predictions.filter(item => item.convertedProjectId).length
 
   return [
-    { label: '高价值客户', value: String(highValueCount), note: '核心经营资产', tag: '重点', tagType: 'success' },
-    { label: '30D 预测机会', value: String(shortTermCount), note: '需近期重点研判', tag: '紧迫', tagType: 'danger' },
-    { label: '远期潜客', value: String(midTermCount), note: '适合关系铺垫', tag: '观察', tagType: 'warning' },
-    { label: '已转化', value: String(convertedCount), note: '已转正式项目池', tag: '完成', tagType: 'info' }
+    { label: '高价值客户', value: String(highValueCount), note: '核心经营资产', tag: '重点', tagType: 'success', trend: 12, isUp: true },
+    { label: '30D 预测机会', value: String(shortTermCount), note: '需近期重点研判', tag: '紧迫', tagType: 'danger', trend: 8, isUp: true },
+    { label: '远期潜客', value: String(midTermCount), note: '适合关系铺垫', tag: '观察', tagType: 'warning', trend: 3, isUp: false },
+    { label: '已转化', value: String(convertedCount), note: '已转正式项目池', tag: '完成', tagType: 'info', trend: 20, isUp: true }
   ]
 })
 
@@ -396,16 +547,26 @@ const buildDeadlineFromWindow = (windowValue) => {
   return ''
 }
 
-const refreshPage = () => {
-  loading.value = true
+const refreshInsights = () => {
+  if (!isMockMode) {
+    ElMessage.info('客户商机中心在真实模式下暂未接入数据源')
+    return
+  }
+  isScanning.value = true
   setTimeout(() => {
-    loading.value = false
-    ElMessage.success('洞察情报已同步至最新')
-  }, 1000)
+    isScanning.value = false
+    ElMessage.success('AI 智能洞察已同步至最新')
+  }, 2500)
+}
+
+const selectFirstHighValue = () => {
+  if (!isMockMode) return
+  const first = customerInsights.value.find(c => c.opportunityScore >= 85)
+  if (first) activeCustomerId.value = first.customerId
 }
 
 const createProject = () => {
-  if (!selectedCustomer.value) return
+  if (!selectedCustomer.value || !isMockMode) return
 
   if (selectedCustomer.value.prediction.convertedProjectId) {
     router.push(`/project/${selectedCustomer.value.prediction.convertedProjectId}`)
@@ -510,8 +671,64 @@ const createProject = () => {
 
 .board-card.hover-lift:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.08);
-  border-color: #e0f2fe;
+  box-shadow: 0 12px 30px -8px rgba(3, 105, 161, 0.15);
+  border-color: #bae6fd;
+}
+
+.card-main {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 16px 0 4px;
+}
+
+.card-trend {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.card-trend.up { color: #10b981; }
+.card-trend.down { color: #f43f5e; }
+.card-trend.neutral { color: #64748b; }
+
+.spark-box {
+  height: 32px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.spark-line {
+  height: 4px;
+  width: 100%;
+  border-radius: 2px;
+  background: #f1f5f9;
+  position: relative;
+  overflow: hidden;
+}
+
+.spark-line::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 60%;
+  border-radius: 2px;
+  animation: spark-slide 2s ease-in-out infinite alternate;
+}
+
+.spark-line.success::after { background: #10b981; }
+.spark-line.danger::after { background: #f43f5e; }
+.spark-line.warning::after { background: #f59e0b; }
+.spark-line.info::after { background: #3b82f6; }
+
+@keyframes spark-slide {
+  from { transform: translateX(-20%); }
+  to { transform: translateX(120%); }
 }
 
 .board-card::after {
@@ -893,6 +1110,184 @@ const createProject = () => {
   border: 1px solid #f1f5f9;
 }
 
+/* Panoramic Drawer Styles */
+.panoramic-view {
+  padding: 0 4px;
+}
+
+.panoramic-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  padding: 16px 12px;
+  border-radius: 12px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-card.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+.stat-card.purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2); }
+.stat-card.green { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2); }
+
+.stat-label {
+  font-size: 11px;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.stat-value small {
+  font-size: 12px;
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+.panoramic-section {
+  margin-bottom: 28px;
+}
+
+.category-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.cat-bar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cat-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.cat-progress-bg {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.cat-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s ease-out;
+}
+
+.history-scroll-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.history-item-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+.history-item-card:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  transform: translateX(4px);
+}
+
+.h-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.h-item-date {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.h-item-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.4;
+}
+
+.h-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.h-item-cat {
+  font-size: 13px;
+  color: #3b82f6;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.h-item-tags {
+  display: flex;
+  gap: 6px;
+}
+
+.micro-tag {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  color: #64748b;
+}
+
+.panoramic-empty {
+  padding-top: 60px;
+}
+
+.premium-drawer .el-drawer__header {
+  margin-bottom: 20px;
+  padding: 20px 24px 0;
+  font-weight: 800;
+  font-size: 18px;
+  color: #1e293b;
+}
+
+.premium-drawer .el-drawer__body {
+  padding: 0 24px 24px;
+}
+
+/* Scrollbar */
+.premium-drawer .el-drawer__body::-webkit-scrollbar {
+  width: 4px;
+}
+
 /* Scrollbar */
 .scrollable::-webkit-scrollbar {
   width: 6px;
@@ -905,5 +1300,228 @@ const createProject = () => {
 
 .scrollable::-webkit-scrollbar-track {
   background: transparent;
+}
+/* Intelligence Overlay */
+.scanning-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.scan-grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(37, 99, 235, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.1) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to bottom, transparent, #2563eb, transparent);
+  box-shadow: 0 0 20px #2563eb;
+  animation: scan-move 2.5s linear infinite;
+}
+
+@keyframes scan-move {
+  from { top: 0%; }
+  to { top: 100%; }
+}
+
+.scan-content {
+  text-align: center;
+  z-index: 10;
+}
+
+.hologram-box {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 2px solid #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  margin: 0 auto 24px;
+  background: rgba(37, 99, 235, 0.2);
+  box-shadow: 0 0 30px rgba(37, 99, 235, 0.4);
+}
+
+.rotating {
+  animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Smart Onboarding */
+.smart-onboarding {
+  height: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 40px;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+}
+
+.api-empty-state {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.api-empty-card {
+  max-width: 420px;
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 40px -20px rgba(15, 23, 42, 0.2);
+  padding: 32px;
+  text-align: center;
+}
+
+.api-empty-tag {
+  margin-bottom: 16px;
+}
+
+.api-empty-card h2 {
+  margin: 0 0 12px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.api-empty-card p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.api-empty-actions {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.onboarding-content {
+  text-align: center;
+  max-width: 400px;
+  animation: fade-in-up 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-avatar-large {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #0f172a 0%, #3b82f6 100%);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  color: white;
+  font-size: 32px;
+}
+
+.shadow-glow {
+  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.3);
+}
+
+.onboarding-content h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.onboarding-content p {
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.onboarding-suggestions {
+  text-align: left;
+}
+
+.suggest-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.suggest-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.s-card {
+  padding: 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.s-card:hover {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+  transform: translateX(4px);
+}
+
+.s-card .el-icon {
+  font-size: 18px;
+  color: #3b82f6;
+}
+
+.s-card span {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 </style>

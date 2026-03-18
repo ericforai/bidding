@@ -148,6 +148,8 @@
 <script setup>
 import { computed } from 'vue'
 import { Share, Cellphone, Warning } from '@element-plus/icons-vue'
+import { isMockMode } from '@/api/config'
+import { getDemoMobileCard } from '@/api/mock-adapters/frontendDemo.js'
 
 const props = defineProps({
   modelValue: {
@@ -171,30 +173,17 @@ const dialogVisible = computed({
   set: (val) => emit('update:modelValue', val)
 })
 
-const mockData = {
-  P001: {
-    projectName: '智慧城市IOC建设项目',
-    stage: '投标准备中',
-    countdown: '5天12小时',
-    customer: 'XX市人民政府',
-    contact: '张科长 138xxxx1234',
-    nextTasks: [
-      { title: '提交技术方案初稿', due: '明天 10:00' },
-      { title: '确认报价策略', due: '后天 14:00' },
-      { title: '准备投标保证金', due: '3天内' }
-    ],
-    risks: [
-      { level: 'high', text: '缺智慧城市案例' },
-      { level: 'medium', text: 'CMMI资质即将过期' },
-      { level: 'low', text: '商务合同模板待确认' }
-    ],
-    winScore: 75,
-    owner: '李四'
-  }
-}
-
 const currentData = computed(() => {
-  return props.data?.[props.projectId] || mockData[props.projectId] || null
+  const projectData = props.data?.[props.projectId] || null
+  if (projectData) {
+    return projectData
+  }
+
+  if (isMockMode()) {
+    return getDemoMobileCard(props.projectId)
+  }
+
+  return null
 })
 
 const getStageType = (stage) => {

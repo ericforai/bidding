@@ -266,23 +266,15 @@ export function showCurrentMode() {
 
 export async function getDataWithFallback() {
   try {
-    // 优先尝试真实 API
     const { projectsApi } = await import('@/api')
-    const result = await projectsApi.getList()
-
-    if (!isMockMode() && (!result || result.error)) {
-      // 如果 API 失败，回退到 Mock 数据
-      console.warn('API 调用失败，使用 Mock 数据')
-      const { mockData } = await import('@/api')
-      return { success: true, data: mockData.projects }
-    }
-
-    return result
+    return await projectsApi.getList()
   } catch (error) {
     console.error('获取数据失败:', error)
-    // 最后的 fallback
-    const { mockData } = await import('@/api')
-    return { success: true, data: mockData.projects }
+    return {
+      success: false,
+      data: [],
+      message: '真实 API 获取失败，未再回退到演示数据',
+    }
   }
 }
 

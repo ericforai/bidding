@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
-import { mockData } from '@/api/mock'
-import { tendersApi } from '@/api'
+import { tendersApi, isMockMode } from '@/api'
+import { getDemoCalendar, getDemoTodos } from '@/api/mock-adapters/frontendDemo.js'
 
 export const useBiddingStore = defineStore('bidding', {
   state: () => ({
     tenders: [],
-    todos: mockData.todos,
-    calendar: mockData.calendar
+    todos: getDemoTodos(),
+    calendar: getDemoCalendar()
   }),
 
   getters: {
@@ -24,13 +24,14 @@ export const useBiddingStore = defineStore('bidding', {
         const result = await tendersApi.getList(filters)
         if (result?.success) {
           this.tenders = result.data || []
-        } else if (!this.tenders.length) {
-          this.tenders = [...mockData.tenders]
+        } else if (!isMockMode()) {
+          this.tenders = []
         }
       } catch (error) {
-        // API 调用失败时回退到 mock 数据
-        console.warn('API 调用失败，使用 mock 数据:', error.message)
-        this.tenders = [...mockData.tenders]
+        if (!isMockMode()) {
+          console.warn('API 调用失败，返回空列表:', error.message)
+          this.tenders = []
+        }
       }
       return this.tenders
     },
@@ -43,6 +44,9 @@ export const useBiddingStore = defineStore('bidding', {
     },
 
     async getTodos() {
+      if (!isMockMode()) {
+        return []
+      }
       return this.todos
     },
 
@@ -54,6 +58,9 @@ export const useBiddingStore = defineStore('bidding', {
     },
 
     async getCalendar() {
+      if (!isMockMode()) {
+        return []
+      }
       return this.calendar
     }
   }

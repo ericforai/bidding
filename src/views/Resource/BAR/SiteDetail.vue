@@ -312,12 +312,12 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import BorrowDialog from './components/BorrowDialog.vue'
-import { loadDemoState, saveDemoState } from '@/utils/demoPersistence'
+import { isMockMode } from '@/api'
+import { getBarSiteDemoOverride, saveBarSiteDemoPatch } from '@/api/mock-adapters/frontendDemo.js'
 
 const router = useRouter()
 const route = useRoute()
 const barStore = useBarStore()
-const BAR_SITE_STORAGE_KEY = 'bar-site-overrides'
 
 const loading = ref(false)
 const site = ref(null)
@@ -365,11 +365,9 @@ const ukRules = {
   expiryDate: [{ required: true, message: '请选择有效期', trigger: 'change' }]
 }
 
-const loadSitePersistence = () => loadDemoState(BAR_SITE_STORAGE_KEY, {})
-
 const applySitePersistence = (data) => {
   if (!data) return data
-  const persisted = loadSitePersistence()[String(data.id)]
+  const persisted = getBarSiteDemoOverride(data.id)
   if (!persisted) return data
   return {
     ...data,
@@ -380,14 +378,10 @@ const applySitePersistence = (data) => {
 }
 
 const persistSitePatch = (siteId, patch) => {
-  const state = loadSitePersistence()
-  const current = state[String(siteId)] || {}
-  state[String(siteId)] = {
-    ...current,
-    ...patch,
-    sop: patch.sop ? { ...(current.sop || {}), ...patch.sop } : current.sop,
+  if (!isMockMode()) {
+    return
   }
-  saveDemoState(BAR_SITE_STORAGE_KEY, state)
+  saveBarSiteDemoPatch(siteId, patch)
 }
 
 const getLoginTypeText = (type) => {

@@ -1167,7 +1167,7 @@ mockData.customerPurchases = [
     category: '劳保用品',
     budget: 560,
     contentSummary: '包含防护服、安全帽、消防器材及工业清洁耗材',
-    extractedTags: ['劳保', '年度采购', '华东']
+    extractedTags: ['劳保', '年度采购', '高频']
   },
   {
     recordId: 'CPR_002',
@@ -1178,7 +1178,40 @@ mockData.customerPurchases = [
     category: '搬运设备',
     budget: 740,
     contentSummary: '叉车、搬运机器人、AGV',
-    extractedTags: ['搬运', 'AGV', '华东']
+    extractedTags: ['搬运', 'AGV', '智能化']
+  },
+  {
+    recordId: 'CPR_001_1',
+    customerId: 'CUST_001',
+    source: 'platform',
+    publishDate: '2024-07-22',
+    title: '宝武集团工业自动化控制系统升级组件',
+    category: '工业自动化',
+    budget: 320,
+    contentSummary: 'PLC模块、变频器、传感器及控制柜',
+    extractedTags: ['自动化', 'PLC', '技术改造']
+  },
+  {
+    recordId: 'CPR_001_2',
+    customerId: 'CUST_001',
+    source: 'platform',
+    publishDate: '2024-04-05',
+    title: '宝武集团第二季度办公物资及IT耗材采购',
+    category: '办公/IT',
+    budget: 120,
+    contentSummary: '笔记本电脑、打印机耗材、办公文具',
+    extractedTags: ['办公', 'IT耗材', '周期性']
+  },
+  {
+    recordId: 'CPR_001_3',
+    customerId: 'CUST_001',
+    source: 'platform',
+    publishDate: '2024-01-12',
+    title: '宝武集团年度安防监控及消防联动系统维护',
+    category: '安防监控',
+    budget: 450,
+    contentSummary: '高清摄像头、红外探头、智能消防终端',
+    extractedTags: ['安防', '消防', '年度维保']
   },
   {
     recordId: 'CPR_003',
@@ -1190,6 +1223,28 @@ mockData.customerPurchases = [
     budget: 450,
     contentSummary: '电缆检测仪、变电站检修工具、绝缘测试设备',
     extractedTags: ['检测', '工具', '华东']
+  },
+  {
+    recordId: 'CPR_003_1',
+    customerId: 'CUST_002',
+    source: 'platform',
+    publishDate: '2024-09-18',
+    title: '国家电网江苏电力无人机巡检系统二期采购',
+    category: '智能装备',
+    budget: 890,
+    contentSummary: '多轴无人机、红外云台、自动充电站',
+    extractedTags: ['无人机', '巡检', '高科技']
+  },
+  {
+    recordId: 'CPR_003_2',
+    customerId: 'CUST_002',
+    source: 'platform',
+    publishDate: '2024-03-12',
+    title: '国家电网江苏电力变电站通用电气配件集采',
+    category: '电气配套',
+    budget: 620,
+    contentSummary: '断路器、继电器、互感器、配电箱组件',
+    extractedTags: ['电气', '互感器', '周期性']
   },
   {
     recordId: 'CPR_004',

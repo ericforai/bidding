@@ -40,6 +40,13 @@ function isNumericId(id) {
   return /^\d+$/.test(String(id))
 }
 
+function apiModeFailure(entityName) {
+  return {
+    success: false,
+    message: `Current backend only supports numeric ${entityName} IDs in API mode`
+  }
+}
+
 function getMockProjects(params = {}) {
   if (isMockMode()) {
     mockData.projects = loadDemoState('projects', mockData.projects)
@@ -136,6 +143,41 @@ function ensureMockScoreDrafts(projectId, fileName) {
   return mockData.projectScoreDrafts[projectId]
 }
 
+function normalizeScoreDraft(draft = {}) {
+  const deliverables = Array.isArray(draft.suggestedDeliverables)
+    ? draft.suggestedDeliverables
+    : (() => {
+        if (typeof draft.suggestedDeliverables !== 'string' || draft.suggestedDeliverables.trim() === '') {
+          return []
+        }
+        try {
+          const parsed = JSON.parse(draft.suggestedDeliverables)
+          return Array.isArray(parsed) ? parsed : []
+        } catch {
+          return []
+        }
+      })()
+
+  const dueDate = typeof draft.dueDate === 'string' && draft.dueDate.length >= 10
+    ? draft.dueDate.slice(0, 10) + 'T00:00:00'
+    : draft.dueDate || ''
+
+  return {
+    ...draft,
+    category: draft.category || 'unknown',
+    suggestedDeliverables: deliverables,
+    dueDate,
+    status: draft.status || 'DRAFT',
+    sourceFileName: draft.sourceFileName || '',
+    sourceTableIndex: Number.isFinite(Number(draft.sourceTableIndex)) ? Number(draft.sourceTableIndex) : null,
+    sourceRowIndex: Number.isFinite(Number(draft.sourceRowIndex)) ? Number(draft.sourceRowIndex) : null,
+  }
+}
+
+function normalizeScoreDraftList(drafts = []) {
+  return Array.isArray(drafts) ? drafts.map((draft) => normalizeScoreDraft(draft)) : []
+}
+
 export const projectsApi = {
   /**
    * 获取项目列表
@@ -153,10 +195,7 @@ export const projectsApi = {
 
     const response = await httpClient.get('/api/projects')
     const projects = Array.isArray(response?.data) ? response.data : []
-    const filteredData = applyProjectFilters(projects, params)
-    const data = filteredData.length > 0 || projects.length > 0
-      ? filteredData
-      : getMockProjects(params)
+    const data = applyProjectFilters(projects, params)
 
     return {
       ...response,
@@ -180,25 +219,13 @@ export const projectsApi = {
     }
 
     if (!isNumericId(id)) {
-      const mockProject = mockData.projects.find((project) => String(project.id) === String(id))
-      return {
-        success: Boolean(mockProject),
-        data: mockProject || null,
-        message: mockProject ? '使用演示项目数据' : 'Current backend only supports numeric project IDs in API mode'
-      }
+      return apiModeFailure('project')
     }
 
-    try {
-      const response = await httpClient.get(`/api/projects/${id}`)
-      return response?.data
-        ? response
-        : { ...response, data: mockData.projects.find((project) => String(project.id) === String(id)) || null }
-    } catch (error) {
-      const mockProject = mockData.projects.find((project) => String(project.id) === String(id))
-      if (mockProject) {
-        return { success: true, data: mockProject, message: '使用演示项目数据' }
-      }
-      throw error
+    const response = await httpClient.get(`/api/projects/${id}`)
+    return {
+      ...response,
+      data: response?.data ?? null
     }
   },
 
@@ -255,10 +282,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(id)) {
-      return {
-        success: false,
-        message: 'Current backend only supports numeric project IDs in API mode'
-      }
+      return apiModeFailure('project')
     }
 
     return httpClient.put(`/api/projects/${id}`, data)
@@ -273,10 +297,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(id)) {
-      return {
-        success: false,
-        message: 'Current backend only supports numeric project IDs in API mode'
-      }
+      return apiModeFailure('project')
     }
 
     return httpClient.delete(`/api/projects/${id}`)
@@ -292,12 +313,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(projectId)) {
-      const project = getMockProject(projectId)
-      return Promise.resolve({
-        success: true,
-        data: project?.tasks || [],
-        message: '使用演示项目任务数据'
-      })
+      return apiModeFailure('project')
     }
 
     return httpClient.get(`/api/projects/${projectId}/tasks`)
@@ -316,10 +332,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(projectId)) {
-      return Promise.resolve({
-        success: false,
-        message: 'Current backend only supports numeric project IDs in API mode'
-      })
+      return apiModeFailure('project')
     }
 
     return httpClient.post(`/api/projects/${projectId}/tasks`, data)
@@ -334,10 +347,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(projectId) || !isNumericId(taskId)) {
-      return Promise.resolve({
-        success: false,
-        message: 'Current backend only supports numeric task IDs in API mode'
-      })
+      return apiModeFailure('task')
     }
 
     return httpClient.patch(`/api/projects/${projectId}/tasks/${taskId}/status`, { status })
@@ -353,12 +363,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(projectId)) {
-      const project = getMockProject(projectId)
-      return Promise.resolve({
-        success: true,
-        data: project?.documents || [],
-        message: '使用演示项目文档数据'
-      })
+      return apiModeFailure('project')
     }
 
     return httpClient.get(`/api/projects/${projectId}/documents`)
@@ -376,10 +381,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(projectId)) {
-      return Promise.resolve({
-        success: false,
-        message: 'Current backend only supports numeric project IDs in API mode'
-      })
+      return apiModeFailure('project')
     }
 
     return httpClient.post(`/api/projects/${projectId}/documents`, {
@@ -397,10 +399,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(projectId) || !isNumericId(documentId)) {
-      return Promise.resolve({
-        success: false,
-        message: 'Current backend only supports numeric document IDs in API mode'
-      })
+      return apiModeFailure('document')
     }
 
     return httpClient.delete(`/api/projects/${projectId}/documents/${documentId}`)
@@ -415,10 +414,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(projectId)) {
-      return Promise.resolve({
-        success: false,
-        message: 'Current backend only supports numeric project IDs in API mode'
-      })
+      return apiModeFailure('project')
     }
 
     return httpClient.post(`/api/projects/${projectId}/reminders`, data)
@@ -439,10 +435,7 @@ export const projectsApi = {
     }
 
     if (!isNumericId(projectId)) {
-      return Promise.resolve({
-        success: false,
-        message: 'Current backend only supports numeric project IDs in API mode'
-      })
+      return apiModeFailure('project')
     }
 
     return httpClient.post(`/api/projects/${projectId}/share-links`, data)
@@ -465,11 +458,23 @@ export const projectsApi = {
       })
     }
 
+    if (!isNumericId(projectId)) {
+      return apiModeFailure('project')
+    }
+
     return httpClient.post(`/api/projects/${projectId}/score-drafts/parse`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
-    })
+    }).then((response) => ({
+      ...response,
+      data: response?.data
+        ? {
+            ...response.data,
+            drafts: normalizeScoreDraftList(response.data.drafts)
+          }
+        : response?.data
+    }))
   },
 
   async getScoreDrafts(projectId) {
@@ -480,7 +485,14 @@ export const projectsApi = {
       })
     }
 
-    return httpClient.get(`/api/projects/${projectId}/score-drafts`)
+    if (!isNumericId(projectId)) {
+      return apiModeFailure('project')
+    }
+
+    return httpClient.get(`/api/projects/${projectId}/score-drafts`).then((response) => ({
+      ...response,
+      data: normalizeScoreDraftList(Array.isArray(response?.data) ? response.data : [])
+    }))
   },
 
   async updateScoreDraft(projectId, draftId, payload) {
@@ -503,7 +515,14 @@ export const projectsApi = {
       return Promise.resolve({ success: true, data: clone(next) })
     }
 
-    return httpClient.patch(`/api/projects/${projectId}/score-drafts/${draftId}`, payload)
+    if (!isNumericId(projectId) || !isNumericId(draftId)) {
+      return apiModeFailure('project score draft')
+    }
+
+    return httpClient.patch(`/api/projects/${projectId}/score-drafts/${draftId}`, payload).then((response) => ({
+      ...response,
+      data: response?.data ? normalizeScoreDraft(response.data) : response?.data
+    }))
   },
 
   async generateScoreDraftTasks(projectId, draftIds) {
@@ -538,6 +557,10 @@ export const projectsApi = {
       return Promise.resolve({ success: true, data: tasks })
     }
 
+    if (!isNumericId(projectId)) {
+      return apiModeFailure('project')
+    }
+
     return httpClient.post(`/api/projects/${projectId}/score-drafts/generate-tasks`, { draftIds })
   },
 
@@ -545,6 +568,10 @@ export const projectsApi = {
     if (isMockMode()) {
       mockData.projectScoreDrafts[projectId] = []
       return Promise.resolve({ success: true, data: null })
+    }
+
+    if (!isNumericId(projectId)) {
+      return apiModeFailure('project')
     }
 
     return httpClient.delete(`/api/projects/${projectId}/score-drafts`)

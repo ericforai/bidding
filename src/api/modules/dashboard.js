@@ -2,8 +2,8 @@
  * 数据看板与任务模块 API
  * 支持双模式切换，并在 API 模式下适配现有后端 analytics 契约
  */
-import httpClient from '../client.js'
 import { mockData } from '../mock.js'
+import httpClient from '../client.js'
 import { isMockMode } from '../config.js'
 
 function formatChange(change) {
@@ -326,22 +326,6 @@ function buildApiOverview(overview = {}) {
   }
 }
 
-function hasApiOverviewData(overview = {}) {
-  const summary = overview?.summaryStats || {}
-  const summaryValues = [
-    Number(summary?.totalTenders || 0),
-    Number(summary?.activeProjects || 0),
-    Number(summary?.successRate || 0),
-    Number(summary?.totalBudget || 0),
-    Number(summary?.pendingTasks || 0),
-  ]
-
-  return summaryValues.some((value) => value > 0) ||
-    (Array.isArray(overview?.tenderTrends) && overview.tenderTrends.length > 0) ||
-    (Array.isArray(overview?.topCompetitors) && overview.topCompetitors.length > 0) ||
-    (Array.isArray(overview?.regionalDistribution) && overview.regionalDistribution.length > 0)
-}
-
 export const dashboardApi = {
   async getOverview() {
     if (isMockMode()) {
@@ -353,14 +337,12 @@ export const dashboardApi = {
       httpClient.get('/api/analytics/product-lines'),
     ])
 
-    const data = hasApiOverviewData(overviewResponse?.data)
-      ? {
-          ...buildApiOverview(overviewResponse?.data),
-          productLines: Array.isArray(productLineResponse?.data) && productLineResponse.data.length > 0
-            ? productLineResponse.data.map(normalizeProductLineItem)
-            : (mockData.dashboard?.productLines || []),
-        }
-      : buildMockOverview()
+    const data = {
+      ...buildApiOverview(overviewResponse?.data),
+      productLines: Array.isArray(productLineResponse?.data)
+        ? productLineResponse.data.map(normalizeProductLineItem)
+        : [],
+    }
 
     return {
       ...overviewResponse,
@@ -384,7 +366,7 @@ export const dashboardApi = {
     const apiData = Array.isArray(response?.data?.tenders) ? response.data.tenders.map(normalizeTrendItem) : []
     return {
       ...response,
-      data: apiData.length > 0 ? apiData : (mockData.dashboard?.trendData || []),
+      data: apiData,
     }
   },
 
@@ -399,9 +381,7 @@ export const dashboardApi = {
     const response = await httpClient.get('/api/analytics/competitors')
     const competitors = Array.isArray(response?.data) ? response.data : []
     const totalAmount = competitors.reduce((sum, item) => sum + Number(item?.totalBidAmount || 0), 0)
-    const data = competitors.length > 0
-      ? competitors.map((item) => normalizeCompetitorItem(item, totalAmount))
-      : (mockData.dashboard?.competitors || [])
+    const data = competitors.map((item) => normalizeCompetitorItem(item, totalAmount))
 
     return {
       ...response,
@@ -421,7 +401,7 @@ export const dashboardApi = {
     const apiData = Array.isArray(response?.data) ? response.data.map(normalizeRegionItem) : []
     return {
       ...response,
-      data: apiData.length > 0 ? apiData : (mockData.dashboard?.regionData || []),
+      data: apiData,
     }
   },
 
@@ -437,7 +417,7 @@ export const dashboardApi = {
     const apiData = Array.isArray(response?.data) ? response.data.map(normalizeProductLineItem) : []
     return {
       ...response,
-      data: apiData.length > 0 ? apiData : (mockData.dashboard?.productLines || []),
+      data: apiData,
     }
   },
 
