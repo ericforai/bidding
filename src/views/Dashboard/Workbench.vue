@@ -779,7 +779,7 @@
               class="todo-item"
               :class="['priority-' + todo.priority, todo.type === 'warning' ? 'todo-warning' : '']"
             >
-              <div class="todo-checkbox" @click.stop="todo.done = !todo.done">
+              <div class="todo-checkbox" @click.stop="handleTaskComplete(todo)">
                 <div class="checkbox-custom" :class="{ checked: todo.done }">
                   <el-icon v-if="todo.done"><Check /></el-icon>
                 </div>
@@ -819,7 +819,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useBiddingStore } from '@/stores/bidding'
-import { approvalApi } from '@/api'
+import { approvalApi, isMockMode } from '@/api'
+import { tasksApi } from '@/api/modules/dashboard.js'
 import {
   Plus, DataAnalysis, ArrowRight, Calendar, User, Clock, Check,
   Document, Briefcase, TrendCharts, Flag, FolderOpened, Wallet
@@ -1130,7 +1131,7 @@ const activeProjects = computed(() => {
 })
 
 // 待办事项 - 角色化数据
-const allTodos = ref([
+const mockRoleTodos = ref([
   // ===== 系统自动预警（所有角色可见） =====
   { id: 100, title: '保证金即将到期 - 西部云项目', role: 'all', priority: 'high', deadline: '还剩5天', done: false, type: 'warning', icon: 'Warning' },
   { id: 101, title: '资质证书即将过期 - 营业执照', role: 'all', priority: 'medium', deadline: '还剩25天', done: false, type: 'warning', icon: 'Clock' },
@@ -1155,20 +1156,75 @@ const allTodos = ref([
   { id: 13, title: '参与技术方案评审', role: 'staff', assignee: '李工', priority: 'medium', deadline: '03-05', done: false }
 ])
 
+const apiTodoItems = ref([])
+
+const systemWarningTodos = computed(() => mockRoleTodos.value.filter(t => t.role === 'all'))
+
+const normalizeApiTodo = (task) => {
+  const priority = String(task?.priority || 'MEDIUM').toLowerCase()
+  const done = task?.status === 'COMPLETED'
+  const deadline = task?.dueDate
+    ? new Date(task.dueDate).toLocaleString('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+    : '待排期'
+
+  return {
+    id: task.id,
+    title: task.title,
+    priority,
+    deadline,
+    done,
+    type: 'task',
+    sourceType: 'task',
+    rawStatus: task.status,
+  }
+}
+
+async function loadPriorityTodos() {
+  if (isMockMode()) {
+    return
+  }
+
+  const assigneeId = userStore.currentUser?.id
+  if (!assigneeId) {
+    apiTodoItems.value = []
+    return
+  }
+
+  try {
+    const result = await tasksApi.getMine(assigneeId)
+    apiTodoItems.value = Array.isArray(result?.data)
+      ? result.data.map(normalizeApiTodo)
+      : []
+  } catch (error) {
+    console.error('加载 API 待办失败:', error)
+    apiTodoItems.value = []
+  }
+}
+
 // 根据角色过滤待办
 const priorityTodos = computed(() => {
+  if (!isMockMode()) {
+    return [...systemWarningTodos.value, ...apiTodoItems.value].slice(0, 8)
+  }
+
   const role = currentUserRole.value
   const name = currentUserName.value
 
   // 系统预警（所有角色可见）
-  const systemWarnings = allTodos.value.filter(t => t.role === 'all')
+  const systemWarnings = systemWarningTodos.value
 
   // 角色专属待办
   let roleTodos = []
   if (role === 'admin') {
-    roleTodos = allTodos.value.filter(t => t.role === 'admin')
+    roleTodos = mockRoleTodos.value.filter(t => t.role === 'admin')
   } else {
-    roleTodos = allTodos.value.filter(t => t.assignee === name)
+    roleTodos = mockRoleTodos.value.filter(t => t.assignee === name)
   }
 
   // 合并：系统预警优先，然后是角色待办
@@ -1313,7 +1369,35 @@ const handleTenderClick = (tender) => {
   router.push(`/bidding/${tender.id}`)
 }
 
-const handleTaskComplete = (task) => {
+const handleTaskComplete = async (task) => {
+  if (task.type === 'warning') {
+    task.done = !task.done
+    if (task.done) {
+      ElMessage.success(`完成任务: ${task.title}`)
+    }
+    return
+  }
+
+  if (!isMockMode()) {
+    if (task.done) {
+      return
+    }
+
+    try {
+      const result = await tasksApi.complete(task.id)
+      if (!result?.success) {
+        throw new Error(result?.message || '更新待办状态失败')
+      }
+      task.done = true
+      task.rawStatus = result?.data?.status || 'COMPLETED'
+      ElMessage.success(`完成任务: ${task.title}`)
+    } catch (error) {
+      ElMessage.error(error?.message || '更新待办状态失败')
+    }
+    return
+  }
+
+  task.done = !task.done
   if (task.done) {
     ElMessage.success(`完成任务: ${task.title}`)
   }
@@ -1565,6 +1649,7 @@ const handleCalendarAction = (event) => {
 onMounted(async () => {
   await biddingStore.getCalendar()
   await loadPendingApprovals()
+  await loadPriorityTodos()
   selectedDateKey.value = formatDateKey(new Date())
   const firstUpcomingEvent = normalizedCalendarEvents.value
     .filter((event) => event.diffDays >= 0)
