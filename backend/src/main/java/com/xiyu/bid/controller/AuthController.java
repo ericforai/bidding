@@ -54,6 +54,20 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Current user retrieved successfully", response));
     }
 
+    @PostMapping("/logout")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<Void>> logout(Authentication authentication) {
+        authService.logout(authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("Logout successful", null));
+    }
+
+    @PostMapping("/refresh")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(Authentication authentication) {
+        AuthResponse response = authService.refreshToken(authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully", response));
+    }
+
     /**
      * 清洗注册请求中的用户输入
      */

@@ -6,6 +6,7 @@
 import { defineStore } from 'pinia'
 import { authApi } from '@/api'
 import { getDemoUsers } from '@/api/mock-adapters/frontendDemo.js'
+import { clearAuthState, getStoredToken, hasPersistentSession } from '@/api/modules/auth.js'
 
 // 从 localStorage 恢复用户状态
 const getSavedUser = () => {
@@ -20,7 +21,7 @@ const getSavedUser = () => {
   return null
 }
 
-const getSavedToken = () => localStorage.getItem('token') || sessionStorage.getItem('token')
+const getSavedToken = () => getStoredToken()
 
 export const useUserStore = defineStore('user', {
   state: () => {
@@ -69,17 +70,20 @@ export const useUserStore = defineStore('user', {
       }
 
       this.currentUser = result.data
-      this.persistSession(Boolean(localStorage.getItem('token')))
+      this.persistSession(hasPersistentSession())
       return this.currentUser
     },
 
-    logout() {
-      this.currentUser = null
-      this.token = null
-      localStorage.removeItem('user')
-      localStorage.removeItem('token')
-      sessionStorage.removeItem('user')
-      sessionStorage.removeItem('token')
+    async logout() {
+      try {
+        await authApi.logout()
+      } catch (error) {
+        console.warn('Logout request failed, clearing local session anyway:', error)
+      } finally {
+        this.currentUser = null
+        this.token = null
+        clearAuthState()
+      }
     },
 
     switchUser(userId) {

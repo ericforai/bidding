@@ -96,4 +96,17 @@ public class AuthService {
                 .role(user.getRole())
                 .build();
     }
+
+    public void logout(String username) {
+        log.info("User logged out: {}", username);
+    }
+
+    public AuthResponse refreshToken(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        String token = jwtUtil.generateToken(user.getUsername());
+        log.info("Token refreshed for user: {}", user.getUsername());
+        return AuthResponse.from(token, user);
+    }
 }
