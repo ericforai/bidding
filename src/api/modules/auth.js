@@ -24,6 +24,17 @@ const getSavedUser = () => {
   return userStr ? JSON.parse(userStr) : null
 }
 
+export const getStoredToken = () => localStorage.getItem('token') || sessionStorage.getItem('token')
+
+export const hasPersistentSession = () => Boolean(localStorage.getItem('token'))
+
+export const clearAuthState = () => {
+  localStorage.removeItem('user')
+  localStorage.removeItem('token')
+  sessionStorage.removeItem('user')
+  sessionStorage.removeItem('token')
+}
+
 export const authApi = {
   /**
    * 用户登录
@@ -66,10 +77,7 @@ export const authApi = {
     if (isMockMode()) {
       return Promise.resolve({ success: true })
     }
-    return Promise.resolve({
-      success: false,
-      message: 'Logout endpoint is not implemented on backend'
-    })
+    return httpClient.post('/api/auth/logout')
   },
 
   /**
@@ -102,10 +110,17 @@ export const authApi = {
         data: { token: 'new-mock-token-' + Date.now() }
       })
     }
-    return Promise.resolve({
-      success: false,
-      message: 'Refresh token endpoint is not implemented on backend'
-    })
+    const response = await httpClient.post('/api/auth/refresh', refreshToken ? { refreshToken } : {})
+    const authPayload = response?.data
+
+    return {
+      ...response,
+      data: {
+        user: normalizeUser(authPayload),
+        token: authPayload?.token,
+        type: authPayload?.type || 'Bearer'
+      }
+    }
   }
 }
 

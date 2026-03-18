@@ -4,7 +4,16 @@
  */
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { API_CONFIG, getApiUrl } from './config'
+import { API_CONFIG } from './config'
+
+const getStoredToken = () => localStorage.getItem('token') || sessionStorage.getItem('token')
+
+const clearStoredSession = () => {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  sessionStorage.removeItem('token')
+  sessionStorage.removeItem('user')
+}
 
 // 创建 axios 实例
 const httpClient = axios.create({
@@ -17,7 +26,7 @@ const httpClient = axios.create({
 httpClient.interceptors.request.use(
   (config) => {
     // 添加 Token
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+    const token = getStoredToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -43,9 +52,10 @@ httpClient.interceptors.response.use(
         case 401:
           ElMessage.error('登录已过期，请重新登录')
           // 清除 token 并跳转登录
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
-          window.location.href = '/login'
+          clearStoredSession()
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login'
+          }
           break
         case 403:
           ElMessage.error('没有权限访问该资源')
