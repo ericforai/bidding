@@ -170,6 +170,8 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
+const hasRoleAccess = (roles) => !roles || roles.length === 0 || roles.includes(userStore.userRole)
+
 const activeMenu = computed(() => {
   const { meta, path } = route
   if (meta?.activeMenu) {
@@ -286,23 +288,18 @@ const menuConfig = [
 
 // 根据角色过滤菜单
 const filteredMenus = computed(() => {
-  const userRole = userStore.userRole
-
   return menuConfig
     .map(menu => {
-      // 检查菜单权限
-      if (menu.meta?.roles && !menu.meta.roles.includes(userRole)) {
+      if (!hasRoleAccess(menu.meta?.roles)) {
         return null
       }
 
-      // 处理子菜单
       if (menu.children) {
-        const visibleChildren = menu.children.filter(child => {
-          if (child.meta?.roles && !child.meta.roles.includes(userRole)) {
-            return false
-          }
-          return true
-        })
+        const visibleChildren = menu.children.filter(child => hasRoleAccess(child.meta?.roles))
+
+        if (visibleChildren.length === 0) {
+          return null
+        }
 
         return {
           ...menu,
