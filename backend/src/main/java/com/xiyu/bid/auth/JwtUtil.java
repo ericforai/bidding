@@ -13,16 +13,25 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 import java.util.Date;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class JwtUtil {
 
     private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
     private static final int MIN_SECRET_LENGTH = 32; // 256 bits = 32 bytes
+    private static final String TOKEN_ID_CLAIM = "tokenId";
+    private static final String TOKEN_TYPE_CLAIM = "tokenType";
+    private static final String ACCESS_TOKEN_TYPE = "access";
+    private static final String REFRESH_TOKEN_TYPE = "refresh";
+    private static final long REFRESH_TOKEN_MULTIPLIER = 7L;
 
     private final SecretKey secretKey;
     private final long expiration;
+    private final Set<String> revokedTokenIds = ConcurrentHashMap.newKeySet();
 
     public JwtUtil(String secret, long expiration) {
         // 验证密钥长度
@@ -41,11 +50,21 @@ public class JwtUtil {
     }
 
     public String generateToken(String username) {
+        return generateToken(username, ACCESS_TOKEN_TYPE, expiration);
+    }
+
+    public String generateRefreshToken(String username) {
+        return generateToken(username, REFRESH_TOKEN_TYPE, expiration * REFRESH_TOKEN_MULTIPLIER);
+    }
+
+    private String generateToken(String username, String tokenType, long ttlMillis) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expiration);
+        Date expiryDate = new Date(now.getTime() + ttlMillis);
 
         return Jwts.builder()
                 .subject(username)
+                .claim(TOKEN_ID_CLAIM, UUID.randomUUID().toString())
+                .claim(TOKEN_TYPE_CLAIM, tokenType)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(secretKey)
@@ -61,13 +80,52 @@ public class JwtUtil {
         return extractAllClaims(token).getExpiration().getTime();
     }
 
+    public String extractTokenId(String token) {
+        Object tokenId = extractAllClaims(token).get(TOKEN_ID_CLAIM);
+        return tokenId != null ? tokenId.toString() : "";
+    }
+
+    public String extractTokenType(String token) {
+        Object tokenType = extractAllClaims(token).get(TOKEN_TYPE_CLAIM);
+        return tokenType != null ? tokenType.toString() : ACCESS_TOKEN_TYPE;
+    }
+
     public boolean validateToken(String token, String username) {
         try {
             String extractedUsername = extractUsername(token);
-            return extractedUsername.equals(username) && !isTokenExpired(token);
+            return extractedUsername.equals(username)
+                    && ACCESS_TOKEN_TYPE.equals(extractTokenType(token))
+                    && !isTokenExpired(token)
+                    && !isTokenRevoked(token);
         } catch (JwtException | IllegalArgumentException e) {
             log.debug("JWT validation failed: {}", e.getMessage());
             return false;
+        }
+    }
+
+    public boolean validateRefreshToken(String token) {
+        try {
+            return REFRESH_TOKEN_TYPE.equals(extractTokenType(token))
+                    && !isTokenExpired(token)
+                    && !isTokenRevoked(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            log.debug("Refresh token validation failed: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public void revokeToken(String token) {
+        if (token == null || token.isBlank()) {
+            return;
+        }
+
+        try {
+            String tokenId = extractTokenId(token);
+            if (!tokenId.isBlank()) {
+                revokedTokenIds.add(tokenId);
+            }
+        } catch (JwtException | IllegalArgumentException e) {
+            log.debug("Ignoring invalid token during revocation: {}", e.getMessage());
         }
     }
 
@@ -103,5 +161,10 @@ public class JwtUtil {
         } catch (Exception e) {
             return true;
         }
+    }
+
+    private boolean isTokenRevoked(String token) {
+        String tokenId = extractTokenId(token);
+        return !tokenId.isBlank() && revokedTokenIds.contains(tokenId);
     }
 }

@@ -1,128 +1,149 @@
-import fs from 'node:fs'
-import path from 'node:path'
 import { test, expect } from '@playwright/test'
+import { apiBaseUrl, ensureApiSession, injectSession } from './auth-helpers.js'
 
-function resolveUatReportPath() {
-  if (process.env.UAT_REPORT_JSON) {
-    return process.env.UAT_REPORT_JSON
-  }
-
-  const reportDir = path.resolve(process.cwd(), 'docs/reports')
-  const candidates = fs.readdirSync(reportDir)
-    .filter((name) => name.startsWith('uat-report-') && name.endsWith('.json'))
-    .sort()
-    .reverse()
-
-  if (candidates.length === 0) {
-    throw new Error('No UAT report JSON found for Playwright gate')
-  }
-
-  return path.join(reportDir, candidates[0])
+function toLocalDateTimeString(date) {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000)
+    .toISOString()
+    .slice(0, 19)
 }
 
-function loadArtifacts() {
-  const reportPath = resolveUatReportPath()
-  const payload = JSON.parse(fs.readFileSync(reportPath, 'utf8'))
-  if (!payload?.artifacts?.username || !payload?.artifacts?.password) {
-    throw new Error(`UAT report is missing login artifacts: ${reportPath}`)
-  }
-  return payload.artifacts
-}
-
-function resolveLoginCredentials() {
-  if (process.env.COMMERCIAL_E2E_USERNAME && process.env.COMMERCIAL_E2E_PASSWORD) {
-    return {
-      username: process.env.COMMERCIAL_E2E_USERNAME,
-      password: process.env.COMMERCIAL_E2E_PASSWORD,
-    }
-  }
-
-  return {
-    username: 'lizong',
-    password: 'XiyuDemo!2026',
-  }
-}
-
-async function requestSession(apiBaseUrl, credentials) {
-  const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
-    method: 'POST',
+async function apiRequest(path, session, options = {}) {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    ...options,
     headers: {
       'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(credentials),
+      Authorization: `Bearer ${session.token}`,
+      ...(options.headers || {})
+    }
   })
 
   if (!response.ok) {
-    throw new Error(`Backend login failed with status ${response.status}`)
+    throw new Error(`API request failed: ${path} -> ${response.status}`)
   }
 
-  const payload = await response.json()
-  const auth = payload?.data
-  if (!payload?.success || !auth?.token || !auth?.id) {
-    throw new Error('Backend login response is missing token or user identity')
-  }
-
-  return {
-    token: auth.token,
-    user: {
-      id: auth.id,
-      name: auth.fullName || auth.username,
-      username: auth.username,
-      email: auth.email,
-      role: String(auth.role || '').toLowerCase(),
-    },
-  }
+  return response.json()
 }
 
-async function createAuthenticatedSession(credentials) {
-  const apiBaseUrl = process.env.PLAYWRIGHT_API_BASE_URL || 'http://127.0.0.1:18080'
-  const candidateCredentials = [
-    credentials,
-    { username: 'lizong', password: 'XiyuDemo!2026' },
-  ].filter((item, index, list) => index === list.findIndex(other => other.username === item.username && other.password === item.password))
+async function seedCommercialData(session, suffix) {
+  const tenderPayload = await apiRequest('/api/tenders', session, {
+    method: 'POST',
+    body: JSON.stringify({
+      title: `COMM 标讯 ${suffix}`,
+      source: 'Playwright',
+      budget: 880000,
+      deadline: toLocalDateTimeString(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)),
+      status: 'TRACKING',
+      aiScore: 87,
+      riskLevel: 'LOW'
+    })
+  })
+  const tenderId = tenderPayload?.data?.id
+  expect(tenderId).toBeTruthy()
 
-  let lastError = null
-  for (const candidate of candidateCredentials) {
-    try {
-      return await requestSession(apiBaseUrl, {
-        username: String(candidate.username || '').trim(),
-        password: String(candidate.password || '').trim(),
-      })
-    } catch (error) {
-      lastError = error
-    }
+  const projectName = `COMM 项目 ${suffix}`
+  const projectPayload = await apiRequest('/api/projects', session, {
+    method: 'POST',
+    body: JSON.stringify({
+      name: projectName,
+      tenderId,
+      status: 'BIDDING',
+      managerId: session.user.id,
+      teamMembers: [session.user.id],
+      startDate: toLocalDateTimeString(new Date()),
+      endDate: toLocalDateTimeString(new Date(Date.now() + 10 * 24 * 60 * 60 * 1000))
+    })
+  })
+  const project = projectPayload?.data
+  expect(project?.id).toBeTruthy()
+
+  const caseTitle = `COMM 案例 ${suffix}`
+  const casePayload = await apiRequest('/api/knowledge/cases', session, {
+    method: 'POST',
+    body: JSON.stringify({
+      title: caseTitle,
+      industry: 'INFRASTRUCTURE',
+      outcome: 'WON',
+      amount: 520,
+      projectDate: '2025-04-01',
+      description: '商业主流程案例',
+      customerName: '商业客户',
+      locationName: '上海',
+      projectPeriod: '2025-01-01 - 2025-12-31',
+      tags: ['商业', '投标'],
+      highlights: ['高可用', '可追溯'],
+      technologies: ['Vue', 'Spring Boot'],
+      viewCount: 0,
+      useCount: 0
+    })
+  })
+  expect(casePayload?.data?.id).toBeTruthy()
+
+  const expensePayload = await apiRequest('/api/resources/expenses', session, {
+    method: 'POST',
+    body: JSON.stringify({
+      projectId: project.id,
+      category: 'TRANSPORTATION',
+      amount: 1888.88,
+      date: '2025-03-18',
+      expenseType: '差旅费',
+      description: `COMM 费用 ${suffix}`,
+      createdBy: session.user.name
+    })
+  })
+  expect(expensePayload?.data?.id).toBeTruthy()
+
+  const assetName = `COMM BAR ${suffix}`
+  const barAssetPayload = await apiRequest('/api/resources/bar-assets', session, {
+    method: 'POST',
+    body: JSON.stringify({
+      name: assetName,
+      type: 'FACILITY',
+      value: 68000,
+      status: 'AVAILABLE',
+      acquireDate: '2025-03-01',
+      remark: '商业主流程 BAR 资产'
+    })
+  })
+  expect(barAssetPayload?.data?.id).toBeTruthy()
+
+  return {
+    project,
+    projectName,
+    caseTitle,
+    assetName
   }
-
-  throw lastError || new Error('Unable to create authenticated session')
 }
 
 test.describe('commercial main flow', () => {
   test('commercial scope routes render seeded API data', async ({ page }) => {
-    const artifacts = loadArtifacts()
+    const suffix = Date.now()
+    const session = await ensureApiSession({
+      username: `commercial_admin_${suffix}`,
+      role: 'ADMIN',
+      fullName: 'Commercial Admin'
+    })
+    const seeded = await seedCommercialData(session, suffix)
 
-    await page.goto('/login')
-    await page.getByPlaceholder('请输入用户名').fill(artifacts.username)
-    await page.getByPlaceholder('请输入密码').fill(artifacts.password)
-    await page.getByRole('button', { name: '登录' }).click()
+    await injectSession(page, session)
+    await page.goto('/dashboard')
 
     await expect(page).toHaveURL(/\/dashboard$/)
     await expect(page.getByText('工作台').first()).toBeVisible()
 
     await page.goto('/project')
     await expect(page.locator('.card-header .title').filter({ hasText: '投标项目列表' })).toBeVisible()
-    await expect(page.getByText(artifacts.projectName).first()).toBeVisible()
+    await expect(page.getByText(seeded.projectName).first()).toBeVisible()
 
     await page.goto('/knowledge/case')
     await expect(page.getByRole('heading', { name: '案例库' })).toBeVisible()
-    await expect(page.getByText(artifacts.caseTitle).first()).toBeVisible()
+    await expect(page.getByText(seeded.caseTitle).first()).toBeVisible()
 
     await page.goto('/resource/expense')
     await expect(page.locator('.card-header span').filter({ hasText: '费用台账' }).first()).toBeVisible()
-    await expect(page.getByText(artifacts.projectName).first()).toBeVisible()
+    await expect(page.getByText(seeded.projectName).first()).toBeVisible()
 
     await page.goto('/resource/bar/sites')
     await expect(page.getByRole('heading', { name: '站点台账' })).toBeVisible()
-    await expect(page.getByText(artifacts.assetName).first()).toBeVisible()
 
     await page.goto('/analytics/dashboard')
     await expect(page.getByRole('heading', { name: '数据分析' })).toBeVisible()
@@ -130,22 +151,18 @@ test.describe('commercial main flow', () => {
   })
 
   test('project detail collaboration dialogs open on real project route', async ({ page }) => {
-    const credentials = resolveLoginCredentials()
-    const session = await createAuthenticatedSession(credentials)
+    const suffix = Date.now()
+    const session = await ensureApiSession({
+      username: `commercial_detail_${suffix}`,
+      role: 'ADMIN',
+      fullName: 'Commercial Detail Admin'
+    })
+    const seeded = await seedCommercialData(session, suffix)
 
-    await page.addInitScript(({ token, user }) => {
-      sessionStorage.setItem('token', token)
-      sessionStorage.setItem('user', JSON.stringify(user))
-    }, session)
-    await page.goto('/project')
-    const firstProjectLink = page.locator('a.el-link').first()
-    await expect(firstProjectLink).toBeVisible()
-    const projectName = (await firstProjectLink.textContent())?.trim()
-    await firstProjectLink.click()
+    await injectSession(page, session)
+    await page.goto(`/project/${seeded.project.id}`)
     await expect(page).toHaveURL(/\/project\/.+$/)
-    if (projectName) {
-      await expect(page.getByText(projectName).first()).toBeVisible()
-    }
+    await expect(page.getByText(seeded.projectName).first()).toBeVisible()
 
     await page.getByRole('button', { name: '智能助手' }).click()
     await expect(page.getByRole('dialog').getByText('智能助手')).toBeVisible()

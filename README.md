@@ -116,6 +116,23 @@ npm run dev
 - Mock 模式：可使用演示账号登录
 - API 模式：使用后端真实用户与鉴权
 
+## E2E 基线
+
+### API 模式 Playwright
+
+- `npm run test:e2e` 会自动准备 API 联调基线
+- 若 `127.0.0.1:18080` 和 `127.0.0.1:1314` 已可用，测试直接复用现有环境
+- 若本地环境未启动，Playwright 会通过 `scripts/test/start-api-e2e-stack.sh` 自动拉起轻量 `e2e` profile 后端和前端预览
+- 测试结束后，仅会自动关闭由本次 Playwright 启动的环境
+
+### 手动控制测试基线
+
+```bash
+bash scripts/test/start-api-e2e-stack.sh
+npm run test:e2e
+bash scripts/test/stop-api-e2e-stack.sh
+```
+
 ## 项目结构
 
 ```

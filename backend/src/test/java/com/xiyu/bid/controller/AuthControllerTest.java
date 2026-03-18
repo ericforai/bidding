@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -34,17 +35,19 @@ class AuthControllerTest {
     @Test
     @WithMockUser(username = "alice", roles = {"ADMIN"})
     void logout_ShouldReturnSuccessResponse() throws Exception {
-        mockMvc.perform(post("/api/auth/logout"))
+        mockMvc.perform(post("/api/auth/logout")
+                        .header("Authorization", "Bearer access-token")
+                        .contentType("application/json")
+                        .content("{\"refreshToken\":\"refresh-token\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Logout successful"));
 
-        verify(authService).logout("alice");
+        verify(authService).logout("alice", "access-token", "refresh-token");
     }
 
     @Test
-    @WithMockUser(username = "alice", roles = {"ADMIN"})
-    void refresh_ShouldIssueNewAccessTokenForAuthenticatedUser() throws Exception {
+    void refresh_ShouldRotateRefreshTokenAndIssueNewAccessToken() throws Exception {
         AuthResponse refreshResponse = AuthResponse.builder()
                 .token("refreshed-token")
                 .type("Bearer")
@@ -55,14 +58,18 @@ class AuthControllerTest {
                 .role(User.Role.ADMIN)
                 .build();
 
-        when(authService.refreshToken(eq("alice"))).thenReturn(refreshResponse);
+        when(authService.refreshSession(eq("refresh-token")))
+                .thenReturn(new AuthService.RefreshSession(refreshResponse, "refresh-token-next"));
 
-        mockMvc.perform(post("/api/auth/refresh"))
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType("application/json")
+                        .content("{\"refreshToken\":\"refresh-token\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Token refreshed successfully"))
                 .andExpect(jsonPath("$.data.token").value("refreshed-token"))
-                .andExpect(jsonPath("$.data.username").value("alice"));
+                .andExpect(jsonPath("$.data.username").value("alice"))
+                .andExpect(header().string("X-Refresh-Token", "refresh-token-next"));
     }
 
     @Test

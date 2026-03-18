@@ -26,13 +26,31 @@ const getSavedUser = () => {
 
 export const getStoredToken = () => localStorage.getItem('token') || sessionStorage.getItem('token')
 
+export const getStoredRefreshToken = () => localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken')
+
 export const hasPersistentSession = () => Boolean(localStorage.getItem('token'))
 
 export const clearAuthState = () => {
   localStorage.removeItem('user')
   localStorage.removeItem('token')
+  localStorage.removeItem('refreshToken')
   sessionStorage.removeItem('user')
   sessionStorage.removeItem('token')
+  sessionStorage.removeItem('refreshToken')
+}
+
+const extractRefreshToken = (response) => {
+  if (response?.data?.refreshToken) {
+    return response.data.refreshToken
+  }
+
+  const headers = response?._headers
+  if (!headers) {
+    return null
+  }
+
+  const matchedKey = Object.keys(headers).find((key) => key.toLowerCase() === 'x-refresh-token')
+  return matchedKey ? headers[matchedKey] : null
 }
 
 export const authApi = {
@@ -49,7 +67,8 @@ export const authApi = {
             success: true,
             data: {
               user,
-              token: 'mock-token-' + Date.now()
+              token: 'mock-token-' + Date.now(),
+              refreshToken: 'mock-refresh-token-' + Date.now()
             }
           })
         }, 300)
@@ -65,6 +84,7 @@ export const authApi = {
       data: {
         user: normalizeUser(authPayload),
         token: authPayload?.token,
+        refreshToken: authPayload?.refreshToken || extractRefreshToken(response),
         type: authPayload?.type || 'Bearer'
       }
     }
@@ -77,7 +97,8 @@ export const authApi = {
     if (isMockMode()) {
       return Promise.resolve({ success: true })
     }
-    return httpClient.post('/api/auth/logout')
+    const refreshToken = getStoredRefreshToken()
+    return httpClient.post('/api/auth/logout', refreshToken ? { refreshToken } : {})
   },
 
   /**
@@ -107,10 +128,14 @@ export const authApi = {
     if (isMockMode()) {
       return Promise.resolve({
         success: true,
-        data: { token: 'new-mock-token-' + Date.now() }
+        data: {
+          token: 'new-mock-token-' + Date.now(),
+          refreshToken: 'new-mock-refresh-token-' + Date.now()
+        }
       })
     }
-    const response = await httpClient.post('/api/auth/refresh', refreshToken ? { refreshToken } : {})
+    const refreshTokenValue = refreshToken || getStoredRefreshToken()
+    const response = await httpClient.post('/api/auth/refresh', refreshTokenValue ? { refreshToken: refreshTokenValue } : {})
     const authPayload = response?.data
 
     return {
@@ -118,6 +143,7 @@ export const authApi = {
       data: {
         user: normalizeUser(authPayload),
         token: authPayload?.token,
+        refreshToken: authPayload?.refreshToken || extractRefreshToken(response),
         type: authPayload?.type || 'Bearer'
       }
     }

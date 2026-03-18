@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 public class AuthResponse {
 
     private String token;
+    private String refreshToken;
     private String type = "Bearer";
     private Long id;
     private String username;
@@ -21,8 +22,13 @@ public class AuthResponse {
     private User.Role role;
 
     public static AuthResponse from(String token, User user) {
+        return from(token, null, user);
+    }
+
+    public static AuthResponse from(String token, String refreshToken, User user) {
         return AuthResponse.builder()
                 .token(token)
+                .refreshToken(refreshToken)
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
