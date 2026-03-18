@@ -1,3 +1,7 @@
+// Input: export repositories, DTOs, and support services
+// Output: Excel Export business service operations
+// Pos: Service/业务层
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.export.service;
 
 import com.xiyu.bid.config.ExportConfig;

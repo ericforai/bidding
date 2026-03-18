@@ -1,9 +1,8 @@
+// Input: UserRepository、PasswordEncoder、JwtUtil、AuthenticationManager
+// Output: 登录/注册结果、JWT 令牌和认证上下文
+// Pos: Auth/认证支撑层
+// 维护声明: 仅维护认证链路；权限规则调整请同步 controller 与 security 配置.
 package com.xiyu.bid.service;
-
-// Input: UserRepository, PasswordEncoder, JwtUtil, AuthenticationManager
-// Output: 认证服务、Token生成、用户管理
-// Pos: Service/业务层
-// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 import com.xiyu.bid.dto.AuthResponse;
 import com.xiyu.bid.dto.LoginRequest;

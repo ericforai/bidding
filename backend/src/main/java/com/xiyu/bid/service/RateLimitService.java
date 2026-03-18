@@ -1,3 +1,11 @@
+// Input: Redis 连接、限流配置和请求标识
+// Output: 限流判断与计数结果
+// Pos: Service/基础设施支撑层
+// 维护声明: 仅维护限流实现；登录策略调整请同步 SecurityConfig 与 Filter.
+// Input: Redis 连接、限流配置和请求标识
+// Output: 限流判断与计数结果
+// Pos: Service/基础设施支撑层
+// 维护声明: 仅维护限流实现；登录策略调整请同步 SecurityConfig 与 Filter.
 package com.xiyu.bid.service;
 
 import com.xiyu.bid.config.ExportConfig;

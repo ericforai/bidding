@@ -1,3 +1,7 @@
+// Input: JWT 密钥、过期时间和声明数据
+// Output: Token 生成、解析和校验结果
+// Pos: Auth/Token 工具层
+// 维护声明: 仅维护 JWT 编解码能力；密钥策略变更请同步配置与登录流程.
 package com.xiyu.bid.auth;
 
 import io.jsonwebtoken.*;

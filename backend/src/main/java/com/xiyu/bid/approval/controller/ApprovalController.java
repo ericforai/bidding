@@ -1,3 +1,7 @@
+// Input: approval service and request DTOs
+// Output: Approval REST API endpoints
+// Pos: Controller/控制器层
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.approval.controller;
 
 import com.xiyu.bid.approval.dto.ApprovalDecisionRequest;

@@ -1,3 +1,7 @@
+// Input: HTTP 请求头、JWT 令牌和安全上下文
+// Output: 已认证用户上下文或未认证放行结果
+// Pos: Auth/认证过滤层
+// 维护声明: 仅维护令牌解析与过滤逻辑；认证规则变更请同步 AuthService 和 SecurityConfig.
 package com.xiyu.bid.auth;
 
 import jakarta.servlet.FilterChain;

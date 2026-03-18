@@ -1,8 +1,7 @@
-// Input: Repository, IAuditLogService
-// Output: 版本历史业务逻辑
+// Input: versionhistory repositories, DTOs, and support services
+// Output: Version History business service operations
 // Pos: Service/业务层
-// 实现文档版本管理的核心业务逻辑
-
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.versionhistory.service;
 
 import com.xiyu.bid.exception.ResourceNotFoundException;

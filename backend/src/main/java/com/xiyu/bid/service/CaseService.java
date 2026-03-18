@@ -1,7 +1,7 @@
-// Input: Repository, 相关依赖
-// Output: 业务服务、数据操作
-// Pos: Service/业务层
-// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+// Input: DTO、Repository、其他 Service 依赖
+// Output: 领域操作结果、事务内状态变更和查询结果
+// Pos: Service/业务编排层
+// 维护声明: 仅维护本服务职责内的业务规则；跨域变化请同步相关模块.
 
 package com.xiyu.bid.service;
 

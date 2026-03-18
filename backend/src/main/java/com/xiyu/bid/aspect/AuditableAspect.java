@@ -1,3 +1,7 @@
+// Input: @Auditable 切点、审计上下文、IAuditLogService
+// Output: 审计日志记录与环绕增强
+// Pos: Aspect/审计切面层
+// 维护声明: 仅维护横切审计逻辑；不要在此层承载业务规则.
 package com.xiyu.bid.aspect;
 
 import com.xiyu.bid.service.AuditLogService;

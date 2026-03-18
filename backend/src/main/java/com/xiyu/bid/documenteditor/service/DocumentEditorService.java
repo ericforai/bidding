@@ -1,3 +1,7 @@
+// Input: documenteditor repositories, DTOs, and support services
+// Output: Document Editor business service operations
+// Pos: Service/业务层
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.documenteditor.service;
 
 import com.xiyu.bid.annotation.Auditable;
