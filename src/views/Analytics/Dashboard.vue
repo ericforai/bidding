@@ -1101,6 +1101,7 @@ const clearMetricQuery = async () => {
   delete nextQuery.drilldown
   delete nextQuery.status
   delete nextQuery.role
+  delete nextQuery.outcome
   await router.replace({ path: '/analytics/dashboard', query: nextQuery })
 }
 
@@ -1123,6 +1124,7 @@ const handleMetricFilterChange = async (key, value) => {
   const extraQuery = {}
   if (key === 'status') extraQuery.status = value === 'ALL' ? undefined : value
   if (key === 'role') extraQuery.role = value === 'ALL' ? undefined : value
+  if (key === 'outcome') extraQuery.outcome = value === 'ALL' ? undefined : value
   await syncMetricQuery(metricDrawerType.value, extraQuery)
 }
 
@@ -1814,13 +1816,14 @@ const viewMore = () => {
 }
 
 watch(
-  () => [route.query.drilldown, route.query.status, route.query.role],
-  async ([drilldown, status, role]) => {
+  () => [route.query.drilldown, route.query.status, route.query.role, route.query.outcome],
+  async ([drilldown, status, role, outcome]) => {
     if (!drilldown || loading.value) return
 
     const nextFilters = {}
     if (status) nextFilters.status = String(status).toUpperCase()
     if (role) nextFilters.role = String(role).toUpperCase()
+    if (outcome) nextFilters.outcome = String(outcome).toUpperCase()
 
     await openMetricDrillDown(String(drilldown), { filters: nextFilters })
   }
@@ -1832,6 +1835,7 @@ onMounted(async () => {
     const nextFilters = {}
     if (route.query.status) nextFilters.status = String(route.query.status).toUpperCase()
     if (route.query.role) nextFilters.role = String(route.query.role).toUpperCase()
+    if (route.query.outcome) nextFilters.outcome = String(route.query.outcome).toUpperCase()
     await openMetricDrillDown(String(route.query.drilldown), { filters: nextFilters })
   }
 })

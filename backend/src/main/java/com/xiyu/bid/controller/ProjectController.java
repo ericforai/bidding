@@ -225,6 +225,11 @@ public class ProjectController {
                 .teamMembers(request.getTeamMembers())
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
+                .sourceModule(request.getSourceModule())
+                .sourceCustomerId(request.getSourceCustomerId())
+                .sourceCustomer(request.getSourceCustomer())
+                .sourceOpportunityId(request.getSourceOpportunityId())
+                .sourceReasoningSummary(request.getSourceReasoningSummary())
                 .build();
     }
 

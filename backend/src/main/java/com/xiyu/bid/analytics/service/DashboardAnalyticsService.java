@@ -26,10 +26,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -49,6 +51,7 @@ public class DashboardAnalyticsService {
     private final DocumentExportRepository documentExportRepository;
 
     private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
+    private static final String ALL_FILTER = "ALL";
 
     /**
      * Get complete dashboard overview with caching
@@ -400,6 +403,336 @@ public class DashboardAnalyticsService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public AnalyticsDrillDownResponseDTO getRevenueDrillDown(
+            String status,
+            LocalDate startDate,
+            LocalDate endDate,
+            Integer page,
+            Integer size
+    ) {
+        Map<Long, Project> projectByTenderId = projectRepository.findAll().stream()
+                .collect(Collectors.toMap(Project::getTenderId, Function.identity(), (left, right) -> left));
+
+        List<Tender> dateFilteredTenders = tenderRepository.findAll().stream()
+                .filter(tender -> isWithinDateRange(tender.getCreatedAt(), startDate, endDate))
+                .toList();
+
+        List<AnalyticsDrillDownRowDTO> baseRows = dateFilteredTenders.stream()
+                .map(tender -> {
+                    Project project = projectByTenderId.get(tender.getId());
+                    return AnalyticsDrillDownRowDTO.builder()
+                            .id(tender.getId())
+                            .relatedId(project != null ? project.getId() : null)
+                            .title(tender.getTitle())
+                            .subtitle(defaultString(tender.getSource(), "未知来源"))
+                            .status(tender.getStatus().name())
+                            .ownerName(project != null ? project.getName() : "未关联项目")
+                            .amount(defaultAmount(tender.getBudget()))
+                            .score(tender.getAiScore())
+                            .createdAt(tender.getCreatedAt())
+                            .deadline(tender.getDeadline())
+                            .build();
+                })
+                .sorted((left, right) -> {
+                    int amountCompare = Comparator.nullsLast(BigDecimal::compareTo)
+                            .compare(right.getAmount(), left.getAmount());
+                    if (amountCompare != 0) {
+                        return amountCompare;
+                    }
+                    return Comparator.nullsLast(LocalDateTime::compareTo)
+                            .compare(right.getCreatedAt(), left.getCreatedAt());
+                })
+                .toList();
+
+        List<AnalyticsDrillDownRowDTO> filteredRows = baseRows.stream()
+                .filter(row -> matchesFilter(row.getStatus(), status))
+                .toList();
+
+        return buildMetricDrillDownResponse(
+                "revenue",
+                "中标金额明细",
+                startDate,
+                endDate,
+                List.of(buildDimension("status", "状态", status, baseRows, AnalyticsDrillDownRowDTO::getStatus, this::translateTenderStatus)),
+                filteredRows,
+                page,
+                size,
+                AnalyticsDrillDownSummaryDTO.builder()
+                        .totalCount((long) filteredRows.size())
+                        .totalAmount(sumAmounts(filteredRows))
+                        .build()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public AnalyticsDrillDownResponseDTO getWinRateDrillDown(
+            String outcome,
+            LocalDate startDate,
+            LocalDate endDate,
+            Integer page,
+            Integer size
+    ) {
+        Map<Long, Tender> tenderById = tenderRepository.findAll().stream()
+                .collect(Collectors.toMap(Tender::getId, Function.identity()));
+        Map<Long, String> userNameMap = getUserNameMap();
+
+        List<AnalyticsDrillDownRowDTO> baseRows = tenderRepository.findAll().stream()
+                .filter(tender -> isWithinDateRange(tender.getCreatedAt(), startDate, endDate))
+                .map(tender -> {
+                    Project project = projectRepository.findByTenderId(tender.getId()).stream().findFirst().orElse(null);
+                    String derivedOutcome = deriveOutcome(tender, project);
+
+                    return AnalyticsDrillDownRowDTO.builder()
+                            .id(tender.getId())
+                            .relatedId(project != null ? project.getId() : null)
+                            .title(tender.getTitle())
+                            .subtitle(project != null ? project.getName() : "未形成项目")
+                            .status(project != null ? project.getStatus().name() : tender.getStatus().name())
+                            .outcome(derivedOutcome)
+                            .ownerName(project != null ? userNameMap.getOrDefault(project.getManagerId(), fallbackUserName(project.getManagerId())) : "-")
+                            .amount(defaultAmount(tender.getBudget()))
+                            .rate("WON".equals(derivedOutcome) ? 100.0 : 0.0)
+                            .createdAt(tender.getCreatedAt())
+                            .deadline(tender.getDeadline())
+                            .build();
+                })
+                .sorted((left, right) -> {
+                    int createdCompare = Comparator.nullsLast(LocalDateTime::compareTo)
+                            .compare(right.getCreatedAt(), left.getCreatedAt());
+                    if (createdCompare != 0) {
+                        return createdCompare;
+                    }
+                    return Comparator.nullsLast(BigDecimal::compareTo)
+                            .compare(right.getAmount(), left.getAmount());
+                })
+                .toList();
+
+        List<AnalyticsDrillDownRowDTO> filteredRows = baseRows.stream()
+                .filter(row -> matchesFilter(row.getOutcome(), outcome))
+                .toList();
+
+        long wonCount = filteredRows.stream().filter(row -> "WON".equals(row.getOutcome())).count();
+        double winRate = filteredRows.isEmpty() ? 0.0 : (wonCount * 100.0) / filteredRows.size();
+
+        return buildMetricDrillDownResponse(
+                "win-rate",
+                "中标率明细",
+                startDate,
+                endDate,
+                List.of(buildDimension("outcome", "结果", outcome, baseRows, AnalyticsDrillDownRowDTO::getOutcome, this::translateOutcome)),
+                filteredRows,
+                page,
+                size,
+                AnalyticsDrillDownSummaryDTO.builder()
+                        .totalCount((long) filteredRows.size())
+                        .totalAmount(sumAmounts(filteredRows))
+                        .wonCount(wonCount)
+                        .winRate(winRate)
+                        .build()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public AnalyticsDrillDownResponseDTO getTeamDrillDown(
+            String role,
+            LocalDate startDate,
+            LocalDate endDate,
+            Integer page,
+            Integer size
+    ) {
+        List<Project> filteredProjects = projectRepository.findAll().stream()
+                .filter(project -> isWithinDateRange(getProjectReferenceDate(project), startDate, endDate))
+                .toList();
+        Map<Long, Tender> tenderById = tenderRepository.findAll().stream()
+                .collect(Collectors.toMap(Tender::getId, Function.identity()));
+        Map<Long, User> userById = userRepository.findAll().stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+        Set<Long> relevantProjectIds = filteredProjects.stream().map(Project::getId).collect(Collectors.toSet());
+        LocalDateTime now = LocalDateTime.now();
+        Map<Long, TeamTaskAggregate> taskAggregateByAssignee = taskRepository.findAll().stream()
+                .filter(task -> relevantProjectIds.contains(task.getProjectId()))
+                .filter(task -> task.getAssigneeId() != null)
+                .collect(Collectors.groupingBy(Task::getAssigneeId, Collectors.collectingAndThen(Collectors.toList(), tasks -> {
+                    TeamTaskAggregate aggregate = new TeamTaskAggregate();
+                    aggregate.totalTaskCount = tasks.size();
+                    aggregate.completedTaskCount = tasks.stream()
+                            .filter(task -> task.getStatus() == Task.Status.COMPLETED)
+                            .count();
+                    aggregate.overdueTaskCount = tasks.stream()
+                            .filter(task -> task.getDueDate() != null)
+                            .filter(task -> task.getDueDate().isBefore(now))
+                            .filter(task -> task.getStatus() != Task.Status.COMPLETED)
+                            .filter(task -> task.getStatus() != Task.Status.CANCELLED)
+                            .count();
+                    return aggregate;
+                })));
+
+        Map<Long, TeamAggregate> aggregates = new HashMap<>();
+        for (Project project : filteredProjects) {
+            Tender tender = tenderById.get(project.getTenderId());
+            BigDecimal amount = tender != null ? defaultAmount(tender.getBudget()) : BigDecimal.ZERO;
+            boolean won = tender != null && tender.getStatus() == Tender.Status.BIDDED;
+            boolean active = project.getStatus() != Project.Status.ARCHIVED;
+
+            Long managerId = project.getManagerId();
+            if (managerId != null) {
+                accumulateTeamAggregate(aggregates, managerId, amount, won, active, true);
+            }
+
+            Set<Long> uniqueMembers = new LinkedHashSet<>(Optional.ofNullable(project.getTeamMembers()).orElse(List.of()));
+            uniqueMembers.remove(managerId);
+            for (Long memberId : uniqueMembers) {
+                accumulateTeamAggregate(aggregates, memberId, amount, won, active, false);
+            }
+        }
+
+        aggregates.forEach((userId, aggregate) -> {
+            TeamTaskAggregate taskAggregate = taskAggregateByAssignee.getOrDefault(userId, TeamTaskAggregate.empty());
+            aggregate.setTaskMetrics(taskAggregate.totalTaskCount, taskAggregate.completedTaskCount, taskAggregate.overdueTaskCount);
+        });
+
+        List<AnalyticsDrillDownRowDTO> baseRows = aggregates.entrySet().stream()
+                .map(entry -> {
+                    Long userId = entry.getKey();
+                    TeamAggregate aggregate = entry.getValue();
+                    User user = userById.get(userId);
+                    double winRate = aggregate.projectCount == 0 ? 0.0 : (aggregate.wonCount * 100.0) / aggregate.projectCount;
+                    double taskCompletionRate = aggregate.totalTaskCount == 0 ? 0.0 : (aggregate.completedTaskCount * 100.0) / aggregate.totalTaskCount;
+                    int performanceScore = calculatePerformanceScore(winRate, taskCompletionRate, aggregate.overdueTaskCount, aggregate.totalTaskCount);
+                    return AnalyticsDrillDownRowDTO.builder()
+                            .id(userId)
+                            .title(user != null ? user.getFullName() : fallbackUserName(userId))
+                            .subtitle(user != null ? user.getEmail() : "-")
+                            .role(user != null ? user.getRole().name() : "UNKNOWN")
+                            .count(aggregate.projectCount)
+                            .wonCount(aggregate.wonCount)
+                            .activeProjectCount(aggregate.activeProjectCount)
+                            .managedProjectCount(aggregate.managedProjectCount)
+                            .totalTaskCount(aggregate.totalTaskCount)
+                            .completedTaskCount(aggregate.completedTaskCount)
+                            .overdueTaskCount(aggregate.overdueTaskCount)
+                            .rate(winRate)
+                            .taskCompletionRate(taskCompletionRate)
+                            .amount(aggregate.totalAmount)
+                            .score(performanceScore)
+                            .teamSize(Math.toIntExact(aggregate.managedProjectCount))
+                            .createdAt(null)
+                            .deadline(null)
+                            .build();
+                })
+                .sorted((left, right) -> {
+                    int scoreCompare = Comparator.nullsLast(Integer::compareTo)
+                            .compare(right.getScore(), left.getScore());
+                    if (scoreCompare != 0) {
+                        return scoreCompare;
+                    }
+                    return Comparator.nullsLast(Double::compareTo)
+                            .compare(right.getRate(), left.getRate());
+                })
+                .toList();
+
+        List<AnalyticsDrillDownRowDTO> filteredRows = baseRows.stream()
+                .filter(row -> matchesFilter(row.getRole(), role))
+                .toList();
+
+        return buildMetricDrillDownResponse(
+                "team",
+                "人员绩效明细",
+                startDate,
+                endDate,
+                List.of(buildDimension("role", "角色", role, baseRows, AnalyticsDrillDownRowDTO::getRole, this::translateUserRole)),
+                filteredRows,
+                page,
+                size,
+                AnalyticsDrillDownSummaryDTO.builder()
+                        .totalCount((long) filteredRows.size())
+                        .totalAmount(sumAmounts(filteredRows))
+                        .totalTeamMembers((long) filteredRows.size())
+                        .wonCount(filteredProjects.stream()
+                                .map(project -> tenderById.get(project.getTenderId()))
+                                .filter(Objects::nonNull)
+                                .filter(tender -> tender.getStatus() == Tender.Status.BIDDED)
+                                .count())
+                        .winRate(filteredRows.isEmpty() ? 0.0 : filteredRows.stream()
+                                .map(AnalyticsDrillDownRowDTO::getRate)
+                                .filter(Objects::nonNull)
+                                .mapToDouble(Double::doubleValue)
+                                .average()
+                                .orElse(0.0))
+                        .totalCompletedTasks(filteredRows.stream()
+                                .map(AnalyticsDrillDownRowDTO::getCompletedTaskCount)
+                                .filter(Objects::nonNull)
+                                .reduce(0L, Long::sum))
+                        .totalOverdueTasks(filteredRows.stream()
+                                .map(AnalyticsDrillDownRowDTO::getOverdueTaskCount)
+                                .filter(Objects::nonNull)
+                                .reduce(0L, Long::sum))
+                        .averageTaskCompletionRate(filteredRows.isEmpty() ? 0.0 : filteredRows.stream()
+                                .map(AnalyticsDrillDownRowDTO::getTaskCompletionRate)
+                                .filter(Objects::nonNull)
+                                .mapToDouble(Double::doubleValue)
+                                .average()
+                                .orElse(0.0))
+                        .build()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public AnalyticsDrillDownResponseDTO getProjectDrillDown(
+            String status,
+            LocalDate startDate,
+            LocalDate endDate,
+            Integer page,
+            Integer size
+    ) {
+        Map<Long, Tender> tenderById = tenderRepository.findAll().stream()
+                .collect(Collectors.toMap(Tender::getId, Function.identity()));
+        Map<Long, String> userNameMap = getUserNameMap();
+
+        List<AnalyticsDrillDownRowDTO> baseRows = projectRepository.findAll().stream()
+                .filter(project -> isWithinDateRange(getProjectReferenceDate(project), startDate, endDate))
+                .map(project -> {
+                    Tender tender = tenderById.get(project.getTenderId());
+                    return AnalyticsDrillDownRowDTO.builder()
+                            .id(project.getId())
+                            .relatedId(project.getTenderId())
+                            .title(project.getName())
+                            .subtitle(tender != null ? tender.getTitle() : "未关联标讯")
+                            .status(project.getStatus().name())
+                            .ownerName(userNameMap.getOrDefault(project.getManagerId(), fallbackUserName(project.getManagerId())))
+                            .amount(tender != null ? defaultAmount(tender.getBudget()) : BigDecimal.ZERO)
+                            .teamSize(Optional.ofNullable(project.getTeamMembers()).orElse(List.of()).size())
+                            .createdAt(getProjectReferenceDate(project))
+                            .deadline(project.getEndDate())
+                            .build();
+                })
+                .sorted(Comparator.comparing(AnalyticsDrillDownRowDTO::getCreatedAt, Comparator.nullsLast(LocalDateTime::compareTo)).reversed())
+                .toList();
+
+        List<AnalyticsDrillDownRowDTO> filteredRows = baseRows.stream()
+                .filter(row -> matchesProjectStatusFilter(row.getStatus(), status))
+                .toList();
+
+        long activeCount = filteredRows.stream().filter(row -> !"ARCHIVED".equals(row.getStatus())).count();
+
+        return buildMetricDrillDownResponse(
+                "projects",
+                "进行中项目明细",
+                startDate,
+                endDate,
+                List.of(buildProjectStatusDimension(status, baseRows)),
+                filteredRows,
+                page,
+                size,
+                AnalyticsDrillDownSummaryDTO.builder()
+                        .totalCount((long) filteredRows.size())
+                        .totalAmount(sumAmounts(filteredRows))
+                        .activeCount(activeCount)
+                        .build()
+        );
+    }
+
     /**
      * Clear the overview cache
      */
@@ -566,5 +899,286 @@ public class DashboardAnalyticsService {
                 .uploadTime(export.getExportedAt() == null ? null : export.getExportedAt().toString())
                 .size(export.getFileSize() == null ? "-" : export.getFileSize() + "B")
                 .build();
+    }
+
+    private AnalyticsDrillDownResponseDTO buildMetricDrillDownResponse(
+            String metricKey,
+            String metricLabel,
+            LocalDate startDate,
+            LocalDate endDate,
+            List<AnalyticsFilterDimensionDTO> dimensions,
+            List<AnalyticsDrillDownRowDTO> filteredRows,
+            Integer requestedPage,
+            Integer requestedSize,
+            AnalyticsDrillDownSummaryDTO summary
+    ) {
+        int page = normalizePage(requestedPage);
+        int size = normalizeSize(requestedSize);
+        int fromIndex = Math.min((page - 1) * size, filteredRows.size());
+        int toIndex = Math.min(fromIndex + size, filteredRows.size());
+        List<AnalyticsDrillDownRowDTO> pageItems = filteredRows.subList(fromIndex, toIndex);
+        int totalPages = filteredRows.isEmpty() ? 0 : (int) Math.ceil((double) filteredRows.size() / size);
+
+        return AnalyticsDrillDownResponseDTO.builder()
+                .metricKey(metricKey)
+                .metricLabel(metricLabel)
+                .filters(AnalyticsDrillDownFiltersDTO.builder()
+                        .startDate(startDate)
+                        .endDate(endDate)
+                        .dimensions(dimensions)
+                        .build())
+                .pagination(AnalyticsPaginationDTO.builder()
+                        .page(page)
+                        .size(size)
+                        .total((long) filteredRows.size())
+                        .totalPages(totalPages)
+                        .hasNext(page < totalPages)
+                        .build())
+                .summary(summary)
+                .items(pageItems)
+                .build();
+    }
+
+    private AnalyticsFilterDimensionDTO buildDimension(
+            String key,
+            String label,
+            String selectedValue,
+            List<AnalyticsDrillDownRowDTO> rows,
+            Function<AnalyticsDrillDownRowDTO, String> extractor,
+            Function<String, String> labelTranslator
+    ) {
+        Map<String, Long> counts = rows.stream()
+                .map(extractor)
+                .filter(Objects::nonNull)
+                .collect(Collectors.groupingBy(Function.identity(), LinkedHashMap::new, Collectors.counting()));
+
+        List<AnalyticsFilterOptionDTO> options = new ArrayList<>();
+        options.add(AnalyticsFilterOptionDTO.builder()
+                .label("全部")
+                .value(ALL_FILTER)
+                .count((long) rows.size())
+                .build());
+        counts.forEach((value, count) -> options.add(AnalyticsFilterOptionDTO.builder()
+                .label(labelTranslator.apply(value))
+                .value(value)
+                .count(count)
+                .build()));
+
+        return AnalyticsFilterDimensionDTO.builder()
+                .key(key)
+                .label(label)
+                .selectedValue(normalizeFilterValue(selectedValue))
+                .options(options)
+                .build();
+    }
+
+    private AnalyticsFilterDimensionDTO buildProjectStatusDimension(String selectedValue, List<AnalyticsDrillDownRowDTO> rows) {
+        long inProgressCount = rows.stream().filter(row -> !"ARCHIVED".equals(row.getStatus())).count();
+        Map<String, Long> counts = rows.stream()
+                .map(AnalyticsDrillDownRowDTO::getStatus)
+                .filter(Objects::nonNull)
+                .collect(Collectors.groupingBy(Function.identity(), LinkedHashMap::new, Collectors.counting()));
+
+        List<AnalyticsFilterOptionDTO> options = new ArrayList<>();
+        options.add(AnalyticsFilterOptionDTO.builder().label("全部").value(ALL_FILTER).count((long) rows.size()).build());
+        options.add(AnalyticsFilterOptionDTO.builder().label("进行中").value("IN_PROGRESS").count(inProgressCount).build());
+        counts.forEach((value, count) -> options.add(AnalyticsFilterOptionDTO.builder()
+                .label(translateProjectStatus(value))
+                .value(value)
+                .count(count)
+                .build()));
+
+        return AnalyticsFilterDimensionDTO.builder()
+                .key("status")
+                .label("项目状态")
+                .selectedValue(normalizeProjectStatusFilter(selectedValue))
+                .options(options)
+                .build();
+    }
+
+    private boolean isWithinDateRange(LocalDateTime value, LocalDate startDate, LocalDate endDate) {
+        if (value == null) {
+            return false;
+        }
+        LocalDate date = value.toLocalDate();
+        if (startDate != null && date.isBefore(startDate)) {
+            return false;
+        }
+        return endDate == null || !date.isAfter(endDate);
+    }
+
+    private boolean matchesFilter(String value, String selectedValue) {
+        String normalized = normalizeFilterValue(selectedValue);
+        return ALL_FILTER.equals(normalized) || Objects.equals(value, normalized);
+    }
+
+    private boolean matchesProjectStatusFilter(String status, String filter) {
+        String normalized = normalizeProjectStatusFilter(filter);
+        if (ALL_FILTER.equals(normalized)) {
+            return true;
+        }
+        if ("IN_PROGRESS".equals(normalized)) {
+            return !"ARCHIVED".equals(status);
+        }
+        return Objects.equals(status, normalized);
+    }
+
+    private String normalizeFilterValue(String value) {
+        if (value == null || value.isBlank()) {
+            return ALL_FILTER;
+        }
+        return value.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private String normalizeProjectStatusFilter(String value) {
+        String normalized = normalizeFilterValue(value);
+        if ("IN_PROGRESS".equals(normalized) || "INPROGRESS".equals(normalized)) {
+            return "IN_PROGRESS";
+        }
+        return normalized;
+    }
+
+    private LocalDateTime getProjectReferenceDate(Project project) {
+        return project.getStartDate() != null ? project.getStartDate() : project.getCreatedAt();
+    }
+
+    private String deriveOutcome(Tender tender, Project project) {
+        if (tender.getStatus() == Tender.Status.BIDDED && project != null) {
+            return "WON";
+        }
+        if (tender.getStatus() == Tender.Status.ABANDONED) {
+            return "LOST";
+        }
+        return "IN_PROGRESS";
+    }
+
+    private Map<Long, String> getUserNameMap() {
+        return userRepository.findAll().stream()
+                .collect(Collectors.toMap(User::getId, User::getFullName));
+    }
+
+    private void accumulateTeamAggregate(
+            Map<Long, TeamAggregate> aggregates,
+            Long userId,
+            BigDecimal amount,
+            boolean won,
+            boolean active,
+            boolean manager
+    ) {
+        if (userId == null) {
+            return;
+        }
+        TeamAggregate aggregate = aggregates.computeIfAbsent(userId, ignored -> new TeamAggregate());
+        aggregate.projectCount++;
+        aggregate.totalAmount = aggregate.totalAmount.add(amount);
+        if (won) {
+            aggregate.wonCount++;
+        }
+        if (active) {
+            aggregate.activeProjectCount++;
+        }
+        if (manager) {
+            aggregate.managedProjectCount++;
+        }
+    }
+
+    private int calculatePerformanceScore(double winRate, double taskCompletionRate, long overdueTaskCount, long totalTaskCount) {
+        double overduePenalty = totalTaskCount == 0 ? 0.0 : (overdueTaskCount * 100.0) / totalTaskCount;
+        double score = (winRate * 0.45) + (taskCompletionRate * 0.4) + (Math.max(0.0, 100.0 - overduePenalty) * 0.15);
+        return (int) Math.round(score);
+    }
+
+    private BigDecimal sumAmounts(List<AnalyticsDrillDownRowDTO> rows) {
+        return rows.stream()
+                .map(AnalyticsDrillDownRowDTO::getAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal defaultAmount(BigDecimal amount) {
+        return amount != null ? amount : BigDecimal.ZERO;
+    }
+
+    private int normalizePage(Integer page) {
+        return page == null || page < 1 ? 1 : page;
+    }
+
+    private int normalizeSize(Integer size) {
+        return size == null || size < 1 ? 10 : Math.min(size, 100);
+    }
+
+    private String fallbackUserName(Long userId) {
+        return userId == null ? "未分配" : "用户#" + userId;
+    }
+
+    private String defaultString(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private String translateTenderStatus(String status) {
+        return switch (normalizeFilterValue(status)) {
+            case "PENDING" -> "待处理";
+            case "TRACKING" -> "跟踪中";
+            case "BIDDED" -> "已投标";
+            case "ABANDONED" -> "已放弃";
+            default -> status;
+        };
+    }
+
+    private String translateProjectStatus(String status) {
+        return switch (normalizeFilterValue(status)) {
+            case "INITIATED" -> "已启动";
+            case "PREPARING" -> "准备中";
+            case "REVIEWING" -> "审核中";
+            case "SEALING" -> "封装中";
+            case "BIDDING" -> "投标中";
+            case "ARCHIVED" -> "已归档";
+            default -> status;
+        };
+    }
+
+    private String translateOutcome(String outcome) {
+        return switch (normalizeFilterValue(outcome)) {
+            case "WON" -> "已中标";
+            case "LOST" -> "未中标";
+            case "IN_PROGRESS" -> "进行中";
+            default -> outcome;
+        };
+    }
+
+    private String translateUserRole(String role) {
+        return switch (normalizeFilterValue(role)) {
+            case "ADMIN" -> "管理员";
+            case "MANAGER" -> "经理";
+            case "STAFF" -> "员工";
+            default -> role;
+        };
+    }
+
+    private static class TeamAggregate {
+        private long projectCount;
+        private long managedProjectCount;
+        private long wonCount;
+        private long activeProjectCount;
+        private long totalTaskCount;
+        private long completedTaskCount;
+        private long overdueTaskCount;
+        private BigDecimal totalAmount = BigDecimal.ZERO;
+
+        public void setTaskMetrics(long totalTaskCount, long completedTaskCount, long overdueTaskCount) {
+            this.totalTaskCount = totalTaskCount;
+            this.completedTaskCount = completedTaskCount;
+            this.overdueTaskCount = overdueTaskCount;
+        }
+    }
+
+    private static class TeamTaskAggregate {
+        private long totalTaskCount;
+        private long completedTaskCount;
+        private long overdueTaskCount;
+
+        public static TeamTaskAggregate empty() {
+            return new TeamTaskAggregate();
+        }
     }
 }

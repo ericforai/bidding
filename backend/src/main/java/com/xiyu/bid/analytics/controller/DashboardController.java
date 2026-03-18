@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -92,6 +93,58 @@ public class DashboardController {
             @RequestParam String key
     ) {
         AnalyticsDrillDownResponse response = dashboardAnalyticsService.getDrillDown(type, key);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/drilldown/revenue")
+    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponseDTO>> getRevenueDrillDown(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "10") Integer size
+    ) {
+        AnalyticsDrillDownResponseDTO response =
+                dashboardAnalyticsService.getRevenueDrillDown(status, startDate, endDate, page, size);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/drilldown/win-rate")
+    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponseDTO>> getWinRateDrillDown(
+            @RequestParam(required = false) String outcome,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "10") Integer size
+    ) {
+        AnalyticsDrillDownResponseDTO response =
+                dashboardAnalyticsService.getWinRateDrillDown(outcome, startDate, endDate, page, size);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/drilldown/team")
+    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponseDTO>> getTeamDrillDown(
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "10") Integer size
+    ) {
+        AnalyticsDrillDownResponseDTO response =
+                dashboardAnalyticsService.getTeamDrillDown(role, startDate, endDate, page, size);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/drilldown/projects")
+    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponseDTO>> getProjectDrillDown(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestParam(required = false, defaultValue = "10") Integer size
+    ) {
+        AnalyticsDrillDownResponseDTO response =
+                dashboardAnalyticsService.getProjectDrillDown(status, startDate, endDate, page, size);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
