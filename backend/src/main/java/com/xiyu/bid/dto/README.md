@@ -1,16 +1,14 @@
-# DTO Package (数据传输对象包)
+# DTO 模块 (数据传输对象包)
 
 > 一旦我所属的文件夹有所变化，请更新我。
 
-## 功能作用
+## 职责
+DTO 负责 API 请求/响应结构和跨模块数据传递，只做字段承载与映射，不承载业务规则。这里是前后端契约的稳定出口。
 
-存放所有模块共享的数据传输对象 (DTO)，包括 API 请求/响应结构。
-
-## 文件清单
-
+## 边界清单
 | 文件 | 地位 | 功能 |
 |------|------|------|
-| `ApiResponse.java` | DTO | 统一 API 响应包装类 |
+| `ApiResponse.java` | DTO | 统一 API 响应包装 |
 | `LoginRequest.java` | DTO | 登录请求 |
 | `RegisterRequest.java` | DTO | 注册请求 |
 | `AuthResponse.java` | DTO | 认证响应 |
@@ -20,20 +18,3 @@
 | `QualificationDTO.java` | DTO | 资质数据传输对象 |
 | `CaseDTO.java` | DTO | 案例数据传输对象 |
 | `TemplateDTO.java` | DTO | 模板数据传输对象 |
-
-## 设计模式
-
-- **Request DTO**: 封装 API 请求参数
-- **Response DTO**: 封装 API 响应数据
-- **统一响应**: 使用 `ApiResponse<T>` 包装所有响应
-
-## 统一响应格式
-
-```json
-{
-  "success": true,
-  "code": 200,
-  "message": "操作成功",
-  "data": { ... }
-}
-```

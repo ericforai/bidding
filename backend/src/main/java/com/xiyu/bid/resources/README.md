@@ -1,37 +1,23 @@
-# Resources Module (平台资源模块)
+# Resources 模块 (平台资源域)
 
 > 一旦我所属的文件夹有所变化，请更新我。
 
-## 功能作用
+## 职责
+资源模块统一管理平台账户、费用、BAR 证书和站点子资源，覆盖借用、审批、归还和校验流程。这里是资源域的总入口，负责把多个资源子能力维持在同一套边界内。
 
-管理第三方投标平台的账户和 CA 数字证书资源，支持账户借用和归还。
-
-## 文件清单
-
+## 边界清单
 | 文件 | 地位 | 功能 |
 |------|------|------|
-| `entity/Account.java` | Entity | 平台账户实体 |
-| `entity/BarAsset.java` | Entity | CA 数字证书资产实体 |
-| `repository/AccountRepository.java` | Repository | 账户数据访问 |
-| `repository/BarAssetRepository.java` | Repository | CA 证书数据访问 |
-| `dto/AccountCreateRequest.java` | DTO | 创建账户请求 |
-| `dto/AccountUpdateRequest.java` | DTO | 更新账户请求 |
-| `dto/BarAssetCreateRequest.java` | DTO | 创建 CA 证书请求 |
-| `dto/BarAssetUpdateRequest.java` | DTO | 更新 CA 证书请求 |
+| `controller/AccountController.java` | Controller | 平台账户接口 |
+| `controller/ExpenseController.java` | Controller | 费用审批与退还接口 |
+| `controller/BarAssetController.java` | Controller | BAR 证书资产接口 |
+| `controller/BarCertificateController.java` | Controller | BAR 证书借还接口 |
+| `controller/BarSiteSubresourceController.java` | Controller | BAR 站点子资源接口 |
 | `service/AccountService.java` | Service | 账户业务逻辑 |
-
-## API 端点
-
-| 方法 | 路径 | 描述 |
-|------|------|------|
-| GET | `/api/platform/accounts` | 获取平台账户列表 |
-| POST | `/api/platform/accounts` | 添加平台账户 |
-| PUT | `/api/platform/accounts/{id}` | 更新账户信息 |
-| DELETE | `/api/platform/accounts/{id}` | 删除账户 |
-| POST | `/api/platform/accounts/{id}/borrow` | 借用账户 |
-| POST | `/api/platform/accounts/{id}/return` | 归还账户 |
-| GET | `/api/bar/assets` | 获取 CA 证书列表 |
-| POST | `/api/bar/assets` | 添加 CA 证书 |
-| PUT | `/api/bar/assets/{id}` | 更新 CA 证书 |
-| DELETE | `/api/bar/assets/{id}` | 删除 CA 证书 |
-| GET | `/api/bar/statistics` | 获取资产统计 |
+| `service/ExpenseService.java` | Service | 费用业务逻辑 |
+| `service/BarAssetService.java` | Service | BAR 资产业务逻辑 |
+| `service/BarCertificateService.java` | Service | BAR 证书业务逻辑 |
+| `service/BarSiteSubresourceService.java` | Service | 站点子资源业务逻辑 |
+| `entity/` | Entity | Account、BarAsset、Expense、BarCertificate、BarSite* 实体 |
+| `repository/` | Repository | 资源数据访问 |
+| `dto/` | DTO | 资源请求/响应模型 |

@@ -1,3 +1,7 @@
+// Input: HTTP 请求、路径参数、认证上下文和 DTO
+// Output: 标准化 API 响应和用例入口
+// Pos: Controller/接口适配层
+// 维护声明: 仅维护协议适配与参数校验；业务规则下沉到 service.
 package com.xiyu.bid.controller;
 
 import com.xiyu.bid.audit.dto.AuditLogQueryResponse;

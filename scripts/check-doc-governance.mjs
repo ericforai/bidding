@@ -26,6 +26,15 @@ const governedDirectories = [
   'src/styles',
   'src/utils',
   'backend',
+  'src/views/Bidding',
+  'src/views/Knowledge',
+  'src/views/Resource',
+  'src/views/Resource/BAR',
+  'src/views/AI',
+  'src/components/ai',
+  'src/components/charts',
+  'src/components/common',
+  'src/components/layout',
 ]
 
 const backendModuleDirectories = []
@@ -45,6 +54,9 @@ const governedFilePatterns = [
   /^src\/stores\/.+\.js$/,
   /^scripts\/[^/]+\.mjs$/,
   /^scripts\/[^/]+\.sh$/,
+  /^scripts\/release\/.+\.(mjs|sh)$/,
+  /^backend\/src\/main\/java\/com\/xiyu\/bid\/(controller|service|config|auth|aspect|exception)\/.+\.java$/,
+  /^backend\/src\/main\/java\/com\/xiyu\/bid\/.+\/(controller|service|config)\/.+\.java$/,
 ]
 
 const violations = []
@@ -89,11 +101,15 @@ function normalizeComment(line) {
 function checkGovernedFile(relativePath) {
   const filePath = path.join(repoRoot, relativePath)
   const content = readFileContent(filePath)
-  const lines = content.split('\n').slice(0, 8)
+  const lines = content.split('\n').slice(0, 20)
   const commentLines = []
+  const isJavaFile = relativePath.endsWith('.java')
 
   for (const line of lines) {
     if (line.startsWith('#!')) {
+      continue
+    }
+    if (isJavaFile && /^package\s+.+;$/.test(line.trim())) {
       continue
     }
     if (/^\s*(\/\/|#)/.test(line)) {
@@ -115,7 +131,10 @@ function checkGovernedFile(relativePath) {
       violations.push(`${relativePath} missing header line "${prefix}"`)
     }
   }
-  if (!commentLines.includes(fileMaintenanceLine)) {
+  const hasMaintenanceLine =
+    commentLines.includes(fileMaintenanceLine) ||
+    commentLines.some((line) => line.startsWith('维护声明:'))
+  if (!hasMaintenanceLine) {
     violations.push(`${relativePath} missing maintenance declaration`)
   }
 }
@@ -139,7 +158,7 @@ for (const relativeDir of governedDirectories) {
 }
 
 for (const relativeDir of backendModuleDirectories) {
-  checkReadme(relativeDir, { requireInventory: false })
+  checkReadme(relativeDir, { requireInventory: true })
 }
 
 for (const root of ['src', 'scripts']) {
@@ -157,4 +176,4 @@ if (violations.length > 0) {
   process.exit(1)
 }
 
-console.log(`Documentation governance check passed for ${governedDirectories.length} directories.`)
+console.log(`Documentation governance check passed for ${governedDirectories.length + backendModuleDirectories.length} directories.`)

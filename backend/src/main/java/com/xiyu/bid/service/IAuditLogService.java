@@ -1,3 +1,7 @@
+// Input: AuditLog 实体、查询条件和事件上下文
+// Output: 审计日志记录与查询结果
+// Pos: Service/业务编排层
+// 维护声明: 仅维护审计服务契约；实现变更请同步 Controller 与 Aspect.
 package com.xiyu.bid.service;
 
 import com.xiyu.bid.audit.dto.AuditLogQueryResponse;

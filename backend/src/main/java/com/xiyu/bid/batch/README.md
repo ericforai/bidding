@@ -1,14 +1,18 @@
-一旦我所属的文件夹有所变化，请更新我。
+> 一旦我所属的文件夹有所变化，请更新我。
 
 # Batch 模块
 
-该目录负责批量任务操作，包括批量分配、认领和删除等后端编排能力。
-当前 README 先覆盖模块职责和关键文件，后续再逐步补齐完整清单表格。
+批量模块负责批量分配、认领和删除等后端编排能力。
+该目录仅处理批量操作的统一入口和结果回传，不承担单条业务逻辑。
+对外提供批量操作 API 和请求/响应 DTO。
 
 | 文件 | 地位 | 功能 |
 |------|------|------|
-| `controller/BatchOperationController.java` | Controller | 暴露批量操作 API |
-| `service/BatchOperationService.java` | Service | 执行批量分配、认领和删除逻辑 |
+| `controller/` | 子目录 | 批量操作 API 边界 |
+| `controller/BatchOperationController.java` | Controller | 批量操作 API |
+| `service/` | 子目录 | 批量编排边界 |
+| `service/BatchOperationService.java` | Service | 批量分配、认领和删除逻辑 |
+| `dto/` | 子目录 | 批量操作请求/响应边界 |
 | `dto/BatchAssignRequest.java` | DTO | 批量分配请求 |
 | `dto/BatchClaimRequest.java` | DTO | 批量认领请求 |
 | `dto/BatchDeleteRequest.java` | DTO | 批量删除请求 |

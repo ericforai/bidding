@@ -1,3 +1,7 @@
+// Input: 业务失败、资源缺失和参数校验异常
+// Output: 业务异常类型与标准化错误映射
+// Pos: Exception/异常处理层
+// 维护声明: 仅维护异常语义与映射；错误码改动请同步前后端契约.
 package com.xiyu.bid.exception;
 
 import com.xiyu.bid.dto.ApiResponse;

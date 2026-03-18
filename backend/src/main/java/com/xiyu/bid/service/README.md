@@ -1,17 +1,19 @@
-# Service - 业务逻辑层
+# Service 模块 (业务逻辑层)
 
-一旦我所属的文件夹有所变化，请更新我。
+> 一旦我所属的文件夹有所变化，请更新我。
 
-## 功能概述
-实现核心业务逻辑，处理事务管理，调用Repository进行数据访问，提供可复用的业务功能。
+## 职责
+Service 层承接用例编排、事务边界和跨仓储协作，是领域规则真正落地的位置。这里负责调用 repository、校验状态转移，并向 controller 输出稳定的业务结果。
 
-## 文件清单
-- `AuthService.java` - 认证服务，用户注册/登录/令牌管理
-- `TenderService.java` - 标讯服务，AI分析计算
-- `ProjectService.java` - 项目服务，状态流转管理
-- `TaskService.java` - 任务服务，分配与进度跟踪
-- `QualificationService.java` - 资质服务
-- `CaseService.java` - 案例服务
-- `TemplateService.java` - 模板服务
-- `KnowledgeService.java` - 知识库服务（已拆分为3个独立服务）
-- `AuditLogService.java` - 审计日志服务
+## 边界清单
+| 文件 | 地位 | 功能 |
+|------|------|------|
+| `AuthService.java` | Service | 认证、注册和令牌管理 |
+| `TenderService.java` | Service | 标讯处理与分析 |
+| `ProjectService.java` | Service | 项目生命周期与状态流转 |
+| `TaskService.java` | Service | 任务分配与进度跟踪 |
+| `QualificationService.java` | Service | 资质管理 |
+| `CaseService.java` | Service | 案例管理 |
+| `TemplateService.java` | Service | 模板管理 |
+| `KnowledgeService.java` | Service | 知识能力聚合服务 |
+| `AuditLogService.java` | Service | 审计日志记录 |

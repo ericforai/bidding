@@ -1,3 +1,7 @@
+// Input: UAT base URLs, report directory, and release-run identifiers
+// Output: UAT execution report JSON and supporting artifact paths
+// Pos: scripts/release/ - Release automation and rehearsal helpers
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 import fs from 'node:fs'
 import path from 'node:path'
 

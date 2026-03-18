@@ -1,3 +1,7 @@
+// Input: Spring environment and framework beans
+// Output: Cache configuration beans
+// Pos: Config/配置层
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.analytics.config;
 
 import org.springframework.cache.CacheManager;

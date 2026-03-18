@@ -1,3 +1,7 @@
+// Input: UserRepository 与用户名查询参数
+// Output: Spring Security UserDetails
+// Pos: Auth/用户加载层
+// 维护声明: 仅维护用户加载逻辑；权限字段映射变更请同步认证链路.
 package com.xiyu.bid.auth;
 
 import com.xiyu.bid.entity.User;

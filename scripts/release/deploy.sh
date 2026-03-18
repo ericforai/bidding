@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Input: release environment variables, repository filesystem, and deployment arguments
+# Output: release preflight, backup, deployment, and signoff side effects
+# Pos: scripts/release/ - Release automation and rehearsal helpers
+# 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

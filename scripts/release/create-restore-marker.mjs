@@ -1,3 +1,7 @@
+// Input: UAT report path, report directory, and restore-state environment variables
+// Output: restore marker JSON for release rehearsal verification
+// Pos: scripts/release/ - Release automation and rehearsal helpers
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 import fs from 'node:fs'
 import path from 'node:path'
 

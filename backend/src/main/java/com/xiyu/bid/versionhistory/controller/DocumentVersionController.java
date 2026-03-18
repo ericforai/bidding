@@ -1,8 +1,7 @@
-// Input: REST API请求
-// Output: JSON响应
+// Input: versionhistory service and request DTOs
+// Output: Document Version REST API endpoints
 // Pos: Controller/控制器层
-// 处理文档版本相关的HTTP请求
-
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.versionhistory.controller;
 
 import com.xiyu.bid.dto.ApiResponse;
