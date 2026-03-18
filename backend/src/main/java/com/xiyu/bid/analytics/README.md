@@ -1,51 +1,27 @@
-# Compliance Check Module
+# Analytics 模块（合规检查能力）
 
 > 一旦我所属的文件夹有所变化，请更新我。
 
-## 目录功能
+## 职责说明
+合规检查模块负责项目和标讯的合规性校验、风险评估与结果查询。
+该目录承载的是规则检查能力，不负责业务主流程编排。
+对外暴露统一的检查、查询和风险评估接口。
 
-合规检查服务模块，提供项目/标讯的合规性检查、风险评估功能。
+## 边界清单
 
-## 文件清单
-
-### Entity (实体层)
-- `entity/ComplianceRule.java` - 合规规则实体
-- `entity/ComplianceCheckResult.java` - 合规检查结果实体
-
-### Repository (数据访问层)
-- `repository/ComplianceRuleRepository.java` - 合规规则数据访问
-- `repository/ComplianceCheckResultRepository.java` - 检查结果数据访问
-
-### Service (业务层)
-- `service/ComplianceCheckService.java` - 合规检查业务逻辑
-
-### Controller (控制器层)
-- `controller/ComplianceController.java` - 合规检查 REST API 端点
-
-### DTO (数据传输对象)
-- `dto/ComplianceCheckResultDTO.java` - 检查结果传输对象
-- `dto/ComplianceIssue.java` - 合规问题
-- `dto/RiskAssessmentDTO.java` - 风险评估结果
-
-## API 端点
-
-- `POST /api/compliance/check/project/{projectId}` - 检查项目合规性
-- `POST /api/compliance/check/tender/{tenderId}` - 检查标讯合规性
-- `GET /api/compliance/results/{resultId}` - 获取检查结果
-- `GET /api/compliance/project/{projectId}/results` - 项目检查历史
-- `GET /api/compliance/assess-risk/{projectId}` - 风险评估
-
-## 规则类型
-
-- QUALIFICATION - 资质要求
-- DOCUMENT - 文档完整性
-- FINANCIAL - 财务要求
-- EXPERIENCE - 经验要求
-- DEADLINE - 时间要求
-
-## 检查状态
-
-- COMPLIANT - 合规
-- NON_COMPLIANT - 不合规
-- PARTIAL_COMPLIANT - 部分合规
-- WARNING - 警告
+| 文件 | 地位 | 功能 |
+|------|------|------|
+| `entity/` | 子目录 | 合规规则与检查结果实体边界 |
+| `entity/ComplianceRule.java` | Entity | 合规规则实体 |
+| `entity/ComplianceCheckResult.java` | Entity | 合规检查结果实体 |
+| `repository/` | 子目录 | 合规数据访问边界 |
+| `repository/ComplianceRuleRepository.java` | Repository | 合规规则数据访问 |
+| `repository/ComplianceCheckResultRepository.java` | Repository | 检查结果数据访问 |
+| `service/` | 子目录 | 合规检查服务边界 |
+| `service/ComplianceCheckService.java` | Service | 合规检查业务逻辑 |
+| `controller/` | 子目录 | 合规检查 API 边界 |
+| `controller/ComplianceController.java` | Controller | 合规检查 REST API |
+| `dto/` | 子目录 | 合规结果与风险评估边界 |
+| `dto/ComplianceCheckResultDTO.java` | DTO | 检查结果传输对象 |
+| `dto/ComplianceIssue.java` | DTO | 合规问题项 |
+| `dto/RiskAssessmentDTO.java` | DTO | 风险评估结果 |

@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Input: database connection environment variables and backup destination arguments
+# Output: release backup archive files and backup metadata
+# Pos: scripts/release/ - Release automation and rehearsal helpers
+# 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
 
 required_env=(DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD)

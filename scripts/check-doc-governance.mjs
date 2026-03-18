@@ -45,6 +45,7 @@ const governedFilePatterns = [
   /^src\/stores\/.+\.js$/,
   /^scripts\/[^/]+\.mjs$/,
   /^scripts\/[^/]+\.sh$/,
+  /^scripts\/release\/.+\.(mjs|sh)$/,
 ]
 
 const violations = []
@@ -139,7 +140,7 @@ for (const relativeDir of governedDirectories) {
 }
 
 for (const relativeDir of backendModuleDirectories) {
-  checkReadme(relativeDir, { requireInventory: false })
+  checkReadme(relativeDir, { requireInventory: true })
 }
 
 for (const root of ['src', 'scripts']) {
@@ -157,4 +158,4 @@ if (violations.length > 0) {
   process.exit(1)
 }
 
-console.log(`Documentation governance check passed for ${governedDirectories.length} directories.`)
+console.log(`Documentation governance check passed for ${governedDirectories.length + backendModuleDirectories.length} directories.`)

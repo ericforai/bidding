@@ -1,16 +1,18 @@
-# Controller - REST API控制器层
+# Controller 模块 (REST API 控制器层)
 
-一旦我所属的文件夹有所变化，请更新我。
+> 一旦我所属的文件夹有所变化，请更新我。
 
-## 功能概述
-处理HTTP请求，提供RESTful API端点，负责参数验证、权限控制，调用Service层处理业务逻辑，返回标准化响应。
+## 职责
+控制器只负责 HTTP 协议适配、参数校验、权限入口和响应封装，不承载领域规则。这里是对外 API 的第一层边界，所有业务流程都下沉到 service 层。
 
-## 文件清单
-- `AuthController.java` - 认证控制器，登录/注册/令牌刷新
-- `TenderController.java` - 标讯管理控制器，CRUD + AI分析
-- `ProjectController.java` - 项目管理控制器，状态流转 + 团队管理
-- `TaskController.java` - 任务管理控制器，分配 + 进度跟踪
-- `QualificationController.java` - 资质管理控制器
-- `CaseController.java` - 案例管理控制器
-- `TemplateController.java` - 模板管理控制器
-- `TestController.java` - 测试控制器
+## 边界清单
+| 文件 | 地位 | 功能 |
+|------|------|------|
+| `AuthController.java` | Controller | 认证、注册和令牌接口 |
+| `TenderController.java` | Controller | 标讯管理接口 |
+| `ProjectController.java` | Controller | 项目管理与状态流转接口 |
+| `TaskController.java` | Controller | 任务分配与进度接口 |
+| `QualificationController.java` | Controller | 资质管理接口 |
+| `CaseController.java` | Controller | 案例管理接口 |
+| `TemplateController.java` | Controller | 模板管理接口 |
+| `TestController.java` | Controller | 测试与联调接口 |

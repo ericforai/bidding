@@ -1,3 +1,7 @@
+// Input: release candidate metadata and report directory paths
+// Output: release signoff packet files and summary artifacts
+// Pos: scripts/release/ - Release automation and rehearsal helpers
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'

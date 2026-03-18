@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Input: release environment variables and optional rehearsal overrides
+# Output: shared rehearsal environment defaults for release scripts
+# Pos: scripts/release/ - Release automation and rehearsal helpers
+# 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 ROOT_DIR="${ROOT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 BACKEND_DIR="${BACKEND_DIR:-$ROOT_DIR/backend}"

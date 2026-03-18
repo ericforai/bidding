@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Input: backup archive path, database connection environment variables, and confirmation flags
+# Output: restored database state and restore verification side effects
+# Pos: scripts/release/ - Release automation and rehearsal helpers
+# 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
 
 if [[ $# -ne 1 ]]; then

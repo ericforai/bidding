@@ -1,51 +1,19 @@
-# Compliance Check Module
+# Compliance 模块 (合规检查模块)
 
 > 一旦我所属的文件夹有所变化，请更新我。
 
-## 目录功能
+## 职责
+合规检查模块负责项目和标讯的规则检查、检查结果记录以及风险评估输出。这里负责把合规规则、检查结果和对外 API 边界收拢到统一位置。
 
-合规检查服务模块，提供项目/标讯的合规性检查、风险评估功能。
-
-## 文件清单
-
-### Entity (实体层)
-- `entity/ComplianceRule.java` - 合规规则实体
-- `entity/ComplianceCheckResult.java` - 合规检查结果实体
-
-### Repository (数据访问层)
-- `repository/ComplianceRuleRepository.java` - 合规规则数据访问
-- `repository/ComplianceCheckResultRepository.java` - 检查结果数据访问
-
-### Service (业务层)
-- `service/ComplianceCheckService.java` - 合规检查业务逻辑
-
-### Controller (控制器层)
-- `controller/ComplianceController.java` - 合规检查 REST API 端点
-
-### DTO (数据传输对象)
-- `dto/ComplianceCheckResultDTO.java` - 检查结果传输对象
-- `dto/ComplianceIssue.java` - 合规问题
-- `dto/RiskAssessmentDTO.java` - 风险评估结果
-
-## API 端点
-
-- `POST /api/compliance/check/project/{projectId}` - 检查项目合规性
-- `POST /api/compliance/check/tender/{tenderId}` - 检查标讯合规性
-- `GET /api/compliance/results/{resultId}` - 获取检查结果
-- `GET /api/compliance/project/{projectId}/results` - 项目检查历史
-- `GET /api/compliance/assess-risk/{projectId}` - 风险评估
-
-## 规则类型
-
-- QUALIFICATION - 资质要求
-- DOCUMENT - 文档完整性
-- FINANCIAL - 财务要求
-- EXPERIENCE - 经验要求
-- DEADLINE - 时间要求
-
-## 检查状态
-
-- COMPLIANT - 合规
-- NON_COMPLIANT - 不合规
-- PARTIAL_COMPLIANT - 部分合规
-- WARNING - 警告
+## 边界清单
+| 文件 | 地位 | 功能 |
+|------|------|------|
+| `controller/ComplianceController.java` | Controller | 合规检查接口 |
+| `service/ComplianceCheckService.java` | Service | 合规检查编排 |
+| `entity/ComplianceRule.java` | Entity | 合规规则实体 |
+| `entity/ComplianceCheckResult.java` | Entity | 合规检查结果实体 |
+| `repository/ComplianceRuleRepository.java` | Repository | 合规规则数据访问 |
+| `repository/ComplianceCheckResultRepository.java` | Repository | 检查结果数据访问 |
+| `dto/ComplianceCheckResultDTO.java` | DTO | 检查结果视图对象 |
+| `dto/ComplianceIssue.java` | DTO | 合规问题对象 |
+| `dto/RiskAssessmentDTO.java` | DTO | 风险评估对象 |

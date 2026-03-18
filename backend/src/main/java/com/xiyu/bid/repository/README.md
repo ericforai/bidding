@@ -1,13 +1,11 @@
-# Repository Package (数据访问层包)
+# Repository 模块 (数据访问层包)
 
 > 一旦我所属的文件夹有所变化，请更新我。
 
-## 功能作用
+## 职责
+Repository 只定义数据访问接口和查询边界，不写业务判断。这里负责把领域对象与数据库读写隔离开，供 service 层调用。
 
-存放 JPA Repository 接口，提供数据库访问能力。
-
-## 文件清单
-
+## 边界清单
 | 文件 | 地位 | 功能 |
 |------|------|------|
 | `UserRepository.java` | Repository | 用户数据访问 |
@@ -18,21 +16,3 @@
 | `CaseRepository.java` | Repository | 案例数据访问 |
 | `TemplateRepository.java` | Repository | 模板数据访问 |
 | `AuditLogRepository.java` | Repository | 审计日志数据访问 |
-
-## 设计模式
-
-继承 `JpaRepository<T, ID>` 获得：
-- 基本 CRUD 操作
-- 分页查询支持
-- 排序功能
-
-## 自定义查询
-
-```java
-// 方法名查询
-List<Project> findByStatus(ProjectStatus status);
-
-// @Query 注解
-@Query("SELECT p FROM Project p WHERE p.createdBy = :userId")
-List<Project> findByCreatedBy(@Param("userId") Long userId);
-```
