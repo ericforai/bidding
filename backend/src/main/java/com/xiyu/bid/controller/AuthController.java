@@ -19,6 +19,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/auth")
@@ -44,7 +46,9 @@ public class AuthController {
             request.setUsername(InputSanitizer.sanitizeString(request.getUsername(), 50));
         }
         AuthResponse response = authService.login(request);
-        return ResponseEntity.ok(ApiResponse.success("Login successful", response));
+        return ResponseEntity.ok()
+                .header("X-Refresh-Token", response.getRefreshToken())
+                .body(ApiResponse.success("Login successful", response));
     }
 
     @GetMapping("/me")
@@ -52,6 +56,28 @@ public class AuthController {
     public ResponseEntity<ApiResponse<AuthResponse>> getCurrentUser(Authentication authentication) {
         AuthResponse response = authService.getCurrentUser(authentication.getName());
         return ResponseEntity.ok(ApiResponse.success("Current user retrieved successfully", response));
+    }
+
+    @PostMapping("/logout")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            Authentication authentication,
+            @RequestHeader(name = "Authorization", required = false) String authorizationHeader,
+            @RequestBody(required = false) Map<String, String> requestBody
+    ) {
+        String accessToken = extractBearerToken(authorizationHeader);
+        String refreshToken = requestBody != null ? requestBody.get("refreshToken") : null;
+        authService.logout(authentication.getName(), accessToken, refreshToken);
+        return ResponseEntity.ok(ApiResponse.success("Logout successful", null));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(@RequestBody(required = false) Map<String, String> requestBody) {
+        String refreshToken = requestBody != null ? requestBody.get("refreshToken") : null;
+        AuthService.RefreshSession session = authService.refreshSession(refreshToken);
+        return ResponseEntity.ok()
+                .header("X-Refresh-Token", session.refreshToken())
+                .body(ApiResponse.success("Token refreshed successfully", session.authResponse()));
     }
 
     /**
@@ -67,5 +93,15 @@ public class AuthController {
         if (request.getFullName() != null) {
             request.setFullName(InputSanitizer.sanitizeString(request.getFullName(), 100));
         }
+    }
+
+    private String extractBearerToken(String authorizationHeader) {
+        if (authorizationHeader == null || authorizationHeader.isBlank()) {
+            return null;
+        }
+        if (authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7);
+        }
+        return authorizationHeader;
     }
 }

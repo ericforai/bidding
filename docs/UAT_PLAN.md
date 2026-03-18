@@ -17,6 +17,7 @@
 - 数据库：已应用 Flyway baseline 与增量迁移
 - 监控：`/actuator/health`、`/actuator/prometheus` 可访问
 - 本地全流程演练入口：`bash scripts/release/rehearse-release.sh`
+- API 模式 Playwright 基线入口：`bash scripts/test/start-api-e2e-stack.sh` 或直接运行 `npm run test:e2e`
 
 ## Entry Criteria
 - 前后端构建通过
@@ -82,3 +83,5 @@
 - 自动 UAT 执行脚本：`node scripts/release/run-uat.mjs`
 - 正式签字模板：`docs/UAT_SIGNOFF_TEMPLATE.md`
 - 签字包生成脚本：`node scripts/release/build-signoff-packet.mjs`
+- Playwright API 联调栈启动脚本：`scripts/test/start-api-e2e-stack.sh`
+- Playwright API 联调栈停止脚本：`scripts/test/stop-api-e2e-stack.sh`

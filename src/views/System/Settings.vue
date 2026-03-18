@@ -54,7 +54,7 @@
             </el-table-column>
             <el-table-column label="操作" width="150">
               <template #default="{ row }">
-                <el-button link type="primary" size="small" @click="handleConfigPermission(row)">
+                <el-button link type="primary" size="small" @click="openPermissionConfig(row)">
                   权限配置
                 </el-button>
                 <el-button link type="primary" size="small">编辑</el-button>
@@ -145,7 +145,7 @@
                   </el-table-column>
                   <el-table-column label="操作" width="100">
                     <template #default="{ row }">
-                      <el-button type="primary" size="small" @click="saveDeptConfig(row)">保存</el-button>
+                      <el-button type="primary" size="small" @click="persistDeptConfig(row)">保存</el-button>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -187,7 +187,7 @@
                   </el-table-column>
                   <el-table-column label="操作" width="100">
                     <template #default="{ row }">
-                      <el-button type="primary" size="small" @click="saveProjectConfig(row)">保存</el-button>
+                      <el-button type="primary" size="small" @click="persistProjectConfig(row)">保存</el-button>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -239,7 +239,7 @@
               <el-switch v-model="config.enableAI" />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="handleSaveConfig">保存配置</el-button>
+              <el-button type="primary" @click="persistBaseConfig">保存配置</el-button>
             </el-form-item>
           </el-form>
         </el-tab-pane>
@@ -528,7 +528,7 @@
                   <el-button
                     type="primary"
                     :disabled="!integrationConfig.oaEnabled"
-                    @click="saveOaConfig"
+                    @click="persistOaConfig"
                   >
                     保存OA配置
                   </el-button>
@@ -787,7 +787,7 @@
       </el-form>
       <template #footer>
         <el-button @click="showFlowMappingDialog = false">取消</el-button>
-        <el-button type="primary" @click="saveFlowMapping">保存</el-button>
+        <el-button type="primary" @click="persistFlowMapping">保存</el-button>
       </template>
     </el-dialog>
 
@@ -863,7 +863,7 @@
       </div>
       <template #footer>
         <el-button @click="showPermissionDialog = false">取消</el-button>
-        <el-button type="primary" @click="savePermissionConfig">保存配置</el-button>
+        <el-button type="primary" @click="persistPermissionConfig">保存配置</el-button>
       </template>
     </el-dialog>
 
@@ -889,18 +889,19 @@
       </el-form>
       <template #footer>
         <el-button @click="showAddRoleDialog = false">取消</el-button>
-        <el-button type="primary" @click="saveRole">保存</el-button>
+        <el-button type="primary" @click="persistRole">保存</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Key, Document, Menu, Operation, Lock, User, OfficeBuilding, Folder, InfoFilled, Search, Download } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { API_CONFIG, auditApi, isMockMode } from '@/api'
+import { API_CONFIG, auditApi, isMockMode, settingsApi } from '@/api'
+import { persistRuntimeSettings } from '@/api/modules/settings.js'
 
 const activeTab = ref('user')
 const userStore = useUserStore()
@@ -919,6 +920,7 @@ const showAddRoleDialog = ref(false)
 const permissionTab = ref('menu')
 const dataScopeTab = ref('user') // 数据权限 Tab 的当前子 tab
 const currentRole = ref(null)
+const menuTreeRef = ref(null)
 
 // 菜单权限树
 const menuPermissions = ref([
@@ -1370,6 +1372,76 @@ const saveRole = () => {
   }
 }
 
+const openPermissionConfig = (role) => {
+  currentRole.value = role
+  permissionTab.value = 'menu'
+  dataScopeForm.value = {
+    scope: role.dataScope || 'all',
+    depts: cloneList(role.allowedDepts),
+    projects: cloneList(role.allowedProjects)
+  }
+  showPermissionDialog.value = true
+  nextTick(() => {
+    menuTreeRef.value?.setCheckedKeys(cloneList(role.menuPermissions))
+  })
+}
+
+const persistPermissionConfig = async () => {
+  if (currentRole.value) {
+    currentRole.value.dataScope = dataScopeForm.value.scope
+    currentRole.value.menuPermissions = normalizeMenuPermissions(menuTreeRef.value?.getCheckedKeys(false) || [])
+    currentRole.value.allowedDepts = cloneList(dataScopeForm.value.depts)
+    currentRole.value.allowedProjects = cloneList(dataScopeForm.value.projects)
+  }
+
+  const saved = await persistSettings('权限配置已保存')
+  if (saved) {
+    showPermissionDialog.value = false
+  }
+}
+
+const persistDeptConfig = async (row) => {
+  await persistSettings(`部门\\\"${row.deptName}\\\"数据权限配置已保存`)
+}
+
+const persistProjectConfig = async (row) => {
+  await persistSettings(`项目组\\\"${row.groupName}\\\"权限配置已保存`)
+}
+
+const persistRole = async () => {
+  if (!roleForm.value.name || !roleForm.value.code) {
+    ElMessage.warning('请填写角色名称和代码')
+    return
+  }
+
+  roles.value.push({
+    ...roleForm.value,
+    userCount: 0,
+    menuPermissions: [],
+    dataScope: roleForm.value.dataScope,
+    allowedProjects: [],
+    allowedDepts: []
+  })
+
+  const saved = await persistSettings('角色添加成功')
+  if (saved) {
+    showAddRoleDialog.value = false
+    roleForm.value = {
+      name: '',
+      code: '',
+      description: '',
+      dataScope: 'all'
+    }
+  }
+}
+
+onMounted(async () => {
+  await loadSettings()
+  if (isMockMode()) {
+    persistRuntimeSettings(buildSettingsPayload())
+  }
+})
+
 // 系统集成配置
 const integrationConfig = ref({
   // 组织架构集成
@@ -1614,9 +1686,182 @@ const callbackApis = [
   }
 ]
 
+const cloneList = (value) => (Array.isArray(value) ? [...value] : [])
+const normalizeMenuPermissions = (permissions) => {
+  const selected = cloneList(permissions)
+  if (selected.includes('all')) {
+    return ['all']
+  }
+
+  const parentPermissions = new Set(menuPermissions.value.map((item) => item.id))
+  return selected.filter((permission) => {
+    const separatorIndex = permission.indexOf('-')
+    if (separatorIndex === -1) {
+      return true
+    }
+
+    const parentPermission = permission.slice(0, separatorIndex)
+    return !parentPermissions.has(parentPermission) || selected.includes(parentPermission)
+  })
+}
+
+const applySettingsPayload = (payload) => {
+  if (!payload) return
+
+  persistRuntimeSettings(payload)
+  userStore.permissionProfileLoaded = true
+
+  if (payload.systemConfig) {
+    config.value = {
+      ...config.value,
+      ...payload.systemConfig
+    }
+  }
+
+  if (Array.isArray(payload.roles)) {
+    roles.value = payload.roles.map((role) => ({
+      ...role,
+      menuPermissions: cloneList(role.menuPermissions),
+      allowedProjects: cloneList(role.allowedProjects),
+      allowedDepts: cloneList(role.allowedDepts)
+    }))
+  }
+
+  if (Array.isArray(payload.deptDataScope)) {
+    deptDataScope.value = payload.deptDataScope.map((item) => ({
+      ...item,
+      allowedDepts: cloneList(item.allowedDepts)
+    }))
+  }
+
+  if (Array.isArray(payload.projectGroupScope)) {
+    projectGroupScope.value = payload.projectGroupScope.map((item) => ({
+      ...item,
+      allowedRoles: cloneList(item.allowedRoles)
+    }))
+  }
+
+  if (payload.integrationConfig) {
+    integrationConfig.value = {
+      ...integrationConfig.value,
+      ...payload.integrationConfig
+    }
+  }
+
+  if (Array.isArray(payload.flowMappings)) {
+    flowMappings.value = payload.flowMappings.map((item) => ({ ...item }))
+    integrationConfig.value.flowMapping = flowMappings.value
+  }
+
+  if (Array.isArray(payload.apiList)) {
+    apiList.value = payload.apiList.map((item) => ({ ...item }))
+  }
+}
+
+const buildSettingsPayload = () => ({
+  systemConfig: {
+    ...config.value
+  },
+  roles: roles.value.map((role) => ({
+    code: role.code,
+    name: role.name,
+    description: role.description,
+    userCount: role.userCount,
+    dataScope: role.dataScope,
+    menuPermissions: cloneList(role.menuPermissions),
+    allowedProjects: cloneList(role.allowedProjects),
+    allowedDepts: cloneList(role.allowedDepts)
+  })),
+  deptDataScope: deptDataScope.value.map((item) => ({
+    deptName: item.deptName,
+    dataScope: item.dataScope,
+    canViewOtherDepts: item.canViewOtherDepts,
+    allowedDepts: cloneList(item.allowedDepts)
+  })),
+  projectGroupScope: projectGroupScope.value.map((item) => ({
+    groupName: item.groupName,
+    manager: item.manager,
+    memberCount: item.memberCount,
+    visibility: item.visibility,
+    allowedRoles: cloneList(item.allowedRoles)
+  })),
+  integrationConfig: {
+    orgEnabled: integrationConfig.value.orgEnabled,
+    orgSystem: integrationConfig.value.orgSystem,
+    orgAppKey: integrationConfig.value.orgAppKey,
+    orgAppSecret: integrationConfig.value.orgAppSecret,
+    oaEnabled: integrationConfig.value.oaEnabled,
+    oaUrl: integrationConfig.value.oaUrl,
+    ssoEnabled: integrationConfig.value.ssoEnabled,
+    callbackUrl: integrationConfig.value.callbackUrl,
+    apiKey: integrationConfig.value.apiKey,
+    ipWhitelist: integrationConfig.value.ipWhitelist
+  },
+  flowMappings: flowMappings.value.map((item) => ({
+    systemFlow: item.systemFlow,
+    oaFlow: item.oaFlow,
+    oaFlowCode: item.oaFlowCode,
+    oaFlowName: item.oaFlowName,
+    description: item.description
+  })),
+  apiList: apiList.value.map((item) => ({
+    name: item.name,
+    path: item.path,
+    method: item.method,
+    description: item.description,
+    status: item.status,
+    enabled: item.enabled
+  }))
+})
+
+const persistSettings = async (successMessage) => {
+  if (isMockMode()) {
+    persistRuntimeSettings(buildSettingsPayload())
+    userStore.permissionProfileLoaded = true
+    ElMessage.success(successMessage)
+    return true
+  }
+
+  try {
+    const response = await settingsApi.updateSettings(buildSettingsPayload())
+    if (!response?.success || !response?.data) {
+      throw new Error(response?.message || '保存配置失败')
+    }
+    applySettingsPayload(response.data)
+    await userStore.refreshPermissionProfile()
+    ElMessage.success(successMessage)
+    return true
+  } catch (error) {
+    await loadSettings()
+    ElMessage.error(error?.message || '保存配置失败')
+    return false
+  }
+}
+
+const loadSettings = async () => {
+  if (isMockMode()) {
+    return
+  }
+
+  try {
+    const response = await settingsApi.getSettings()
+    if (!response?.success || !response?.data) {
+      throw new Error(response?.message || '加载系统配置失败')
+    }
+    applySettingsPayload(response.data)
+    await userStore.refreshPermissionProfile()
+  } catch (error) {
+    ElMessage.error(error?.message || '加载系统配置失败')
+  }
+}
+
 // 方法
-const handleSaveConfig = () => {
-  ElMessage.success('配置已保存')
+const handleSaveConfig = async () => {
+  await persistSettings('配置已保存')
+}
+
+const persistBaseConfig = async () => {
+  await handleSaveConfig()
 }
 
 // 获取HTTP方法对应的标签类型
@@ -1668,6 +1913,10 @@ const saveOaConfig = () => {
   ElMessage.success('OA配置已保存')
 }
 
+const persistOaConfig = async () => {
+  await persistSettings('OA配置已保存')
+}
+
 const editFlowMapping = (row) => {
   currentFlowMapping.value = {
     systemFlow: row.systemFlow,
@@ -1687,6 +1936,20 @@ const saveFlowMapping = () => {
   }
   showFlowMappingDialog.value = false
   ElMessage.success('流程映射配置已保存')
+}
+
+const persistFlowMapping = async () => {
+  const index = currentFlowMapping.value._index
+  if (index !== undefined) {
+    flowMappings.value[index].oaFlowCode = currentFlowMapping.value.oaFlowCode
+    flowMappings.value[index].oaFlowName = currentFlowMapping.value.oaFlowName
+    flowMappings.value[index].oaFlow = currentFlowMapping.value.oaFlowCode
+  }
+
+  const saved = await persistSettings('流程映射配置已保存')
+  if (saved) {
+    showFlowMappingDialog.value = false
+  }
 }
 
 // API管理

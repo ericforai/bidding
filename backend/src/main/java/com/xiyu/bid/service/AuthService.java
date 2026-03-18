@@ -21,6 +21,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -30,6 +33,9 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final ConcurrentMap<String, String> activeRefreshTokenIdsByUsername = new ConcurrentHashMap<>();
+
+    public record RefreshSession(AuthResponse authResponse, String refreshToken) {}
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -78,9 +84,10 @@ public class AuthService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         String token = jwtUtil.generateToken(user.getUsername());
+        String refreshToken = issueRefreshToken(user.getUsername());
         log.info("User logged in: {}", user.getUsername());
 
-        return AuthResponse.from(token, user);
+        return AuthResponse.from(token, refreshToken, user);
     }
 
     public AuthResponse getCurrentUser(String username) {
@@ -95,5 +102,61 @@ public class AuthService {
                 .fullName(user.getFullName())
                 .role(user.getRole())
                 .build();
+    }
+
+    public void logout(String username) {
+        logout(username, null, null);
+    }
+
+    public void logout(String username, String accessToken, String refreshToken) {
+        if (accessToken != null && !accessToken.isBlank()) {
+            jwtUtil.revokeToken(accessToken);
+        }
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            jwtUtil.revokeToken(refreshToken);
+        }
+        if (username != null && !username.isBlank()) {
+            activeRefreshTokenIdsByUsername.remove(username);
+        }
+        log.info("User logged out: {}", username);
+    }
+
+    public String issueRefreshToken(String username) {
+        String refreshToken = jwtUtil.generateRefreshToken(username);
+        activeRefreshTokenIdsByUsername.put(username, jwtUtil.extractTokenId(refreshToken));
+        return refreshToken;
+    }
+
+    public AuthResponse refreshToken(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        String token = jwtUtil.generateToken(user.getUsername());
+        log.info("Token refreshed for user: {}", user.getUsername());
+        return AuthResponse.from(token, user);
+    }
+
+    public RefreshSession refreshSession(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new IllegalArgumentException("Refresh token is required");
+        }
+        if (!jwtUtil.validateRefreshToken(refreshToken)) {
+            throw new IllegalArgumentException("Refresh token is invalid or expired");
+        }
+
+        String username = jwtUtil.extractUsername(refreshToken);
+        String activeRefreshTokenId = activeRefreshTokenIdsByUsername.get(username);
+        String providedRefreshTokenId = jwtUtil.extractTokenId(refreshToken);
+        if (activeRefreshTokenId == null || !activeRefreshTokenId.equals(providedRefreshTokenId)) {
+            throw new IllegalArgumentException("Refresh token is no longer active");
+        }
+
+        jwtUtil.revokeToken(refreshToken);
+        String accessToken = jwtUtil.generateToken(username);
+        String rotatedRefreshToken = issueRefreshToken(username);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        AuthResponse authResponse = AuthResponse.from(accessToken, rotatedRefreshToken, user);
+        return new RefreshSession(authResponse, rotatedRefreshToken);
     }
 }

@@ -107,6 +107,7 @@ import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CommonIcon from '@/components/common/CommonIcon.vue'
 import { useUserStore } from '@/stores/user'
+import { hasMenuAccessForRole } from '@/api/modules/settings'
 
 const props = defineProps({
   collapse: {
@@ -170,6 +171,12 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
+const hasRoleAccess = (roles) => !roles || roles.length === 0 || roles.includes(userStore.userRole)
+const hasPermissionAccess = (permissionKeys) => {
+  const decision = hasMenuAccessForRole(userStore.userRole, permissionKeys)
+  return decision === null ? true : decision
+}
+
 const activeMenu = computed(() => {
   const { meta, path } = route
   if (meta?.activeMenu) {
@@ -184,86 +191,86 @@ const menuConfig = [
   {
     path: '/dashboard',
     name: 'Dashboard',
-    meta: { title: '工作台', icon: 'workbench' }
+    meta: { title: '工作台', icon: 'workbench', permissionKeys: ['dashboard'] }
   },
   {
     path: '/bidding',
     name: 'Bidding',
-    meta: { title: '标讯中心', icon: 'bidding' }
+    meta: { title: '标讯中心', icon: 'bidding', permissionKeys: ['bidding', 'bidding-list'] }
   },
   {
     path: '/bidding/customer-opportunities',
     name: 'CustomerOpportunityCenter',
-    meta: { title: '客户商机中心', icon: 'bidding' }
+    meta: { title: '客户商机中心', icon: 'bidding', permissionKeys: ['bidding'] }
   },
   {
     path: '/project',
     name: 'Project',
-    meta: { title: '投标项目', icon: 'project' },
+    meta: { title: '投标项目', icon: 'project', permissionKeys: ['project'] },
     children: [
       {
         path: '/project',
         name: 'ProjectList',
-        meta: { title: '项目列表' }
+        meta: { title: '项目列表', permissionKeys: ['project', 'project-list'] }
       },
       {
         path: '/project/create',
         name: 'ProjectCreate',
-        meta: { title: '创建项目' }
+        meta: { title: '创建项目', permissionKeys: ['project', 'project-create'] }
       }
     ]
   },
   {
     path: '/knowledge',
     name: 'Knowledge',
-    meta: { title: '知识库', icon: 'knowledge' },
+    meta: { title: '知识库', icon: 'knowledge', permissionKeys: ['knowledge'] },
     children: [
       {
         path: '/knowledge/qualification',
         name: 'Qualification',
-        meta: { title: '资质库' }
+        meta: { title: '资质库', permissionKeys: ['knowledge', 'knowledge-qualification'] }
       },
       {
         path: '/knowledge/case',
         name: 'Case',
-        meta: { title: '案例库' }
+        meta: { title: '案例库', permissionKeys: ['knowledge', 'knowledge-case'] }
       },
       {
         path: '/knowledge/template',
         name: 'Template',
-        meta: { title: '模板库' }
+        meta: { title: '模板库', permissionKeys: ['knowledge', 'knowledge-template'] }
       }
     ]
   },
   {
     path: '/resource',
     name: 'Resource',
-    meta: { title: '资源管理', icon: 'resource' },
+    meta: { title: '资源管理', icon: 'resource', permissionKeys: ['resource'] },
     children: [
       {
         path: '/resource/bar',
         name: 'BAR',
-        meta: { title: '资产台账' }
+        meta: { title: '资产台账', permissionKeys: ['resource', 'resource-bar'] }
       },
       {
         path: '/resource/bar/sites',
         name: 'BAR_SiteList',
-        meta: { title: '站点台账' }
+        meta: { title: '站点台账', permissionKeys: ['resource', 'resource-bar'] }
       },
       {
         path: '/resource/expense',
         name: 'Expense',
-        meta: { title: '费用管理' }
+        meta: { title: '费用管理', permissionKeys: ['resource', 'resource-expense'] }
       },
       {
         path: '/resource/account',
         name: 'Account',
-        meta: { title: '账户管理' }
+        meta: { title: '账户管理', permissionKeys: ['resource', 'resource-account'] }
       },
       {
         path: '/resource/bid-result',
         name: 'BidResult',
-        meta: { title: '结果闭环' }
+        meta: { title: '结果闭环', permissionKeys: ['resource'] }
       }
     ]
   },
@@ -275,34 +282,31 @@ const menuConfig = [
   {
     path: '/analytics/dashboard',
     name: 'AnalyticsDashboard',
-    meta: { title: '数据分析', icon: 'analytics', roles: ['admin', 'manager'] }
+    meta: { title: '数据分析', icon: 'analytics', roles: ['admin', 'manager'], permissionKeys: ['analytics', 'analytics-dashboard'] }
   },
   {
     path: '/settings',
     name: 'Settings',
-    meta: { title: '系统设置', icon: 'settings', roles: ['admin'] }
+    meta: { title: '系统设置', icon: 'settings', roles: ['admin'], permissionKeys: ['settings'] }
   }
 ]
 
 // 根据角色过滤菜单
 const filteredMenus = computed(() => {
-  const userRole = userStore.userRole
-
   return menuConfig
     .map(menu => {
-      // 检查菜单权限
-      if (menu.meta?.roles && !menu.meta.roles.includes(userRole)) {
+      if (!hasRoleAccess(menu.meta?.roles) || !hasPermissionAccess(menu.meta?.permissionKeys)) {
         return null
       }
 
-      // 处理子菜单
       if (menu.children) {
-        const visibleChildren = menu.children.filter(child => {
-          if (child.meta?.roles && !child.meta.roles.includes(userRole)) {
-            return false
-          }
-          return true
-        })
+        const visibleChildren = menu.children.filter(
+          child => hasRoleAccess(child.meta?.roles) && hasPermissionAccess(child.meta?.permissionKeys)
+        )
+
+        if (visibleChildren.length === 0) {
+          return null
+        }
 
         return {
           ...menu,

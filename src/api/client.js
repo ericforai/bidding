@@ -4,7 +4,66 @@
  */
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { API_CONFIG, getApiUrl } from './config'
+import { API_CONFIG } from './config'
+
+const getStoredToken = () => localStorage.getItem('token') || sessionStorage.getItem('token')
+const getStoredRefreshToken = () => localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken')
+
+const getHeaderValue = (headers, headerName) => {
+  if (!headers) {
+    return null
+  }
+
+  const target = String(headerName).toLowerCase()
+  const matchedKey = Object.keys(headers).find((key) => key.toLowerCase() === target)
+  return matchedKey ? headers[matchedKey] : null
+}
+
+const getPreferredStorage = () => {
+  if (
+    sessionStorage.getItem('token') ||
+    sessionStorage.getItem('refreshToken') ||
+    sessionStorage.getItem('user')
+  ) {
+    return sessionStorage
+  }
+  if (
+    localStorage.getItem('token') ||
+    localStorage.getItem('refreshToken') ||
+    localStorage.getItem('user')
+  ) {
+    return localStorage
+  }
+  return sessionStorage
+}
+
+const syncStoredTokens = ({ token, refreshToken }) => {
+  const storage = getPreferredStorage()
+  const otherStorage = storage === localStorage ? sessionStorage : localStorage
+
+  if (token) {
+    storage.setItem('token', token)
+  }
+  if (refreshToken) {
+    storage.setItem('refreshToken', refreshToken)
+  }
+
+  if (token) {
+    otherStorage.removeItem('token')
+  }
+  if (refreshToken) {
+    otherStorage.removeItem('refreshToken')
+  }
+}
+
+const clearStoredSession = () => {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  localStorage.removeItem('refreshToken')
+  sessionStorage.removeItem('token')
+  sessionStorage.removeItem('user')
+  sessionStorage.removeItem('refreshToken')
+}
 
 // 创建 axios 实例
 const httpClient = axios.create({
@@ -17,7 +76,7 @@ const httpClient = axios.create({
 httpClient.interceptors.request.use(
   (config) => {
     // 添加 Token
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+    const token = getStoredToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -32,10 +91,62 @@ httpClient.interceptors.request.use(
 httpClient.interceptors.response.use(
   (response) => {
     // 后端返回的统一格式: { success: true, data: ..., message: ... }
-    return response.data
+    return {
+      ...response.data,
+      _headers: response.headers
+    }
   },
-  (error) => {
+  async (error) => {
     const { response } = error
+    const originalRequest = error.config || {}
+
+    const shouldAttemptRefresh =
+      response?.status === 401 &&
+      !originalRequest._retry &&
+      !String(originalRequest.url || '').includes('/api/auth/login') &&
+      !String(originalRequest.url || '').includes('/api/auth/refresh') &&
+      !String(originalRequest.url || '').includes('/api/auth/logout') &&
+      Boolean(getStoredRefreshToken())
+
+    if (shouldAttemptRefresh) {
+      originalRequest._retry = true
+
+      try {
+        const refreshResponse = await axios.post(
+          `${API_CONFIG.baseURL}/api/auth/refresh`,
+          { refreshToken: getStoredRefreshToken() },
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            timeout: API_CONFIG.timeout
+          }
+        )
+
+        const refreshedToken = refreshResponse?.data?.data?.token
+        const rotatedRefreshToken =
+          refreshResponse?.data?.data?.refreshToken ||
+          getHeaderValue(refreshResponse?.headers, 'x-refresh-token')
+        if (!refreshedToken) {
+          throw new Error('Missing refreshed access token')
+        }
+
+        syncStoredTokens({
+          token: refreshedToken,
+          refreshToken: rotatedRefreshToken || getStoredRefreshToken()
+        })
+
+        originalRequest.headers = originalRequest.headers || {}
+        originalRequest.headers.Authorization = `Bearer ${refreshedToken}`
+        return httpClient(originalRequest)
+      } catch (refreshError) {
+        clearStoredSession()
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login'
+        }
+        return Promise.reject(refreshError)
+      }
+    }
 
     if (response) {
       // 服务器返回错误状态码
@@ -43,9 +154,10 @@ httpClient.interceptors.response.use(
         case 401:
           ElMessage.error('登录已过期，请重新登录')
           // 清除 token 并跳转登录
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
-          window.location.href = '/login'
+          clearStoredSession()
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login'
+          }
           break
         case 403:
           ElMessage.error('没有权限访问该资源')

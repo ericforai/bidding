@@ -70,7 +70,7 @@
               <el-icon><User /></el-icon>
               个人中心
             </el-dropdown-item>
-            <el-dropdown-item command="settings">
+            <el-dropdown-item v-if="canAccessSettings" command="settings">
               <el-icon><Setting /></el-icon>
               系统设置
             </el-dropdown-item>
@@ -157,12 +157,13 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import {
   Search, Bell, ArrowDown, User, Setting,
   SwitchButton, Expand, Fold, Refresh, Menu, Check, Close
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import { hasMenuAccessForRole } from '@/api/modules/settings'
 
 const props = defineProps({
   collapse: {
@@ -214,6 +215,10 @@ const userAvatar = computed(() => {
 const userName = computed(() => userStore.currentUser?.name || '游客')
 const userRoleText = computed(() => roleTextMap[userStore.userRole] || '游客')
 const allUsers = computed(() => userStore.users || [])
+const canAccessSettings = computed(() => {
+  const decision = hasMenuAccessForRole(userStore.userRole, ['settings'])
+  return decision === null ? userStore.userRole === 'admin' : decision
+})
 
 const handleToggle = () => {
   emit('toggleCollapse')
@@ -253,17 +258,16 @@ const handleCommand = async (command) => {
       ElMessage.info('个人中心')
       break
     case 'settings':
-      router.push('/settings')
+      if (canAccessSettings.value) {
+        router.push('/settings')
+      } else {
+        ElMessage.warning('当前角色无权访问系统设置')
+      }
       break
     case 'logout':
       try {
-        await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        })
-        userStore.logout()
-        router.push('/login')
+        await userStore.logout()
+        await router.replace('/login')
         ElMessage.success('已退出登录')
       } catch {
         // 用户取消

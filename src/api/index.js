@@ -36,6 +36,7 @@ export { dashboardApi } from './modules/dashboard.js'
 export { approvalApi } from './modules/approval.js'
 export { exportApi, ExportType, ExportFormat, ExportStatus } from './modules/export.js'
 export { auditApi } from './modules/audit.js'
+export { settingsApi } from './modules/settings.js'
 
 // 统一导出对象 (方便解构使用)
 export default {
@@ -73,5 +74,8 @@ export default {
   export: () => import('./modules/export.js').then(m => m.exportApi),
 
   // 审计
-  audit: () => import('./modules/audit.js').then(m => m.default)
+  audit: () => import('./modules/audit.js').then(m => m.default),
+
+  // 系统设置
+  settings: () => import('./modules/settings.js').then(m => m.settingsApi)
 }

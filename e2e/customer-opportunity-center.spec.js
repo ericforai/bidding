@@ -1,21 +1,20 @@
 import { test, expect } from '@playwright/test'
+import { ensureApiSession, injectSession } from './auth-helpers.js'
 
-async function loginAsMockUser(page) {
-  await page.goto('/login')
-  await page.evaluate(() => {
-    Object.keys(window.localStorage)
-      .filter((key) => key.startsWith('xiyu-demo:'))
-      .forEach((key) => window.localStorage.removeItem(key))
+async function loginAsApiUser(page) {
+  const session = await ensureApiSession({
+    username: `customer_center_${Date.now()}`,
+    role: 'MANAGER',
+    fullName: 'Customer Opportunity Manager'
   })
-  await page.getByPlaceholder('请输入用户名').fill('小王')
-  await page.getByPlaceholder('请输入密码').fill('123456')
-  await page.getByRole('button', { name: '登录' }).click()
+  await injectSession(page, session)
+  await page.goto('/dashboard')
   await expect(page).toHaveURL(/\/dashboard$/)
 }
 
 test.describe('customer opportunity center', () => {
   test('sales can open customer opportunity center and jump into project creation', async ({ page }) => {
-    await loginAsMockUser(page)
+    await loginAsApiUser(page)
 
     await page.goto('/bidding')
     await expect(page.getByRole('button', { name: '客户商机中心' })).toBeVisible()

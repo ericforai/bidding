@@ -210,7 +210,7 @@ const displayAccounts = computed(() => (
 const accountHint = computed(() => (
   isMockMode()
     ? '密码：任意输入即可'
-    : 'API 模式默认密码：123456'
+    : 'API 模式请使用已分配的正式账号凭证登录'
 ))
 
 const handleLogin = async () => {

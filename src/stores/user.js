@@ -4,8 +4,10 @@
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 import { defineStore } from 'pinia'
-import { authApi } from '@/api'
+import { authApi, isMockMode, settingsApi } from '@/api'
 import { getDemoUsers } from '@/api/mock-adapters/frontendDemo.js'
+import { clearAuthState, getStoredRefreshToken, getStoredToken, hasPersistentSession } from '@/api/modules/auth.js'
+import { clearRuntimeSettings, getRolePermissionProfile } from '@/api/modules/settings.js'
 
 // 从 localStorage 恢复用户状态
 const getSavedUser = () => {
@@ -20,7 +22,8 @@ const getSavedUser = () => {
   return null
 }
 
-const getSavedToken = () => localStorage.getItem('token') || sessionStorage.getItem('token')
+const getSavedToken = () => getStoredToken()
+const getSavedRefreshToken = () => getStoredRefreshToken()
 
 export const useUserStore = defineStore('user', {
   state: () => {
@@ -29,14 +32,17 @@ export const useUserStore = defineStore('user', {
     return {
       currentUser: savedUser,
       token: getSavedToken(),
+      refreshToken: getSavedRefreshToken(),
+      permissionProfileLoaded: false,
       users: getDemoUsers()
     }
   },
 
   getters: {
     isLoggedIn: (state) => !!state.currentUser && !!state.token,
-    userRole: (state) => state.currentUser?.role || 'staff',
-    userName: (state) => state.currentUser?.name || '用户'
+    userRole: (state) => String(state.currentUser?.role || 'staff').toLowerCase(),
+    userName: (state) => state.currentUser?.name || '用户',
+    permissionProfile: (state) => getRolePermissionProfile(state.currentUser?.role)
   },
 
   actions: {
@@ -49,7 +55,9 @@ export const useUserStore = defineStore('user', {
 
       this.currentUser = result.data.user
       this.token = result.data.token
+      this.refreshToken = result.data.refreshToken || null
       this.persistSession(remember)
+      await this.refreshPermissionProfile()
       return this.currentUser
     },
 
@@ -69,17 +77,44 @@ export const useUserStore = defineStore('user', {
       }
 
       this.currentUser = result.data
-      this.persistSession(Boolean(localStorage.getItem('token')))
+      this.token = getStoredToken()
+      this.refreshToken = getStoredRefreshToken()
+      this.persistSession(hasPersistentSession())
+      await this.refreshPermissionProfile()
       return this.currentUser
     },
 
-    logout() {
-      this.currentUser = null
-      this.token = null
-      localStorage.removeItem('user')
-      localStorage.removeItem('token')
-      sessionStorage.removeItem('user')
-      sessionStorage.removeItem('token')
+    async logout() {
+      try {
+        await authApi.logout()
+      } catch (error) {
+        console.warn('Logout request failed, clearing local session anyway:', error)
+      } finally {
+        this.currentUser = null
+        this.token = null
+        this.refreshToken = null
+        this.permissionProfileLoaded = false
+        clearAuthState()
+        clearRuntimeSettings()
+      }
+    },
+
+    async refreshPermissionProfile() {
+      if (isMockMode() || !this.token || !this.currentUser) {
+        this.permissionProfileLoaded = false
+        clearRuntimeSettings()
+        return null
+      }
+
+      try {
+        const response = await settingsApi.getRuntimePermissions()
+        this.permissionProfileLoaded = Boolean(response?.success && response?.data)
+        return response?.data || null
+      } catch {
+        this.permissionProfileLoaded = false
+        clearRuntimeSettings()
+        return null
+      }
     },
 
     switchUser(userId) {
@@ -98,8 +133,14 @@ export const useUserStore = defineStore('user', {
 
       otherStorage.removeItem('user')
       otherStorage.removeItem('token')
+      otherStorage.removeItem('refreshToken')
       storage.setItem('user', JSON.stringify(this.currentUser))
       storage.setItem('token', this.token)
+      if (this.refreshToken) {
+        storage.setItem('refreshToken', this.refreshToken)
+      } else {
+        storage.removeItem('refreshToken')
+      }
     }
   }
 })

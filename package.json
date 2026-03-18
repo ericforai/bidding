@@ -9,6 +9,7 @@
     "check:doc-governance": "node scripts/check-doc-governance.mjs",
     "build": "npm run check:front-data-boundaries && npm run check:doc-governance && vite build",
     "preview": "vite preview",
+    "test:e2e": "npx playwright test --config playwright.config.js",
     "test:e2e:commercial": "npx playwright test --config playwright.config.js",
     "check-docs": "bash scripts/check-doc-consistency.sh"
   },
