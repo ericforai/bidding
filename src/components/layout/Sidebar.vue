@@ -22,6 +22,7 @@
         text-color="rgba(255, 255, 255, 0.85)"
         active-text-color="#FFFFFF"
         router
+        @select="handleMenuSelect"
       >
         <!-- 直接按配置顺序渲染菜单项 -->
         <template v-for="item in filteredMenus" :key="item.path">
@@ -70,6 +71,7 @@
       text-color="rgba(255, 255, 255, 0.85)"
       active-text-color="#FFFFFF"
       router
+      @select="handleMenuSelect"
     >
       <!-- 直接按配置顺序渲染菜单项 -->
       <template v-for="item in filteredMenus" :key="item.path">
@@ -584,6 +586,27 @@ const filteredMenus = computed(() => {
 
 .close-icon :deep(.el-icon) {
   font-size: 20px;
+}
+
+/* ========== 移动端抽屉菜单触摸目标优化 ========== */
+.mobile-drawer :deep(.el-menu-item),
+.mobile-drawer :deep(.el-sub-menu__title) {
+  min-height: 48px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+}
+
+.mobile-drawer :deep(.el-sub-menu .el-menu-item) {
+  min-height: 44px;
+  padding: 10px 20px 10px 32px;
+}
+
+/* 移动端菜单项触摸反馈 */
+.mobile-drawer :deep(.el-menu-item):active,
+.mobile-drawer :deep(.el-sub-menu__title):active {
+  background: rgba(64, 158, 255, 0.2) !important;
+  transition: background-color 0.1s ease;
 }
 
 /* ========== 移动端响应式 ========== */

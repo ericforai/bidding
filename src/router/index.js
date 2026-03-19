@@ -91,12 +91,14 @@ const routes = [
       {
         path: 'knowledge/qualification',
         name: 'Qualification',
+        alias: 'knowledge/qualifications',
         component: () => import('@/views/Knowledge/Qualification.vue'),
         meta: { title: '资质库' }
       },
       {
         path: 'knowledge/case',
         name: 'Case',
+        alias: 'knowledge/cases',
         component: () => import('@/views/Knowledge/Case.vue'),
         meta: { title: '案例库' }
       },
@@ -109,6 +111,7 @@ const routes = [
       {
         path: 'knowledge/template',
         name: 'Template',
+        alias: 'knowledge/templates',
         component: () => import('@/views/Knowledge/Template.vue'),
         meta: { title: '模板库' }
       },
