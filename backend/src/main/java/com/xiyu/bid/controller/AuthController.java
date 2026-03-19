@@ -6,20 +6,26 @@ package com.xiyu.bid.controller;
 
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.dto.AuthResponse;
+import com.xiyu.bid.dto.AuthSessionResult;
 import com.xiyu.bid.dto.LoginRequest;
 import com.xiyu.bid.dto.RegisterRequest;
 import com.xiyu.bid.service.AuthService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import com.xiyu.bid.util.InputSanitizer;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.time.Duration;
 
 @Slf4j
 @RestController
@@ -28,6 +34,18 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+
+    @Value("${app.auth.refresh-cookie-name:refresh_token}")
+    private String refreshCookieName;
+
+    @Value("${app.auth.refresh-cookie-secure:false}")
+    private boolean refreshCookieSecure;
+
+    @Value("${app.auth.refresh-cookie-same-site:Lax}")
+    private String refreshCookieSameSite;
+
+    @Value("${jwt.refresh-expiration:604800000}")
+    private long refreshExpiration;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
@@ -45,10 +63,10 @@ public class AuthController {
         if (request.getUsername() != null) {
             request.setUsername(InputSanitizer.sanitizeString(request.getUsername(), 50));
         }
-        AuthResponse response = authService.login(request);
+        AuthSessionResult sessionResult = authService.login(request);
         return ResponseEntity.ok()
-                .header("X-Refresh-Token", response.getRefreshToken())
-                .body(ApiResponse.success("Login successful", response));
+                .header(HttpHeaders.SET_COOKIE, buildRefreshCookie(sessionResult.getRefreshToken(), Boolean.TRUE.equals(request.getRememberMe())).toString())
+                .body(ApiResponse.success("Login successful", sessionResult.getAuthResponse()));
     }
 
     @GetMapping("/me")
@@ -59,25 +77,19 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Void>> logout(
-            Authentication authentication,
-            @RequestHeader(name = "Authorization", required = false) String authorizationHeader,
-            @RequestBody(required = false) Map<String, String> requestBody
-    ) {
-        String accessToken = extractBearerToken(authorizationHeader);
-        String refreshToken = requestBody != null ? requestBody.get("refreshToken") : null;
-        authService.logout(authentication.getName(), accessToken, refreshToken);
-        return ResponseEntity.ok(ApiResponse.success("Logout successful", null));
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request) {
+        authService.logout(extractRefreshToken(request));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, clearRefreshCookie().toString())
+                .body(ApiResponse.success("Logout successful", null));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(@RequestBody(required = false) Map<String, String> requestBody) {
-        String refreshToken = requestBody != null ? requestBody.get("refreshToken") : null;
-        AuthService.RefreshSession session = authService.refreshSession(refreshToken);
+    public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(HttpServletRequest request) {
+        AuthSessionResult sessionResult = authService.refreshToken(extractRefreshToken(request));
         return ResponseEntity.ok()
-                .header("X-Refresh-Token", session.refreshToken())
-                .body(ApiResponse.success("Token refreshed successfully", session.authResponse()));
+                .header(HttpHeaders.SET_COOKIE, buildRefreshCookie(sessionResult.getRefreshToken(), true).toString())
+                .body(ApiResponse.success("Token refreshed successfully", sessionResult.getAuthResponse()));
     }
 
     /**
@@ -95,13 +107,41 @@ public class AuthController {
         }
     }
 
-    private String extractBearerToken(String authorizationHeader) {
-        if (authorizationHeader == null || authorizationHeader.isBlank()) {
+    private String extractRefreshToken(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
             return null;
         }
-        if (authorizationHeader.startsWith("Bearer ")) {
-            return authorizationHeader.substring(7);
+
+        for (Cookie cookie : cookies) {
+            if (refreshCookieName.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
         }
-        return authorizationHeader;
+        return null;
+    }
+
+    private ResponseCookie buildRefreshCookie(String refreshToken, boolean persistent) {
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(refreshCookieName, refreshToken)
+                .httpOnly(true)
+                .secure(refreshCookieSecure)
+                .sameSite(refreshCookieSameSite)
+                .path("/");
+
+        if (persistent) {
+            builder.maxAge(Duration.ofMillis(refreshExpiration));
+        }
+
+        return builder.build();
+    }
+
+    private ResponseCookie clearRefreshCookie() {
+        return ResponseCookie.from(refreshCookieName, "")
+                .httpOnly(true)
+                .secure(refreshCookieSecure)
+                .sameSite(refreshCookieSameSite)
+                .path("/")
+                .maxAge(Duration.ZERO)
+                .build();
     }
 }

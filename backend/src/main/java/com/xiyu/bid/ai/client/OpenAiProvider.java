@@ -14,7 +14,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * OpenAI Provider
@@ -49,37 +48,33 @@ public class OpenAiProvider implements AiProvider {
     }
 
     @Override
-    public CompletableFuture<AiAnalysisResponse> analyzeTender(String content, Map<String, Object> context) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                log.debug("OpenAI analyzing tender content length: {}", content != null ? content.length() : 0);
+    public AiAnalysisResponse analyzeTender(String content, Map<String, Object> context) {
+        try {
+            log.debug("OpenAI analyzing tender content length: {}", content != null ? content.length() : 0);
 
-                String prompt = buildTenderAnalysisPrompt(content, context);
-                String response = callOpenAI(prompt);
+            String prompt = buildTenderAnalysisPrompt(content, context);
+            String response = callOpenAI(prompt);
 
-                return parseAnalysisResponse(response);
-            } catch (Exception e) {
-                log.error("Error calling OpenAI API for tender analysis", e);
-                throw new RuntimeException("Failed to analyze tender with OpenAI", e);
-            }
-        });
+            return parseAnalysisResponse(response);
+        } catch (Exception e) {
+            log.error("Error calling OpenAI API for tender analysis", e);
+            throw new RuntimeException("Failed to analyze tender with OpenAI", e);
+        }
     }
 
     @Override
-    public CompletableFuture<AiAnalysisResponse> analyzeProject(Long projectId, Map<String, Object> context) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                log.debug("OpenAI analyzing project id: {}", projectId);
+    public AiAnalysisResponse analyzeProject(Long projectId, Map<String, Object> context) {
+        try {
+            log.debug("OpenAI analyzing project id: {}", projectId);
 
-                String prompt = buildProjectAnalysisPrompt(projectId, context);
-                String response = callOpenAI(prompt);
+            String prompt = buildProjectAnalysisPrompt(projectId, context);
+            String response = callOpenAI(prompt);
 
-                return parseAnalysisResponse(response);
-            } catch (Exception e) {
-                log.error("Error calling OpenAI API for project analysis", e);
-                throw new RuntimeException("Failed to analyze project with OpenAI", e);
-            }
-        });
+            return parseAnalysisResponse(response);
+        } catch (Exception e) {
+            log.error("Error calling OpenAI API for project analysis", e);
+            throw new RuntimeException("Failed to analyze project with OpenAI", e);
+        }
     }
 
     /**

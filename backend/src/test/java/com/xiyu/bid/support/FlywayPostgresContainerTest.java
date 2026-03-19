@@ -61,8 +61,78 @@ class FlywayPostgresContainerTest {
                 Integer.class
         );
 
+        Integer systemSettingsRuns = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from flyway_schema_history
+                where success = true
+                  and version = '13'
+                  and script = 'V13__create_system_settings_table.sql'
+                """,
+                Integer.class
+        );
+
+        Integer systemSettingsTableCount = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from information_schema.tables
+                where table_schema = 'public'
+                  and table_name = 'system_settings'
+                """,
+                Integer.class
+        );
+
+        Integer refreshSessionRuns = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from flyway_schema_history
+                where success = true
+                  and version = '14'
+                  and script = 'V14__create_refresh_sessions_table.sql'
+                """,
+                Integer.class
+        );
+
+        Integer refreshSessionsTableCount = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from information_schema.tables
+                where table_schema = 'public'
+                  and table_name = 'refresh_sessions'
+                """,
+                Integer.class
+        );
+
+        Integer userDepartmentRuns = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from flyway_schema_history
+                where success = true
+                  and version = '15'
+                  and script = 'V15__add_user_department_columns.sql'
+                """,
+                Integer.class
+        );
+
+        Integer departmentCodeColumnCount = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from information_schema.columns
+                where table_schema = 'public'
+                  and table_name = 'users'
+                  and column_name = 'department_code'
+                """,
+                Integer.class
+        );
+
         org.junit.jupiter.api.Assertions.assertEquals(1, baselineRuns);
         org.junit.jupiter.api.Assertions.assertEquals(0, resourcesIncrementalRuns);
+        org.junit.jupiter.api.Assertions.assertEquals(1, systemSettingsRuns);
+        org.junit.jupiter.api.Assertions.assertEquals(1, systemSettingsTableCount);
+        org.junit.jupiter.api.Assertions.assertEquals(1, refreshSessionRuns);
+        org.junit.jupiter.api.Assertions.assertEquals(1, refreshSessionsTableCount);
+        org.junit.jupiter.api.Assertions.assertEquals(1, userDepartmentRuns);
+        org.junit.jupiter.api.Assertions.assertEquals(1, departmentCodeColumnCount);
     }
 
     @TestConfiguration

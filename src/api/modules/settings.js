@@ -1,18 +1,88 @@
-// Input: httpClient
-// Output: settingsApi - system settings retrieval and update functions
+// Input: httpClient, API mode config, settings payload normalizers and fallback snapshots
+// Output: settingsApi - admin settings accessors for data-scope configuration
 // Pos: src/api/modules/ - Frontend API module layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 import httpClient from '../client.js'
+import { isMockMode } from '../config.js'
 
 const normalizeRole = (role) => String(role || '').trim().toLowerCase()
 const normalizePermissionList = (permissions) => (
   Array.isArray(permissions)
-    ? [...new Set(permissions.map(item => String(item || '').trim()).filter(Boolean))]
+    ? [...new Set(permissions.map((item) => String(item || '').trim()).filter(Boolean))]
     : []
 )
 
 let runtimeSettings = null
+
+const fallbackConfig = {
+  userDataScope: [],
+  deptDataScope: [],
+  deptOptions: [],
+  deptTree: []
+}
+
+const normalizeAllowedProjects = (allowedProjects) => {
+  if (!Array.isArray(allowedProjects)) {
+    return []
+  }
+
+  return [...new Set(
+    allowedProjects
+      .map((projectId) => Number(projectId))
+      .filter((projectId) => Number.isFinite(projectId))
+  )].sort((left, right) => left - right)
+}
+
+const normalizeAllowedDepts = (allowedDepts) => {
+  if (!Array.isArray(allowedDepts)) {
+    return []
+  }
+
+  return [...new Set(
+    allowedDepts
+      .map((deptCode) => String(deptCode || '').trim())
+      .filter(Boolean)
+  )]
+}
+
+const normalizeUserRow = (row = {}) => ({
+  userId: row.userId,
+  userName: row.userName || '',
+  deptCode: row.deptCode || '',
+  dept: row.dept || '',
+  role: row.role || '',
+  dataScope: row.dataScope || 'self',
+  allowedProjects: normalizeAllowedProjects(row.allowedProjects),
+  allowedDepts: normalizeAllowedDepts(row.allowedDepts)
+})
+
+const normalizeDeptRow = (row = {}) => ({
+  deptCode: row.deptCode || '',
+  deptName: row.deptName || '',
+  dataScope: row.dataScope || 'self',
+  canViewOtherDepts: Boolean(row.canViewOtherDepts),
+  allowedDepts: normalizeAllowedDepts(row.allowedDepts)
+})
+
+const normalizeDeptOption = (option = {}) => ({
+  code: option.code || '',
+  name: option.name || ''
+})
+
+const normalizeDeptTreeItem = (item = {}) => ({
+  deptCode: item.deptCode || '',
+  deptName: item.deptName || '',
+  parentDeptCode: item.parentDeptCode || '',
+  sortOrder: Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : 0
+})
+
+const normalizeConfig = (payload = fallbackConfig) => ({
+  userDataScope: Array.isArray(payload.userDataScope) ? payload.userDataScope.map(normalizeUserRow) : [],
+  deptDataScope: Array.isArray(payload.deptDataScope) ? payload.deptDataScope.map(normalizeDeptRow) : [],
+  deptOptions: Array.isArray(payload.deptOptions) ? payload.deptOptions.map(normalizeDeptOption) : [],
+  deptTree: Array.isArray(payload.deptTree) ? payload.deptTree.map(normalizeDeptTreeItem) : []
+})
 
 const buildRuntimeRoleMap = (payload) => {
   const roles = Array.isArray(payload?.roles) ? payload.roles : []
@@ -48,10 +118,10 @@ export const clearRuntimeSettings = () => {
 export const getRuntimeSettings = () => runtimeSettings
 
 export const getRolePermissionProfile = (role) => {
-  const runtimeSettings = getRuntimeSettings()
-  if (!runtimeSettings) return null
+  const currentRuntimeSettings = getRuntimeSettings()
+  if (!currentRuntimeSettings) return null
 
-  return runtimeSettings.roleMap?.[normalizeRole(role)] || null
+  return currentRuntimeSettings.roleMap?.[normalizeRole(role)] || null
 }
 
 export const hasMenuAccessForRole = (role, permissionKeys = []) => {
@@ -62,43 +132,39 @@ export const hasMenuAccessForRole = (role, permissionKeys = []) => {
   if (normalizedKeys.length === 0) return true
 
   if (profile.menuPermissions.includes('all')) return true
-  return normalizedKeys.some(key => profile.menuPermissions.includes(key))
+  return normalizedKeys.some((key) => profile.menuPermissions.includes(key))
 }
 
 export const settingsApi = {
-  async getSettings() {
-    const response = await httpClient.get('/api/settings')
-    if (response?.success && response?.data) {
-      persistRuntimeSettings(response.data)
+  async getDataScopeConfig() {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: normalizeConfig(fallbackConfig)
+      })
     }
-    return response
+
+    const response = await httpClient.get('/api/admin/settings/data-scope')
+    return {
+      ...response,
+      data: normalizeConfig(response?.data)
+    }
   },
 
-  async updateSettings(payload) {
-    const response = await httpClient.put('/api/settings', payload)
-    if (response?.success && response?.data) {
-      persistRuntimeSettings(response.data)
+  async saveDataScopeConfig(payload) {
+    const normalizedPayload = normalizeConfig(payload)
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: normalizedPayload
+      })
     }
-    return response
-  },
 
-  async getRuntimePermissions() {
-    const response = await httpClient.get('/api/settings/runtime-permissions')
-    if (response?.success && response?.data) {
-      runtimeSettings = {
-        updatedAt: Date.now(),
-        roleMap: {
-          [normalizeRole(response.data.code)]: {
-            code: normalizeRole(response.data.code),
-            menuPermissions: normalizePermissionList(response.data.menuPermissions),
-            dataScope: response.data.dataScope || 'self',
-            allowedProjects: Array.isArray(response.data.allowedProjects) ? [...response.data.allowedProjects] : [],
-            allowedDepts: Array.isArray(response.data.allowedDepts) ? [...response.data.allowedDepts] : []
-          }
-        }
-      }
+    const response = await httpClient.put('/api/admin/settings/data-scope', normalizedPayload)
+    return {
+      ...response,
+      data: normalizeConfig(response?.data)
     }
-    return response
   }
 }
 

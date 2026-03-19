@@ -76,6 +76,6 @@ export default {
   // 审计
   audit: () => import('./modules/audit.js').then(m => m.default),
 
-  // 系统设置
+  // 设置
   settings: () => import('./modules/settings.js').then(m => m.settingsApi)
 }

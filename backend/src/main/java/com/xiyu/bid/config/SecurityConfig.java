@@ -51,7 +51,6 @@ public class SecurityConfig {
             "/actuator/health",
             "/actuator/health/**",
             "/actuator/info",
-            "/actuator/prometheus",
             "/error",
             "/h2-console/**"
     };

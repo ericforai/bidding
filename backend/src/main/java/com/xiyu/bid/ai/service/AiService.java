@@ -42,21 +42,19 @@ public class AiService {
      * @param context Additional context for analysis
      * @return CompletableFuture that completes when analysis is done
      */
-    @Async
+    @Async("aiTaskExecutor")
     @Transactional
     public CompletableFuture<Void> analyzeTender(Long tenderId, Map<String, Object> context) {
-        return CompletableFuture.runAsync(() -> {
-            try {
-                analyzeTenderSync(tenderId, context);
-
-            } catch (ResourceNotFoundException e) {
-                log.error("Tender not found for AI analysis: {}", tenderId);
-                throw e;
-            } catch (Exception e) {
-                log.error("Error during AI analysis for tender id: {}", tenderId, e);
-                throw new RuntimeException("Failed to analyze tender", e);
-            }
-        });
+        try {
+            analyzeTenderSync(tenderId, context);
+            return CompletableFuture.completedFuture(null);
+        } catch (ResourceNotFoundException e) {
+            log.error("Tender not found for AI analysis: {}", tenderId);
+            throw e;
+        } catch (Exception e) {
+            log.error("Error during AI analysis for tender id: {}", tenderId, e);
+            throw new RuntimeException("Failed to analyze tender", e);
+        }
     }
 
     /**
@@ -66,21 +64,19 @@ public class AiService {
      * @param context Additional context for analysis
      * @return CompletableFuture that completes when analysis is done
      */
-    @Async
+    @Async("aiTaskExecutor")
     @Transactional
     public CompletableFuture<Void> analyzeProject(Long projectId, Map<String, Object> context) {
-        return CompletableFuture.runAsync(() -> {
-            try {
-                analyzeProjectSync(projectId, context);
-
-            } catch (ResourceNotFoundException e) {
-                log.error("Project not found for AI analysis: {}", projectId);
-                throw e;
-            } catch (Exception e) {
-                log.error("Error during AI analysis for project id: {}", projectId, e);
-                throw new RuntimeException("Failed to analyze project", e);
-            }
-        });
+        try {
+            analyzeProjectSync(projectId, context);
+            return CompletableFuture.completedFuture(null);
+        } catch (ResourceNotFoundException e) {
+            log.error("Project not found for AI analysis: {}", projectId);
+            throw e;
+        } catch (Exception e) {
+            log.error("Error during AI analysis for project id: {}", projectId, e);
+            throw new RuntimeException("Failed to analyze project", e);
+        }
     }
 
     @Transactional
@@ -93,7 +89,7 @@ public class AiService {
         String content = prepareTenderContent(tender);
         Map<String, Object> normalizedContext = context != null ? context : Map.of();
 
-        AiAnalysisResponse response = aiProvider.analyzeTender(content, normalizedContext).join();
+        AiAnalysisResponse response = aiProvider.analyzeTender(content, normalizedContext);
         updateTenderWithAnalysis(tender, response);
 
         log.info("Completed synchronous AI analysis for tender id: {}, score: {}", tenderId, tender.getAiScore());
@@ -109,7 +105,7 @@ public class AiService {
 
         Map<String, Object> normalizedContext = context != null ? context : Map.of();
 
-        AiAnalysisResponse response = aiProvider.analyzeProject(projectId, normalizedContext).join();
+        AiAnalysisResponse response = aiProvider.analyzeProject(projectId, normalizedContext);
         updateProjectWithAnalysis(project, response);
 
         log.info("Completed synchronous AI analysis for project id: {}", projectId);

@@ -18,3 +18,5 @@
 ## 更新记录
 
 - 2026-03-11: `project.js` 添加 API 失败时 mock 数据回退逻辑
+- 2026-03-18: `user.js` 开始保存 `allowedProjectIds`，用于认证恢复后的项目级权限快照
+- 2026-03-19: `user.js` 会话快照新增 `allowedDepts` 校验，避免恢复旧快照时遗漏部门级权限范围

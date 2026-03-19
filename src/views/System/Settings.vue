@@ -54,7 +54,7 @@
             </el-table-column>
             <el-table-column label="操作" width="150">
               <template #default="{ row }">
-                <el-button link type="primary" size="small" @click="openPermissionConfig(row)">
+                <el-button link type="primary" size="small" @click="handleConfigPermission(row)">
                   权限配置
                 </el-button>
                 <el-button link type="primary" size="small">编辑</el-button>
@@ -97,9 +97,7 @@
                   <el-table-column prop="allowedProjects" label="可访问项目组" min-width="220">
                     <template #default="{ row }">
                       <el-select v-model="row.allowedProjects" multiple size="small" style="width: 100%" @change="handleUserProjectChange(row)">
-                        <el-option label="央企项目组" value="pg1" />
-                        <el-option label="政府项目组" value="pg2" />
-                        <el-option label="军队项目组" value="pg3" />
+                        <el-option v-for="option in projectScopeOptions" :key="option.value" :label="option.label" :value="option.value" />
                       </el-select>
                     </template>
                   </el-table-column>
@@ -135,17 +133,13 @@
                   <el-table-column prop="allowedDepts" label="可访问部门" min-width="220">
                     <template #default="{ row }">
                       <el-select v-model="row.allowedDepts" multiple size="small" style="width: 100%" :disabled="!row.canViewOtherDepts">
-                        <el-option label="华南销售部" value="dept1" />
-                        <el-option label="华东销售部" value="dept2" />
-                        <el-option label="技术部" value="dept3" />
-                        <el-option label="商务部" value="dept4" />
-                        <el-option label="投标管理部" value="dept5" />
+                        <el-option v-for="option in deptOptions" :key="option.code" :label="option.name" :value="option.code" />
                       </el-select>
                     </template>
                   </el-table-column>
                   <el-table-column label="操作" width="100">
                     <template #default="{ row }">
-                      <el-button type="primary" size="small" @click="persistDeptConfig(row)">保存</el-button>
+                      <el-button type="primary" size="small" @click="saveDeptConfig(row)">保存</el-button>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -161,8 +155,18 @@
                   </div>
                 </template>
                 <el-table :data="projectGroupScope" size="small" border>
-                  <el-table-column prop="groupName" label="项目组" width="150" />
-                  <el-table-column prop="manager" label="负责人" width="100" />
+                  <el-table-column prop="groupName" label="项目组" min-width="180">
+                    <template #default="{ row }">
+                      <el-input v-model="row.groupName" size="small" placeholder="请输入项目组名称" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="managerUserId" label="负责人" width="160">
+                    <template #default="{ row }">
+                      <el-select v-model="row.managerUserId" size="small" style="width: 100%" @change="handleProjectManagerChange(row)">
+                        <el-option v-for="user in userOptions" :key="user.id" :label="user.name" :value="user.id" />
+                      </el-select>
+                    </template>
+                  </el-table-column>
                   <el-table-column prop="memberCount" label="成员数" width="80" align="center" />
                   <el-table-column prop="visibility" label="可见范围" width="140">
                     <template #default="{ row }">
@@ -185,12 +189,72 @@
                       </el-select>
                     </template>
                   </el-table-column>
+                  <el-table-column prop="memberUserIds" label="组成员" min-width="220">
+                    <template #default="{ row }">
+                      <el-select v-model="row.memberUserIds" multiple size="small" style="width: 100%" @change="handleProjectMembersChange(row)">
+                        <el-option v-for="user in userOptions" :key="user.id" :label="user.name" :value="user.id" />
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="projectIds" label="绑定项目" min-width="260">
+                    <template #default="{ row }">
+                      <el-select v-model="row.projectIds" multiple size="small" style="width: 100%" @change="handleProjectBindingChange(row)">
+                        <el-option v-for="option in projectScopeOptions" :key="option.value" :label="option.label" :value="option.value" />
+                      </el-select>
+                    </template>
+                  </el-table-column>
                   <el-table-column label="操作" width="100">
                     <template #default="{ row }">
-                      <el-button type="primary" size="small" @click="persistProjectConfig(row)">保存</el-button>
+                      <el-button type="primary" size="small" @click="saveProjectConfig(row)">保存</el-button>
                     </template>
                   </el-table-column>
                 </el-table>
+                <div style="margin-top: 12px;">
+                  <el-button type="primary" plain @click="addProjectGroupRow">新增项目组</el-button>
+                </div>
+              </el-tab-pane>
+
+              <el-tab-pane name="org">
+                <template #label>
+                  <div class="tab-label-with-icon">
+                    <el-icon><OfficeBuilding /></el-icon>
+                    <span>组织架构</span>
+                    <el-badge :value="deptTree.length" class="tab-badge" />
+                  </div>
+                </template>
+                <el-table :data="deptTree" size="small" border>
+                  <el-table-column prop="deptName" label="部门名称" min-width="180">
+                    <template #default="{ row }">
+                      <el-input v-model="row.deptName" size="small" placeholder="请输入部门名称" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="deptCode" label="部门编码" width="140">
+                    <template #default="{ row }">
+                      <el-input v-model="row.deptCode" size="small" placeholder="编码" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="parentDeptCode" label="上级部门" min-width="180">
+                    <template #default="{ row }">
+                      <el-select v-model="row.parentDeptCode" clearable size="small" style="width: 100%">
+                        <el-option v-for="option in deptParentOptions(row.deptCode)" :key="option.code" :label="option.name" :value="option.code" />
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="sortOrder" label="排序" width="100">
+                    <template #default="{ row }">
+                      <el-input-number v-model="row.sortOrder" size="small" :min="0" :step="1" />
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="170">
+                    <template #default="{ row, $index }">
+                      <el-button type="primary" link size="small" @click="saveDeptTreeConfig('组织架构' + (row.deptName || row.deptCode || ($index + 1)) + '已保存')">保存</el-button>
+                      <el-button type="danger" link size="small" @click="removeDeptTreeRow($index)">删除</el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <div style="margin-top: 12px;">
+                  <el-button type="primary" plain @click="addDeptTreeRow">新增部门</el-button>
+                </div>
               </el-tab-pane>
 
               <!-- 权限规则说明 -->
@@ -239,7 +303,7 @@
               <el-switch v-model="config.enableAI" />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="persistBaseConfig">保存配置</el-button>
+              <el-button type="primary" @click="handleSaveConfig">保存配置</el-button>
             </el-form-item>
           </el-form>
         </el-tab-pane>
@@ -528,7 +592,7 @@
                   <el-button
                     type="primary"
                     :disabled="!integrationConfig.oaEnabled"
-                    @click="persistOaConfig"
+                    @click="saveOaConfig"
                   >
                     保存OA配置
                   </el-button>
@@ -787,7 +851,7 @@
       </el-form>
       <template #footer>
         <el-button @click="showFlowMappingDialog = false">取消</el-button>
-        <el-button type="primary" @click="persistFlowMapping">保存</el-button>
+        <el-button type="primary" @click="saveFlowMapping">保存</el-button>
       </template>
     </el-dialog>
 
@@ -843,18 +907,12 @@
               </el-form-item>
               <el-form-item label="自定义部门" v-if="dataScopeForm.scope === 'custom'">
                 <el-select v-model="dataScopeForm.depts" multiple placeholder="请选择部门" style="width: 100%">
-                  <el-option label="华南销售部" value="dept1" />
-                  <el-option label="华东销售部" value="dept2" />
-                  <el-option label="技术部" value="dept3" />
-                  <el-option label="商务部" value="dept4" />
-                  <el-option label="投标管理部" value="dept5" />
+                  <el-option v-for="option in deptOptions" :key="option.code" :label="option.name" :value="option.code" />
                 </el-select>
               </el-form-item>
               <el-form-item label="项目组权限">
                 <el-select v-model="dataScopeForm.projects" multiple placeholder="请选择可访问的项目组" style="width: 100%">
-                  <el-option label="央企项目组" value="pg1" />
-                  <el-option label="政府项目组" value="pg2" />
-                  <el-option label="军队项目组" value="pg3" />
+                  <el-option v-for="option in projectScopeOptions" :key="option.value" :label="option.label" :value="option.value" />
                 </el-select>
               </el-form-item>
             </el-form>
@@ -863,7 +921,7 @@
       </div>
       <template #footer>
         <el-button @click="showPermissionDialog = false">取消</el-button>
-        <el-button type="primary" @click="persistPermissionConfig">保存配置</el-button>
+        <el-button type="primary" @click="savePermissionConfig">保存配置</el-button>
       </template>
     </el-dialog>
 
@@ -889,19 +947,18 @@
       </el-form>
       <template #footer>
         <el-button @click="showAddRoleDialog = false">取消</el-button>
-        <el-button type="primary" @click="persistRole">保存</el-button>
+        <el-button type="primary" @click="saveRole">保存</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Key, Document, Menu, Operation, Lock, User, OfficeBuilding, Folder, InfoFilled, Search, Download } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { API_CONFIG, auditApi, isMockMode, settingsApi } from '@/api'
-import { persistRuntimeSettings } from '@/api/modules/settings.js'
+import { API_CONFIG, auditApi, isMockMode, projectsApi, settingsApi } from '@/api'
 
 const activeTab = ref('user')
 const userStore = useUserStore()
@@ -920,7 +977,6 @@ const showAddRoleDialog = ref(false)
 const permissionTab = ref('menu')
 const dataScopeTab = ref('user') // 数据权限 Tab 的当前子 tab
 const currentRole = ref(null)
-const menuTreeRef = ref(null)
 
 // 菜单权限树
 const menuPermissions = ref([
@@ -972,28 +1028,17 @@ const dataScopeForm = ref({
 })
 
 // 用户数据权限 Mock
-const userDataScope = ref([
-  { userName: '小王', dept: '华南销售部', role: '销售', dataScope: 'dept', allowedProjects: ['pg1', 'pg2'] },
-  { userName: '张经理', dept: '投标管理部', role: '经理', dataScope: 'all', allowedProjects: ['pg1', 'pg2', 'pg3'] },
-  { userName: '李工', dept: '技术部', role: '技术人员', dataScope: 'self', allowedProjects: ['pg2'] },
-  { userName: '王销售', dept: '华东销售部', role: '销售', dataScope: 'dept', allowedProjects: ['pg1'] },
-  { userName: '赵财务', dept: '财务部', role: '财务', dataScope: 'dept', allowedProjects: ['pg1', 'pg2', 'pg3'] }
-])
+const userDataScope = ref([])
 
 // 部门数据权限 Mock
-const deptDataScope = ref([
-  { deptName: '华南销售部', dataScope: 'dept', canViewOtherDepts: false, allowedDepts: ['dept1'] },
-  { deptName: '华东销售部', dataScope: 'dept', canViewOtherDepts: false, allowedDepts: ['dept2'] },
-  { deptName: '技术部', dataScope: 'dept', canViewOtherDepts: false, allowedDepts: ['dept3'] },
-  { deptName: '投标管理部', dataScope: 'all', canViewOtherDepts: true, allowedDepts: [] }
-])
+const deptDataScope = ref([])
+const deptOptions = ref([])
+const deptTree = ref([])
+const userOptions = ref([])
+const projectScopeOptions = ref([])
 
 // 项目组数据权限 Mock
-const projectGroupScope = ref([
-  { groupName: '央企项目组', manager: '张经理', memberCount: 5, visibility: 'members', allowedRoles: ['admin', 'manager', 'sales'] },
-  { groupName: '政府项目组', manager: '李经理', memberCount: 3, visibility: 'members', allowedRoles: ['admin', 'manager', 'sales'] },
-  { groupName: '军队项目组', manager: '王经理', memberCount: 2, visibility: 'manager', allowedRoles: ['admin', 'manager'] }
-])
+const projectGroupScope = ref([])
 
 // 角色表单
 const roleForm = ref({
@@ -1318,35 +1363,48 @@ const savePermissionConfig = () => {
 
 // 数据权限变更处理
 const handleUserDataScopeChange = (row) => {
-  // 用户数据权限变更事件
+  persistDataScopeConfig(`用户"${row.userName}"数据权限已保存`)
 }
 
 const handleUserProjectChange = (row) => {
-  // 用户项目权限变更事件
+  persistDataScopeConfig(`用户"${row.userName}"项目白名单已保存`)
 }
 
 const handleDeptDataScopeChange = (row) => {
-  // 部门数据权限变更事件
+  persistDataScopeConfig(`部门"${row.deptName}"数据权限已保存`)
 }
 
-onMounted(() => {
-  loadAuditLogs()
+onMounted(async () => {
+  await Promise.all([
+    loadAuditLogs(),
+    loadDataScopeConfig(),
+    loadProjectScopeOptions()
+  ])
 })
 
 const handleDeptCrossAccessChange = (row) => {
-  // 部门跨部门访问变更事件
+  if (!row.canViewOtherDepts) {
+    row.allowedDepts = []
+  }
 }
 
 const saveDeptConfig = (row) => {
-  ElMessage.success(`部门"${row.deptName}"数据权限配置已保存`)
+  persistDataScopeConfig(`部门"${row.deptName}"数据权限配置已保存`)
 }
 
 const handleProjectVisibilityChange = (row) => {
-  // 项目组可见范围变更事件
+  if (row.visibility === 'manager') {
+    row.allowedRoles = []
+    row.memberUserIds = []
+  }
+  if (row.visibility === 'members') {
+    row.allowedRoles = []
+  }
 }
 
 const saveProjectConfig = (row) => {
-  ElMessage.success(`项目组"${row.groupName}"权限配置已保存`)
+  syncProjectGroupMeta(row)
+  persistDataScopeConfig(`项目组"${row.groupName}"权限配置已保存`)
 }
 
 // 保存角色
@@ -1371,76 +1429,6 @@ const saveRole = () => {
     dataScope: 'all'
   }
 }
-
-const openPermissionConfig = (role) => {
-  currentRole.value = role
-  permissionTab.value = 'menu'
-  dataScopeForm.value = {
-    scope: role.dataScope || 'all',
-    depts: cloneList(role.allowedDepts),
-    projects: cloneList(role.allowedProjects)
-  }
-  showPermissionDialog.value = true
-  nextTick(() => {
-    menuTreeRef.value?.setCheckedKeys(cloneList(role.menuPermissions))
-  })
-}
-
-const persistPermissionConfig = async () => {
-  if (currentRole.value) {
-    currentRole.value.dataScope = dataScopeForm.value.scope
-    currentRole.value.menuPermissions = normalizeMenuPermissions(menuTreeRef.value?.getCheckedKeys(false) || [])
-    currentRole.value.allowedDepts = cloneList(dataScopeForm.value.depts)
-    currentRole.value.allowedProjects = cloneList(dataScopeForm.value.projects)
-  }
-
-  const saved = await persistSettings('权限配置已保存')
-  if (saved) {
-    showPermissionDialog.value = false
-  }
-}
-
-const persistDeptConfig = async (row) => {
-  await persistSettings(`部门\\\"${row.deptName}\\\"数据权限配置已保存`)
-}
-
-const persistProjectConfig = async (row) => {
-  await persistSettings(`项目组\\\"${row.groupName}\\\"权限配置已保存`)
-}
-
-const persistRole = async () => {
-  if (!roleForm.value.name || !roleForm.value.code) {
-    ElMessage.warning('请填写角色名称和代码')
-    return
-  }
-
-  roles.value.push({
-    ...roleForm.value,
-    userCount: 0,
-    menuPermissions: [],
-    dataScope: roleForm.value.dataScope,
-    allowedProjects: [],
-    allowedDepts: []
-  })
-
-  const saved = await persistSettings('角色添加成功')
-  if (saved) {
-    showAddRoleDialog.value = false
-    roleForm.value = {
-      name: '',
-      code: '',
-      description: '',
-      dataScope: 'all'
-    }
-  }
-}
-
-onMounted(async () => {
-  await loadSettings()
-  if (isMockMode()) {
-    persistRuntimeSettings(buildSettingsPayload())
-  }
-})
 
 // 系统集成配置
 const integrationConfig = ref({
@@ -1686,182 +1674,130 @@ const callbackApis = [
   }
 ]
 
-const cloneList = (value) => (Array.isArray(value) ? [...value] : [])
-const normalizeMenuPermissions = (permissions) => {
-  const selected = cloneList(permissions)
-  if (selected.includes('all')) {
-    return ['all']
-  }
+// 方法
+const buildDataScopePayload = () => ({
+  userDataScope: userDataScope.value,
+  deptDataScope: deptDataScope.value,
+  deptOptions: deptOptions.value,
+  deptTree: deptTree.value,
+  projectGroupScope: projectGroupScope.value,
+  userOptions: userOptions.value
+})
 
-  const parentPermissions = new Set(menuPermissions.value.map((item) => item.id))
-  return selected.filter((permission) => {
-    const separatorIndex = permission.indexOf('-')
-    if (separatorIndex === -1) {
-      return true
+const applyDataScopePayload = (payload = {}) => {
+  userDataScope.value = Array.isArray(payload.userDataScope) ? payload.userDataScope : []
+  deptDataScope.value = Array.isArray(payload.deptDataScope) ? payload.deptDataScope : []
+  deptOptions.value = Array.isArray(payload.deptOptions) ? payload.deptOptions : []
+  deptTree.value = Array.isArray(payload.deptTree) ? payload.deptTree : []
+  userOptions.value = Array.isArray(payload.userOptions) ? payload.userOptions : []
+  projectGroupScope.value = Array.isArray(payload.projectGroupScope)
+    ? payload.projectGroupScope.map((row) => ({
+      ...row,
+      manager: resolveUserName(row.managerUserId, payload.userOptions),
+      memberCount: Array.isArray(row.memberUserIds) ? row.memberUserIds.length : Number(row.memberCount || 0)
+    }))
+    : []
+}
+
+const loadDataScopeConfig = async () => {
+  try {
+    const result = await settingsApi.getDataScopeConfig()
+    if (!result?.success) {
+      throw new Error(result?.message || '加载数据权限配置失败')
     }
+    applyDataScopePayload(result.data)
+  } catch (error) {
+    console.error('Failed to load data scope config:', error)
+    ElMessage.error(error?.message || '加载数据权限配置失败')
+  }
+}
 
-    const parentPermission = permission.slice(0, separatorIndex)
-    return !parentPermissions.has(parentPermission) || selected.includes(parentPermission)
+const persistDataScopeConfig = async (successMessage = '数据权限配置已保存') => {
+  try {
+    const result = await settingsApi.saveDataScopeConfig(buildDataScopePayload())
+    if (!result?.success) {
+      throw new Error(result?.message || '保存数据权限配置失败')
+    }
+    applyDataScopePayload(result.data)
+    ElMessage.success(successMessage)
+  } catch (error) {
+    console.error('Failed to save data scope config:', error)
+    ElMessage.error(error?.message || '保存数据权限配置失败')
+  }
+}
+
+const loadProjectScopeOptions = async () => {
+  try {
+    const result = await projectsApi.getList()
+    if (!result?.success || !Array.isArray(result?.data)) {
+      return
+    }
+    projectScopeOptions.value = result.data.map((project) => ({
+      value: project.id,
+      label: project.name
+    }))
+  } catch (error) {
+    console.warn('Failed to load project scope options:', error)
+  }
+}
+
+const resolveUserName = (userId, source = userOptions.value) => {
+  const match = Array.isArray(source) ? source.find((user) => String(user.id) === String(userId)) : null
+  return match?.name || ''
+}
+
+const syncProjectGroupMeta = (row) => {
+  row.manager = resolveUserName(row.managerUserId)
+  row.memberCount = Array.isArray(row.memberUserIds) ? row.memberUserIds.length : 0
+}
+
+const handleProjectManagerChange = (row) => {
+  syncProjectGroupMeta(row)
+}
+
+const handleProjectMembersChange = (row) => {
+  syncProjectGroupMeta(row)
+}
+
+const handleProjectBindingChange = (row) => {
+  syncProjectGroupMeta(row)
+}
+
+const addProjectGroupRow = () => {
+  projectGroupScope.value.push({
+    groupCode: '',
+    groupName: '',
+    managerUserId: null,
+    manager: '',
+    memberCount: 0,
+    visibility: 'members',
+    memberUserIds: [],
+    allowedRoles: [],
+    projectIds: []
   })
 }
 
-const applySettingsPayload = (payload) => {
-  if (!payload) return
+const deptParentOptions = (currentDeptCode) => deptTree.value.filter((item) => item.deptCode && item.deptCode !== currentDeptCode)
 
-  persistRuntimeSettings(payload)
-  userStore.permissionProfileLoaded = true
-
-  if (payload.systemConfig) {
-    config.value = {
-      ...config.value,
-      ...payload.systemConfig
-    }
-  }
-
-  if (Array.isArray(payload.roles)) {
-    roles.value = payload.roles.map((role) => ({
-      ...role,
-      menuPermissions: cloneList(role.menuPermissions),
-      allowedProjects: cloneList(role.allowedProjects),
-      allowedDepts: cloneList(role.allowedDepts)
-    }))
-  }
-
-  if (Array.isArray(payload.deptDataScope)) {
-    deptDataScope.value = payload.deptDataScope.map((item) => ({
-      ...item,
-      allowedDepts: cloneList(item.allowedDepts)
-    }))
-  }
-
-  if (Array.isArray(payload.projectGroupScope)) {
-    projectGroupScope.value = payload.projectGroupScope.map((item) => ({
-      ...item,
-      allowedRoles: cloneList(item.allowedRoles)
-    }))
-  }
-
-  if (payload.integrationConfig) {
-    integrationConfig.value = {
-      ...integrationConfig.value,
-      ...payload.integrationConfig
-    }
-  }
-
-  if (Array.isArray(payload.flowMappings)) {
-    flowMappings.value = payload.flowMappings.map((item) => ({ ...item }))
-    integrationConfig.value.flowMapping = flowMappings.value
-  }
-
-  if (Array.isArray(payload.apiList)) {
-    apiList.value = payload.apiList.map((item) => ({ ...item }))
-  }
+const addDeptTreeRow = () => {
+  deptTree.value.push({
+    deptCode: '',
+    deptName: '',
+    parentDeptCode: '',
+    sortOrder: deptTree.value.length
+  })
 }
 
-const buildSettingsPayload = () => ({
-  systemConfig: {
-    ...config.value
-  },
-  roles: roles.value.map((role) => ({
-    code: role.code,
-    name: role.name,
-    description: role.description,
-    userCount: role.userCount,
-    dataScope: role.dataScope,
-    menuPermissions: cloneList(role.menuPermissions),
-    allowedProjects: cloneList(role.allowedProjects),
-    allowedDepts: cloneList(role.allowedDepts)
-  })),
-  deptDataScope: deptDataScope.value.map((item) => ({
-    deptName: item.deptName,
-    dataScope: item.dataScope,
-    canViewOtherDepts: item.canViewOtherDepts,
-    allowedDepts: cloneList(item.allowedDepts)
-  })),
-  projectGroupScope: projectGroupScope.value.map((item) => ({
-    groupName: item.groupName,
-    manager: item.manager,
-    memberCount: item.memberCount,
-    visibility: item.visibility,
-    allowedRoles: cloneList(item.allowedRoles)
-  })),
-  integrationConfig: {
-    orgEnabled: integrationConfig.value.orgEnabled,
-    orgSystem: integrationConfig.value.orgSystem,
-    orgAppKey: integrationConfig.value.orgAppKey,
-    orgAppSecret: integrationConfig.value.orgAppSecret,
-    oaEnabled: integrationConfig.value.oaEnabled,
-    oaUrl: integrationConfig.value.oaUrl,
-    ssoEnabled: integrationConfig.value.ssoEnabled,
-    callbackUrl: integrationConfig.value.callbackUrl,
-    apiKey: integrationConfig.value.apiKey,
-    ipWhitelist: integrationConfig.value.ipWhitelist
-  },
-  flowMappings: flowMappings.value.map((item) => ({
-    systemFlow: item.systemFlow,
-    oaFlow: item.oaFlow,
-    oaFlowCode: item.oaFlowCode,
-    oaFlowName: item.oaFlowName,
-    description: item.description
-  })),
-  apiList: apiList.value.map((item) => ({
-    name: item.name,
-    path: item.path,
-    method: item.method,
-    description: item.description,
-    status: item.status,
-    enabled: item.enabled
-  }))
-})
-
-const persistSettings = async (successMessage) => {
-  if (isMockMode()) {
-    persistRuntimeSettings(buildSettingsPayload())
-    userStore.permissionProfileLoaded = true
-    ElMessage.success(successMessage)
-    return true
-  }
-
-  try {
-    const response = await settingsApi.updateSettings(buildSettingsPayload())
-    if (!response?.success || !response?.data) {
-      throw new Error(response?.message || '保存配置失败')
-    }
-    applySettingsPayload(response.data)
-    await userStore.refreshPermissionProfile()
-    ElMessage.success(successMessage)
-    return true
-  } catch (error) {
-    await loadSettings()
-    ElMessage.error(error?.message || '保存配置失败')
-    return false
-  }
+const removeDeptTreeRow = (index) => {
+  deptTree.value.splice(index, 1)
 }
 
-const loadSettings = async () => {
-  if (isMockMode()) {
-    return
-  }
-
-  try {
-    const response = await settingsApi.getSettings()
-    if (!response?.success || !response?.data) {
-      throw new Error(response?.message || '加载系统配置失败')
-    }
-    applySettingsPayload(response.data)
-    await userStore.refreshPermissionProfile()
-  } catch (error) {
-    ElMessage.error(error?.message || '加载系统配置失败')
-  }
+const saveDeptTreeConfig = async (message = '组织架构配置已保存') => {
+  await persistDataScopeConfig(message)
 }
 
-// 方法
-const handleSaveConfig = async () => {
-  await persistSettings('配置已保存')
-}
-
-const persistBaseConfig = async () => {
-  await handleSaveConfig()
+const handleSaveConfig = () => {
+  ElMessage.success('配置已保存')
 }
 
 // 获取HTTP方法对应的标签类型
@@ -1913,10 +1849,6 @@ const saveOaConfig = () => {
   ElMessage.success('OA配置已保存')
 }
 
-const persistOaConfig = async () => {
-  await persistSettings('OA配置已保存')
-}
-
 const editFlowMapping = (row) => {
   currentFlowMapping.value = {
     systemFlow: row.systemFlow,
@@ -1936,20 +1868,6 @@ const saveFlowMapping = () => {
   }
   showFlowMappingDialog.value = false
   ElMessage.success('流程映射配置已保存')
-}
-
-const persistFlowMapping = async () => {
-  const index = currentFlowMapping.value._index
-  if (index !== undefined) {
-    flowMappings.value[index].oaFlowCode = currentFlowMapping.value.oaFlowCode
-    flowMappings.value[index].oaFlowName = currentFlowMapping.value.oaFlowName
-    flowMappings.value[index].oaFlow = currentFlowMapping.value.oaFlowCode
-  }
-
-  const saved = await persistSettings('流程映射配置已保存')
-  if (saved) {
-    showFlowMappingDialog.value = false
-  }
 }
 
 // API管理

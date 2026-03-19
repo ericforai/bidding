@@ -33,6 +33,21 @@ public class AsyncConfig implements AsyncConfigurer {
     }
 
     /**
+     * AI analysis专用线程池
+     */
+    @Bean(name = "aiTaskExecutor")
+    public ThreadPoolTaskExecutor aiTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(4);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("ai-async-");
+        executor.setRejectedExecutionHandler(new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
+
+    /**
      * 审计日志专用线程池
      */
     @Bean(name = "auditLogExecutor")

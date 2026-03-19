@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -38,6 +39,44 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
      */
     @Query("SELECT p FROM Project p WHERE p.status <> 'ARCHIVED'")
     List<Project> findActiveProjects();
+
+    @Query("""
+            SELECT DISTINCT p
+            FROM Project p
+            LEFT JOIN FETCH p.teamMembers tm
+            WHERE p.tenderId IN :tenderIds
+            """)
+    List<Project> findAllWithTeamMembersByTenderIdIn(Collection<Long> tenderIds);
+
+    @Query("""
+            SELECT DISTINCT p.id
+            FROM Project p
+            LEFT JOIN p.teamMembers tm
+            WHERE p.managerId = :userId OR tm = :userId
+            """)
+    List<Long> findAccessibleProjectIdsByUserId(Long userId);
+
+    @Query("SELECT p.id FROM Project p")
+    List<Long> findAllProjectIds();
+
+    @Query(value = """
+            SELECT DISTINCT p.id
+            FROM projects p
+            LEFT JOIN users manager_user ON manager_user.id = p.manager_id
+            LEFT JOIN project_team_members ptm ON ptm.project_id = p.id
+            LEFT JOIN users member_user ON member_user.id = ptm.member_id
+            WHERE COALESCE(manager_user.department_code, 'UNASSIGNED') IN (:departmentCodes)
+               OR COALESCE(member_user.department_code, 'UNASSIGNED') IN (:departmentCodes)
+            """, nativeQuery = true)
+    List<Long> findAccessibleProjectIdsByDepartmentCodes(Collection<String> departmentCodes);
+
+    @Query("""
+            SELECT COUNT(DISTINCT p.id)
+            FROM Project p
+            LEFT JOIN p.teamMembers tm
+            WHERE p.id = :projectId AND (p.managerId = :userId OR tm = :userId)
+            """)
+    long countAccessibleProjectByIdAndUserId(Long projectId, Long userId);
 
     /**
      * 根据项目名称模糊查询

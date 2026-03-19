@@ -1,19 +1,24 @@
-// Input: UserRepository、PasswordEncoder、JwtUtil、AuthenticationManager
+// Input: UserRepository、RefreshSessionRepository、PasswordEncoder、JwtUtil、AuthenticationManager
 // Output: 登录/注册结果、JWT 令牌和认证上下文
 // Pos: Auth/认证支撑层
 // 维护声明: 仅维护认证链路；权限规则调整请同步 controller 与 security 配置.
 package com.xiyu.bid.service;
 
 import com.xiyu.bid.dto.AuthResponse;
+import com.xiyu.bid.dto.AuthSessionResult;
 import com.xiyu.bid.dto.LoginRequest;
 import com.xiyu.bid.dto.RegisterRequest;
+import com.xiyu.bid.entity.RefreshSession;
 import com.xiyu.bid.entity.User;
+import com.xiyu.bid.repository.RefreshSessionRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.auth.JwtUtil;
 import com.xiyu.bid.util.PasswordValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -21,8 +26,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.util.HexFormat;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -30,12 +39,14 @@ import java.util.concurrent.ConcurrentMap;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final RefreshSessionRepository refreshSessionRepository;
+    private final ProjectAccessScopeService projectAccessScopeService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
-    private final ConcurrentMap<String, String> activeRefreshTokenIdsByUsername = new ConcurrentHashMap<>();
 
-    public record RefreshSession(AuthResponse authResponse, String refreshToken) {}
+    @Value("${jwt.refresh-expiration:604800000}")
+    private long refreshExpiration;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -68,12 +79,18 @@ public class AuthService {
         user = userRepository.save(user);
         log.info("New user registered: {}", user.getUsername());
 
-        String token = jwtUtil.generateToken(user.getUsername());
-        return AuthResponse.from(token, user);
+        String token = jwtUtil.generateAccessToken(user.getUsername());
+        return AuthResponse.from(
+                token,
+                user,
+                projectAccessScopeService.getAllowedProjectIds(user),
+                projectAccessScopeService.getAllowedDepartmentCodes(user)
+        );
     }
 
-    public AuthResponse login(LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
+    @Transactional
+    public AuthSessionResult login(LoginRequest request) {
+        authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getUsername(),
                         request.getPassword()
@@ -83,11 +100,19 @@ public class AuthService {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        String token = jwtUtil.generateToken(user.getUsername());
-        String refreshToken = issueRefreshToken(user.getUsername());
+        String token = jwtUtil.generateAccessToken(user.getUsername());
+        String refreshToken = createRefreshSession(user);
         log.info("User logged in: {}", user.getUsername());
 
-        return AuthResponse.from(token, refreshToken, user);
+        return AuthSessionResult.builder()
+                .authResponse(AuthResponse.from(
+                        token,
+                        user,
+                        projectAccessScopeService.getAllowedProjectIds(user),
+                        projectAccessScopeService.getAllowedDepartmentCodes(user)
+                ))
+                .refreshToken(refreshToken)
+                .build();
     }
 
     public AuthResponse getCurrentUser(String username) {
@@ -101,62 +126,95 @@ public class AuthService {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .role(user.getRole())
+                .deptCode(user.getDepartmentCode())
+                .dept(user.getDepartmentName())
+                .allowedProjectIds(projectAccessScopeService.getAllowedProjectIds(user))
+                .allowedDepts(projectAccessScopeService.getAllowedDepartmentCodes(user))
                 .build();
     }
 
-    public void logout(String username) {
-        logout(username, null, null);
+    @Transactional
+    public void logout(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return;
+        }
+
+        refreshSessionRepository.findByTokenHash(hashToken(refreshToken))
+                .filter(session -> session.getRevokedAt() == null)
+                .ifPresent(session -> {
+                    session.setRevokedAt(LocalDateTime.now());
+                    refreshSessionRepository.save(session);
+                    log.info("Refresh session revoked for user: {}", session.getUser().getUsername());
+                });
     }
 
-    public void logout(String username, String accessToken, String refreshToken) {
-        if (accessToken != null && !accessToken.isBlank()) {
-            jwtUtil.revokeToken(accessToken);
+    @Transactional
+    public AuthSessionResult refreshToken(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new InsufficientAuthenticationException("Refresh token is required");
         }
-        if (refreshToken != null && !refreshToken.isBlank()) {
-            jwtUtil.revokeToken(refreshToken);
+
+        RefreshSession session = refreshSessionRepository.findByTokenHash(hashToken(refreshToken))
+                .orElseThrow(() -> new InsufficientAuthenticationException("Refresh token is invalid"));
+
+        LocalDateTime now = LocalDateTime.now();
+        if (session.getRevokedAt() != null || session.getExpiresAt().isBefore(now)) {
+            throw new InsufficientAuthenticationException("Refresh token is no longer valid");
         }
-        if (username != null && !username.isBlank()) {
-            activeRefreshTokenIdsByUsername.remove(username);
+
+        User user = session.getUser();
+        if (!Boolean.TRUE.equals(user.getEnabled())) {
+            throw new InsufficientAuthenticationException("User account is disabled");
         }
-        log.info("User logged out: {}", username);
+
+        String accessToken = jwtUtil.generateAccessToken(user.getUsername());
+        session.setRevokedAt(now);
+        refreshSessionRepository.save(session);
+        String rotatedRefreshToken = createRefreshSession(user);
+        log.info("Token refreshed for user: {}", user.getUsername());
+
+        return AuthSessionResult.builder()
+                .authResponse(AuthResponse.from(
+                        accessToken,
+                        user,
+                        projectAccessScopeService.getAllowedProjectIds(user),
+                        projectAccessScopeService.getAllowedDepartmentCodes(user)
+                ))
+                .refreshToken(rotatedRefreshToken)
+                .build();
     }
 
-    public String issueRefreshToken(String username) {
-        String refreshToken = jwtUtil.generateRefreshToken(username);
-        activeRefreshTokenIdsByUsername.put(username, jwtUtil.extractTokenId(refreshToken));
+    String hashTokenForTest(String token) {
+        return hashToken(token);
+    }
+
+    private String createRefreshSession(User user) {
+        String refreshToken = generateRefreshToken();
+        RefreshSession session = RefreshSession.builder()
+                .user(user)
+                .tokenHash(hashToken(refreshToken))
+                .expiresAt(LocalDateTime.now().plusNanos(refreshExpiration * 1_000_000L))
+                .build();
+        refreshSessionRepository.save(session);
         return refreshToken;
     }
 
-    public AuthResponse refreshToken(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-        String token = jwtUtil.generateToken(user.getUsername());
-        log.info("Token refreshed for user: {}", user.getUsername());
-        return AuthResponse.from(token, user);
+    private String generateRefreshToken() {
+        return UUID.randomUUID().toString().replace("-", "")
+                + UUID.randomUUID().toString().replace("-", "");
     }
 
-    public RefreshSession refreshSession(String refreshToken) {
-        if (refreshToken == null || refreshToken.isBlank()) {
-            throw new IllegalArgumentException("Refresh token is required");
-        }
-        if (!jwtUtil.validateRefreshToken(refreshToken)) {
-            throw new IllegalArgumentException("Refresh token is invalid or expired");
+    private String hashToken(String token) {
+        if (token == null || token.isBlank()) {
+            throw new InsufficientAuthenticationException("Refresh token is invalid");
         }
 
-        String username = jwtUtil.extractUsername(refreshToken);
-        String activeRefreshTokenId = activeRefreshTokenIdsByUsername.get(username);
-        String providedRefreshTokenId = jwtUtil.extractTokenId(refreshToken);
-        if (activeRefreshTokenId == null || !activeRefreshTokenId.equals(providedRefreshTokenId)) {
-            throw new IllegalArgumentException("Refresh token is no longer active");
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashed = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hashed);
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 digest unavailable", ex);
         }
-
-        jwtUtil.revokeToken(refreshToken);
-        String accessToken = jwtUtil.generateToken(username);
-        String rotatedRefreshToken = issueRefreshToken(username);
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-        AuthResponse authResponse = AuthResponse.from(accessToken, rotatedRefreshToken, user);
-        return new RefreshSession(authResponse, rotatedRefreshToken);
     }
 }

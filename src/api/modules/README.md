@@ -19,4 +19,7 @@
 | `knowledge.js` | API 模块 | 资质、案例、模板等知识资产调用 |
 | `projects.js` | API 模块 | 项目列表、详情、任务、评分、结果录入调用 |
 | `resources.js` | API 模块 | 平台账号、BAR、证书、资源能力调用 |
+| `settings.js` | API 模块 | 系统设置页的数据权限配置读写 |
 | `tenders.js` | API 模块 | 标讯列表、详情、入项和关联调用 |
+
+`auth.js` 返回的用户快照会保留会话级权限字段，例如 `allowedProjectIds` 和 `allowedDepts`，供 store 和路由恢复使用。

@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -13,27 +15,39 @@ import lombok.NoArgsConstructor;
 public class AuthResponse {
 
     private String token;
-    private String refreshToken;
     private String type = "Bearer";
     private Long id;
     private String username;
     private String email;
     private String fullName;
     private User.Role role;
+    private String deptCode;
+    private String dept;
+    @Builder.Default
+    private List<Long> allowedProjectIds = List.of();
+    @Builder.Default
+    private List<String> allowedDepts = List.of();
 
     public static AuthResponse from(String token, User user) {
-        return from(token, null, user);
+        return from(token, user, List.of(), List.of());
     }
 
-    public static AuthResponse from(String token, String refreshToken, User user) {
+    public static AuthResponse from(String token, User user, List<Long> allowedProjectIds) {
+        return from(token, user, allowedProjectIds, List.of());
+    }
+
+    public static AuthResponse from(String token, User user, List<Long> allowedProjectIds, List<String> allowedDepts) {
         return AuthResponse.builder()
                 .token(token)
-                .refreshToken(refreshToken)
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .role(user.getRole())
+                .deptCode(user.getDepartmentCode())
+                .dept(user.getDepartmentName())
+                .allowedProjectIds(allowedProjectIds == null ? List.of() : allowedProjectIds)
+                .allowedDepts(allowedDepts == null ? List.of() : allowedDepts)
                 .build();
     }
 }

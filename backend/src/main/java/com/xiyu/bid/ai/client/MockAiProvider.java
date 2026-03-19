@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Mock AI Provider
@@ -53,49 +52,45 @@ public class MockAiProvider implements AiProvider {
     );
 
     @Override
-    public CompletableFuture<AiAnalysisResponse> analyzeTender(String content, Map<String, Object> context) {
-        return CompletableFuture.supplyAsync(() -> {
-            log.debug("Mock AI analyzing tender content length: {}", content != null ? content.length() : 0);
+    public AiAnalysisResponse analyzeTender(String content, Map<String, Object> context) {
+        log.debug("Mock AI analyzing tender content length: {}", content != null ? content.length() : 0);
 
-            // Simulate AI processing delay
-            simulateProcessingDelay();
+        // Simulate AI processing delay
+        simulateProcessingDelay();
 
-            // Generate score based on content and context
-            int score = calculateScore(content, context);
-            Tender.RiskLevel riskLevel = calculateRiskLevel(score);
+        // Generate score based on content and context
+        int score = calculateScore(content, context);
+        Tender.RiskLevel riskLevel = calculateRiskLevel(score);
 
-            return AiAnalysisResponse.builder()
-                    .score(score)
-                    .riskLevel(riskLevel)
-                    .strengths(selectRandomStrengths(score))
-                    .weaknesses(selectRandomWeaknesses(score))
-                    .recommendations(selectRandomRecommendations(score))
-                    .dimensionScores(generateDimensionScores(score))
-                    .build();
-        });
+        return AiAnalysisResponse.builder()
+                .score(score)
+                .riskLevel(riskLevel)
+                .strengths(selectRandomStrengths(score))
+                .weaknesses(selectRandomWeaknesses(score))
+                .recommendations(selectRandomRecommendations(score))
+                .dimensionScores(generateDimensionScores(score))
+                .build();
     }
 
     @Override
-    public CompletableFuture<AiAnalysisResponse> analyzeProject(Long projectId, Map<String, Object> context) {
-        return CompletableFuture.supplyAsync(() -> {
-            log.debug("Mock AI analyzing project id: {}", projectId);
+    public AiAnalysisResponse analyzeProject(Long projectId, Map<String, Object> context) {
+        log.debug("Mock AI analyzing project id: {}", projectId);
 
-            // Simulate AI processing delay
-            simulateProcessingDelay();
+        // Simulate AI processing delay
+        simulateProcessingDelay();
 
-            // Generate score based on project context
-            int score = calculateProjectScore(projectId, context);
-            Tender.RiskLevel riskLevel = calculateRiskLevel(score);
+        // Generate score based on project context
+        int score = calculateProjectScore(projectId, context);
+        Tender.RiskLevel riskLevel = calculateRiskLevel(score);
 
-            return AiAnalysisResponse.builder()
-                    .score(score)
-                    .riskLevel(riskLevel)
-                    .strengths(selectRandomStrengths(score))
-                    .weaknesses(selectRandomWeaknesses(score))
-                    .recommendations(selectRandomRecommendations(score))
-                    .dimensionScores(generateProjectDimensionScores(score))
-                    .build();
-        });
+        return AiAnalysisResponse.builder()
+                .score(score)
+                .riskLevel(riskLevel)
+                .strengths(selectRandomStrengths(score))
+                .weaknesses(selectRandomWeaknesses(score))
+                .recommendations(selectRandomRecommendations(score))
+                .dimensionScores(generateProjectDimensionScores(score))
+                .build();
     }
 
     /**

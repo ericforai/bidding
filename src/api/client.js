@@ -1,82 +1,55 @@
 /**
  * HTTP 客户端封装
- * 基于 axios 实现，支持拦截器、错误处理、Token 管理
+ * 基于 axios 实现，支持拦截器、自动刷新和会话状态同步
  */
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { API_CONFIG } from './config'
+import {
+  bootstrapLegacyAccessToken,
+  clearSessionState,
+  getAccessToken
+} from './session.js'
 
-const getStoredToken = () => localStorage.getItem('token') || sessionStorage.getItem('token')
-const getStoredRefreshToken = () => localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken')
+let refreshPromise = null
 
-const getHeaderValue = (headers, headerName) => {
-  if (!headers) {
-    return null
+const syncRefreshedSession = async (refreshResult) => {
+  if (!refreshResult?.success || !refreshResult?.data?.user) {
+    return
   }
 
-  const target = String(headerName).toLowerCase()
-  const matchedKey = Object.keys(headers).find((key) => key.toLowerCase() === target)
-  return matchedKey ? headers[matchedKey] : null
-}
-
-const getPreferredStorage = () => {
-  if (
-    sessionStorage.getItem('token') ||
-    sessionStorage.getItem('refreshToken') ||
-    sessionStorage.getItem('user')
-  ) {
-    return sessionStorage
-  }
-  if (
-    localStorage.getItem('token') ||
-    localStorage.getItem('refreshToken') ||
-    localStorage.getItem('user')
-  ) {
-    return localStorage
-  }
-  return sessionStorage
-}
-
-const syncStoredTokens = ({ token, refreshToken }) => {
-  const storage = getPreferredStorage()
-  const otherStorage = storage === localStorage ? sessionStorage : localStorage
-
-  if (token) {
-    storage.setItem('token', token)
-  }
-  if (refreshToken) {
-    storage.setItem('refreshToken', refreshToken)
-  }
-
-  if (token) {
-    otherStorage.removeItem('token')
-  }
-  if (refreshToken) {
-    otherStorage.removeItem('refreshToken')
+  try {
+    const { useUserStore } = await import('@/stores/user')
+    const userStore = useUserStore()
+    userStore.applyAuthSession(refreshResult.data)
+  } catch (syncError) {
+    console.warn('Failed to sync refreshed auth session:', syncError)
   }
 }
 
-const clearStoredSession = () => {
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
-  localStorage.removeItem('refreshToken')
-  sessionStorage.removeItem('token')
-  sessionStorage.removeItem('user')
-  sessionStorage.removeItem('refreshToken')
+const shouldSkipRefresh = (config = {}) => {
+  const url = String(config.url || '')
+  return Boolean(
+    config.skipAuthRefresh ||
+    url.includes('/api/auth/login') ||
+    url.includes('/api/auth/refresh') ||
+    url.includes('/api/auth/logout')
+  )
 }
 
 // 创建 axios 实例
 const httpClient = axios.create({
   baseURL: API_CONFIG.baseURL,
   timeout: API_CONFIG.timeout,
-  headers: API_CONFIG.headers
+  headers: API_CONFIG.headers,
+  withCredentials: true
 })
 
 // 请求拦截器
 httpClient.interceptors.request.use(
   (config) => {
     // 添加 Token
-    const token = getStoredToken()
+    const token = getAccessToken() || bootstrapLegacyAccessToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -91,60 +64,35 @@ httpClient.interceptors.request.use(
 httpClient.interceptors.response.use(
   (response) => {
     // 后端返回的统一格式: { success: true, data: ..., message: ... }
-    return {
-      ...response.data,
-      _headers: response.headers
-    }
+    return response.data
   },
   async (error) => {
-    const { response } = error
-    const originalRequest = error.config || {}
+    const { response, config } = error
 
-    const shouldAttemptRefresh =
-      response?.status === 401 &&
-      !originalRequest._retry &&
-      !String(originalRequest.url || '').includes('/api/auth/login') &&
-      !String(originalRequest.url || '').includes('/api/auth/refresh') &&
-      !String(originalRequest.url || '').includes('/api/auth/logout') &&
-      Boolean(getStoredRefreshToken())
-
-    if (shouldAttemptRefresh) {
-      originalRequest._retry = true
+    if (response?.status === 401 && config && !config._retry && !shouldSkipRefresh(config)) {
+      config._retry = true
 
       try {
-        const refreshResponse = await axios.post(
-          `${API_CONFIG.baseURL}/api/auth/refresh`,
-          { refreshToken: getStoredRefreshToken() },
-          {
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            timeout: API_CONFIG.timeout
-          }
-        )
-
-        const refreshedToken = refreshResponse?.data?.data?.token
-        const rotatedRefreshToken =
-          refreshResponse?.data?.data?.refreshToken ||
-          getHeaderValue(refreshResponse?.headers, 'x-refresh-token')
-        if (!refreshedToken) {
-          throw new Error('Missing refreshed access token')
+        if (!refreshPromise) {
+          refreshPromise = import('./modules/auth.js')
+            .then(({ authApi }) => authApi.refreshToken())
+            .finally(() => {
+              refreshPromise = null
+            })
         }
 
-        syncStoredTokens({
-          token: refreshedToken,
-          refreshToken: rotatedRefreshToken || getStoredRefreshToken()
-        })
+        const refreshResult = await refreshPromise
+        await syncRefreshedSession(refreshResult)
+        const token = refreshResult?.data?.token || getAccessToken()
 
-        originalRequest.headers = originalRequest.headers || {}
-        originalRequest.headers.Authorization = `Bearer ${refreshedToken}`
-        return httpClient(originalRequest)
+        if (token) {
+          config.headers = config.headers || {}
+          config.headers.Authorization = `Bearer ${token}`
+        }
+
+        return httpClient(config)
       } catch (refreshError) {
-        clearStoredSession()
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login'
-        }
-        return Promise.reject(refreshError)
+        // Refresh 失败时继续走统一的未认证清理逻辑
       }
     }
 
@@ -152,11 +100,12 @@ httpClient.interceptors.response.use(
       // 服务器返回错误状态码
       switch (response.status) {
         case 401:
-          ElMessage.error('登录已过期，请重新登录')
-          // 清除 token 并跳转登录
-          clearStoredSession()
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login'
+          if (!shouldSkipRefresh(config)) {
+            ElMessage.error('登录已过期，请重新登录')
+            clearSessionState()
+            if (window.location.pathname !== '/login') {
+              window.location.href = '/login'
+            }
           }
           break
         case 403:

@@ -1263,6 +1263,7 @@ import AutoTasks from '@/components/ai/AutoTasks.vue'
 import MobileCard from '@/components/ai/MobileCard.vue'
 import ApprovalDialog from '@/components/common/ApprovalDialog.vue'
 import ScoreDraftDialog from '@/components/project/ScoreDraftDialog.vue'
+import { getAccessToken } from '@/api/session.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -1317,8 +1318,9 @@ const showMobileCard = ref(false)
 // 结果录入表单
 const noticeFileList = ref([])
 const uploadAction = ref(isDemoMode ? '/api/upload' : '')
-const uploadHeaders = ref({
-  Authorization: `Bearer ${localStorage.getItem('token') || ''}`
+const uploadHeaders = computed(() => {
+  const token = getAccessToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
 })
 
 const resultForm = ref({
