@@ -78,10 +78,10 @@
             <span class="section-title">待处理的自动化提醒</span>
             <div class="filter-group">
               <el-radio-group v-model="urgencyFilter" size="small">
-                <el-radio-button label="all">全部</el-radio-button>
-                <el-radio-button label="high">紧急</el-radio-button>
-                <el-radio-button label="medium">一般</el-radio-button>
-                <el-radio-button label="low">低</el-radio-button>
+                <el-radio-button value="all">全部</el-radio-button>
+                <el-radio-button value="high">紧急</el-radio-button>
+                <el-radio-button value="medium">一般</el-radio-button>
+                <el-radio-button value="low">低</el-radio-button>
               </el-radio-group>
             </div>
           </div>

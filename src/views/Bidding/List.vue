@@ -115,7 +115,7 @@
           AI推荐
           <el-tag size="small" type="success" class="match-tag">高匹配</el-tag>
         </div>
-        <el-link type="primary" :underline="false" @click="handleViewAllRecommend">
+        <el-link type="primary" underline="hover" @click="handleViewAllRecommend">
           查看全部
           <el-icon><ArrowRight /></el-icon>
         </el-link>

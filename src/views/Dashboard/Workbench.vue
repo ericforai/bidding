@@ -182,7 +182,7 @@
                     <div class="calendar-panel-eyebrow">未来 7 天</div>
                     <h4 class="calendar-panel-title">关键执行清单</h4>
                   </div>
-                  <el-link type="primary" :underline="false" @click="activeCalendarFilter = 'all'">清除筛选</el-link>
+                  <el-link type="primary" underline="hover" @click="activeCalendarFilter = 'all'">清除筛选</el-link>
                 </div>
                 <div class="upcoming-events-list">
                   <div
@@ -271,7 +271,7 @@
                 </svg>
                 重点标讯
               </h3>
-              <el-link type="primary" :underline="false" @click="router.push('/bidding')">
+              <el-link type="primary" underline="hover" @click="router.push('/bidding')">
                 查看全部
                 <el-icon class="el-icon--right"><ArrowRight /></el-icon>
               </el-link>
@@ -342,7 +342,7 @@
                 </svg>
                 我的项目
               </h3>
-              <el-link type="primary" :underline="false" @click="router.push('/project')">
+              <el-link type="primary" underline="hover" @click="router.push('/project')">
                 查看全部
                 <el-icon class="el-icon--right"><ArrowRight /></el-icon>
               </el-link>
@@ -514,7 +514,7 @@
               </svg>
               重点项目
             </h3>
-            <el-link type="primary" :underline="false" @click="router.push('/project')">
+            <el-link type="primary" underline="hover" @click="router.push('/project')">
               查看全部
               <el-icon class="el-icon--right"><ArrowRight /></el-icon>
             </el-link>
@@ -575,7 +575,7 @@
               </svg>
               进行中项目
             </h3>
-            <el-link type="primary" :underline="false" @click="router.push('/project')">
+            <el-link type="primary" underline="hover" @click="router.push('/project')">
               查看全部
               <el-icon class="el-icon--right"><ArrowRight /></el-icon>
             </el-link>
@@ -815,7 +815,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, markRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useBiddingStore } from '@/stores/bidding'
@@ -827,6 +827,13 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import ApprovalDialog from '@/components/common/ApprovalDialog.vue'
+
+// Wrap icon components with markRaw to prevent Vue from making them reactive
+// This improves performance by avoiding unnecessary reactivity overhead
+const Icons = markRaw({
+  Plus, DataAnalysis, ArrowRight, Calendar, User, Clock, Check,
+  Document, Briefcase, TrendCharts, Flag, FolderOpened, Wallet
+})
 
 const router = useRouter()
 const userStore = useUserStore()

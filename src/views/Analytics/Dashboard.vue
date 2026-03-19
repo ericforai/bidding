@@ -51,9 +51,9 @@
         <div class="chart-header">
           <h3 class="chart-title">中标率趋势</h3>
           <el-radio-group v-model="trendPeriod" size="small" @change="updateTrendChart">
-            <el-radio-button label="month">月度</el-radio-button>
-            <el-radio-button label="quarter">季度</el-radio-button>
-            <el-radio-button label="year">年度</el-radio-button>
+            <el-radio-button value="month">月度</el-radio-button>
+            <el-radio-button value="quarter">季度</el-radio-button>
+            <el-radio-button value="year">年度</el-radio-button>
           </el-radio-group>
         </div>
         <LineChart :option="trendChartOption" height="300px" @chart-click="handleTrendClick" />
@@ -76,9 +76,9 @@
         <div class="chart-header">
           <h3 class="chart-title">投入产出分析（按产品线）</h3>
           <el-radio-group v-model="productMetric" size="small" @change="updateProductChart">
-            <el-radio-button label="revenue">收入</el-radio-button>
-            <el-radio-button label="rate">中标率</el-radio-button>
-            <el-radio-button label="roi">ROI</el-radio-button>
+            <el-radio-button value="revenue">收入</el-radio-button>
+            <el-radio-button value="rate">中标率</el-radio-button>
+            <el-radio-button value="roi">ROI</el-radio-button>
           </el-radio-group>
         </div>
         <FeaturePlaceholder
@@ -98,9 +98,9 @@
         <div class="chart-header">
           <h3 class="chart-title">区域分布</h3>
           <el-radio-group v-model="regionView" size="small" @change="updateRegionChart">
-            <el-radio-button label="amount">金额</el-radio-button>
-            <el-radio-button label="bids">投标数</el-radio-button>
-            <el-radio-button label="rate">中标率</el-radio-button>
+            <el-radio-button value="amount">金额</el-radio-button>
+            <el-radio-button value="bids">投标数</el-radio-button>
+            <el-radio-button value="rate">中标率</el-radio-button>
           </el-radio-group>
         </div>
         <BarChart :option="regionChartOption" height="280px" @chart-click="handleRegionClick" />
