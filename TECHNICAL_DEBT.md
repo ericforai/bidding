@@ -8,14 +8,31 @@
 
 ## P2 - 交付前处理
 
-### 1. api/client.js - 使用 router.push 替代 window.location.href
+### ✅ 1. api/client.js - 使用 router.push 替代 window.location.href
 
 **文件**: `src/api/client.js:106-107`
 
-**当前代码**:
+**完成日期**: 2026-03-19
+
+**修复前**:
 ```javascript
 if (window.location.pathname !== '/login') {
   window.location.href = '/login'
+}
+```
+
+**修复后**:
+```javascript
+import router from '@/router/index.js'
+
+// Use Vue Router for navigation to ensure guards are triggered
+if (router.currentRoute.value.path !== '/login') {
+  router.push('/login').catch((navError) => {
+  // Ignore navigation aborted errors (e.g., user navigated away)
+    if (navError.name !== 'NavigationDuplicated') {
+      console.error('Navigation to login failed:', navError)
+    }
+  })
 }
 ```
 
@@ -23,18 +40,17 @@ if (window.location.pathname !== '/login') {
 
 **影响**: POC 阶段影响较小，但正式环境可能导致路由状态残留
 
-**建议修复**:
-```javascript
-import router from '@/router'
+**解决方案**: 使用 `router.push()` 进行导航，确保路由守卫被正确触发
 
-if (window.location.pathname !== '/login') {
-  router.push('/login')
-}
-```
+**测试**: 添加 E2E 测试 `e2e/router-navigation-redirect.spec.js` 验证：
+- 登录跳转使用 Vue Router
+- 路由守卫正常工作
+- 无控制台错误
+- 无重定向循环
 
 **预计工时**: 15 分钟
 
-**优先级**: P2 - 接入真实后端时处理
+**优先级**: P2 - 已修复
 
 ---
 

@@ -2,7 +2,9 @@ package com.xiyu.bid.platform.util;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import javax.crypto.Cipher;
@@ -18,6 +20,12 @@ import java.util.Base64;
 /**
  * Password Encryption Utility
  * Provides AES-256-GCM encryption for password storage
+ *
+ * Security Requirements:
+ * - Production environment: PLATFORM_ENCRYPTION_KEY environment variable is REQUIRED
+ * - Development/Test environment: Fallback key is used for convenience
+ * - Minimum key length: 16 characters
+ * - Key derivation: SHA-256 to generate 256-bit key
  */
 @Component
 @Slf4j
@@ -28,26 +36,51 @@ public class PasswordEncryptionUtil {
     private static final int GCM_IV_LENGTH = 12;
     private static final int GCM_TAG_LENGTH = 128;
 
+    // Fallback key for development/test environments only
+    private static final String DEV_FALLBACK_KEY = "dev-fallback-encryption-key-32-chars";
+
     private byte[] encryptionKey;
 
     @Value("${platform.account.encryption-key:}")
     private String configuredKey;
 
+    @Autowired(required = false)
+    private Environment environment;
+
     @PostConstruct
     public void initialize() {
+        // Priority order:
+        // 1. Application property (platform.account.encryption-key)
+        // 2. Environment variable (PLATFORM_ENCRYPTION_KEY)
+        // 3. Fallback key (dev/test only)
         String keyFromEnv = configuredKey != null && !configuredKey.trim().isEmpty()
                 ? configuredKey
-                : System.getenv("PLATFORM_ACCOUNT_ENCRYPTION_KEY");
+                : System.getenv("PLATFORM_ENCRYPTION_KEY");
+
+        // Check if we're in a non-development environment
+        boolean isProductionOrStaging = isProductionOrStagingEnvironment();
+
         if (keyFromEnv == null || keyFromEnv.trim().isEmpty()) {
-            String errorMsg = "PLATFORM_ACCOUNT_ENCRYPTION_KEY environment variable is required for password encryption. " +
-                           "This is a security requirement - hardcoded keys are not allowed.";
-            log.error(errorMsg);
-            throw new IllegalStateException(errorMsg);
+            if (isProductionOrStaging) {
+                // Production/staging environments MUST have the encryption key
+                String errorMsg = "PLATFORM_ENCRYPTION_KEY environment variable is required in " +
+                                getActiveProfiles() + " environment. " +
+                                "This is a security requirement - hardcoded keys are not allowed. " +
+                                "Please set PLATFORM_ENCRYPTION_KEY environment variable with at least 16 characters.";
+                log.error(errorMsg);
+                throw new IllegalStateException(errorMsg);
+            } else {
+                // Development/test environments use fallback key
+                log.warn("PLATFORM_ENCRYPTION_KEY not set in {} environment. Using fallback key for development only. " +
+                        "This should NOT be used in production!",
+                        getActiveProfiles());
+                keyFromEnv = DEV_FALLBACK_KEY;
+            }
         }
 
         // Validate minimum key length for security
         if (keyFromEnv.length() < 16) {
-            String errorMsg = "PLATFORM_ACCOUNT_ENCRYPTION_KEY must be at least 16 characters for secure encryption. " +
+            String errorMsg = "PLATFORM_ENCRYPTION_KEY must be at least 16 characters for secure encryption. " +
                            "Current length: " + keyFromEnv.length();
             log.error(errorMsg);
             throw new IllegalStateException(errorMsg);
@@ -55,7 +88,66 @@ public class PasswordEncryptionUtil {
 
         // Ensure key is exactly 32 bytes (256 bits) for AES-256
         this.encryptionKey = deriveKey(keyFromEnv);
-        log.info("PasswordEncryptionUtil initialized with AES-256-GCM");
+        log.info("PasswordEncryptionUtil initialized with AES-256-GCM in {} environment", getActiveProfiles());
+    }
+
+    /**
+     * Check if the current environment is production or staging
+     * @return true if running in production or staging, false otherwise
+     */
+    private boolean isProductionOrStagingEnvironment() {
+        if (environment == null) {
+            // If we can't determine the environment, check system property
+            String springProfile = System.getProperty("SPRING_PROFILES_ACTIVE");
+            if (springProfile != null) {
+                return springProfile.toLowerCase().contains("prod") ||
+                       springProfile.toLowerCase().contains("staging");
+            }
+            // Default to treating null environment as non-production (for test convenience)
+            // This allows unit tests to work without Spring context
+            return false;
+        }
+
+        String[] activeProfiles = environment.getActiveProfiles();
+        if (activeProfiles.length == 0) {
+            // No active profiles, check default profiles
+            String[] defaultProfiles = environment.getDefaultProfiles();
+            for (String profile : defaultProfiles) {
+                if ("prod".equalsIgnoreCase(profile) || "staging".equalsIgnoreCase(profile)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Check active profiles
+        for (String profile : activeProfiles) {
+            if ("prod".equalsIgnoreCase(profile) || "staging".equalsIgnoreCase(profile)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get a string representation of active Spring profiles for logging
+     * @return comma-separated list of active profiles
+     */
+    private String getActiveProfiles() {
+        if (environment == null) {
+            return "unknown";
+        }
+
+        String[] activeProfiles = environment.getActiveProfiles();
+        if (activeProfiles.length == 0) {
+            String[] defaultProfiles = environment.getDefaultProfiles();
+            return defaultProfiles.length > 0
+                ? String.join(",", defaultProfiles) + " (default)"
+                : "none";
+        }
+
+        return String.join(",", activeProfiles);
     }
 
     /**

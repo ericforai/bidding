@@ -10,6 +10,7 @@ import {
   clearSessionState,
   getAccessToken
 } from './session.js'
+import router from '@/router/index.js'
 
 let refreshPromise = null
 
@@ -103,8 +104,14 @@ httpClient.interceptors.response.use(
           if (!shouldSkipRefresh(config)) {
             ElMessage.error('登录已过期，请重新登录')
             clearSessionState()
-            if (window.location.pathname !== '/login') {
-              window.location.href = '/login'
+            // Use Vue Router for navigation to ensure guards are triggered
+            if (router.currentRoute.value.path !== '/login') {
+              router.push('/login').catch((navError) => {
+              // Ignore navigation aborted errors (e.g., user navigated away)
+                if (navError.name !== 'NavigationDuplicated') {
+                  console.error('Navigation to login failed:', navError)
+                }
+              })
             }
           }
           break
