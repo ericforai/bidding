@@ -1,0 +1,3 @@
+-- Ensure audit_logs table has proper field types
+-- This is a no-op migration for documentation purposes
+-- The audit_logs table already exists with correct schema

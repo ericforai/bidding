@@ -5,18 +5,22 @@
 package com.xiyu.bid.batch.service;
 
 import com.xiyu.bid.annotation.Auditable;
+import com.xiyu.bid.batch.dto.BatchApproveFeesRequest;
 import com.xiyu.bid.batch.dto.BatchAssignRequest;
 import com.xiyu.bid.batch.dto.BatchDeleteRequest;
 import com.xiyu.bid.batch.dto.BatchOperationResponse;
+import com.xiyu.bid.batch.dto.BatchProjectUpdateRequest;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.entity.User;
+import com.xiyu.bid.fees.entity.Fee;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TaskRepository;
 import com.xiyu.bid.repository.TenderRepository;
 import com.xiyu.bid.service.AuditLogService;
 import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.util.InputSanitizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -46,6 +50,7 @@ public class BatchOperationService {
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
     private final IAuditLogService auditLogService;
+    private final com.xiyu.bid.fees.repository.FeeRepository feeRepository;
 
     private static final int MAX_BATCH_SIZE = 100;
 
@@ -339,10 +344,169 @@ public class BatchOperationService {
     }
 
     /**
+     * Batch update projects operation.
+     * Allows updating status and/or manager for multiple projects.
+     * Requires UPDATE_PROJECT permission.
+     *
+     * @param request the batch update request containing project IDs and fields to update
+     * @param userId the ID of the user performing the update
+     * @param userRole the role of the user performing the update
+     * @return batch operation response with success/failure counts
+     */
+    @Auditable(action = "BATCH_UPDATE", entityType = "PROJECT", description = "Batch update projects")
+    @Transactional(
+        rollbackFor = Exception.class,
+        isolation = Isolation.READ_COMMITTED
+    )
+    @PreAuthorize("hasAuthority('UPDATE_PROJECT')")
+    public BatchOperationResponse batchUpdateProjects(BatchProjectUpdateRequest request, Long userId, User.Role userRole) {
+        if (request == null) {
+            throw new IllegalArgumentException("Batch update request cannot be null");
+        }
+        if (!request.hasUpdates()) {
+            throw new IllegalArgumentException("At least one field (status or managerId) must be specified for update");
+        }
+
+        validateBatchInput(request.getProjectIds(), "Project IDs");
+        validateUserId(userId);
+        validateUserRole(userRole);
+        log.info("Batch updating projects: count={}, userId={}, status={}, managerId={}",
+                request.getProjectIds().size(), userId, request.getStatus(), request.getManagerId());
+
+        BatchOperationResponse response = BatchOperationResponse.builder()
+                .operationType("UPDATE")
+                .operationTime(LocalDateTime.now())
+                .build();
+        response.setTotalCount(request.getProjectIds().size());
+
+        List<Project> projectsToUpdate = new ArrayList<>();
+        for (Long projectId : request.getProjectIds()) {
+            try {
+                Optional<Project> projectOpt = projectRepository.findById(projectId);
+                if (projectOpt.isEmpty()) {
+                    response.addError(projectId, "Project not found with ID: " + projectId, "NOT_FOUND");
+                    continue;
+                }
+                Project project = projectOpt.get();
+
+                // Check permission: only admin or project manager can update
+                if (!hasUpdatePermission(project, userId, userRole)) {
+                    response.addError(projectId, "Permission denied: you must be the project manager or admin", "PERMISSION_DENIED");
+                    continue;
+                }
+
+                // Update status if provided
+                if (request.getStatus() != null) {
+                    project.setStatus(request.getStatus());
+                }
+
+                // Update manager if provided
+                if (request.getManagerId() != null) {
+                    project.setManagerId(request.getManagerId());
+                }
+
+                projectsToUpdate.add(project);
+                response.addSuccess(projectId);
+
+            } catch (Exception e) {
+                response.addError(projectId, "Failed to update project: " + e.getMessage(), "UPDATE_ERROR");
+            }
+        }
+
+        if (!projectsToUpdate.isEmpty()) {
+            projectRepository.saveAll(projectsToUpdate);
+        }
+
+        recordBatchOperationLog(response, "PROJECT", "UPDATE", userId);
+        response.setSuccess(response.getFailureCount() == 0);
+        return response;
+    }
+
+    /**
+     * Batch approve (mark as paid) fees operation.
+     * Allows marking multiple fee records as paid at once.
+     * Requires PAY_FEE permission.
+     *
+     * @param request the batch approve fees request
+     * @param userId the ID of the user performing the approval
+     * @return batch operation response with success/failure counts
+     */
+    @Auditable(action = "BATCH_PAY", entityType = "FEE", description = "Batch mark fees as paid")
+    @Transactional(
+        rollbackFor = Exception.class,
+        isolation = Isolation.READ_COMMITTED
+    )
+    @PreAuthorize("hasAuthority('PAY_FEE')")
+    public BatchOperationResponse batchApproveFees(BatchApproveFeesRequest request, Long userId) {
+        if (request == null) {
+            throw new IllegalArgumentException("Batch approve fees request cannot be null");
+        }
+
+        validateBatchInput(request.getFeeIds(), "Fee IDs");
+        validateUserId(userId);
+        log.info("Batch approving fees: count={}, userId={}, paidBy={}",
+                request.getFeeIds().size(), userId, request.getPaidBy());
+
+        BatchOperationResponse response = BatchOperationResponse.builder()
+                .operationType("PAY")
+                .operationTime(LocalDateTime.now())
+                .build();
+        response.setTotalCount(request.getFeeIds().size());
+
+        String paidBy = request.getPaidBy() != null ? request.getPaidBy() : "System (Batch " + userId + ")";
+
+        List<Fee> feesToUpdate = new ArrayList<>();
+        for (Long feeId : request.getFeeIds()) {
+            try {
+                Optional<Fee> feeOpt = feeRepository.findById(feeId);
+                if (feeOpt.isEmpty()) {
+                    response.addError(feeId, "Fee not found with ID: " + feeId, "NOT_FOUND");
+                    continue;
+                }
+                Fee fee = feeOpt.get();
+
+                // Only pending fees can be marked as paid
+                if (fee.getStatus() != Fee.Status.PENDING) {
+                    response.addError(feeId, "Only pending fees can be marked as paid. Current status: " + fee.getStatus(),
+                            "INVALID_STATUS");
+                    continue;
+                }
+
+                // Mark as paid
+                fee.setStatus(Fee.Status.PAID);
+                fee.setPaymentDate(LocalDateTime.now());
+                fee.setPaidBy(InputSanitizer.stripHtml(InputSanitizer.sanitizeString(paidBy, 200)));
+
+                feesToUpdate.add(fee);
+                response.addSuccess(feeId);
+
+            } catch (Exception e) {
+                response.addError(feeId, "Failed to approve fee: " + e.getMessage(), "PAY_ERROR");
+            }
+        }
+
+        if (!feesToUpdate.isEmpty()) {
+            feeRepository.saveAll(feesToUpdate);
+        }
+
+        recordBatchOperationLog(response, "FEE", "PAY", userId);
+        response.setSuccess(response.getFailureCount() == 0);
+        return response;
+    }
+
+    /**
      * Check if user has delete permission for the project.
      * User must be the project manager or admin.
      */
     private boolean hasDeletePermission(Project project, Long userId, User.Role userRole) {
+        return userRole == User.Role.ADMIN || project.getManagerId().equals(userId);
+    }
+
+    /**
+     * Check if user has update permission for the project.
+     * User must be the project manager or admin.
+     */
+    private boolean hasUpdatePermission(Project project, Long userId, User.Role userRole) {
         return userRole == User.Role.ADMIN || project.getManagerId().equals(userId);
     }
 

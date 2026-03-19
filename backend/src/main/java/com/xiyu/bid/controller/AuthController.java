@@ -7,9 +7,17 @@ package com.xiyu.bid.controller;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.dto.AuthResponse;
 import com.xiyu.bid.dto.AuthSessionResult;
+import com.xiyu.bid.dto.EmailVerificationResponse;
+import com.xiyu.bid.dto.ForgotPasswordRequest;
 import com.xiyu.bid.dto.LoginRequest;
+import com.xiyu.bid.dto.PasswordResetResponse;
 import com.xiyu.bid.dto.RegisterRequest;
+import com.xiyu.bid.dto.ResetPasswordRequest;
+import com.xiyu.bid.dto.SessionDTO;
 import com.xiyu.bid.service.AuthService;
+import com.xiyu.bid.service.EmailVerificationService;
+import com.xiyu.bid.service.PasswordResetService;
+import com.xiyu.bid.service.SessionService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import com.xiyu.bid.util.InputSanitizer;
@@ -34,6 +42,9 @@ import java.time.Duration;
 public class AuthController {
 
     private final AuthService authService;
+    private final PasswordResetService passwordResetService;
+    private final SessionService sessionService;
+    private final EmailVerificationService emailVerificationService;
 
     @Value("${app.auth.refresh-cookie-name:refresh_token}")
     private String refreshCookieName;
@@ -90,6 +101,98 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, buildRefreshCookie(sessionResult.getRefreshToken(), true).toString())
                 .body(ApiResponse.success("Token refreshed successfully", sessionResult.getAuthResponse()));
+    }
+
+    /**
+     * 忘记密码 - 发送密码重置邮件
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<PasswordResetResponse>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request
+    ) {
+        // 清理邮箱输入
+        String sanitizedEmail = InputSanitizer.sanitizeString(request.email(), 100);
+        String result = passwordResetService.createPasswordResetToken(sanitizedEmail);
+
+        // 开发环境返回令牌，生产环境只返回成功消息
+        PasswordResetResponse response = new PasswordResetResponse(
+                "If an account exists with this email, a password reset link has been sent",
+                result // 仅开发环境使用
+        );
+        return ResponseEntity.ok(ApiResponse.success("Password reset initiated", response));
+    }
+
+    /**
+     * 重置密码 - 使用令牌设置新密码
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request
+    ) {
+        passwordResetService.resetPassword(request.token(), request.newPassword());
+        return ResponseEntity.ok(ApiResponse.success("Password has been reset successfully", null));
+    }
+
+    /**
+     * Get all active sessions for the current user
+     */
+    @GetMapping("/sessions")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<java.util.List<SessionDTO>>> getSessions(Authentication authentication) {
+        com.xiyu.bid.entity.User user = authService.getUserRepository().findByUsername(authentication.getName())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        java.util.List<SessionDTO> sessions = sessionService.getUserSessions(user.getId());
+        return ResponseEntity.ok(ApiResponse.success("Sessions retrieved", sessions));
+    }
+
+    /**
+     * Revoke a specific session
+     */
+    @DeleteMapping("/sessions/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<Void>> revokeSession(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        com.xiyu.bid.entity.User user = authService.getUserRepository().findByUsername(authentication.getName())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        sessionService.revokeSession(id, user.getId());
+        return ResponseEntity.ok(ApiResponse.success("Session revoked", null));
+    }
+
+    /**
+     * Revoke all sessions except the current one
+     */
+    @DeleteMapping("/sessions")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<Void>> revokeAllSessions(Authentication authentication, HttpServletRequest request) {
+        com.xiyu.bid.entity.User user = authService.getUserRepository().findByUsername(authentication.getName())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        sessionService.revokeAllSessions(user.getId(), extractRefreshToken(request));
+        return ResponseEntity.ok(ApiResponse.success("All sessions revoked", null));
+    }
+
+    /**
+     * Request email verification
+     */
+    @PostMapping("/verify-email")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<EmailVerificationResponse>> requestEmailVerification(Authentication authentication) {
+        com.xiyu.bid.entity.User user = authService.getUserRepository().findByUsername(authentication.getName())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        String result = emailVerificationService.createVerificationToken(user.getId());
+        return ResponseEntity.ok(ApiResponse.success("Verification email sent", new EmailVerificationResponse(result)));
+    }
+
+    /**
+     * Verify email using token
+     */
+    @GetMapping("/verify-email/{token}")
+    public ResponseEntity<ApiResponse<Void>> verifyEmail(@PathVariable String token) {
+        // Sanitize token input
+        String sanitizedToken = InputSanitizer.sanitizeString(token, 128);
+        emailVerificationService.verifyEmail(sanitizedToken);
+        return ResponseEntity.ok(ApiResponse.success("Email verified successfully", null));
     }
 
     /**

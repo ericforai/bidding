@@ -188,6 +188,13 @@ public class AuthService {
         return hashToken(token);
     }
 
+    /**
+     * Get the UserRepository for access by controllers
+     */
+    public UserRepository getUserRepository() {
+        return userRepository;
+    }
+
     private String createRefreshSession(User user) {
         String refreshToken = generateRefreshToken();
         RefreshSession session = RefreshSession.builder()

@@ -20,7 +20,10 @@ export const useBiddingStore = defineStore('bidding', {
     biddingTenders: (state) => state.tenders.filter(t => t.status === 'bidding'),
     highPriorityTenders: (state) => state.tenders.filter(t => t.aiScore >= 85),
     urgentTodos: (state) => state.todos.filter(t => t.priority === 'high'),
-    todayEvents: (state) => state.calendar.filter(c => c.date === '2025-02-26')
+    todayEvents: (state) => {
+      const today = new Date().toISOString().split('T')[0]
+      return state.calendar.filter(c => c.date === today)
+    }
   },
 
   actions: {

@@ -4,10 +4,7 @@
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.batch.controller;
 
-import com.xiyu.bid.batch.dto.BatchAssignRequest;
-import com.xiyu.bid.batch.dto.BatchClaimRequest;
-import com.xiyu.bid.batch.dto.BatchDeleteRequest;
-import com.xiyu.bid.batch.dto.BatchOperationResponse;
+import com.xiyu.bid.batch.dto.*;
 import com.xiyu.bid.batch.service.BatchOperationService;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.entity.User;
@@ -169,6 +166,79 @@ public class BatchOperationController {
         return ResponseEntity.ok(ApiResponse.success("Batch operation history (placeholder)", List.of()));
     }
 
+    /**
+     * Batch update projects endpoint.
+     * Allows updating status and/or manager for multiple projects.
+     */
+    @PatchMapping("/projects")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<BatchOperationResponse>> batchUpdateProjects(
+            @Valid @RequestBody BatchProjectUpdateRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        User currentUser = getCurrentUser(userDetails);
+        log.info("PATCH /api/batch/projects - Updating {} projects by user: {}",
+                request.getProjectIds().size(), currentUser.getId());
+
+        if (request.getProjectIds() == null || request.getProjectIds().isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Project IDs list cannot be empty"));
+        }
+
+        if (!request.hasUpdates()) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "At least one field (status or managerId) must be specified for update"));
+        }
+
+        BatchProjectUpdateRequest sanitizedRequest = sanitizeRequestRemark(request);
+        BatchOperationResponse response = batchOperationService.batchUpdateProjects(
+                sanitizedRequest, currentUser.getId(), currentUser.getRole());
+
+        String message = buildSuccessMessage("updated", "project", response.getSuccessCount());
+        return ResponseEntity.ok(ApiResponse.success(message, response));
+    }
+
+    /**
+     * Batch approve (mark as paid) fees endpoint.
+     * Allows marking multiple fee records as paid at once.
+     */
+    @PostMapping("/fees/approve")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<BatchOperationResponse>> batchApproveFees(
+            @Valid @RequestBody BatchApproveFeesRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        User currentUser = getCurrentUser(userDetails);
+        log.info("POST /api/batch/fees/approve - Approving {} fees by user: {}",
+                request.getFeeIds().size(), currentUser.getId());
+
+        if (request.getFeeIds() == null || request.getFeeIds().isEmpty()) {
+            return ResponseEntity.badRequest().body(
+                    ApiResponse.error(400, "Fee IDs list cannot be empty"));
+        }
+
+        // Sanitize paidBy field
+        if (request.getPaidBy() != null && !request.getPaidBy().isEmpty()) {
+            String sanitizedPaidBy = InputSanitizer.sanitizeString(request.getPaidBy(), 200);
+            request = new BatchApproveFeesRequest(
+                    request.getFeeIds(),
+                    sanitizedPaidBy,
+                    currentUser.getId()
+            );
+        } else {
+            request = new BatchApproveFeesRequest(
+                    request.getFeeIds(),
+                    null,
+                    currentUser.getId()
+            );
+        }
+
+        BatchOperationResponse response = batchOperationService.batchApproveFees(request, currentUser.getId());
+
+        String message = buildSuccessMessage("approved", "fee", response.getSuccessCount());
+        return ResponseEntity.ok(ApiResponse.success(message, response));
+    }
+
     private String buildSuccessMessage(String action, String itemType, int count) {
         if (count == 0) {
             return String.format("No %ss were %s. Check error details for more information.",
@@ -184,6 +254,19 @@ public class BatchOperationController {
         if (request.getRemark() != null && !request.getRemark().isEmpty()) {
             request.setRemark(InputSanitizer.sanitizeString(request.getRemark(), MAX_REMARK_LENGTH));
         }
+    }
+
+    private BatchProjectUpdateRequest sanitizeRequestRemark(BatchProjectUpdateRequest request) {
+        if (request.getRemark() != null && !request.getRemark().isEmpty()) {
+            String sanitizedRemark = InputSanitizer.sanitizeString(request.getRemark(), MAX_REMARK_LENGTH);
+            return BatchProjectUpdateRequest.builder()
+                    .projectIds(request.getProjectIds())
+                    .status(request.getStatus())
+                    .managerId(request.getManagerId())
+                    .remark(sanitizedRemark)
+                    .build();
+        }
+        return request;
     }
 
     private void sanitizeRequestReason(BatchDeleteRequest request) {
