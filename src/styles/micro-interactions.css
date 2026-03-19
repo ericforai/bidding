@@ -294,6 +294,11 @@
 .el-card {
   transition: all var(--transition-base);
   border-radius: 12px;
+  margin-bottom: var(--space-lg, 24px);
+}
+
+.el-card:last-child {
+  margin-bottom: 0;
 }
 
 .el-card:hover {
@@ -306,6 +311,16 @@
 
 .el-card.is-always-shadow:hover {
   box-shadow: var(--elevation-3);
+}
+
+/* Card content padding consistency */
+.el-card__body {
+  padding: var(--space-lg, 24px);
+}
+
+.el-card__header {
+  padding: var(--space-md, 16px) var(--space-lg, 24px);
+  border-bottom: 1px solid var(--gray-100, #E8E8E8);
 }
 
 /* ==================== Table Micro-Interactions ==================== */
