@@ -89,6 +89,10 @@ const routes = [
         meta: { title: '项目详情' }
       },
       {
+        path: 'knowledge',
+        redirect: '/knowledge/qualification'
+      },
+      {
         path: 'knowledge/qualification',
         name: 'Qualification',
         alias: 'knowledge/qualifications',
