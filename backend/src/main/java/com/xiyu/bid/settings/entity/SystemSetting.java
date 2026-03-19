@@ -5,7 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -31,8 +30,7 @@ public class SystemSetting {
     @Column(name = "config_key", nullable = false, unique = true, length = 100)
     private String configKey;
 
-    @Lob
-    @Column(name = "payload_json", nullable = false)
+    @Column(name = "payload_json", nullable = false, columnDefinition = "TEXT")
     private String payloadJson;
 
     @Column(name = "created_at", nullable = false, updatable = false)

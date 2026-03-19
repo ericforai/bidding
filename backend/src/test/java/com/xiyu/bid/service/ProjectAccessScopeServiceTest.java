@@ -32,11 +32,14 @@ class ProjectAccessScopeServiceTest {
     @Mock
     private DataScopeConfigService dataScopeConfigService;
 
+    @Mock
+    private ProjectGroupService projectGroupService;
+
     private ProjectAccessScopeService projectAccessScopeService;
 
     @BeforeEach
     void setUp() {
-        projectAccessScopeService = new ProjectAccessScopeService(userRepository, projectRepository, dataScopeConfigService);
+        projectAccessScopeService = new ProjectAccessScopeService(userRepository, projectRepository, dataScopeConfigService, projectGroupService);
         SecurityContextHolder.clearContext();
     }
 
@@ -53,6 +56,7 @@ class ProjectAccessScopeServiceTest {
                 .dataScope("self")
                 .build());
         when(projectRepository.findAccessibleProjectIdsByUserId(601L)).thenReturn(List.of(9L, 3L, 5L));
+        when(projectGroupService.getGrantedProjectIds(user)).thenReturn(List.of());
 
         assertThat(projectAccessScopeService.getAllowedProjectIds(user)).containsExactly(3L, 5L, 9L);
     }
@@ -73,8 +77,9 @@ class ProjectAccessScopeServiceTest {
                 .build());
         when(projectRepository.findAccessibleProjectIdsByUserId(602L)).thenReturn(List.of(3L));
         when(projectRepository.findAccessibleProjectIdsByDepartmentCodes(List.of("TECH"))).thenReturn(List.of(8L, 6L));
+        when(projectGroupService.getGrantedProjectIds(user)).thenReturn(List.of(10L));
 
-        assertThat(projectAccessScopeService.getAllowedProjectIds(user)).containsExactly(3L, 6L, 8L);
+        assertThat(projectAccessScopeService.getAllowedProjectIds(user)).containsExactly(3L, 6L, 8L, 10L);
     }
 
     @Test
@@ -94,6 +99,7 @@ class ProjectAccessScopeServiceTest {
                 .dataScope("self")
                 .build());
         when(projectRepository.findAccessibleProjectIdsByUserId(601L)).thenReturn(List.of(1L));
+        when(projectGroupService.getGrantedProjectIds(user)).thenReturn(List.of());
 
         List<Project> filtered = projectAccessScopeService.filterAccessibleProjects(List.of(
                 Project.builder().id(1L).name("可见项目").build(),
@@ -120,6 +126,7 @@ class ProjectAccessScopeServiceTest {
                 .dataScope("self")
                 .build());
         when(projectRepository.findAccessibleProjectIdsByUserId(701L)).thenReturn(List.of());
+        when(projectGroupService.getGrantedProjectIds(user)).thenReturn(List.of());
 
         assertThatThrownBy(() -> projectAccessScopeService.assertCurrentUserCanAccessProject(12L))
                 .isInstanceOf(AccessDeniedException.class);

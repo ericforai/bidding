@@ -125,6 +125,68 @@ class FlywayPostgresContainerTest {
                 Integer.class
         );
 
+        Integer projectGroupRuns = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from flyway_schema_history
+                where success = true
+                  and version = '16'
+                  and script = 'V16__create_project_group_tables.sql'
+                """,
+                Integer.class
+        );
+
+        Integer projectGroupsTableCount = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from information_schema.tables
+                where table_schema = 'public'
+                  and table_name = 'project_groups'
+                """,
+                Integer.class
+        );
+
+        Integer projectGroupProjectsTableCount = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from information_schema.tables
+                where table_schema = 'public'
+                  and table_name = 'project_group_projects'
+                """,
+                Integer.class
+        );
+
+        Integer projectGroupMembersTableCount = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from information_schema.tables
+                where table_schema = 'public'
+                  and table_name = 'project_group_members'
+                """,
+                Integer.class
+        );
+
+        Integer projectGroupRoleAccessTableCount = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from information_schema.tables
+                where table_schema = 'public'
+                  and table_name = 'project_group_role_access'
+                """,
+                Integer.class
+        );
+
+        Integer projectGroupConstraintRuns = jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from flyway_schema_history
+                where success = true
+                  and version = '17'
+                  and script = 'V17__constrain_project_group_enums.sql'
+                """,
+                Integer.class
+        );
+
         org.junit.jupiter.api.Assertions.assertEquals(1, baselineRuns);
         org.junit.jupiter.api.Assertions.assertEquals(0, resourcesIncrementalRuns);
         org.junit.jupiter.api.Assertions.assertEquals(1, systemSettingsRuns);
@@ -133,6 +195,12 @@ class FlywayPostgresContainerTest {
         org.junit.jupiter.api.Assertions.assertEquals(1, refreshSessionsTableCount);
         org.junit.jupiter.api.Assertions.assertEquals(1, userDepartmentRuns);
         org.junit.jupiter.api.Assertions.assertEquals(1, departmentCodeColumnCount);
+        org.junit.jupiter.api.Assertions.assertEquals(1, projectGroupRuns);
+        org.junit.jupiter.api.Assertions.assertEquals(1, projectGroupsTableCount);
+        org.junit.jupiter.api.Assertions.assertEquals(1, projectGroupProjectsTableCount);
+        org.junit.jupiter.api.Assertions.assertEquals(1, projectGroupMembersTableCount);
+        org.junit.jupiter.api.Assertions.assertEquals(1, projectGroupRoleAccessTableCount);
+        org.junit.jupiter.api.Assertions.assertEquals(1, projectGroupConstraintRuns);
     }
 
     @TestConfiguration

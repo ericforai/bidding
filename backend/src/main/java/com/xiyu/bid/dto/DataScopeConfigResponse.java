@@ -27,9 +27,6 @@ public class DataScopeConfigResponse {
     private List<DepartmentTreeItem> deptTree = new ArrayList<>();
 
     @Builder.Default
-    private List<ProjectGroupScopeItem> projectGroupScope = new ArrayList<>();
-
-    @Builder.Default
     private List<UserOptionItem> userOptions = new ArrayList<>();
 
     @Data
@@ -80,25 +77,6 @@ public class DataScopeConfigResponse {
         private String deptName;
         private String parentDeptCode;
         private Integer sortOrder;
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ProjectGroupScopeItem {
-        private String groupCode;
-        private String groupName;
-        private Long managerUserId;
-        private String manager;
-        private Integer memberCount;
-        private String visibility;
-        @Builder.Default
-        private List<Long> memberUserIds = new ArrayList<>();
-        @Builder.Default
-        private List<String> allowedRoles = new ArrayList<>();
-        @Builder.Default
-        private List<Long> projectIds = new ArrayList<>();
     }
 
     @Data

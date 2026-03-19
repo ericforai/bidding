@@ -4,17 +4,25 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.dto.DataScopeConfigPayload;
 import com.xiyu.bid.dto.DataScopeConfigResponse;
-import com.xiyu.bid.entity.SystemSetting;
 import com.xiyu.bid.entity.User;
-import com.xiyu.bid.repository.SystemSettingRepository;
 import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.settings.entity.SystemSetting;
+import com.xiyu.bid.settings.repository.SystemSettingRepository;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -26,11 +34,9 @@ public class DataScopeConfigService {
 
     public static final String DATA_SCOPE_CONFIG_KEY = "data_scope_config";
     private static final String DEFAULT_SCOPE = "self";
-    private static final String DEFAULT_GROUP_VISIBILITY = "members";
     private static final String UNASSIGNED_DEPT_CODE = "UNASSIGNED";
     private static final String UNASSIGNED_DEPT_NAME = "未分配";
     private static final Set<String> ALLOWED_SCOPES = Set.of("all", "dept", "deptAndSub", "self");
-    private static final Set<String> ALLOWED_VISIBILITIES = Set.of("all", "members", "manager", "custom");
 
     private final SystemSettingRepository systemSettingRepository;
     private final UserRepository userRepository;
@@ -57,9 +63,6 @@ public class DataScopeConfigService {
                         (left, right) -> right,
                         LinkedHashMap::new
                 ));
-        Map<Long, User> usersById = users.stream()
-                .filter(user -> user.getId() != null)
-                .collect(Collectors.toMap(User::getId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
 
         return DataScopeConfigResponse.builder()
                 .userDataScope(users.stream()
@@ -70,9 +73,6 @@ public class DataScopeConfigService {
                         .toList())
                 .deptOptions(departmentGraph.options())
                 .deptTree(departmentGraph.tree())
-                .projectGroupScope(payload.getProjectGroupRules().stream()
-                        .map(rule -> toProjectGroupItem(rule, usersById))
-                        .toList())
                 .userOptions(users.stream()
                         .map(this::toUserOptionItem)
                         .toList())
@@ -86,7 +86,6 @@ public class DataScopeConfigService {
                 .departmentTree(normalizeDepartmentTree(safeRequest.getDeptTree()))
                 .userRules(normalizeUserRules(safeRequest.getUserDataScope()))
                 .departmentRules(normalizeDepartmentRules(safeRequest.getDeptDataScope()))
-                .projectGroupRules(normalizeProjectGroupRules(safeRequest.getProjectGroupScope()))
                 .build();
 
         SystemSetting setting = systemSettingRepository.findByConfigKey(DATA_SCOPE_CONFIG_KEY)
@@ -116,9 +115,7 @@ public class DataScopeConfigService {
                 .orElse(null);
 
         String dataScope = normalizeScope(userRule != null ? userRule.getDataScope() : departmentRule != null ? departmentRule.getDataScope() : DEFAULT_SCOPE);
-        LinkedHashSet<Long> explicitProjectIds = new LinkedHashSet<>(userRule == null ? List.of() : normalizeProjectIds(userRule.getAllowedProjectIds()));
-        explicitProjectIds.addAll(getProjectIdsGrantedByGroups(payload.getProjectGroupRules(), user));
-
+        List<Long> explicitProjectIds = userRule == null ? List.of() : normalizeProjectIds(userRule.getAllowedProjectIds());
         List<String> explicitDeptCodes = normalizeDepartmentCodes(
                 userRule != null ? userRule.getAllowedDeptCodes() : departmentRule != null ? departmentRule.getAllowedDeptCodes() : List.of()
         );
@@ -126,8 +123,10 @@ public class DataScopeConfigService {
         if ("all".equals(dataScope)) {
             return AccessProfile.builder()
                     .dataScope(dataScope)
-                    .allowedDepartmentCodes(departmentGraph.options().stream().map(DataScopeConfigResponse.DepartmentOptionItem::getCode).toList())
-                    .explicitProjectIds(List.copyOf(explicitProjectIds))
+                    .allowedDepartmentCodes(departmentGraph.options().stream()
+                            .map(DataScopeConfigResponse.DepartmentOptionItem::getCode)
+                            .toList())
+                    .explicitProjectIds(explicitProjectIds)
                     .build();
         }
 
@@ -145,7 +144,7 @@ public class DataScopeConfigService {
         return AccessProfile.builder()
                 .dataScope(dataScope)
                 .allowedDepartmentCodes(List.copyOf(allowedDepartmentCodes))
-                .explicitProjectIds(List.copyOf(explicitProjectIds))
+                .explicitProjectIds(explicitProjectIds)
                 .build();
     }
 
@@ -178,24 +177,6 @@ public class DataScopeConfigService {
                 .dataScope(normalizeScope(rule == null ? null : rule.getDataScope()))
                 .canViewOtherDepts(rule != null && rule.isCanViewOtherDepts())
                 .allowedDepts(rule == null ? List.of() : normalizeDepartmentCodes(rule.getAllowedDeptCodes()))
-                .build();
-    }
-
-    private DataScopeConfigResponse.ProjectGroupScopeItem toProjectGroupItem(
-            DataScopeConfigPayload.ProjectGroupRule rule,
-            Map<Long, User> usersById
-    ) {
-        User manager = rule.getManagerUserId() == null ? null : usersById.get(rule.getManagerUserId());
-        return DataScopeConfigResponse.ProjectGroupScopeItem.builder()
-                .groupCode(normalizeGroupCode(rule.getGroupCode(), rule.getGroupName()))
-                .groupName(normalizeGroupName(rule.getGroupName()))
-                .managerUserId(rule.getManagerUserId())
-                .manager(manager == null ? "" : manager.getFullName())
-                .memberCount(normalizeLongIds(rule.getMemberUserIds()).size())
-                .visibility(normalizeVisibility(rule.getVisibility()))
-                .memberUserIds(normalizeLongIds(rule.getMemberUserIds()))
-                .allowedRoles(normalizeRoles(rule.getAllowedRoles()))
-                .projectIds(normalizeProjectIds(rule.getProjectIds()))
                 .build();
     }
 
@@ -347,61 +328,11 @@ public class DataScopeConfigService {
                 .toList();
     }
 
-    private List<DataScopeConfigPayload.ProjectGroupRule> normalizeProjectGroupRules(List<DataScopeConfigResponse.ProjectGroupScopeItem> projectGroupScope) {
-        if (projectGroupScope == null) {
-            return List.of();
-        }
-        return projectGroupScope.stream()
-                .filter(item -> hasText(item.getGroupName()) || hasText(item.getGroupCode()))
-                .map(item -> DataScopeConfigPayload.ProjectGroupRule.builder()
-                        .groupCode(normalizeGroupCode(item.getGroupCode(), item.getGroupName()))
-                        .groupName(normalizeGroupName(item.getGroupName()))
-                        .managerUserId(item.getManagerUserId())
-                        .visibility(normalizeVisibility(item.getVisibility()))
-                        .memberUserIds(normalizeLongIds(item.getMemberUserIds()))
-                        .allowedRoles(normalizeRoles(item.getAllowedRoles()))
-                        .projectIds(normalizeProjectIds(item.getProjectIds()))
-                        .build())
-                .toList();
-    }
-
-    private List<Long> getProjectIdsGrantedByGroups(List<DataScopeConfigPayload.ProjectGroupRule> projectGroupRules, User user) {
-        if (projectGroupRules == null || user == null) {
-            return List.of();
-        }
-        String currentRole = String.valueOf(user.getRole()).toLowerCase();
-        LinkedHashSet<Long> granted = new LinkedHashSet<>();
-
-        for (DataScopeConfigPayload.ProjectGroupRule rule : projectGroupRules) {
-            if (matchesGroupRule(rule, user, currentRole)) {
-                granted.addAll(normalizeProjectIds(rule.getProjectIds()));
-            }
-        }
-        return List.copyOf(granted);
-    }
-
-    private boolean matchesGroupRule(DataScopeConfigPayload.ProjectGroupRule rule, User user, String currentRole) {
-        String visibility = normalizeVisibility(rule.getVisibility());
-        List<Long> memberUserIds = normalizeLongIds(rule.getMemberUserIds());
-        List<String> allowedRoles = normalizeRoles(rule.getAllowedRoles());
-
-        return switch (visibility) {
-            case "all" -> true;
-            case "manager" -> Objects.equals(rule.getManagerUserId(), user.getId());
-            case "custom" -> allowedRoles.contains(currentRole) || Objects.equals(rule.getManagerUserId(), user.getId());
-            default -> Objects.equals(rule.getManagerUserId(), user.getId()) || memberUserIds.contains(user.getId());
-        };
-    }
-
     private List<Long> normalizeProjectIds(List<Long> projectIds) {
-        return normalizeLongIds(projectIds);
-    }
-
-    private List<Long> normalizeLongIds(List<Long> ids) {
-        if (ids == null) {
+        if (projectIds == null) {
             return List.of();
         }
-        return ids.stream()
+        return projectIds.stream()
                 .filter(Objects::nonNull)
                 .distinct()
                 .sorted()
@@ -421,26 +352,9 @@ public class DataScopeConfigService {
                 .toList();
     }
 
-    private List<String> normalizeRoles(List<String> roles) {
-        if (roles == null) {
-            return List.of();
-        }
-        return roles.stream()
-                .filter(Objects::nonNull)
-                .map(role -> role.trim().toLowerCase())
-                .filter(this::hasText)
-                .distinct()
-                .toList();
-    }
-
     private String normalizeScope(String dataScope) {
         String candidate = dataScope == null ? DEFAULT_SCOPE : dataScope.trim();
         return ALLOWED_SCOPES.contains(candidate) ? candidate : DEFAULT_SCOPE;
-    }
-
-    private String normalizeVisibility(String visibility) {
-        String candidate = visibility == null ? DEFAULT_GROUP_VISIBILITY : visibility.trim();
-        return ALLOWED_VISIBILITIES.contains(candidate) ? candidate : DEFAULT_GROUP_VISIBILITY;
     }
 
     private String normalizeDepartmentCode(String departmentCode) {
@@ -463,20 +377,6 @@ public class DataScopeConfigService {
         }
         String normalizedParent = normalizeDepartmentCode(parentCode);
         return normalizedParent.equals(normalizeDepartmentCode(currentCode)) ? null : normalizedParent;
-    }
-
-    private String normalizeGroupCode(String groupCode, String groupName) {
-        if (hasText(groupCode)) {
-            return groupCode.trim();
-        }
-        if (!hasText(groupName)) {
-            return UUID.randomUUID().toString();
-        }
-        return groupName.trim().replaceAll("\\s+", "_").toUpperCase(Locale.ROOT);
-    }
-
-    private String normalizeGroupName(String groupName) {
-        return hasText(groupName) ? groupName.trim() : "未命名项目组";
     }
 
     private boolean hasText(String value) {
