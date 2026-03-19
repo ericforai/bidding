@@ -40,3 +40,4 @@ test-login.html
 
 # Git worktrees
 .worktrees/
+.gstack/

@@ -27,9 +27,9 @@
           </el-form-item>
           <el-form-item label="优先级">
             <el-radio-group v-model="approvalForm.priority">
-              <el-radio :label="0">常规</el-radio>
-              <el-radio :label="1">紧急</el-radio>
-              <el-radio :label="2">非常紧急</el-radio>
+              <el-radio :value="0">常规</el-radio>
+              <el-radio :value="1">紧急</el-radio>
+              <el-radio :value="2">非常紧急</el-radio>
             </el-radio-group>
           </el-form-item>
           <el-form-item label="审批说明">

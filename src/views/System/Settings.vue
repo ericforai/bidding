@@ -848,11 +848,11 @@
             <el-form label-width="100px">
               <el-form-item label="数据范围">
                 <el-radio-group v-model="dataScopeForm.scope">
-                  <el-radio label="all">全部数据</el-radio>
-                  <el-radio label="custom">自定义</el-radio>
-                  <el-radio label="dept">本部门</el-radio>
-                  <el-radio label="deptAndSub">本部门及下级</el-radio>
-                  <el-radio label="self">仅本人</el-radio>
+                  <el-radio value="all">全部数据</el-radio>
+                  <el-radio value="custom">自定义</el-radio>
+                  <el-radio value="dept">本部门</el-radio>
+                  <el-radio value="deptAndSub">本部门及下级</el-radio>
+                  <el-radio value="self">仅本人</el-radio>
                 </el-radio-group>
               </el-form-item>
               <el-form-item label="自定义部门" v-if="dataScopeForm.scope === 'custom'">

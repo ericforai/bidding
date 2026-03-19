@@ -727,8 +727,8 @@
         <!-- 投标结果选择 -->
         <el-form-item label="投标结果">
           <el-radio-group v-model="resultForm.result">
-            <el-radio label="won">中标</el-radio>
-            <el-radio label="lost">未中标</el-radio>
+            <el-radio value="won">中标</el-radio>
+            <el-radio value="lost">未中标</el-radio>
           </el-radio-group>
         </el-form-item>
 
@@ -1127,9 +1127,9 @@
             </el-form-item>
             <el-form-item label="封装方式">
               <el-radio-group v-model="submitForm.packageType">
-                <el-radio label="paper">纸质封装</el-radio>
-                <el-radio label="electronic">电子标书</el-radio>
-                <el-radio label="both">纸质+电子</el-radio>
+                <el-radio value="paper">纸质封装</el-radio>
+                <el-radio value="electronic">电子标书</el-radio>
+                <el-radio value="both">纸质+电子</el-radio>
               </el-radio-group>
             </el-form-item>
             <el-form-item label="密封要求">
@@ -1142,9 +1142,9 @@
             </el-form-item>
             <el-form-item label="递交方式">
               <el-radio-group v-model="submitForm.deliveryMethod">
-                <el-radio label="online">线上递交</el-radio>
-                <el-radio label="offline">现场递交</el-radio>
-                <el-radio label="courier">快递递交</el-radio>
+                <el-radio value="online">线上递交</el-radio>
+                <el-radio value="offline">现场递交</el-radio>
+                <el-radio value="courier">快递递交</el-radio>
               </el-radio-group>
             </el-form-item>
             <el-form-item label="递交时间" v-if="submitForm.deliveryMethod !== 'online'">

@@ -134,9 +134,9 @@
             <div class="form-section">
               <h4 class="section-label">选择模板</h4>
               <el-radio-group v-model="assemblyForm.templateId" class="template-options">
-                <el-radio :label="'TPL_SMARTCITY'" border>智慧城市</el-radio>
-                <el-radio :label="'TPL_SOFTWARE'" border>软件开发</el-radio>
-                <el-radio :label="'TPL_EQUIPMENT'" border>设备采购</el-radio>
+                <el-radio :value="'TPL_SMARTCITY'" border>智慧城市</el-radio>
+                <el-radio :value="'TPL_SOFTWARE'" border>软件开发</el-radio>
+                <el-radio :value="'TPL_EQUIPMENT'" border>设备采购</el-radio>
               </el-radio-group>
             </div>
 
@@ -255,8 +255,8 @@
         </el-form-item>
         <el-form-item label="章节类型">
           <el-radio-group v-model="sectionForm.type">
-            <el-radio label="section">章节</el-radio>
-            <el-radio label="folder">文件夹</el-radio>
+            <el-radio value="section">章节</el-radio>
+            <el-radio value="folder">文件夹</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>

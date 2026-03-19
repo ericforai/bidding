@@ -67,9 +67,9 @@
       <!-- 借用用途 -->
       <el-form-item label="借用用途" prop="purpose">
         <el-radio-group v-model="form.purpose">
-          <el-radio label="purchase">购买标书</el-radio>
-          <el-radio label="upload">投标上传</el-radio>
-          <el-radio label="other">其他</el-radio>
+          <el-radio value="purchase">购买标书</el-radio>
+          <el-radio value="upload">投标上传</el-radio>
+          <el-radio value="other">其他</el-radio>
         </el-radio-group>
       </el-form-item>
 

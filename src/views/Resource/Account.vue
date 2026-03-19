@@ -134,9 +134,9 @@
         </el-form-item>
         <el-form-item label="借用用途">
           <el-radio-group v-model="borrowForm.purpose">
-            <el-radio label="购买标书">购买标书</el-radio>
-            <el-radio label="投标上传">投标上传</el-radio>
-            <el-radio label="其他">其他</el-radio>
+            <el-radio value="购买标书">购买标书</el-radio>
+            <el-radio value="投标上传">投标上传</el-radio>
+            <el-radio value="其他">其他</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="借用期限">

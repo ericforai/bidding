@@ -297,8 +297,8 @@
         <el-form :model="approvalForm" label-width="80px">
           <el-form-item label="审批结果">
             <el-radio-group v-model="approvalForm.result">
-              <el-radio label="approved">通过</el-radio>
-              <el-radio label="rejected">拒绝</el-radio>
+              <el-radio value="approved">通过</el-radio>
+              <el-radio value="rejected">拒绝</el-radio>
             </el-radio-group>
           </el-form-item>
           <el-form-item label="审批意见">
