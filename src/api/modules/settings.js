@@ -6,13 +6,20 @@
 import httpClient from '../client.js'
 import { isMockMode } from '../config.js'
 
+const normalizeRole = (role) => String(role || '').trim().toLowerCase()
+const normalizePermissionList = (permissions) => (
+  Array.isArray(permissions)
+    ? [...new Set(permissions.map((item) => String(item || '').trim()).filter(Boolean))]
+    : []
+)
+
+let runtimeSettings = null
+
 const fallbackConfig = {
   userDataScope: [],
   deptDataScope: [],
   deptOptions: [],
-  deptTree: [],
-  projectGroupScope: [],
-  userOptions: []
+  deptTree: []
 }
 
 const normalizeAllowedProjects = (allowedProjects) => {
@@ -70,34 +77,63 @@ const normalizeDeptTreeItem = (item = {}) => ({
   sortOrder: Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : 0
 })
 
-const normalizeProjectGroupRow = (row = {}) => ({
-  groupCode: row.groupCode || '',
-  groupName: row.groupName || '',
-  managerUserId: row.managerUserId ?? null,
-  manager: row.manager || '',
-  memberCount: Number.isFinite(Number(row.memberCount)) ? Number(row.memberCount) : 0,
-  visibility: row.visibility || 'members',
-  memberUserIds: normalizeAllowedProjects(row.memberUserIds),
-  allowedRoles: Array.isArray(row.allowedRoles) ? [...new Set(row.allowedRoles.map((role) => String(role || '').trim()).filter(Boolean))] : [],
-  projectIds: normalizeAllowedProjects(row.projectIds)
-})
-
-const normalizeUserOption = (option = {}) => ({
-  id: option.id,
-  name: option.name || '',
-  role: option.role || '',
-  deptCode: option.deptCode || '',
-  dept: option.dept || ''
-})
-
 const normalizeConfig = (payload = fallbackConfig) => ({
   userDataScope: Array.isArray(payload.userDataScope) ? payload.userDataScope.map(normalizeUserRow) : [],
   deptDataScope: Array.isArray(payload.deptDataScope) ? payload.deptDataScope.map(normalizeDeptRow) : [],
   deptOptions: Array.isArray(payload.deptOptions) ? payload.deptOptions.map(normalizeDeptOption) : [],
-  deptTree: Array.isArray(payload.deptTree) ? payload.deptTree.map(normalizeDeptTreeItem) : [],
-  projectGroupScope: Array.isArray(payload.projectGroupScope) ? payload.projectGroupScope.map(normalizeProjectGroupRow) : [],
-  userOptions: Array.isArray(payload.userOptions) ? payload.userOptions.map(normalizeUserOption) : []
+  deptTree: Array.isArray(payload.deptTree) ? payload.deptTree.map(normalizeDeptTreeItem) : []
 })
+
+const buildRuntimeRoleMap = (payload) => {
+  const roles = Array.isArray(payload?.roles) ? payload.roles : []
+  return roles.reduce((acc, role) => {
+    const code = normalizeRole(role?.code)
+    if (!code) return acc
+
+    acc[code] = {
+      code,
+      menuPermissions: normalizePermissionList(role?.menuPermissions),
+      dataScope: role?.dataScope || 'self',
+      allowedProjects: Array.isArray(role?.allowedProjects) ? [...role.allowedProjects] : [],
+      allowedDepts: Array.isArray(role?.allowedDepts) ? [...role.allowedDepts] : []
+    }
+    return acc
+  }, {})
+}
+
+export const persistRuntimeSettings = (payload) => {
+  if (!payload) return null
+
+  runtimeSettings = {
+    updatedAt: Date.now(),
+    roleMap: buildRuntimeRoleMap(payload)
+  }
+  return runtimeSettings
+}
+
+export const clearRuntimeSettings = () => {
+  runtimeSettings = null
+}
+
+export const getRuntimeSettings = () => runtimeSettings
+
+export const getRolePermissionProfile = (role) => {
+  const currentRuntimeSettings = getRuntimeSettings()
+  if (!currentRuntimeSettings) return null
+
+  return currentRuntimeSettings.roleMap?.[normalizeRole(role)] || null
+}
+
+export const hasMenuAccessForRole = (role, permissionKeys = []) => {
+  const profile = getRolePermissionProfile(role)
+  if (!profile) return null
+
+  const normalizedKeys = normalizePermissionList(permissionKeys)
+  if (normalizedKeys.length === 0) return true
+
+  if (profile.menuPermissions.includes('all')) return true
+  return normalizedKeys.some((key) => profile.menuPermissions.includes(key))
+}
 
 export const settingsApi = {
   async getDataScopeConfig() {

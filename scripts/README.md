@@ -11,3 +11,4 @@
 | `check-doc-governance.mjs` | 门禁脚本 | 检查强制目录 README 和强制文件头注释是否符合规范 |
 | `check-front-data-boundaries.mjs` | 门禁脚本 | 检查前端业务层是否越过 mock 数据边界 |
 | `clean-local-artifacts.sh` | 清理脚本 | 删除本地产生的测试、报告和演练产物 |
+| `test/` | 测试基线目录 | Playwright 与 API 联调测试的启动、停止和说明脚本 |

@@ -1,39 +1,5 @@
 import { test, expect } from '@playwright/test'
-
-const apiBaseUrl = process.env.PLAYWRIGHT_API_BASE_URL || 'http://127.0.0.1:18080'
-const username = process.env.COMMERCIAL_E2E_USERNAME || 'lizong'
-const password = process.env.COMMERCIAL_E2E_PASSWORD || 'XiyuDemo!2026'
-
-async function apiLogin() {
-  const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ username, password }),
-  })
-
-  if (!response.ok) {
-    throw new Error(`Login failed with status ${response.status}`)
-  }
-
-  const payload = await response.json()
-  const auth = payload?.data
-  if (!payload?.success || !auth?.token || !auth?.id) {
-    throw new Error('Login payload missing token or user identity')
-  }
-
-  return {
-    token: auth.token,
-    user: {
-      id: auth.id,
-      name: auth.fullName || auth.username,
-      username: auth.username,
-      email: auth.email,
-      role: String(auth.role || '').toLowerCase(),
-    },
-  }
-}
+import { apiBaseUrl, ensureApiSession, injectSession } from './auth-helpers.js'
 
 async function apiRequest(path, session, options = {}) {
   const response = await fetch(`${apiBaseUrl}${path}`, {
@@ -53,7 +19,11 @@ async function apiRequest(path, session, options = {}) {
 }
 
 test('document editor loads backend sections and persists saved content', async ({ page }) => {
-  const session = await apiLogin()
+  const session = await ensureApiSession({
+    username: `document_editor_${Date.now()}`,
+    role: 'ADMIN',
+    fullName: 'Document Editor Admin'
+  })
   const projectId = 960100 + Date.now() % 10000
 
   const structurePayload = await apiRequest(`/api/documents/${projectId}/editor/structure`, session, {
@@ -81,10 +51,7 @@ test('document editor loads backend sections and persists saved content', async 
   const sectionId = sectionPayload?.data?.id
   expect(sectionId).toBeTruthy()
 
-  await page.addInitScript(({ token, user }) => {
-    sessionStorage.setItem('token', token)
-    sessionStorage.setItem('user', JSON.stringify(user))
-  }, session)
+  await injectSession(page, session)
 
   await page.goto(`/document/editor/${projectId}`)
   await expect(page.getByText('章节目录')).toBeVisible()

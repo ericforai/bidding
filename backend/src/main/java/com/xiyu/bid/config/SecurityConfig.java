@@ -44,7 +44,9 @@ public class SecurityConfig {
     private String[] corsAllowedOrigins;
 
     private static final String[] WHITE_LIST_URL = {
-            "/api/auth/**",
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/refresh",
             "/api/public/**",
             "/actuator/health",
             "/actuator/health/**",
