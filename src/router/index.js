@@ -3,19 +3,8 @@ import { useUserStore } from '@/stores/user'
 
 const DEFAULT_AUTHENTICATED_HOME = '/dashboard'
 
-const getStoredUser = () => {
-  const raw = localStorage.getItem('user') || sessionStorage.getItem('user')
-  if (!raw) return null
-
-  try {
-    return JSON.parse(raw)
-  } catch {
-    return null
-  }
-}
-
 const getNormalizedRole = (userStore) => {
-  const role = userStore.currentUser?.role || getStoredUser()?.role || ''
+  const role = userStore.currentUser?.role || ''
   return String(role).toLowerCase()
 }
 
@@ -200,23 +189,11 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
-  let hasAuthState =
-    userStore.token ||
-    localStorage.getItem('token') ||
-    sessionStorage.getItem('token') ||
-    userStore.currentUser ||
-    localStorage.getItem('user') ||
-    sessionStorage.getItem('user')
+  let hasAuthState = Boolean(userStore.currentUser && userStore.token)
 
-  if (hasAuthState && !userStore.currentUser && userStore.token) {
+  if (!userStore.hasRestoredSession) {
     await userStore.restoreSession()
-    hasAuthState =
-      userStore.token ||
-      localStorage.getItem('token') ||
-      sessionStorage.getItem('token') ||
-      userStore.currentUser ||
-      localStorage.getItem('user') ||
-      sessionStorage.getItem('user')
+    hasAuthState = Boolean(userStore.currentUser && userStore.token)
   }
 
   if (to.meta.requiresAuth && !hasAuthState) {

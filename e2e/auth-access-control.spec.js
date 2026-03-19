@@ -1,16 +1,44 @@
 import { test, expect } from '@playwright/test'
+import { attachRefreshSession, extractRefreshToken } from './support/auth-session.js'
 
-const mockUsers = {
-  admin: { id: 'U003', name: '李总', role: 'admin', dept: '管理层', avatar: '' },
-  manager: { id: 'U001', name: '小王', role: 'manager', dept: '华南销售部', avatar: '' },
-  staff: { id: 'U004', name: '李工', role: 'staff', dept: '技术部', avatar: '' },
+const apiBaseUrl = process.env.PLAYWRIGHT_API_BASE_URL || 'http://127.0.0.1:18080'
+const demoPassword = process.env.E2E_DEMO_PASSWORD || '123456'
+
+const users = {
+  admin: { username: 'lizong', password: demoPassword },
+  manager: { username: 'zhangjingli', password: demoPassword },
+  staff: { username: 'xiaowang', password: demoPassword },
 }
 
-async function setSession(page, user) {
-  await page.addInitScript(({ sessionUser }) => {
-    sessionStorage.setItem('token', `playwright-token-${sessionUser.id}`)
-    sessionStorage.setItem('user', JSON.stringify(sessionUser))
-  }, { sessionUser: user })
+const readStoredUserHint = () => {
+  const rawUser =
+    window.localStorage.getItem('user') ||
+    window.sessionStorage.getItem('user') ||
+    'null'
+
+  return JSON.parse(rawUser)
+}
+
+async function loginViaApi(page, user) {
+  const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      username: user.username,
+      password: user.password,
+      rememberMe: true
+    })
+  })
+
+  if (!response.ok) {
+    throw new Error(`Login failed with status ${response.status}`)
+  }
+
+  const responseBody = await response.json()
+  await attachRefreshSession(page, extractRefreshToken(response))
+  return responseBody.data
 }
 
 test.describe('auth access control', () => {
@@ -22,7 +50,7 @@ test.describe('auth access control', () => {
   })
 
   test('blocks manager from admin-only settings route', async ({ page }) => {
-    await setSession(page, mockUsers.manager)
+    await loginViaApi(page, users.manager)
 
     await page.goto('/settings')
 
@@ -33,7 +61,7 @@ test.describe('auth access control', () => {
   })
 
   test('blocks staff from analytics dashboard route', async ({ page }) => {
-    await setSession(page, mockUsers.staff)
+    await loginViaApi(page, users.staff)
 
     await page.goto('/analytics/dashboard')
 
@@ -41,15 +69,58 @@ test.describe('auth access control', () => {
     await expect(page.getByText('工作台').first()).toBeVisible()
   })
 
-  test('allows admin to reach settings and keeps settings entry visible', async ({ page }) => {
-    await setSession(page, mockUsers.admin)
+  test('restores allowed project scope from refresh when stored user hint is stale', async ({ page }) => {
+    const authPayload = {
+      id: 1,
+      username: 'lizong',
+      email: 'lizong@example.com',
+      fullName: '李总',
+      role: 'ADMIN',
+      token: 'restored-access-token',
+      type: 'Bearer',
+      allowedProjectIds: [101, 202, 303]
+    }
 
-    await page.goto('/settings')
+    const staleUserHint = {
+      id: authPayload.id,
+      name: authPayload.fullName || authPayload.name || authPayload.username,
+      username: authPayload.username,
+      email: authPayload.email,
+      role: String(authPayload.role || '').toLowerCase()
+    }
 
-    await expect(page).toHaveURL(/\/settings$/)
-    await expect(page.getByText('系统设置').first()).toBeVisible()
+    await page.route('**/api/auth/refresh', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          message: 'Token refreshed successfully',
+          data: authPayload
+        })
+      })
+    })
 
-    await page.locator('.user-info').click()
-    await expect(page.getByRole('menuitem', { name: /系统设置/ })).toBeVisible()
+    await page.addInitScript((userHint) => {
+      const existingUser = JSON.parse(window.localStorage.getItem('user') || 'null')
+      if (Array.isArray(existingUser?.allowedProjectIds)) {
+        return
+      }
+
+      window.localStorage.setItem('user', JSON.stringify(userHint))
+    }, staleUserHint)
+
+    await page.goto('/login')
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await page.waitForFunction((expectedScope) => {
+      const restoredUser = (window.localStorage.getItem('user') || window.sessionStorage.getItem('user'))
+        ? JSON.parse(window.localStorage.getItem('user') || window.sessionStorage.getItem('user') || 'null')
+        : null
+      return JSON.stringify(restoredUser?.allowedProjectIds || []) === JSON.stringify(expectedScope)
+    }, authPayload.allowedProjectIds)
+
+    const restoredUserHint = await page.evaluate(readStoredUserHint)
+    expect(restoredUserHint?.allowedProjectIds).toEqual(authPayload.allowedProjectIds)
+    expect(restoredUserHint?.username).toBe(authPayload.username)
   })
 })

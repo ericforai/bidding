@@ -378,6 +378,7 @@ import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
 import { getFeaturePlaceholder, isFeatureUnavailableResponse, knowledgeApi, isMockMode } from '@/api'
 import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 import { triggerDownload } from '@/api/modules/export'
+import { getAccessToken } from '@/api/session.js'
 
 const userStore = useUserStore()
 const isAdmin = computed(() => userStore.currentUser?.role === 'admin')
@@ -713,7 +714,7 @@ const handleDownload = (row) => {
   }
 
   // API 模式：处理文件下载
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+  const token = getAccessToken()
   const filename = `${row.name}.${row.fileUrl.split('.').pop() || 'pdf'}`
 
   fetch(row.fileUrl, {

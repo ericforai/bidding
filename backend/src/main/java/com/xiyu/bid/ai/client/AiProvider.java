@@ -3,7 +3,6 @@ package com.xiyu.bid.ai.client;
 import com.xiyu.bid.ai.dto.AiAnalysisResponse;
 
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * AI Provider Interface
@@ -12,20 +11,20 @@ import java.util.concurrent.CompletableFuture;
 public interface AiProvider {
 
     /**
-     * Analyze tender content
+     * Analyze tender content synchronously.
      *
      * @param content The tender content to analyze
      * @param context Additional context information (budget, deadline, etc.)
-     * @return CompletableFuture containing analysis results
+     * @return analysis results
      */
-    CompletableFuture<AiAnalysisResponse> analyzeTender(String content, Map<String, Object> context);
+    AiAnalysisResponse analyzeTender(String content, Map<String, Object> context);
 
     /**
-     * Analyze project
+     * Analyze project synchronously.
      *
      * @param projectId The project ID to analyze
      * @param context Additional context information
-     * @return CompletableFuture containing analysis results
+     * @return analysis results
      */
-    CompletableFuture<AiAnalysisResponse> analyzeProject(Long projectId, Map<String, Object> context);
+    AiAnalysisResponse analyzeProject(Long projectId, Map<String, Object> context);
 }

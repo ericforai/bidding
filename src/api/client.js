@@ -1,32 +1,55 @@
 /**
  * HTTP 客户端封装
- * 基于 axios 实现，支持拦截器、错误处理、Token 管理
+ * 基于 axios 实现，支持拦截器、自动刷新和会话状态同步
  */
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { API_CONFIG } from './config'
+import {
+  bootstrapLegacyAccessToken,
+  clearSessionState,
+  getAccessToken
+} from './session.js'
 
-const getStoredToken = () => localStorage.getItem('token') || sessionStorage.getItem('token')
+let refreshPromise = null
 
-const clearStoredSession = () => {
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
-  sessionStorage.removeItem('token')
-  sessionStorage.removeItem('user')
+const syncRefreshedSession = async (refreshResult) => {
+  if (!refreshResult?.success || !refreshResult?.data?.user) {
+    return
+  }
+
+  try {
+    const { useUserStore } = await import('@/stores/user')
+    const userStore = useUserStore()
+    userStore.applyAuthSession(refreshResult.data)
+  } catch (syncError) {
+    console.warn('Failed to sync refreshed auth session:', syncError)
+  }
+}
+
+const shouldSkipRefresh = (config = {}) => {
+  const url = String(config.url || '')
+  return Boolean(
+    config.skipAuthRefresh ||
+    url.includes('/api/auth/login') ||
+    url.includes('/api/auth/refresh') ||
+    url.includes('/api/auth/logout')
+  )
 }
 
 // 创建 axios 实例
 const httpClient = axios.create({
   baseURL: API_CONFIG.baseURL,
   timeout: API_CONFIG.timeout,
-  headers: API_CONFIG.headers
+  headers: API_CONFIG.headers,
+  withCredentials: true
 })
 
 // 请求拦截器
 httpClient.interceptors.request.use(
   (config) => {
     // 添加 Token
-    const token = getStoredToken()
+    const token = getAccessToken() || bootstrapLegacyAccessToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -43,18 +66,46 @@ httpClient.interceptors.response.use(
     // 后端返回的统一格式: { success: true, data: ..., message: ... }
     return response.data
   },
-  (error) => {
-    const { response } = error
+  async (error) => {
+    const { response, config } = error
+
+    if (response?.status === 401 && config && !config._retry && !shouldSkipRefresh(config)) {
+      config._retry = true
+
+      try {
+        if (!refreshPromise) {
+          refreshPromise = import('./modules/auth.js')
+            .then(({ authApi }) => authApi.refreshToken())
+            .finally(() => {
+              refreshPromise = null
+            })
+        }
+
+        const refreshResult = await refreshPromise
+        await syncRefreshedSession(refreshResult)
+        const token = refreshResult?.data?.token || getAccessToken()
+
+        if (token) {
+          config.headers = config.headers || {}
+          config.headers.Authorization = `Bearer ${token}`
+        }
+
+        return httpClient(config)
+      } catch (refreshError) {
+        // Refresh 失败时继续走统一的未认证清理逻辑
+      }
+    }
 
     if (response) {
       // 服务器返回错误状态码
       switch (response.status) {
         case 401:
-          ElMessage.error('登录已过期，请重新登录')
-          // 清除 token 并跳转登录
-          clearStoredSession()
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login'
+          if (!shouldSkipRefresh(config)) {
+            ElMessage.error('登录已过期，请重新登录')
+            clearSessionState()
+            if (window.location.pathname !== '/login') {
+              window.location.href = '/login'
+            }
           }
           break
         case 403:

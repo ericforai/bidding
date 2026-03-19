@@ -6,6 +6,7 @@
 package com.xiyu.bid.analytics.service;
 
 import com.xiyu.bid.analytics.dto.*;
+import com.xiyu.bid.analytics.repository.DashboardAnalyticsRepository;
 import com.xiyu.bid.documentexport.entity.DocumentExport;
 import com.xiyu.bid.documentexport.repository.DocumentExportRepository;
 import com.xiyu.bid.entity.Project;
@@ -33,6 +34,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Service for dashboard analytics and aggregation
@@ -49,6 +52,7 @@ public class DashboardAnalyticsService {
     private final UserRepository userRepository;
     private final ProjectDocumentRepository projectDocumentRepository;
     private final DocumentExportRepository documentExportRepository;
+    private final DashboardAnalyticsRepository dashboardAnalyticsRepository;
 
     private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
     private static final String ALL_FILTER = "ALL";
@@ -59,21 +63,13 @@ public class DashboardAnalyticsService {
     @Cacheable(value = "dashboard:overview", key = "'overview'")
     public DashboardOverviewDTO getOverview() {
         log.debug("Fetching dashboard overview from database");
-
-        SummaryStats summaryStats = getSummaryStats();
-        List<TrendData> tenderTrends = getTenderTrends();
-        List<TrendData> projectTrends = getProjectTrends();
-        Map<String, Long> statusDistribution = getStatusDistribution();
-        List<CompetitorData> topCompetitors = getTopCompetitors(5);
-        List<RegionalData> regionalDistribution = getRegionalDistribution();
-
         return DashboardOverviewDTO.builder()
-                .summaryStats(summaryStats)
-                .tenderTrends(tenderTrends)
-                .projectTrends(projectTrends)
-                .statusDistribution(statusDistribution)
-                .topCompetitors(topCompetitors)
-                .regionalDistribution(regionalDistribution)
+                .summaryStats(getSummaryStats())
+                .tenderTrends(getTenderTrends())
+                .projectTrends(getProjectTrends())
+                .statusDistribution(getStatusDistribution())
+                .topCompetitors(getTopCompetitors(5))
+                .regionalDistribution(getRegionalDistribution())
                 .build();
     }
 
@@ -81,28 +77,16 @@ public class DashboardAnalyticsService {
      * Get summary statistics
      */
     public SummaryStats getSummaryStats() {
-        List<Tender> allTenders = tenderRepository.findAll();
-        List<Project> activeProjects = projectRepository.findActiveProjects();
-        List<Task> pendingTasks = taskRepository.findByStatus(Task.Status.TODO);
-
-        long totalTenders = allTenders.size();
-        long activeProjectsCount = activeProjects.size();
-        long pendingTasksCount = pendingTasks.size();
-
-        // Calculate total budget
-        BigDecimal totalBudget = allTenders.stream()
-                .map(Tender::getBudget)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        // Calculate success rate
-        double successRate = calculateSuccessRate(allTenders, activeProjects);
+        DashboardAnalyticsRepository.OverviewSnapshot snapshot = dashboardAnalyticsRepository.fetchOverviewSnapshot();
+        double successRate = snapshot.biddedTenders() == 0
+                ? 0.0
+                : (snapshot.winningProjects() * 100.0) / snapshot.biddedTenders();
 
         return SummaryStats.builder()
-                .totalTenders(totalTenders)
-                .activeProjects(activeProjectsCount)
-                .pendingTasks(pendingTasksCount)
-                .totalBudget(totalBudget)
+                .totalTenders(snapshot.totalTenders())
+                .activeProjects(snapshot.activeProjects())
+                .pendingTasks(snapshot.pendingTasks())
+                .totalBudget(snapshot.totalBudget())
                 .successRate(successRate)
                 .build();
     }
@@ -111,26 +95,14 @@ public class DashboardAnalyticsService {
      * Get tender trends grouped by month
      */
     public List<TrendData> getTenderTrends() {
-        List<Tender> tenders = tenderRepository.findAll();
-
-        // Group by month
-        Map<String, List<Tender>> groupedByMonth = tenders.stream()
-                .collect(Collectors.groupingBy(tender ->
-                        tender.getCreatedAt().format(MONTH_FORMATTER)));
-
-        // Calculate trends
+        List<DashboardAnalyticsRepository.MonthlyTrendRow> rows = dashboardAnalyticsRepository.fetchTenderTrends();
         List<TrendData> trends = new ArrayList<>();
-        List<String> sortedMonths = new ArrayList<>(groupedByMonth.keySet());
-        Collections.sort(sortedMonths);
-
         Long previousCount = null;
-        for (String month : sortedMonths) {
-            List<Tender> monthTenders = groupedByMonth.get(month);
-            long count = monthTenders.size();
-            BigDecimal value = monthTenders.stream()
-                    .map(Tender::getBudget)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        for (DashboardAnalyticsRepository.MonthlyTrendRow row : rows) {
+            int year = row.year();
+            int month = row.month();
+            long count = row.count() == null ? 0L : row.count();
+            BigDecimal value = row.totalValue() == null ? BigDecimal.ZERO : row.totalValue();
 
             Double changePercentage = null;
             if (previousCount != null && previousCount > 0) {
@@ -138,7 +110,7 @@ public class DashboardAnalyticsService {
             }
 
             trends.add(TrendData.builder()
-                    .period(month)
+                    .period(String.format("%04d-%02d", year, month))
                     .count(count)
                     .value(value)
                     .changePercentage(changePercentage)
@@ -154,22 +126,13 @@ public class DashboardAnalyticsService {
      * Get project trends grouped by month
      */
     public List<TrendData> getProjectTrends() {
-        List<Project> projects = projectRepository.findAll();
-
-        // Group by month
-        Map<String, List<Project>> groupedByMonth = projects.stream()
-                .collect(Collectors.groupingBy(project ->
-                        project.getCreatedAt().format(MONTH_FORMATTER)));
-
-        // Calculate trends
+        List<DashboardAnalyticsRepository.MonthlyTrendRow> rows = dashboardAnalyticsRepository.fetchProjectTrends();
         List<TrendData> trends = new ArrayList<>();
-        List<String> sortedMonths = new ArrayList<>(groupedByMonth.keySet());
-        Collections.sort(sortedMonths);
-
         Long previousCount = null;
-        for (String month : sortedMonths) {
-            List<Project> monthProjects = groupedByMonth.get(month);
-            long count = monthProjects.size();
+        for (DashboardAnalyticsRepository.MonthlyTrendRow row : rows) {
+            int year = row.year();
+            int month = row.month();
+            long count = row.count() == null ? 0L : row.count();
 
             Double changePercentage = null;
             if (previousCount != null && previousCount > 0) {
@@ -177,7 +140,7 @@ public class DashboardAnalyticsService {
             }
 
             trends.add(TrendData.builder()
-                    .period(month)
+                    .period(String.format("%04d-%02d", year, month))
                     .count(count)
                     .value(null) // No monetary value for projects
                     .changePercentage(changePercentage)
@@ -192,14 +155,14 @@ public class DashboardAnalyticsService {
     /**
      * Get status distribution for tenders
      */
-    public Map<String, Long> getStatusDistribution() {
-        Map<String, Long> distribution = new ConcurrentHashMap<>();
-
-        distribution.put("PENDING", tenderRepository.countByStatus(Tender.Status.PENDING));
-        distribution.put("TRACKING", tenderRepository.countByStatus(Tender.Status.TRACKING));
-        distribution.put("BIDDED", tenderRepository.countByStatus(Tender.Status.BIDDED));
-        distribution.put("ABANDONED", tenderRepository.countByStatus(Tender.Status.ABANDONED));
-
+        public Map<String, Long> getStatusDistribution() {
+        Map<Tender.Status, Long> countsByStatus = new EnumMap<>(Tender.Status.class);
+        for (DashboardAnalyticsRepository.StatusCountRow row : dashboardAnalyticsRepository.fetchStatusDistribution()) {
+            countsByStatus.put(row.status(), row.count() == null ? 0L : row.count());
+        }
+        Map<String, Long> distribution = new LinkedHashMap<>();
+        Arrays.stream(Tender.Status.values()).forEach(status ->
+                distribution.put(status.name(), countsByStatus.getOrDefault(status, 0L)));
         return distribution;
     }
 
@@ -207,114 +170,61 @@ public class DashboardAnalyticsService {
      * Get top competitors by bid count
      */
     public List<CompetitorData> getTopCompetitors(Integer limit) {
-        // Since we don't have competitor data in Tender entity,
-        // this is a placeholder implementation
-        // In real scenario, you would have a separate Competitor entity or bid history
-
-        List<Tender> tenders = tenderRepository.findAll();
-        Map<String, List<Tender>> tendersBySource = tenders.stream()
-                .filter(t -> t.getSource() != null)
-                .collect(Collectors.groupingBy(Tender::getSource));
-
-        List<CompetitorData> competitors = tendersBySource.entrySet().stream()
-                .map(entry -> {
-                    String source = entry.getKey();
-                    List<Tender> sourceTenders = entry.getValue();
-
-                    // Simplified calculation - treating sources as competitors
-                    long bidCount = sourceTenders.size();
-                    long winCount = sourceTenders.stream()
-                            .filter(t -> t.getStatus() == Tender.Status.BIDDED)
-                            .count();
-                    double winRate = bidCount > 0 ? (winCount * 100.0) / bidCount : 0.0;
-
-                    BigDecimal totalBidAmount = sourceTenders.stream()
-                            .map(Tender::getBudget)
-                            .filter(Objects::nonNull)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
+        List<DashboardAnalyticsRepository.SourceAggregateRow> rows = dashboardAnalyticsRepository.fetchSourceAggregates(limit == null || limit < 1 ? 5 : limit);
+        return rows.stream()
+                .map(row -> {
+                    String source = row.source();
+                    long bidCount = row.bidCount() == null ? 0L : row.bidCount();
+                    long winCount = row.winCount() == null ? 0L : row.winCount();
+                    double winRate = bidCount == 0 ? 0.0 : (winCount * 100.0) / bidCount;
                     return CompetitorData.builder()
                             .name(source)
                             .bidCount(bidCount)
                             .winCount(winCount)
                             .winRate(winRate)
-                            .totalBidAmount(totalBidAmount)
+                            .totalBidAmount(row.totalBidAmount() == null ? BigDecimal.ZERO : row.totalBidAmount())
                             .build();
                 })
-                .sorted((a, b) -> Long.compare(b.getBidCount(), a.getBidCount()))
                 .collect(Collectors.toList());
-
-        // Apply limit if specified
-        if (limit != null && limit > 0 && competitors.size() > limit) {
-            return competitors.subList(0, limit);
-        }
-
-        return competitors;
     }
 
     /**
      * Get regional distribution of tenders
      */
     public List<RegionalData> getRegionalDistribution() {
-        List<Tender> tenders = tenderRepository.findAll();
-
-        if (tenders.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        // Since we don't have region field in Tender entity,
-        // we'll use source as a proxy for region
-        // In real scenario, you would have a region field
-
-        Map<String, List<Tender>> tendersBySource = tenders.stream()
-                .filter(t -> t.getSource() != null)
-                .collect(Collectors.groupingBy(Tender::getSource));
-
-        long totalTenders = tenders.size();
-        BigDecimal grandTotalBudget = tenders.stream()
-                .map(Tender::getBudget)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        List<RegionalData> regionalData = tendersBySource.entrySet().stream()
-                .map(entry -> {
-                    String source = entry.getKey();
-                    List<Tender> sourceTenders = entry.getValue();
-
-                    long count = sourceTenders.size();
-                    BigDecimal budget = sourceTenders.stream()
-                            .map(Tender::getBudget)
-                            .filter(Objects::nonNull)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                    double percentage = totalTenders > 0 ? (count * 100.0) / totalTenders : 0.0;
-
+        List<DashboardAnalyticsRepository.SourceAggregateRow> rows = dashboardAnalyticsRepository.fetchSourceAggregates(Integer.MAX_VALUE);
+        long totalTenders = rows.stream()
+                .mapToLong(row -> row.bidCount() == null ? 0L : row.bidCount())
+                .sum();
+        return rows.stream()
+                .map(row -> {
+                    long count = row.bidCount() == null ? 0L : row.bidCount();
+                    double percentage = totalTenders == 0 ? 0.0 : (count * 100.0) / totalTenders;
                     return RegionalData.builder()
-                            .region(source)
+                            .region(row.source())
                             .tenderCount(count)
-                            .totalBudget(budget)
+                            .totalBudget(row.totalBidAmount() == null ? BigDecimal.ZERO : row.totalBidAmount())
                             .percentage(percentage)
                             .build();
                 })
-                .sorted((a, b) -> Long.compare(b.getTenderCount(), a.getTenderCount()))
                 .collect(Collectors.toList());
-
-        return regionalData;
     }
 
     public List<ProductLineData> getProductLinePerformance() {
-        Map<String, List<Tender>> tendersByProductLine = tenderRepository.findAll().stream()
-                .collect(Collectors.groupingBy(tender -> classifyProductLine(tender.getTitle())));
+        Map<String, List<DashboardAnalyticsRepository.ProductLineCandidateRow>> tendersByProductLine = dashboardAnalyticsRepository
+                .fetchProductLineCandidateRows()
+                .stream()
+                .collect(Collectors.groupingBy(row -> classifyProductLine(row.title())));
 
         return tendersByProductLine.entrySet().stream()
                 .map(entry -> {
-                    List<Tender> tenders = entry.getValue();
+                    List<DashboardAnalyticsRepository.ProductLineCandidateRow> tenders = entry.getValue();
                     long bidCount = tenders.size();
                     long wonCount = tenders.stream()
-                            .filter(tender -> tender.getStatus() == Tender.Status.BIDDED)
+                            .filter(tender -> tender.status() == Tender.Status.BIDDED)
                             .count();
                     BigDecimal revenue = tenders.stream()
-                            .map(Tender::getBudget)
+                            .map(DashboardAnalyticsRepository.ProductLineCandidateRow::budget)
                             .filter(Objects::nonNull)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
                     BigDecimal cost = revenue.multiply(new BigDecimal("0.72"));
@@ -334,59 +244,61 @@ public class DashboardAnalyticsService {
 
     @Transactional(readOnly = true)
     public AnalyticsDrillDownResponse getDrillDown(String type, String key) {
-        List<Tender> allTenders = tenderRepository.findAll();
-        List<Project> allProjects = projectRepository.findAll();
-        List<Task> allTasks = taskRepository.findAll();
-
-        List<Tender> matchedTenders = switch (type.toLowerCase(Locale.ROOT)) {
+        List<DashboardAnalyticsRepository.TenderSummaryRow> allTenders = dashboardAnalyticsRepository.fetchTenderSummaryRows();
+        List<DashboardAnalyticsRepository.TenderSummaryRow> matchedTenders = switch (type.toLowerCase(Locale.ROOT)) {
             case "trend" -> allTenders.stream()
-                    .filter(tender -> tender.getCreatedAt() != null)
-                    .filter(tender -> tender.getCreatedAt().format(MONTH_FORMATTER).equals(key))
+                    .filter(tender -> tender.createdAt() != null)
+                    .filter(tender -> tender.createdAt().format(MONTH_FORMATTER).equals(key))
                     .collect(Collectors.toList());
             case "competitor", "region" -> allTenders.stream()
-                    .filter(tender -> key.equals(tender.getSource()))
+                    .filter(tender -> key.equals(tender.source()))
                     .collect(Collectors.toList());
             case "product" -> allTenders.stream()
-                    .filter(tender -> classifyProductLine(tender.getTitle()).equals(key))
+                    .filter(tender -> classifyProductLine(tender.title()).equals(key))
                     .collect(Collectors.toList());
             default -> Collections.emptyList();
         };
 
         Set<Long> tenderIds = matchedTenders.stream()
-                .map(Tender::getId)
-                .collect(Collectors.toSet());
+                .map(DashboardAnalyticsRepository.TenderSummaryRow::tenderId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        List<Project> matchedProjects = allProjects.stream()
-                .filter(project -> tenderIds.contains(project.getTenderId()))
-                .collect(Collectors.toList());
+        List<ProjectSnapshotAggregate> matchedProjects = tenderIds.isEmpty()
+                ? List.of()
+                : aggregateProjectSnapshots(dashboardAnalyticsRepository.fetchProjectSnapshotRowsByTenderIds(tenderIds));
 
         Set<Long> projectIds = matchedProjects.stream()
-                .map(Project::getId)
-                .collect(Collectors.toSet());
+                .map(ProjectSnapshotAggregate::projectId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
-        List<Task> matchedTasks = allTasks.stream()
-                .filter(task -> projectIds.contains(task.getProjectId()))
-                .collect(Collectors.toList());
+        List<DashboardAnalyticsRepository.TaskSnapshotRow> matchedTasks = dashboardAnalyticsRepository.fetchTaskSnapshotRows(projectIds);
+        List<DashboardAnalyticsRepository.ProjectDocumentRow> projectDocuments = dashboardAnalyticsRepository.fetchProjectDocumentRows(projectIds);
+        List<DashboardAnalyticsRepository.DocumentExportRow> documentExports = dashboardAnalyticsRepository.fetchDocumentExportRows(projectIds);
+        Map<Long, User> userById = loadUsersById(collectProjectUserIds(matchedProjects));
+        Map<Long, DashboardAnalyticsRepository.TenderSummaryRow> tenderById = matchedTenders.stream()
+                .collect(Collectors.toMap(DashboardAnalyticsRepository.TenderSummaryRow::tenderId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
 
         List<AnalyticsDrillDownProjectDTO> projectItems = matchedProjects.stream()
-                .map(project -> AnalyticsDrillDownProjectDTO.builder()
-                        .id(project.getId())
-                        .name(project.getName())
-                        .customer(resolveProjectCustomer(project))
-                        .budget(resolveTenderBudget(project.getTenderId(), matchedTenders))
-                        .status(project.getStatus() == null ? "-" : project.getStatus().name().toLowerCase(Locale.ROOT))
-                        .manager(resolveUserDisplayName(project.getManagerId()))
-                        .result(resolveProjectResult(project))
-                        .build())
+                .map(project -> {
+                    return AnalyticsDrillDownProjectDTO.builder()
+                            .id(project.projectId())
+                            .name(project.projectName())
+                            .customer(defaultString(project.tenderSource(), "-"))
+                            .budget(defaultAmount(project.budget()))
+                            .status(project.projectStatus() == null ? "-" : project.projectStatus().name().toLowerCase(Locale.ROOT))
+                            .manager(resolveDisplayName(userById.get(project.managerId()), project.managerName(), project.managerId()))
+                            .result(resolveProjectResult(project.projectStatus()))
+                            .build();
+                })
                 .collect(Collectors.toList());
 
-        List<AnalyticsDrillDownTeamDTO> teamItems = buildTeamItems(matchedProjects, matchedTasks);
-        List<AnalyticsDrillDownFileDTO> fileItems = buildFileItems(matchedProjects);
+        List<AnalyticsDrillDownTeamDTO> teamItems = buildTeamItems(matchedProjects, matchedTasks, userById);
+        List<AnalyticsDrillDownFileDTO> fileItems = buildFileItems(matchedProjects, projectDocuments, documentExports);
         long totalParticipation = matchedTenders.size();
-        long wonCount = matchedTenders.stream().filter(tender -> tender.getStatus() == Tender.Status.BIDDED).count();
+        long wonCount = matchedTenders.stream().filter(tender -> tender.status() == Tender.Status.BIDDED).count();
         double teamWinRate = totalParticipation > 0 ? (wonCount * 100.0) / totalParticipation : 0.0;
         BigDecimal totalAmount = matchedTenders.stream()
-                .map(Tender::getBudget)
+                .map(DashboardAnalyticsRepository.TenderSummaryRow::budget)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -411,29 +323,19 @@ public class DashboardAnalyticsService {
             Integer page,
             Integer size
     ) {
-        Map<Long, Project> projectByTenderId = projectRepository.findAll().stream()
-                .collect(Collectors.toMap(Project::getTenderId, Function.identity(), (left, right) -> left));
-
-        List<Tender> dateFilteredTenders = tenderRepository.findAll().stream()
-                .filter(tender -> isWithinDateRange(tender.getCreatedAt(), startDate, endDate))
-                .toList();
-
-        List<AnalyticsDrillDownRowDTO> baseRows = dateFilteredTenders.stream()
-                .map(tender -> {
-                    Project project = projectByTenderId.get(tender.getId());
-                    return AnalyticsDrillDownRowDTO.builder()
-                            .id(tender.getId())
-                            .relatedId(project != null ? project.getId() : null)
-                            .title(tender.getTitle())
-                            .subtitle(defaultString(tender.getSource(), "未知来源"))
-                            .status(tender.getStatus().name())
-                            .ownerName(project != null ? project.getName() : "未关联项目")
-                            .amount(defaultAmount(tender.getBudget()))
-                            .score(tender.getAiScore())
-                            .createdAt(tender.getCreatedAt())
-                            .deadline(tender.getDeadline())
-                            .build();
-                })
+        List<AnalyticsDrillDownRowDTO> baseRows = dashboardAnalyticsRepository.fetchRevenueDrillDownRows(startDate, endDate).stream()
+                .map(row -> AnalyticsDrillDownRowDTO.builder()
+                        .id(row.tenderId())
+                        .relatedId(row.projectId())
+                        .title(row.title())
+                        .subtitle(defaultString(row.source(), "未知来源"))
+                        .status(row.tenderStatus() == null ? null : row.tenderStatus().name())
+                        .ownerName(defaultString(row.projectName(), "未关联项目"))
+                        .amount(defaultAmount(row.budget()))
+                        .score(row.score())
+                        .createdAt(row.createdAt())
+                        .deadline(row.deadline())
+                        .build())
                 .sorted((left, right) -> {
                     int amountCompare = Comparator.nullsLast(BigDecimal::compareTo)
                             .compare(right.getAmount(), left.getAmount());
@@ -473,28 +375,37 @@ public class DashboardAnalyticsService {
             Integer page,
             Integer size
     ) {
-        Map<Long, Tender> tenderById = tenderRepository.findAll().stream()
-                .collect(Collectors.toMap(Tender::getId, Function.identity()));
-        Map<Long, String> userNameMap = getUserNameMap();
+        List<DashboardAnalyticsRepository.TenderSummaryRow> tenderRows = dashboardAnalyticsRepository.fetchTenderSummaryRows();
+        List<DashboardAnalyticsRepository.TenderSummaryRow> filteredTenders = tenderRows.stream()
+                .filter(tender -> isWithinDateRange(tender.createdAt(), startDate, endDate))
+                .toList();
 
-        List<AnalyticsDrillDownRowDTO> baseRows = tenderRepository.findAll().stream()
-                .filter(tender -> isWithinDateRange(tender.getCreatedAt(), startDate, endDate))
+        Map<Long, DashboardAnalyticsRepository.TenderSummaryRow> tenderById = filteredTenders.stream()
+                .collect(Collectors.toMap(DashboardAnalyticsRepository.TenderSummaryRow::tenderId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
+
+        List<ProjectSnapshotAggregate> projectSnapshots = tenderById.isEmpty()
+                ? List.of()
+                : aggregateProjectSnapshots(dashboardAnalyticsRepository.fetchProjectSnapshotRowsByTenderIds(tenderById.keySet()));
+        Map<Long, ProjectSnapshotAggregate> projectByTenderId = projectSnapshots.stream()
+                .collect(Collectors.toMap(ProjectSnapshotAggregate::tenderId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
+
+        List<AnalyticsDrillDownRowDTO> baseRows = filteredTenders.stream()
                 .map(tender -> {
-                    Project project = projectRepository.findByTenderId(tender.getId()).stream().findFirst().orElse(null);
+                    ProjectSnapshotAggregate project = projectByTenderId.get(tender.tenderId());
                     String derivedOutcome = deriveOutcome(tender, project);
 
                     return AnalyticsDrillDownRowDTO.builder()
-                            .id(tender.getId())
-                            .relatedId(project != null ? project.getId() : null)
-                            .title(tender.getTitle())
-                            .subtitle(project != null ? project.getName() : "未形成项目")
-                            .status(project != null ? project.getStatus().name() : tender.getStatus().name())
+                            .id(tender.tenderId())
+                            .relatedId(project != null ? project.projectId() : null)
+                            .title(tender.title())
+                            .subtitle(project != null ? project.projectName() : "未形成项目")
+                            .status(project != null && project.projectStatus() != null ? project.projectStatus().name() : tender.status().name())
                             .outcome(derivedOutcome)
-                            .ownerName(project != null ? userNameMap.getOrDefault(project.getManagerId(), fallbackUserName(project.getManagerId())) : "-")
-                            .amount(defaultAmount(tender.getBudget()))
+                            .ownerName(project != null ? resolveDisplayName(null, project.managerName(), project.managerId()) : "-")
+                            .amount(defaultAmount(tender.budget()))
                             .rate("WON".equals(derivedOutcome) ? 100.0 : 0.0)
-                            .createdAt(tender.getCreatedAt())
-                            .deadline(tender.getDeadline())
+                            .createdAt(tender.createdAt())
+                            .deadline(tender.deadline())
                             .build();
                 })
                 .sorted((left, right) -> {
@@ -541,49 +452,59 @@ public class DashboardAnalyticsService {
             Integer page,
             Integer size
     ) {
-        List<Project> filteredProjects = projectRepository.findAll().stream()
-                .filter(project -> isWithinDateRange(getProjectReferenceDate(project), startDate, endDate))
-                .toList();
-        Map<Long, Tender> tenderById = tenderRepository.findAll().stream()
-                .collect(Collectors.toMap(Tender::getId, Function.identity()));
-        Map<Long, User> userById = userRepository.findAll().stream()
-                .collect(Collectors.toMap(User::getId, Function.identity()));
-        Set<Long> relevantProjectIds = filteredProjects.stream().map(Project::getId).collect(Collectors.toSet());
+        List<DashboardAnalyticsRepository.TenderSummaryRow> tenderRows = dashboardAnalyticsRepository.fetchTenderSummaryRows();
+        Map<Long, DashboardAnalyticsRepository.TenderSummaryRow> tenderById = tenderRows.stream()
+                .collect(Collectors.toMap(DashboardAnalyticsRepository.TenderSummaryRow::tenderId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
+
+        List<ProjectSnapshotAggregate> filteredProjects = aggregateProjectSnapshots(
+                dashboardAnalyticsRepository.fetchProjectSnapshotRowsByDateRange(startDate, endDate)
+        );
+
+        Set<Long> relevantProjectIds = filteredProjects.stream()
+                .map(ProjectSnapshotAggregate::projectId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         LocalDateTime now = LocalDateTime.now();
-        Map<Long, TeamTaskAggregate> taskAggregateByAssignee = taskRepository.findAll().stream()
-                .filter(task -> relevantProjectIds.contains(task.getProjectId()))
-                .filter(task -> task.getAssigneeId() != null)
-                .collect(Collectors.groupingBy(Task::getAssigneeId, Collectors.collectingAndThen(Collectors.toList(), tasks -> {
+        Map<Long, TeamTaskAggregate> taskAggregateByAssignee = dashboardAnalyticsRepository.fetchTaskSnapshotRows(relevantProjectIds).stream()
+                .filter(task -> task.assigneeId() != null)
+                .collect(Collectors.groupingBy(DashboardAnalyticsRepository.TaskSnapshotRow::assigneeId, Collectors.collectingAndThen(Collectors.toList(), tasks -> {
                     TeamTaskAggregate aggregate = new TeamTaskAggregate();
                     aggregate.totalTaskCount = tasks.size();
                     aggregate.completedTaskCount = tasks.stream()
-                            .filter(task -> task.getStatus() == Task.Status.COMPLETED)
+                            .filter(task -> task.status() == Task.Status.COMPLETED)
                             .count();
                     aggregate.overdueTaskCount = tasks.stream()
-                            .filter(task -> task.getDueDate() != null)
-                            .filter(task -> task.getDueDate().isBefore(now))
-                            .filter(task -> task.getStatus() != Task.Status.COMPLETED)
-                            .filter(task -> task.getStatus() != Task.Status.CANCELLED)
+                            .filter(task -> task.dueDate() != null)
+                            .filter(task -> task.dueDate().isBefore(now))
+                            .filter(task -> task.status() != Task.Status.COMPLETED)
+                            .filter(task -> task.status() != Task.Status.CANCELLED)
                             .count();
                     return aggregate;
                 })));
 
-        Map<Long, TeamAggregate> aggregates = new HashMap<>();
-        for (Project project : filteredProjects) {
-            Tender tender = tenderById.get(project.getTenderId());
-            BigDecimal amount = tender != null ? defaultAmount(tender.getBudget()) : BigDecimal.ZERO;
-            boolean won = tender != null && tender.getStatus() == Tender.Status.BIDDED;
-            boolean active = project.getStatus() != Project.Status.ARCHIVED;
+        Set<Long> userIds = filteredProjects.stream()
+                .flatMap(project -> Stream.concat(
+                        project.managerId() == null ? Stream.empty() : Stream.of(project.managerId()),
+                        project.teamMemberIds().stream()
+                ))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Long, User> userById = loadUsersById(userIds);
 
-            Long managerId = project.getManagerId();
+        Map<Long, TeamAggregate> aggregates = new HashMap<>();
+        for (ProjectSnapshotAggregate project : filteredProjects) {
+            DashboardAnalyticsRepository.TenderSummaryRow tender = tenderById.get(project.tenderId());
+            BigDecimal amount = tender != null ? defaultAmount(tender.budget()) : defaultAmount(project.budget());
+            boolean won = tender != null && tender.status() == Tender.Status.BIDDED;
+            boolean active = project.projectStatus() != Project.Status.ARCHIVED;
+
+            Long managerId = project.managerId();
             if (managerId != null) {
                 accumulateTeamAggregate(aggregates, managerId, amount, won, active, true);
             }
 
-            Set<Long> uniqueMembers = new LinkedHashSet<>(Optional.ofNullable(project.getTeamMembers()).orElse(List.of()));
-            uniqueMembers.remove(managerId);
-            for (Long memberId : uniqueMembers) {
-                accumulateTeamAggregate(aggregates, memberId, amount, won, active, false);
+            for (Long memberId : project.teamMemberIds()) {
+                if (!Objects.equals(memberId, managerId)) {
+                    accumulateTeamAggregate(aggregates, memberId, amount, won, active, false);
+                }
             }
         }
 
@@ -650,9 +571,9 @@ public class DashboardAnalyticsService {
                         .totalAmount(sumAmounts(filteredRows))
                         .totalTeamMembers((long) filteredRows.size())
                         .wonCount(filteredProjects.stream()
-                                .map(project -> tenderById.get(project.getTenderId()))
+                                .map(project -> tenderById.get(project.tenderId()))
                                 .filter(Objects::nonNull)
-                                .filter(tender -> tender.getStatus() == Tender.Status.BIDDED)
+                                .filter(tender -> tender.status() == Tender.Status.BIDDED)
                                 .count())
                         .winRate(filteredRows.isEmpty() ? 0.0 : filteredRows.stream()
                                 .map(AnalyticsDrillDownRowDTO::getRate)
@@ -686,27 +607,19 @@ public class DashboardAnalyticsService {
             Integer page,
             Integer size
     ) {
-        Map<Long, Tender> tenderById = tenderRepository.findAll().stream()
-                .collect(Collectors.toMap(Tender::getId, Function.identity()));
-        Map<Long, String> userNameMap = getUserNameMap();
-
-        List<AnalyticsDrillDownRowDTO> baseRows = projectRepository.findAll().stream()
-                .filter(project -> isWithinDateRange(getProjectReferenceDate(project), startDate, endDate))
-                .map(project -> {
-                    Tender tender = tenderById.get(project.getTenderId());
-                    return AnalyticsDrillDownRowDTO.builder()
-                            .id(project.getId())
-                            .relatedId(project.getTenderId())
-                            .title(project.getName())
-                            .subtitle(tender != null ? tender.getTitle() : "未关联标讯")
-                            .status(project.getStatus().name())
-                            .ownerName(userNameMap.getOrDefault(project.getManagerId(), fallbackUserName(project.getManagerId())))
-                            .amount(tender != null ? defaultAmount(tender.getBudget()) : BigDecimal.ZERO)
-                            .teamSize(Optional.ofNullable(project.getTeamMembers()).orElse(List.of()).size())
-                            .createdAt(getProjectReferenceDate(project))
-                            .deadline(project.getEndDate())
-                            .build();
-                })
+        List<AnalyticsDrillDownRowDTO> baseRows = dashboardAnalyticsRepository.fetchProjectDrillDownRows(startDate, endDate).stream()
+                .map(row -> AnalyticsDrillDownRowDTO.builder()
+                        .id(row.projectId())
+                        .relatedId(row.tenderId())
+                        .title(row.projectName())
+                        .subtitle(defaultString(row.tenderTitle(), "未关联标讯"))
+                        .status(row.projectStatus() == null ? null : row.projectStatus().name())
+                        .ownerName(defaultString(row.managerName(), fallbackUserName(row.managerId())))
+                        .amount(defaultAmount(row.budget()))
+                        .teamSize(row.teamSize())
+                        .createdAt(row.referenceDate())
+                        .deadline(row.endDate())
+                        .build())
                 .sorted(Comparator.comparing(AnalyticsDrillDownRowDTO::getCreatedAt, Comparator.nullsLast(LocalDateTime::compareTo)).reversed())
                 .toList();
 
@@ -810,6 +723,150 @@ public class DashboardAnalyticsService {
             return "won";
         }
         return null;
+    }
+
+    private String resolveProjectResult(Project.Status status) {
+        if (status == null) {
+            return null;
+        }
+        if (status == Project.Status.ARCHIVED
+                || status == Project.Status.BIDDING
+                || status == Project.Status.REVIEWING
+                || status == Project.Status.SEALING) {
+            return "won";
+        }
+        return null;
+    }
+
+    private String resolveDisplayName(User user, String fallbackName, Long userId) {
+        if (user != null && user.getFullName() != null && !user.getFullName().isBlank()) {
+            return user.getFullName();
+        }
+        if (fallbackName != null && !fallbackName.isBlank()) {
+            return fallbackName;
+        }
+        return fallbackUserName(userId);
+    }
+
+    private Map<Long, User> loadUsersById(Collection<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return StreamSupport.stream(userRepository.findAllById(userIds).spliterator(), false)
+                .collect(Collectors.toMap(User::getId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
+    }
+
+    private Set<Long> collectProjectUserIds(List<ProjectSnapshotAggregate> projects) {
+        Set<Long> userIds = new LinkedHashSet<>();
+        for (ProjectSnapshotAggregate project : projects) {
+            if (project.managerId() != null) {
+                userIds.add(project.managerId());
+            }
+            userIds.addAll(project.teamMemberIds());
+        }
+        return userIds;
+    }
+
+    private List<ProjectSnapshotAggregate> aggregateProjectSnapshots(List<DashboardAnalyticsRepository.ProjectSnapshotRow> rows) {
+        Map<Long, ProjectSnapshotAggregate> aggregates = new LinkedHashMap<>();
+        for (DashboardAnalyticsRepository.ProjectSnapshotRow row : rows) {
+            ProjectSnapshotAggregate aggregate = aggregates.computeIfAbsent(row.projectId(), ignored -> new ProjectSnapshotAggregate(
+                    row.projectId(),
+                    row.tenderId(),
+                    row.projectName(),
+                    row.projectStatus(),
+                    row.managerId(),
+                    row.managerName(),
+                    row.tenderSource(),
+                    row.budget(),
+                    row.referenceDate(),
+                    row.endDate(),
+                    new LinkedHashSet<>()
+            ));
+            if (row.teamMemberId() != null) {
+                aggregate.teamMemberIds().add(row.teamMemberId());
+            }
+        }
+        return new ArrayList<>(aggregates.values());
+    }
+
+    private List<AnalyticsDrillDownTeamDTO> buildTeamItems(
+            List<ProjectSnapshotAggregate> projects,
+            List<DashboardAnalyticsRepository.TaskSnapshotRow> tasks,
+            Map<Long, User> usersById
+    ) {
+        Map<Long, List<DashboardAnalyticsRepository.TaskSnapshotRow>> tasksByAssignee = tasks.stream()
+                .filter(task -> task.assigneeId() != null)
+                .collect(Collectors.groupingBy(DashboardAnalyticsRepository.TaskSnapshotRow::assigneeId));
+
+        Set<Long> teamMemberIds = new LinkedHashSet<>();
+        projects.forEach(project -> {
+            if (project.managerId() != null) {
+                teamMemberIds.add(project.managerId());
+            }
+            teamMemberIds.addAll(project.teamMemberIds());
+        });
+
+        return teamMemberIds.stream()
+                .map(userId -> {
+                    User user = usersById.get(userId);
+                    long participation = tasksByAssignee.getOrDefault(userId, List.of()).size();
+                    long completedWins = tasksByAssignee.getOrDefault(userId, List.of()).stream()
+                            .filter(task -> task.status() == Task.Status.COMPLETED)
+                            .count();
+                    double winRate = participation > 0 ? (completedWins * 100.0) / participation : 0.0;
+
+                    return AnalyticsDrillDownTeamDTO.builder()
+                            .name(user != null ? user.getFullName() : fallbackUserName(userId))
+                            .role(user != null ? user.getRole().name().toLowerCase(Locale.ROOT) : "member")
+                            .dept("-")
+                            .participation(participation)
+                            .winRate(winRate)
+                            .build();
+                })
+                .toList();
+    }
+
+    private List<AnalyticsDrillDownFileDTO> buildFileItems(
+            List<ProjectSnapshotAggregate> projects,
+            List<DashboardAnalyticsRepository.ProjectDocumentRow> projectDocuments,
+            List<DashboardAnalyticsRepository.DocumentExportRow> documentExports
+    ) {
+        Map<Long, ProjectSnapshotAggregate> projectById = projects.stream()
+                .collect(Collectors.toMap(ProjectSnapshotAggregate::projectId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
+        List<AnalyticsDrillDownFileDTO> files = new ArrayList<>();
+
+        for (DashboardAnalyticsRepository.ProjectDocumentRow document : projectDocuments) {
+            ProjectSnapshotAggregate project = projectById.get(document.projectId());
+            if (project != null) {
+                files.add(AnalyticsDrillDownFileDTO.builder()
+                        .id("doc-" + document.documentId())
+                        .name(document.name())
+                        .project(project.projectName())
+                        .uploader(document.uploaderName())
+                        .uploadTime(document.createdAt() == null ? null : document.createdAt().toString())
+                        .size(document.size())
+                        .build());
+            }
+        }
+
+        for (DashboardAnalyticsRepository.DocumentExportRow export : documentExports) {
+            ProjectSnapshotAggregate project = projectById.get(export.projectId());
+            if (project != null) {
+                files.add(AnalyticsDrillDownFileDTO.builder()
+                        .id("export-" + export.exportId())
+                        .name(export.fileName())
+                        .project(project.projectName())
+                        .uploader(export.exportedByName())
+                        .uploadTime(export.exportedAt() == null ? null : export.exportedAt().toString())
+                        .size(export.fileSize() == null ? "-" : export.fileSize() + "B")
+                        .build());
+            }
+        }
+
+        return files.stream()
+                .sorted(Comparator.comparing(AnalyticsDrillDownFileDTO::getUploadTime, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
     }
 
     private String resolveUserDisplayName(Long userId) {
@@ -1052,9 +1109,14 @@ public class DashboardAnalyticsService {
         return "IN_PROGRESS";
     }
 
-    private Map<Long, String> getUserNameMap() {
-        return userRepository.findAll().stream()
-                .collect(Collectors.toMap(User::getId, User::getFullName));
+    private String deriveOutcome(DashboardAnalyticsRepository.TenderSummaryRow tender, ProjectSnapshotAggregate project) {
+        if (tender.status() == Tender.Status.BIDDED && project != null) {
+            return "WON";
+        }
+        if (tender.status() == Tender.Status.ABANDONED) {
+            return "LOST";
+        }
+        return "IN_PROGRESS";
     }
 
     private void accumulateTeamAggregate(
@@ -1097,6 +1159,21 @@ public class DashboardAnalyticsService {
 
     private BigDecimal defaultAmount(BigDecimal amount) {
         return amount != null ? amount : BigDecimal.ZERO;
+    }
+
+    private record ProjectSnapshotAggregate(
+            Long projectId,
+            Long tenderId,
+            String projectName,
+            Project.Status projectStatus,
+            Long managerId,
+            String managerName,
+            String tenderSource,
+            BigDecimal budget,
+            LocalDateTime referenceDate,
+            LocalDateTime endDate,
+            Set<Long> teamMemberIds
+    ) {
     }
 
     private int normalizePage(Integer page) {

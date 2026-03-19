@@ -39,6 +39,12 @@ public class User {
     @Column(nullable = false)
     private Boolean enabled = true;
 
+    @Column(name = "department_code", length = 100)
+    private String departmentCode;
+
+    @Column(name = "department_name", length = 100)
+    private String departmentName;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -24,6 +24,7 @@ import com.xiyu.bid.projectworkflow.repository.ProjectShareLinkRepository;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TaskRepository;
 import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +46,7 @@ public class ProjectWorkflowService {
     private static final DateTimeFormatter DISPLAY_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.CHINA);
 
     private final ProjectRepository projectRepository;
+    private final ProjectAccessScopeService projectAccessScopeService;
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final ProjectDocumentRepository projectDocumentRepository;
@@ -247,6 +249,7 @@ public class ProjectWorkflowService {
     }
 
     private Project requireProject(Long projectId) {
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
         return projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", String.valueOf(projectId)));
     }

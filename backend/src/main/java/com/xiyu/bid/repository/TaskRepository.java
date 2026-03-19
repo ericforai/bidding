@@ -4,6 +4,7 @@ import com.xiyu.bid.entity.Task;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -17,6 +18,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
      * 根据项目ID查找任务
      */
     List<Task> findByProjectId(Long projectId);
+
+    List<Task> findByProjectIdIn(Collection<Long> projectIds);
 
     /**
      * 根据受托人ID查找任务

@@ -40,7 +40,7 @@ public class JwtUtil {
         log.info("JWT initialized with expiration: {} ms", expiration);
     }
 
-    public String generateToken(String username) {
+    public String generateAccessToken(String username) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
 
@@ -50,6 +50,10 @@ public class JwtUtil {
                 .expiration(expiryDate)
                 .signWith(secretKey)
                 .compact();
+    }
+
+    public String generateToken(String username) {
+        return generateAccessToken(username);
     }
 
     public String extractUsername(String token) {

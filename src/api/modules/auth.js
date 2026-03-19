@@ -10,46 +10,69 @@
 import httpClient from '../client.js'
 import { mockData } from '../mock.js'
 import { isMockMode } from '../config.js'
+import {
+  clearSessionState,
+  getStoredUser,
+  hasPersistentUserHint,
+  setAccessToken
+} from '../session.js'
+
+const normalizeAllowedProjectIds = (allowedProjectIds) => {
+  if (!Array.isArray(allowedProjectIds)) {
+    return []
+  }
+
+  return [...new Set(allowedProjectIds.filter((projectId) => projectId !== null && projectId !== undefined))]
+}
+
+const normalizeAllowedDepts = (allowedDepts) => {
+  if (!Array.isArray(allowedDepts)) {
+    return []
+  }
+
+  return [...new Set(allowedDepts.filter((deptCode) => deptCode !== null && deptCode !== undefined && deptCode !== ''))]
+}
 
 const normalizeUser = (authPayload) => ({
   id: authPayload?.id,
-  name: authPayload?.fullName || authPayload?.username,
+  name: authPayload?.fullName || authPayload?.name || authPayload?.username,
   username: authPayload?.username,
   email: authPayload?.email,
-  role: String(authPayload?.role || '').toLowerCase()
+  role: String(authPayload?.role || '').toLowerCase(),
+  dept: authPayload?.dept || authPayload?.departmentName || '',
+  deptCode: authPayload?.deptCode || authPayload?.departmentCode || '',
+  allowedProjectIds: normalizeAllowedProjectIds(authPayload?.allowedProjectIds),
+  allowedDepts: normalizeAllowedDepts(authPayload?.allowedDepts)
 })
 
-const getSavedUser = () => {
-  const userStr = localStorage.getItem('user') || sessionStorage.getItem('user')
-  return userStr ? JSON.parse(userStr) : null
-}
+export const getSavedUser = () => getStoredUser()
 
-export const getStoredToken = () => localStorage.getItem('token') || sessionStorage.getItem('token')
-
-export const hasPersistentSession = () => Boolean(localStorage.getItem('token'))
+export const hasPersistentSession = () => hasPersistentUserHint()
 
 export const clearAuthState = () => {
-  localStorage.removeItem('user')
-  localStorage.removeItem('token')
-  sessionStorage.removeItem('user')
-  sessionStorage.removeItem('token')
+  clearSessionState()
 }
 
 export const authApi = {
   /**
    * 用户登录
    */
-  async login(username, password) {
+  async login(username, password, rememberMe = true) {
     if (isMockMode()) {
       // Mock 模式
       return new Promise((resolve) => {
         setTimeout(() => {
           const user = mockData.users.find(u => u.name === username) || mockData.users[0]
+          const token = 'mock-token-' + Date.now()
+          setAccessToken(token)
           resolve({
             success: true,
             data: {
-              user,
-              token: 'mock-token-' + Date.now()
+              user: {
+                ...user,
+                allowedProjectIds: normalizeAllowedProjectIds(user.allowedProjectIds)
+              },
+              token
             }
           })
         }, 300)
@@ -57,8 +80,11 @@ export const authApi = {
     }
 
     // 真实 API 模式
-    const response = await httpClient.post('/api/auth/login', { username, password })
+    const response = await httpClient.post('/api/auth/login', { username, password, rememberMe }, {
+      skipAuthRefresh: true
+    })
     const authPayload = response?.data
+    setAccessToken(authPayload?.token)
 
     return {
       ...response,
@@ -75,9 +101,13 @@ export const authApi = {
    */
   async logout() {
     if (isMockMode()) {
+      clearAuthState()
       return Promise.resolve({ success: true })
     }
-    return httpClient.post('/api/auth/logout')
+    return httpClient.post('/api/auth/logout', null, {
+      skipAuthRefresh: true,
+      silentAuthError: true
+    })
   },
 
   /**
@@ -85,9 +115,14 @@ export const authApi = {
    */
   async getCurrentUser() {
     if (isMockMode()) {
+      const savedUser = getSavedUser() || mockData.users[0]
+
       return Promise.resolve({
         success: true,
-        data: getSavedUser() || mockData.users[0]
+        data: {
+          ...savedUser,
+          allowedProjectIds: normalizeAllowedProjectIds(savedUser?.allowedProjectIds)
+        }
       })
     }
 
@@ -103,15 +138,34 @@ export const authApi = {
   /**
    * 刷新 Token
    */
-  async refreshToken(refreshToken) {
+  async refreshToken() {
     if (isMockMode()) {
+      const user = getSavedUser()
+      if (!user) {
+        return Promise.resolve({
+          success: false,
+          message: 'No active mock session'
+        })
+      }
+      const token = 'new-mock-token-' + Date.now()
+      setAccessToken(token)
       return Promise.resolve({
         success: true,
-        data: { token: 'new-mock-token-' + Date.now() }
+        data: {
+          user: {
+            ...user,
+            allowedProjectIds: normalizeAllowedProjectIds(user.allowedProjectIds)
+          },
+          token
+        }
       })
     }
-    const response = await httpClient.post('/api/auth/refresh', refreshToken ? { refreshToken } : {})
+    const response = await httpClient.post('/api/auth/refresh', null, {
+      skipAuthRefresh: true,
+      silentAuthError: true
+    })
     const authPayload = response?.data
+    setAccessToken(authPayload?.token)
 
     return {
       ...response,

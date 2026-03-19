@@ -16,6 +16,10 @@ import com.xiyu.bid.repository.TenderRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.service.AuditLogService;
 import com.xiyu.bid.service.IAuditLogService;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceUnit;
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,12 +38,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = "spring.main.allow-bean-definition-overriding=true")
+@SpringBootTest(properties = {
+        "spring.main.allow-bean-definition-overriding=true",
+        "spring.jpa.properties.hibernate.generate_statistics=true"
+})
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles("test")
@@ -71,6 +79,9 @@ class AuditOperationalAnalyticsIntegrationTest {
 
     @Autowired
     private DocumentExportRepository documentExportRepository;
+
+    @PersistenceUnit
+    private EntityManagerFactory entityManagerFactory;
 
     private User adminUser;
     private Project project;
@@ -214,6 +225,8 @@ class AuditOperationalAnalyticsIntegrationTest {
                 .success(false)
                 .errorMessage("Bad credentials")
                 .build());
+
+        resetStatistics();
     }
 
     @Test
@@ -241,31 +254,80 @@ class AuditOperationalAnalyticsIntegrationTest {
     @Test
     @WithMockUser(roles = {"ADMIN"})
     void analyticsEndpoints_ShouldReturnRealProductLinesAndDrillDownData() throws Exception {
+        mockMvc.perform(get("/api/analytics/overview"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.summaryStats.totalTenders").value(2))
+                .andExpect(jsonPath("$.data.summaryStats.activeProjects").value(1))
+                .andExpect(jsonPath("$.data.summaryStats.pendingTasks").value(0))
+                .andExpect(jsonPath("$.data.statusDistribution.BIDDED").value(1))
+                .andExpect(jsonPath("$.data.topCompetitors[0].name").value("中国政府采购网"));
+
+        resetStatistics();
         mockMvc.perform(get("/api/analytics/product-lines"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[*].name", hasItem("智慧办公")));
+        assertQueryCountAtMost(2);
 
+        resetStatistics();
+        mockMvc.perform(get("/api/analytics/drilldown/revenue")
+                        .param("status", "BIDDED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.metricKey").value("revenue"))
+                .andExpect(jsonPath("$.data.items[0].title").value("智慧办公平台采购"))
+                .andExpect(jsonPath("$.data.summary.totalCount").value(1));
+        assertQueryCountAtMost(2);
+
+        resetStatistics();
         mockMvc.perform(get("/api/analytics/drill-down")
                         .param("type", "trend")
                         .param("key", currentMonthKey))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.stats.totalParticipation").value(2))
                 .andExpect(jsonPath("$.data.projects[0].name").value("智慧办公实施项目"));
+        assertQueryCountAtMost(6);
 
+        resetStatistics();
         mockMvc.perform(get("/api/analytics/drill-down")
                         .param("type", "competitor")
                         .param("key", "中国政府采购网"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.stats.totalParticipation").value(2))
                 .andExpect(jsonPath("$.data.files[0].name").value("智慧办公实施项目_export.json"));
+        assertQueryCountAtMost(6);
 
+        resetStatistics();
         mockMvc.perform(get("/api/analytics/drilldown/projects")
                         .param("status", "IN_PROGRESS"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.metricKey").value("projects"))
                 .andExpect(jsonPath("$.data.items[0].title").value("智慧办公实施项目"))
                 .andExpect(jsonPath("$.data.summary.activeCount").value(1));
+        assertQueryCountAtMost(2);
+
+        resetStatistics();
+        mockMvc.perform(get("/api/analytics/drilldown/team")
+                        .param("role", "ADMIN"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.metricKey").value("team"))
+                .andExpect(jsonPath("$.data.items[0].title").value("审计管理员"))
+                .andExpect(jsonPath("$.data.items[0].count").value(1))
+                .andExpect(jsonPath("$.data.items[0].managedProjectCount").value(1))
+                .andExpect(jsonPath("$.data.summary.totalCompletedTasks").value(0));
+        assertQueryCountAtMost(4);
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void analyticsEndpoints_ShouldReturnWinRateAndTeamDrillDownData() throws Exception {
+        mockMvc.perform(get("/api/analytics/drilldown/win-rate")
+                        .param("outcome", "WON"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.metricKey").value("win-rate"))
+                .andExpect(jsonPath("$.data.items[0].title").value("智慧办公平台采购"))
+                .andExpect(jsonPath("$.data.summary.totalCount").value(1))
+                .andExpect(jsonPath("$.data.summary.wonCount").value(1));
 
         mockMvc.perform(get("/api/analytics/drilldown/team")
                         .param("role", "ADMIN"))
@@ -275,5 +337,162 @@ class AuditOperationalAnalyticsIntegrationTest {
                 .andExpect(jsonPath("$.data.items[0].count").value(1))
                 .andExpect(jsonPath("$.data.items[0].managedProjectCount").value(1))
                 .andExpect(jsonPath("$.data.summary.totalCompletedTasks").value(0));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void analyticsQueries_ShouldStayBelowNaiveBaselines() throws Exception {
+        long productLineStatements = measureStatements(() -> mockMvc.perform(get("/api/analytics/product-lines"))
+                .andExpect(status().isOk()));
+        long productLineBaseline = measureStatements(this::runNaiveProductLineBaseline);
+        assertThat(productLineStatements)
+                .as("product-lines should use fewer SQL statements than the naive baseline")
+                .isGreaterThan(0L)
+                .isLessThan(productLineBaseline)
+                .isLessThanOrEqualTo(4L);
+
+        long drillDownStatements = measureStatements(() -> mockMvc.perform(get("/api/analytics/drill-down")
+                .param("type", "trend")
+                .param("key", currentMonthKey))
+                .andExpect(status().isOk()));
+        long drillDownBaseline = measureStatements(() -> runNaiveDrillDownBaseline("trend", currentMonthKey));
+        assertThat(drillDownStatements)
+                .as("drill-down should use fewer SQL statements than the naive baseline")
+                .isGreaterThan(0L)
+                .isLessThan(drillDownBaseline)
+                .isLessThanOrEqualTo(8L);
+
+        long winRateStatements = measureStatements(() -> mockMvc.perform(get("/api/analytics/drilldown/win-rate")
+                .param("outcome", "WON"))
+                .andExpect(status().isOk()));
+        long winRateBaseline = measureStatements(this::runNaiveWinRateBaseline);
+        assertThat(winRateStatements)
+                .as("win-rate drill-down should use fewer SQL statements than the naive baseline")
+                .isGreaterThan(0L)
+                .isLessThan(winRateBaseline)
+                .isLessThanOrEqualTo(8L);
+
+        long teamStatements = measureStatements(() -> mockMvc.perform(get("/api/analytics/drilldown/team")
+                .param("role", "ADMIN"))
+                .andExpect(status().isOk()));
+        long teamBaseline = measureStatements(this::runNaiveTeamBaseline);
+        assertThat(teamStatements)
+                .as("team drill-down should use fewer SQL statements than the naive baseline")
+                .isGreaterThan(0L)
+                .isLessThan(teamBaseline)
+                .isLessThanOrEqualTo(8L);
+    }
+
+    private long measureStatements(ThrowingAction action) throws Exception {
+        SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
+        Statistics statistics = sessionFactory.getStatistics();
+        boolean previouslyEnabled = statistics.isStatisticsEnabled();
+        statistics.setStatisticsEnabled(true);
+        statistics.clear();
+        try {
+            action.run();
+            return statistics.getPrepareStatementCount();
+        } finally {
+            statistics.clear();
+            statistics.setStatisticsEnabled(previouslyEnabled);
+        }
+    }
+
+    private void resetStatistics() {
+        SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
+        Statistics statistics = sessionFactory.getStatistics();
+        statistics.setStatisticsEnabled(true);
+        statistics.clear();
+    }
+
+    private void assertQueryCountAtMost(long expectedMax) {
+        SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
+        Statistics statistics = sessionFactory.getStatistics();
+        assertThat(statistics.getPrepareStatementCount())
+                .as("SQL statement count should stay within the optimized threshold")
+                .isLessThanOrEqualTo(expectedMax);
+    }
+
+    private void runNaiveProductLineBaseline() {
+        tenderRepository.findAll().forEach(tender -> {
+            tenderRepository.findById(tender.getId());
+            projectRepository.findByTenderId(tender.getId());
+        });
+    }
+
+    private void runNaiveDrillDownBaseline(String type, String key) {
+        List<Tender> tenders = tenderRepository.findAll();
+        List<Project> projects = projectRepository.findAll();
+        List<Task> tasks = taskRepository.findAll();
+        projectDocumentRepository.findAll();
+        documentExportRepository.findAll();
+
+        for (Tender tender : tenders) {
+            tenderRepository.findById(tender.getId());
+        }
+        for (Project project : projects) {
+            projectRepository.findById(project.getId());
+            if (project.getTenderId() != null) {
+                tenderRepository.findById(project.getTenderId());
+            }
+            projectDocumentRepository.findByProjectIdOrderByCreatedAtDesc(project.getId());
+            documentExportRepository.findByProjectIdOrderByExportedAtDesc(project.getId());
+        }
+        for (Task task : tasks) {
+            taskRepository.findById(task.getId());
+        }
+        if ("trend".equals(type) && key != null) {
+            tenderRepository.findAll().stream()
+                    .filter(tender -> tender.getCreatedAt() != null)
+                    .filter(tender -> tender.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM")).equals(key))
+                    .toList();
+        }
+    }
+
+    private void runNaiveWinRateBaseline() {
+        List<Tender> tenders = tenderRepository.findAll();
+        List<Project> projects = projectRepository.findAll();
+        userRepository.findAll();
+
+        for (Tender tender : tenders) {
+            tenderRepository.findById(tender.getId());
+            projectRepository.findByTenderId(tender.getId());
+        }
+        for (Project project : projects) {
+            if (project.getManagerId() != null) {
+                userRepository.findById(project.getManagerId());
+            }
+            if (project.getTenderId() != null) {
+                tenderRepository.findById(project.getTenderId());
+            }
+        }
+    }
+
+    private void runNaiveTeamBaseline() {
+        List<Project> projects = projectRepository.findAll();
+        List<Tender> tenders = tenderRepository.findAll();
+        List<User> users = userRepository.findAll();
+        List<Task> tasks = taskRepository.findAll();
+
+        for (Project project : projects) {
+            projectRepository.findById(project.getId());
+            if (project.getTenderId() != null) {
+                tenderRepository.findById(project.getTenderId());
+            }
+            if (project.getManagerId() != null) {
+                userRepository.findById(project.getManagerId());
+            }
+            taskRepository.findByProjectId(project.getId());
+            projectDocumentRepository.findByProjectIdOrderByCreatedAtDesc(project.getId());
+            documentExportRepository.findByProjectIdOrderByExportedAtDesc(project.getId());
+        }
+        tenders.forEach(tender -> tenderRepository.findById(tender.getId()));
+        users.forEach(user -> userRepository.findById(user.getId()));
+        tasks.forEach(task -> taskRepository.findById(task.getId()));
+    }
+
+    @FunctionalInterface
+    private interface ThrowingAction {
+        void run() throws Exception;
     }
 }

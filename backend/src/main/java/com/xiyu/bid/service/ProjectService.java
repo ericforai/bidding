@@ -43,6 +43,7 @@ public class ProjectService {
     );
 
     private final ProjectRepository projectRepository;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     /**
      * 获取所有项目
@@ -50,7 +51,7 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public List<ProjectDTO> getAllProjects() {
         log.debug("Fetching all projects");
-        return projectRepository.findAll().stream()
+        return projectAccessScopeService.filterAccessibleProjects(projectRepository.findAll()).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -61,6 +62,7 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public ProjectDTO getProjectById(Long id) {
         log.debug("Fetching project by id: {}", id);
+        projectAccessScopeService.assertCurrentUserCanAccessProject(id);
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", id.toString()));
         return convertToDTO(project);
@@ -83,6 +85,7 @@ public class ProjectService {
      */
     public ProjectDTO updateProject(Long id, ProjectDTO projectDTO) {
         log.debug("Updating project with id: {}", id);
+        projectAccessScopeService.assertCurrentUserCanAccessProject(id);
         Project existingProject = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", id.toString()));
 
@@ -99,6 +102,7 @@ public class ProjectService {
      */
     public void deleteProject(Long id) {
         log.debug("Deleting project with id: {}", id);
+        projectAccessScopeService.assertCurrentUserCanAccessProject(id);
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", id.toString()));
         projectRepository.delete(project);
@@ -115,6 +119,7 @@ public class ProjectService {
     )
     public ProjectDTO updateProjectStatus(Long id, Project.Status status) {
         log.debug("Updating status for project with id: {} to {}", id, status);
+        projectAccessScopeService.assertCurrentUserCanAccessProject(id);
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", id.toString()));
 
@@ -134,6 +139,7 @@ public class ProjectService {
     )
     public ProjectDTO updateProjectTeam(Long id, List<Long> teamMembers) {
         log.debug("Updating team for project with id: {}", id);
+        projectAccessScopeService.assertCurrentUserCanAccessProject(id);
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", id.toString()));
 
@@ -149,7 +155,7 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public List<ProjectDTO> getProjectsByStatus(Project.Status status) {
         log.debug("Fetching projects by status: {}", status);
-        return projectRepository.findByStatus(status).stream()
+        return projectAccessScopeService.filterAccessibleProjects(projectRepository.findByStatus(status)).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -160,7 +166,7 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public List<ProjectDTO> getProjectsByManager(Long managerId) {
         log.debug("Fetching projects by manager: {}", managerId);
-        return projectRepository.findByManagerId(managerId).stream()
+        return projectAccessScopeService.filterAccessibleProjects(projectRepository.findByManagerId(managerId)).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -171,7 +177,7 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public List<ProjectDTO> getProjectsByTender(Long tenderId) {
         log.debug("Fetching projects by tender: {}", tenderId);
-        return projectRepository.findByTenderId(tenderId).stream()
+        return projectAccessScopeService.filterAccessibleProjects(projectRepository.findByTenderId(tenderId)).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -182,7 +188,7 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public List<ProjectDTO> getActiveProjects() {
         log.debug("Fetching active projects");
-        return projectRepository.findActiveProjects().stream()
+        return projectAccessScopeService.filterAccessibleProjects(projectRepository.findActiveProjects()).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -193,7 +199,7 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public List<ProjectDTO> searchProjectsByName(String name) {
         log.debug("Searching projects by name: {}", name);
-        return projectRepository.findByNameContainingIgnoreCase(name).stream()
+        return projectAccessScopeService.filterAccessibleProjects(projectRepository.findByNameContainingIgnoreCase(name)).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -204,13 +210,14 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public Map<Project.Status, Long> getProjectStatistics() {
         log.debug("Fetching project statistics");
+        List<Project> visibleProjects = projectAccessScopeService.filterAccessibleProjects(projectRepository.findAll());
         return Map.of(
-            Project.Status.INITIATED, projectRepository.countByStatus(Project.Status.INITIATED),
-            Project.Status.PREPARING, projectRepository.countByStatus(Project.Status.PREPARING),
-            Project.Status.REVIEWING, projectRepository.countByStatus(Project.Status.REVIEWING),
-            Project.Status.SEALING, projectRepository.countByStatus(Project.Status.SEALING),
-            Project.Status.BIDDING, projectRepository.countByStatus(Project.Status.BIDDING),
-            Project.Status.ARCHIVED, projectRepository.countByStatus(Project.Status.ARCHIVED)
+            Project.Status.INITIATED, countProjectsByStatus(visibleProjects, Project.Status.INITIATED),
+            Project.Status.PREPARING, countProjectsByStatus(visibleProjects, Project.Status.PREPARING),
+            Project.Status.REVIEWING, countProjectsByStatus(visibleProjects, Project.Status.REVIEWING),
+            Project.Status.SEALING, countProjectsByStatus(visibleProjects, Project.Status.SEALING),
+            Project.Status.BIDDING, countProjectsByStatus(visibleProjects, Project.Status.BIDDING),
+            Project.Status.ARCHIVED, countProjectsByStatus(visibleProjects, Project.Status.ARCHIVED)
         );
     }
 
@@ -372,5 +379,11 @@ public class ProjectService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private long countProjectsByStatus(List<Project> projects, Project.Status status) {
+        return projects.stream()
+                .filter(project -> project.getStatus() == status)
+                .count();
     }
 }

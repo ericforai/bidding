@@ -1,77 +1,106 @@
-// Input: authApi and demo user adapter for mock-mode session setup
-// Output: useUserStore - Pinia store for authentication and current user state
+// Input: authApi responses and demo user adapter for mock-mode session setup
+// Output: useUserStore - Pinia store for auth, session restore, and user scope state
 // Pos: src/stores/ - State management layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 import { defineStore } from 'pinia'
 import { authApi } from '@/api'
 import { getDemoUsers } from '@/api/mock-adapters/frontendDemo.js'
-import { clearAuthState, getStoredToken, hasPersistentSession } from '@/api/modules/auth.js'
-
-// 从 localStorage 恢复用户状态
-const getSavedUser = () => {
-  try {
-    const saved = localStorage.getItem('user') || sessionStorage.getItem('user')
-    if (saved) {
-      return JSON.parse(saved)
-    }
-  } catch (e) {
-    console.error('Failed to parse saved user:', e)
-  }
-  return null
-}
-
-const getSavedToken = () => getStoredToken()
+import { clearAuthState, hasPersistentSession } from '@/api/modules/auth.js'
+import {
+  bootstrapLegacyAccessToken,
+  getStoredUser,
+  persistUserHint
+} from '@/api/session.js'
 
 export const useUserStore = defineStore('user', {
   state: () => {
-    const savedUser = getSavedUser()
+    const savedUser = getStoredUser()
 
     return {
       currentUser: savedUser,
-      token: getSavedToken(),
-      users: getDemoUsers()
+      token: bootstrapLegacyAccessToken(),
+      users: getDemoUsers(),
+      isRestoringSession: false,
+      hasRestoredSession: false
     }
   },
 
   getters: {
     isLoggedIn: (state) => !!state.currentUser && !!state.token,
     userRole: (state) => state.currentUser?.role || 'staff',
-    userName: (state) => state.currentUser?.name || '用户'
+    userName: (state) => state.currentUser?.name || '用户',
+    allowedProjectIds: (state) => state.currentUser?.allowedProjectIds || [],
+    allowedDepts: (state) => state.currentUser?.allowedDepts || []
   },
 
   actions: {
+    applyAuthSession(authData, remember = hasPersistentSession()) {
+      const nextUser = authData?.user || authData
+      const nextToken = authData?.token
+
+      if (!nextUser) {
+        return null
+      }
+
+      this.currentUser = nextUser
+      if (nextToken) {
+        this.token = nextToken
+      }
+
+      this.persistSession(remember)
+      return this.currentUser
+    },
+
     async login(username, password, remember = true) {
-      const result = await authApi.login(username, password)
+      const result = await authApi.login(username, password, remember)
 
       if (!result?.success || !result?.data?.user || !result?.data?.token) {
         throw new Error(result?.message || 'Login failed')
       }
 
-      this.currentUser = result.data.user
-      this.token = result.data.token
-      this.persistSession(remember)
+      this.applyAuthSession(result.data, remember)
+      this.hasRestoredSession = true
       return this.currentUser
     },
 
     async restoreSession() {
-      if (!this.token) {
-        return null
-      }
-
-      if (this.currentUser) {
+      if (this.isRestoringSession) {
         return this.currentUser
       }
 
-      const result = await authApi.getCurrentUser()
-      if (!result?.success || !result?.data) {
-        this.logout()
-        return null
+      if (this.hasRestoredSession) {
+        return this.currentUser
       }
 
-      this.currentUser = result.data
-      this.persistSession(hasPersistentSession())
-      return this.currentUser
+      const hasProjectScopeSnapshot = Array.isArray(this.currentUser?.allowedProjectIds)
+      const hasDeptScopeSnapshot = Array.isArray(this.currentUser?.allowedDepts)
+
+      if (this.currentUser && this.token && hasProjectScopeSnapshot && hasDeptScopeSnapshot) {
+        this.hasRestoredSession = true
+        return this.currentUser
+      }
+
+      this.isRestoringSession = true
+
+      try {
+        const result = this.token
+          ? await authApi.getCurrentUser()
+          : await authApi.refreshToken()
+
+        if (!result?.success || !result?.data) {
+          throw new Error(result?.message || 'Session restore failed')
+        }
+
+        this.applyAuthSession(result.data, hasPersistentSession())
+        return this.currentUser
+      } catch (error) {
+        this.resetSession()
+        return null
+      } finally {
+        this.isRestoringSession = false
+        this.hasRestoredSession = true
+      }
     },
 
     async logout() {
@@ -80,9 +109,7 @@ export const useUserStore = defineStore('user', {
       } catch (error) {
         console.warn('Logout request failed, clearing local session anyway:', error)
       } finally {
-        this.currentUser = null
-        this.token = null
-        clearAuthState()
+        this.resetSession()
       }
     },
 
@@ -93,17 +120,18 @@ export const useUserStore = defineStore('user', {
       }
     },
 
+    resetSession() {
+      this.currentUser = null
+      this.token = null
+      this.isRestoringSession = false
+      this.hasRestoredSession = true
+      clearAuthState()
+    },
+
     // 持久化用户状态到 storage
     persistSession(remember = true) {
-      if (!this.currentUser || !this.token) return
-
-      const storage = remember ? localStorage : sessionStorage
-      const otherStorage = remember ? sessionStorage : localStorage
-
-      otherStorage.removeItem('user')
-      otherStorage.removeItem('token')
-      storage.setItem('user', JSON.stringify(this.currentUser))
-      storage.setItem('token', this.token)
+      if (!this.currentUser) return
+      persistUserHint(this.currentUser, remember)
     }
   }
 })
