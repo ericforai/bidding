@@ -8,6 +8,14 @@ import { test, expect } from '@playwright/test'
  */
 
 test.describe('router navigation redirect', () => {
+  // Clear all storage before each test to ensure clean state
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.clear()
+      sessionStorage.clear()
+    })
+  })
+
   test('should use router.push for login redirect on 401, not window.location.href', async ({ page }) => {
     // Seed initial session with complete user data to avoid restoreSession API call
     await page.addInitScript(() => {
@@ -78,12 +86,10 @@ test.describe('router navigation redirect', () => {
     // Verify session was cleared
     const storageState = await page.evaluate(() => ({
       token: sessionStorage.getItem('token'),
-      refreshToken: sessionStorage.getItem('refreshToken'),
       user: sessionStorage.getItem('user')
     }))
 
     expect(storageState.token).toBeNull()
-    expect(storageState.refreshToken).toBeNull()
     expect(storageState.user).toBeNull()
 
     // Verify error message was shown

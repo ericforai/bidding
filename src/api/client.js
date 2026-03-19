@@ -93,7 +93,21 @@ httpClient.interceptors.response.use(
 
         return httpClient(config)
       } catch (refreshError) {
-        // Refresh 失败时继续走统一的未认证清理逻辑
+        // Refresh 失败 - 清除会话并跳转到登录页
+        ElMessage.error('登录已过期，请重新登录')
+        clearSessionState()
+        // Also clear Pinia store state to ensure route guard sees correct state
+        const { useUserStore } = await import('@/stores/user.js')
+        useUserStore().resetSession()
+        if (router.currentRoute.value.path !== '/login') {
+          router.push('/login').catch((navError) => {
+            if (navError.name !== 'NavigationDuplicated') {
+              console.error('Navigation to login failed:', navError)
+            }
+          })
+        }
+        // 抛出错误以中止原请求
+        throw refreshError
       }
     }
 
