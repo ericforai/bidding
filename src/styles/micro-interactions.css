@@ -199,9 +199,24 @@ body, .text-body, .el-main, .el-card__body {
   text-underline-offset: 3px;
 }
 
-/* Icon buttons */
+/* Icon buttons - minimum touch target 44px */
 .el-button.is-circle {
   transition: all var(--transition-base);
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+}
+
+/* Icon-only buttons ensure touch target */
+.el-button:has(.el-icon):not(:has(.el-button__text)),
+button[class*="icon"]:not(.el-button),
+.el-icon-btn {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .el-button.is-circle:hover {
@@ -211,6 +226,11 @@ body, .text-body, .el-main, .el-card__body {
 
 .el-button.is-circle:active {
   transform: scale(1);
+}
+
+/* Ensure icons inside buttons have proper spacing */
+.el-button .el-icon {
+  font-size: 18px;
 }
 
 /* Button loading state */
