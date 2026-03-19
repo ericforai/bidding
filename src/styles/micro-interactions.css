@@ -161,11 +161,12 @@
 
 /* ==================== Input Field Micro-Interactions ==================== */
 
-/* Input wrapper */
+/* Input wrapper - minimum touch target 44px */
 .el-input .el-input__wrapper {
   transition: all var(--transition-base);
   border-radius: 8px;
-  padding: 8px 14px;
+  padding: 11px 14px;
+  min-height: 44px;
   box-shadow: var(--elevation-0);
 }
 
