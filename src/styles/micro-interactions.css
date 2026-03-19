@@ -10,7 +10,7 @@ h1, .page-title, .dashboard-title {
   font-size: 32px;
   font-weight: 700;
   line-height: 1.2;
-  color: var(--text-primary, #1A1A1A);
+  color: #0F0F0F;
   letter-spacing: -0.02em;
   margin-bottom: var(--space-lg, 24px);
 }
@@ -20,7 +20,7 @@ h2, .section-title, .card-title {
   font-size: 24px;
   font-weight: 600;
   line-height: 1.3;
-  color: var(--text-primary, #1A1A1A);
+  color: #1A1A1A;
   letter-spacing: -0.01em;
   margin-bottom: var(--space-md, 16px);
 }
@@ -30,7 +30,7 @@ h3, .subsection-title {
   font-size: 18px;
   font-weight: 600;
   line-height: 1.4;
-  color: var(--text-secondary, #666666);
+  color: #2A2A2A;
   margin-bottom: var(--space-sm, 8px);
 }
 
@@ -39,8 +39,29 @@ h4, .subheading {
   font-size: 16px;
   font-weight: 600;
   line-height: 1.4;
-  color: var(--text-secondary, #666666);
+  color: #333333;
   margin-bottom: var(--space-sm, 8px);
+}
+
+/* 正文文本 - WCAG AA 对比度 */
+body, .text-body, .el-main, .el-card__body {
+  color: #1A1A1A;
+  line-height: 1.6;
+}
+
+/* 次要文本 */
+.text-secondary, .el-text--secondary {
+  color: #4A4A4A;
+}
+
+/* 辅助文本 */
+.text-tertiary, .text-muted, .el-text--placeholder {
+  color: #6A6A6A;
+}
+
+/* 深色背景上的文本 - WCAG AAA */
+.text-on-dark, .el-text--primary-on-dark {
+  color: #F5F5F5;
 }
 
 /* ==================== Design Tokens ==================== */
