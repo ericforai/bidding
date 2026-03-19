@@ -2,13 +2,15 @@ package com.xiyu.bid.project.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.entity.Project;
-import com.xiyu.bid.entity.SystemSetting;
+import com.xiyu.bid.entity.ProjectGroup;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.platform.util.PasswordEncryptionUtil;
+import com.xiyu.bid.repository.ProjectGroupRepository;
 import com.xiyu.bid.repository.ProjectRepository;
-import com.xiyu.bid.repository.SystemSettingRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.service.DataScopeConfigService;
+import com.xiyu.bid.settings.entity.SystemSetting;
+import com.xiyu.bid.settings.repository.SystemSettingRepository;
 import com.xiyu.bid.support.TestPasswordEncryptionUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +47,9 @@ class ProjectControllerIntegrationTest {
     private ProjectRepository projectRepository;
 
     @Autowired
+    private ProjectGroupRepository projectGroupRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -70,6 +75,7 @@ class ProjectControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        projectGroupRepository.deleteAll();
         projectRepository.deleteAll();
         systemSettingRepository.deleteAll();
         userRepository.deleteAll();
@@ -142,6 +148,16 @@ class ProjectControllerIntegrationTest {
                 .teamMembers(List.of(889L))
                 .startDate(LocalDateTime.of(2026, 3, 12, 9, 0))
                 .endDate(LocalDateTime.of(2026, 3, 22, 18, 0))
+                .build());
+
+        Long visibleProjectId = projectRepository.findByNameContainingIgnoreCase("真实项目列表回归").get(0).getId();
+        projectGroupRepository.saveAndFlush(ProjectGroup.builder()
+                .groupCode("G1")
+                .groupName("重点项目组")
+                .managerUserId(managerUser.getId())
+                .visibility(ProjectGroup.Visibility.MEMBERS)
+                .memberUserIds(List.of(groupViewerUser.getId()))
+                .projectIds(List.of(visibleProjectId))
                 .build());
 
         systemSettingRepository.save(SystemSetting.builder()
@@ -248,17 +264,6 @@ class ProjectControllerIntegrationTest {
                                     "canViewOtherDepts", false,
                                     "allowedDeptCodes", List.of()
                             )
-                    ),
-                    "projectGroupRules", List.of(
-                            java.util.Map.of(
-                                    "groupCode", "G1",
-                                    "groupName", "重点项目组",
-                                    "managerUserId", managerUser.getId(),
-                                    "visibility", "members",
-                                    "memberUserIds", List.of(groupViewerUser.getId()),
-                                    "allowedRoles", List.of(),
-                                    "projectIds", List.of(projectRepository.findByNameContainingIgnoreCase("真实项目列表回归").get(0).getId())
-                            )
                     )
             ));
         } catch (Exception ex) {
@@ -273,5 +278,15 @@ class ProjectControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].name").value("真实项目列表回归"));
+    }
+
+    @Test
+    @WithMockUser(username = "group-viewer-user", roles = {"STAFF"})
+    void getAllProjects_ShouldExcludeProjectsAfterProjectGroupIsDeleted() throws Exception {
+        projectGroupRepository.deleteAll();
+
+        mockMvc.perform(get("/api/projects"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(0));
     }
 }

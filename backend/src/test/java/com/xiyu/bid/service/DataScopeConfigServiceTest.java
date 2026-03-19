@@ -2,10 +2,10 @@ package com.xiyu.bid.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.dto.DataScopeConfigResponse;
-import com.xiyu.bid.entity.SystemSetting;
 import com.xiyu.bid.entity.User;
-import com.xiyu.bid.repository.SystemSettingRepository;
 import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.settings.entity.SystemSetting;
+import com.xiyu.bid.settings.repository.SystemSettingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -196,52 +196,6 @@ class DataScopeConfigServiceTest {
     }
 
     @Test
-    void getAccessProfile_ShouldGrantProjectsFromMatchingProjectGroupRule() {
-        User staffUser = User.builder()
-                .id(3L)
-                .username("staff")
-                .fullName("Staff")
-                .role(User.Role.STAFF)
-                .departmentCode("TECH")
-                .departmentName("技术部")
-                .enabled(true)
-                .build();
-        String payloadJson = """
-                {
-                  "departmentTree": [
-                    {
-                      "departmentCode": "TECH",
-                      "departmentName": "技术部",
-                      "parentDepartmentCode": null,
-                      "sortOrder": 1
-                    }
-                  ],
-                  "userRules": [],
-                  "departmentRules": [],
-                  "projectGroupRules": [
-                    {
-                      "groupCode": "G1",
-                      "groupName": "重点项目组",
-                      "managerUserId": 10,
-                      "visibility": "custom",
-                      "memberUserIds": [],
-                      "allowedRoles": ["staff"],
-                      "projectIds": [88, 99]
-                    }
-                  ]
-                }
-                """;
-
-        when(userRepository.findAll()).thenReturn(List.of(staffUser));
-        when(systemSettingRepository.findByConfigKey(DataScopeConfigService.DATA_SCOPE_CONFIG_KEY))
-                .thenReturn(Optional.of(SystemSetting.builder().configKey(DataScopeConfigService.DATA_SCOPE_CONFIG_KEY).payloadJson(payloadJson).build()));
-
-        DataScopeConfigService.AccessProfile profile = dataScopeConfigService.getAccessProfile(staffUser);
-
-        assertThat(profile.getExplicitProjectIds()).containsExactly(88L, 99L);
-    }
-
-    @Test
     void saveConfig_ShouldPersistNormalizedRules() {
         User salesUser = User.builder()
                 .id(1L)
@@ -277,15 +231,6 @@ class DataScopeConfigServiceTest {
                                 .parentDeptCode("SALES")
                                 .sortOrder(2)
                                 .build()))
-                .projectGroupScope(List.of(DataScopeConfigResponse.ProjectGroupScopeItem.builder()
-                        .groupCode("G1")
-                        .groupName("重点项目组")
-                        .managerUserId(1L)
-                        .visibility("custom")
-                        .memberUserIds(List.of(2L, 2L))
-                        .allowedRoles(List.of("staff", "staff"))
-                        .projectIds(List.of(8L, 7L, 7L))
-                        .build()))
                 .build();
         AtomicReference<String> savedPayload = new AtomicReference<>();
 
@@ -308,7 +253,5 @@ class DataScopeConfigServiceTest {
         assertThat(response.getUserDataScope().get(0).getAllowedProjects()).containsExactly(99L, 100L);
         assertThat(response.getDeptDataScope().get(0).getAllowedDepts()).containsExactly("TECH");
         assertThat(response.getDeptTree()).hasSize(2);
-        assertThat(response.getProjectGroupScope().get(0).getProjectIds()).containsExactly(7L, 8L);
-        assertThat(response.getProjectGroupScope().get(0).getMemberUserIds()).containsExactly(2L);
     }
 }

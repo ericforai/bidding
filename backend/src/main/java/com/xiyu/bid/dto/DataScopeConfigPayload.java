@@ -23,9 +23,6 @@ public class DataScopeConfigPayload {
     @Builder.Default
     private List<DepartmentScopeRule> departmentRules = new ArrayList<>();
 
-    @Builder.Default
-    private List<ProjectGroupRule> projectGroupRules = new ArrayList<>();
-
     @Data
     @Builder
     @NoArgsConstructor
@@ -60,22 +57,5 @@ public class DataScopeConfigPayload {
         private boolean canViewOtherDepts;
         @Builder.Default
         private List<String> allowedDeptCodes = new ArrayList<>();
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ProjectGroupRule {
-        private String groupCode;
-        private String groupName;
-        private Long managerUserId;
-        private String visibility;
-        @Builder.Default
-        private List<Long> memberUserIds = new ArrayList<>();
-        @Builder.Default
-        private List<String> allowedRoles = new ArrayList<>();
-        @Builder.Default
-        private List<Long> projectIds = new ArrayList<>();
     }
 }

@@ -30,6 +30,7 @@ public class ProjectAccessScopeService {
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
     private final DataScopeConfigService dataScopeConfigService;
+    private final ProjectGroupService projectGroupService;
 
     public List<Long> getAllowedProjectIds(User user) {
         if (user == null || user.getRole() == User.Role.ADMIN) {
@@ -45,6 +46,7 @@ public class ProjectAccessScopeService {
 
         Set<Long> allowedIds = new LinkedHashSet<>(projectRepository.findAccessibleProjectIdsByUserId(user.getId()));
         allowedIds.addAll(accessProfile.getExplicitProjectIds());
+        allowedIds.addAll(projectGroupService.getGrantedProjectIds(user));
         if (!accessProfile.getAllowedDepartmentCodes().isEmpty()) {
             allowedIds.addAll(projectRepository.findAccessibleProjectIdsByDepartmentCodes(accessProfile.getAllowedDepartmentCodes()));
         }

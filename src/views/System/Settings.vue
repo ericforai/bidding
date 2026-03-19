@@ -154,64 +154,14 @@
                     <el-badge :value="projectGroupScope.length" class="tab-badge" />
                   </div>
                 </template>
-                <el-table :data="projectGroupScope" size="small" border>
-                  <el-table-column prop="groupName" label="项目组" min-width="180">
-                    <template #default="{ row }">
-                      <el-input v-model="row.groupName" size="small" placeholder="请输入项目组名称" />
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="managerUserId" label="负责人" width="160">
-                    <template #default="{ row }">
-                      <el-select v-model="row.managerUserId" size="small" style="width: 100%" @change="handleProjectManagerChange(row)">
-                        <el-option v-for="user in userOptions" :key="user.id" :label="user.name" :value="user.id" />
-                      </el-select>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="memberCount" label="成员数" width="80" align="center" />
-                  <el-table-column prop="visibility" label="可见范围" width="140">
-                    <template #default="{ row }">
-                      <el-select v-model="row.visibility" size="small" @change="handleProjectVisibilityChange(row)">
-                        <el-option label="全员可见" value="all" />
-                        <el-option label="项目组成员" value="members" />
-                        <el-option label="仅负责人" value="manager" />
-                        <el-option label="自定义角色" value="custom" />
-                      </el-select>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="allowedRoles" label="可访问角色" min-width="240">
-                    <template #default="{ row }">
-                      <el-select v-model="row.allowedRoles" multiple size="small" style="width: 100%" :disabled="row.visibility === 'manager'">
-                        <el-option label="管理员" value="admin" />
-                        <el-option label="经理" value="manager" />
-                        <el-option label="销售" value="sales" />
-                        <el-option label="技术人员" value="tech" />
-                        <el-option label="财务" value="finance" />
-                      </el-select>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="memberUserIds" label="组成员" min-width="220">
-                    <template #default="{ row }">
-                      <el-select v-model="row.memberUserIds" multiple size="small" style="width: 100%" @change="handleProjectMembersChange(row)">
-                        <el-option v-for="user in userOptions" :key="user.id" :label="user.name" :value="user.id" />
-                      </el-select>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="projectIds" label="绑定项目" min-width="260">
-                    <template #default="{ row }">
-                      <el-select v-model="row.projectIds" multiple size="small" style="width: 100%" @change="handleProjectBindingChange(row)">
-                        <el-option v-for="option in projectScopeOptions" :key="option.value" :label="option.label" :value="option.value" />
-                      </el-select>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="操作" width="100">
-                    <template #default="{ row }">
-                      <el-button type="primary" size="small" @click="saveProjectConfig(row)">保存</el-button>
-                    </template>
-                  </el-table-column>
-                </el-table>
-                <div style="margin-top: 12px;">
-                  <el-button type="primary" plain @click="addProjectGroupRow">新增项目组</el-button>
-                </div>
+                <ProjectGroupSettingsPanel
+                  :project-groups="projectGroupScope"
+                  :user-options="userOptions"
+                  :project-scope-options="projectScopeOptions"
+                  @add-group="addProjectGroupRow"
+                  @save-group="saveProjectConfig"
+                  @delete-group="removeProjectGroupRow"
+                />
               </el-tab-pane>
 
               <el-tab-pane name="org">
@@ -955,10 +905,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Key, Document, Menu, Operation, Lock, User, OfficeBuilding, Folder, InfoFilled, Search, Download } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { API_CONFIG, auditApi, isMockMode, projectsApi, settingsApi } from '@/api'
+import { API_CONFIG, auditApi, isMockMode, projectGroupsApi, projectsApi, settingsApi } from '@/api'
+import ProjectGroupSettingsPanel from '@/components/system/ProjectGroupSettingsPanel.vue'
 
 const activeTab = ref('user')
 const userStore = useUserStore()
@@ -1378,6 +1329,7 @@ onMounted(async () => {
   await Promise.all([
     loadAuditLogs(),
     loadDataScopeConfig(),
+    loadProjectGroupConfig(),
     loadProjectScopeOptions()
   ])
 })
@@ -1392,19 +1344,65 @@ const saveDeptConfig = (row) => {
   persistDataScopeConfig(`部门"${row.deptName}"数据权限配置已保存`)
 }
 
-const handleProjectVisibilityChange = (row) => {
-  if (row.visibility === 'manager') {
-    row.allowedRoles = []
-    row.memberUserIds = []
-  }
-  if (row.visibility === 'members') {
-    row.allowedRoles = []
+const saveProjectConfig = async (row, index) => {
+  syncProjectGroupMeta(row)
+
+  try {
+    const result = row.id
+      ? await projectGroupsApi.updateProjectGroup(row.id, row)
+      : await projectGroupsApi.createProjectGroup(row)
+
+    if (!result?.success || !result?.data) {
+      throw new Error(result?.message || '保存项目组配置失败')
+    }
+
+    projectGroupScope.value.splice(index, 1, {
+      ...result.data,
+      manager: result.data.manager || resolveUserName(result.data.managerUserId),
+      memberCount: Array.isArray(result.data.memberUserIds) ? result.data.memberUserIds.length : Number(result.data.memberCount || 0)
+    })
+    ElMessage.success(`项目组"${result.data.groupName}"权限配置已保存`)
+  } catch (error) {
+    console.error('Failed to save project group:', error)
+    ElMessage.error(error?.message || '保存项目组配置失败')
   }
 }
 
-const saveProjectConfig = (row) => {
-  syncProjectGroupMeta(row)
-  persistDataScopeConfig(`项目组"${row.groupName}"权限配置已保存`)
+const removeProjectGroupRow = async (row, index) => {
+  const displayName = row.groupName || row.groupCode || `第${index + 1}个项目组`
+
+  try {
+    await ElMessageBox.confirm(
+      `删除后将移除项目组“${displayName}”及其项目绑定，是否继续？`,
+      '删除项目组',
+      {
+        type: 'warning',
+        confirmButtonText: '删除',
+        cancelButtonText: '取消'
+      }
+    )
+
+    if (!row.id) {
+      projectGroupScope.value.splice(index, 1)
+      ElMessage.success(`项目组“${displayName}”已删除`)
+      return
+    }
+
+    const result = await projectGroupsApi.deleteProjectGroup(row.id)
+    if (!result?.success) {
+      throw new Error(result?.message || '删除项目组失败')
+    }
+
+    projectGroupScope.value.splice(index, 1)
+    ElMessage.success(`项目组“${displayName}”已删除`)
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') {
+      return
+    }
+
+    console.error('Failed to delete project group:', error)
+    ElMessage.error(error?.message || '删除项目组失败')
+  }
 }
 
 // 保存角色
@@ -1679,9 +1677,7 @@ const buildDataScopePayload = () => ({
   userDataScope: userDataScope.value,
   deptDataScope: deptDataScope.value,
   deptOptions: deptOptions.value,
-  deptTree: deptTree.value,
-  projectGroupScope: projectGroupScope.value,
-  userOptions: userOptions.value
+  deptTree: deptTree.value
 })
 
 const applyDataScopePayload = (payload = {}) => {
@@ -1689,14 +1685,6 @@ const applyDataScopePayload = (payload = {}) => {
   deptDataScope.value = Array.isArray(payload.deptDataScope) ? payload.deptDataScope : []
   deptOptions.value = Array.isArray(payload.deptOptions) ? payload.deptOptions : []
   deptTree.value = Array.isArray(payload.deptTree) ? payload.deptTree : []
-  userOptions.value = Array.isArray(payload.userOptions) ? payload.userOptions : []
-  projectGroupScope.value = Array.isArray(payload.projectGroupScope)
-    ? payload.projectGroupScope.map((row) => ({
-      ...row,
-      manager: resolveUserName(row.managerUserId, payload.userOptions),
-      memberCount: Array.isArray(row.memberUserIds) ? row.memberUserIds.length : Number(row.memberCount || 0)
-    }))
-    : []
 }
 
 const loadDataScopeConfig = async () => {
@@ -1726,6 +1714,43 @@ const persistDataScopeConfig = async (successMessage = '数据权限配置已保
   }
 }
 
+const buildProjectGroupPayload = () => ({
+  projectGroups: projectGroupScope.value.map((row) => ({
+    id: row.id,
+    groupCode: row.groupCode,
+    groupName: row.groupName,
+    managerUserId: row.managerUserId,
+    visibility: row.visibility,
+    memberUserIds: row.memberUserIds,
+    allowedRoles: row.allowedRoles,
+    projectIds: row.projectIds
+  }))
+})
+
+const applyProjectGroupPayload = (payload = {}) => {
+  userOptions.value = Array.isArray(payload.userOptions) ? payload.userOptions : userOptions.value
+  projectGroupScope.value = Array.isArray(payload.projectGroups)
+    ? payload.projectGroups.map((row) => ({
+      ...row,
+      manager: row.manager || resolveUserName(row.managerUserId, userOptions.value),
+      memberCount: Array.isArray(row.memberUserIds) ? row.memberUserIds.length : Number(row.memberCount || 0)
+    }))
+    : []
+}
+
+const loadProjectGroupConfig = async () => {
+  try {
+    const result = await projectGroupsApi.getProjectGroups()
+    if (!result?.success) {
+      throw new Error(result?.message || '加载项目组配置失败')
+    }
+    applyProjectGroupPayload(result.data)
+  } catch (error) {
+    console.error('Failed to load project groups:', error)
+    ElMessage.error(error?.message || '加载项目组配置失败')
+  }
+}
+
 const loadProjectScopeOptions = async () => {
   try {
     const result = await projectsApi.getList()
@@ -1751,20 +1776,9 @@ const syncProjectGroupMeta = (row) => {
   row.memberCount = Array.isArray(row.memberUserIds) ? row.memberUserIds.length : 0
 }
 
-const handleProjectManagerChange = (row) => {
-  syncProjectGroupMeta(row)
-}
-
-const handleProjectMembersChange = (row) => {
-  syncProjectGroupMeta(row)
-}
-
-const handleProjectBindingChange = (row) => {
-  syncProjectGroupMeta(row)
-}
-
 const addProjectGroupRow = () => {
   projectGroupScope.value.push({
+    id: null,
     groupCode: '',
     groupName: '',
     managerUserId: null,

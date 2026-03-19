@@ -37,6 +37,7 @@ export { approvalApi } from './modules/approval.js'
 export { exportApi, ExportType, ExportFormat, ExportStatus } from './modules/export.js'
 export { auditApi } from './modules/audit.js'
 export { settingsApi } from './modules/settings.js'
+export { projectGroupsApi } from './modules/projectGroups.js'
 
 // 统一导出对象 (方便解构使用)
 export default {
@@ -77,5 +78,8 @@ export default {
   audit: () => import('./modules/audit.js').then(m => m.default),
 
   // 设置
-  settings: () => import('./modules/settings.js').then(m => m.settingsApi)
+  settings: () => import('./modules/settings.js').then(m => m.settingsApi),
+
+  // 项目组
+  projectGroups: () => import('./modules/projectGroups.js').then(m => m.projectGroupsApi)
 }
