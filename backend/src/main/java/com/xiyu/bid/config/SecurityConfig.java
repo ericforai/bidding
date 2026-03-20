@@ -40,7 +40,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RateLimitFilter rateLimitFilter;
 
-    @Value("${cors.allowed-origins:http://localhost:1314,http://localhost:5173,http://localhost:5174,http://localhost:3000}")
+    @Value("${cors.allowed-origins:http://localhost:1314,http://127.0.0.1:1314,http://localhost:5173,http://localhost:5174,http://localhost:3000}")
     private String[] corsAllowedOrigins;
 
     private static final String[] WHITE_LIST_URL = {

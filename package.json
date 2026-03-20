@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:all": "bash ./start.sh",
     "check:front-data-boundaries": "node scripts/check-front-data-boundaries.mjs",
     "check:doc-governance": "node scripts/check-doc-governance.mjs",
     "build": "npm run check:front-data-boundaries && npm run check:doc-governance && vite build",
