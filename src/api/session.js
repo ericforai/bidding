@@ -20,8 +20,13 @@ const removeLegacyStoredToken = () => {
   getBrowserStorages().forEach((storage) => storage.removeItem(ACCESS_TOKEN_KEY))
 }
 
-export const setAccessToken = (token) => {
+export const setAccessToken = (token, remember = true) => {
   accessToken = token || null
+  // 持久化 token 到存储
+  if (token) {
+    const storage = remember ? window.localStorage : window.sessionStorage
+    storage.setItem(ACCESS_TOKEN_KEY, token)
+  }
   return accessToken
 }
 
@@ -29,6 +34,8 @@ export const getAccessToken = () => accessToken
 
 export const clearAccessToken = () => {
   accessToken = null
+  // 同时清除存储中的 token
+  getBrowserStorages().forEach((storage) => storage.removeItem(ACCESS_TOKEN_KEY))
 }
 
 export const bootstrapLegacyAccessToken = () => {
@@ -45,7 +52,7 @@ export const bootstrapLegacyAccessToken = () => {
   }
 
   accessToken = legacyToken
-  removeLegacyStoredToken()
+  // 保留存储中的 token，不再删除
   return accessToken
 }
 
@@ -85,7 +92,7 @@ export const persistUserHint = (user, remember = true) => {
 
   otherStorage.removeItem(USER_KEY)
   storage.setItem(USER_KEY, JSON.stringify(user))
-  removeLegacyStoredToken()
+  // 不再删除 token，token 由 setAccessToken 单独管理
 }
 
 export const clearAuthHints = () => {

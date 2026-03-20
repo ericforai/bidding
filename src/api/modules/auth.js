@@ -84,7 +84,7 @@ export const authApi = {
       skipAuthRefresh: true
     })
     const authPayload = response?.data
-    setAccessToken(authPayload?.token)
+    setAccessToken(authPayload?.token, rememberMe)
 
     return {
       ...response,
@@ -165,7 +165,7 @@ export const authApi = {
       silentAuthError: true
     })
     const authPayload = response?.data
-    setAccessToken(authPayload?.token)
+    setAccessToken(authPayload?.token, true) // refresh 时默认持久化
 
     return {
       ...response,
