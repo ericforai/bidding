@@ -815,7 +815,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, markRaw } from 'vue'
+import { ref, computed, onMounted, markRaw, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useBiddingStore } from '@/stores/bidding'
@@ -858,7 +858,7 @@ const pendingCount = computed(() => {
 // ========== 角色化视图配置 ==========
 
 // 管理层 (admin) - 李总
-const adminMetrics = ref([
+const adminMetrics = shallowRef([
   {
     key: 'totalRevenue',
     label: '年度中标金额',
@@ -906,7 +906,7 @@ const adminMetrics = ref([
 ])
 
 // 销售经理 (manager - 华南销售部) - 小王
-const salesMetrics = ref([
+const salesMetrics = shallowRef([
   {
     key: 'newTenders',
     label: '本周新标讯',
@@ -954,7 +954,7 @@ const salesMetrics = ref([
 ])
 
 // 投标经理 (manager - 投标管理部) - 张经理
-const biddingMetrics = ref([
+const biddingMetrics = shallowRef([
   {
     key: 'myProjects',
     label: '负责项目',
@@ -1002,7 +1002,7 @@ const biddingMetrics = ref([
 ])
 
 // 技术员工 (staff) - 李工
-const staffMetrics = ref([
+const staffMetrics = shallowRef([
   {
     key: 'myTasks',
     label: '我的任务',
