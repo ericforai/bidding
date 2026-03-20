@@ -136,7 +136,7 @@ const truncatedPrompt = computed(() => {
 // 根据准确率返回标签类型
 const getAccuracyType = (accuracy) => {
   if (accuracy >= 95) return 'success'
-  if (accuracy >= 90) return ''
+  if (accuracy >= 90) return 'info'  // 修复: 使用 'info' 替代空字符串
   if (accuracy >= 85) return 'warning'
   return 'danger'
 }

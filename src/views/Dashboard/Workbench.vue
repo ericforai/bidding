@@ -863,7 +863,7 @@ const adminMetrics = ref([
     key: 'totalRevenue',
     label: '年度中标金额',
     value: '¥2,450万',
-    icon: TrendCharts,
+    icon: Icons.TrendCharts,
     iconBg: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)',
     iconColor: '#059669',
     change: '+15.2%',
@@ -874,7 +874,7 @@ const adminMetrics = ref([
     key: 'winRate',
     label: '整体中标率',
     value: '68.5%',
-    icon: Flag,
+    icon: Icons.Flag,
     iconBg: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
     iconColor: '#D97706',
     change: '+5.2%',
@@ -885,7 +885,7 @@ const adminMetrics = ref([
     key: 'teamSize',
     label: '投标团队',
     value: '45人',
-    icon: User,
+    icon: Icons.User,
     iconBg: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)',
     iconColor: '#1E40AF',
     change: '+3',
@@ -896,7 +896,7 @@ const adminMetrics = ref([
     key: 'activeProjects',
     label: '进行中项目',
     value: '18个',
-    icon: Briefcase,
+    icon: Icons.Briefcase,
     iconBg: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)',
     iconColor: '#DC2626',
     change: '+2',
@@ -911,7 +911,7 @@ const salesMetrics = ref([
     key: 'newTenders',
     label: '本周新标讯',
     value: '23',
-    icon: Document,
+    icon: Icons.Document,
     iconBg: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)',
     iconColor: '#1E40AF',
     change: '+8',
@@ -922,7 +922,7 @@ const salesMetrics = ref([
     key: 'myOpportunities',
     label: '跟进机会',
     value: '12',
-    icon: TrendCharts,
+    icon: Icons.TrendCharts,
     iconBg: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)',
     iconColor: '#059669',
     change: '+3',
@@ -933,7 +933,7 @@ const salesMetrics = ref([
     key: 'customerVisits',
     label: '本周拜访',
     value: '5',
-    icon: User,
+    icon: Icons.User,
     iconBg: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
     iconColor: '#D97706',
     change: '0',
@@ -944,7 +944,7 @@ const salesMetrics = ref([
     key: 'pendingProposals',
     label: '待立项',
     value: '4',
-    icon: Briefcase,
+    icon: Icons.Briefcase,
     iconBg: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)',
     iconColor: '#DC2626',
     change: '-1',
@@ -959,7 +959,7 @@ const biddingMetrics = ref([
     key: 'myProjects',
     label: '负责项目',
     value: '8',
-    icon: Briefcase,
+    icon: Icons.Briefcase,
     iconBg: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)',
     iconColor: '#1E40AF',
     change: '+2',
@@ -970,7 +970,7 @@ const biddingMetrics = ref([
     key: 'urgentTasks',
     label: '紧急任务',
     value: '5',
-    icon: Flag,
+    icon: Icons.Flag,
     iconBg: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)',
     iconColor: '#DC2626',
     change: '+1',
@@ -981,7 +981,7 @@ const biddingMetrics = ref([
     key: 'teamWorkload',
     label: '团队工作量',
     value: '85%',
-    icon: TrendCharts,
+    icon: Icons.TrendCharts,
     iconBg: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
     iconColor: '#D97706',
     change: '+5%',
@@ -992,7 +992,7 @@ const biddingMetrics = ref([
     key: 'resourceStatus',
     label: '资源可用',
     value: '3人',
-    icon: User,
+    icon: Icons.User,
     iconBg: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)',
     iconColor: '#059669',
     change: '0',
@@ -1007,7 +1007,7 @@ const staffMetrics = ref([
     key: 'myTasks',
     label: '我的任务',
     value: '6',
-    icon: Document,
+    icon: Icons.Document,
     iconBg: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)',
     iconColor: '#1E40AF',
     change: '+2',
@@ -1018,7 +1018,7 @@ const staffMetrics = ref([
     key: 'completedThisWeek',
     label: '本周完成',
     value: '3',
-    icon: Check,
+    icon: Icons.Check,
     iconBg: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)',
     iconColor: '#059669',
     change: '+1',
@@ -1029,7 +1029,7 @@ const staffMetrics = ref([
     key: 'pendingReviews',
     label: '待评审',
     value: '2',
-    icon: Flag,
+    icon: Icons.Flag,
     iconBg: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)',
     iconColor: '#DC2626',
     change: '0',
@@ -1040,7 +1040,7 @@ const staffMetrics = ref([
     key: 'workHours',
     label: '本周工时',
     value: '32h',
-    icon: Clock,
+    icon: Icons.Clock,
     iconBg: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
     iconColor: '#D97706',
     change: '-4h',
@@ -1090,25 +1090,25 @@ const bannerActions = computed(() => {
   const role = currentUserRole.value
   if (role === 'admin') {
     return [
-      { key: 'report', label: '业绩报表', type: 'primary', icon: DataAnalysis, handler: () => router.push('/analytics/dashboard') },
-      { key: 'team', label: '团队管理', type: 'default', icon: User, handler: () => router.push('/settings') }
+      { key: 'report', label: '业绩报表', type: 'primary', icon: Icons.DataAnalysis, handler: () => router.push('/analytics/dashboard') },
+      { key: 'team', label: '团队管理', type: 'default', icon: Icons.User, handler: () => router.push('/settings') }
     ]
   }
   if (currentUserName.value === '小王') {
     return [
-      { key: 'tenders', label: '查看标讯', type: 'primary', icon: Document, handler: () => router.push('/bidding') },
-      { key: 'add', label: '添加机会', type: 'default', icon: Plus, handler: handleCreateProject }
+      { key: 'tenders', label: '查看标讯', type: 'primary', icon: Icons.Document, handler: () => router.push('/bidding') },
+      { key: 'add', label: '添加机会', type: 'default', icon: Icons.Plus, handler: handleCreateProject }
     ]
   }
   if (currentUserName.value === '张经理') {
     return [
-      { key: 'projects', label: '我的项目', type: 'primary', icon: Briefcase, handler: () => router.push('/project') },
-      { key: 'tasks', label: '任务分配', type: 'default', icon: Check, handler: () => {} }
+      { key: 'projects', label: '我的项目', type: 'primary', icon: Icons.Briefcase, handler: () => router.push('/project') },
+      { key: 'tasks', label: '任务分配', type: 'default', icon: Icons.Check, handler: () => {} }
     ]
   }
   return [
-    { key: 'tasks', label: '我的任务', type: 'primary', icon: Document, handler: () => {} },
-    { key: 'calendar', label: '日程', type: 'default', icon: Calendar, handler: () => {} }
+    { key: 'tasks', label: '我的任务', type: 'primary', icon: Icons.Document, handler: () => {} },
+    { key: 'calendar', label: '日程', type: 'default', icon: Icons.Calendar, handler: () => {} }
   ]
 })
 
