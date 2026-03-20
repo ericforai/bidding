@@ -533,12 +533,12 @@ const filteredQualifications = computed(() => {
 // 类型标签类型
 const getTypeTagType = (type) => {
   const types = {
-    enterprise: '',
+    enterprise: 'primary',  // 修复: 使用 'primary' 替代空字符串
     personnel: 'success',
     product: 'warning',
     industry: 'info'
   }
-  return types[type] || ''
+  return types[type] || 'info'  // 修复: 默认返回 'info' 替代空字符串
 }
 
 // 类型标签文本
