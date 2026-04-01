@@ -1,4 +1,4 @@
-package com.xiyu.bid.service;
+package com.xiyu.bid.admin.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.dto.DataScopeConfigResponse;

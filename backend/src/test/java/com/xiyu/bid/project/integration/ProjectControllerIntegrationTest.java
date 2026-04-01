@@ -8,7 +8,7 @@ import com.xiyu.bid.platform.util.PasswordEncryptionUtil;
 import com.xiyu.bid.repository.ProjectGroupRepository;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.UserRepository;
-import com.xiyu.bid.service.DataScopeConfigService;
+import com.xiyu.bid.admin.service.DataScopeConfigService;
 import com.xiyu.bid.settings.entity.SystemSetting;
 import com.xiyu.bid.settings.repository.SystemSettingRepository;
 import com.xiyu.bid.support.TestPasswordEncryptionUtil;
