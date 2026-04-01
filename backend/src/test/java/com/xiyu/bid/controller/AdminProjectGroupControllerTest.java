@@ -3,7 +3,7 @@ package com.xiyu.bid.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.dto.ProjectGroupConfigRequest;
 import com.xiyu.bid.dto.ProjectGroupConfigResponse;
-import com.xiyu.bid.service.ProjectGroupService;
+import com.xiyu.bid.admin.service.ProjectGroupService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

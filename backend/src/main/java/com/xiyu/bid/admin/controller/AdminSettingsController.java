@@ -1,8 +1,8 @@
-package com.xiyu.bid.controller;
+package com.xiyu.bid.admin.controller;
 
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.dto.DataScopeConfigResponse;
-import com.xiyu.bid.service.DataScopeConfigService;
+import com.xiyu.bid.admin.service.DataScopeConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

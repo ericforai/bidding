@@ -1,4 +1,4 @@
-package com.xiyu.bid.service;
+package com.xiyu.bid.admin.service;
 import com.xiyu.bid.entity.RoleProfileCatalog;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -241,6 +241,7 @@ public class DataScopeConfigService {
                         node.getDepartmentCode(),
                         normalizeDepartmentName(node.getDepartmentName()),
                         normalizeParentDepartmentCode(node.getParentDepartmentCode(), node.getDepartmentCode()),
+                        node.getDepartmentManagerId(),
                         node.getSortOrder() == null ? 0 : node.getSortOrder()
                 )
         ));
@@ -251,6 +252,7 @@ public class DataScopeConfigService {
                     code,
                     normalizeDepartmentName(user.getDepartmentName()),
                     null,
+                    null,
                     definitions.size()
             ));
         });
@@ -259,6 +261,7 @@ public class DataScopeConfigService {
             definitions.put(UNASSIGNED_DEPT_CODE, new DepartmentDefinition(
                     UNASSIGNED_DEPT_CODE,
                     UNASSIGNED_DEPT_NAME,
+                    null,
                     null,
                     0
             ));
@@ -278,6 +281,7 @@ public class DataScopeConfigService {
                         .deptCode(definition.code())
                         .deptName(definition.name())
                         .parentDeptCode(definition.parentCode())
+                        .departmentManagerId(definition.managerId())
                         .sortOrder(definition.sortOrder())
                         .build())
                 .toList();
@@ -348,6 +352,7 @@ public class DataScopeConfigService {
                         .departmentCode(normalizeDepartmentCode(item.getDeptCode()))
                         .departmentName(normalizeDepartmentName(item.getDeptName()))
                         .parentDepartmentCode(normalizeParentDepartmentCode(item.getParentDeptCode(), item.getDeptCode()))
+                        .departmentManagerId(item.getDepartmentManagerId())
                         .sortOrder(item.getSortOrder() == null ? 0 : item.getSortOrder())
                         .build())
                 .toList();
@@ -363,6 +368,7 @@ public class DataScopeConfigService {
                         .departmentCode(normalizeDepartmentCode(item.getDepartmentCode()))
                         .departmentName(normalizeDepartmentName(item.getDepartmentName()))
                         .parentDepartmentCode(normalizeParentDepartmentCode(item.getParentDepartmentCode(), item.getDepartmentCode()))
+                        .departmentManagerId(item.getDepartmentManagerId())
                         .sortOrder(item.getSortOrder() == null ? 0 : item.getSortOrder())
                         .build())
                 .toList();
@@ -495,7 +501,7 @@ public class DataScopeConfigService {
         }
     }
 
-    private record DepartmentDefinition(String code, String name, String parentCode, int sortOrder) {
+    private record DepartmentDefinition(String code, String name, String parentCode, Long managerId, int sortOrder) {
     }
 
     private record DepartmentGraph(
