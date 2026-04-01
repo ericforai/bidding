@@ -1,4 +1,4 @@
-package com.xiyu.bid.service;
+package com.xiyu.bid.admin.service;
 
 import com.xiyu.bid.dto.ProjectGroupConfigRequest;
 import com.xiyu.bid.dto.ProjectGroupConfigResponse;
