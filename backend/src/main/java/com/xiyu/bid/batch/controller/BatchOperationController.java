@@ -4,11 +4,16 @@
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.batch.controller;
 
-import com.xiyu.bid.batch.dto.*;
+import com.xiyu.bid.batch.dto.BatchApproveFeesRequest;
+import com.xiyu.bid.batch.dto.BatchAssignRequest;
+import com.xiyu.bid.batch.dto.BatchClaimRequest;
+import com.xiyu.bid.batch.dto.BatchDeleteRequest;
+import com.xiyu.bid.batch.dto.BatchOperationResponse;
+import com.xiyu.bid.batch.dto.BatchProjectUpdateRequest;
 import com.xiyu.bid.batch.service.BatchOperationService;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.entity.User;
-import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.service.AuthService;
 import com.xiyu.bid.util.InputSanitizer;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +23,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Locale;
 import java.util.List;
 
 @RestController
@@ -27,13 +42,16 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class BatchOperationController {
+    private static final String ADMIN_MANAGER_EXPR = "hasAnyRole('ADMIN', 'MANAGER')";
+    private static final int ZERO_COUNT = 0;
+    private static final int SINGLE_COUNT = 1;
 
     private final BatchOperationService batchOperationService;
-    private final UserRepository userRepository;
+    private final AuthService authService;
     private static final int MAX_REMARK_LENGTH = 500;
 
     @PostMapping("/tenders/claim")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize(ADMIN_MANAGER_EXPR)
     public ResponseEntity<ApiResponse<BatchOperationResponse>> batchClaimTenders(
             @Valid @RequestBody BatchClaimRequest request) {
 
@@ -53,7 +71,7 @@ public class BatchOperationController {
     }
 
     @PostMapping("/tasks/assign")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize(ADMIN_MANAGER_EXPR)
     public ResponseEntity<ApiResponse<BatchOperationResponse>> batchAssignTasks(
             @Valid @RequestBody BatchAssignRequest request) {
 
@@ -77,7 +95,7 @@ public class BatchOperationController {
     }
 
     @DeleteMapping("/projects")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize(ADMIN_MANAGER_EXPR)
     public ResponseEntity<ApiResponse<BatchOperationResponse>> batchDeleteProjects(
             @Valid @RequestBody BatchDeleteRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -101,7 +119,7 @@ public class BatchOperationController {
     }
 
     @DeleteMapping("/{type}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize(ADMIN_MANAGER_EXPR)
     public ResponseEntity<ApiResponse<BatchOperationResponse>> batchDeleteItems(
             @PathVariable String type,
             @Valid @RequestBody BatchDeleteRequest request,
@@ -131,7 +149,7 @@ public class BatchOperationController {
             log.warn("Invalid item type for batch deletion: {}", type);
             return ResponseEntity.badRequest().body(
                     ApiResponse.error(400, "Invalid item type: " + type + ". Supported types: tender, task, project"));
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Error during batch deletion: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                     ApiResponse.error(500, "Failed to delete items: " + e.getMessage()));
@@ -158,7 +176,7 @@ public class BatchOperationController {
     }
 
     @GetMapping("/history")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize(ADMIN_MANAGER_EXPR)
     public ResponseEntity<ApiResponse<List<String>>> getBatchOperationHistory(
             @RequestParam(defaultValue = "10") int limit) {
 
@@ -171,7 +189,7 @@ public class BatchOperationController {
      * Allows updating status and/or manager for multiple projects.
      */
     @PatchMapping("/projects")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize(ADMIN_MANAGER_EXPR)
     public ResponseEntity<ApiResponse<BatchOperationResponse>> batchUpdateProjects(
             @Valid @RequestBody BatchProjectUpdateRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -203,7 +221,7 @@ public class BatchOperationController {
      * Allows marking multiple fee records as paid at once.
      */
     @PostMapping("/fees/approve")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize(ADMIN_MANAGER_EXPR)
     public ResponseEntity<ApiResponse<BatchOperationResponse>> batchApproveFees(
             @Valid @RequestBody BatchApproveFeesRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -240,13 +258,14 @@ public class BatchOperationController {
     }
 
     private String buildSuccessMessage(String action, String itemType, int count) {
-        if (count == 0) {
+        String normalizedItemType = itemType.toLowerCase(Locale.ROOT);
+        if (count == ZERO_COUNT) {
             return String.format("No %ss were %s. Check error details for more information.",
-                    itemType.toLowerCase(), action);
-        } else if (count == 1) {
-            return String.format("Successfully %s 1 %s", action, itemType.toLowerCase());
+                    normalizedItemType, action);
+        } else if (count == SINGLE_COUNT) {
+            return String.format("Successfully %s 1 %s", action, normalizedItemType);
         } else {
-            return String.format("Successfully %s %d %ss", action, count, itemType.toLowerCase());
+            return String.format("Successfully %s %d %ss", action, count, normalizedItemType);
         }
     }
 
@@ -280,10 +299,12 @@ public class BatchOperationController {
             throw new org.springframework.security.authentication.AuthenticationServiceException(
                     "Authenticated user is required");
         }
-
-        return userRepository.findByUsername(userDetails.getUsername().trim())
-                .orElseThrow(() -> new org.springframework.security.authentication.AuthenticationServiceException(
-                        "Authenticated user not found: " + userDetails.getUsername()));
+        try {
+            return authService.resolveUserByUsername(userDetails.getUsername().trim());
+        } catch (org.springframework.security.core.userdetails.UsernameNotFoundException ex) {
+            throw new org.springframework.security.authentication.AuthenticationServiceException(
+                    "Authenticated user not found: " + userDetails.getUsername(), ex);
+        }
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -295,7 +316,7 @@ public class BatchOperationController {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<BatchOperationResponse>> handleGenericException(Exception e) {
+    public ResponseEntity<ApiResponse<BatchOperationResponse>> handleGenericException(RuntimeException e) {
         log.error("Error in batch operation: {}", e.getMessage(), e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 ApiResponse.error(500, "An error occurred during batch operation: " + e.getMessage()));

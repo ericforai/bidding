@@ -9,7 +9,7 @@
  */
 import httpClient from '../client.js'
 import { mockData } from '../mock.js'
-import { isMockMode } from '../config.js'
+import { isMockMode, isTenderApiMockFallbackEnabled } from '../config.js'
 
 function matchesTenderField(actualValue, expectedValue) {
   return String(actualValue || '').toLowerCase() === String(expectedValue || '').toLowerCase()
@@ -48,6 +48,11 @@ function getMockTenders(params = {}) {
   return applyTenderFilters([...mockData.tenders], params)
 }
 
+function warnApiFallback(reason) {
+  // Keep fallback explicit and observable in API mode.
+  console.warn(`[tendersApi] API mode fallback to mock data: ${reason}`)
+}
+
 export const tendersApi = {
   /**
    * 获取标讯列表
@@ -65,9 +70,11 @@ export const tendersApi = {
     const response = await httpClient.get('/api/tenders')
     const tenders = Array.isArray(response?.data) ? response.data : []
     const filteredData = applyTenderFilters(tenders, params)
-    const data = filteredData.length > 0 || tenders.length > 0
-      ? filteredData
-      : getMockTenders(params)
+    const shouldFallback = filteredData.length === 0 && tenders.length === 0 && isTenderApiMockFallbackEnabled()
+    if (shouldFallback) {
+      warnApiFallback('empty /api/tenders response')
+    }
+    const data = shouldFallback ? getMockTenders(params) : filteredData
 
     return {
       ...response,
@@ -100,12 +107,21 @@ export const tendersApi = {
 
     try {
       const response = await httpClient.get(`/api/tenders/${id}`)
-      return response?.data
-        ? response
-        : { ...response, data: mockData.tenders.find((tender) => String(tender.id) === String(id)) || null }
+      if (response?.data) {
+        return response
+      }
+      if (isTenderApiMockFallbackEnabled()) {
+        warnApiFallback(`empty /api/tenders/${id} response`)
+        return { ...response, data: mockData.tenders.find((tender) => String(tender.id) === String(id)) || null }
+      }
+      return response
     } catch (error) {
+      if (!isTenderApiMockFallbackEnabled()) {
+        throw error
+      }
       const mockTender = mockData.tenders.find((tender) => String(tender.id) === String(id))
       if (mockTender) {
+        warnApiFallback(`request /api/tenders/${id} failed`)
         return { success: true, data: mockTender, message: '使用演示标讯数据' }
       }
       throw error
@@ -176,11 +192,51 @@ export const tendersApi = {
       })
     }
 
-    return Promise.resolve({
-      success: false,
-      message: 'Tender AI analysis payload is not aligned with the backend response yet'
-    })
+    if (!isNumericId(id)) {
+      return {
+        success: false,
+        message: 'Current backend only supports numeric tender IDs in API mode'
+      }
+    }
+
+    try {
+      return await httpClient.get(`/api/tenders/${id}/ai-analysis`)
+    } catch (error) {
+      if (error?.response?.status !== 404) {
+        throw error
+      }
+      return httpClient.post(`/api/tenders/${id}/ai-analysis`)
+    }
   }
 }
 
 export default tendersApi
+
+/**
+ * 爬虫/同步 API
+ * 用于手动触发从 CEB 平台抓取标讯
+ */
+export const crawlerApi = {
+  /**
+   * 手动触发标讯抓取
+   * @param {string} keyword - 搜索关键词
+   * @param {number} page - 起始页码
+   * @param {number} pageSize - 每页条数
+   */
+  async trigger({ keyword = '', page = 1, pageSize = 20 } = {}) {
+    if (isMockMode()) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            success: true,
+            data: { saved: 5, skipped: 2, total: 7 },
+            message: '【演示模式】模拟抓取完成：新增 5 条，跳过 2 条（已存在）'
+          })
+        }, 1500)
+      })
+    }
+    return httpClient.post('/api/admin/crawler/trigger', null, {
+      params: { keyword, page, pageSize }
+    })
+  }
+}

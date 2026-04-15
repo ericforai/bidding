@@ -3,7 +3,7 @@ package com.xiyu.bid.export.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.config.ExportConfig;
 import com.xiyu.bid.entity.User;
-import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.service.AuthService;
 import com.xiyu.bid.service.RateLimitService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,9 +11,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.lang.reflect.Method;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ExportControllerSecurityTest {
 
     @Mock
-    private UserRepository userRepository;
+    private AuthService authService;
 
     @Test
     void extractUserId_ResolvesPersistedUserByUsername() throws Exception {
@@ -40,7 +40,7 @@ class ExportControllerSecurityTest {
                 .enabled(true)
                 .build();
 
-        org.mockito.Mockito.when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+        org.mockito.Mockito.when(authService.resolveUserByUsername("alice")).thenReturn(user);
 
         Method method = ExportController.class.getDeclaredMethod("extractUserId", UserDetails.class);
         method.setAccessible(true);
@@ -50,7 +50,7 @@ class ExportControllerSecurityTest {
                 (ExportConfig) null,
                 (RateLimitService) null,
                 new ObjectMapper(),
-                userRepository
+                authService
         );
 
         Long userId = (Long) method.invoke(controller, userDetails);
@@ -65,7 +65,8 @@ class ExportControllerSecurityTest {
                 .authorities("ROLE_STAFF")
                 .build();
 
-        org.mockito.Mockito.when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
+        org.mockito.Mockito.when(authService.resolveUserByUsername("ghost"))
+                .thenThrow(new UsernameNotFoundException("User not found"));
 
         Method method = ExportController.class.getDeclaredMethod("extractUserId", UserDetails.class);
         method.setAccessible(true);
@@ -75,7 +76,7 @@ class ExportControllerSecurityTest {
                 (ExportConfig) null,
                 (RateLimitService) null,
                 new ObjectMapper(),
-                userRepository
+                authService
         );
 
         assertThatThrownBy(() -> method.invoke(controller, userDetails))

@@ -31,7 +31,13 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Duration;
 
@@ -40,6 +46,8 @@ import java.time.Duration;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
+
+    private static final String AUTHENTICATED_EXPR = "isAuthenticated()";
 
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
@@ -81,7 +89,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize(AUTHENTICATED_EXPR)
     public ResponseEntity<ApiResponse<AuthResponse>> getCurrentUser(Authentication authentication) {
         AuthResponse response = authService.getCurrentUser(authentication.getName());
         return ResponseEntity.ok(ApiResponse.success("Current user retrieved successfully", response));
@@ -137,11 +145,10 @@ public class AuthController {
      * Get all active sessions for the current user
      */
     @GetMapping("/sessions")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize(AUTHENTICATED_EXPR)
     public ResponseEntity<ApiResponse<java.util.List<SessionDTO>>> getSessions(Authentication authentication) {
-        com.xiyu.bid.entity.User user = authService.getUserRepository().findByUsername(authentication.getName())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        java.util.List<SessionDTO> sessions = sessionService.getUserSessions(user.getId());
+        Long userId = authService.resolveUserIdByUsername(authentication.getName());
+        java.util.List<SessionDTO> sessions = sessionService.getUserSessions(userId);
         return ResponseEntity.ok(ApiResponse.success("Sessions retrieved", sessions));
     }
 
@@ -149,14 +156,13 @@ public class AuthController {
      * Revoke a specific session
      */
     @DeleteMapping("/sessions/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize(AUTHENTICATED_EXPR)
     public ResponseEntity<ApiResponse<Void>> revokeSession(
             @PathVariable Long id,
             Authentication authentication
     ) {
-        com.xiyu.bid.entity.User user = authService.getUserRepository().findByUsername(authentication.getName())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        sessionService.revokeSession(id, user.getId());
+        Long userId = authService.resolveUserIdByUsername(authentication.getName());
+        sessionService.revokeSession(id, userId);
         return ResponseEntity.ok(ApiResponse.success("Session revoked", null));
     }
 
@@ -164,11 +170,10 @@ public class AuthController {
      * Revoke all sessions except the current one
      */
     @DeleteMapping("/sessions")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize(AUTHENTICATED_EXPR)
     public ResponseEntity<ApiResponse<Void>> revokeAllSessions(Authentication authentication, HttpServletRequest request) {
-        com.xiyu.bid.entity.User user = authService.getUserRepository().findByUsername(authentication.getName())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        sessionService.revokeAllSessions(user.getId(), extractRefreshToken(request));
+        Long userId = authService.resolveUserIdByUsername(authentication.getName());
+        sessionService.revokeAllSessions(userId, extractRefreshToken(request));
         return ResponseEntity.ok(ApiResponse.success("All sessions revoked", null));
     }
 
@@ -176,11 +181,10 @@ public class AuthController {
      * Request email verification
      */
     @PostMapping("/verify-email")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize(AUTHENTICATED_EXPR)
     public ResponseEntity<ApiResponse<EmailVerificationResponse>> requestEmailVerification(Authentication authentication) {
-        com.xiyu.bid.entity.User user = authService.getUserRepository().findByUsername(authentication.getName())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        String result = emailVerificationService.createVerificationToken(user.getId());
+        Long userId = authService.resolveUserIdByUsername(authentication.getName());
+        String result = emailVerificationService.createVerificationToken(userId);
         return ResponseEntity.ok(ApiResponse.success("Verification email sent", new EmailVerificationResponse(result)));
     }
 

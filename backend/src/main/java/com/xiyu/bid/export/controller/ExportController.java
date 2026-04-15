@@ -12,7 +12,7 @@ import com.xiyu.bid.entity.User;
 import com.xiyu.bid.export.dto.ExportRequest;
 import com.xiyu.bid.export.dto.ExportResponse;
 import com.xiyu.bid.export.service.ExcelExportService;
-import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.service.AuthService;
 import com.xiyu.bid.service.RateLimitService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,9 +21,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,12 +42,13 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class ExportController {
+    private static final String ADMIN_MANAGER_STAFF_EXPR = "hasAnyRole('ADMIN', 'MANAGER', 'STAFF')";
 
     private final ExcelExportService excelExportService;
     private final ExportConfig exportConfig;
     private final RateLimitService rateLimitService;
     private final ObjectMapper objectMapper;
-    private final UserRepository userRepository;
+    private final AuthService authService;
 
     private static final String EXPORT_TEMP_DIR = System.getProperty("java.io.tmpdir") + "/xiyu-exports/";
 
@@ -53,7 +58,7 @@ public class ExportController {
      * Rate limited to prevent abuse.
      */
     @PostMapping("/excel")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @PreAuthorize(ADMIN_MANAGER_STAFF_EXPR)
     @Auditable(action = "EXPORT_EXCEL", entityType = "DATA", description = "Export data to Excel")
     public ResponseEntity<?> exportToExcel(
             @Valid @RequestBody ExportRequest request,
@@ -108,7 +113,7 @@ public class ExportController {
             log.warn("Export validation failed: user={}, error={}", userId, e.getMessage());
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Export failed: user={}, error={}", userId, e.getMessage(), e);
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("Export failed: " + e.getMessage()));
@@ -119,7 +124,7 @@ public class ExportController {
      * Export and download Excel file directly.
      */
     @PostMapping("/excel/download")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @PreAuthorize(ADMIN_MANAGER_STAFF_EXPR)
     @Auditable(action = "EXPORT_EXCEL_DOWNLOAD", entityType = "DATA", description = "Export and download Excel file")
     public ResponseEntity<byte[]> exportAndDownload(
             @Valid @RequestBody ExportRequest request,
@@ -161,7 +166,7 @@ public class ExportController {
                     .contentLength(fileContent.length)
                     .body(fileContent);
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Export download failed: user={}, error={}", userId, e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
@@ -171,7 +176,7 @@ public class ExportController {
      * Get supported export types.
      */
     @GetMapping("/types")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @PreAuthorize(ADMIN_MANAGER_STAFF_EXPR)
     public ResponseEntity<ApiResponse<java.util.List<String>>> getSupportedTypes() {
         return ResponseEntity.ok(ApiResponse.success(java.util.List.of(
                 "tenders", "projects", "qualifications", "cases", "templates"
@@ -182,7 +187,7 @@ public class ExportController {
      * Get export configuration (for admin display).
      */
     @GetMapping("/config")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @PreAuthorize(ADMIN_MANAGER_STAFF_EXPR)
     @Auditable(action = "VIEW_EXPORT_CONFIG", entityType = "SYSTEM", description = "View export configuration")
     public ResponseEntity<ApiResponse<ExportConfigInfo>> getExportConfig(
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -219,9 +224,12 @@ public class ExportController {
                     "Username cannot be null or empty");
         }
 
-        return userRepository.findByUsername(username.trim())
-                .orElseThrow(() -> new org.springframework.security.authentication.AuthenticationServiceException(
-                        "Authenticated user not found: " + username));
+        try {
+            return authService.resolveUserByUsername(username.trim());
+        } catch (org.springframework.security.core.userdetails.UsernameNotFoundException ex) {
+            throw new org.springframework.security.authentication.AuthenticationServiceException(
+                    "Authenticated user not found: " + username, ex);
+        }
     }
 
     private String sanitizeFilename(String filename) {

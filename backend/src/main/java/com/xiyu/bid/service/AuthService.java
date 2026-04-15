@@ -3,12 +3,14 @@
 // Pos: Auth/认证支撑层
 // 维护声明: 仅维护认证链路；权限规则调整请同步 controller 与 security 配置.
 package com.xiyu.bid.service;
+import com.xiyu.bid.entity.RoleProfileCatalog;
 
 import com.xiyu.bid.dto.AuthResponse;
 import com.xiyu.bid.dto.AuthSessionResult;
 import com.xiyu.bid.dto.LoginRequest;
 import com.xiyu.bid.dto.RegisterRequest;
 import com.xiyu.bid.entity.RefreshSession;
+import com.xiyu.bid.entity.RoleProfile;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.RefreshSessionRepository;
 import com.xiyu.bid.repository.UserRepository;
@@ -37,13 +39,16 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+    private static final String USER_NOT_FOUND = "User not found";
 
     private final UserRepository userRepository;
     private final RefreshSessionRepository refreshSessionRepository;
     private final ProjectAccessScopeService projectAccessScopeService;
+    private final DataScopeConfigService dataScopeConfigService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final RoleProfileService roleProfileService;
 
     @Value("${jwt.refresh-expiration:604800000}")
     private long refreshExpiration;
@@ -67,12 +72,14 @@ public class AuthService {
         }
 
         // Create new user
+        RoleProfile roleProfile = roleProfileService.resolveRoleProfile(request.getResolvedRoleCode(), User.Role.STAFF);
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
                 .fullName(request.getFullName())
-                .role(request.getRole() != null ? request.getRole() : User.Role.STAFF)
+                .role(RoleProfileCatalog.legacyRoleForCode(roleProfile.getCode()))
+                .roleProfile(roleProfile)
                 .enabled(true)
                 .build();
 
@@ -84,7 +91,8 @@ public class AuthService {
                 token,
                 user,
                 projectAccessScopeService.getAllowedProjectIds(user),
-                projectAccessScopeService.getAllowedDepartmentCodes(user)
+                projectAccessScopeService.getAllowedDepartmentCodes(user),
+                dataScopeConfigService.getRoleMenuPermissions(user)
         );
     }
 
@@ -98,7 +106,7 @@ public class AuthService {
         );
 
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND));
 
         String token = jwtUtil.generateAccessToken(user.getUsername());
         String refreshToken = createRefreshSession(user);
@@ -109,7 +117,8 @@ public class AuthService {
                         token,
                         user,
                         projectAccessScopeService.getAllowedProjectIds(user),
-                        projectAccessScopeService.getAllowedDepartmentCodes(user)
+                        projectAccessScopeService.getAllowedDepartmentCodes(user),
+                        dataScopeConfigService.getRoleMenuPermissions(user)
                 ))
                 .refreshToken(refreshToken)
                 .build();
@@ -117,7 +126,7 @@ public class AuthService {
 
     public AuthResponse getCurrentUser(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND));
 
         return AuthResponse.builder()
                 .type("Bearer")
@@ -125,12 +134,28 @@ public class AuthService {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
-                .role(user.getRole())
+                .role(user.getRoleCode())
+                .roleCode(user.getRoleCode())
+                .roleName(user.getRoleName())
                 .deptCode(user.getDepartmentCode())
                 .dept(user.getDepartmentName())
                 .allowedProjectIds(projectAccessScopeService.getAllowedProjectIds(user))
                 .allowedDepts(projectAccessScopeService.getAllowedDepartmentCodes(user))
+                .menuPermissions(dataScopeConfigService.getRoleMenuPermissions(user))
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public Long resolveUserIdByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .map(User::getId)
+                .orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND));
+    }
+
+    @Transactional(readOnly = true)
+    public User resolveUserByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND));
     }
 
     @Transactional
@@ -178,7 +203,8 @@ public class AuthService {
                         accessToken,
                         user,
                         projectAccessScopeService.getAllowedProjectIds(user),
-                        projectAccessScopeService.getAllowedDepartmentCodes(user)
+                        projectAccessScopeService.getAllowedDepartmentCodes(user),
+                        dataScopeConfigService.getRoleMenuPermissions(user)
                 ))
                 .refreshToken(rotatedRefreshToken)
                 .build();
@@ -186,13 +212,6 @@ public class AuthService {
 
     String hashTokenForTest(String token) {
         return hashToken(token);
-    }
-
-    /**
-     * Get the UserRepository for access by controllers
-     */
-    public UserRepository getUserRepository() {
-        return userRepository;
     }
 
     private String createRefreshSession(User user) {

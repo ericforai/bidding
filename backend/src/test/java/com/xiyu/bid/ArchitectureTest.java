@@ -61,6 +61,22 @@ public class ArchitectureTest {
             .because("新模块Controller必须通过Service层访问数据");
 
     /**
+     * RULE 1.1: Auth/Tender 控制器不得直接依赖 Repository
+     * 作为分阶段整治的首批老模块约束
+     */
+    @ArchTest
+    public static final ArchRule auth_tender_controller_should_not_depend_on_repository =
+        noClasses()
+            .that().resideInAPackage("com.xiyu.bid.controller..")
+            .or().resideInAPackage("com.xiyu.bid.tender.controller..")
+            .or().resideInAPackage("com.xiyu.bid.batch.controller..")
+            .or().resideInAPackage("com.xiyu.bid.export.controller..")
+            .or().resideInAPackage("com.xiyu.bid.bidresult.controller..")
+            .should().dependOnClassesThat()
+            .resideInAPackage("..repository..")
+            .because("首批整治模块控制器必须通过Service层访问数据");
+
+    /**
      * RULE 2: Service层不应依赖上层
      * Service层可以依赖Repository和其他Service的DTO
      * 只检查新模块
