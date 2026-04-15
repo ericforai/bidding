@@ -4,7 +4,6 @@ import com.xiyu.bid.entity.RoleProfile;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.RoleProfileRepository;
 import com.xiyu.bid.repository.UserRepository;
-import com.xiyu.bid.service.RoleProfileService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,8 +26,7 @@ class E2eDemoDataInitializerTest {
         UserRepository userRepository = mock(UserRepository.class);
         PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
         RoleProfileRepository roleProfileRepository = mock(RoleProfileRepository.class);
-        RoleProfileService roleProfileService = mock(RoleProfileService.class);
-        E2eDemoDataInitializer initializer = new E2eDemoDataInitializer(userRepository, roleProfileRepository, roleProfileService, passwordEncoder);
+        E2eDemoDataInitializer initializer = new E2eDemoDataInitializer(userRepository, roleProfileRepository, passwordEncoder);
 
         when(userRepository.findByUsername(any())).thenReturn(Optional.empty());
         when(roleProfileRepository.findByCodeIgnoreCase(anyString()))

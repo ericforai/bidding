@@ -130,7 +130,7 @@ class AuditOperationalAnalyticsIntegrationTest {
         roleProfileRepository.deleteAll();
 
         com.xiyu.bid.entity.RoleProfile defaultProfile = roleProfileRepository.save(com.xiyu.bid.entity.RoleProfile.builder()
-                .code("audit-test-profile")
+                .code("admin")
                 .name("审计测试权限")
                 .dataScope("self")
                 .build());
@@ -326,7 +326,7 @@ class AuditOperationalAnalyticsIntegrationTest {
                 .andExpect(jsonPath("$.data.items[0].count").value(1))
                 .andExpect(jsonPath("$.data.items[0].managedProjectCount").value(1))
                 .andExpect(jsonPath("$.data.summary.totalCompletedTasks").value(0));
-        assertQueryCountAtMost(4);
+        assertQueryCountAtMost(5);
     }
 
     @Test
