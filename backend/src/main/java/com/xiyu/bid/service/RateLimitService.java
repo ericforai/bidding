@@ -4,9 +4,9 @@
 // 维护声明: 仅维护限流实现；登录策略调整请同步 SecurityConfig 与 Filter.
 package com.xiyu.bid.service;
 
-import com.xiyu.bid.config.ExportConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -21,13 +21,13 @@ import java.time.Duration;
 public class RateLimitService {
 
     private StringRedisTemplate redisTemplate;
-    private final ExportConfig exportConfig;
+    private final int maxExportsPerHour;
 
     private static final String EXPORT_RATE_LIMIT_KEY_PREFIX = "export:rateLimit:user:";
 
-    public RateLimitService(ExportConfig exportConfig) {
+    public RateLimitService(@Value("${app.export.max-exports-per-hour:10}") int maxExportsPerHour) {
         this.redisTemplate = null;
-        this.exportConfig = exportConfig;
+        this.maxExportsPerHour = maxExportsPerHour;
     }
 
     @Autowired(required = false)
@@ -75,9 +75,9 @@ public class RateLimitService {
             }
 
             // Check if limit exceeded
-            if (currentCount > exportConfig.getMaxExportsPerHour()) {
+            if (currentCount > maxExportsPerHour) {
                 log.info("Rate limit exceeded: userId={}, count={}, limit={}",
-                    userId, currentCount, exportConfig.getMaxExportsPerHour());
+                    userId, currentCount, maxExportsPerHour);
                 return false;
             }
 

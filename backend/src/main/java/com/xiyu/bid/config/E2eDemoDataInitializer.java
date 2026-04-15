@@ -7,8 +7,8 @@ package com.xiyu.bid.config;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.RoleProfileRepository;
 import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.entity.RoleProfile;
 import com.xiyu.bid.entity.RoleProfileCatalog;
-import com.xiyu.bid.service.RoleProfileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -29,12 +29,11 @@ public class E2eDemoDataInitializer implements ApplicationRunner {
 
     private final UserRepository userRepository;
     private final RoleProfileRepository roleProfileRepository;
-    private final RoleProfileService roleProfileService;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(ApplicationArguments args) {
-        roleProfileService.ensureSystemRoles();
+        ensureSystemRoles();
         seedDemoUsers();
     }
 
@@ -66,6 +65,34 @@ public class E2eDemoDataInitializer implements ApplicationRunner {
 
         userRepository.save(user);
         log.info("Seeded e2e demo user: {}", demoUser.username());
+    }
+
+    private void ensureSystemRoles() {
+        for (RoleProfileCatalog.SeedDefinition definition : RoleProfileCatalog.seedDefinitions()) {
+            roleProfileRepository.findByCodeIgnoreCase(definition.code())
+                    .ifPresentOrElse(
+                            existing -> {
+                                if (!Boolean.TRUE.equals(existing.getIsSystem())) {
+                                    existing.setIsSystem(true);
+                                    roleProfileRepository.save(existing);
+                                }
+                            },
+                            () -> {
+                                RoleProfile role = RoleProfile.builder()
+                                        .code(definition.code())
+                                        .name(definition.name())
+                                        .description(definition.description())
+                                        .isSystem(definition.system())
+                                        .enabled(true)
+                                        .dataScope(definition.dataScope())
+                                        .build();
+                                role.setMenuPermissions(definition.menuPermissions());
+                                role.setAllowedProjects(List.of());
+                                role.setAllowedDepts(List.of());
+                                roleProfileRepository.save(role);
+                            }
+                    );
+        }
     }
 
     private record DemoUser(String username, String fullName, String email, User.Role role) {
