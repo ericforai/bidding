@@ -29,6 +29,9 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Run unit tests (Vitest)
+        run: npm run test:unit
+
       - name: Build frontend (mock)
         run: npm run build
 
@@ -51,14 +54,18 @@ jobs:
           java-version: 21
           cache: maven
 
-      - name: Compile backend
-        run: mvn -DskipTests compile
+      - name: Run all tests and verify coverage
+        run: mvn verify
+        env:
+          PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
 
-      - name: Run baseline and resource integration tests
-        run: mvn -Dtest=FlywayBaselineContextTest,ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest test
-
-      - name: Run PostgreSQL Testcontainers baseline test
-        run: mvn -Dtest=FlywayPostgresContainerTest test
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: backend/target/site/jacoco/
+          retention-days: 7
 
   e2e:
     runs-on: ubuntu-latest

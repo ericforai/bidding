@@ -4,17 +4,17 @@
 
 **位置**: `src/api/`
 
-**功能**: 封装后端 API 调用和 Mock 数据，提供统一的数据访问接口。
+**功能**: 封装真实后端 API 调用，提供统一的数据通信链路抽象。
 
 ## 文件清单
 
 | 文件 | 类型 | 功能 |
 |------|------|------|
 | `client.js` | HTTP 客户端 | Axios 封装，请求/响应拦截器 |
-| `config.js` | 配置 | API 基础配置，Mock 模式开关 |
-| `mock.js` | Mock 数据 | POC 项目所有静态 Mock 数据源 |
+| `config.js` | 配置 | API 基础配置和拦截器防腐 |
+| `mock.js` | (已弃用) | 曾用于POC阶段的静态数据文件，现必须弃用以避免污染真实数据流 |
 | `index.js` | 导出入口 | 统一导出所有 API 模块 |
-| `mock-adapters/` | 目录 | 隔离 demo 数据读取和 demoPersistence 适配 |
+| `mock-adapters/` | (待移除) | 旧版的本地 demo 数据组装转换层，即将整体拆除 |
 | `modules/` | 目录 | 按业务模块拆分的 API 调用函数 |
 | `examples.js` | 示例 | API 使用示例代码 |
 | `trendradar.js` | 趋势雷达 | 趋势雷达相关 API |
@@ -33,10 +33,10 @@
 | `ai.js` | AI 智能分析 |
 | ... | 其他业务模块 |
 
-## 治理约束
+## 治理底线
 
-- 业务页面、组件、store 不得直接依赖 `mock.js`
-- demo 数据只能通过 `mock-adapters/` 或 API module 间接暴露
+- 业务页面、组件、store **绝对不得使用任何本地 Mock 演示数据兜底逻辑**。
+- 系统已全面进入交付期开发态，所有数据往来只能严格通过按模块调取真实微服务。
 - 目录和文件维护规则见 `docs/DOCUMENTATION_GOVERNANCE.md`
 
 ## 更新记录

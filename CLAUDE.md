@@ -12,11 +12,27 @@ npm run preview  # 预览构建结果
 
 ## 端口约定
 
-- Mock 数据前端默认开发端口固定为 `1314`
+- 前端本地开发服务端口固定为 `1314`
 - 默认访问地址固定为 `http://127.0.0.1:1314` 或 `http://localhost:1314`
 - `vite.config.js`、`playwright.config.js`、日常联调、截图和演示统一以 `1314` 为准
 - `14173` 这类端口仅允许用于临时排查；排查结束后必须关闭，不作为项目约定，不作为演示入口，不写入测试基线
 - 如果本机同时存在 `1314` 和其他临时 Vite 端口，优先保留 `1314`
+
+## 验证清单 (Verification Checklist)
+
+所有涉及生产代码（Frontend / Backend）变更的任务，完成后必须作为交付条件经过以下红线扫描：
+1. **防止数据回退污染审查**: 运行 `npm run check:front-data-boundaries`，打回任何企图私自使用旧版 mock 兜底的代码。
+2. **文档治理与双向同步验证**: 运行 `npm run check:doc-governance`。
+3. **架构隐式依赖阻断排查**: 运行 `cd backend && mvn test -Dtest=ArchitectureTest` 确保没有 Controller 직连 Repository 或其他违反六边形架构预设的坏味道。
+4. **后端功能与生命周期基准测试**: 运行 `cd backend && mvn clean compile test`。
+5. **部署可达性打桩打包**: 至少确保终端命令 `npm run build` 没有抛出任何模块解析异常。
+
+## 核心环境坑点与规避 (Pitfalls)
+
+1. **Spring Security 身份识别错位报错**：在后端 Controller 获取用户上下文时，如果强推 `Authentication.getName()` 到 `Long` 类型 ID 必定抛出 `ClassCastException` 崩溃，因其返回的是业务字符串 `username`。一定要通过 `authService.resolveUserByUsername()` 这个专用工具实现安全身份映射。
+2. **前后端接口端口联调错乱**：后端微服务启动默认绑定 **`18080`** 端口，而非某些陈旧 Spring Boot 记忆中的 `8080`。当 VITE 的 API Base 报错连接拒绝时，首先排查是 8080 导致还是 18080 导致。
+3. **废弃旧版Mock兜底**：系统已全面移除前端 `mock` 回退机制，专注于真实服务端响应闭环。若前端列表白屏，去查报错或联调真正的后端。
+4. **依赖注入越权红线**：禁止在控制层（Controller）隐式使用或注入 `Repository`。如果项目需求促使你这样做，这属于绝对反模式操作，项目内置 ArchUnit CI 随时可能将其识别为构建失败——所有的存储互动必须委托收口给对应 Domain 的 Service。
 
 ## 项目架构
 
@@ -37,7 +53,7 @@ npm run preview  # 预览构建结果
 ```
 src/
 ├── api/
-│   └── mock.js           # 所有Mock数据源（无需后端）
+│   └── mock.js           # [已废弃] 遗留演示配置 (不再新加业务数据)
 ├── config/
 │   └── ai-prompts.js     # AI功能配置（投标准备、标书编制、团队协作）
 ├── components/
@@ -67,18 +83,14 @@ src/
 ### 状态管理模式
 
 项目使用 Pinia 进行状态管理，stores 位于 `src/stores/`：
-- 数据主要从 `src/api/mock.js` 初始化
+- 页面首次加载直接向底层真实 API 根据 Router/Store Hooks 索要数据
 - 用户状态持久化到 localStorage
 - 使用 Composition API 风格的 `defineStore`
 
-### 双模式数据架构
+### 数据层架构
 
-项目支持 Mock 和 API 两种模式，通过 `VITE_API_MODE` 环境变量切换：
-
-- **API 模式**（默认，生产路径）：前端通过 `src/api/modules/` 调用后端 REST API
-- **Mock 模式**（演示/开发）：数据来自 `src/api/mock.js`，无需后端
-
-Mock 数据结构包括：users, tenders, projects, qualifications, cases, templates, aiAnalysis, complianceCheck, competitionIntel 等。
+项目已全面转入真实产品交付状态，**彻底废弃双模式并丢弃旧有的 Mock 模式**。
+前端所有的业务数据和持久化流转，必须通过 `src/api/modules/` 向后端发起 REST API 数据交互请求。
 
 ### AI功能配置
 
@@ -110,13 +122,7 @@ import Something from '@/components/...'
 2. 在 `src/router/index.js` 添加路由配置
 3. 如需权限控制，添加 `meta.roles`
 
-### 添加新Mock数据
-直接在 `src/api/mock.js` 的 `mockData` 对象中添加：
-```js
-mockData.newEntity = [
-  { id: '001', name: '...', ... }
-]
-```
+
 
 ### 添加AI功能
 在 `src/config/ai-prompts.js` 的 `aiConfigs` 中添加新配置，包含：
@@ -146,10 +152,10 @@ mockData.newEntity = [
 ## 项目说明
 
 - 这是一个 60 天交付项目（非 POC），目标是向客户交付可上线的投标管理平台
-- 项目支持 Mock 模式（本地演示）和 API 模式（真实后端），默认使用 API 模式
+- 项目已全面淘汰落后的 Mock 模式，系统强制依赖真实后端接口串联才能进入功能链路
 - 后端技术栈：Spring Boot 3.2 + Java 21 + PostgreSQL + Redis
 - 部署方式：私有化部署，源码级交付
 - 开发服务器默认运行在 http://localhost:1314
 - 后端 API 默认运行在 http://localhost:18080
-- Mock 演示、联调记录、测试回放默认都使用 `1314` 端口
+- 本地方案联调记录、测试回放默认都使用 `1314` 开发环境端口
 - 关键文档：`docs/DELIVERY_BLOCKERS_SCHEDULE.md`（交付阻塞项）、`docs/GO_LIVE_CHECKLIST.md`（上线清单）

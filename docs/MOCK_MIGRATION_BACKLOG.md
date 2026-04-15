@@ -1,40 +1,24 @@
-# Mock 直连页面迁移 Backlog
+# 遗留 Mock 直连清理倒计时清单
 
 参考总规则：`docs/FRONTEND_REAL_DATA_GOVERNANCE.md`  
-本清单只记录剩余迁移点，不再单独定义治理原则。
 
-本清单只记录“页面层仍直接依赖 `@/api/mock`”的剩余迁移点。  
-`src/api/mock.js` 继续作为长期 MVP 演示数据源保留，不在本清单中视为待删除资产。
+**警告**：本仓库已全面拉起最后 2 个月的产品上线交付计划。因此：原本作为长线妥协的 `src/api/mock.js` 以及所有 Mock Adapter 将被**强制废离**。
+前端再无“支持 Demo 演示”和“保留 Mock 回退”这两种合法状态。
 
-## 已完成首批主链路
+## 当前残留的高风险污染清单
 
-- 登录页：已切到 `authApi + user store`
-- 项目列表页：已切到 `projectsApi + project store`
-- 标讯列表主数据：已切到 `tendersApi + bidding store`
+以下区域如果尚未转入真实的 API 网络请求链路，将被视为当前迭代一号优先级的技术清债阻塞点：
 
-## 第二阶段待迁移页面
-
-| 页面 | 当前直连 Mock 内容 | 推荐迁移目标 |
+| 所在范围 | 历史遗留罪状 | 清盘行动方案 |
 | --- | --- | --- |
-| `src/views/Analytics/Dashboard.vue` | 看板统计、趋势图表数据 | `dashboardApi`，先按后端 `/api/analytics/*` 实际路径收敛 |
-| `src/views/Bidding/AIAnalysis.vue` | AI 分析结果 | `aiApi` 或 `tendersApi` 的真实分析契约，先统一响应结构 |
-| `src/views/Project/Detail.vue` | 项目详情、任务、文档 | `projectsApi`，其中任务/文档子能力需先明确后端契约 |
-| `src/views/Resource/Expense.vue` | 费用台账与统计 | 先在 `feesApi` 和 `resources/expenses` 两套模型中确定唯一事实源 |
-| `src/views/Resource/Account.vue` | 账户列表与借用状态 | 先区分 `platform accounts` 与 `resource accounts` 后再迁移 |
-| `src/views/Resource/BAR/components/BorrowDialog.vue` | 站点借用/找回演示数据 | 先收敛 BAR 领域模型，再决定是否接 `bar-assets` 或新增后端接口 |
-| `src/views/System/Settings.vue` | API 文档与系统展示数据 | 改为基于真实契约生成，避免继续传播错误路径 |
+| `src/views/Analytics/Dashboard.vue` | 脱离后端的闭门自造数据 | 无论后端指标出齐与否，全部接入真实 `dashboardApi`（缺失图表暂作空白）。 |
+| `src/views/Project/Detail.vue` | 任务模块或文档模块兜底假数据 | 全部强制接入 `projectsApi` 走纯后端编排，未支持字段直接抛出真实数据错误。 |
+| `src/views/Resource/Expense.vue` | 假账本模拟操作假象 | 拆除虚壳，强硬对接 `feesApi`。 |
+| `src/views/System/Settings.vue` | 硬编码系统设置说明 | 全量依赖真端契约控制，无接口坚决直接占位不渲染。 |
+| **All Stores** | Pinia 中的降级方案 | 从 `user.js`到`bidding.js`，找出并彻底连根拔起任何因为网络异常而自动填充 `mockList` 的防爆假象处理。 |
 
-## Store 层仍保留 Mock 的位置
+## 清理验收死线要求
 
-以下 store 当前仍保留 mock 作为 fallback 或演示数据来源，属于允许状态，不视为本阶段问题：
-
-- `src/stores/user.js`
-- `src/stores/project.js`
-- `src/stores/bidding.js`
-- `src/stores/bar.js`
-
-## 迁移规则
-
-- 已迁移页面禁止再次直接 `import { mockData } from '@/api/mock'`
-- 未迁移页面允许继续读 mock，但必须先修正对应 API 模块契约再迁移
-- 对后端不存在的能力，API 层必须显式失败，不允许伪造真实接口成功
+- 以上清单被标记的内容如若在接下来的合并请求中发现依旧在访问 `mock.js` 或试图挂载兜底逻辑，合并将被直接挂起。
+- 我们宁愿功能界面报错甚至空置，也绝不允许功能界面上出现其实没有落库的“假繁荣数据”。
+- 尽早推动全站通过无脏文件的 `check-front-data-boundaries` 门禁。
