@@ -78,7 +78,7 @@ seed_default_user() {
   curl -fsS -X POST "$UAT_API_BASE_URL/api/auth/register" \
     -H 'Content-Type: application/json' \
     -d "$(cat <<EOF
-{"username":"$username","password":"XiyuDemo!2026","email":"$email","fullName":"$full_name","role":"$role"}
+{"username":"$username","password":"123456","email":"$email","fullName":"$full_name","role":"$role"}
 EOF
 )" >/dev/null 2>&1 || true
 }
@@ -95,7 +95,7 @@ rm -f "$MARKER_FILE"
 if ! is_http_ready "$UAT_API_BASE_URL/actuator/health"; then
   printf '==> Building frontend assets for API mode\n'
   cd "$ROOT_DIR"
-  VITE_API_MODE=api VITE_API_BASE_URL="$UAT_API_BASE_URL" npm run build >/dev/null
+  VITE_API_BASE_URL="$UAT_API_BASE_URL" npm run build:api >/dev/null
 
   cleanup_port_listener "$BACKEND_PORT"
   rm -f "$BACKEND_PID_FILE"

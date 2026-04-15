@@ -311,6 +311,21 @@
         <el-button type="primary" @click="confirmApproval">提交审批</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="showDetailDialog" title="费用详情" width="620px">
+      <el-descriptions v-if="currentExpenseDetail" :column="1" border>
+        <el-descriptions-item label="项目名称">{{ currentExpenseDetail.project }}</el-descriptions-item>
+        <el-descriptions-item label="费用类型">{{ currentExpenseDetail.type }}</el-descriptions-item>
+        <el-descriptions-item label="金额">¥{{ Number(currentExpenseDetail.amount || 0).toFixed(2) }} 万元</el-descriptions-item>
+        <el-descriptions-item label="发生日期">{{ currentExpenseDetail.date || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">{{ currentExpenseDetail.status || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="审批状态">{{ currentExpenseDetail.approvalStatus || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="申请人">{{ currentExpenseDetail.createdBy || currentExpenseDetail.applicant || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="审批人">{{ currentExpenseDetail.approvedBy || currentExpenseDetail.approver || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="审批意见">{{ currentExpenseDetail.approvalComment || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="备注">{{ currentExpenseDetail.description || currentExpenseDetail.remark || '-' }}</el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
   </div>
 </template>
 
@@ -319,6 +334,7 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Plus, Download, Bell, WarningFilled } from '@element-plus/icons-vue'
 import { projectsApi, resourcesApi, isMockMode } from '@/api'
+import { exportApi } from '@/api/modules/export'
 import { useUserStore } from '@/stores/user'
 
 const searchForm = ref({
@@ -331,6 +347,7 @@ const fees = ref([])
 const showApplyDialog = ref(false)
 const showRemindDialog = ref(false)
 const showApprovalDialog = ref(false)
+const showDetailDialog = ref(false)
 const userStore = useUserStore()
 const applyForm = ref({
   type: '保证金',
@@ -340,6 +357,7 @@ const applyForm = ref({
 })
 const currentRemindItem = ref(null)
 const currentApprovalItem = ref(null)
+const currentExpenseDetail = ref(null)
 const approvalForm = ref({
   result: 'approved',
   comment: ''
@@ -399,8 +417,8 @@ const loadProjectOptions = async () => {
   approvalRecords.value = hydrateApprovalProjectNames(approvalRecords.value)
 }
 
-// 审批记录 Mock 数据
-const approvalRecords = ref([
+// 审批记录：Mock 模式使用硬编码数据，API 模式使用空数组（由后端填充）
+const approvalRecords = ref(isMockMode() ? [
   {
     id: 1,
     project: '某央企项目',
@@ -445,7 +463,7 @@ const approvalRecords = ref([
     approvalStatus: 'pending',
     remark: '集采项目保证金'
   }
-])
+] : [])
 
 const displayedApprovalRecords = computed(() => {
   if (isMockResourceMode.value) {
@@ -576,11 +594,34 @@ const handleReset = () => {
 }
 
 const handleExport = () => {
-  ElMessage.success('导出成功')
+  exportApi.exportExcel('expenses', filteredFees.value.map((item) => ({
+    项目名称: item.project,
+    费用类型: item.type,
+    金额_万元: Number(item.amount || 0).toFixed(2),
+    状态: item.status,
+    审批状态: item.approvalStatus,
+    发生日期: item.date,
+    备注: item.description || '',
+  })), `expenses-${new Date().toISOString().slice(0, 10)}.csv`).then((result) => {
+    if (!result?.success) {
+      ElMessage.error('导出失败')
+      return
+    }
+    ElMessage.success('费用台账导出成功')
+  })
 }
 
-const handleDetail = (row) => {
-  ElMessage.info(`查看详情：${row.project}`)
+const handleDetail = async (row) => {
+  currentExpenseDetail.value = row
+  showDetailDialog.value = true
+  if (isMockMode()) return
+
+  const response = await resourcesApi.expenses.getDetail(row.id)
+  if (!response?.success) {
+    ElMessage.error(response?.message || '费用详情加载失败')
+    return
+  }
+  currentExpenseDetail.value = response.data || row
 }
 
 const handleReturn = (row) => {
@@ -602,11 +643,6 @@ const handleReturn = (row) => {
 }
 
 const handleSubmitApply = async () => {
-  if (!isMockMode()) {
-    ElMessage.info('真实后端创建费用记录还需要项目ID和分类映射，当前表单暂未接入')
-    return
-  }
-
   const payload = {
     type: applyForm.value.type,
     projectId: applyForm.value.project,

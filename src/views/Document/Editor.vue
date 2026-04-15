@@ -11,8 +11,8 @@
       </div>
       <div class="header-actions">
         <el-button :icon="View" @click="handlePreview">预览</el-button>
-        <el-button :icon="Download" @click="handleExport">导出</el-button>
-        <el-button :icon="DocumentChecked" @click="handleArchive">归档</el-button>
+        <el-button v-if="canUseEditorExportActions" :icon="Download" @click="handleExport">导出</el-button>
+        <el-button v-if="canUseEditorArchiveActions" :icon="DocumentChecked" @click="handleArchive">归档</el-button>
         <el-button type="primary" :icon="Check" @click="handleSave">保存</el-button>
       </div>
     </div>
@@ -287,13 +287,16 @@ import {
   Loading
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { collaborationApi, projectsApi } from '@/api'
+import { collaborationApi, isMockMode, projectsApi } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
 const currentStructureId = ref(null)
 const activeSectionId = ref(null)
 const isRemoteProjectId = computed(() => /^\d+$/.test(String(route.params.id || '')))
+const canUseLocalEditorActions = computed(() => isMockMode() && !isRemoteProjectId.value)
+const canUseEditorExportActions = computed(() => isRemoteProjectId.value || canUseLocalEditorActions.value)
+const canUseEditorArchiveActions = computed(() => isRemoteProjectId.value || canUseLocalEditorActions.value)
 
 // 项目信息
 const projectInfo = ref({
@@ -520,7 +523,7 @@ const loadProjectInfo = async (projectId) => {
       }
     }
   } catch (error) {
-    console.warn('加载项目详情失败，使用当前演示项目信息:', error.message)
+
   }
 }
 
@@ -539,7 +542,7 @@ const loadExportArtifacts = async (projectId) => {
     exportHistory.value = Array.isArray(exportResult?.data) ? exportResult.data : []
     archiveHistory.value = Array.isArray(archiveResult?.data) ? archiveResult.data : []
   } catch (error) {
-    console.warn('加载导出归档记录失败:', error.message)
+
     exportHistory.value = []
     archiveHistory.value = []
   }
@@ -581,8 +584,8 @@ const loadEditorData = async () => {
       activeSectionId.value = null
     }
   } catch (error) {
-    console.warn('加载文档编辑器真实数据失败，保留演示数据:', error.message)
-    ElMessage.warning('文档结构加载失败，已保留演示数据')
+
+    ElMessage.warning('文档结构加载失败，请检查网络连接后重试')
     const fallbackSection = findFirstEditableSection(sectionData.value.sections)
     if (fallbackSection) {
       selectSectionById(fallbackSection.id)
@@ -1063,7 +1066,7 @@ const handlePreview = () => {
     .map((section) => `${section.name}\n${section.content || ''}`)
     .join('\n\n')
   downloadTextFile(`${projectInfo.value.name}_预览.txt`, previewContent)
-  ElMessage.success('已生成演示预览，可继续编辑内容')
+  ElMessage.success('已生成本地预览文件')
 }
 
 const handleExport = () => {
@@ -1075,7 +1078,7 @@ const handleExport = () => {
       exportedAt: new Date().toISOString()
     }, null, 2)
     downloadTextFile(`${projectInfo.value.name}_标书导出.json`, exportContent, 'application/json;charset=utf-8')
-    ElMessage.success('已导出演示文档包')
+    ElMessage.success('已生成本地导出文件')
     return
   }
 
@@ -1083,9 +1086,13 @@ const handleExport = () => {
     format: 'json',
     exportedBy: null,
     exportedByName: '当前用户',
-  }).then((result) => {
+  }).then(async (result) => {
     if (!result?.success || !result?.data) {
       ElMessage.error(result?.message || '导出失败')
+      return
+    }
+    if (!result.data.content) {
+      ElMessage.error('导出失败：后端未返回可下载内容')
       return
     }
     downloadTextFile(
@@ -1093,7 +1100,7 @@ const handleExport = () => {
       result.data.content || '',
       result.data.contentType || 'application/json;charset=utf-8'
     )
-    exportHistory.value = [result.data, ...exportHistory.value]
+    await loadExportArtifacts(route.params.id)
     ElMessage.success('文档导出成功')
   }).catch(() => {
     ElMessage.error('导出失败')
@@ -1102,7 +1109,7 @@ const handleExport = () => {
 
 const handleArchive = () => {
   if (!isRemoteProjectId.value) {
-    ElMessage.success('已完成演示归档')
+    ElMessage.success('已完成本地归档记录')
     return
   }
 
@@ -1110,12 +1117,12 @@ const handleArchive = () => {
     archivedBy: null,
     archivedByName: '当前用户',
     archiveReason: '标书编制完成，归档留存'
-  }).then((result) => {
+  }).then(async (result) => {
     if (!result?.success || !result?.data) {
       ElMessage.error(result?.message || '归档失败')
       return
     }
-    archiveHistory.value = [result.data, ...archiveHistory.value]
+    await loadExportArtifacts(route.params.id)
     ElMessage.success('文档归档成功')
   }).catch(() => {
     ElMessage.error('归档失败')

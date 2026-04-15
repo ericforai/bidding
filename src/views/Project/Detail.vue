@@ -169,8 +169,8 @@
             <div class="card-title">
               <el-icon><List /></el-icon>
               <span>任务看板</span>
-              <el-button link type="primary" :icon="Plus" @click="handleAddTask">添加任务</el-button>
-              <el-button link type="warning" @click="handleResetTasks">重置任务</el-button>
+              <el-button v-if="canManageProjectTasks" link type="primary" :icon="Plus" @click="handleAddTask">添加任务</el-button>
+              <el-button v-if="isDemoMode" link type="warning" @click="handleResetTasks">重置任务</el-button>
             </div>
           </template>
           <TaskBoard
@@ -296,10 +296,11 @@
             <div class="card-title">
               <el-icon><Folder /></el-icon>
               <span>项目文档</span>
-              <el-button link type="success" :icon="DocumentChecked" @click="handleArchiveDocuments">
+              <el-button v-if="canManageProjectDocuments" link type="success" :icon="DocumentChecked" @click="handleArchiveDocuments">
                 归档资料
               </el-button>
               <el-upload
+                v-if="canManageProjectDocuments"
                 :show-file-list="false"
                 :before-upload="handleUpload"
                 accept=".doc,.docx,.pdf,.xls,.xlsx"
@@ -334,12 +335,13 @@
       <!-- 右侧信息栏 -->
       <el-aside width="320px" class="right-sidebar">
         <!-- AI智能检查面板 -->
-        <el-card class="ai-check-card">
+        <el-card v-if="showAICheckCard" class="ai-check-card">
           <template #header>
             <div class="card-title">
               <el-icon><MagicStick /></el-icon>
               <span>AI智能检查</span>
               <el-button
+                v-if="canRunAICheck"
                 type="primary"
                 size="small"
                 @click="runAICheck"
@@ -655,10 +657,10 @@
             </div>
           </template>
           <div class="action-list">
-            <el-button :icon="DocumentAdd" @click="handleAddDocument">添加文档</el-button>
+            <el-button v-if="canManageProjectDocuments" :icon="DocumentAdd" @click="handleAddDocument">添加文档</el-button>
             <el-button :icon="Share" @click="handleShare">分享项目</el-button>
             <el-button :icon="Download" @click="handleExport">导出资料</el-button>
-            <el-button :icon="Bell" @click="handleSetReminder">设置提醒</el-button>
+            <el-button v-if="canSetProjectReminder" :icon="Bell" @click="handleSetReminder">设置提醒</el-button>
           </div>
         </el-card>
 
@@ -907,12 +909,14 @@
     />
 
     <AutoTasks
+      v-if="isDemoMode"
       v-model="showAutoTasks"
       :project-id="route.params.id"
       :data="demoAutoTasks"
     />
 
     <MobileCard
+      v-if="isDemoMode"
       v-model="showMobileCard"
       :project-id="route.params.id"
       :data="demoMobileCard"
@@ -1485,6 +1489,14 @@ const aiResult = ref({
   quality: null,
   score: null
 })
+const hasAiCheckResult = computed(() => Boolean(
+  aiResult.value.compliance ||
+  aiResult.value.score ||
+  project.value?.aiCheck?.compliance ||
+  project.value?.aiCheck?.quality
+))
+const canRunAICheck = computed(() => true)
+const showAICheckCard = computed(() => true)
 
 // 智能助手面板相关
 const assistantPanelVisible = ref(false)
@@ -1587,6 +1599,9 @@ const project = computed(() => {
 })
 
 const dialogProjectId = computed(() => project.value?.id ?? route.params.id)
+const canManageProjectTasks = computed(() => isDemoMode || isApiProject.value)
+const canManageProjectDocuments = computed(() => isDemoMode || isApiProject.value)
+const canSetProjectReminder = computed(() => isDemoMode || isApiProject.value)
 
 const canSubmit = computed(() => {
   return project.value?.status === 'drafting' || project.value?.status === 'reviewing'
@@ -1783,7 +1798,7 @@ const runAICheck = async () => {
     ])
 
     if (complianceResponse?.success === false || scoreResponse?.success === false) {
-      const message = complianceResponse?.message || scoreResponse?.message || 'AI检查暂未接入真实结果'
+      const message = complianceResponse?.message || scoreResponse?.message || '当前未获取到 AI 检查结果'
       aiResult.value = { compliance: null, quality: null, score: null }
       ElMessage.warning(message)
       return
@@ -1926,7 +1941,15 @@ const goToSiteDetail = () => {
 }
 
 const borrowUK = () => {
-  ElMessage.info('借用功能请在站点详情页操作')
+  if (assetCheckResult.value?.site?.id) {
+    router.push({
+      path: `/resource/bar/site/${assetCheckResult.value.site.id}`,
+      query: {
+        fromProjectId: String(route.params.id || ''),
+        fromProjectName: project.value?.name || ''
+      }
+    })
+  }
 }
 
 const viewSOP = () => {
@@ -2590,7 +2613,7 @@ const handleExport = () => {
     JSON.stringify(payload, null, 2),
     'application/json;charset=utf-8'
   )
-  ElMessage.success(`已生成演示导出包：${project.value?.name || '项目资料'}.zip`)
+  ElMessage.success(`已生成演示导出包：${project.value?.name || '项目资料'}_导出.json`)
 }
 
 const handleArchiveDocuments = async () => {
@@ -2603,7 +2626,7 @@ const handleArchiveDocuments = async () => {
       action: '归档了项目资料',
       time: new Date().toLocaleString('zh-CN', { hour12: false }),
     })
-    ElMessage.success('已完成演示归档')
+    ElMessage.success('已完成本地归档记录')
     return
   }
 
@@ -2643,7 +2666,7 @@ const handleSetReminder = async () => {
       action: '设置了项目跟进提醒',
       time: new Date().toLocaleString('zh-CN', { hour12: false }),
     })
-    ElMessage.success('已设置演示提醒，默认明天 09:00 提醒')
+    ElMessage.success('已设置本地提醒，默认明天 09:00 提醒')
     return
   }
 
@@ -2888,6 +2911,18 @@ const handleSubmitPackage = () => {
 }
 
 const handleDownloadDeliverable = (item) => {
+  if (isApiProject.value && item.url && item.url !== '#') {
+    const link = document.createElement('a')
+    link.href = item.url
+    link.download = item.name || ''
+    link.target = '_blank'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    ElMessage.success(`已下载 ${item.name}`)
+    return
+  }
+
   downloadTextFile(item.name, `演示交付物：${item.name}\n类型：${item.type || ''}\n上传者：${item.uploader || ''}`)
   ElMessage.success(`已下载 ${item.name}`)
 }
@@ -2910,8 +2945,10 @@ onMounted(async () => {
       : null
   }
   await loadProjectWorkflowData(projectId)
-  demoAutoTasks.value = getDemoAutoTasks()
-  demoMobileCard.value = getDemoMobileCard(projectId)
+  if (isDemoMode) {
+    demoAutoTasks.value = getDemoAutoTasks()
+    demoMobileCard.value = getDemoMobileCard(projectId)
+  }
 
   // 加载资产台账数据
   await barStore.getSites()

@@ -20,7 +20,8 @@ npm run preview  # 预览构建结果
 
 ## 项目架构
 
-这是一个 Vue 3 + Vite 的 POC 项目，用于演示投标管理平台的核心业务流程。
+西域数智化投标管理平台 — 60天交付项目（2026-04-27 启动，2026-06-25 上线）。
+面向西域集团的私有化部署、源码交付项目，当前处于实施准备阶段。
 
 ### 技术栈
 - **前端框架**: Vue 3 (Composition API)
@@ -70,20 +71,14 @@ src/
 - 用户状态持久化到 localStorage
 - 使用 Composition API 风格的 `defineStore`
 
-### Mock数据架构
+### 双模式数据架构
 
-所有数据集中在 `src/api/mock.js`，数据结构包括：
-- `users` - 用户信息（小王、张经理、李总）
-- `tenders` - 标讯列表
-- `projects` - 投标项目
-- `qualifications` - 资质库
-- `cases` - 案例库
-- `templates` - 模板库
-- `aiAnalysis` - AI分析结果（按项目ID索引）
-- `complianceCheck` - 合规检查结果
-- `competitionIntel` - 竞争情报
+项目支持 Mock 和 API 两种模式，通过 `VITE_API_MODE` 环境变量切换：
 
-添加新的Mock数据时，直接在 `mockData` 对象中添加对应字段。
+- **API 模式**（默认，生产路径）：前端通过 `src/api/modules/` 调用后端 REST API
+- **Mock 模式**（演示/开发）：数据来自 `src/api/mock.js`，无需后端
+
+Mock 数据结构包括：users, tenders, projects, qualifications, cases, templates, aiAnalysis, complianceCheck, competitionIntel 等。
 
 ### AI功能配置
 
@@ -135,9 +130,26 @@ mockData.newEntity = [
 <el-icon><Plus /></el-icon>
 ```
 
+## Wiki 知识库
+
+项目配备了三层 LLM Wiki 知识库，用于结构化管理项目知识：
+
+- **治理规范**: `WIKI.md`（项目根目录）— 定义 Wiki 的维护规则和工作流
+- **源文档索引**: `.wiki/INDEX.md` — 对项目 70+ 源文档的分类编目
+- **知识页面**: `.wiki/pages/*.md` — LLM 合成的 11 个知识页面
+
+**使用方式**：
+1. 回答项目相关问题时，优先查阅 `.wiki/pages/` 中的合成知识
+2. 需要细节时，通过页面 frontmatter 的 `sources` 字段追溯到原始文档
+3. 新增源文档时，按 `WIKI.md` 中的摄入工作流更新 Wiki
+
 ## 项目说明
 
-- 这是一个POC项目，使用Mock数据，无需后端服务
-- 默认登录用户为"小王"，用户信息会保存在localStorage
+- 这是一个 60 天交付项目（非 POC），目标是向客户交付可上线的投标管理平台
+- 项目支持 Mock 模式（本地演示）和 API 模式（真实后端），默认使用 API 模式
+- 后端技术栈：Spring Boot 3.2 + Java 21 + PostgreSQL + Redis
+- 部署方式：私有化部署，源码级交付
 - 开发服务器默认运行在 http://localhost:1314
+- 后端 API 默认运行在 http://localhost:18080
 - Mock 演示、联调记录、测试回放默认都使用 `1314` 端口
+- 关键文档：`docs/DELIVERY_BLOCKERS_SCHEDULE.md`（交付阻塞项）、`docs/GO_LIVE_CHECKLIST.md`（上线清单）

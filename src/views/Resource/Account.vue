@@ -24,7 +24,7 @@
       <template #header>
         <div class="card-header">
           <span>平台账户管理</span>
-          <el-button v-if="isMockResourceMode" type="primary" @click="handleCreate">
+          <el-button type="primary" @click="handleCreate">
             <el-icon><Plus /></el-icon> 添加账户
           </el-button>
         </div>
@@ -105,7 +105,7 @@
                   <el-dropdown-menu>
                     <el-dropdown-item command="view" :icon="View">查看详情</el-dropdown-item>
                     <el-dropdown-item command="reset" :icon="RefreshLeft">重置密码</el-dropdown-item>
-                    <el-dropdown-item v-if="isMockResourceMode" command="toggle" :icon="View">
+                    <el-dropdown-item command="toggle" :icon="View">
                       {{ row.status === 'available' ? '禁用账户' : '启用账户' }}
                     </el-dropdown-item>
                     <el-dropdown-item divided command="delete" :icon="Delete" style="color: #f56c6c">
@@ -151,6 +151,47 @@
         <el-button type="primary" @click="handleSubmitBorrow">提交申请</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="showDetailDialog" title="账户详情" width="560px">
+      <el-descriptions v-if="currentAccountDetail" :column="1" border>
+        <el-descriptions-item label="平台名称">{{ currentAccountDetail.platform }}</el-descriptions-item>
+        <el-descriptions-item label="用户名">{{ currentAccountDetail.username || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-tag v-if="currentAccountDetail.status === 'available'" type="success">可用</el-tag>
+          <el-tag v-else-if="currentAccountDetail.status === 'in_use'" type="warning">使用中</el-tag>
+          <el-tag v-else type="info">禁用</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="使用人">{{ currentAccountDetail.borrower || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="最近使用">{{ currentAccountDetail.lastUsed || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="归还截止">{{ currentAccountDetail.dueAt || '-' }}</el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
+
+    <el-dialog v-model="showCreateDialog" :title="editingAccountId ? '编辑账户' : '新增账户'" width="520px">
+      <el-form :model="createForm" label-width="100px">
+        <el-form-item label="平台名称">
+          <el-input v-model="createForm.accountName" placeholder="请输入平台名称" />
+        </el-form-item>
+        <el-form-item label="平台类型">
+          <el-select v-model="createForm.platformType" placeholder="请选择">
+            <el-option label="投标平台" value="BID_PLATFORM" />
+            <el-option label="采购平台" value="PROCUREMENT_PLATFORM" />
+            <el-option label="政府平台" value="GOVERNMENT_PLATFORM" />
+            <el-option label="其他平台" value="OTHER" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="用户名">
+          <el-input v-model="createForm.username" placeholder="请输入用户名" />
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input v-model="createForm.password" type="password" show-password :placeholder="editingAccountId ? '留空则不修改密码' : '请输入密码'" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showCreateDialog = false">取消</el-button>
+        <el-button type="primary" @click="submitCreate">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -173,7 +214,10 @@ const passwordVisible = ref({})
 
 const accounts = ref([])
 const showBorrowDialog = ref(false)
+const showDetailDialog = ref(false)
+const showCreateDialog = ref(false)
 const currentAccount = ref(null)
+const currentAccountDetail = ref(null)
 const borrowForm = ref({
   platform: '',
   project: '',
@@ -181,7 +225,13 @@ const borrowForm = ref({
   returnDate: '',
   remark: ''
 })
-const isMockResourceMode = isMockMode()
+const createForm = ref({
+  accountName: '',
+  platformType: 'BID_PLATFORM',
+  username: '',
+  password: '',
+})
+const editingAccountId = ref(null)
 
 const loadAccounts = async () => {
   const response = await resourcesApi.accounts.getList(searchForm.value)
@@ -203,7 +253,15 @@ const handleBorrow = (row) => {
 }
 
 const handleEdit = (row) => {
-  ElMessage.info(`编辑账户：${row.platform}`)
+  editingAccountId.value = row.id
+  const raw = row.raw || {}
+  createForm.value = {
+    accountName: raw.accountName || row.platform || '',
+    platformType: raw.platformType || 'BID_PLATFORM',
+    username: raw.username || row.username || '',
+    password: '',
+  }
+  showCreateDialog.value = true
 }
 
 const handleCopyPassword = async (row) => {
@@ -228,7 +286,16 @@ const handleCopyPassword = async (row) => {
 const handleMoreAction = async (command, row) => {
   switch (command) {
     case 'view':
-      ElMessage.info(`查看详情：${row.platform}`)
+      currentAccountDetail.value = row
+      showDetailDialog.value = true
+      if (!isMockMode()) {
+        const response = await resourcesApi.accounts.getDetail(row.id)
+        if (!response?.success) {
+          ElMessage.error(response?.message || '账户详情加载失败')
+          return
+        }
+        currentAccountDetail.value = response.data || row
+      }
       break
     case 'reset':
       try {
@@ -237,15 +304,36 @@ const handleMoreAction = async (command, row) => {
           cancelButtonText: '取消',
           type: 'warning'
         })
-        ElMessage.success('密码已重置')
+        if (isMockMode()) {
+          ElMessage.success('密码已重置')
+        } else {
+          const resetResponse = await resourcesApi.accounts.update(row.id, { resetPassword: true })
+          if (!resetResponse?.success) {
+            ElMessage.error(resetResponse?.message || '重置密码失败')
+            return
+          }
+          ElMessage.success('密码已重置')
+        }
       } catch {
         // 用户取消
       }
       break
-    case 'toggle':
-      row.status = row.status === 'available' ? 'disabled' : 'available'
-      ElMessage.success(`已${row.status === 'available' ? '启用' : '禁用'}账户：${row.platform}`)
+    case 'toggle': {
+      const newStatus = row.status === 'available' ? 'disabled' : 'available'
+      if (isMockMode()) {
+        row.status = newStatus
+        ElMessage.success(`已${newStatus === 'available' ? '启用' : '禁用'}账户：${row.platform}`)
+      } else {
+        const toggleResponse = await resourcesApi.accounts.update(row.id, { status: newStatus.toUpperCase() })
+        if (!toggleResponse?.success) {
+          ElMessage.error(toggleResponse?.message || '状态更新失败')
+          return
+        }
+        await loadAccounts()
+        ElMessage.success(`已${newStatus === 'available' ? '启用' : '禁用'}账户：${row.platform}`)
+      }
       break
+    }
     case 'delete':
       try {
         await ElMessageBox.confirm(`确定要删除账户"${row.platform}"吗？`, '确认删除', {
@@ -267,12 +355,52 @@ const handleMoreAction = async (command, row) => {
   }
 }
 
-const handleDelete = (row) => {
-  ElMessage.success(`删除账户：${row.platform}`)
+const handleCreate = () => {
+  editingAccountId.value = null
+  createForm.value = {
+    accountName: '',
+    platformType: 'BID_PLATFORM',
+    username: '',
+    password: '',
+  }
+  showCreateDialog.value = true
 }
 
-const handleCreate = () => {
-  ElMessage.success('新增账户演示入口已开启，可继续使用现有表单流程')
+const submitCreate = async () => {
+  const isEditing = !!editingAccountId.value
+  const payload = {
+    accountName: createForm.value.accountName.trim(),
+    platformType: createForm.value.platformType,
+    username: createForm.value.username.trim(),
+  }
+
+  // Password is required for create, optional for edit
+  if (createForm.value.password) {
+    payload.password = createForm.value.password
+  }
+
+  if (!payload.accountName || !payload.username || (!isEditing && !payload.password)) {
+    ElMessage.warning('请完整填写账户信息')
+    return
+  }
+
+  let response
+  if (isEditing) {
+    response = await resourcesApi.accounts.update(editingAccountId.value, payload)
+  } else {
+    payload.password = createForm.value.password
+    response = await resourcesApi.accounts.create(payload)
+  }
+
+  if (!response?.success) {
+    ElMessage.error(response?.message || (isEditing ? '编辑账户失败' : '新增账户失败'))
+    return
+  }
+
+  await loadAccounts()
+  showCreateDialog.value = false
+  editingAccountId.value = null
+  ElMessage.success(isEditing ? '账户已更新' : '账户已新增')
 }
 
 const handleSubmitBorrow = async () => {
