@@ -5,7 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -52,16 +51,13 @@ public class RoleProfile {
     @Builder.Default
     private String dataScope = "self";
 
-    @Lob
-    @Column(name = "menu_permissions")
+    @Column(name = "menu_permissions", length = 4000)
     private String menuPermissionsValue;
 
-    @Lob
-    @Column(name = "allowed_projects")
+    @Column(name = "allowed_projects", length = 4000)
     private String allowedProjectsValue;
 
-    @Lob
-    @Column(name = "allowed_depts")
+    @Column(name = "allowed_depts", length = 4000)
     private String allowedDeptsValue;
 
     @Column(name = "created_at", nullable = false, updatable = false)
