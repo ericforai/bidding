@@ -14,6 +14,18 @@ async function requestJson(url, options = {}) {
   return payload
 }
 
+async function adminRequest(path, token, options = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+    ...(options.headers || {})
+  }
+  return requestJson(`${apiBaseUrl}${path}`, {
+    ...options,
+    headers
+  })
+}
+
 async function ensureSession({ username, role, fullName }) {
   const email = `${username}@example.com`
 
@@ -26,7 +38,7 @@ async function ensureSession({ username, role, fullName }) {
         password,
         email,
         fullName,
-        role
+        roleCode: String(role || '').toLowerCase()
       })
     })
   } catch (error) {
@@ -53,7 +65,9 @@ async function ensureSession({ username, role, fullName }) {
       name: payload.data.fullName || payload.data.username,
       username: payload.data.username,
       email: payload.data.email,
-      role: String(payload.data.role || '').toLowerCase()
+      role: String(payload.data.roleCode || payload.data.role || '').toLowerCase(),
+      roleName: payload.data.roleName || '',
+      menuPermissions: Array.isArray(payload.data.menuPermissions) ? payload.data.menuPermissions : []
     }
   }
 }
@@ -68,7 +82,7 @@ async function setSession(page, session) {
   }, { currentSession: session })
 }
 
-test('saved settings permissions affect manager runtime route access', async ({ page, context }) => {
+test('api settings page supports custom roles and still blocks managers from admin routes', async ({ page, context }) => {
   const suffix = Date.now()
   const adminSession = await ensureSession({
     username: `settings_admin_${suffix}`,
@@ -85,25 +99,54 @@ test('saved settings permissions affect manager runtime route access', async ({ 
   await page.goto('/settings')
 
   await expect(page).toHaveURL(/\/settings$/)
-  await page.getByRole('tab', { name: '角色权限' }).click()
+  await expect(page.getByRole('tab', { name: /角色权限/ })).toBeVisible()
+  await expect(page.getByRole('tab', { name: /数据权限/ })).toBeVisible()
+  const roleCode = `customrole${suffix}`
+  const createdRole = await adminRequest('/api/admin/roles', adminSession.token, {
+    method: 'POST',
+    body: JSON.stringify({
+      code: roleCode,
+      name: '自定义回归角色',
+      description: 'E2E 创建的自定义角色',
+      dataScope: 'self',
+      enabled: true,
+      menuPermissions: ['dashboard'],
+      allowedProjects: [],
+      allowedDepts: []
+    })
+  })
+  await page.reload()
+  await page.getByRole('tab', { name: /角色权限/ }).click()
+  await expect(page.getByText('自定义回归角色')).toBeVisible()
+  const customUsername = `settings_custom_${suffix}`
+  await adminRequest('/api/admin/users', adminSession.token, {
+    method: 'POST',
+    body: JSON.stringify({
+      username: customUsername,
+      password,
+      fullName: 'Custom Role User',
+      email: `${customUsername}@example.com`,
+      roleId: createdRole.data.id,
+      enabled: true
+    })
+  })
 
-  await page.getByRole('button', { name: '权限配置' }).nth(1).click()
-
-  const permissionDialog = page.locator('.permission-dialog')
-  await expect(permissionDialog).toBeVisible()
-
-  const analyticsNode = permissionDialog.locator('.el-tree-node').filter({ hasText: '数据分析' }).first()
-  await analyticsNode.locator('.el-checkbox').click()
-
-  await permissionDialog.getByRole('button', { name: '保存配置' }).click()
-  await expect(page.getByText('权限配置已保存')).toBeVisible()
+  const customSession = await ensureSession({
+    username: customUsername,
+    role: 'staff',
+    fullName: 'Custom Role User'
+  })
+  const customPage = await context.newPage()
+  await setSession(customPage, customSession)
+  await customPage.goto('/dashboard')
+  await expect(customPage.getByText('工作台').first()).toBeVisible()
+  await expect(customPage.getByText('投标项目').first()).toBeHidden()
+  await expect(customPage.getByText('知识库').first()).toBeHidden()
 
   const managerPage = await context.newPage()
   await setSession(managerPage, managerSession)
-
-  await managerPage.goto('/analytics/dashboard')
+  await managerPage.goto('/settings')
 
   await expect(managerPage).toHaveURL(/\/dashboard$/)
   await expect(managerPage.getByText('工作台').first()).toBeVisible()
-  await expect(managerPage.locator('.sidebar-menu').getByText('数据分析')).toHaveCount(0)
 })

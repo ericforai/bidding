@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+<suppressions>
+    <suppress files=".*/src/test/java/.*" checks=".*"/>
+    <!-- DTOs use Lombok; field-level Javadoc adds noise without value -->
+    <suppress files=".*/dto/.*\.java" checks="JavadocVariable|JavadocType|JavadocMethod|MissingJavadocMethod|JavadocPackage|JavadocStyle|MagicNumber|LineLength|FinalParameters"/>
+</suppressions>

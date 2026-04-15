@@ -1,5 +1,5 @@
-// Input: httpClient, API mode config, settings payload normalizers and fallback snapshots
-// Output: settingsApi - admin settings accessors for data-scope configuration
+// Input: httpClient, API mode config, settings payload normalizers and runtime permission snapshots
+// Output: settingsApi - admin settings accessors for data-scope and role-menu configuration
 // Pos: src/api/modules/ - Frontend API module layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -19,7 +19,10 @@ const fallbackConfig = {
   userDataScope: [],
   deptDataScope: [],
   deptOptions: [],
-  deptTree: []
+  deptTree: [],
+  userOptions: [],
+  users: [],
+  roles: []
 }
 
 const normalizeAllowedProjects = (allowedProjects) => {
@@ -81,7 +84,45 @@ const normalizeConfig = (payload = fallbackConfig) => ({
   userDataScope: Array.isArray(payload.userDataScope) ? payload.userDataScope.map(normalizeUserRow) : [],
   deptDataScope: Array.isArray(payload.deptDataScope) ? payload.deptDataScope.map(normalizeDeptRow) : [],
   deptOptions: Array.isArray(payload.deptOptions) ? payload.deptOptions.map(normalizeDeptOption) : [],
-  deptTree: Array.isArray(payload.deptTree) ? payload.deptTree.map(normalizeDeptTreeItem) : []
+  deptTree: Array.isArray(payload.deptTree) ? payload.deptTree.map(normalizeDeptTreeItem) : [],
+  userOptions: Array.isArray(payload.userOptions) ? payload.userOptions.map((user) => ({
+    id: user?.id,
+    name: user?.name || '',
+    roleId: user?.roleId ?? null,
+    role: normalizeRole(user?.roleCode || user?.role),
+    roleName: user?.roleName || '',
+    deptCode: user?.deptCode || '',
+    dept: user?.dept || ''
+  })) : [],
+  users: Array.isArray(payload.users) ? payload.users.map((user) => ({
+    id: user?.id,
+    username: user?.username || '',
+    fullName: user?.fullName || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    departmentCode: user?.departmentCode || '',
+    departmentName: user?.departmentName || '',
+    roleId: user?.roleId ?? null,
+    role: normalizeRole(user?.roleCode || user?.role),
+    roleCode: normalizeRole(user?.roleCode || user?.role),
+    roleName: user?.roleName || '',
+    enabled: Boolean(user?.enabled)
+  })) : [],
+  roles: Array.isArray(payload.roles)
+    ? payload.roles.map((role) => ({
+      id: role?.id ?? null,
+      code: normalizeRole(role?.code),
+      name: role?.name || '',
+      description: role?.description || '',
+      isSystem: Boolean(role?.system),
+      enabled: Boolean(role?.enabled ?? true),
+      userCount: Number.isFinite(Number(role?.userCount)) ? Number(role.userCount) : 0,
+      dataScope: role?.dataScope || 'self',
+      menuPermissions: normalizePermissionList(role?.menuPermissions),
+      allowedProjects: normalizeAllowedProjects(role?.allowedProjects),
+      allowedDepts: normalizeAllowedDepts(role?.allowedDepts)
+    }))
+    : []
 })
 
 const buildRuntimeRoleMap = (payload) => {
@@ -165,6 +206,148 @@ export const settingsApi = {
       ...response,
       data: normalizeConfig(response?.data)
     }
+  },
+
+  async getUsers() {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: []
+      })
+    }
+
+    const response = await httpClient.get('/api/admin/users')
+    return {
+      ...response,
+      data: Array.isArray(response?.data) ? response.data.map((user) => ({
+        id: user?.id,
+        username: user?.username || '',
+        fullName: user?.fullName || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
+        departmentCode: user?.departmentCode || '',
+        departmentName: user?.departmentName || '',
+        roleId: user?.roleId ?? null,
+        role: normalizeRole(user?.roleCode || user?.role),
+        roleCode: normalizeRole(user?.roleCode || user?.role),
+        roleName: user?.roleName || '',
+        enabled: Boolean(user?.enabled)
+      })) : []
+    }
+  },
+
+  async createUser(payload) {
+    const response = await httpClient.post('/api/admin/users', payload)
+    return {
+      ...response,
+      data: response?.data
+    }
+  },
+
+  async updateUser(userId, payload) {
+    const response = await httpClient.put(`/api/admin/users/${userId}`, payload)
+    return {
+      ...response,
+      data: response?.data
+    }
+  },
+
+  async updateUserStatus(userId, enabled) {
+    const response = await httpClient.patch(`/api/admin/users/${userId}/status`, { enabled })
+    return {
+      ...response,
+      data: response?.data
+    }
+  },
+
+  async getRoles() {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: normalizeConfig(fallbackConfig).roles
+      })
+    }
+
+    const response = await httpClient.get('/api/admin/roles')
+    return {
+      ...response,
+      data: Array.isArray(response?.data)
+        ? response.data.map((role) => ({
+          id: role?.id ?? null,
+          code: normalizeRole(role?.code),
+          name: role?.name || '',
+          description: role?.description || '',
+          isSystem: Boolean(role?.system),
+          enabled: Boolean(role?.enabled ?? true),
+          userCount: Number.isFinite(Number(role?.userCount)) ? Number(role.userCount) : 0,
+          dataScope: role?.dataScope || 'self',
+          menuPermissions: normalizePermissionList(role?.menuPermissions),
+          allowedProjects: normalizeAllowedProjects(role?.allowedProjects),
+          allowedDepts: normalizeAllowedDepts(role?.allowedDepts)
+        }))
+        : []
+    }
+  },
+
+  async createRole(payload) {
+    const response = await httpClient.post('/api/admin/roles', payload)
+    return {
+      ...response,
+      data: response?.data
+    }
+  },
+
+  async updateRole(roleId, payload) {
+    const response = await httpClient.put(`/api/admin/roles/${roleId}`, payload)
+    return {
+      ...response,
+      data: response?.data
+    }
+  },
+
+  async updateRoleStatus(roleId, enabled) {
+    const response = await httpClient.patch(`/api/admin/roles/${roleId}/status`, { enabled })
+    return {
+      ...response,
+      data: response?.data
+    }
+  },
+
+  async resetRole(roleId) {
+    const response = await httpClient.post(`/api/admin/roles/${roleId}/reset-default`)
+    return {
+      ...response,
+      data: response?.data
+    }
+  },
+
+  async getSystemSettings() {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: {
+          systemConfig: {
+            sysName: '西域数智化投标管理平台',
+            depositWarnDays: 7,
+            qualWarnDays: 30,
+            enableAI: true
+          }
+        }
+      })
+    }
+
+    return httpClient.get('/api/settings')
+  },
+
+  async updateSystemSettings(payload) {
+    if (isMockMode()) {
+      return Promise.resolve({
+        success: true,
+        data: payload
+      })
+    }
+
+    return httpClient.put('/api/settings', payload)
   }
 }
 

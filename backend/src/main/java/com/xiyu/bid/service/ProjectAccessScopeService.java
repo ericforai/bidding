@@ -3,6 +3,7 @@
 // Pos: Service/权限支撑层
 // 维护声明: 维护项目访问范围判断；显式项目、部门范围和管理员绕过统一在这里收口。
 package com.xiyu.bid.service;
+import com.xiyu.bid.entity.RoleProfileCatalog;
 
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.User;
@@ -33,7 +34,7 @@ public class ProjectAccessScopeService {
     private final ProjectGroupService projectGroupService;
 
     public List<Long> getAllowedProjectIds(User user) {
-        if (user == null || user.getRole() == User.Role.ADMIN) {
+        if (user == null || RoleProfileCatalog.ADMIN_CODE.equalsIgnoreCase(user.getRoleCode())) {
             return List.of();
         }
         DataScopeConfigService.AccessProfile accessProfile = dataScopeConfigService.getAccessProfile(user);
@@ -57,7 +58,7 @@ public class ProjectAccessScopeService {
     }
 
     public List<String> getAllowedDepartmentCodes(User user) {
-        if (user == null || user.getRole() == User.Role.ADMIN) {
+        if (user == null || RoleProfileCatalog.ADMIN_CODE.equalsIgnoreCase(user.getRoleCode())) {
             return List.of();
         }
         return dataScopeConfigService.getAccessProfile(user).getAllowedDepartmentCodes();

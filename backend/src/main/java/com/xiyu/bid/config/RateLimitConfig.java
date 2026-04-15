@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
@@ -20,7 +21,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RateLimitConfig {
 
     @Bean
-    public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory connectionFactory) {
+    public RedisTemplate<String, String> redisTemplate(org.springframework.beans.factory.ObjectProvider<RedisConnectionFactory> connectionFactoryProvider) {
+        RedisConnectionFactory connectionFactory = connectionFactoryProvider.getIfAvailable();
+        if (connectionFactory == null) {
+            return null;
+        }
         RedisTemplate<String, String> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
         template.setKeySerializer(new StringRedisSerializer());
@@ -29,8 +34,8 @@ public class RateLimitConfig {
     }
 
     @Bean
-    public RateLimiter rateLimiter(RedisTemplate<String, String> redisTemplate) {
-        return new RateLimiter(redisTemplate);
+    public RateLimiter rateLimiter(org.springframework.beans.factory.ObjectProvider<StringRedisTemplate> redisTemplateProvider) {
+        return new RateLimiter(redisTemplateProvider.getIfAvailable());
     }
 
     /**
@@ -38,10 +43,10 @@ public class RateLimitConfig {
      * Falls back to in-memory rate limiting if Redis is unavailable
      */
     public static class RateLimiter {
-        private final RedisTemplate<String, String> redisTemplate;
+        private final StringRedisTemplate redisTemplate;
         private final ConcurrentHashMap<String, RateLimitInfo> localCache = new ConcurrentHashMap<>();
 
-        public RateLimiter(RedisTemplate<String, String> redisTemplate) {
+        public RateLimiter(StringRedisTemplate redisTemplate) {
             this.redisTemplate = redisTemplate;
         }
 
@@ -68,7 +73,7 @@ public class RateLimitConfig {
                 }
 
                 return currentCount <= maxRequests;
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 // Redis unavailable, fallback to local cache
                 return allowRequestLocal(key, maxRequests, duration);
             }

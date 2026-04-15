@@ -8,29 +8,39 @@
       <el-tabs v-model="activeTab">
         <el-tab-pane label="用户管理" name="user">
           <div class="tab-header">
-            <el-button type="primary">
+            <el-button type="primary" @click="handleCreateUser">
               <el-icon><Plus /></el-icon> 添加用户
             </el-button>
           </div>
-          <el-table :data="users" stripe>
+          <el-table :data="managedUsers" stripe>
+            <el-table-column prop="username" label="登录名" width="140" />
             <el-table-column prop="name" label="姓名" width="120" />
             <el-table-column prop="role" label="角色" width="120">
               <template #default="{ row }">
-                <el-tag v-if="row.role === 'admin'" type="danger">管理员</el-tag>
-                <el-tag v-else-if="row.role === 'manager'" type="warning">经理</el-tag>
-                <el-tag v-else>普通员工</el-tag>
+                <el-tag :type="row.role === 'admin' ? 'danger' : row.role === 'manager' ? 'warning' : 'info'">
+                  {{ row.roleName || row.role || '未分配角色' }}
+                </el-tag>
               </template>
             </el-table-column>
             <el-table-column prop="dept" label="部门" />
+            <el-table-column prop="email" label="邮箱" min-width="180" />
+            <el-table-column prop="phone" label="手机号" width="140" />
             <el-table-column label="状态" width="100">
-              <template #default>
-                <el-tag type="success">启用</el-tag>
+              <template #default="{ row }">
+                <el-tag :type="row.enabled ? 'success' : 'info'">{{ row.enabled ? '启用' : '停用' }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="150">
+            <el-table-column label="操作" width="180">
               <template #default="{ row }">
-                <el-button link type="primary" size="small">编辑</el-button>
-                <el-button link type="danger" size="small">删除</el-button>
+                <el-button link type="primary" size="small" @click="handleEditUser(row)">编辑</el-button>
+                <el-button
+                  link
+                  :type="row.enabled ? 'danger' : 'success'"
+                  size="small"
+                  @click="handleToggleUserStatus(row)"
+                >
+                  {{ row.enabled ? '停用' : '启用' }}
+                </el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -38,27 +48,53 @@
 
         <el-tab-pane label="角色权限" name="role">
           <div class="tab-header">
-            <el-button type="primary" @click="showAddRoleDialog = true">
-              <el-icon><Plus /></el-icon> 添加角色
+            <el-button type="primary" @click="handleCreateRole">
+              <el-icon><Plus /></el-icon> 新增角色
             </el-button>
+            <el-alert type="info" :closable="false" show-icon>
+              当前版本支持自定义角色、菜单权限和数据权限配置，保存后会立即应用到当前会话。
+            </el-alert>
           </div>
           <el-table :data="roles" stripe>
             <el-table-column prop="name" label="角色名称" width="150" />
             <el-table-column prop="code" label="角色代码" width="120" />
             <el-table-column prop="description" label="描述" />
+            <el-table-column label="类型" width="110">
+              <template #default="{ row }">
+                <el-tag :type="row.isSystem ? 'warning' : 'info'">{{ row.isSystem ? '系统角色' : '自定义角色' }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="row.enabled ? 'success' : 'info'">{{ row.enabled ? '启用' : '停用' }}</el-tag>
+              </template>
+            </el-table-column>
             <el-table-column prop="userCount" label="用户数" width="100" />
             <el-table-column prop="dataScope" label="数据范围" width="120">
               <template #default="{ row }">
                 <el-tag size="small">{{ getDataScopeText(row.dataScope) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="150">
+            <el-table-column label="操作" width="240">
               <template #default="{ row }">
+                <el-button link type="primary" size="small" @click="handleEditRole(row)">
+                  编辑信息
+                </el-button>
                 <el-button link type="primary" size="small" @click="handleConfigPermission(row)">
                   权限配置
                 </el-button>
-                <el-button link type="primary" size="small">编辑</el-button>
-                <el-button link type="danger" size="small">删除</el-button>
+                <el-button v-if="row.isSystem" link type="warning" size="small" @click="handleResetRole(row)">
+                  恢复默认
+                </el-button>
+                <el-button
+                  v-if="!row.isSystem"
+                  link
+                  :type="row.enabled ? 'danger' : 'success'"
+                  size="small"
+                  @click="handleToggleRoleStatus(row)"
+                >
+                  {{ row.enabled ? '停用' : '启用' }}
+                </el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -295,7 +331,7 @@
                 </el-form-item>
                 <el-form-item label="操作人">
                   <el-select v-model="auditSearch.operator" placeholder="全部" clearable style="width: 120px">
-                    <el-option v-for="user in users" :key="user.id" :label="user.name" :value="user.name" />
+                    <el-option v-for="user in managedUsers" :key="user.id" :label="user.name" :value="user.name" />
                   </el-select>
                 </el-form-item>
                 <el-form-item label="部门">
@@ -805,6 +841,73 @@
       </template>
     </el-dialog>
 
+    <el-dialog v-model="showUserDialog" :title="userDialogMode === 'create' ? '添加用户' : '编辑用户'" width="560px">
+      <el-form label-width="110px">
+        <el-form-item label="登录名" required>
+          <el-input v-model="userForm.username" placeholder="请输入登录名" />
+        </el-form-item>
+        <el-form-item v-if="userDialogMode === 'create'" label="初始密码" required>
+          <el-input v-model="userForm.password" type="password" show-password placeholder="请输入初始密码" />
+        </el-form-item>
+        <el-form-item label="姓名" required>
+          <el-input v-model="userForm.fullName" placeholder="请输入姓名" />
+        </el-form-item>
+        <el-form-item label="邮箱" required>
+          <el-input v-model="userForm.email" placeholder="请输入邮箱" />
+        </el-form-item>
+        <el-form-item label="手机号">
+          <el-input v-model="userForm.phone" placeholder="请输入手机号" />
+        </el-form-item>
+        <el-form-item label="部门编码">
+          <el-input v-model="userForm.departmentCode" placeholder="请输入部门编码" />
+        </el-form-item>
+        <el-form-item label="部门名称">
+          <el-input v-model="userForm.departmentName" placeholder="请输入部门名称" />
+        </el-form-item>
+        <el-form-item label="角色" required>
+          <el-select v-model="userForm.roleId" placeholder="请选择角色" style="width: 100%">
+            <el-option v-for="option in roleOptions" :key="option.value" :label="option.label" :value="option.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="userDialogMode === 'edit'" label="状态">
+          <el-switch v-model="userForm.enabled" active-text="启用" inactive-text="停用" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showUserDialog = false">取消</el-button>
+        <el-button type="primary" @click="submitUserForm">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="showRoleDialog" :title="roleDialogMode === 'create' ? '新增角色' : '编辑角色信息'" width="520px">
+      <el-form label-width="110px">
+        <el-form-item label="角色代码" required>
+          <el-input v-model="roleEditForm.code" :disabled="roleDialogMode !== 'create'" placeholder="请输入角色代码（英文/数字）" />
+        </el-form-item>
+        <el-form-item label="角色名称" required>
+          <el-input v-model="roleEditForm.name" placeholder="请输入角色名称" />
+        </el-form-item>
+        <el-form-item label="角色描述">
+          <el-input v-model="roleEditForm.description" type="textarea" :rows="3" placeholder="请输入角色描述" />
+        </el-form-item>
+        <el-form-item label="默认数据范围">
+          <el-select v-model="roleEditForm.dataScope" placeholder="请选择" style="width: 100%">
+            <el-option label="全部数据" value="all" />
+            <el-option label="本部门" value="dept" />
+            <el-option label="本部门及下级" value="deptAndSub" />
+            <el-option label="仅本人" value="self" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-switch v-model="roleEditForm.enabled" active-text="启用" inactive-text="停用" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showRoleDialog = false">取消</el-button>
+        <el-button type="primary" @click="submitRoleForm">保存</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 权限配置对话框 -->
     <el-dialog v-model="showPermissionDialog" title="权限配置" width="600px" class="permission-dialog">
       <div class="permission-content">
@@ -828,18 +931,6 @@
               :default-checked-keys="currentRole?.menuPermissions || []"
             />
           </el-tab-pane>
-          <!-- 操作权限 -->
-          <el-tab-pane name="action">
-            <template #label>
-              <span><el-icon><Operation /></el-icon> 操作权限</span>
-            </template>
-            <el-table :data="actionPermissions" size="small" border>
-              <el-table-column type="selection" width="55" />
-              <el-table-column prop="module" label="模块" width="120" />
-              <el-table-column prop="action" label="操作" />
-              <el-table-column prop="description" label="说明" />
-            </el-table>
-          </el-tab-pane>
           <!-- 数据权限 -->
           <el-tab-pane name="data">
             <template #label>
@@ -849,20 +940,19 @@
               <el-form-item label="数据范围">
                 <el-radio-group v-model="dataScopeForm.scope">
                   <el-radio value="all">全部数据</el-radio>
-                  <el-radio value="custom">自定义</el-radio>
                   <el-radio value="dept">本部门</el-radio>
                   <el-radio value="deptAndSub">本部门及下级</el-radio>
                   <el-radio value="self">仅本人</el-radio>
                 </el-radio-group>
               </el-form-item>
-              <el-form-item label="自定义部门" v-if="dataScopeForm.scope === 'custom'">
-                <el-select v-model="dataScopeForm.depts" multiple placeholder="请选择部门" style="width: 100%">
-                  <el-option v-for="option in deptOptions" :key="option.code" :label="option.name" :value="option.code" />
-                </el-select>
-              </el-form-item>
               <el-form-item label="项目组权限">
                 <el-select v-model="dataScopeForm.projects" multiple placeholder="请选择可访问的项目组" style="width: 100%">
                   <el-option v-for="option in projectScopeOptions" :key="option.value" :label="option.label" :value="option.value" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="部门白名单">
+                <el-select v-model="dataScopeForm.depts" multiple placeholder="请选择可访问部门" style="width: 100%">
+                  <el-option v-for="option in deptOptions" :key="option.code" :label="option.name" :value="option.code" />
                 </el-select>
               </el-form-item>
             </el-form>
@@ -874,60 +964,68 @@
         <el-button type="primary" @click="savePermissionConfig">保存配置</el-button>
       </template>
     </el-dialog>
-
-    <!-- 添加角色对话框 -->
-    <el-dialog v-model="showAddRoleDialog" title="添加角色" width="500px">
-      <el-form :model="roleForm" label-width="100px">
-        <el-form-item label="角色名称" required>
-          <el-input v-model="roleForm.name" placeholder="请输入角色名称" />
-        </el-form-item>
-        <el-form-item label="角色代码" required>
-          <el-input v-model="roleForm.code" placeholder="如: sales_manager" />
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="roleForm.description" type="textarea" :rows="3" />
-        </el-form-item>
-        <el-form-item label="数据权限">
-          <el-select v-model="roleForm.dataScope" placeholder="请选择">
-            <el-option label="全部数据" value="all" />
-            <el-option label="本部门" value="dept" />
-            <el-option label="本人" value="self" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showAddRoleDialog = false">取消</el-button>
-        <el-button type="primary" @click="saveRole">保存</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Key, Document, Menu, Operation, Lock, User, OfficeBuilding, Folder, InfoFilled, Search, Download } from '@element-plus/icons-vue'
+import { Plus, Key, Document, Menu, Lock, User, OfficeBuilding, Folder, InfoFilled, Search, Download } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { API_CONFIG, auditApi, isMockMode, projectGroupsApi, projectsApi, settingsApi } from '@/api'
+import { API_CONFIG, auditApi, authApi, isMockMode, projectGroupsApi, projectsApi, settingsApi } from '@/api'
+import { persistRuntimeSettings } from '@/api/modules/settings'
 import ProjectGroupSettingsPanel from '@/components/system/ProjectGroupSettingsPanel.vue'
 
-const activeTab = ref('user')
+const activeTab = ref(isMockMode() ? 'user' : 'dataScope')
 const userStore = useUserStore()
-const users = computed(() => userStore.users || [])
+const managedUsers = ref([])
+const showUserDialog = ref(false)
+const userDialogMode = ref('create')
+const editingUserId = ref(null)
+const showRoleDialog = ref(false)
+const roleDialogMode = ref('edit')
+const editingRoleId = ref(null)
+const roleEditForm = ref({
+  id: null,
+  code: '',
+  name: '',
+  description: '',
+  dataScope: 'self',
+  enabled: true
+})
+const userForm = ref({
+  username: '',
+  password: '',
+  fullName: '',
+  email: '',
+  phone: '',
+  departmentCode: '',
+  departmentName: '',
+  roleId: null,
+  enabled: true
+})
 
-const roles = ref([
-  { code: 'admin', name: '管理员', description: '系统管理员，拥有所有权限', userCount: 1, dataScope: 'all', menuPermissions: ['all'] },
-  { code: 'manager', name: '经理', description: '部门经理，可查看报表和审批', userCount: 1, dataScope: 'dept', menuPermissions: ['dashboard', 'project', 'analytics'] },
-  { code: 'sales', name: '销售', description: '销售人员，可创建项目和查看数据', userCount: 5, dataScope: 'self', menuPermissions: ['dashboard', 'project', 'bidding'] },
-  { code: 'tech', name: '技术人员', description: '技术人员，可参与项目任务', userCount: 10, dataScope: 'self', menuPermissions: ['dashboard', 'project'] }
-])
+const defaultRoleDefinitions = [
+  { id: null, code: 'admin', name: '管理员', description: '系统管理员，拥有所有权限', isSystem: true, enabled: true, userCount: 0, dataScope: 'all', menuPermissions: ['all'], allowedProjects: [], allowedDepts: [] },
+  { id: null, code: 'manager', name: '经理', description: '部门经理，可查看项目、知识库、资源与分析数据', isSystem: true, enabled: true, userCount: 0, dataScope: 'dept', menuPermissions: ['dashboard', 'bidding', 'project', 'knowledge', 'resource', 'analytics'], allowedProjects: [], allowedDepts: [] },
+  { id: null, code: 'staff', name: '员工', description: '业务人员，可查看工作台、标讯、项目、知识库与资源', isSystem: true, enabled: true, userCount: 0, dataScope: 'self', menuPermissions: ['dashboard', 'bidding', 'project', 'knowledge', 'resource'], allowedProjects: [], allowedDepts: [] }
+]
+
+const roles = ref(defaultRoleDefinitions.map((role) => ({ ...role })))
 
 // 权限配置相关
 const showPermissionDialog = ref(false)
-const showAddRoleDialog = ref(false)
 const permissionTab = ref('menu')
 const dataScopeTab = ref('user') // 数据权限 Tab 的当前子 tab
 const currentRole = ref(null)
+const menuTreeRef = ref(null)
+
+const roleOptions = computed(() => roles.value
+  .filter((role) => role.enabled || role.id === userForm.value.roleId)
+  .map((role) => ({
+    value: role.id,
+    label: `${role.name}${role.enabled ? '' : '（已停用）'}`
+  })))
 
 // 菜单权限树
 const menuPermissions = ref([
@@ -956,21 +1054,6 @@ const menuPermissions = ref([
   ]}
 ])
 
-// 操作权限列表
-const actionPermissions = ref([
-  { module: '项目管理', action: '创建项目', description: '可以创建新的投标项目' },
-  { module: '项目管理', action: '编辑项目', description: '可以编辑项目基本信息' },
-  { module: '项目管理', action: '删除项目', description: '可以删除投标项目' },
-  { module: '项目管理', action: '提交审批', description: '可以提交项目审批' },
-  { module: '费用管理', action: '申请费用', description: '可以申请投标费用' },
-  { module: '费用管理', action: '审批费用', description: '可以审批费用申请' },
-  { module: '费用管理', action: '查看费用', description: '可以查看费用明细' },
-  { module: '标讯管理', action: '查看标讯', description: '可以查看标讯信息' },
-  { module: '标讯管理', action: '收藏标讯', description: '可以收藏标讯' },
-  { module: '数据分析', action: '查看报表', description: '可以查看数据分析报表' },
-  { module: '数据分析', action: '导出数据', description: '可以导出分析数据' }
-])
-
 // 数据权限表单
 const dataScopeForm = ref({
   scope: 'all',
@@ -991,13 +1074,25 @@ const projectScopeOptions = ref([])
 // 项目组数据权限 Mock
 const projectGroupScope = ref([])
 
-// 角色表单
-const roleForm = ref({
-  name: '',
-  code: '',
-  description: '',
-  dataScope: 'all'
-})
+const normalizeRoleRows = (items = []) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    return defaultRoleDefinitions.map((role) => ({ ...role }))
+  }
+
+  return items.map((role) => ({
+    id: role.id ?? null,
+    code: role.code,
+    name: role.name || role.code,
+    description: role.description || '',
+    isSystem: Boolean(role.isSystem),
+    enabled: Boolean(role.enabled ?? true),
+    userCount: Number(role.userCount || 0),
+    dataScope: role.dataScope || 'self',
+    menuPermissions: Array.isArray(role.menuPermissions) ? [...role.menuPermissions] : [],
+    allowedProjects: Array.isArray(role.allowedProjects) ? [...role.allowedProjects] : [],
+    allowedDepts: Array.isArray(role.allowedDepts) ? [...role.allowedDepts] : []
+  }))
+}
 
 const config = ref({
   sysName: '西域数智化投标管理平台',
@@ -1290,26 +1385,327 @@ const getDataScopeText = (scope) => {
   return map[scope] || scope
 }
 
+const refreshCurrentUserSession = async () => {
+  if (!userStore.currentUser || isMockMode()) {
+    return
+  }
+
+  try {
+    const result = await authApi.getCurrentUser()
+    if (result?.success && result?.data) {
+      userStore.applyAuthSession({ user: result.data }, true)
+    }
+  } catch (error) {
+    console.warn('Failed to refresh current user session after settings update:', error)
+  }
+}
+
+const resetUserForm = () => {
+  userForm.value = {
+    username: '',
+    password: '',
+    fullName: '',
+    email: '',
+    phone: '',
+    departmentCode: '',
+    departmentName: '',
+    roleId: roles.value.find((role) => role.code === 'staff')?.id ?? roles.value[0]?.id ?? null,
+    enabled: true
+  }
+  editingUserId.value = null
+}
+
+const buildUserPayload = () => ({
+  username: userForm.value.username.trim(),
+  password: userForm.value.password,
+  fullName: userForm.value.fullName.trim(),
+  email: userForm.value.email.trim(),
+  phone: userForm.value.phone.trim(),
+  departmentCode: userForm.value.departmentCode.trim(),
+  departmentName: userForm.value.departmentName.trim(),
+  roleId: userForm.value.roleId,
+  enabled: Boolean(userForm.value.enabled)
+})
+
+const validateUserForm = () => {
+  if (!userForm.value.username.trim()) {
+    throw new Error('请填写登录名')
+  }
+  if (userDialogMode.value === 'create' && !userForm.value.password) {
+    throw new Error('请填写初始密码')
+  }
+  if (!userForm.value.fullName.trim()) {
+    throw new Error('请填写姓名')
+  }
+  if (!userForm.value.email.trim()) {
+    throw new Error('请填写邮箱')
+  }
+  if (!userForm.value.roleId) {
+    throw new Error('请选择角色')
+  }
+}
+
+const handleCreateUser = () => {
+  userDialogMode.value = 'create'
+  resetUserForm()
+  showUserDialog.value = true
+}
+
+const handleCreateRole = () => {
+  roleDialogMode.value = 'create'
+  editingRoleId.value = null
+  roleEditForm.value = {
+    id: null,
+    code: '',
+    name: '',
+    description: '',
+    dataScope: 'self',
+    enabled: true
+  }
+  showRoleDialog.value = true
+}
+
+const handleEditUser = (row) => {
+  userDialogMode.value = 'edit'
+  editingUserId.value = row.id
+  userForm.value = {
+    username: row.username || '',
+    password: '',
+    fullName: row.fullName || row.name || '',
+    email: row.email || '',
+    phone: row.phone || '',
+    departmentCode: row.departmentCode || row.deptCode || '',
+    departmentName: row.departmentName || row.dept || '',
+    roleId: row.roleId || roles.value.find((role) => role.code === row.role)?.id || null,
+    enabled: Boolean(row.enabled)
+  }
+  showUserDialog.value = true
+}
+
+const submitUserForm = async () => {
+  try {
+    validateUserForm()
+
+    const payload = buildUserPayload()
+    const result = userDialogMode.value === 'create'
+      ? await settingsApi.createUser(payload)
+      : await settingsApi.updateUser(editingUserId.value, payload)
+
+    if (!result?.success) {
+      throw new Error(result?.message || '保存用户失败')
+    }
+
+    await loadDataScopeConfig()
+
+    ElMessage.success(userDialogMode.value === 'create' ? '用户创建成功' : '用户更新成功')
+    showUserDialog.value = false
+  } catch (error) {
+    console.error('Failed to submit user form:', error)
+    ElMessage.error(error?.message || '保存用户失败')
+  }
+}
+
+const handleToggleUserStatus = async (row) => {
+  const nextEnabled = !row.enabled
+  const actionText = nextEnabled ? '启用' : '停用'
+
+  try {
+    await ElMessageBox.confirm(
+      `确认${actionText}用户“${row.name || row.fullName || row.username}”吗？`,
+      `${actionText}用户`,
+      {
+        type: 'warning',
+        confirmButtonText: actionText,
+        cancelButtonText: '取消'
+      }
+    )
+
+    const result = await settingsApi.updateUserStatus(row.id, nextEnabled)
+    if (!result?.success) {
+      throw new Error(result?.message || `${actionText}用户失败`)
+    }
+
+    await loadDataScopeConfig()
+
+    ElMessage.success(`用户已${actionText}`)
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') {
+      return
+    }
+    console.error('Failed to update user status:', error)
+    ElMessage.error(error?.message || `${actionText}用户失败`)
+  }
+}
+
+const handleEditRole = (role) => {
+  roleDialogMode.value = 'edit'
+  editingRoleId.value = role.id
+  roleEditForm.value = {
+    id: role.id,
+    code: role.code,
+    name: role.name || '',
+    description: role.description || '',
+    dataScope: role.dataScope || 'self',
+    enabled: Boolean(role.enabled)
+  }
+  showRoleDialog.value = true
+}
+
+const handleToggleRoleStatus = async (role) => {
+  const nextEnabled = !role.enabled
+  const actionText = nextEnabled ? '启用' : '停用'
+
+  try {
+    await ElMessageBox.confirm(
+      `确认${actionText}角色“${role.name}”吗？`,
+      `${actionText}角色`,
+      {
+        type: 'warning',
+        confirmButtonText: actionText,
+        cancelButtonText: '取消'
+      }
+    )
+
+    const result = await settingsApi.updateRoleStatus(role.id, nextEnabled)
+    if (!result?.success) {
+      throw new Error(result?.message || `${actionText}角色失败`)
+    }
+
+    await loadDataScopeConfig()
+    await refreshCurrentUserSession()
+    ElMessage.success(`角色已${actionText}`)
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') {
+      return
+    }
+    console.error('Failed to update role status:', error)
+    ElMessage.error(error?.message || `${actionText}角色失败`)
+  }
+}
+
+const submitRoleForm = async () => {
+  if (!roleEditForm.value.code.trim()) {
+    ElMessage.warning('请填写角色代码')
+    return
+  }
+  if (!roleEditForm.value.name.trim()) {
+    ElMessage.warning('请填写角色名称')
+    return
+  }
+
+  try {
+    const payload = {
+      code: roleEditForm.value.code.trim().toLowerCase(),
+      name: roleEditForm.value.name.trim(),
+      description: roleEditForm.value.description.trim(),
+      dataScope: roleEditForm.value.dataScope,
+      enabled: Boolean(roleEditForm.value.enabled),
+      menuPermissions: currentRole.value?.code === roleEditForm.value.code ? currentRole.value?.menuPermissions || [] : roles.value.find((role) => role.id === editingRoleId.value)?.menuPermissions || [],
+      allowedProjects: currentRole.value?.code === roleEditForm.value.code ? dataScopeForm.value.projects || [] : roles.value.find((role) => role.id === editingRoleId.value)?.allowedProjects || [],
+      allowedDepts: currentRole.value?.code === roleEditForm.value.code ? dataScopeForm.value.depts || [] : roles.value.find((role) => role.id === editingRoleId.value)?.allowedDepts || []
+    }
+    const result = roleDialogMode.value === 'create'
+      ? await settingsApi.createRole(payload)
+      : await settingsApi.updateRole(editingRoleId.value, payload)
+    if (!result?.success) {
+      throw new Error(result?.message || '保存角色信息失败')
+    }
+    await loadDataScopeConfig()
+    await refreshCurrentUserSession()
+    ElMessage.success('角色信息已保存')
+    showRoleDialog.value = false
+  } catch (error) {
+    console.error('Failed to save role metadata:', error)
+    ElMessage.error(error?.message || '保存角色信息失败')
+  }
+}
+
+const handleResetRole = async (role) => {
+  if (!role.id) {
+    ElMessage.error('角色未完成初始化')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确认将角色“${role.name}”恢复为默认配置吗？`,
+      '恢复默认',
+      {
+        type: 'warning',
+        confirmButtonText: '恢复默认',
+        cancelButtonText: '取消'
+      }
+    )
+
+    const result = await settingsApi.resetRole(role.id)
+    if (!result?.success) {
+      throw new Error(result?.message || '恢复角色默认配置失败')
+    }
+
+    await loadDataScopeConfig()
+    await refreshCurrentUserSession()
+    ElMessage.success('角色已恢复默认配置')
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') {
+      return
+    }
+    console.error('Failed to reset role:', error)
+    ElMessage.error(error?.message || '恢复角色默认配置失败')
+  }
+}
+
 // 配置权限
 const handleConfigPermission = (role) => {
-  currentRole.value = role
+  currentRole.value = {
+    ...role,
+    menuPermissions: Array.isArray(role.menuPermissions) ? [...role.menuPermissions] : [],
+    allowedProjects: Array.isArray(role.allowedProjects) ? [...role.allowedProjects] : [],
+    allowedDepts: Array.isArray(role.allowedDepts) ? [...role.allowedDepts] : []
+  }
   permissionTab.value = 'menu'
   dataScopeForm.value = {
     scope: role.dataScope || 'all',
-    depts: [],
-    projects: []
+    depts: Array.isArray(role.allowedDepts) ? [...role.allowedDepts] : [],
+    projects: Array.isArray(role.allowedProjects) ? [...role.allowedProjects] : []
   }
   showPermissionDialog.value = true
+  nextTick(() => {
+    menuTreeRef.value?.setCheckedKeys(currentRole.value?.menuPermissions || [])
+  })
 }
 
 // 保存权限配置
-const savePermissionConfig = () => {
-  if (currentRole.value) {
-    currentRole.value.dataScope = dataScopeForm.value.scope
-    currentRole.value.menuPermissions = []
+const savePermissionConfig = async () => {
+  if (!currentRole.value) {
+    return
   }
-  ElMessage.success('权限配置已保存')
-  showPermissionDialog.value = false
+
+  const nextMenuPermissions = [
+    ...(menuTreeRef.value?.getCheckedKeys(false) || []),
+    ...(menuTreeRef.value?.getHalfCheckedKeys?.() || [])
+  ]
+
+  try {
+    const result = await settingsApi.updateRole(currentRole.value.id, {
+      name: currentRole.value.name,
+      description: currentRole.value.description || '',
+      dataScope: dataScopeForm.value.scope,
+      enabled: Boolean(currentRole.value.enabled),
+      menuPermissions: nextMenuPermissions,
+      allowedProjects: [...dataScopeForm.value.projects],
+      allowedDepts: [...dataScopeForm.value.depts]
+    })
+    if (!result?.success) {
+      throw new Error(result?.message || '保存权限配置失败')
+    }
+    await loadDataScopeConfig()
+    await refreshCurrentUserSession()
+    ElMessage.success('权限配置已保存')
+    showPermissionDialog.value = false
+  } catch (error) {
+    console.error('Failed to save role permissions:', error)
+    ElMessage.error(error?.message || '保存权限配置失败')
+  }
 }
 
 // 数据权限变更处理
@@ -1329,6 +1725,7 @@ onMounted(async () => {
   await Promise.all([
     loadAuditLogs(),
     loadDataScopeConfig(),
+    loadSystemSettings(),
     loadProjectGroupConfig(),
     loadProjectScopeOptions()
   ])
@@ -1402,29 +1799,6 @@ const removeProjectGroupRow = async (row, index) => {
 
     console.error('Failed to delete project group:', error)
     ElMessage.error(error?.message || '删除项目组失败')
-  }
-}
-
-// 保存角色
-const saveRole = () => {
-  if (!roleForm.value.name || !roleForm.value.code) {
-    ElMessage.warning('请填写角色名称和代码')
-    return
-  }
-  roles.value.push({
-    ...roleForm.value,
-    userCount: 0,
-    menuPermissions: [],
-    dataScope: roleForm.value.dataScope
-  })
-  ElMessage.success('角色添加成功')
-  showAddRoleDialog.value = false
-  // 重置表单
-  roleForm.value = {
-    name: '',
-    code: '',
-    description: '',
-    dataScope: 'all'
   }
 }
 
@@ -1677,7 +2051,28 @@ const buildDataScopePayload = () => ({
   userDataScope: userDataScope.value,
   deptDataScope: deptDataScope.value,
   deptOptions: deptOptions.value,
-  deptTree: deptTree.value
+  deptTree: deptTree.value,
+  userOptions: userOptions.value,
+  users: managedUsers.value,
+  roles: roles.value
+})
+
+const normalizeManagedUser = (user = {}) => ({
+  id: user.id,
+  username: user.username || '',
+  name: user.fullName || user.name || '',
+  fullName: user.fullName || user.name || '',
+  email: user.email || '',
+  phone: user.phone || '',
+  deptCode: user.departmentCode || user.deptCode || '',
+  dept: user.departmentName || user.dept || '',
+  departmentCode: user.departmentCode || user.deptCode || '',
+  departmentName: user.departmentName || user.dept || '',
+  roleId: user.roleId ?? null,
+  role: String(user.roleCode || user.role || '').toLowerCase(),
+  roleCode: String(user.roleCode || user.role || '').toLowerCase(),
+  roleName: user.roleName || '',
+  enabled: Boolean(user.enabled)
 })
 
 const applyDataScopePayload = (payload = {}) => {
@@ -1685,6 +2080,10 @@ const applyDataScopePayload = (payload = {}) => {
   deptDataScope.value = Array.isArray(payload.deptDataScope) ? payload.deptDataScope : []
   deptOptions.value = Array.isArray(payload.deptOptions) ? payload.deptOptions : []
   deptTree.value = Array.isArray(payload.deptTree) ? payload.deptTree : []
+  userOptions.value = Array.isArray(payload.userOptions) ? payload.userOptions : []
+  managedUsers.value = Array.isArray(payload.users) ? payload.users.map(normalizeManagedUser) : []
+  roles.value = normalizeRoleRows(payload.roles)
+  persistRuntimeSettings({ roles: roles.value })
 }
 
 const loadDataScopeConfig = async () => {
@@ -1697,6 +2096,26 @@ const loadDataScopeConfig = async () => {
   } catch (error) {
     console.error('Failed to load data scope config:', error)
     ElMessage.error(error?.message || '加载数据权限配置失败')
+  }
+}
+
+const loadSystemSettings = async () => {
+  try {
+    const result = await settingsApi.getSystemSettings()
+    if (!result?.success) {
+      throw new Error(result?.message || '加载系统配置失败')
+    }
+
+    const systemConfig = result?.data?.systemConfig || {}
+    config.value = {
+      sysName: systemConfig.sysName || config.value.sysName,
+      depositWarnDays: Number(systemConfig.depositWarnDays ?? config.value.depositWarnDays),
+      qualWarnDays: Number(systemConfig.qualWarnDays ?? config.value.qualWarnDays),
+      enableAI: Boolean(systemConfig.enableAI ?? config.value.enableAI)
+    }
+  } catch (error) {
+    console.error('Failed to load system settings:', error)
+    ElMessage.error(error?.message || '加载系统配置失败')
   }
 }
 
@@ -1810,8 +2229,31 @@ const saveDeptTreeConfig = async (message = '组织架构配置已保存') => {
   await persistDataScopeConfig(message)
 }
 
-const handleSaveConfig = () => {
-  ElMessage.success('配置已保存')
+const handleSaveConfig = async () => {
+  try {
+    const result = await settingsApi.updateSystemSettings({
+      systemConfig: {
+        sysName: config.value.sysName,
+        depositWarnDays: config.value.depositWarnDays,
+        qualWarnDays: config.value.qualWarnDays,
+        enableAI: config.value.enableAI
+      }
+    })
+    if (!result?.success) {
+      throw new Error(result?.message || '保存系统配置失败')
+    }
+    const systemConfig = result?.data?.systemConfig || {}
+    config.value = {
+      sysName: systemConfig.sysName || config.value.sysName,
+      depositWarnDays: Number(systemConfig.depositWarnDays ?? config.value.depositWarnDays),
+      qualWarnDays: Number(systemConfig.qualWarnDays ?? config.value.qualWarnDays),
+      enableAI: Boolean(systemConfig.enableAI ?? config.value.enableAI)
+    }
+    ElMessage.success('系统配置已保存')
+  } catch (error) {
+    console.error('Failed to save system settings:', error)
+    ElMessage.error(error?.message || '保存系统配置失败')
+  }
 }
 
 // 获取HTTP方法对应的标签类型

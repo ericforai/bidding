@@ -132,6 +132,8 @@ test.describe('commercial main flow', () => {
 
     await page.goto('/project')
     await expect(page.locator('.card-header .title').filter({ hasText: '投标项目列表' })).toBeVisible()
+    await page.getByPlaceholder('请输入项目名称').fill(seeded.projectName)
+    await page.getByRole('button', { name: '搜索' }).click()
     await expect(page.getByText(seeded.projectName).first()).toBeVisible()
 
     await page.goto('/knowledge/case')

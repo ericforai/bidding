@@ -10,7 +10,7 @@ import com.xiyu.bid.fees.entity.Fee;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TaskRepository;
 import com.xiyu.bid.repository.TenderRepository;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -1,6 +1,6 @@
 package com.xiyu.bid.testing;
 
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;

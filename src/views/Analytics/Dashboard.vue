@@ -72,7 +72,7 @@
     <!-- Charts Row 2 -->
     <div class="charts-row">
       <!-- Product Line ROI -->
-      <div class="chart-card chart-card-large">
+      <div v-if="showProductLinesCard" class="chart-card chart-card-large">
         <div class="chart-header">
           <h3 class="chart-title">投入产出分析（按产品线）</h3>
           <el-radio-group v-model="productMetric" size="small" @change="updateProductChart">
@@ -81,13 +81,7 @@
             <el-radio-button value="roi">ROI</el-radio-button>
           </el-radio-group>
         </div>
-        <FeaturePlaceholder
-          v-if="productLinesPlaceholder"
-          :title="productLinesPlaceholder.title"
-          :message="productLinesPlaceholder.message"
-          :hint="productLinesPlaceholder.hint"
-        />
-        <BarChart v-else :option="productChartOption" height="300px" @chart-click="handleProductClick" />
+        <BarChart :option="productChartOption" height="300px" @chart-click="handleProductClick" />
       </div>
     </div>
 
@@ -558,6 +552,7 @@ const metricDrillDownDimensions = computed(() => metricDrillDownResponse.value?.
 const metricPagination = computed(() => metricDrillDownResponse.value?.pagination || metricPaginationState.value)
 const hasMetricDrillDownAction = computed(() => ['revenue', 'win-rate', 'projects'].includes(metricDrawerType.value))
 const productLinesPlaceholder = computed(() => pageFeaturePlaceholders.value.productLines || null)
+const showProductLinesCard = computed(() => true)
 
 const buildEmptyDashboardData = () => ({
   totalBids: 0,
@@ -988,10 +983,15 @@ const loadData = async () => {
     if (productLinesResponse?.success) {
       nextData.productLines = Array.isArray(productLinesResponse.data) ? productLinesResponse.data : []
     } else if (isFeatureUnavailableResponse(productLinesResponse)) {
+      if (!isDemoMode) {
+        nextData.productLines = []
+        dashboardData.value = nextData
+        return
+      }
       const placeholder = notifyFeatureUnavailable(productLinesResponse, {
         fallback: {
-          title: '产品线分析暂未接入',
-          hint: '当前页其余指标仍基于真实后端数据加载。',
+          title: '产品线分析当前不可用',
+          hint: '其余指标仍基于真实后端数据加载，可稍后重试或联系管理员检查分析服务。',
         },
         level: 'warning',
       })
@@ -1058,11 +1058,19 @@ const openMetricDrillDown = async (type, options = {}) => {
   try {
     const response = await dashboardApi.getDrillDown(type, buildMetricDrillDownParams())
     if (isFeatureUnavailableResponse(response)) {
+      if (!isDemoMode) {
+        metricDrawerVisible.value = false
+        metricDrawerType.value = ''
+        metricDrawerTitle.value = ''
+        metricDrillDownResponse.value = buildEmptyMetricDrillDownResponse()
+        ElMessage.info('当前版本暂不开放该分析明细')
+        return
+      }
       metricDrillDownResponse.value = buildEmptyMetricDrillDownResponse()
       metricDrillDownPlaceholder.value = notifyFeatureUnavailable(response, {
         fallback: {
-          title: '下钻明细暂未接入',
-          hint: '请从已接入的指标卡片进入真实明细。',
+          title: '下钻明细当前不可用',
+          hint: '当前无法返回该指标的明细数据，请稍后重试或联系管理员检查分析服务。',
         },
       }) || getFeaturePlaceholder(response)
       return
@@ -1303,7 +1311,7 @@ const handleCompetitorClick = (params) => {
 
 const handleProductClick = (params) => {
   if (productLinesPlaceholder.value) {
-    ElMessage.info(productLinesPlaceholder.value.message)
+    ElMessage.info(isDemoMode ? productLinesPlaceholder.value.message : '当前版本暂不开放产品线分析')
     return
   }
   const product = dashboardData.value.productLines[params.dataIndex]

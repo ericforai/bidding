@@ -5,14 +5,17 @@
 package com.xiyu.bid.platform.service;
 
 import com.xiyu.bid.entity.User;
-import com.xiyu.bid.platform.dto.*;
+import com.xiyu.bid.platform.dto.BorrowAccountRequest;
+import com.xiyu.bid.platform.dto.PlatformAccountCreateRequest;
+import com.xiyu.bid.platform.dto.PlatformAccountDTO;
+import com.xiyu.bid.platform.dto.PlatformAccountStatisticsDTO;
 import com.xiyu.bid.platform.entity.PlatformAccount;
 import com.xiyu.bid.platform.entity.PlatformAccount.AccountStatus;
 import com.xiyu.bid.platform.entity.PlatformAccount.PlatformType;
 import com.xiyu.bid.platform.repository.PlatformAccountRepository;
 import com.xiyu.bid.platform.util.PasswordEncryptionUtil;
-import com.xiyu.bid.service.AuditLogService;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.AuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -330,7 +333,7 @@ public class PlatformAccountService {
     protected void logAsync(AuditLogService.AuditLogEntry entry) {
         try {
             auditLogService.log(entry);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Failed to log audit entry", e);
         }
     }

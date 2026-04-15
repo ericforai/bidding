@@ -1,8 +1,8 @@
 package com.xiyu.bid.controller;
 
-import com.xiyu.bid.dto.TaskDTO;
 import com.xiyu.bid.entity.Task;
-import com.xiyu.bid.service.TaskService;
+import com.xiyu.bid.task.dto.TaskDTO;
+import com.xiyu.bid.task.service.TaskService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

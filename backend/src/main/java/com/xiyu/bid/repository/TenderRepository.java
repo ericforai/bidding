@@ -13,6 +13,11 @@ import java.util.List;
 public interface TenderRepository extends JpaRepository<Tender, Long> {
 
     /**
+     * 根据外部 ID 查询标讯
+     */
+    java.util.Optional<Tender> findByExternalId(String externalId);
+
+    /**
      * 根据状态查询标讯
      */
     List<Tender> findByStatus(Tender.Status status);

@@ -72,6 +72,7 @@ public class ArchitectureTest {
             .or().resideInAPackage("com.xiyu.bid.batch.controller..")
             .or().resideInAPackage("com.xiyu.bid.export.controller..")
             .or().resideInAPackage("com.xiyu.bid.bidresult.controller..")
+            .or().resideInAPackage("com.xiyu.bid.approval.controller..")
             .should().dependOnClassesThat()
             .resideInAPackage("..repository..")
             .because("首批整治模块控制器必须通过Service层访问数据");

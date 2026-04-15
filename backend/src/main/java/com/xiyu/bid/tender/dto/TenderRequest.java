@@ -1,7 +1,14 @@
 package com.xiyu.bid.tender.dto;
 
 import com.xiyu.bid.entity.Tender;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -43,4 +50,10 @@ public class TenderRequest {
     private Integer aiScore;
 
     private Tender.RiskLevel riskLevel;
+
+    @Size(max = 2000, message = "原始链接长度不能超过2000个字符")
+    private String originalUrl;
+
+    @Size(max = 100, message = "外部标识长度不能超过100个字符")
+    private String externalId;
 }

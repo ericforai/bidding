@@ -7,7 +7,7 @@ import com.xiyu.bid.competitionintel.entity.CompetitionAnalysis;
 import com.xiyu.bid.competitionintel.entity.Competitor;
 import com.xiyu.bid.competitionintel.repository.CompetitionAnalysisRepository;
 import com.xiyu.bid.competitionintel.repository.CompetitorRepository;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

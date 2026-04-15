@@ -1,7 +1,9 @@
 package com.xiyu.bid.repository;
 
 import com.xiyu.bid.entity.EmailVerificationToken;
+import com.xiyu.bid.entity.RoleProfile;
 import com.xiyu.bid.entity.User;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -27,6 +29,18 @@ class EmailVerificationTokenRepositoryTest {
     @Autowired
     private EmailVerificationTokenRepository repository;
 
+    private RoleProfile defaultProfile;
+
+    @BeforeEach
+    void setUp() {
+        defaultProfile = RoleProfile.builder()
+                .code("test-profile")
+                .name("测试权限")
+                .dataScope("self")
+                .build();
+        entityManager.persist(defaultProfile);
+    }
+
     @Test
     void testFindByToken_Success() {
         User user = User.builder()
@@ -35,6 +49,7 @@ class EmailVerificationTokenRepositoryTest {
                 .fullName("Test User")
                 .password("password")
                 .role(User.Role.STAFF)
+                .roleProfile(defaultProfile)
                 .emailVerified(false)
                 .enabled(true)
                 .build();
@@ -69,6 +84,7 @@ class EmailVerificationTokenRepositoryTest {
                 .fullName("Test User")
                 .password("password")
                 .role(User.Role.STAFF)
+                .roleProfile(defaultProfile)
                 .emailVerified(false)
                 .enabled(true)
                 .build();
@@ -97,6 +113,7 @@ class EmailVerificationTokenRepositoryTest {
                 .fullName("Test User")
                 .password("password")
                 .role(User.Role.STAFF)
+                .roleProfile(defaultProfile)
                 .emailVerified(false)
                 .enabled(true)
                 .build();
@@ -125,6 +142,7 @@ class EmailVerificationTokenRepositoryTest {
                 .fullName("Test User")
                 .password("password")
                 .role(User.Role.STAFF)
+                .roleProfile(defaultProfile)
                 .emailVerified(false)
                 .enabled(true)
                 .build();
@@ -152,6 +170,7 @@ class EmailVerificationTokenRepositoryTest {
                 .fullName("Test User")
                 .password("password")
                 .role(User.Role.STAFF)
+                .roleProfile(defaultProfile)
                 .emailVerified(false)
                 .enabled(true)
                 .build();

@@ -17,7 +17,7 @@
  */
 
 // 导出配置
-export { API_CONFIG, isMockMode, isCommercialMode, getApiUrl } from './config.js'
+export { API_CONFIG, isMockMode, isMockLoginEnabled, isCommercialMode, getApiUrl } from './config.js'
 export { buildFeatureUnavailableResponse, getFeaturePlaceholder, isFeatureUnavailableResponse } from './featureAvailability.js'
 
 // 导出 HTTP 客户端
@@ -38,6 +38,7 @@ export { exportApi, ExportType, ExportFormat, ExportStatus } from './modules/exp
 export { auditApi } from './modules/audit.js'
 export { settingsApi } from './modules/settings.js'
 export { projectGroupsApi } from './modules/projectGroups.js'
+export { bidResultsApi } from './modules/bidResults.js'
 
 // 统一导出对象 (方便解构使用)
 export default {

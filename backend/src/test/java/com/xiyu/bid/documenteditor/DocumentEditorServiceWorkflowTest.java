@@ -16,7 +16,7 @@ import com.xiyu.bid.documenteditor.repository.DocumentSectionLockRepository;
 import com.xiyu.bid.documenteditor.repository.DocumentSectionRepository;
 import com.xiyu.bid.documenteditor.repository.DocumentStructureRepository;
 import com.xiyu.bid.documenteditor.service.DocumentEditorService;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

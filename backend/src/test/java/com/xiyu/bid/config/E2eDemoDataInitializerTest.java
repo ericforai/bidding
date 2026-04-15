@@ -1,7 +1,10 @@
 package com.xiyu.bid.config;
 
+import com.xiyu.bid.entity.RoleProfile;
 import com.xiyu.bid.entity.User;
+import com.xiyu.bid.repository.RoleProfileRepository;
 import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.service.RoleProfileService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -11,6 +14,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -22,9 +26,13 @@ class E2eDemoDataInitializerTest {
     void seedDemoUsers_ShouldCreateExpectedUsersWithEncodedPasswords() {
         UserRepository userRepository = mock(UserRepository.class);
         PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
-        E2eDemoDataInitializer initializer = new E2eDemoDataInitializer(userRepository, passwordEncoder);
+        RoleProfileRepository roleProfileRepository = mock(RoleProfileRepository.class);
+        RoleProfileService roleProfileService = mock(RoleProfileService.class);
+        E2eDemoDataInitializer initializer = new E2eDemoDataInitializer(userRepository, roleProfileRepository, roleProfileService, passwordEncoder);
 
         when(userRepository.findByUsername(any())).thenReturn(Optional.empty());
+        when(roleProfileRepository.findByCodeIgnoreCase(anyString()))
+                .thenReturn(Optional.of(RoleProfile.builder().id(1L).code("TEST").build()));
         when(passwordEncoder.encode("123456")).thenReturn("encoded-123456");
 
         initializer.seedDemoUsers();

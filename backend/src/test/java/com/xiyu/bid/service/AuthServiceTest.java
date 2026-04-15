@@ -4,6 +4,7 @@ import com.xiyu.bid.auth.JwtUtil;
 import com.xiyu.bid.dto.AuthSessionResult;
 import com.xiyu.bid.dto.LoginRequest;
 import com.xiyu.bid.entity.RefreshSession;
+import com.xiyu.bid.entity.RoleProfile;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.RefreshSessionRepository;
 import com.xiyu.bid.repository.UserRepository;
@@ -48,6 +49,12 @@ class AuthServiceTest {
     @Mock
     private ProjectAccessScopeService projectAccessScopeService;
 
+    @Mock
+    private DataScopeConfigService dataScopeConfigService;
+
+    @Mock
+    private RoleProfileService roleProfileService;
+
     private AuthService authService;
 
     @BeforeEach
@@ -56,9 +63,11 @@ class AuthServiceTest {
                 userRepository,
                 refreshSessionRepository,
                 projectAccessScopeService,
+                dataScopeConfigService,
                 passwordEncoder,
                 jwtUtil,
-                authenticationManager
+                authenticationManager,
+                roleProfileService
         );
         ReflectionTestUtils.setField(authService, "refreshExpiration", 7 * 24 * 60 * 60 * 1000L);
     }
@@ -74,6 +83,7 @@ class AuthServiceTest {
         when(jwtUtil.generateAccessToken("alice")).thenReturn("access-token");
         when(projectAccessScopeService.getAllowedProjectIds(user)).thenReturn(List.of(11L, 12L));
         when(projectAccessScopeService.getAllowedDepartmentCodes(user)).thenReturn(List.of("SALES"));
+        when(dataScopeConfigService.getRoleMenuPermissions(user)).thenReturn(List.of("all"));
 
         AuthSessionResult result = authService.login(request);
 
@@ -99,6 +109,7 @@ class AuthServiceTest {
         when(jwtUtil.generateAccessToken("alice")).thenReturn("rotated-access-token");
         when(projectAccessScopeService.getAllowedProjectIds(user)).thenReturn(List.of(21L));
         when(projectAccessScopeService.getAllowedDepartmentCodes(user)).thenReturn(List.of("BID"));
+        when(dataScopeConfigService.getRoleMenuPermissions(user)).thenReturn(List.of("all"));
 
         AuthSessionResult result = authService.refreshToken("raw-refresh-token");
 
@@ -142,6 +153,7 @@ class AuthServiceTest {
                 .email("alice@example.com")
                 .fullName("Alice")
                 .role(User.Role.ADMIN)
+                .roleProfile(RoleProfile.builder().id(1L).code("admin").name("管理员").build())
                 .enabled(true)
                 .password("encoded")
                 .build();

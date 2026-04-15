@@ -12,7 +12,7 @@ import com.xiyu.bid.approval.enums.ApprovalStatus;
 import com.xiyu.bid.approval.service.ApprovalWorkflowService;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.entity.User;
-import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +47,7 @@ import java.util.UUID;
 public class ApprovalController {
 
     private final ApprovalWorkflowService approvalWorkflowService;
-    private final UserRepository userRepository;
+    private final AuthService authService;
 
     /**
      * 提交审批
@@ -290,8 +297,11 @@ public class ApprovalController {
                     "Username cannot be null or empty");
         }
 
-        return userRepository.findByUsername(username.trim())
-                .orElseThrow(() -> new org.springframework.security.authentication.AuthenticationServiceException(
-                        "Authenticated user not found: " + username));
+        try {
+            return authService.resolveUserByUsername(username.trim());
+        } catch (org.springframework.security.core.userdetails.UsernameNotFoundException ex) {
+            throw new org.springframework.security.authentication.AuthenticationServiceException(
+                    "Authenticated user not found: " + username, ex);
+        }
     }
 }

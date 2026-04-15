@@ -9,7 +9,7 @@ import com.xiyu.bid.scoreanalysis.entity.DimensionScore;
 import com.xiyu.bid.scoreanalysis.repository.ScoreAnalysisRepository;
 import com.xiyu.bid.scoreanalysis.repository.DimensionScoreRepository;
 import com.xiyu.bid.scoreanalysis.service.ScoreAnalysisService;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

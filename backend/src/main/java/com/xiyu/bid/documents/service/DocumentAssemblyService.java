@@ -5,6 +5,7 @@
 package com.xiyu.bid.documents.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.documents.dto.AssemblyRequest;
@@ -16,7 +17,7 @@ import com.xiyu.bid.documents.entity.DocumentAssembly;
 import com.xiyu.bid.documents.repository.AssemblyTemplateRepository;
 import com.xiyu.bid.documents.repository.DocumentAssemblyRepository;
 import com.xiyu.bid.exception.ResourceNotFoundException;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -194,7 +195,7 @@ public class DocumentAssemblyService {
             }
 
             return result;
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             log.error("Failed to parse variables JSON: {}", variablesJson, e);
             // Return original template if JSON parsing fails
             return templateContent;

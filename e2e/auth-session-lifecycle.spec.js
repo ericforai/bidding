@@ -1,7 +1,13 @@
 import { test, expect } from '@playwright/test'
 
+const expectEmptyAxiosPostBody = (request) => {
+  expect([null, 'null']).toContain(request.postData())
+}
+
 async function seedSession(page) {
   await page.addInitScript(() => {
+    localStorage.clear()
+    sessionStorage.clear()
     sessionStorage.setItem('token', 'expired-access-token')
     sessionStorage.setItem('refreshToken', 'refresh-token-initial')
   })
@@ -45,15 +51,11 @@ test.describe('auth session lifecycle', () => {
     })
 
     await page.route('**/api/auth/refresh', async (route) => {
-      const payload = route.request().postDataJSON()
-      expect(payload.refreshToken).toBe('refresh-token-initial')
+      expectEmptyAxiosPostBody(route.request())
 
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        headers: {
-          'X-Refresh-Token': 'refresh-token-rotated'
-        },
         body: JSON.stringify({
           success: true,
           data: {
@@ -73,14 +75,21 @@ test.describe('auth session lifecycle', () => {
     await expect(page).toHaveURL(/\/dashboard$/)
     await expect(page.getByText('工作台').first()).toBeVisible()
 
-    const storedToken = await page.evaluate(() => sessionStorage.getItem('token'))
-    const storedRefreshToken = await page.evaluate(() => sessionStorage.getItem('refreshToken'))
-    expect(storedToken).toBe('access-token-rotated')
-    expect(storedRefreshToken).toBe('refresh-token-rotated')
+    const storageState = await page.evaluate(() => ({
+      localToken: localStorage.getItem('token'),
+      sessionToken: sessionStorage.getItem('token'),
+      sessionUser: sessionStorage.getItem('user')
+    }))
+
+    expect(storageState.localToken).toBe('access-token-rotated')
+    expect(storageState.sessionUser).toContain('alice')
+    expect(storageState.sessionToken).toBe('expired-access-token')
   })
 
   test('logout sends refresh token and clears local session state', async ({ page }) => {
     await page.addInitScript(() => {
+      localStorage.clear()
+      sessionStorage.clear()
       sessionStorage.setItem('token', 'access-token-live')
       sessionStorage.setItem('refreshToken', 'refresh-token-live')
       sessionStorage.setItem('user', JSON.stringify({
@@ -92,9 +101,25 @@ test.describe('auth session lifecycle', () => {
       }))
     })
 
+    await page.route('**/api/auth/me', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: {
+            id: 1,
+            username: 'alice',
+            fullName: 'Alice',
+            email: 'alice@example.com',
+            role: 'ADMIN'
+          }
+        })
+      })
+    })
+
     await page.route('**/api/auth/logout', async (route) => {
-      const payload = route.request().postDataJSON()
-      expect(payload.refreshToken).toBe('refresh-token-live')
+      expectEmptyAxiosPostBody(route.request())
       expect(route.request().headers().authorization).toBe('Bearer access-token-live')
 
       await route.fulfill({
@@ -112,12 +137,10 @@ test.describe('auth session lifecycle', () => {
 
     const storageState = await page.evaluate(() => ({
       token: sessionStorage.getItem('token'),
-      refreshToken: sessionStorage.getItem('refreshToken'),
       user: sessionStorage.getItem('user')
     }))
 
     expect(storageState.token).toBeNull()
-    expect(storageState.refreshToken).toBeNull()
     expect(storageState.user).toBeNull()
   })
 })

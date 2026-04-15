@@ -113,7 +113,7 @@ public class ExportController {
             log.warn("Export validation failed: user={}, error={}", userId, e.getMessage());
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error(e.getMessage()));
-        } catch (RuntimeException e) {
+        } catch (IOException | RuntimeException e) {
             log.error("Export failed: user={}, error={}", userId, e.getMessage(), e);
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("Export failed: " + e.getMessage()));
@@ -166,7 +166,7 @@ public class ExportController {
                     .contentLength(fileContent.length)
                     .body(fileContent);
 
-        } catch (RuntimeException e) {
+        } catch (IOException | RuntimeException e) {
             log.error("Export download failed: user={}, error={}", userId, e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }

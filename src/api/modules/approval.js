@@ -196,6 +196,27 @@ async function getProjectApprovals(projectId, params = {}) {
   }
 }
 
+async function getMyApprovals(params = {}) {
+  if (isMockMode()) {
+    return { success: true, data: buildMockProjectApprovals(1) }
+  }
+
+  const response = await httpClient.get('/api/approvals/my', {
+    params: { page: 0, size: 20, ...params },
+  })
+  const rows = Array.isArray(response?.data?.content)
+    ? response.data.content
+    : Array.isArray(response?.data)
+      ? response.data
+      : []
+
+  return {
+    ...response,
+    data: rows.map(normalizeApproval),
+    page: response?.data?.pageable ?? null,
+  }
+}
+
 async function submitApproval(payload) {
   if (isMockMode()) {
     return {
@@ -232,6 +253,7 @@ async function reject(id, payload) {
 export const approvalApi = {
   getPendingApprovals,
   getProjectApprovals,
+  getMyApprovals,
   submitApproval,
   approve,
   reject,

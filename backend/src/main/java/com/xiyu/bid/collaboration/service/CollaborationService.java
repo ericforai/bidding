@@ -16,7 +16,7 @@ import com.xiyu.bid.collaboration.entity.CollaborationThread;
 import com.xiyu.bid.collaboration.repository.CommentRepository;
 import com.xiyu.bid.collaboration.repository.CollaborationThreadRepository;
 import com.xiyu.bid.exception.ResourceNotFoundException;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import com.xiyu.bid.util.InputSanitizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

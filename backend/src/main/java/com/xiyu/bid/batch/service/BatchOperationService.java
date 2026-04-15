@@ -18,8 +18,8 @@ import com.xiyu.bid.fees.entity.Fee;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TaskRepository;
 import com.xiyu.bid.repository.TenderRepository;
-import com.xiyu.bid.service.AuditLogService;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.AuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import com.xiyu.bid.util.InputSanitizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -95,7 +95,7 @@ public class BatchOperationService {
                 tender.setStatus(Tender.Status.TRACKING);
                 tendersToClaim.add(tender);
                 response.addSuccess(tenderId);
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 response.addError(tenderId, "Failed to claim tender: " + e.getMessage(), "CLAIM_ERROR");
             }
         }
@@ -143,7 +143,7 @@ public class BatchOperationService {
                 task.setAssigneeId(assigneeId);
                 tasksToUpdate.add(task);
                 response.addSuccess(taskId);
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 response.addError(taskId, "Failed to assign task: " + e.getMessage(), "ASSIGN_ERROR");
             }
         }
@@ -211,7 +211,7 @@ public class BatchOperationService {
                 }
                 projectsToDelete.add(project);
                 response.addSuccess(projectId);
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 response.addError(projectId, "Failed to delete project: " + e.getMessage(), "DELETE_ERROR");
             }
         }
@@ -258,7 +258,7 @@ public class BatchOperationService {
         validateUserRole(userRole);
         log.info("Batch deleting items: type={}, count={}", itemType, ids.size());
 
-        String normalizedType = itemType.trim().toUpperCase();
+        String normalizedType = itemType.trim().toUpperCase(java.util.Locale.ROOT);
         switch (normalizedType) {
             case "TENDER":
                 return batchDeleteTenders(ids, userId);
@@ -294,7 +294,7 @@ public class BatchOperationService {
                     toDelete.add(t);
                     response.addSuccess(id);
                 });
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 response.addError(id, e.getMessage(), "DELETE_ERROR");
             }
         }
@@ -330,7 +330,7 @@ public class BatchOperationService {
                     toDelete.add(t);
                     response.addSuccess(id);
                 });
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 response.addError(id, e.getMessage(), "DELETE_ERROR");
             }
         }
@@ -408,7 +408,7 @@ public class BatchOperationService {
                 projectsToUpdate.add(project);
                 response.addSuccess(projectId);
 
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 response.addError(projectId, "Failed to update project: " + e.getMessage(), "UPDATE_ERROR");
             }
         }
@@ -480,7 +480,7 @@ public class BatchOperationService {
                 feesToUpdate.add(fee);
                 response.addSuccess(feeId);
 
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 response.addError(feeId, "Failed to approve fee: " + e.getMessage(), "PAY_ERROR");
             }
         }
@@ -561,7 +561,7 @@ public class BatchOperationService {
                     .entityId(entityId != null ? String.valueOf(entityId) : null)
                     .userId(userId != null ? String.valueOf(userId) : null)
                     .description(String.format("Batch %s: %d success, %d failed. IDs: %s",
-                            operationType.toLowerCase(),
+                            operationType.toLowerCase(java.util.Locale.ROOT),
                             response.getSuccessCount(),
                             response.getFailureCount(),
                             successIds))
@@ -569,7 +569,7 @@ public class BatchOperationService {
                     .build();
 
             auditLogService.log(entry);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Failed to record batch operation log: {}", e.getMessage());
         }
     }

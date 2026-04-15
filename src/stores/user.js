@@ -7,6 +7,7 @@ import { defineStore } from 'pinia'
 import { authApi } from '@/api'
 import { getDemoUsers } from '@/api/mock-adapters/frontendDemo.js'
 import { clearAuthState, hasPersistentSession } from '@/api/modules/auth.js'
+import { persistRuntimeSettings } from '@/api/modules/settings.js'
 import {
   bootstrapLegacyAccessToken,
   getStoredUser,
@@ -47,6 +48,13 @@ export const useUserStore = defineStore('user', {
       if (nextToken) {
         this.token = nextToken
       }
+      persistRuntimeSettings({
+        roles: [{
+          code: nextUser?.roleCode || nextUser?.role,
+          name: nextUser?.roleName || '',
+          menuPermissions: Array.isArray(nextUser?.menuPermissions) ? nextUser.menuPermissions : []
+        }]
+      })
 
       this.persistSession(remember)
       return this.currentUser

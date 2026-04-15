@@ -9,7 +9,8 @@
  */
 import httpClient from '../client.js'
 import { mockData } from '../mock.js'
-import { isMockMode } from '../config.js'
+import { isMockLoginEnabled, isMockMode } from '../config.js'
+import { persistRuntimeSettings } from './settings.js'
 import {
   clearSessionState,
   getStoredUser,
@@ -38,11 +39,14 @@ const normalizeUser = (authPayload) => ({
   name: authPayload?.fullName || authPayload?.name || authPayload?.username,
   username: authPayload?.username,
   email: authPayload?.email,
-  role: String(authPayload?.role || '').toLowerCase(),
+  role: String(authPayload?.roleCode || authPayload?.role || '').toLowerCase(),
+  roleCode: String(authPayload?.roleCode || authPayload?.role || '').toLowerCase(),
+  roleName: authPayload?.roleName || '',
   dept: authPayload?.dept || authPayload?.departmentName || '',
   deptCode: authPayload?.deptCode || authPayload?.departmentCode || '',
   allowedProjectIds: normalizeAllowedProjectIds(authPayload?.allowedProjectIds),
-  allowedDepts: normalizeAllowedDepts(authPayload?.allowedDepts)
+  allowedDepts: normalizeAllowedDepts(authPayload?.allowedDepts),
+  menuPermissions: Array.isArray(authPayload?.menuPermissions) ? authPayload.menuPermissions : []
 })
 
 export const getSavedUser = () => getStoredUser()
@@ -59,6 +63,12 @@ export const authApi = {
    */
   async login(username, password, rememberMe = true) {
     if (isMockMode()) {
+      if (!isMockLoginEnabled()) {
+        return Promise.resolve({
+          success: false,
+          message: 'Mock 登录已禁用，请显式使用 mock 模式启动前端'
+        })
+      }
       // Mock 模式
       return new Promise((resolve) => {
         setTimeout(() => {
@@ -85,11 +95,18 @@ export const authApi = {
     })
     const authPayload = response?.data
     setAccessToken(authPayload?.token, rememberMe)
+    persistRuntimeSettings({
+      roles: [{
+        code: normalizeUser(authPayload).role,
+        menuPermissions: normalizeUser(authPayload).menuPermissions
+      }]
+    })
+    const normalizedUser = normalizeUser(authPayload)
 
     return {
       ...response,
       data: {
-        user: normalizeUser(authPayload),
+        user: normalizedUser,
         token: authPayload?.token,
         type: authPayload?.type || 'Bearer'
       }
@@ -128,10 +145,17 @@ export const authApi = {
 
     const response = await httpClient.get('/api/auth/me')
     const authPayload = response?.data
+    const normalizedUser = normalizeUser(authPayload)
+    persistRuntimeSettings({
+      roles: [{
+        code: normalizedUser.role,
+        menuPermissions: normalizedUser.menuPermissions
+      }]
+    })
 
     return {
       ...response,
-      data: normalizeUser(authPayload)
+      data: normalizedUser
     }
   },
 
@@ -166,11 +190,18 @@ export const authApi = {
     })
     const authPayload = response?.data
     setAccessToken(authPayload?.token, true) // refresh 时默认持久化
+    const normalizedUser = normalizeUser(authPayload)
+    persistRuntimeSettings({
+      roles: [{
+        code: normalizedUser.role,
+        menuPermissions: normalizedUser.menuPermissions
+      }]
+    })
 
     return {
       ...response,
       data: {
-        user: normalizeUser(authPayload),
+        user: normalizedUser,
         token: authPayload?.token,
         type: authPayload?.type || 'Bearer'
       }

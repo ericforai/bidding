@@ -5,8 +5,8 @@
 package com.xiyu.bid.versionhistory.service;
 
 import com.xiyu.bid.exception.ResourceNotFoundException;
-import com.xiyu.bid.service.AuditLogService;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.AuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import com.xiyu.bid.versionhistory.dto.DocumentVersionDTO;
 import com.xiyu.bid.versionhistory.dto.VersionCreateRequest;
 import com.xiyu.bid.versionhistory.dto.VersionDiffDTO;
@@ -308,7 +308,7 @@ public class VersionHistoryService {
                     .build();
 
             auditLogService.log(entry);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Failed to log audit entry", e);
         }
     }

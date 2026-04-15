@@ -84,15 +84,18 @@ function toLocalDateTimeString(date) {
 }
 
 async function waitForAuditItems(session, minimumCount = 1) {
-  for (let attempt = 0; attempt < 10; attempt += 1) {
-    const payload = await authedJson('/api/audit', session)
-    if (Array.isArray(payload?.data?.items) && payload.data.items.length >= minimumCount) {
-      return payload
-    }
-    await new Promise((resolve) => setTimeout(resolve, 500))
-  }
+  let payload = null
 
-  throw new Error('Audit items were not visible before timeout')
+  await expect.poll(async () => {
+    payload = await authedJson('/api/audit', session)
+    return Array.isArray(payload?.data?.items) ? payload.data.items.length : 0
+  }, {
+    message: 'Audit items were not visible before timeout',
+    intervals: [500],
+    timeout: 10000,
+  }).toBeGreaterThanOrEqual(minimumCount)
+
+  return payload
 }
 
 test('dashboard and audit screens render real operational data', async ({ page }) => {
@@ -162,10 +165,18 @@ test('dashboard and audit screens render real operational data', async ({ page }
   await expect(page.locator('#main-content').getByText('系统设置')).toBeVisible()
   await page.getByRole('tab', { name: '审计日志' }).click()
   await expect(page.getByText('今日操作')).toBeVisible()
-  await expect(page.locator('.audit-table .el-table__row').first()).toBeVisible()
+  const firstAuditRow = page.locator('.audit-table .el-table__row').first()
+  await expect(firstAuditRow).toBeVisible()
   await expect(page.getByText('export').or(page.getByText('审计日志')).first()).toBeVisible()
 
-  await page.getByPlaceholder('搜索操作内容/对象').fill('project')
+  const firstAuditRowText = await firstAuditRow.innerText()
+  const stableSearchKeyword = firstAuditRowText
+    .split(/\s+/)
+    .find((segment) => segment.length >= 2 && /[\u4e00-\u9fa5a-zA-Z]/.test(segment))
+
+  expect(stableSearchKeyword).toBeTruthy()
+
+  await page.getByPlaceholder('搜索操作内容/对象').fill(stableSearchKeyword)
   await page.getByRole('button', { name: /搜索/ }).click()
   await expect(page.locator('.audit-table .el-table__row').first()).toBeVisible()
 })

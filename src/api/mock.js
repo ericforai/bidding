@@ -78,6 +78,38 @@ export const mockData = {
       industry: '数据中心',
       deadline: '2025-03-25',
       tags: ['数据中心', '云计算']
+    },
+    {
+      id: 'B005',
+      title: '2026年全省高速公路监控系统升级采购公告',
+      budget: 1580,
+      region: '成都',
+      date: '2026-04-01',
+      aiScore: 88,
+      probability: 'high',
+      aiReason: '我司在高速监控领域有成熟案例，客户曾咨询过相关技术',
+      status: 'new',
+      industry: '交通',
+      deadline: '2026-04-30',
+      source: 'CEB',
+      originalUrl: 'https://bulletin.cebpubservice.com/biddingBulletin/2026-04-01/ff8080819b6cca06019d43c8e6e37360.html',
+      tags: ['智能交通', '监控系统', '公开招标']
+    },
+    {
+      id: 'B006',
+      title: '某大型国企生产线自动化改造项目',
+      budget: 2100,
+      region: '上海',
+      date: '2026-04-01',
+      aiScore: 75,
+      probability: 'medium',
+      aiReason: '预算充足，但需要极高的定制化研发能力',
+      status: 'new',
+      industry: '工业',
+      deadline: '2026-05-15',
+      source: 'CEB',
+      originalUrl: 'https://bulletin.cebpubservice.com/biddingBulletin/2026-04-01/ab8180819b6cca06019d43c8e6e37444.html',
+      tags: ['生产线改造', '智能制造']
     }
   ],
 

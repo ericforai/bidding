@@ -4,6 +4,7 @@
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 const ACCESS_TOKEN_KEY = 'token'
+const LEGACY_REFRESH_TOKEN_KEY = 'refreshToken'
 const USER_KEY = 'user'
 
 let accessToken = null
@@ -99,6 +100,7 @@ export const clearAuthHints = () => {
   getBrowserStorages().forEach((storage) => {
     storage.removeItem(USER_KEY)
     storage.removeItem(ACCESS_TOKEN_KEY)
+    storage.removeItem(LEGACY_REFRESH_TOKEN_KEY)
   })
 }
 

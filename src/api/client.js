@@ -13,6 +13,7 @@ import {
 import router from '@/router/index.js'
 
 let refreshPromise = null
+let authFailureHandled = false
 
 const syncRefreshedSession = async (refreshResult) => {
   if (!refreshResult?.success || !refreshResult?.data?.user) {
@@ -36,6 +37,31 @@ const shouldSkipRefresh = (config = {}) => {
     url.includes('/api/auth/refresh') ||
     url.includes('/api/auth/logout')
   )
+}
+
+const handleAuthFailure = async () => {
+  if (authFailureHandled) {
+    return
+  }
+
+  authFailureHandled = true
+  ElMessage.error('登录已过期，请重新登录')
+  clearSessionState()
+
+  try {
+    const { useUserStore } = await import('@/stores/user.js')
+    useUserStore().resetSession()
+  } catch (syncError) {
+    console.warn('Failed to reset auth store after auth failure:', syncError)
+  }
+
+  if (router.currentRoute.value.path !== '/login') {
+    router.push('/login').catch((navError) => {
+      if (navError.name !== 'NavigationDuplicated') {
+        console.error('Navigation to login failed:', navError)
+      }
+    })
+  }
 }
 
 // 创建 axios 实例
@@ -64,6 +90,7 @@ httpClient.interceptors.request.use(
 // 响应拦截器
 httpClient.interceptors.response.use(
   (response) => {
+    authFailureHandled = false
     // 后端返回的统一格式: { success: true, data: ..., message: ... }
     return response.data
   },
@@ -93,20 +120,7 @@ httpClient.interceptors.response.use(
 
         return httpClient(config)
       } catch (refreshError) {
-        // Refresh 失败 - 清除会话并跳转到登录页
-        ElMessage.error('登录已过期，请重新登录')
-        clearSessionState()
-        // Also clear Pinia store state to ensure route guard sees correct state
-        const { useUserStore } = await import('@/stores/user.js')
-        useUserStore().resetSession()
-        if (router.currentRoute.value.path !== '/login') {
-          router.push('/login').catch((navError) => {
-            if (navError.name !== 'NavigationDuplicated') {
-              console.error('Navigation to login failed:', navError)
-            }
-          })
-        }
-        // 抛出错误以中止原请求
+        await handleAuthFailure()
         throw refreshError
       }
     }
@@ -116,17 +130,7 @@ httpClient.interceptors.response.use(
       switch (response.status) {
         case 401:
           if (!shouldSkipRefresh(config)) {
-            ElMessage.error('登录已过期，请重新登录')
-            clearSessionState()
-            // Use Vue Router for navigation to ensure guards are triggered
-            if (router.currentRoute.value.path !== '/login') {
-              router.push('/login').catch((navError) => {
-              // Ignore navigation aborted errors (e.g., user navigated away)
-                if (navError.name !== 'NavigationDuplicated') {
-                  console.error('Navigation to login failed:', navError)
-                }
-              })
-            }
+            await handleAuthFailure()
           }
           break
         case 403:

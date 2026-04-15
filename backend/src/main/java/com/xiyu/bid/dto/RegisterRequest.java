@@ -1,6 +1,6 @@
 package com.xiyu.bid.dto;
 
-import com.xiyu.bid.entity.User;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -25,5 +25,13 @@ public class RegisterRequest {
     @Size(max = 100, message = "Full name must not exceed 100 characters")
     private String fullName;
 
-    private User.Role role = User.Role.STAFF;
+    @JsonAlias("role")
+    private String roleCode = "staff";
+
+    public String getResolvedRoleCode() {
+        if (roleCode == null || roleCode.isBlank()) {
+            return "staff";
+        }
+        return roleCode;
+    }
 }

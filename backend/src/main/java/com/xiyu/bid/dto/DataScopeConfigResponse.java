@@ -29,6 +29,12 @@ public class DataScopeConfigResponse {
     @Builder.Default
     private List<UserOptionItem> userOptions = new ArrayList<>();
 
+    @Builder.Default
+    private List<UserItem> users = new ArrayList<>();
+
+    @Builder.Default
+    private List<RolePermissionItem> roles = new ArrayList<>();
+
     @Data
     @Builder
     @NoArgsConstructor
@@ -86,8 +92,49 @@ public class DataScopeConfigResponse {
     public static class UserOptionItem {
         private Long id;
         private String name;
+        private Long roleId;
         private String role;
+        private String roleName;
         private String deptCode;
         private String dept;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UserItem {
+        private Long id;
+        private String username;
+        private String fullName;
+        private String email;
+        private String phone;
+        private String departmentCode;
+        private String departmentName;
+        private Long roleId;
+        private String role;
+        private String roleName;
+        private Boolean enabled;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RolePermissionItem {
+        private Long id;
+        private String code;
+        private String name;
+        private String description;
+        private Boolean system;
+        private Boolean enabled;
+        private Integer userCount;
+        private String dataScope;
+        @Builder.Default
+        private List<String> menuPermissions = new ArrayList<>();
+        @Builder.Default
+        private List<Long> allowedProjects = new ArrayList<>();
+        @Builder.Default
+        private List<String> allowedDepts = new ArrayList<>();
     }
 }

@@ -108,6 +108,7 @@
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CommonIcon from '@/components/common/CommonIcon.vue'
+import { isMockMode } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { hasMenuAccessForRole } from '@/api/modules/settings'
 
@@ -172,11 +173,28 @@ onUnmounted(() => {
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const isApiDeliveryMode = computed(() => !isMockMode())
+const hiddenApiMenuNames = new Set([
+  'CustomerOpportunityCenter'
+])
 
 const hasRoleAccess = (roles) => !roles || roles.length === 0 || roles.includes(userStore.userRole)
 const hasPermissionAccess = (permissionKeys) => {
   const decision = hasMenuAccessForRole(userStore.userRole, permissionKeys)
-  return decision === null ? true : decision
+  if (decision !== null) {
+    return decision
+  }
+
+  const currentPermissions = Array.isArray(userStore.currentUser?.menuPermissions)
+    ? userStore.currentUser.menuPermissions
+    : []
+  if (currentPermissions.length === 0) {
+    return true
+  }
+  if (currentPermissions.includes('all')) {
+    return true
+  }
+  return (permissionKeys || []).some((key) => currentPermissions.includes(key))
 }
 
 const activeMenu = computed(() => {
@@ -297,13 +315,20 @@ const menuConfig = [
 const filteredMenus = computed(() => {
   return menuConfig
     .map(menu => {
+      if (isApiDeliveryMode.value && hiddenApiMenuNames.has(menu.name)) {
+        return null
+      }
       if (!hasRoleAccess(menu.meta?.roles) || !hasPermissionAccess(menu.meta?.permissionKeys)) {
         return null
       }
 
       if (menu.children) {
         const visibleChildren = menu.children.filter(
-          child => hasRoleAccess(child.meta?.roles) && hasPermissionAccess(child.meta?.permissionKeys)
+          child => (
+            (!isApiDeliveryMode.value || !hiddenApiMenuNames.has(child.name)) &&
+            hasRoleAccess(child.meta?.roles) &&
+            hasPermissionAccess(child.meta?.permissionKeys)
+          )
         )
 
         if (visibleChildren.length === 0) {

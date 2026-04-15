@@ -1,10 +1,13 @@
 package com.xiyu.bid.service;
+import com.xiyu.bid.entity.RoleProfileCatalog;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.dto.DataScopeConfigPayload;
 import com.xiyu.bid.dto.DataScopeConfigResponse;
+import com.xiyu.bid.entity.RoleProfile;
 import com.xiyu.bid.entity.User;
+import com.xiyu.bid.repository.RoleProfileRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.settings.entity.SystemSetting;
 import com.xiyu.bid.settings.repository.SystemSettingRepository;
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.LinkedHashMap;
@@ -23,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -37,9 +42,10 @@ public class DataScopeConfigService {
     private static final String UNASSIGNED_DEPT_CODE = "UNASSIGNED";
     private static final String UNASSIGNED_DEPT_NAME = "未分配";
     private static final Set<String> ALLOWED_SCOPES = Set.of("all", "dept", "deptAndSub", "self");
-
     private final SystemSettingRepository systemSettingRepository;
     private final UserRepository userRepository;
+    private final RoleProfileRepository roleProfileRepository;
+    private final RoleProfileService roleProfileService;
     private final ObjectMapper objectMapper;
 
     public DataScopeConfigResponse getConfig() {
@@ -63,7 +69,6 @@ public class DataScopeConfigService {
                         (left, right) -> right,
                         LinkedHashMap::new
                 ));
-
         return DataScopeConfigResponse.builder()
                 .userDataScope(users.stream()
                         .map(user -> toUserItem(user, userRules.get(user.getId())))
@@ -76,6 +81,10 @@ public class DataScopeConfigService {
                 .userOptions(users.stream()
                         .map(this::toUserOptionItem)
                         .toList())
+                .users(users.stream()
+                        .map(this::toManagedUserItem)
+                        .toList())
+                .roles(buildRoleItems(users))
                 .build();
     }
 
@@ -114,10 +123,21 @@ public class DataScopeConfigService {
                 .findFirst()
                 .orElse(null);
 
-        String dataScope = normalizeScope(userRule != null ? userRule.getDataScope() : departmentRule != null ? departmentRule.getDataScope() : DEFAULT_SCOPE);
-        List<Long> explicitProjectIds = userRule == null ? List.of() : normalizeProjectIds(userRule.getAllowedProjectIds());
+        RoleProfile roleProfile = resolveRoleProfile(user);
+        String dataScope = normalizeScope(userRule != null
+                ? userRule.getDataScope()
+                : departmentRule != null
+                ? departmentRule.getDataScope()
+                : roleProfile.getDataScope());
+        List<Long> explicitProjectIds = userRule != null
+                ? normalizeProjectIds(userRule.getAllowedProjectIds())
+                : normalizeProjectIds(roleProfile.getAllowedProjects());
         List<String> explicitDeptCodes = normalizeDepartmentCodes(
-                userRule != null ? userRule.getAllowedDeptCodes() : departmentRule != null ? departmentRule.getAllowedDeptCodes() : List.of()
+                userRule != null
+                        ? userRule.getAllowedDeptCodes()
+                        : departmentRule != null
+                        ? departmentRule.getAllowedDeptCodes()
+                        : roleProfile.getAllowedDepts()
         );
 
         if ("all".equals(dataScope)) {
@@ -148,6 +168,10 @@ public class DataScopeConfigService {
                 .build();
     }
 
+    public List<String> getRoleMenuPermissions(User user) {
+        return normalizeMenuPermissions(resolveRoleProfile(user).getMenuPermissions());
+    }
+
     private List<User> loadUsers() {
         return userRepository.findAll().stream()
                 .sorted(Comparator.comparing(User::getUsername, String.CASE_INSENSITIVE_ORDER))
@@ -160,7 +184,7 @@ public class DataScopeConfigService {
                 .userName(user.getFullName())
                 .deptCode(normalizeDepartmentCode(user.getDepartmentCode()))
                 .dept(normalizeDepartmentName(user.getDepartmentName()))
-                .role(String.valueOf(user.getRole()).toLowerCase())
+                .role(user.getRoleCode())
                 .dataScope(normalizeScope(rule == null ? null : rule.getDataScope()))
                 .allowedProjects(rule == null ? List.of() : normalizeProjectIds(rule.getAllowedProjectIds()))
                 .allowedDepts(rule == null ? List.of() : normalizeDepartmentCodes(rule.getAllowedDeptCodes()))
@@ -184,9 +208,27 @@ public class DataScopeConfigService {
         return DataScopeConfigResponse.UserOptionItem.builder()
                 .id(user.getId())
                 .name(user.getFullName())
-                .role(String.valueOf(user.getRole()).toLowerCase())
+                .roleId(user.getRoleProfile() == null ? null : user.getRoleProfile().getId())
+                .role(user.getRoleCode())
+                .roleName(user.getRoleName())
                 .deptCode(normalizeDepartmentCode(user.getDepartmentCode()))
                 .dept(normalizeDepartmentName(user.getDepartmentName()))
+                .build();
+    }
+
+    private DataScopeConfigResponse.UserItem toManagedUserItem(User user) {
+        return DataScopeConfigResponse.UserItem.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .departmentCode(normalizeDepartmentCode(user.getDepartmentCode()))
+                .departmentName(normalizeDepartmentName(user.getDepartmentName()))
+                .roleId(user.getRoleProfile() == null ? null : user.getRoleProfile().getId())
+                .role(user.getRoleCode())
+                .roleName(user.getRoleName())
+                .enabled(Boolean.TRUE.equals(user.getEnabled()))
                 .build();
     }
 
@@ -241,6 +283,34 @@ public class DataScopeConfigService {
                 .toList();
 
         return new DepartmentGraph(definitions, options, tree);
+    }
+
+    private List<DataScopeConfigResponse.RolePermissionItem> buildRoleItems(List<User> users) {
+        roleProfileService.ensureSystemRoles();
+        Map<String, Integer> userCountByRole = users.stream()
+                .collect(Collectors.groupingBy(
+                        User::getRoleCode,
+                        LinkedHashMap::new,
+                        Collectors.collectingAndThen(Collectors.counting(), Long::intValue)
+                ));
+
+        return roleProfileRepository.findAll().stream()
+                .sorted(Comparator.comparing(RoleProfile::getIsSystem).reversed()
+                        .thenComparing(RoleProfile::getCode, String.CASE_INSENSITIVE_ORDER))
+                .map(role -> DataScopeConfigResponse.RolePermissionItem.builder()
+                        .id(role.getId())
+                        .code(normalizeRoleCode(role.getCode()))
+                        .name(role.getName())
+                        .description(role.getDescription())
+                        .system(Boolean.TRUE.equals(role.getIsSystem()))
+                        .enabled(Boolean.TRUE.equals(role.getEnabled()))
+                        .userCount(userCountByRole.getOrDefault(normalizeRoleCode(role.getCode()), 0))
+                        .dataScope(normalizeScope(role.getDataScope()))
+                        .menuPermissions(normalizeMenuPermissions(role.getMenuPermissions()))
+                        .allowedProjects(normalizeProjectIds(role.getAllowedProjects()))
+                        .allowedDepts(normalizeDepartmentCodes(role.getAllowedDepts()))
+                        .build())
+                .toList();
     }
 
     private DataScopeConfigPayload loadPayload() {
@@ -352,6 +422,18 @@ public class DataScopeConfigService {
                 .toList();
     }
 
+    private List<String> normalizeMenuPermissions(List<String> menuPermissions) {
+        if (menuPermissions == null) {
+            return List.of();
+        }
+        return menuPermissions.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(this::hasText)
+                .distinct()
+                .toList();
+    }
+
     private String normalizeScope(String dataScope) {
         String candidate = dataScope == null ? DEFAULT_SCOPE : dataScope.trim();
         return ALLOWED_SCOPES.contains(candidate) ? candidate : DEFAULT_SCOPE;
@@ -381,6 +463,10 @@ public class DataScopeConfigService {
 
     private boolean hasText(String value) {
         return value != null && !value.trim().isBlank();
+    }
+
+    private String normalizeRoleCode(String roleCode) {
+        return roleCode == null ? "" : roleCode.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
     @Builder
@@ -436,5 +522,24 @@ public class DataScopeConfigService {
             }
             return List.copyOf(visited);
         }
+    }
+
+    private RoleProfile resolveRoleProfile(User user) {
+        String roleCode = user == null ? null : user.getRoleCode();
+        Optional<RoleProfile> roleProfile = roleProfileRepository.findByCodeIgnoreCase(roleCode);
+        if (roleProfile.isPresent()) {
+            return roleProfile.get();
+        }
+        RoleProfileCatalog.SeedDefinition definition = RoleProfileCatalog.definitionForCode(roleCode);
+        RoleProfile fallbackRole = RoleProfile.builder()
+                .code(definition.code())
+                .name(definition.name())
+                .description(definition.description())
+                .isSystem(definition.system())
+                .enabled(true)
+                .dataScope(definition.dataScope())
+                .build();
+        fallbackRole.setMenuPermissions(definition.menuPermissions());
+        return fallbackRole;
     }
 }

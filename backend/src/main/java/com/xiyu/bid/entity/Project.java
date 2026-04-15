@@ -1,6 +1,20 @@
 package com.xiyu.bid.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Entity;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -91,6 +105,12 @@ public class Project {
 
     @Column(name = "source_reasoning_summary", columnDefinition = "TEXT")
     private String sourceReasoningSummary;
+
+    @Column(name = "customer_manager", length = 100)
+    private String customerManager;
+
+    @Column(name = "customer_manager_id", length = 100)
+    private String customerManagerId;
 
     /**
      * 创建时间

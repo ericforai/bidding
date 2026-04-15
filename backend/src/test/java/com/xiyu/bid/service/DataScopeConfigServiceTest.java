@@ -3,6 +3,7 @@ package com.xiyu.bid.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.dto.DataScopeConfigResponse;
 import com.xiyu.bid.entity.User;
+import com.xiyu.bid.repository.RoleProfileRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.settings.entity.SystemSetting;
 import com.xiyu.bid.settings.repository.SystemSettingRepository;
@@ -29,11 +30,19 @@ class DataScopeConfigServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private RoleProfileRepository roleProfileRepository;
+
+    @Mock
+    private RoleProfileService roleProfileService;
+
     private DataScopeConfigService dataScopeConfigService;
 
     @BeforeEach
     void setUp() {
-        dataScopeConfigService = new DataScopeConfigService(systemSettingRepository, userRepository, new ObjectMapper());
+        dataScopeConfigService = new DataScopeConfigService(systemSettingRepository, userRepository, roleProfileRepository, roleProfileService, new ObjectMapper());
+        org.mockito.Mockito.lenient().when(roleProfileRepository.findByCodeIgnoreCase(org.mockito.ArgumentMatchers.anyString())).thenReturn(Optional.empty());
+        org.mockito.Mockito.lenient().when(roleProfileRepository.findAll()).thenReturn(List.of());
     }
 
     @Test

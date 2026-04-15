@@ -8,7 +8,7 @@
           <p class="page-subtitle">AI智能匹配，发现优质商机</p>
         </div>
         <div class="header-actions">
-          <el-button @click="handleOpenCustomerOpportunityCenter">
+          <el-button v-if="isMockModeEnabled" @click="handleOpenCustomerOpportunityCenter">
             <el-icon><UserFilled /></el-icon>
             客户商机中心
           </el-button>
@@ -75,6 +75,7 @@
             <el-option label="内部" value="internal" />
             <el-option label="外部获取" value="external" />
             <el-option label="人工录入" value="manual" />
+            <el-option label="公共服务平台(CEB)" value="CEB" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -181,6 +182,15 @@
               <el-icon><Download /></el-icon>
               导出
             </el-button>
+            <el-button
+              size="small"
+              type="warning"
+              :loading="crawlerLoading"
+              @click="handleFetchFromCeb"
+            >
+              <el-icon><Refresh /></el-icon>
+              一键获取标讯
+            </el-button>
             <el-radio-group v-model="viewMode" size="small">
               <el-radio-button value="all">全部 ({{ filteredTenders.length }})</el-radio-button>
               <el-radio-button value="new">新建 ({{ newTendersCount }})</el-radio-button>
@@ -234,8 +244,12 @@
           <el-table-column prop="title" label="标讯标题" min-width="280" show-overflow-tooltip>
             <template #default="{ row }">
               <div class="title-cell">
-                <span class="title-text">{{ row.title }}</span>
-                <el-tag v-if="row.aiScore >= 90" size="small" type="success">高匹配</el-tag>
+                <el-link v-if="row.originalUrl" :href="row.originalUrl" target="_blank" type="primary" :underline="false">
+                  <span class="title-text">{{ row.title }}</span>
+                  <el-icon style="margin-left: 4px" size="14"><Link /></el-icon>
+                </el-link>
+                <span v-else class="title-text">{{ row.title }}</span>
+                <el-tag v-if="row.aiScore >= 90" size="small" type="success" style="margin-left: 8px">高匹配</el-tag>
               </div>
             </template>
           </el-table-column>
@@ -1292,6 +1306,7 @@ import { useRouter } from 'vue-router'
 import { useBiddingStore } from '@/stores/bidding'
 import { useUserStore } from '@/stores/user'
 import { tendersApi } from '@/api'
+import { crawlerApi } from '@/api/modules/tenders'
 import {
   Search, Plus, Download, Star, TrendCharts, List, Share, CircleCheck,
   MoreFilled, Check, User, Calendar, Flag, Briefcase, ChatDotRound,
@@ -1334,6 +1349,28 @@ const viewMode = ref('all')
 
 // 移动端检测
 const isMobile = ref(false)
+
+// 爬虫触发
+const crawlerLoading = ref(false)
+const handleFetchFromCeb = async () => {
+  crawlerLoading.value = true
+  try {
+    const res = await crawlerApi.trigger({ keyword: searchForm.value?.keyword || '', pageSize: 20 })
+    if (res?.success || res?.data) {
+      const d = res.data || {}
+      ElMessage.success(`标讯同步完成：新增 ${d.saved ?? 0} 条，跳过 ${d.skipped ?? 0} 条`)
+      // 刷新列表
+      await biddingStore.getTenders()
+    } else {
+      ElMessage.warning(res?.message || '同步完成，但未得到结果')
+    }
+  } catch (e) {
+    ElMessage.error('获取标讯失败，请检查网络或后端服务')
+  } finally {
+    crawlerLoading.value = false
+  }
+}
+
 const checkMobile = () => {
   isMobile.value = window.innerWidth < 768
 }
@@ -1989,16 +2026,20 @@ const getSourceTagType = (source) => {
   const map = {
     internal: 'info',
     external: 'success',
-    manual: 'warning'
+    manual: 'warning',
+    'CEB': 'success',
+    '中国招标投标公共服务平台': 'success'
   }
-  return map[source] || ''
+  return map[source] || 'info'
 }
 
 const getSourceText = (source) => {
   const map = {
     internal: '内部',
     external: '外部获取',
-    manual: '人工录入'
+    manual: '人工录入',
+    'CEB': '公共平台(CEB)',
+    '中国招标投标公共服务平台': '公共平台(CEB)'
   }
   return map[source] || source
 }
@@ -2106,6 +2147,8 @@ const handleViewAllRecommend = () => {
   }
   viewMode.value = 'all'
 }
+
+const isMockModeEnabled = computed(() => isMockMode())
 
 const handleOpenCustomerOpportunityCenter = () => {
   router.push('/bidding/customer-opportunities')

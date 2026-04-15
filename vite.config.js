@@ -34,5 +34,13 @@ export default defineConfig({
   server: {
     port: 1314,
     open: true
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    include: ['src/**/*.{test,spec}.{js,ts,jsx,tsx}'],
+    coverage: {
+      reporter: ['text', 'json', 'html']
+    }
   }
 })

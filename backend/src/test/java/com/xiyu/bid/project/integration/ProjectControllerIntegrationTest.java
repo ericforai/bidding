@@ -7,6 +7,7 @@ import com.xiyu.bid.entity.User;
 import com.xiyu.bid.platform.util.PasswordEncryptionUtil;
 import com.xiyu.bid.repository.ProjectGroupRepository;
 import com.xiyu.bid.repository.ProjectRepository;
+import com.xiyu.bid.repository.RoleProfileRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.service.DataScopeConfigService;
 import com.xiyu.bid.settings.entity.SystemSetting;
@@ -53,6 +54,9 @@ class ProjectControllerIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private RoleProfileRepository roleProfileRepository;
+
+    @Autowired
     private SystemSettingRepository systemSettingRepository;
 
     @Autowired
@@ -63,6 +67,7 @@ class ProjectControllerIntegrationTest {
     private User outsiderUser;
     private User departmentViewerUser;
     private User groupViewerUser;
+    private com.xiyu.bid.entity.RoleProfile defaultProfile;
 
     @TestConfiguration
     static class TestBeans {
@@ -79,6 +84,13 @@ class ProjectControllerIntegrationTest {
         projectRepository.deleteAll();
         systemSettingRepository.deleteAll();
         userRepository.deleteAll();
+        roleProfileRepository.deleteAll();
+
+        defaultProfile = roleProfileRepository.save(com.xiyu.bid.entity.RoleProfile.builder()
+                .code("test-profile")
+                .name("测试权限")
+                .dataScope("self")
+                .build());
 
         managerUser = userRepository.save(User.builder()
                 .username("manager-user")
@@ -86,6 +98,7 @@ class ProjectControllerIntegrationTest {
                 .email("manager@example.com")
                 .fullName("项目经理")
                 .role(User.Role.MANAGER)
+                .roleProfile(defaultProfile)
                 .departmentCode("BID")
                 .departmentName("投标管理部")
                 .enabled(true)
@@ -96,6 +109,7 @@ class ProjectControllerIntegrationTest {
                 .email("staff@example.com")
                 .fullName("项目成员")
                 .role(User.Role.STAFF)
+                .roleProfile(defaultProfile)
                 .departmentCode("TECH")
                 .departmentName("技术部")
                 .enabled(true)
@@ -106,6 +120,7 @@ class ProjectControllerIntegrationTest {
                 .email("outsider@example.com")
                 .fullName("外部人员")
                 .role(User.Role.STAFF)
+                .roleProfile(defaultProfile)
                 .departmentCode("SALES")
                 .departmentName("销售部")
                 .enabled(true)
@@ -116,6 +131,7 @@ class ProjectControllerIntegrationTest {
                 .email("dept-viewer@example.com")
                 .fullName("同部门查看人")
                 .role(User.Role.STAFF)
+                .roleProfile(defaultProfile)
                 .departmentCode("BID")
                 .departmentName("投标管理部")
                 .enabled(true)
@@ -126,6 +142,7 @@ class ProjectControllerIntegrationTest {
                 .email("group-viewer@example.com")
                 .fullName("项目组查看人")
                 .role(User.Role.STAFF)
+                .roleProfile(defaultProfile)
                 .departmentCode("FINANCE")
                 .departmentName("财务部")
                 .enabled(true)

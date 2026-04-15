@@ -13,7 +13,7 @@ import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.QualificationRepository;
 import com.xiyu.bid.repository.TenderRepository;
 import com.xiyu.bid.repository.TemplateRepository;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -345,7 +345,7 @@ class ExcelExportServiceTest {
 
         excelExportService.exportToExcel("tenders", outputPath, null, 1L);
 
-        verify(auditLogService).log(any(com.xiyu.bid.service.AuditLogService.AuditLogEntry.class));
+        verify(auditLogService).log(any(com.xiyu.bid.audit.service.AuditLogService.AuditLogEntry.class));
 
         java.io.File file = outputPath.toFile();
         if (file.exists()) {

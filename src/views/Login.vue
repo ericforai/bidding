@@ -145,8 +145,7 @@
           </el-form-item>
         </el-form>
 
-        <!-- 测试账号提示 -->
-        <div class="test-accounts">
+        <div v-if="showMockAccounts" class="test-accounts">
           <div class="test-header">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
@@ -177,7 +176,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { isMockMode } from '@/api/config'
+import { isMockLoginEnabled } from '@/api/config'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -201,14 +200,16 @@ const loginRules = {
   ]
 }
 
+const showMockAccounts = computed(() => isMockLoginEnabled())
+
 const displayAccounts = computed(() => (
-  isMockMode()
+  showMockAccounts.value
     ? ['小王', '张经理', '李总', '李工']
     : ['lizong（李总）', 'zhangjingli（张经理）', 'xiaowang（小王）']
 ))
 
 const accountHint = computed(() => (
-  isMockMode()
+  showMockAccounts.value
     ? '密码：任意输入即可'
     : 'API 模式请使用已分配的正式账号凭证登录'
 ))

@@ -38,6 +38,20 @@ async function loginViaApi(page, user) {
 
   const responseBody = await response.json()
   await attachRefreshSession(page, extractRefreshToken(response))
+  await page.addInitScript((authData) => {
+    const normalizedUser = {
+      id: authData?.id,
+      name: authData?.fullName || authData?.name || authData?.username,
+      username: authData?.username,
+      email: authData?.email,
+      role: String(authData?.role || '').toLowerCase(),
+      allowedProjectIds: Array.isArray(authData?.allowedProjectIds) ? authData.allowedProjectIds : [],
+      allowedDepts: Array.isArray(authData?.allowedDepts) ? authData.allowedDepts : []
+    }
+
+    sessionStorage.setItem('token', authData?.token || '')
+    sessionStorage.setItem('user', JSON.stringify(normalizedUser))
+  }, responseBody.data)
   return responseBody.data
 }
 

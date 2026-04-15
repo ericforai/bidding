@@ -1,6 +1,16 @@
 package com.xiyu.bid.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,7 +29,8 @@ import java.time.LocalDateTime;
     @Index(name = "idx_tender_status", columnList = "status"),
     @Index(name = "idx_tender_source", columnList = "source"),
     @Index(name = "idx_tender_deadline", columnList = "deadline"),
-    @Index(name = "idx_tender_ai_score", columnList = "ai_score")
+    @Index(name = "idx_tender_ai_score", columnList = "ai_score"),
+    @Index(name = "idx_tender_external_id", columnList = "external_id", unique = true)
 })
 @Getter
 @Setter
@@ -33,6 +44,12 @@ public class Tender {
     private Long id;
 
     /**
+     * 外部唯一标识 (来自 CEB 平台)
+     */
+    @Column(name = "external_id", length = 100, unique = true)
+    private String externalId;
+
+    /**
      * 标题
      */
     @Column(nullable = false, length = 500)
@@ -43,6 +60,12 @@ public class Tender {
      */
     @Column(length = 200)
     private String source;
+
+    /**
+     * 原始链接
+     */
+    @Column(name = "original_url", length = 1000)
+    private String originalUrl;
 
     /**
      * 预算金额
@@ -61,6 +84,7 @@ public class Tender {
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
+    @Builder.Default
     private Tender.Status status = Tender.Status.PENDING;
 
     /**

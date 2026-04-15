@@ -12,7 +12,7 @@ import com.xiyu.bid.collaboration.repository.CommentRepository;
 import com.xiyu.bid.collaboration.repository.CollaborationThreadRepository;
 import com.xiyu.bid.collaboration.service.CollaborationService;
 import com.xiyu.bid.exception.ResourceNotFoundException;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

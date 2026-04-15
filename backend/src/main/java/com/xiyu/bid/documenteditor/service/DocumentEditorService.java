@@ -5,7 +5,16 @@
 package com.xiyu.bid.documenteditor.service;
 
 import com.xiyu.bid.annotation.Auditable;
-import com.xiyu.bid.documenteditor.dto.*;
+import com.xiyu.bid.documenteditor.dto.DocumentReminderDTO;
+import com.xiyu.bid.documenteditor.dto.DocumentSectionDTO;
+import com.xiyu.bid.documenteditor.dto.DocumentStructureDTO;
+import com.xiyu.bid.documenteditor.dto.SectionAssignmentRequest;
+import com.xiyu.bid.documenteditor.dto.SectionCreateRequest;
+import com.xiyu.bid.documenteditor.dto.SectionLockRequest;
+import com.xiyu.bid.documenteditor.dto.SectionReminderRequest;
+import com.xiyu.bid.documenteditor.dto.SectionReorderRequest;
+import com.xiyu.bid.documenteditor.dto.SectionUpdateRequest;
+import com.xiyu.bid.documenteditor.dto.StructureCreateRequest;
 import com.xiyu.bid.documenteditor.entity.DocumentReminder;
 import com.xiyu.bid.documenteditor.entity.DocumentSection;
 import com.xiyu.bid.documenteditor.entity.DocumentSectionAssignment;
@@ -18,14 +27,18 @@ import com.xiyu.bid.documenteditor.repository.DocumentSectionLockRepository;
 import com.xiyu.bid.documenteditor.repository.DocumentSectionRepository;
 import com.xiyu.bid.documenteditor.repository.DocumentStructureRepository;
 import com.xiyu.bid.exception.ResourceNotFoundException;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**

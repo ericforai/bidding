@@ -68,6 +68,10 @@
             <el-icon><DocumentAdd /></el-icon>
             立即投标
           </el-button>
+          <el-button v-if="tender && tender.originalUrl" type="success" size="large" @click="handleViewOriginal">
+            <el-icon><Link /></el-icon>
+            查看官网公告
+          </el-button>
           <el-button size="large" @click="handleFollow">
             <el-icon><StarFilled v-if="isFollowed" /><Star v-else /></el-icon>
             {{ isFollowed ? '已关注' : '加入关注' }}
@@ -220,13 +224,14 @@ import {
   StarFilled,
   Star,
   Share,
+  Link,
   CircleCheckFilled,
   Briefcase,
   Document,
   ArrowRight
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { isMockMode } from '@/api'
+import { tendersApi, isMockMode } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -332,8 +337,17 @@ const relatedCases = computed(() => {
 
 onMounted(async () => {
   const tenderId = route.params.id
-  await biddingStore.getTenders()
-  tender.value = biddingStore.tenders.find(t => t.id === tenderId)
+  try {
+    const result = await tendersApi.getDetail(tenderId)
+    if (result?.success) {
+      tender.value = result.data
+    } else {
+      ElMessage.error(result?.message || '获取标讯详情失败')
+    }
+  } catch (error) {
+    console.error('Failed to fetch tender detail:', error)
+    ElMessage.error('网络请求失败，请稍后重试')
+  }
 })
 
 const getScoreClass = (score) => {
@@ -384,6 +398,14 @@ const handleFollow = () => {
 
 const handleShare = () => {
   ElMessage.success('分享链接已复制到剪贴板')
+}
+
+const handleViewOriginal = () => {
+  if (tender.value && tender.value.originalUrl) {
+    window.open(tender.value.originalUrl, '_blank')
+  } else {
+    ElMessage.warning('该标讯暂无官网公告链接')
+  }
 }
 
 const handleViewCase = (caseId) => {

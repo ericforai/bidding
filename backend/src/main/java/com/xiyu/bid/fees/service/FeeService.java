@@ -12,7 +12,7 @@ import com.xiyu.bid.fees.dto.FeeStatisticsDTO;
 import com.xiyu.bid.fees.dto.FeeUpdateRequest;
 import com.xiyu.bid.fees.entity.Fee;
 import com.xiyu.bid.fees.repository.FeeRepository;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

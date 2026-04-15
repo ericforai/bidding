@@ -210,9 +210,16 @@ export const bidAnalysisApi = {
       })
     }
     if (!isNumericId(tenderId)) return Promise.resolve(invalidIdMessage('tender'))
-
-    const response = await httpClient.post(`/api/tenders/${tenderId}/ai-analysis`)
-    return { ...response, data: normalizeBidAnalysis(response?.data) }
+    try {
+      const response = await httpClient.get(`/api/tenders/${tenderId}/ai-analysis`)
+      return { ...response, data: normalizeBidAnalysis(response?.data) }
+    } catch (error) {
+      if (error?.response?.status !== 404) {
+        throw error
+      }
+      const createResponse = await httpClient.post(`/api/tenders/${tenderId}/ai-analysis`)
+      return { ...createResponse, data: normalizeBidAnalysis(createResponse?.data) }
+    }
   },
 }
 

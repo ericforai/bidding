@@ -3,7 +3,6 @@ package com.xiyu.bid.controller;
 import com.xiyu.bid.dto.AuthResponse;
 import com.xiyu.bid.dto.AuthSessionResult;
 import com.xiyu.bid.dto.LoginRequest;
-import com.xiyu.bid.entity.User;
 import com.xiyu.bid.service.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
@@ -47,7 +46,9 @@ class AuthControllerTest {
                 .username("alice")
                 .email("alice@example.com")
                 .fullName("Alice")
-                .role(User.Role.ADMIN)
+                .role("admin")
+                .roleCode("admin")
+                .roleName("管理员")
                 .build();
 
         when(authService.login(eq(loginRequest("alice", "secret"))))
@@ -99,7 +100,9 @@ class AuthControllerTest {
                 .username("alice")
                 .email("alice@example.com")
                 .fullName("Alice")
-                .role(User.Role.ADMIN)
+                .role("admin")
+                .roleCode("admin")
+                .roleName("管理员")
                 .build();
 
         when(authService.refreshToken(eq("refresh-token")))

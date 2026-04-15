@@ -1,0 +1,70 @@
+// Input: bidding store, mocked tenders API, demo todo/calendar adapters
+// Output: store state and action regression coverage
+// Pos: stores/测试 - bidding store spec
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { setActivePinia, createPinia } from 'pinia'
+import { useBiddingStore } from './bidding'
+import { tendersApi } from '@/api'
+
+// Mock API
+vi.mock('@/api', () => ({
+  tendersApi: {
+    getList: vi.fn()
+  },
+  isMockMode: vi.fn(() => false)
+}))
+
+// Mock frontendDemo
+vi.mock('@/api/mock-adapters/frontendDemo.js', () => ({
+  getDemoCalendar: () => [],
+  getDemoTodos: () => [
+    { id: 1, title: '待办1', priority: 'high' },
+    { id: 2, title: '待办2', priority: 'low' }
+  ]
+}))
+
+describe('Bidding Store', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('初始状态应该正确', () => {
+    const store = useBiddingStore()
+    expect(store.tenders).toEqual([])
+    expect(store.todos).has.length(2)
+  })
+
+  it('getters: highPriorityTenders 应该只返回评分 >= 85 的标讯', () => {
+    const store = useBiddingStore()
+    store.tenders = [
+      { id: 1, aiScore: 90 },
+      { id: 2, aiScore: 70 },
+      { id: 3, aiScore: 85 }
+    ]
+    expect(store.highPriorityTenders).has.length(2)
+    expect(store.highPriorityTenders.map(t => t.id)).contains(1, 3)
+  })
+
+  it('actions: getTenders 成功时应该更新 tenders', async () => {
+    const store = useBiddingStore()
+    const tenderRows = [{ id: 1, title: '测试标讯' }]
+    tendersApi.getList.mockResolvedValue({ success: true, data: tenderRows })
+
+    await store.getTenders()
+
+    expect(store.tenders).toEqual(tenderRows)
+    expect(tendersApi.getList).toHaveBeenCalledOnce()
+  })
+
+  it('actions: updateTenderStatus 应该更新本地状态', () => {
+    const store = useBiddingStore()
+    store.tenders = [{ id: '100', status: 'new' }]
+    
+    store.updateTenderStatus('100', 'following')
+    
+    expect(store.tenders[0].status).toBe('following')
+  })
+})

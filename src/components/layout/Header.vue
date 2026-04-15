@@ -16,7 +16,7 @@
       </div>
     </div>
 
-    <div class="header-center" v-if="!isMobile">
+    <div class="header-center" v-if="!isMobile && !isApiDeliveryMode">
       <el-input
         v-model="searchKeyword"
         placeholder="搜索标讯、项目、知识..."
@@ -28,14 +28,14 @@
     </div>
 
     <!-- 移动端搜索按钮 -->
-    <div class="header-center-mobile" v-else>
+    <div class="header-center-mobile" v-else-if="!isApiDeliveryMode">
       <el-icon class="mobile-search-icon" @click="showMobileSearch = true">
         <Search />
       </el-icon>
     </div>
 
     <div class="header-right">
-      <el-tooltip content="通知" placement="bottom">
+      <el-tooltip v-if="!isApiDeliveryMode" content="通知" placement="bottom">
         <el-badge :value="unreadCount" :hidden="unreadCount === 0" class="notification-badge">
           <el-icon class="header-icon" @click="handleNotification">
             <Bell />
@@ -66,7 +66,7 @@
               <el-icon><Refresh /></el-icon>
               切换角色
             </el-dropdown-item>
-            <el-dropdown-item command="profile">
+            <el-dropdown-item v-if="!isApiDeliveryMode" command="profile">
               <el-icon><User /></el-icon>
               个人中心
             </el-dropdown-item>
@@ -130,6 +130,7 @@
 
     <!-- 移动端搜索弹窗 -->
     <el-dialog
+      v-if="!isApiDeliveryMode"
       v-model="showMobileSearch"
       title="搜索"
       :width="isMobile ? '90%' : '500px'"
@@ -162,6 +163,7 @@ import {
   Search, Bell, ArrowDown, User, Setting,
   SwitchButton, Expand, Fold, Refresh, Menu, Check, Close
 } from '@element-plus/icons-vue'
+import { isMockMode } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { hasMenuAccessForRole } from '@/api/modules/settings'
 
@@ -176,9 +178,10 @@ const emit = defineEmits(['toggleCollapse', 'mobileMenuClick'])
 
 const router = useRouter()
 const userStore = useUserStore()
+const isApiDeliveryMode = computed(() => !isMockMode())
 
 const searchKeyword = ref('')
-const unreadCount = ref(3)
+const unreadCount = ref(isApiDeliveryMode.value ? 0 : 3)
 const roleDialogVisible = ref(false)
 const selectedUserId = ref('')
 const showMobileSearch = ref(false)
@@ -213,11 +216,23 @@ const userAvatar = computed(() => {
   return name.charAt(0).toUpperCase()
 })
 const userName = computed(() => userStore.currentUser?.name || '游客')
-const userRoleText = computed(() => roleTextMap[userStore.userRole] || '游客')
+const userRoleText = computed(() => userStore.currentUser?.roleName || roleTextMap[userStore.userRole] || '游客')
 const allUsers = computed(() => userStore.users || [])
 const canAccessSettings = computed(() => {
   const decision = hasMenuAccessForRole(userStore.userRole, ['settings'])
-  return decision === null ? userStore.userRole === 'admin' : decision
+  if (decision !== null) {
+    return decision
+  }
+  const currentPermissions = Array.isArray(userStore.currentUser?.menuPermissions)
+    ? userStore.currentUser.menuPermissions
+    : []
+  if (currentPermissions.includes('all')) {
+    return true
+  }
+  if (currentPermissions.length > 0) {
+    return currentPermissions.includes('settings')
+  }
+  return userStore.userRole === 'admin'
 })
 
 const handleToggle = () => {
@@ -229,6 +244,7 @@ const handleMobileMenuClick = () => {
 }
 
 const handleSearch = () => {
+  if (isApiDeliveryMode.value) return
   if (searchKeyword.value.trim()) {
     ElMessage.info(`搜索: ${searchKeyword.value}`)
     // TODO: 实现全局搜索功能
@@ -236,6 +252,7 @@ const handleSearch = () => {
 }
 
 const handleMobileSearch = () => {
+  if (isApiDeliveryMode.value) return
   if (searchKeyword.value.trim()) {
     ElMessage.info(`搜索: ${searchKeyword.value}`)
     showMobileSearch.value = false
@@ -244,6 +261,7 @@ const handleMobileSearch = () => {
 }
 
 const handleNotification = () => {
+  if (isApiDeliveryMode.value) return
   ElMessage.info('通知中心')
   unreadCount.value = 0
 }
@@ -255,7 +273,9 @@ const handleCommand = async (command) => {
       selectedUserId.value = userStore.currentUser?.id || ''
       break
     case 'profile':
-      ElMessage.info('个人中心')
+      if (!isApiDeliveryMode.value) {
+        ElMessage.info('个人中心')
+      }
       break
     case 'settings':
       if (canAccessSettings.value) {

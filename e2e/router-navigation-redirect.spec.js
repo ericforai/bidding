@@ -110,17 +110,14 @@ test.describe('router navigation redirect', () => {
     })
 
     // Trigger an API call that would return 401
-    await page.evaluate(() => {
-      // Simulate an API call happening while on login page
-      fetch('/api/auth/me')
-        .then(() => {})
-        .catch(() => {})
-    })
+    const [response] = await Promise.all([
+      page.waitForResponse(res => res.url().includes('/api/auth/me') && res.status() === 401),
+      page.evaluate(() => {
+        fetch('/api/auth/me').catch(() => {})
+      })
+    ])
 
-    // Wait a bit to ensure no redirect happens
-    await page.waitForTimeout(1000)
-
-    // Verify we're still on login page (no redirect loop)
+    // After the 401 response is processed, verify we're still on login page
     await expect(page).toHaveURL(/\/login$/)
   })
 

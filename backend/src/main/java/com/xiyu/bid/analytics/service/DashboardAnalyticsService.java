@@ -5,7 +5,24 @@
 
 package com.xiyu.bid.analytics.service;
 
-import com.xiyu.bid.analytics.dto.*;
+import com.xiyu.bid.analytics.dto.AnalyticsDrillDownFileDTO;
+import com.xiyu.bid.analytics.dto.AnalyticsDrillDownFiltersDTO;
+import com.xiyu.bid.analytics.dto.AnalyticsDrillDownProjectDTO;
+import com.xiyu.bid.analytics.dto.AnalyticsDrillDownResponse;
+import com.xiyu.bid.analytics.dto.AnalyticsDrillDownResponseDTO;
+import com.xiyu.bid.analytics.dto.AnalyticsDrillDownRowDTO;
+import com.xiyu.bid.analytics.dto.AnalyticsDrillDownStatsDTO;
+import com.xiyu.bid.analytics.dto.AnalyticsDrillDownSummaryDTO;
+import com.xiyu.bid.analytics.dto.AnalyticsDrillDownTeamDTO;
+import com.xiyu.bid.analytics.dto.AnalyticsFilterDimensionDTO;
+import com.xiyu.bid.analytics.dto.AnalyticsFilterOptionDTO;
+import com.xiyu.bid.analytics.dto.AnalyticsPaginationDTO;
+import com.xiyu.bid.analytics.dto.CompetitorData;
+import com.xiyu.bid.analytics.dto.DashboardOverviewDTO;
+import com.xiyu.bid.analytics.dto.ProductLineData;
+import com.xiyu.bid.analytics.dto.RegionalData;
+import com.xiyu.bid.analytics.dto.SummaryStats;
+import com.xiyu.bid.analytics.dto.TrendData;
 import com.xiyu.bid.analytics.repository.DashboardAnalyticsRepository;
 import com.xiyu.bid.documentexport.entity.DocumentExport;
 import com.xiyu.bid.documentexport.repository.DocumentExportRepository;
@@ -30,7 +47,20 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -525,7 +555,7 @@ public class DashboardAnalyticsService {
                             .id(userId)
                             .title(user != null ? user.getFullName() : fallbackUserName(userId))
                             .subtitle(user != null ? user.getEmail() : "-")
-                            .role(user != null ? user.getRole().name() : "UNKNOWN")
+                            .role(user != null ? user.getRoleCode().toUpperCase(Locale.ROOT) : "UNKNOWN")
                             .count(aggregate.projectCount)
                             .wonCount(aggregate.wonCount)
                             .activeProjectCount(aggregate.activeProjectCount)
@@ -818,7 +848,7 @@ public class DashboardAnalyticsService {
 
                     return AnalyticsDrillDownTeamDTO.builder()
                             .name(user != null ? user.getFullName() : fallbackUserName(userId))
-                            .role(user != null ? user.getRole().name().toLowerCase(Locale.ROOT) : "member")
+                            .role(user != null ? user.getRoleCode().toLowerCase(Locale.ROOT) : "member")
                             .dept("-")
                             .participation(participation)
                             .winRate(winRate)
@@ -904,7 +934,7 @@ public class DashboardAnalyticsService {
 
                     return AnalyticsDrillDownTeamDTO.builder()
                             .name(user != null ? user.getFullName() : ("用户" + userId))
-                            .role(user != null ? user.getRole().name().toLowerCase(Locale.ROOT) : "member")
+                            .role(user != null ? user.getRoleCode().toLowerCase(Locale.ROOT) : "member")
                             .dept("-")
                             .participation(participation)
                             .winRate(winRate)

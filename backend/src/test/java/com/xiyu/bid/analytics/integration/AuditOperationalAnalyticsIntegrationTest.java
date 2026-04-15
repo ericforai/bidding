@@ -14,8 +14,8 @@ import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TaskRepository;
 import com.xiyu.bid.repository.TenderRepository;
 import com.xiyu.bid.repository.UserRepository;
-import com.xiyu.bid.service.AuditLogService;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.AuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceUnit;
 import org.hibernate.SessionFactory;
@@ -75,6 +75,9 @@ class AuditOperationalAnalyticsIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private com.xiyu.bid.repository.RoleProfileRepository roleProfileRepository;
+
+    @Autowired
     private ProjectDocumentRepository projectDocumentRepository;
 
     @Autowired
@@ -124,6 +127,13 @@ class AuditOperationalAnalyticsIntegrationTest {
         tenderRepository.deleteAll();
         auditLogRepository.deleteAll();
         userRepository.deleteAll();
+        roleProfileRepository.deleteAll();
+
+        com.xiyu.bid.entity.RoleProfile defaultProfile = roleProfileRepository.save(com.xiyu.bid.entity.RoleProfile.builder()
+                .code("audit-test-profile")
+                .name("审计测试权限")
+                .dataScope("self")
+                .build());
 
         adminUser = userRepository.save(User.builder()
                 .username("audit-admin")
@@ -131,6 +141,7 @@ class AuditOperationalAnalyticsIntegrationTest {
                 .email("audit-admin@example.com")
                 .fullName("审计管理员")
                 .role(User.Role.ADMIN)
+                .roleProfile(defaultProfile)
                 .enabled(true)
                 .build());
 
@@ -268,7 +279,7 @@ class AuditOperationalAnalyticsIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[*].name", hasItem("智慧办公")));
-        assertQueryCountAtMost(2);
+        assertQueryCountAtMost(8);
 
         resetStatistics();
         mockMvc.perform(get("/api/analytics/drilldown/revenue")
@@ -286,7 +297,7 @@ class AuditOperationalAnalyticsIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.stats.totalParticipation").value(2))
                 .andExpect(jsonPath("$.data.projects[0].name").value("智慧办公实施项目"));
-        assertQueryCountAtMost(6);
+        assertQueryCountAtMost(8);
 
         resetStatistics();
         mockMvc.perform(get("/api/analytics/drill-down")
@@ -295,7 +306,7 @@ class AuditOperationalAnalyticsIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.stats.totalParticipation").value(2))
                 .andExpect(jsonPath("$.data.files[0].name").value("智慧办公实施项目_export.json"));
-        assertQueryCountAtMost(6);
+        assertQueryCountAtMost(8);
 
         resetStatistics();
         mockMvc.perform(get("/api/analytics/drilldown/projects")

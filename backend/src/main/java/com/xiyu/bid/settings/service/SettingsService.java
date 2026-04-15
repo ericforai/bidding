@@ -81,7 +81,7 @@ public class SettingsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        String roleCode = user.getRole().name().toLowerCase();
+        String roleCode = user.getRoleCode();
         SettingsResponse.RoleSetting roleSetting = readSettings().getRoles().stream()
                 .filter(role -> roleCode.equalsIgnoreCase(role.getCode()))
                 .findFirst()

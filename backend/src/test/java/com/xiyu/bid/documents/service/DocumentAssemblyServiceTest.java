@@ -9,7 +9,7 @@ import com.xiyu.bid.documents.entity.DocumentAssembly;
 import com.xiyu.bid.documents.repository.AssemblyTemplateRepository;
 import com.xiyu.bid.documents.repository.DocumentAssemblyRepository;
 import com.xiyu.bid.exception.ResourceNotFoundException;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

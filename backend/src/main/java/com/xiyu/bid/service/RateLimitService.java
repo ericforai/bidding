@@ -2,16 +2,12 @@
 // Output: 限流判断与计数结果
 // Pos: Service/基础设施支撑层
 // 维护声明: 仅维护限流实现；登录策略调整请同步 SecurityConfig 与 Filter.
-// Input: Redis 连接、限流配置和请求标识
-// Output: 限流判断与计数结果
-// Pos: Service/基础设施支撑层
-// 维护声明: 仅维护限流实现；登录策略调整请同步 SecurityConfig 与 Filter.
 package com.xiyu.bid.service;
 
 import com.xiyu.bid.config.ExportConfig;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -21,14 +17,28 @@ import java.time.Duration;
  * Uses Redis to track export counts per user.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class RateLimitService {
 
-    private final RedisTemplate<String, String> redisTemplate;
+    private StringRedisTemplate redisTemplate;
     private final ExportConfig exportConfig;
 
     private static final String EXPORT_RATE_LIMIT_KEY_PREFIX = "export:rateLimit:user:";
+
+    public RateLimitService(ExportConfig exportConfig) {
+        this.redisTemplate = null;
+        this.exportConfig = exportConfig;
+    }
+
+    @Autowired(required = false)
+    public void setRedisTemplate(StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
+        if (redisTemplate != null) {
+            log.info("Rate limit service wired with Redis template");
+        } else {
+            log.info("Rate limit service running without Redis template");
+        }
+    }
 
     /**
      * Check if the user has exceeded their export rate limit.
@@ -40,6 +50,10 @@ public class RateLimitService {
         if (userId == null) {
             // If we can't identify the user, allow the request but log it
             log.warn("Rate limit check: userId is null, allowing request");
+            return true;
+        }
+        if (redisTemplate == null) {
+            log.debug("Rate limit check: Redis unavailable, allowing request for user {}", userId);
             return true;
         }
 
@@ -69,7 +83,7 @@ public class RateLimitService {
 
             return true;
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             // If Redis is unavailable, fail open (allow the request)
             log.error("Rate limit check failed for user {}: {}", userId, e.getMessage());
             return true;
@@ -83,7 +97,7 @@ public class RateLimitService {
      * @param userId The ID of the user whose limit should be reset
      */
     public void resetRateLimit(Long userId) {
-        if (userId == null) {
+        if (userId == null || redisTemplate == null) {
             return;
         }
 
@@ -91,7 +105,7 @@ public class RateLimitService {
             String key = EXPORT_RATE_LIMIT_KEY_PREFIX + userId;
             redisTemplate.delete(key);
             log.info("Rate limit reset for user: {}", userId);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Failed to reset rate limit for user {}: {}", userId, e.getMessage());
         }
     }
@@ -103,7 +117,7 @@ public class RateLimitService {
      * @return The number of exports in the current time window
      */
     public long getCurrentExportCount(Long userId) {
-        if (userId == null) {
+        if (userId == null || redisTemplate == null) {
             return 0;
         }
 
@@ -111,7 +125,7 @@ public class RateLimitService {
             String key = EXPORT_RATE_LIMIT_KEY_PREFIX + userId;
             String count = redisTemplate.opsForValue().get(key);
             return count != null ? Long.parseLong(count.toString()) : 0;
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Failed to get export count for user {}: {}", userId, e.getMessage());
             return 0;
         }

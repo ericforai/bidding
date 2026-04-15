@@ -54,7 +54,7 @@ public class AuditLogService implements IAuditLogService {
             AuditLog auditLog = buildAuditLog(entry);
             auditLogRepository.save(auditLog);
             log.debug("Audit log saved: {}", auditLog.getAction());
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Failed to save audit log", e);
         }
     }
@@ -66,7 +66,7 @@ public class AuditLogService implements IAuditLogService {
         try {
             AuditLog auditLog = buildAuditLog(entry);
             return auditLogRepository.save(auditLog);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Failed to save audit log synchronously", e);
             throw new RuntimeException("Failed to create audit log", e);
         }
@@ -365,7 +365,7 @@ public class AuditLogService implements IAuditLogService {
         if (user == null || user.getRole() == null) {
             return "unknown";
         }
-        return user.getRole().name().toLowerCase(Locale.ROOT);
+        return user.getRoleCode().toLowerCase(Locale.ROOT);
     }
 
     private String normalizeAction(String action) {

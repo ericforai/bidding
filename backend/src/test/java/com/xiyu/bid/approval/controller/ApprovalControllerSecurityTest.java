@@ -2,7 +2,7 @@ package com.xiyu.bid.approval.controller;
 
 import com.xiyu.bid.approval.service.ApprovalWorkflowService;
 import com.xiyu.bid.entity.User;
-import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.service.AuthService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -11,8 +11,6 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.lang.reflect.Method;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -20,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ApprovalControllerSecurityTest {
 
     @Mock
-    private UserRepository userRepository;
+    private AuthService authService;
 
     @Test
     void getUserIdFromDetails_ResolvesPersistedUserByUsername() throws Exception {
@@ -38,7 +36,7 @@ class ApprovalControllerSecurityTest {
                 .enabled(true)
                 .build();
 
-        org.mockito.Mockito.when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+        org.mockito.Mockito.when(authService.resolveUserByUsername("alice")).thenReturn(user);
 
         Method method = ApprovalController.class.getDeclaredMethod(
                 "getUserIdFromDetails",
@@ -46,7 +44,7 @@ class ApprovalControllerSecurityTest {
         );
         method.setAccessible(true);
 
-        ApprovalController controller = new ApprovalController((ApprovalWorkflowService) null, userRepository);
+        ApprovalController controller = new ApprovalController((ApprovalWorkflowService) null, authService);
 
         Long userId = (Long) method.invoke(controller, userDetails);
 
@@ -60,7 +58,8 @@ class ApprovalControllerSecurityTest {
                 .authorities("ROLE_STAFF")
                 .build();
 
-        org.mockito.Mockito.when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
+        org.mockito.Mockito.when(authService.resolveUserByUsername("ghost"))
+                .thenThrow(new org.springframework.security.core.userdetails.UsernameNotFoundException("ghost"));
 
         Method method = ApprovalController.class.getDeclaredMethod(
                 "getUserIdFromDetails",
@@ -68,7 +67,7 @@ class ApprovalControllerSecurityTest {
         );
         method.setAccessible(true);
 
-        ApprovalController controller = new ApprovalController((ApprovalWorkflowService) null, userRepository);
+        ApprovalController controller = new ApprovalController((ApprovalWorkflowService) null, authService);
 
         assertThatThrownBy(() -> method.invoke(controller, userDetails))
                 .hasCauseExactlyInstanceOf(AuthenticationServiceException.class)

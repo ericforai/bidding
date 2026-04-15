@@ -15,10 +15,18 @@ import com.xiyu.bid.entity.Case;
 import com.xiyu.bid.repository.CaseRepository;
 import com.xiyu.bid.entity.Template;
 import com.xiyu.bid.repository.TemplateRepository;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -475,10 +483,10 @@ public class ExcelExportService {
         }
 
         try {
-            auditLogService.log(com.xiyu.bid.service.AuditLogService.AuditLogEntry.builder()
+            auditLogService.log(com.xiyu.bid.audit.service.AuditLogService.AuditLogEntry.builder()
                     .userId(userId != null ? String.valueOf(userId) : "system")
                     .action("EXPORT")
-                    .entityType(dataType.toUpperCase())
+                    .entityType(dataType.toUpperCase(java.util.Locale.ROOT))
                     .entityId(null)
                     .description(String.format("Export %s: %d records, %d bytes",
                         dataType, recordCount, fileSize))
@@ -488,7 +496,7 @@ public class ExcelExportService {
 
             log.info("Export audit: user={}, type={}, records={}, size={}, success={}, duration={}ms",
                 userId, dataType, recordCount, fileSize, success, duration);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Failed to log export operation: {}", e.getMessage(), e);
         }
     }

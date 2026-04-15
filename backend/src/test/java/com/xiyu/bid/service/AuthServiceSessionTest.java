@@ -4,6 +4,7 @@ import com.xiyu.bid.auth.JwtUtil;
 import com.xiyu.bid.dto.AuthSessionResult;
 import com.xiyu.bid.dto.LoginRequest;
 import com.xiyu.bid.entity.RefreshSession;
+import com.xiyu.bid.entity.RoleProfile;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.RefreshSessionRepository;
 import com.xiyu.bid.repository.UserRepository;
@@ -50,6 +51,12 @@ class AuthServiceSessionTest {
     @Mock
     private ProjectAccessScopeService projectAccessScopeService;
 
+    @Mock
+    private DataScopeConfigService dataScopeConfigService;
+
+    @Mock
+    private RoleProfileService roleProfileService;
+
     private AuthService authService;
     private User user;
 
@@ -59,9 +66,11 @@ class AuthServiceSessionTest {
                 userRepository,
                 refreshSessionRepository,
                 projectAccessScopeService,
+                dataScopeConfigService,
                 passwordEncoder,
                 jwtUtil,
-                authenticationManager
+                authenticationManager,
+                roleProfileService
         );
         ReflectionTestUtils.setField(authService, "refreshExpiration", 7_200_000L);
 
@@ -72,6 +81,7 @@ class AuthServiceSessionTest {
                 .email("alice@example.com")
                 .fullName("Alice")
                 .role(User.Role.ADMIN)
+                .roleProfile(RoleProfile.builder().id(1L).code("admin").name("管理员").build())
                 .enabled(true)
                 .build();
     }
@@ -86,6 +96,7 @@ class AuthServiceSessionTest {
         when(jwtUtil.generateAccessToken("alice")).thenReturn("access-token");
         when(projectAccessScopeService.getAllowedProjectIds(user)).thenReturn(List.of(8L, 9L));
         when(projectAccessScopeService.getAllowedDepartmentCodes(user)).thenReturn(List.of("SALES"));
+        when(dataScopeConfigService.getRoleMenuPermissions(user)).thenReturn(List.of("all"));
         when(refreshSessionRepository.save(any(RefreshSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         AuthSessionResult result = authService.login(request);
@@ -114,6 +125,7 @@ class AuthServiceSessionTest {
         when(jwtUtil.generateAccessToken("alice")).thenReturn("new-access-token");
         when(projectAccessScopeService.getAllowedProjectIds(user)).thenReturn(List.of(99L));
         when(projectAccessScopeService.getAllowedDepartmentCodes(user)).thenReturn(List.of("BID"));
+        when(dataScopeConfigService.getRoleMenuPermissions(user)).thenReturn(List.of("all"));
         when(refreshSessionRepository.save(any(RefreshSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         AuthSessionResult result = authService.refreshToken("old-refresh-token");

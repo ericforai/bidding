@@ -4,8 +4,8 @@
 // 维护声明: 仅维护横切审计逻辑；不要在此层承载业务规则.
 package com.xiyu.bid.aspect;
 
-import com.xiyu.bid.service.AuditLogService;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.AuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -57,7 +57,11 @@ public class AuditableAspect {
             result = joinPoint.proceed();
             success = true;
             return result;
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
+            success = false;
+            errorMessage = e.getMessage();
+            throw e;
+        } catch (Error e) {
             success = false;
             errorMessage = e.getMessage();
             throw e;

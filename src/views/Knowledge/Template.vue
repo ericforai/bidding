@@ -1754,8 +1754,8 @@ const loadTemplates = async () => {
       pagination.total = 0
       featurePlaceholder.value = notifyFeatureUnavailable(result, {
         fallback: {
-          title: '模板库暂未接入',
-          hint: '模板相关页面已切换为统一占位态，不再把未接入能力当成空数据。',
+          title: '模板库当前不可用',
+          hint: '当前无法加载模板列表，请稍后重试或联系管理员检查知识库服务。',
         },
       })
       if (!featurePlaceholder.value && result?.message) {
@@ -2168,8 +2168,8 @@ const handleMoreAction = async (command, row) => {
           versionHistory.value = []
           versionPlaceholder.value = notifyFeatureUnavailable(versionResult, {
             fallback: {
-              title: '版本历史暂未接入',
-              hint: '后端补齐模板版本接口后，这里会展示真实版本轨迹。',
+              title: '版本历史当前不可用',
+              hint: '当前无法加载模板版本轨迹，可继续使用模板主体能力。',
             },
           })
           versionDialogVisible.value = true

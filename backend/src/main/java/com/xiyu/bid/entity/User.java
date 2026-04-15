@@ -1,6 +1,18 @@
 package com.xiyu.bid.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,12 +41,19 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(length = 32)
+    private String phone;
+
     @Column(nullable = false)
     private String fullName;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id", nullable = true)
+    private RoleProfile roleProfile;
 
     @Column(nullable = false)
     @Builder.Default
@@ -70,6 +89,35 @@ public class User {
     public enum Role {
         ADMIN,
         MANAGER,
-        STAFF
+        STAFF;
+
+        public static Role fromCode(String code) {
+            if (code == null || code.isBlank()) {
+                return STAFF;
+            }
+            return switch (code.trim().toLowerCase(java.util.Locale.ROOT)) {
+                case "admin" -> ADMIN;
+                case "manager" -> MANAGER;
+                default -> STAFF;
+            };
+        }
+    }
+
+    public String getRoleCode() {
+        if (roleProfile != null && roleProfile.getCode() != null && !roleProfile.getCode().isBlank()) {
+            return roleProfile.getCode().trim().toLowerCase(java.util.Locale.ROOT);
+        }
+        return role == null ? "staff" : role.name().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    public String getRoleName() {
+        if (roleProfile != null && roleProfile.getName() != null && !roleProfile.getName().isBlank()) {
+            return roleProfile.getName();
+        }
+        return switch (getRole()) {
+            case ADMIN -> "管理员";
+            case MANAGER -> "经理";
+            case STAFF -> "员工";
+        };
     }
 }

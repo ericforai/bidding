@@ -1,5 +1,8 @@
 <template>
   <div class="workbench">
+    <div class="page-identity">
+      <span class="page-kicker">工作台</span>
+    </div>
     <!-- 欢迎横幅 - 角色化 -->
     <div class="welcome-banner" :class="'banner-' + currentUserRole">
       <div class="banner-content">
@@ -811,6 +814,62 @@
       :approval-info="currentApprovalItem"
       @success="handleApprovalSuccess"
     />
+
+    <el-dialog
+      v-model="supportRequestDialogVisible"
+      title="标书支持申请"
+      width="640px"
+      destroy-on-close
+    >
+      <el-form :model="supportRequestForm" label-width="110px">
+        <el-form-item label="关联项目" required>
+          <el-select
+            v-model="supportRequestForm.projectId"
+            filterable
+            placeholder="请选择投标项目"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="project in supportRequestProjects"
+              :key="project.id"
+              :label="project.name"
+              :value="project.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="申请类型" required>
+          <el-select v-model="supportRequestForm.type" style="width: 100%">
+            <el-option label="技术支持" value="technical_support" />
+            <el-option label="商务支持" value="commercial_support" />
+            <el-option label="综合支持" value="bid_support" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="期望完成时间">
+          <el-date-picker
+            v-model="supportRequestForm.dueDate"
+            type="datetime"
+            placeholder="请选择期望完成时间"
+            style="width: 100%"
+            value-format="YYYY-MM-DDTHH:mm:ss"
+          />
+        </el-form-item>
+        <el-form-item label="需求说明" required>
+          <el-input
+            v-model="supportRequestForm.description"
+            type="textarea"
+            :rows="5"
+            maxlength="500"
+            show-word-limit
+            placeholder="请说明需要的支持内容、交付物和时间要求"
+          />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="supportRequestDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="supportRequestSubmitting" @click="submitSupportRequest">提交申请</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -819,7 +878,7 @@ import { ref, computed, onMounted, markRaw, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useBiddingStore } from '@/stores/bidding'
-import { approvalApi, isMockMode } from '@/api'
+import { approvalApi, isMockMode, projectsApi } from '@/api'
 import { tasksApi } from '@/api/modules/dashboard.js'
 import {
   Plus, DataAnalysis, ArrowRight, Calendar, User, Clock, Check,
@@ -1250,6 +1309,15 @@ const pendingApprovals = ref([])
 const approvalDialogVisible = ref(false)
 const approvalMode = ref('approve')
 const currentApprovalItem = ref({})
+const supportRequestDialogVisible = ref(false)
+const supportRequestSubmitting = ref(false)
+const supportRequestProjects = ref([])
+const supportRequestForm = ref({
+  projectId: null,
+  type: 'bid_support',
+  dueDate: '',
+  description: ''
+})
 
 // ========== 销售经理数据 (小王) ==========
 const hotTenders = ref([
@@ -1354,6 +1422,7 @@ const handleReject = (item) => {
 
 const handleApprovalSuccess = async () => {
   await loadPendingApprovals()
+  await loadMyProcesses()
 }
 
 async function loadPendingApprovals() {
@@ -1369,6 +1438,97 @@ async function loadPendingApprovals() {
   } catch (error) {
     console.error('加载待审批事项失败:', error)
     pendingApprovals.value = []
+  }
+}
+
+const approvalStatusToProcessStatus = (status) => {
+  const normalized = String(status || '').toUpperCase()
+  if (normalized === 'APPROVED') return 'in-progress'
+  if (normalized === 'REJECTED' || normalized === 'CANCELLED') return 'urgent'
+  return 'pending'
+}
+
+async function loadMyProcesses() {
+  if (isMockMode()) {
+    return
+  }
+
+  try {
+    const result = await approvalApi.getMyApprovals({ page: 0, size: 8 })
+    myProcesses.value = Array.isArray(result?.data) ? result.data.map((item) => ({
+      id: item.id,
+      title: item.title || `${item.projectName} - ${item.typeName}`,
+      status: approvalStatusToProcessStatus(item.status),
+      description: item.description || '暂无说明',
+      progress: item.status === 'APPROVED' ? 100 : item.status === 'PENDING' ? 55 : 0,
+      time: item.submittedAt || item.submitTime || item.time || ''
+    })) : []
+  } catch (error) {
+    console.error('加载我的流程失败:', error)
+    myProcesses.value = []
+  }
+}
+
+async function loadSupportRequestProjects() {
+  try {
+    const result = await projectsApi.getList()
+    if (!result?.success || !Array.isArray(result?.data)) {
+      throw new Error(result?.message || '加载项目列表失败')
+    }
+    supportRequestProjects.value = result.data
+      .map((item) => ({
+        id: Number(item.id),
+        name: item.name || item.projectName || `项目#${item.id}`
+      }))
+      .filter((item) => Number.isFinite(item.id))
+  } catch (error) {
+    console.error('加载支持申请项目失败:', error)
+    supportRequestProjects.value = []
+  }
+}
+
+const resetSupportRequestForm = () => {
+  supportRequestForm.value = {
+    projectId: supportRequestProjects.value[0]?.id || null,
+    type: 'bid_support',
+    dueDate: '',
+    description: ''
+  }
+}
+
+async function submitSupportRequest() {
+  if (!supportRequestForm.value.projectId) {
+    ElMessage.warning('请选择关联项目')
+    return
+  }
+  if (!supportRequestForm.value.description.trim()) {
+    ElMessage.warning('请填写需求说明')
+    return
+  }
+
+  const selectedProject = supportRequestProjects.value.find((item) => item.id === Number(supportRequestForm.value.projectId))
+  supportRequestSubmitting.value = true
+  try {
+    const result = await approvalApi.submitApproval({
+      projectId: Number(supportRequestForm.value.projectId),
+      projectName: selectedProject?.name || `项目#${supportRequestForm.value.projectId}`,
+      approvalType: supportRequestForm.value.type,
+      title: `${selectedProject?.name || '当前项目'} - 标书支持申请`,
+      description: supportRequestForm.value.description.trim(),
+      dueDate: supportRequestForm.value.dueDate || null,
+      priority: 1
+    })
+    if (!result?.success) {
+      throw new Error(result?.message || '提交标书支持申请失败')
+    }
+    ElMessage.success('标书支持申请已提交')
+    supportRequestDialogVisible.value = false
+    await Promise.all([loadPendingApprovals(), loadMyProcesses()])
+    resetSupportRequestForm()
+  } catch (error) {
+    ElMessage.error(error?.message || '提交标书支持申请失败')
+  } finally {
+    supportRequestSubmitting.value = false
   }
 }
 
@@ -1414,17 +1574,24 @@ const handleReview = (review) => {
   ElMessage.info(`打开评审: ${review.title}`)
 }
 
+const isMockModeEnabled = computed(() => isMockMode())
+
 // 快速发起处理
 const handleQuickAction = (type) => {
   switch (type) {
     case 'support':
-      ElMessage.info('发起标书支持申请')
+      supportRequestDialogVisible.value = true
+      if (supportRequestProjects.value.length === 0) {
+        loadSupportRequestProjects().then(resetSupportRequestForm)
+      } else {
+        resetSupportRequestForm()
+      }
       break
     case 'borrow':
       router.push('/knowledge/qualification')
       break
     case 'expense':
-      ElMessage.info('发起投标费用申请')
+      router.push('/resource/expense')
       break
   }
 }
@@ -1656,7 +1823,10 @@ const handleCalendarAction = (event) => {
 onMounted(async () => {
   await biddingStore.getCalendar()
   await loadPendingApprovals()
+  await loadMyProcesses()
+  await loadSupportRequestProjects()
   await loadPriorityTodos()
+  resetSupportRequestForm()
   selectedDateKey.value = formatDateKey(new Date())
   const firstUpcomingEvent = normalizedCalendarEvents.value
     .filter((event) => event.diffDays >= 0)
@@ -1770,6 +1940,19 @@ export default {
   padding: 24px;
   background: #F8FAFC;
   min-height: 100%;
+}
+
+.page-identity {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.page-kicker {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  letter-spacing: 0.08em;
 }
 
 /* ==================== 欢迎横幅 ==================== */

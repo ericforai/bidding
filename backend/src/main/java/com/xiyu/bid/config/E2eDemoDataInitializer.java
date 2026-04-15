@@ -5,7 +5,10 @@
 package com.xiyu.bid.config;
 
 import com.xiyu.bid.entity.User;
+import com.xiyu.bid.repository.RoleProfileRepository;
 import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.entity.RoleProfileCatalog;
+import com.xiyu.bid.service.RoleProfileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -25,10 +28,13 @@ public class E2eDemoDataInitializer implements ApplicationRunner {
     private static final String DEMO_PASSWORD = "123456";
 
     private final UserRepository userRepository;
+    private final RoleProfileRepository roleProfileRepository;
+    private final RoleProfileService roleProfileService;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(ApplicationArguments args) {
+        roleProfileService.ensureSystemRoles();
         seedDemoUsers();
     }
 
@@ -46,10 +52,15 @@ public class E2eDemoDataInitializer implements ApplicationRunner {
         User user = userRepository.findByUsername(demoUser.username())
                 .orElseGet(User::new);
 
+        String roleCode = RoleProfileCatalog.definitionForLegacyRole(demoUser.role()).code();
+        var profile = roleProfileRepository.findByCodeIgnoreCase(roleCode)
+                .orElseThrow(() -> new IllegalStateException("Required RoleProfile not found: " + roleCode));
+
         user.setUsername(demoUser.username());
         user.setFullName(demoUser.fullName());
         user.setEmail(demoUser.email());
         user.setRole(demoUser.role());
+        user.setRoleProfile(profile);
         user.setEnabled(true);
         user.setPassword(passwordEncoder.encode(DEMO_PASSWORD));
 

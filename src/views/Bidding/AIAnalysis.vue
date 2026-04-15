@@ -342,16 +342,12 @@ const handleGoBack = () => {
 
 // 导出报告
 const handleExport = () => {
-  ElMessage.success('报告导出中，请稍候...')
-  // 实际导出逻辑
-  setTimeout(() => {
-    ElMessage.success('报告导出成功！')
-  }, 1500)
+  ElMessage.info('报告导出能力将在后续版本开放，本轮先提供在线查看结果。')
 }
 
 // 同步任务到日程
 const handleSyncTasks = () => {
-  ElMessage.success('任务已同步到日程')
+  ElMessage.info('任务同步能力将在后续版本开放，本轮先提供任务建议查看。')
 }
 
 // 任务勾选
@@ -428,19 +424,17 @@ const loadTenderInfo = async () => {
 }
 
 const loadAnalysis = async () => {
-  const response = await aiApi.bid.getAnalysis(tenderId.value)
-  if (response?.success && response.data) {
-    analysisData.value = response.data
-    return
-  }
-
-  analysisData.value = null
-
-  if (isApiMode) {
-    ElMessage.warning('该标讯 AI 分析尚未纳入正式交付范围，已返回标讯详情')
-    router.replace(`/bidding/${tenderId.value}`)
-  } else {
+  try {
+    const response = await aiApi.bid.getAnalysis(tenderId.value)
+    if (response?.success && response.data) {
+      analysisData.value = response.data
+      return
+    }
+    analysisData.value = null
     ElMessage.error(response?.message || 'AI 分析数据加载失败')
+  } catch (error) {
+    analysisData.value = null
+    ElMessage.error(error?.response?.data?.message || error?.message || 'AI 分析数据加载失败')
   }
 }
 

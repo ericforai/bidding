@@ -1341,8 +1341,8 @@ const loadCases = async () => {
       pagination.total = 0
       featurePlaceholder.value = notifyFeatureUnavailable(result, {
         fallback: {
-          title: '案例库暂未接入',
-          hint: '真实后端尚未返回案例列表时，这里会显式展示占位态。',
+          title: '案例库当前不可用',
+          hint: '当前无法加载案例列表，请稍后重试或联系管理员检查知识库服务。',
         },
       })
       if (!featurePlaceholder.value && result?.message) {

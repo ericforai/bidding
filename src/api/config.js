@@ -11,7 +11,7 @@ const ENABLE_MOCK_LOGIN = (viteEnv.VITE_ENABLE_MOCK_LOGIN || process.env.VITE_EN
 const ENABLE_TENDER_API_MOCK_FALLBACK = (viteEnv.VITE_API_ALLOW_TENDER_MOCK_FALLBACK || process.env.VITE_API_ALLOW_TENDER_MOCK_FALLBACK || 'false') === 'true'
 
 // 后端 API 基础地址
-export const API_BASE_URL = viteEnv.VITE_API_BASE_URL || process.env.VITE_API_BASE_URL || 'http://localhost:8080'
+export const API_BASE_URL = viteEnv.VITE_API_BASE_URL || process.env.VITE_API_BASE_URL || 'http://localhost:18080'
 
 // API 模式
 export const API_CONFIG = {

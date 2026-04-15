@@ -15,6 +15,8 @@
 
 - 前端真实数据源治理：[`docs/FRONTEND_REAL_DATA_GOVERNANCE.md`](docs/FRONTEND_REAL_DATA_GOVERNANCE.md)
 - 文档与注释治理规范：[`docs/DOCUMENTATION_GOVERNANCE.md`](docs/DOCUMENTATION_GOVERNANCE.md)
+- Wiki 知识库治理：[`WIKI.md`](WIKI.md) — 三层 LLM Wiki 架构（源文档索引 + 合成知识页 + Schema）
+- Wiki 知识导航：[`.wiki/pages/_index.md`](.wiki/pages/_index.md) — 11 个知识页面目录
 
 ## 技术栈
 
@@ -72,7 +74,7 @@
 
 ### Mock 模式
 
-- 默认模式
+- 非默认模式，仅在需要演示时手动启用
 - 前端可独立运行
 - 使用 `src/api/mock.js` 作为正式演示数据源
 - Mock 前端默认端口固定为 `1314`
@@ -81,6 +83,7 @@
 
 ### API 模式
 
+- 默认模式
 - 对接 Spring Boot + PostgreSQL + Redis
 - 用于真实联调、上线前验证、UAT 和发布演练
 - 启动前需要准备后端环境和必要环境变量
@@ -107,13 +110,17 @@ npm install
 npm run dev
 ```
 
+- 默认 `npm run dev` 即 API 模式
+- 如需手动进入演示环境，请使用 `npm run dev:mock`
+- 如需显式启动 API 模式，请使用 `npm run dev:api`
+
 ### 3. 访问系统
 
 打开浏览器访问: http://127.0.0.1:1314
 
 ### 4. 登录
 
-- Mock 模式：可使用演示账号登录
+- Mock 模式：仅在 `npm run dev:mock` 启动后可使用演示账号登录
 - API 模式：使用后端真实用户与鉴权
 
 ## E2E 基线

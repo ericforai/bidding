@@ -1,7 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { isMockMode } from '@/api'
 import { useUserStore } from '@/stores/user'
 
 const DEFAULT_AUTHENTICATED_HOME = '/dashboard'
+const isApiDeliveryMode = () => !isMockMode()
+const HIDDEN_API_ROUTES = new Set([
+  'CustomerOpportunityCenter'
+])
 
 const getNormalizedRole = (userStore) => {
   const role = userStore.currentUser?.role || ''
@@ -207,6 +212,14 @@ router.beforeEach(async (to, from, next) => {
     next('/login')
   } else if (to.path === '/login' && hasAuthState) {
     next(DEFAULT_AUTHENTICATED_HOME)
+  } else if (isApiDeliveryMode() && HIDDEN_API_ROUTES.has(String(to.name || ''))) {
+    next(
+      to.name === 'CustomerOpportunityCenter'
+        ? '/bidding'
+        : to.name === 'BiddingAIAnalysis'
+            ? '/bidding'
+            : '/knowledge/qualification'
+    )
   } else if (hasAuthState && !hasRouteAccess(to, getNormalizedRole(userStore))) {
     next(DEFAULT_AUTHENTICATED_HOME)
   } else {

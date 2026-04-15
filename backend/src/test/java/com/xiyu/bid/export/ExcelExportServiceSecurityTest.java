@@ -7,7 +7,7 @@ import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.QualificationRepository;
 import com.xiyu.bid.repository.TenderRepository;
 import com.xiyu.bid.repository.TemplateRepository;
-import com.xiyu.bid.service.IAuditLogService;
+import com.xiyu.bid.audit.service.IAuditLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

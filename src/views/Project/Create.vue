@@ -851,8 +851,8 @@ const runAIAnalysis = async () => {
       aiGeneratedTasks.value = []
       scorePreviewPlaceholder.value = notifyFeatureUnavailable(response, {
         fallback: {
-          title: '评分预览暂未接入',
-          hint: '当前会继续保留项目创建流程，评分建议可在后续人工补充。',
+          title: '评分预览当前不可用',
+          hint: '项目创建流程会继续保留，评分建议可在分析服务恢复后补充。',
         },
       }) || {
         title: '评分预览不可用',

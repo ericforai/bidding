@@ -19,7 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 /**
@@ -66,6 +68,8 @@ public class TenderService {
         if (tenderDTO.getStatus() != null) existingTender.setStatus(tenderDTO.getStatus());
         if (tenderDTO.getAiScore() != null) existingTender.setAiScore(tenderDTO.getAiScore());
         if (tenderDTO.getRiskLevel() != null) existingTender.setRiskLevel(tenderDTO.getRiskLevel());
+        if (tenderDTO.getOriginalUrl() != null) existingTender.setOriginalUrl(tenderDTO.getOriginalUrl());
+        if (tenderDTO.getExternalId() != null) existingTender.setExternalId(tenderDTO.getExternalId());
         Tender updatedTender = tenderRepository.save(existingTender);
         log.info("Updated tender with id: {}", id);
         return convertToDTO(updatedTender);
@@ -95,7 +99,16 @@ public class TenderService {
         log.debug("Analyzing tender with id: {}", id);
         Tender tender = tenderRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Tender", id.toString()));
         CompletableFuture<Void> analysisFuture = aiService.analyzeTender(id, Map.of("budget", tender.getBudget(), "deadline", tender.getDeadline(), "source", tender.getSource()));
-        try { analysisFuture.get(30, TimeUnit.SECONDS); } catch (Exception e) { log.error("Error waiting for AI analysis completion for tender id: {}", id, e); throw new RuntimeException("Failed to complete AI analysis", e); }
+        try {
+            analysisFuture.get(30, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("AI analysis wait interrupted for tender id: {}", id, e);
+            throw new RuntimeException("AI analysis wait interrupted", e);
+        } catch (ExecutionException | TimeoutException e) {
+            log.error("Error waiting for AI analysis completion for tender id: {}", id, e);
+            throw new RuntimeException("Failed to complete AI analysis", e);
+        }
         Tender analyzedTender = tenderRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Tender", id.toString()));
         log.info("Analyzed tender with id: {}, AI Score: {}", id, analyzedTender.getAiScore());
         return convertToDTO(analyzedTender);
@@ -108,10 +121,10 @@ public class TenderService {
     }
 
     private TenderDTO convertToDTO(Tender tender) {
-        return TenderDTO.builder().id(tender.getId()).title(tender.getTitle()).source(tender.getSource()).budget(tender.getBudget()).deadline(tender.getDeadline()).status(tender.getStatus()).aiScore(tender.getAiScore()).riskLevel(tender.getRiskLevel()).createdAt(tender.getCreatedAt()).updatedAt(tender.getUpdatedAt()).build();
+        return TenderDTO.builder().id(tender.getId()).title(tender.getTitle()).source(tender.getSource()).budget(tender.getBudget()).deadline(tender.getDeadline()).status(tender.getStatus()).aiScore(tender.getAiScore()).riskLevel(tender.getRiskLevel()).originalUrl(tender.getOriginalUrl()).externalId(tender.getExternalId()).createdAt(tender.getCreatedAt()).updatedAt(tender.getUpdatedAt()).build();
     }
 
     private Tender convertToEntity(TenderDTO dto) {
-        return Tender.builder().id(dto.getId()).title(dto.getTitle()).source(dto.getSource()).budget(dto.getBudget()).deadline(dto.getDeadline()).status(dto.getStatus() != null ? dto.getStatus() : Tender.Status.PENDING).aiScore(dto.getAiScore()).riskLevel(dto.getRiskLevel()).build();
+        return Tender.builder().id(dto.getId()).title(dto.getTitle()).source(dto.getSource()).budget(dto.getBudget()).deadline(dto.getDeadline()).status(dto.getStatus() != null ? dto.getStatus() : Tender.Status.PENDING).aiScore(dto.getAiScore()).riskLevel(dto.getRiskLevel()).originalUrl(dto.getOriginalUrl()).externalId(dto.getExternalId()).build();
     }
 }
