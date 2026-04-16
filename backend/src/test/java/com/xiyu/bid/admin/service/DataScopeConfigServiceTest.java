@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.dto.DataScopeConfigResponse;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.RoleProfileRepository;
-import com.xiyu.bid.service.RoleProfileService;
 import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.roleprofile.RoleProfileBootstrap;
 import com.xiyu.bid.settings.entity.SystemSetting;
 import com.xiyu.bid.settings.repository.SystemSettingRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,13 +36,13 @@ class DataScopeConfigServiceTest {
     private RoleProfileRepository roleProfileRepository;
 
     @Mock
-    private RoleProfileService roleProfileService;
+    private RoleProfileBootstrap roleProfileBootstrap;
 
     private DataScopeConfigService dataScopeConfigService;
 
     @BeforeEach
     void setUp() {
-        dataScopeConfigService = new DataScopeConfigService(systemSettingRepository, userRepository, roleProfileRepository, roleProfileService, new ObjectMapper());
+        dataScopeConfigService = new DataScopeConfigService(systemSettingRepository, userRepository, roleProfileRepository, roleProfileBootstrap, new ObjectMapper());
         org.mockito.Mockito.lenient().when(roleProfileRepository.findByCodeIgnoreCase(org.mockito.ArgumentMatchers.anyString())).thenReturn(Optional.empty());
         org.mockito.Mockito.lenient().when(roleProfileRepository.findAll()).thenReturn(List.of());
     }
@@ -104,6 +105,18 @@ class DataScopeConfigServiceTest {
         assertThat(response.getDeptDataScope()).hasSize(2);
         assertThat(response.getDeptDataScope().get(0).isCanViewOtherDepts()).isTrue();
         assertThat(response.getDeptTree()).hasSize(2);
+    }
+
+    @Test
+    void getConfig_ShouldEnsureSystemRolesInsideAdminBoundary() {
+        when(userRepository.findAll()).thenReturn(List.of());
+        when(systemSettingRepository.findByConfigKey(DataScopeConfigService.DATA_SCOPE_CONFIG_KEY))
+                .thenReturn(Optional.empty());
+
+        DataScopeConfigResponse response = dataScopeConfigService.getConfig();
+
+        assertThat(response.getRoles()).isEmpty();
+        verify(roleProfileBootstrap).ensureSystemRoles();
     }
 
     @Test
