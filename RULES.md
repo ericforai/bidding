@@ -44,6 +44,7 @@
 - 核心业务逻辑必须优先写成可单元测试的纯函数或近似纯函数。
 - Controller、Repository、API adapter、Pinia action、Vue 组件事件、事务编排服务属于命令式外壳，允许副作用，但不得承载复杂业务规则。
 - 如因框架约束必须在外壳层更新状态，必须先把核心计算提炼到独立函数、Service 或领域方法中。
+- 后端新写纯核心代码时，优先放入 `..core..` 或 `..domain..` 包；这些包下的非 `..entity..` 类受 `FPJavaArchitectureTest` 强制约束。
 
 ### 2.1 纯核心与命令式外壳
 
@@ -139,6 +140,32 @@ function approveTender(tender) {
 
 Vue 组件和 Pinia Store 可以进行受控状态更新，但更新前的业务计算应尽量放到纯函数中完成。
 
+### 2.5 FP-Java Profile 可执行门禁
+
+后端使用 `FPJavaArchitectureTest` 将 FP-Java Profile 变成自动门禁。
+
+适用范围：
+- `com.xiyu.bid..core..`
+- `com.xiyu.bid..domain..`
+- 排除 `..entity..`，因为 JPA Entity 受 ORM 框架约束，允许可变状态和无参构造等例外。
+
+门禁内容：
+- 纯核心不得依赖 Controller、Repository、Config、Adapter、Gateway。
+- 纯核心不得依赖 Spring Web/Data/JDBC、JPA、日志、文件、网络等命令式外壳或 I/O API。
+- 纯核心不得依赖项目业务异常包；预期业务失败应通过 Result / Optional / ValidationResult 返回。
+- 纯核心数据默认使用 record 或 final 字段，不暴露 setter。
+
+执行命令：
+
+```bash
+cd /Users/user/xiyu/xiyu-bid-poc/backend
+mvn test -Dtest=FPJavaArchitectureTest
+```
+
+说明：
+- 这是面向新增纯核心包的硬门禁，不会把当前存量 DTO、Service、JPA Entity 一次性纳入红灯区。
+- 如果某段逻辑需要被 FP-Java Profile 保护，应主动迁入 `core` / `domain` 非 Entity 包，而不是继续留在事务编排 Service 中。
+
 ---
 
 ## 3. Mock 政策（统一决策）
@@ -199,6 +226,7 @@ mvn test
 - 因此，当前后端验证要求是：
   - 至少运行与本次变更相关的测试
   - 若触及架构边界，运行 `ArchitectureTest`
+  - 若新增或修改 `..core..` / `..domain..` 非 Entity 纯核心代码，运行 `FPJavaArchitectureTest`
   - 如出现失败，按新引入问题处理
   - 不得再把当前仓库写成“存在已知存量失败”
 

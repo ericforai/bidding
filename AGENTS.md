@@ -3,12 +3,25 @@
 本仓库对应“西域数智化投标管理平台”的交付项目。
 当前目录名、包名和构件名中仍保留 `xiyu-bid-poc`、`bid-poc` 等历史命名，这些属于遗留标识，不代表项目仍按 POC 方式协作或对外表达。
 
+## Agent Contract
+
+本项目默认采用 **FP-Java Profile**：
+
+1. 先分清 Pure Core 和 Imperative Shell。
+2. 业务规则、校验、金额/状态/权限计算放入可单测的纯核心。
+3. Controller / Application Service / Repository 只做取数、事务、保存、消息和边界转换。
+4. 纯核心不得修改入参，不得读写数据库、API、文件、时间、随机数或日志。
+5. 预期内业务失败用 Result / Optional / ValidationResult 返回，不用异常做业务分支。
+6. DTO、VO、命令对象、领域值对象优先用 record 或 final 不可变对象。
+7. JPA Entity、框架适配类可按框架约束例外处理，但不得承载复杂业务规则。
+8. 完成前必须说明：纯核心在哪里，副作用在哪里，跑了哪些验证。
+
 ## 协作口径
 
 - **协作语言**：默认使用中文进行沟通、代码注释、测试说明和变更描述。
 - **项目品牌**：对外统一使用“西域数智化投标管理平台”全称；仅在引用仓库路径、包名、脚本名时保留 `xiyu-bid-poc` 等历史标识。
 - **开场约定**：AI 代理开启新任务或接收复杂任务时，应先说明当前项目采用“真实 API 单一路径”的交付开发模式；仓库中仍存在少量本地 demo 适配残留，但它们只属于待删除遗留，不是允许的开发、联调、演示或验收路径。随后按 `RULES.md` 中的四阶段流程（plan → tdd → code-review → refactor-clean）和核心业务逻辑架构约束展开工作。
-- **架构约束**：业务计算、校验、状态流转、金额/评分/权限判断必须优先放入可测试的纯核心；API、数据库、Store、组件事件和事务编排属于命令式外壳，只做取数、保存、状态提交和边界转换。
+- **架构约束**：详细解释见 `RULES.md`；后端纯核心门禁由 `FPJavaArchitectureTest` 执行。
 
 ## Mock 政策（统一决策）
 
@@ -66,6 +79,7 @@ VITE_API_MODE=api VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --host
 
 - **前端改动**：优先运行 `npx vitest run <相关测试文件>`，并至少执行 `npm run check:front-data-boundaries`、`npm run check:doc-governance`、`npm run build`。
 - **后端改动**：运行 `mvn test -Dtest=<相关测试类>`；如涉及架构边界，再运行 `mvn test -Dtest=ArchitectureTest`，并把结果作为常规门禁如实汇报。
+- **纯核心改动**：如新增或修改 `..core..` / `..domain..` 非 Entity 代码，必须运行 `mvn test -Dtest=FPJavaArchitectureTest`。
 - **核心链路改动**：运行 `npm run test:e2e`。
 - **禁止取巧**：不得通过删除测试、弱化断言、改写验收口径来掩盖问题。
 
