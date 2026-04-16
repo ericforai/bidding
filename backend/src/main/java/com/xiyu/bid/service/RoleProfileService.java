@@ -9,6 +9,7 @@ import com.xiyu.bid.entity.RoleProfile;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.RoleProfileRepository;
 import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.roleprofile.RoleProfileBootstrap;
 import com.xiyu.bid.util.InputSanitizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ public class RoleProfileService {
 
     private final RoleProfileRepository roleProfileRepository;
     private final UserRepository userRepository;
+    private final RoleProfileBootstrap roleProfileBootstrap;
 
     public List<RoleDTO> listRoles() {
         ensureSystemRoles();
@@ -128,31 +130,7 @@ public class RoleProfileService {
 
     @Transactional
     public void ensureSystemRoles() {
-        for (RoleProfileCatalog.SeedDefinition definition : RoleProfileCatalog.seedDefinitions()) {
-            roleProfileRepository.findByCodeIgnoreCase(definition.code())
-                    .ifPresentOrElse(
-                            existing -> {
-                                if (!Boolean.TRUE.equals(existing.getIsSystem())) {
-                                    existing.setIsSystem(true);
-                                    roleProfileRepository.save(existing);
-                                }
-                            },
-                            () -> {
-                                RoleProfile role = RoleProfile.builder()
-                                        .code(definition.code())
-                                        .name(definition.name())
-                                        .description(definition.description())
-                                        .isSystem(definition.system())
-                                        .enabled(true)
-                                        .dataScope(definition.dataScope())
-                                        .build();
-                                role.setMenuPermissions(definition.menuPermissions());
-                                role.setAllowedProjects(List.of());
-                                role.setAllowedDepts(List.of());
-                                roleProfileRepository.save(role);
-                            }
-                    );
-        }
+        roleProfileBootstrap.ensureSystemRoles();
     }
 
     public RoleProfile requireRoleProfile(Long roleId) {
