@@ -121,18 +121,6 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    switchUser(userId) {
-      const targetUser = this.users.find(u => u.id === userId)
-      if (!targetUser) {
-        console.warn(`User with id "${userId}" not found`)
-        return
-      }
-      this.currentUser = targetUser
-      if (this.token) {
-        this.persistSession(true)
-      }
-    },
-
     resetSession() {
       this.currentUser = null
       this.token = null

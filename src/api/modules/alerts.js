@@ -90,6 +90,10 @@ export const alertHistoryApi = {
 
   async acknowledge(id) {
     return httpClient.patch(`/api/alerts/history/${id}/acknowledge`)
+  },
+
+  async getUnresolved(params = {}) {
+    return httpClient.get('/api/alerts/history/unresolved', { params })
   } }
 
 export default {

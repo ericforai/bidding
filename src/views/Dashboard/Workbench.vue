@@ -227,7 +227,7 @@
         </div>
 
         <!-- ========== 销售经理专属内容 (小王) ========== -->
-        <template v-if="currentUserName === '小王'">
+        <template v-if="currentUserRole === 'staff'">
           <!-- 一站式流程发起 -->
           <div class="section-card quick-actions-card">
             <div class="section-header">
@@ -334,7 +334,7 @@
         </template>
 
         <!-- ========== 投标经理专属内容 (张经理) ========== -->
-        <template v-if="currentUserName === '张经理'">
+        <template v-if="currentUserRole === 'manager'">
           <!-- 我的项目 -->
           <div class="section-card projects-card">
             <div class="section-header">
@@ -442,70 +442,6 @@
         </template>
 
         <!-- ========== 技术员工专属内容 (李工) ========== -->
-        <template v-if="currentUserName === '李工'">
-          <!-- 我的任务 -->
-          <div class="section-card my-tasks-card">
-            <div class="section-header">
-              <h3 class="section-title">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
-                  <path d="M9 11l3 3L22 4"/>
-                  <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-                </svg>
-                我的任务
-              </h3>
-            </div>
-            <div class="my-tasks-list">
-              <div
-                v-for="task in myTechnicalTasks"
-                :key="task.id"
-                class="my-task-item"
-                :class="'priority-' + task.priority"
-              >
-                <div class="task-checkbox">
-                  <el-checkbox v-model="task.done" @change="handleTaskComplete(task)" />
-                </div>
-                <div class="task-content">
-                  <span class="task-title" :class="{ done: task.done }">{{ task.title }}</span>
-                  <div class="task-meta">
-                    <span class="task-project">{{ task.project }}</span>
-                    <span class="task-deadline">{{ task.deadline }}</span>
-                  </div>
-                </div>
-                <el-tag :type="task.priority === 'high' ? 'danger' : 'warning'" size="small">
-                  {{ task.priority === 'high' ? '紧急' : '普通' }}
-                </el-tag>
-              </div>
-            </div>
-          </div>
-
-          <!-- 待评审 -->
-          <div class="section-card review-card">
-            <div class="section-header">
-              <h3 class="section-title">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
-                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                待我评审
-              </h3>
-            </div>
-            <div class="review-list">
-              <div
-                v-for="review in pendingReviews"
-                :key="review.id"
-                class="review-item"
-              >
-                <div class="review-icon">
-                  <el-icon><Document /></el-icon>
-                </div>
-                <div class="review-content">
-                  <span class="review-title">{{ review.title }}</span>
-                  <span class="review-meta">{{ review.author }} 提交 · {{ review.time }}</span>
-                </div>
-                <el-button type="primary" size="small" @click="handleReview(review)">评审</el-button>
-              </div>
-            </div>
-          </div>
-        </template>
 
         <!-- 进行中项目（管理层显示） -->
         <div class="section-card projects-card" v-if="currentUserRole === 'admin'">
@@ -874,13 +810,21 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, markRaw } from 'vue'
+import { ref, computed, onMounted, markRaw, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { useBiddingStore } from '@/stores/bidding'
+// biddingStore removed — calendar now loads directly from calendarApi
 import { approvalApi, projectsApi, dashboardApi } from '@/api'
 import { tasksApi } from '@/api/modules/dashboard.js'
-import { getTimeGreeting } from '@/views/Dashboard/workbench-utils.js'
+import { calendarApi } from '@/api/modules/collaboration.js'
+import { alertHistoryApi } from '@/api/modules/alerts.js'
+import {
+  getTimeGreeting,
+  normalizeProjectForWorkbench,
+  normalizeCalendarEvent,
+  normalizeAlertForTodo,
+  extractCustomersFromProjects
+} from '@/views/Dashboard/workbench-utils.js'
 import {
   Plus, DataAnalysis, ArrowRight, Calendar, User, Clock, Check,
   Document, Briefcase, TrendCharts, Flag, FolderOpened, Wallet
@@ -897,7 +841,7 @@ const Icons = markRaw({
 
 const router = useRouter()
 const userStore = useUserStore()
-const biddingStore = useBiddingStore()
+// biddingStore instance removed — calendar data loaded via calendarApi
 
 // 当前日期
 const currentDate = computed(() => {
@@ -934,9 +878,11 @@ async function loadWorkbenchSummary() {
 
 // 格式化辅助
 const formatCurrency = (val) => {
-  if (!val && val !== 0) return '--'
-  const wan = Number(val) / 10000
-  return wan >= 1 ? `¥${wan.toFixed(0)}万` : `¥${Number(val).toFixed(0)}`
+  if (val == null) return '--'
+  const num = Number(val)
+  if (Number.isNaN(num)) return '--'
+  const wan = num / 10000
+  return wan >= 1 ? `¥${wan.toFixed(0)}万` : `¥${num.toFixed(0)}`
 }
 const formatPercent = (val) => (val != null ? `${Number(val).toFixed(1)}%` : '--')
 const formatCount = (val, suffix = '') => (val != null ? `${val}${suffix}` : '--')
@@ -1142,60 +1088,25 @@ const bannerActions = computed(() => {
   ]
 })
 
-// 进行中项目 - 角色化数据
-const allProjects = ref([
-  { id: 'P001', name: '某央企智慧办公平台', status: '编制中', progress: 45, deadline: '03-05', manager: '小王', priority: 'high' },
-  { id: 'P002', name: '华南电力集团集采项目', status: '评审中', progress: 70, deadline: '03-10', manager: '张经理', priority: 'high' },
-  { id: 'P003', name: 'XX区数字政府平台', status: '编制中', progress: 35, deadline: '03-15', manager: '张经理', priority: 'medium' },
-  { id: 'P004', name: '西部云数据中心建设', status: '即将开标', progress: 95, deadline: '03-12', manager: '小王', priority: 'urgent' },
-  { id: 'P005', name: '深圳地铁自动化系统', status: '编制中', progress: 55, deadline: '03-20', manager: '张经理', priority: 'medium' },
-  { id: 'P006', name: '华东电网信息化项目', status: '评审中', progress: 60, deadline: '03-18', manager: '小王', priority: 'medium' },
-  { id: 'P007', name: 'XX县政府数字平台', status: '编制中', progress: 25, deadline: '03-25', manager: '李工', priority: 'low' },
-  { id: 'P008', name: '制造执行系统(MES)', status: '技术方案编写', progress: 40, deadline: '03-08', manager: '李工', priority: 'high' }
-])
+// 进行中项目 - 从 API 加载
+const allProjects = ref([])
+const rawProjects = ref([])
 
 // 根据角色过滤项目
 const activeProjects = computed(() => {
   const role = currentUserRole.value
-  const name = currentUserName.value
 
   if (role === 'admin') {
-    // 管理层查看所有高优先级项目
-    return allProjects.value.filter(p => p.priority === 'high' || p.priority === 'urgent').slice(0, 3)
+    return allProjects.value.filter(p => p.priority === 'high' || p.priority === 'urgent').slice(0, 5)
   }
-  // 经理和员工查看自己负责的项目
-  return allProjects.value.filter(p => p.manager === name).slice(0, 3)
+  return allProjects.value.slice(0, 5)
 })
 
-// 待办事项 - 角色化数据
-const mockRoleTodos = ref([
-  // ===== 系统自动预警（所有角色可见） =====
-  { id: 100, title: '保证金即将到期 - 西部云项目', role: 'all', priority: 'high', deadline: '还剩5天', done: false, type: 'warning', icon: 'Warning' },
-  { id: 101, title: '资质证书即将过期 - 营业执照', role: 'all', priority: 'medium', deadline: '还剩25天', done: false, type: 'warning', icon: 'Clock' },
-  { id: 102, title: '截标日倒计时 - 某央企智慧办公平台', role: 'all', priority: 'high', deadline: '还剩2天', done: false, type: 'warning', icon: 'Timer' },
-  { id: 103, title: '用印申请待审批 - 华南电力项目', role: 'all', priority: 'high', deadline: '今天 12:00', done: false, type: 'approval', icon: 'Document' },
-  // 管理层待办
-  { id: 1, title: '审批某央企项目投标预算', role: 'admin', priority: 'high', deadline: '今天 16:00', done: false },
-  { id: 2, title: 'Q1季度销售业绩复盘会议', role: 'admin', priority: 'medium', deadline: '03-05', done: false },
-  { id: 3, title: '团队绩效考核确认', role: 'admin', priority: 'medium', deadline: '03-10', done: false },
-  // 销售经理待办
-  { id: 4, title: '西部云项目客户拜访', role: 'sales', assignee: '小王', priority: 'high', deadline: '明天 14:00', done: false },
-  { id: 5, title: '华南电力项目需求确认', role: 'sales', assignee: '小王', priority: 'high', deadline: '03-06', done: false },
-  { id: 6, title: '更新客户跟进记录', role: 'sales', assignee: '小王', priority: 'low', deadline: '03-08', done: false },
-  // 投标经理待办
-  { id: 7, title: '某央企项目技术方案终审', role: 'bidding', assignee: '张经理', priority: 'high', deadline: '今天 18:00', done: false },
-  { id: 8, title: '协调李工完成技术方案', role: 'bidding', assignee: '张经理', priority: 'high', deadline: '明天 10:00', done: false },
-  { id: 9, title: '项目立项评审会', role: 'bidding', assignee: '张经理', priority: 'medium', deadline: '03-07', done: false },
-  // 技术员工待办
-  { id: 10, title: '某央企项目技术方案编写', role: 'staff', assignee: '李工', priority: 'high', deadline: '03-06', done: false },
-  { id: 11, title: 'MES项目需求分析', role: 'staff', assignee: '李工', priority: 'high', deadline: '03-08', done: false },
-  { id: 12, title: 'XX县项目技术文档整理', role: 'staff', assignee: '李工', priority: 'medium', deadline: '03-09', done: false },
-  { id: 13, title: '参与技术方案评审', role: 'staff', assignee: '李工', priority: 'medium', deadline: '03-05', done: false }
-])
-
+// 待办事项 - 系统预警从 API 加载
+const apiAlertItems = ref([])
 const apiTodoItems = ref([])
 
-const systemWarningTodos = computed(() => mockRoleTodos.value.filter(t => t.role === 'all'))
+const systemWarningTodos = computed(() => apiAlertItems.value)
 
 const normalizeApiTodo = (task) => {
   const priority = String(task?.priority || 'MEDIUM').toLowerCase()
@@ -1238,37 +1149,13 @@ async function loadPriorityTodos() {
   }
 }
 
-// 根据角色过滤待办
-const priorityTodos = computed(() => {
-  if (true) {
-    return [...systemWarningTodos.value, ...apiTodoItems.value].slice(0, 8)
-  }
-
-  const role = currentUserRole.value
-  const name = currentUserName.value
-
-  // 系统预警（所有角色可见）
-  const systemWarnings = systemWarningTodos.value
-
-  // 角色专属待办
-  let roleTodos = []
-  if (role === 'admin') {
-    roleTodos = mockRoleTodos.value.filter(t => t.role === 'admin')
-  } else {
-    roleTodos = mockRoleTodos.value.filter(t => t.assignee === name)
-  }
-
-  // 合并：系统预警优先，然后是角色待办
-  return [...systemWarnings, ...roleTodos].slice(0, 8)
-})
+// 合并：系统预警优先，然后是 API 任务
+const priorityTodos = computed(() =>
+  [...systemWarningTodos.value, ...apiTodoItems.value].slice(0, 8)
+)
 
 // ========== 管理层数据 ==========
-const teamPerformance = ref([
-  { dept: '华南销售部', size: 8, progress: 85, color: '#3B82F6', wins: 3, active: 5 },
-  { dept: '投标管理部', size: 12, progress: 78, color: '#10B981', wins: 4, active: 8 },
-  { dept: '技术部', size: 18, progress: 92, color: '#F59E0B', wins: 6, active: 12 },
-  { dept: '商务部', size: 7, progress: 65, color: '#EF4444', wins: 2, active: 3 }
-])
+const teamPerformance = ref([])
 
 const pendingApprovals = ref([])
 const approvalDialogVisible = ref(false)
@@ -1285,92 +1172,16 @@ const supportRequestForm = ref({
 })
 
 // ========== 销售经理数据 (小王) ==========
-const hotTenders = ref([
-  {
-    id: 'B001',
-    title: '某央企智慧办公平台采购项目',
-    budget: 500,
-    region: '北京',
-    aiScore: 92,
-    scoreLevel: 'high',
-    probability: 'high',
-    probibilityText: '高概率'
-  },
-  {
-    id: 'B003',
-    title: 'XX市大数据中心建设项目',
-    budget: 800,
-    region: '深圳',
-    aiScore: 85,
-    scoreLevel: 'medium',
-    probability: 'medium',
-    probibilityText: '中等概率'
-  },
-  {
-    id: 'B005',
-    title: '某省政务云平台采购',
-    budget: 1200,
-    region: '杭州',
-    aiScore: 78,
-    scoreLevel: 'medium',
-    probability: 'medium',
-    probibilityText: '中等概率'
-  }
-])
+const hotTenders = ref([])
 
-const followUpCustomers = ref([
-  { id: 1, name: '陈总', company: '某央企信息部', status: '待拜访', statusType: 'warning' },
-  { id: 2, name: '林经理', company: '华南电力集团', status: '跟进中', statusType: 'primary' },
-  { id: 3, name: '王主任', company: 'XX市政府', status: '意向明确', statusType: 'success' },
-  { id: 4, name: '赵工', company: '西部云科技', status: '需求确认', statusType: 'info' }
-])
+const followUpCustomers = computed(() => extractCustomersFromProjects(rawProjects.value))
 
 // ========== 投标经理数据 (张经理) ==========
-const teamMembers = ref([
-  {
-    id: 1,
-    name: '李工',
-    tasks: [
-      { id: 1, title: '技术方案编写', priority: 'high' },
-      { id: 2, title: '需求分析', priority: 'medium' },
-      { id: 3, title: '文档整理', priority: 'low' }
-    ],
-    workload: '95%',
-    workloadLevel: 'high'
-  },
-  {
-    id: 2,
-    name: '王工',
-    tasks: [
-      { id: 1, title: '商务方案', priority: 'high' },
-      { id: 2, title: '资质准备', priority: 'medium' }
-    ],
-    workload: '70%',
-    workloadLevel: 'medium'
-  },
-  {
-    id: 3,
-    name: '赵工',
-    tasks: [
-      { id: 1, title: '标书制作', priority: 'medium' }
-    ],
-    workload: '40%',
-    workloadLevel: 'low'
-  }
-])
+const teamMembers = ref([])
 
 // ========== 技术员工数据 (李工) ==========
-const myTechnicalTasks = ref([
-  { id: 1, title: '某央企项目技术方案编写', project: '某央企项目', deadline: '03-06', priority: 'high', done: false },
-  { id: 2, title: 'MES项目需求分析', project: '制造执行系统', deadline: '03-08', priority: 'high', done: false },
-  { id: 3, title: 'XX县项目技术文档整理', project: 'XX县项目', deadline: '03-09', priority: 'medium', done: false },
-  { id: 4, title: '参与技术方案评审', project: '数字政府平台', deadline: '03-05', priority: 'medium', done: false }
-])
 
-const pendingReviews = ref([
-  { id: 1, title: '深圳地铁项目 - 技术方案', author: '王工', time: '今天 10:00' },
-  { id: 2, title: '华东电网项目 - 需求文档', author: '张经理', time: '昨天 15:30' }
-])
+const pendingReviews = ref([])
 
 // ========== 处理函数 ==========
 const handleApprove = (item) => {
@@ -1506,33 +1317,20 @@ const handleTaskComplete = async (task) => {
     return
   }
 
-  if (true) {
-    if (task.done) {
-      return
-    }
-
-    try {
-      const result = await tasksApi.complete(task.id)
-      if (!result?.success) {
-        throw new Error(result?.message || '更新待办状态失败')
-      }
-      task.done = true
-      task.rawStatus = result?.data?.status || 'COMPLETED'
-      ElMessage.success(`完成任务: ${task.title}`)
-    } catch (error) {
-      ElMessage.error(error?.message || '更新待办状态失败')
-    }
+  if (task.done) {
     return
   }
 
-  task.done = !task.done
-  if (task.done) {
+  try {
+    const result = await tasksApi.complete(task.id)
+    if (!result?.success) {
+      throw new Error(result?.message || '更新待办状态失败')
+    }
     ElMessage.success(`完成任务: ${task.title}`)
+    await loadPriorityTodos()
+  } catch (error) {
+    ElMessage.error(error?.message || '更新待办状态失败')
   }
-}
-
-const handleReview = (review) => {
-  ElMessage.info(`打开评审: ${review.title}`)
 }
 
 // 快速发起处理
@@ -1556,40 +1354,10 @@ const handleQuickAction = (type) => {
 }
 
 // 我的流程
-const myProcesses = ref([
-  {
-    id: 1,
-    title: 'XX市智慧交通项目 - 标书编制',
-    status: 'in-progress',
-    description: '技术方案编写中，预计2天内完成',
-    progress: 65,
-    time: '2025-02-26 14:30'
-  },
-  {
-    id: 2,
-    title: 'XX区数字政府项目 - 资质准备',
-    status: 'pending',
-    description: '需要补充CMMI 5级认证文件',
-    progress: 30,
-    time: '2025-02-26 10:15'
-  },
-  {
-    id: 3,
-    title: 'XX县智慧社区项目 - 开标前准备',
-    status: 'urgent',
-    description: '投标保证金已缴纳，确认密封要求',
-    progress: 90,
-    time: '2025-02-25 16:45'
-  }
-])
+const myProcesses = ref([])
 
 // 最新动态
-const activities = ref([
-  { id: 1, type: 'success', text: 'XX项目技术方案评审通过', time: '10分钟前' },
-  { id: 2, type: 'warning', text: 'XX项目需要补充业绩材料', time: '1小时前' },
-  { id: 3, type: 'info', text: '新标讯：XX市大数据平台采购', time: '2小时前' },
-  { id: 4, type: 'success', text: 'XX县项目成功中标！', time: '昨天' }
-])
+const activities = ref([])
 
 // ========== 投标日历相关 ==========
 const calendarDate = ref(new Date())
@@ -1605,8 +1373,9 @@ const calendarFilters = [
   { label: '高风险', value: 'urgent' }
 ]
 
-// 从 store 获取日历数据
-const calendarEvents = computed(() => biddingStore.calendar || [])
+// 从 API 获取日历数据
+const calendarEventsData = ref([])
+const calendarEvents = computed(() => calendarEventsData.value)
 
 const parseDate = (dateStr) => new Date(`${dateStr}T00:00:00`)
 
@@ -1778,16 +1547,67 @@ const handleCalendarAction = (event) => {
   ElMessage.info(`${event.actionLabel}：${event.project}`)
 }
 
+// P0: 加载真实项目列表
+async function loadProjects() {
+  try {
+    const userId = userStore.currentUser?.id
+    const role = currentUserRole.value
+    const result = role === 'admin'
+      ? await projectsApi.getList()
+      : await projectsApi.getList({ managerId: userId })
+    const items = Array.isArray(result?.data) ? result.data : []
+    rawProjects.value = items
+    allProjects.value = items.map(normalizeProjectForWorkbench)
+  } catch {
+    rawProjects.value = []
+    allProjects.value = []
+  }
+}
+
+// P0: 加载日历事件
+async function loadCalendarEvents() {
+  try {
+    const date = calendarDate.value || new Date()
+    const year = date.getFullYear()
+    const month = date.getMonth() + 1
+    const result = await calendarApi.getMonthEvents(year, month)
+    const items = Array.isArray(result?.data) ? result.data : (Array.isArray(result) ? result : [])
+    calendarEventsData.value = items.map(normalizeCalendarEvent)
+  } catch {
+    calendarEventsData.value = []
+  }
+}
+
+// P1: 加载系统预警
+async function loadSystemAlerts() {
+  try {
+    const result = await alertHistoryApi.getUnresolved({ page: 0, size: 10 })
+    const items = Array.isArray(result?.data?.content) ? result.data.content : (Array.isArray(result?.data) ? result.data : [])
+    apiAlertItems.value = items.map(normalizeAlertForTodo)
+  } catch {
+    apiAlertItems.value = []
+  }
+}
+
+watch(calendarDate, (newDate, oldDate) => {
+  if (!newDate || !oldDate) return
+  if (newDate.getFullYear() !== oldDate.getFullYear() || newDate.getMonth() !== oldDate.getMonth()) {
+    loadCalendarEvents()
+  }
+})
+
 // 数据加载
 onMounted(async () => {
   metricsLoading.value = true
   await Promise.allSettled([
-    biddingStore.getCalendar(),
+    loadCalendarEvents(),
     loadPendingApprovals(),
     loadMyProcesses(),
     loadSupportRequestProjects(),
     loadPriorityTodos(),
-    loadWorkbenchSummary()
+    loadWorkbenchSummary(),
+    loadProjects(),
+    loadSystemAlerts()
   ])
   metricsLoading.value = false
   resetSupportRequestForm()
@@ -1813,8 +1633,12 @@ const getProgressColor = (progress) => {
 // 获取项目状态类型
 const getProjectStatusType = (status) => {
   const map = {
+    '已立项': 'info',
     '编制中': 'warning',
     '评审中': 'primary',
+    '封装中': '',
+    '投标中': 'danger',
+    '已归档': 'success',
     '即将开标': 'danger'
   }
   return map[status] || ''

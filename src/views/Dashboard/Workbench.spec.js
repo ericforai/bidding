@@ -1,5 +1,50 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { getTimeGreeting } from '@/views/Dashboard/workbench-utils.js'
+
+vi.mock('@/stores/user', () => ({
+  useUserStore: vi.fn()
+}))
+
+describe('Workbench role-based visibility', () => {
+  const roleConditions = [
+    { role: 'staff', expectedSections: ['客户跟进'], hiddenSections: ['我的项目'] },
+    { role: 'manager', expectedSections: ['我的项目'], hiddenSections: ['客户跟进'] },
+    { role: 'admin', expectedSections: [], hiddenSections: ['客户跟进', '我的项目'] }
+  ]
+
+  it('uses roleCode not displayName for section visibility', () => {
+    const sourceCode = `
+      v-if="currentUserRole === 'staff'"
+      v-if="currentUserRole === 'manager'"
+      v-if="currentUserRole === 'admin'"
+    `
+    expect(sourceCode).not.toContain("currentUserName === '小王'")
+    expect(sourceCode).not.toContain("currentUserName === '张经理'")
+    expect(sourceCode).not.toContain("currentUserName === '李工'")
+  })
+
+  it.each(roleConditions)('role "$role" maps to correct section visibility', ({ role, expectedSections, hiddenSections }) => {
+    const roleMap = {
+      staff: ['客户跟进'],
+      manager: ['我的项目'],
+      admin: []
+    }
+    expect(roleMap[role]).toEqual(expectedSections)
+    hiddenSections.forEach(section => {
+      expect(roleMap[role]).not.toContain(section)
+    })
+  })
+
+  it('李工 section has been removed (no backend user exists)', () => {
+    const fs = require('fs')
+    const source = fs.readFileSync('src/views/Dashboard/Workbench.vue', 'utf-8')
+    expect(source).not.toContain("currentUserName === '李工'")
+    expect(source).not.toContain("currentUserName === '小王'")
+    expect(source).not.toContain("currentUserName === '张经理'")
+    expect(source).toContain("currentUserRole === 'staff'")
+    expect(source).toContain("currentUserRole === 'manager'")
+  })
+})
 
 describe('getTimeGreeting', () => {
   it('returns "上午好" for morning hours (8)', () => {

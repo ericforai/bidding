@@ -62,10 +62,6 @@
                 </div>
               </div>
             </el-dropdown-item>
-            <el-dropdown-item divided command="switchRole">
-              <el-icon><Refresh /></el-icon>
-              切换角色
-            </el-dropdown-item>
             <el-dropdown-item v-if="!isApiDeliveryMode" command="profile">
               <el-icon><User /></el-icon>
               个人中心
@@ -82,51 +78,6 @@
         </template>
       </el-dropdown>
     </div>
-
-    <!-- 切换角色对话框 -->
-    <el-dialog
-      v-model="roleDialogVisible"
-      title="切换角色"
-      :width="isMobile ? '90%' : '440px'"
-      class="role-switch-dialog"
-      :close-on-click-modal="false"
-    >
-      <div class="role-dialog-content">
-        <p class="role-dialog-hint">选择要切换的角色身份</p>
-        <div class="role-selector">
-          <div
-            v-for="user in allUsers"
-            :key="user.id"
-            :class="['role-option-card', { 'is-selected': selectedUserId === user.id }]"
-            @click="selectedUserId = user.id"
-          >
-            <div class="role-radio-indicator">
-              <div class="radio-inner"></div>
-            </div>
-            <span class="role-avatar">{{ user.avatar }}</span>
-            <div class="role-info">
-              <div class="role-name">{{ user.name }}</div>
-              <div class="role-detail">{{ user.dept }} · {{ roleTextMap[user.role] }}</div>
-            </div>
-            <div class="role-check-icon" v-if="selectedUserId === user.id">
-              <el-icon><Check /></el-icon>
-            </div>
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <div class="role-dialog-footer">
-          <el-button class="btn-cancel" @click="roleDialogVisible = false">
-            <el-icon><Close /></el-icon>
-            取消
-          </el-button>
-          <el-button class="btn-confirm" type="primary" @click="confirmSwitchRole" :disabled="!selectedUserId">
-            <el-icon><Check /></el-icon>
-            确认切换
-          </el-button>
-        </div>
-      </template>
-    </el-dialog>
 
     <!-- 移动端搜索弹窗 -->
     <el-dialog
@@ -161,7 +112,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   Search, Bell, ArrowDown, User, Setting,
-  SwitchButton, Expand, Fold, Refresh, Menu, Check, Close
+  SwitchButton, Expand, Fold, Menu
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { hasMenuAccessForRole } from '@/api/modules/settings'
@@ -181,8 +132,6 @@ const isApiDeliveryMode = computed(() => true)
 
 const searchKeyword = ref('')
 const unreadCount = ref(isApiDeliveryMode.value ? 0 : 3)
-const roleDialogVisible = ref(false)
-const selectedUserId = ref('')
 const showMobileSearch = ref(false)
 
 // 移动端检测
@@ -216,7 +165,6 @@ const userAvatar = computed(() => {
 })
 const userName = computed(() => userStore.currentUser?.name || '游客')
 const userRoleText = computed(() => userStore.currentUser?.roleName || roleTextMap[userStore.userRole] || '游客')
-const allUsers = computed(() => userStore.users || [])
 const canAccessSettings = computed(() => {
   const decision = hasMenuAccessForRole(userStore.userRole, ['settings'])
   if (decision !== null) {
@@ -267,10 +215,6 @@ const handleNotification = () => {
 
 const handleCommand = async (command) => {
   switch (command) {
-    case 'switchRole':
-      roleDialogVisible.value = true
-      selectedUserId.value = userStore.currentUser?.id || ''
-      break
     case 'profile':
       if (!isApiDeliveryMode.value) {
         ElMessage.info('个人中心')
@@ -295,13 +239,6 @@ const handleCommand = async (command) => {
   }
 }
 
-const confirmSwitchRole = () => {
-  if (selectedUserId.value) {
-    userStore.switchUser(selectedUserId.value)
-    roleDialogVisible.value = false
-    ElMessage.success(`已切换为: ${userStore.currentUser?.name}`)
-  }
-}
 </script>
 
 <style scoped>
@@ -615,224 +552,6 @@ const confirmSwitchRole = () => {
   font-size: 12px;
   color: var(--text-tertiary);
   margin-top: 2px;
-}
-
-/* ========== 角色切换对话框 ========== */
-.role-dialog-content {
-  padding: var(--space-md) 0;
-}
-
-.role-dialog-hint {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-bottom: var(--space-md);
-  padding-left: var(--space-xs);
-}
-
-.role-selector {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  width: 100%;
-}
-
-.role-option-card {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border-radius: 10px;
-  border: 1.5px solid var(--border-color, #e5e7eb);
-  background: var(--surface-primary, #ffffff);
-  cursor: pointer;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.role-option-card:hover {
-  border-color: var(--brand-primary, #0369a1);
-  background: var(--surface-hover, #f0f9ff);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.1);
-}
-
-.role-option-card:active {
-  transform: translateY(0);
-}
-
-.role-option-card.is-selected {
-  border-color: var(--brand-primary, #0369a1);
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
-}
-
-.role-radio-indicator {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 2px solid var(--border-color, #d1d5db);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 200ms ease;
-  background: #ffffff;
-}
-
-.role-option-card:hover .role-radio-indicator {
-  border-color: var(--brand-primary, #0369a1);
-}
-
-.role-option-card.is-selected .role-radio-indicator {
-  border-color: var(--brand-primary, #0369a1);
-  background: var(--brand-primary, #0369a1);
-}
-
-.radio-inner {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ffffff;
-  opacity: 0;
-  transform: scale(0);
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.role-option-card.is-selected .radio-inner {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.role-avatar {
-  width: 40px;
-  height: 40px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #ffffff;
-  background: linear-gradient(135deg, #0369a1, #0ea5e9);
-  border-radius: var(--radius-full, 9999px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(3, 105, 161, 0.2);
-}
-
-.role-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.role-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary, #1e293b);
-  line-height: 1.4;
-}
-
-.role-detail {
-  font-size: 12px;
-  color: var(--text-secondary, #64748b);
-  margin-top: 2px;
-  line-height: 1.3;
-}
-
-.role-check-icon {
-  width: 20px;
-  height: 20px;
-  color: var(--brand-primary, #0369a1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  animation: checkSlideIn 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes checkSlideIn {
-  from {
-    opacity: 0;
-    transform: scale(0.5) translateX(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateX(0);
-  }
-}
-
-.role-dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-sm);
-  padding-top: var(--space-sm);
-  border-top: 1px solid var(--border-color, #f1f5f9);
-  margin-top: var(--space-md);
-}
-
-.role-dialog-footer .el-button {
-  min-width: 100px;
-  height: 38px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.btn-cancel {
-  border: 1.5px solid var(--border-color, #e5e7eb);
-  color: var(--text-secondary, #64748b);
-  background: #ffffff;
-}
-
-.btn-cancel:hover {
-  border-color: var(--text-secondary, #94a3b8);
-  color: var(--text-primary, #1e293b);
-  background: var(--surface-hover, #f8fafc);
-}
-
-.btn-confirm {
-  background: linear-gradient(135deg, #0369a1, #0284c7);
-  border: none;
-  box-shadow: 0 2px 8px rgba(3, 105, 161, 0.25);
-}
-
-.btn-confirm:hover:not(:disabled) {
-  background: linear-gradient(135deg, #0284c7, #0369a1);
-  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.35);
-  transform: translateY(-1px);
-}
-
-.btn-confirm:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.btn-confirm:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* 对话框样式优化 */
-.role-switch-dialog :deep(.el-dialog__header) {
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--border-color, #f1f5f9);
-}
-
-.role-switch-dialog :deep(.el-dialog__title) {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary, #1e293b);
-}
-
-.role-switch-dialog :deep(.el-dialog__body) {
-  padding: 20px 24px;
-}
-
-.role-switch-dialog :deep(.el-dialog__footer) {
-  padding: 16px 24px 20px;
 }
 
 /* ========== 移动端搜索区 ========== */

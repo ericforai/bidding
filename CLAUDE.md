@@ -119,6 +119,7 @@ npm run build
 - E2E：`e2e/`
 - 治理脚本：`scripts/`
 - 交付与规范文档：`docs/`
+- 项目知识库（Wiki）：`.wiki/pages/`（含标书需求追溯、架构、模块、缺口分析等，导航见 `.wiki/pages/_index.md`）
 
 ## 执行原则
 
