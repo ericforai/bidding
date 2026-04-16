@@ -1,0 +1,9 @@
+ALTER TABLE projects ADD COLUMN customer VARCHAR(255);
+ALTER TABLE projects ADD COLUMN budget DECIMAL(14,2);
+ALTER TABLE projects ADD COLUMN industry VARCHAR(50);
+ALTER TABLE projects ADD COLUMN region VARCHAR(100);
+ALTER TABLE projects ADD COLUMN platform VARCHAR(255);
+ALTER TABLE projects ADD COLUMN deadline DATE;
+ALTER TABLE projects ADD COLUMN description TEXT;
+ALTER TABLE projects ADD COLUMN remark TEXT;
+ALTER TABLE projects ADD COLUMN tags_json VARCHAR(1000);

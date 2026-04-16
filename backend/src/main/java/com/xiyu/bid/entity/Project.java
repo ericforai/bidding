@@ -14,12 +14,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -105,6 +106,42 @@ public class Project {
 
     @Column(name = "source_reasoning_summary", columnDefinition = "TEXT")
     private String sourceReasoningSummary;
+
+    @Column(name = "competitor_analysis_json", columnDefinition = "TEXT")
+    private String competitorAnalysisJson;
+
+    @Column(name = "tasks_json", columnDefinition = "TEXT")
+    private String tasksJson;
+
+    @Column(name = "ai_analysis_json", columnDefinition = "TEXT")
+    private String aiAnalysisJson;
+
+    @Column(name = "customer", length = 255)
+    private String customer;
+
+    @Column(name = "budget", precision = 14, scale = 2)
+    private BigDecimal budget;
+
+    @Column(name = "industry", length = 50)
+    private String industry;
+
+    @Column(name = "region", length = 100)
+    private String region;
+
+    @Column(name = "platform", length = 255)
+    private String platform;
+
+    @Column(name = "deadline")
+    private LocalDate deadline;
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "remark", columnDefinition = "TEXT")
+    private String remark;
+
+    @Column(name = "tags_json", length = 1000)
+    private String tagsJson;
 
     @Column(name = "customer_manager", length = 100)
     private String customerManager;
