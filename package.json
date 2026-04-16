@@ -6,13 +6,11 @@
   "scripts": {
     "dev": "vite",
     "dev:api": "vite --mode api",
-    "dev:mock": "vite --mode mock",
     "dev:all": "bash ./start.sh",
     "check:front-data-boundaries": "node scripts/check-front-data-boundaries.mjs",
     "check:doc-governance": "node scripts/check-doc-governance.mjs",
     "build": "npm run check:front-data-boundaries && npm run check:doc-governance && vite build",
     "build:api": "vite build --mode api",
-    "build:mock": "vite build --mode mock",
     "preview": "vite preview",
     "test:e2e": "npx playwright test --config playwright.config.js",
     "test:e2e:commercial": "npx playwright test --config playwright.config.js",

@@ -190,7 +190,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { collaborationApi, isMockMode } from '@/api'
+import { collaborationApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
@@ -218,7 +218,7 @@ const compareNew = ref('')
 const selectedVersion = ref(null)
 const versions = ref([])
 const compareResult = ref(null)
-const isApiMode = computed(() => !isMockMode())
+const isApiMode = computed(() => true)
 const currentUserId = computed(() => userStore.currentUser?.id ?? null)
 
 const oldVersion = computed(() => {
@@ -307,8 +307,7 @@ const handleCreateVersion = () => {
     const response = await collaborationApi.versions.createVersion(props.projectId, {
       changeSummary: value,
       content: value,
-      createdBy: currentUserId.value || 1,
-    })
+      createdBy: currentUserId.value || 1 })
     if (!response?.success) {
       ElMessage.error(response?.message || '创建版本失败')
       return

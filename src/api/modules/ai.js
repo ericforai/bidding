@@ -5,12 +5,10 @@
 
 /**
  * AI 智能分析模块 API
- * 支持双模式切换，并在 API 模式下对齐当前后端契约
+ * 真实 API AI 分析访问层
  */
 import httpClient from '../client.js'
-import { mockData } from '../mock.js'
 import { buildFeatureUnavailableResponse } from '../featureAvailability.js'
-import { isMockMode } from '../config.js'
 
 function isNumericId(id) {
   return /^\d+$/.test(String(id))
@@ -19,8 +17,7 @@ function isNumericId(id) {
 function invalidIdMessage(entityName) {
   return {
     success: false,
-    message: `Current backend only supports numeric ${entityName} IDs in API mode`,
-  }
+    message: `Current backend only supports numeric ${entityName} IDs in API mode` }
 }
 
 function normalizeBidAnalysis(data = {}) {
@@ -30,8 +27,7 @@ function normalizeBidAnalysis(data = {}) {
     suggestion: data?.suggestion || data?.summary || '暂无分析建议',
     dimensionScores: Array.isArray(data?.dimensionScores) ? data.dimensionScores : [],
     risks: Array.isArray(data?.risks) ? data.risks : [],
-    autoTasks: Array.isArray(data?.autoTasks) ? data.autoTasks : [],
-  }
+    autoTasks: Array.isArray(data?.autoTasks) ? data.autoTasks : [] }
 }
 
 function normalizeScoreAnalysis(data = {}) {
@@ -47,14 +43,11 @@ function normalizeScoreAnalysis(data = {}) {
           name: dimension?.dimensionName || '未命名维度',
           score: Number(dimension?.score || 0),
           weight: Number(dimension?.weight || 0),
-          comments: dimension?.comments || '',
-        }))
-      : [],
-  }
+          comments: dimension?.comments || '' }))
+      : [] }
 }
 
 function buildScorePreview(context = {}) {
-  const base = mockData.scoreAnalysis?.P001 || {}
   const budget = Number(context?.budget || 0)
   const industry = context?.industry || ''
   const tags = Array.isArray(context?.tags) ? context.tags : []
@@ -69,50 +62,64 @@ function buildScorePreview(context = {}) {
   const boundedWinScore = Math.max(0, Math.min(100, winScore))
   const winLevel = boundedWinScore >= 80 ? 'high' : boundedWinScore >= 60 ? 'medium' : 'low'
 
-  const scoreCategories = Array.isArray(base.scoreCategories)
-    ? base.scoreCategories.map((category) => ({ ...category }))
-    : []
-  const gapItems = Array.isArray(base.gapItems) ? base.gapItems.map((item) => ({ ...item })) : []
+  const scoreCategories = [
+    {
+      name: '商务',
+      total: 30,
+      covered: tags.includes('央国企') ? 24 : 18,
+      percentage: tags.includes('央国企') ? 80 : 60,
+      gaps: tags.includes('央国企') ? ['履约评价补强'] : ['业绩证明补强', '关键资质补齐'],
+    },
+    {
+      name: '技术',
+      total: 40,
+      covered: tags.includes('信创') ? 34 : 24,
+      percentage: tags.includes('信创') ? 85 : 60,
+      gaps: tags.includes('信创') ? ['集成实施案例'] : ['技术架构说明', '产品兼容性证明'],
+    },
+    {
+      name: '报价',
+      total: 30,
+      covered: budget > 500 ? 16 : 22,
+      percentage: budget > 500 ? 53 : 73,
+      gaps: budget > 500 ? ['报价竞争力校核'] : ['成本测算说明'],
+    },
+  ]
 
-  if (tags.includes('信创')) {
-    const techCategory = scoreCategories.find((item) => item.name === '技术')
-    if (techCategory) {
-      techCategory.covered = Math.min(techCategory.total, techCategory.covered + 4)
-      techCategory.percentage = Math.round((techCategory.covered / techCategory.total) * 100)
-      techCategory.gaps = techCategory.gaps.filter((gap) => gap !== '大数据平台')
-    }
-  }
+  const gapItems = scoreCategories.flatMap((category) =>
+    (category.gaps || []).map((gap) => ({
+      category: category.name,
+      scorePoint: gap,
+      required: `补充${gap}相关材料`,
+    })),
+  )
 
   const risks = [
-    ...(base.aiSummary?.risks || []),
     ...(budget > 500 ? [{ level: 'medium', content: '预算较高，需重点关注报价竞争力' }] : []),
+    ...(tags.includes('信创') ? [] : [{ level: 'medium', content: '缺少信创与兼容性证明时，技术评分可能受限' }]),
   ]
 
   const suggestions = [
-    ...(base.aiSummary?.suggestions || []),
-    ...(tags.includes('信创') ? ['突出信创兼容能力，补充国产化生态证明材料'] : []),
+    '围绕评分项提前映射已有材料，避免临近截标再补件',
+    ...(tags.includes('信创') ? ['突出信创兼容能力，补充国产化生态证明材料'] : ['补充兼容性与可替代方案说明']),
   ]
 
   const generatedTasks = gapItems.map((item, index) => ({
     name: `补齐${item.scorePoint}`,
     priority: item.category === '技术' ? 'high' : 'medium',
     suggestion: item.required,
-    selected: index < 4,
-  }))
+    selected: index < 4 }))
 
   return {
     aiSummary: {
       winScore: boundedWinScore,
       winLevel,
       risks,
-      suggestions,
-    },
+      suggestions },
     scoreAnalysis: {
       scoreCategories,
-      gapItems,
-    },
-    generatedTasks,
-  }
+      gapItems },
+    generatedTasks }
 }
 
 function normalizeCompetitionAnalysis(data) {
@@ -125,8 +132,7 @@ function normalizeCompetitionAnalysis(data) {
     competitiveAdvantage: item?.competitiveAdvantage || '',
     recommendedStrategy: item?.recommendedStrategy || '',
     riskFactors: item?.riskFactors || '',
-    analysisDate: item?.analysisDate || '',
-  }))
+    analysisDate: item?.analysisDate || '' }))
 }
 
 function normalizeRoiAnalysis(data = {}) {
@@ -142,8 +148,7 @@ function normalizeRoiAnalysis(data = {}) {
     roiPercentage: Number(data?.roiPercentage || 0),
     paybackPeriodMonths: Number(data?.paybackPeriodMonths || 0),
     riskFactors: data?.riskFactors || '',
-    assumptions: data?.assumptions || '',
-  }
+    assumptions: data?.assumptions || '' }
 }
 
 function normalizeComplianceResult(data = {}) {
@@ -164,8 +169,7 @@ function normalizeComplianceResult(data = {}) {
         category: issue?.ruleType || issue?.severity || '合规',
         item: issue?.ruleName || issue?.description || '检查项',
         status: issue?.passed === false ? 'fail' : 'pass',
-        suggestion: issue?.recommendation || issue?.description || '',
-      }))
+        suggestion: issue?.recommendation || issue?.description || '' }))
     } catch {
       return []
     }
@@ -179,8 +183,7 @@ function normalizeComplianceResult(data = {}) {
     overallScore: Number(data?.riskScore || data?.overallScore || 0),
     issues: parseIssues(),
     checkedAt: data?.checkedAt || '',
-    checkedBy: data?.checkedBy || '',
-  }
+    checkedBy: data?.checkedBy || '' }
 }
 
 function normalizeProjectAiCards(data = {}) {
@@ -190,25 +193,17 @@ function normalizeProjectAiCards(data = {}) {
           overallScore: Number(data.score.overallScore || 0),
           riskLevel: data.score.riskLevel || 'UNKNOWN',
           summary: data.score.summary || '',
-          dimensions: Array.isArray(data.score.dimensions) ? data.score.dimensions : [],
-        }
+          dimensions: Array.isArray(data.score.dimensions) ? data.score.dimensions : [] }
       : null,
     competition: Array.isArray(data?.competition) ? data.competition : [],
     compliance: Array.isArray(data?.compliance)
       ? data.compliance.map(normalizeComplianceResult)
       : [],
-    roi: data?.roi ? normalizeRoiAnalysis(data.roi) : null,
-  }
+    roi: data?.roi ? normalizeRoiAnalysis(data.roi) : null }
 }
 
 export const bidAnalysisApi = {
   async getAnalysis(tenderId) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizeBidAnalysis(mockData.aiAnalysis?.[tenderId] || mockData.aiAnalysis?.B001 || mockData.aiAnalysis?.T001),
-      })
-    }
     if (!isNumericId(tenderId)) return Promise.resolve(invalidIdMessage('tender'))
     try {
       const response = await httpClient.get(`/api/tenders/${tenderId}/ai-analysis`)
@@ -220,17 +215,10 @@ export const bidAnalysisApi = {
       const createResponse = await httpClient.post(`/api/tenders/${tenderId}/ai-analysis`)
       return { ...createResponse, data: normalizeBidAnalysis(createResponse?.data) }
     }
-  },
-}
+  } }
 
 export const scoreAnalysisApi = {
   async getAnalysis(projectId) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: mockData.scoreAnalysis?.[projectId] || mockData.scoreAnalysis?.P001 || null,
-      })
-    }
     if (!isNumericId(projectId)) return Promise.resolve(invalidIdMessage('project'))
 
     const response = await httpClient.get(`/api/ai/score-analysis/project/${projectId}`)
@@ -238,22 +226,10 @@ export const scoreAnalysisApi = {
   },
 
   async create(data) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: { ...data, id: `SA${Date.now()}` } })
-    }
     return httpClient.post('/api/ai/score-analysis', data)
   },
 
   async compare(id1, id2) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: {
-          project1: mockData.scoreAnalysis?.[id1] || mockData.scoreAnalysis?.P001,
-          project2: mockData.scoreAnalysis?.[id2] || mockData.scoreAnalysis?.P001,
-        },
-      })
-    }
     if (!isNumericId(id1) || !isNumericId(id2)) return Promise.resolve(invalidIdMessage('project'))
 
     const response = await httpClient.get(`/api/ai/score-analysis/compare/${id1}/${id2}`)
@@ -262,18 +238,10 @@ export const scoreAnalysisApi = {
       ...response,
       data: {
         project1: list[0] || null,
-        project2: list[1] || null,
-      },
-    }
+        project2: list[1] || null } }
   },
 
   async generatePreview(context) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: buildScorePreview(context),
-      })
-    }
 
     const response = await httpClient.post('/api/projects/score-preview', {
       projectId: context?.projectId || null,
@@ -281,99 +249,57 @@ export const scoreAnalysisApi = {
       projectName: context?.projectName || context?.name || '',
       industry: context?.industry || '',
       budget: Number(context?.budget || 0),
-      tags: Array.isArray(context?.tags) ? context.tags : [],
-    })
+      tags: Array.isArray(context?.tags) ? context.tags : [] })
     return { ...response, data: response?.data ?? null }
-  },
-}
+  } }
 
 export const projectAiApi = {
   async getCards(projectId) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: {
-          score: normalizeScoreAnalysis(mockData.scoreAnalysis?.[projectId] || mockData.scoreAnalysis?.P001 || {}),
-          competition: mockData.competitionIntel?.[projectId]?.competitors || mockData.competitionIntel?.P001?.competitors || [],
-          compliance: [mockData.complianceCheck?.[projectId] || mockData.complianceCheck?.P001].filter(Boolean),
-          roi: normalizeRoiAnalysis(mockData.roiAnalysis?.[projectId] || mockData.roiAnalysis?.P001 || {}),
-        },
-      })
-    }
     if (!isNumericId(projectId)) {
       return Promise.resolve(buildFeatureUnavailableResponse('project-ai-cards', {
-        message: 'Project ID must be numeric in API mode',
-      }))
+        message: 'Project ID must be numeric in API mode' }))
     }
 
     const response = await httpClient.get(`/api/projects/${projectId}/ai-cards`)
     return { ...response, data: response?.data ? normalizeProjectAiCards(response.data) : null }
-  },
-}
+  } }
 
 export const competitionApi = {
   async getProjectAnalysis(projectId) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: mockData.competitionIntel?.[projectId] || mockData.competitionIntel?.P001 || null,
-      })
-    }
     if (!isNumericId(projectId)) {
       return Promise.resolve(buildFeatureUnavailableResponse('competition-analysis', {
-        message: 'Project ID must be numeric in API mode',
-      }))
+        message: 'Project ID must be numeric in API mode' }))
     }
 
     const response = await httpClient.get(`/api/ai/competition/project/${projectId}`)
     return {
       ...response,
-      data: response?.data ? normalizeCompetitionAnalysis(response.data) : [],
-    }
+      data: response?.data ? normalizeCompetitionAnalysis(response.data) : [] }
   },
 
   async getCompetitors() {
-    if (isMockMode()) {
-      const analysis = mockData.competitionIntel?.P001
-      return Promise.resolve({ success: true, data: analysis?.competitors || [] })
-    }
     return httpClient.get('/api/ai/competition/competitors')
   },
 
   async addCompetitor(data) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: { ...data, id: `C${Date.now()}` } })
-    }
     return httpClient.post('/api/ai/competition/competitors', data)
   },
 
   async analyze(projectId) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: mockData.competitionIntel?.P001 || null })
-    }
     if (!isNumericId(projectId)) {
       return Promise.resolve(buildFeatureUnavailableResponse('competition-analysis', {
-        message: 'Project ID must be numeric in API mode',
-      }))
+        message: 'Project ID must be numeric in API mode' }))
     }
 
     const response = await httpClient.post(`/api/ai/competition/project/${projectId}/analyze`)
     return { ...response, data: response?.data ? normalizeCompetitionAnalysis(response.data)[0] || null : null }
-  },
-}
+  } }
 
 export const roiApi = {
   async getAnalysis(projectId) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: mockData.roiAnalysis?.[projectId] || mockData.roiAnalysis?.P001 || null,
-      })
-    }
     if (!isNumericId(projectId)) {
       return Promise.resolve(buildFeatureUnavailableResponse('roi-analysis', {
-        message: 'Project ID must be numeric in API mode',
-      }))
+        message: 'Project ID must be numeric in API mode' }))
     }
 
     const response = await httpClient.get(`/api/ai/roi/project/${projectId}`)
@@ -381,58 +307,23 @@ export const roiApi = {
   },
 
   async calculate(data) {
-    if (isMockMode()) {
-      const cost = Object.values(data.estimatedCost || {}).reduce((sum, value) => sum + (value || 0), 0)
-      const revenue = Number(data.projectBudget || 0)
-      const profit = revenue - cost
-      return Promise.resolve({
-        success: true,
-        data: {
-          ...data,
-          totalCost: cost,
-          netProfit: profit,
-          profitMargin: revenue ? Number(((profit / revenue) * 100).toFixed(1)) : 0,
-        },
-      })
-    }
     if (!isNumericId(data?.projectId)) {
       return Promise.resolve(buildFeatureUnavailableResponse('roi-analysis', {
-        message: 'Project ID must be numeric in API mode',
-      }))
+        message: 'Project ID must be numeric in API mode' }))
     }
 
     return httpClient.post(`/api/ai/roi/project/${data.projectId}/calculate`, data)
   },
 
   async sensitivity(data) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: {
-          scenarios: [
-            { name: '乐观', roi: 85, probability: 0.3 },
-            { name: '中性', roi: 72, probability: 0.5 },
-            { name: '悲观', roi: 45, probability: 0.2 },
-          ],
-        },
-      })
-    }
     return httpClient.post('/api/ai/roi/sensitivity', data)
-  },
-}
+  } }
 
 export const complianceApi = {
   async getCheckResult(projectId) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: mockData.complianceCheck?.[projectId] || mockData.complianceCheck?.P001 || null,
-      })
-    }
     if (!isNumericId(projectId)) {
       return Promise.resolve(buildFeatureUnavailableResponse('compliance-check', {
-        message: 'Project ID must be numeric in API mode',
-      }))
+        message: 'Project ID must be numeric in API mode' }))
     }
 
     const response = await httpClient.get(`/api/compliance/project/${projectId}/results`)
@@ -441,13 +332,9 @@ export const complianceApi = {
   },
 
   async performCheck(projectId) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: mockData.complianceCheck?.P001 || null })
-    }
     if (!isNumericId(projectId)) {
       return Promise.resolve(buildFeatureUnavailableResponse('compliance-check', {
-        message: 'Project ID must be numeric in API mode',
-      }))
+        message: 'Project ID must be numeric in API mode' }))
     }
 
     const response = await httpClient.post(`/api/compliance/check/project/${projectId}`)
@@ -455,19 +342,14 @@ export const complianceApi = {
   },
 
   async performTenderCheck(tenderId) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: mockData.complianceCheck?.P001 || null })
-    }
     if (!isNumericId(tenderId)) {
       return Promise.resolve(buildFeatureUnavailableResponse('compliance-check', {
-        message: 'Tender ID must be numeric in API mode',
-      }))
+        message: 'Tender ID must be numeric in API mode' }))
     }
 
     const response = await httpClient.post(`/api/compliance/check/tender/${tenderId}`)
     return { ...response, data: response?.data ? normalizeComplianceResult(response.data) : null }
-  },
-}
+  } }
 
 export default {
   bid: bidAnalysisApi,
@@ -475,5 +357,4 @@ export default {
   project: projectAiApi,
   competition: competitionApi,
   roi: roiApi,
-  compliance: complianceApi,
-}
+  compliance: complianceApi }

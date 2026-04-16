@@ -145,14 +145,14 @@
           </el-form-item>
         </el-form>
 
-        <div v-if="showMockAccounts" class="test-accounts">
+        <div class="test-accounts">
           <div class="test-header">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
               <path d="M12 16v-4"/>
               <path d="M12 8h.01"/>
             </svg>
-            <span>测试账号</span>
+            <span>登录提示</span>
           </div>
           <div class="account-list">
             <span
@@ -176,7 +176,6 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { isMockLoginEnabled } from '@/api/config'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -200,19 +199,13 @@ const loginRules = {
   ]
 }
 
-const showMockAccounts = computed(() => isMockLoginEnabled())
+const displayAccounts = computed(() => [
+  'lizong（李总）',
+  'zhangjingli（张经理）',
+  'xiaowang（小王）'
+])
 
-const displayAccounts = computed(() => (
-  showMockAccounts.value
-    ? ['小王', '张经理', '李总', '李工']
-    : ['lizong（李总）', 'zhangjingli（张经理）', 'xiaowang（小王）']
-))
-
-const accountHint = computed(() => (
-  showMockAccounts.value
-    ? '密码：任意输入即可'
-    : 'API 模式请使用已分配的正式账号凭证登录'
-))
+const accountHint = computed(() => '请使用已分配的正式账号凭证登录')
 
 const handleLogin = async () => {
   if (!loginFormRef.value) return

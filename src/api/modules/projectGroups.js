@@ -4,7 +4,6 @@
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 import httpClient from '../client.js'
-import { isMockMode } from '../config.js'
 
 const fallbackPayload = {
   projectGroups: [],
@@ -63,12 +62,6 @@ const normalizePayload = (payload = fallbackPayload) => ({
 
 export const projectGroupsApi = {
   async getProjectGroups() {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizePayload(fallbackPayload)
-      })
-    }
 
     const response = await httpClient.get('/api/admin/project-groups')
     return {
@@ -79,12 +72,6 @@ export const projectGroupsApi = {
 
   async saveProjectGroups(payload) {
     const normalizedPayload = normalizePayload(payload)
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizedPayload
-      })
-    }
 
     const response = await httpClient.put('/api/admin/project-groups', normalizedPayload)
     return {
@@ -95,15 +82,6 @@ export const projectGroupsApi = {
 
   async createProjectGroup(payload) {
     const normalizedItem = normalizeProjectGroupRow(payload)
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: {
-          ...normalizedItem,
-          id: normalizedItem.id ?? Date.now()
-        }
-      })
-    }
 
     const response = await httpClient.post('/api/admin/project-groups', normalizedItem)
     return {
@@ -122,15 +100,6 @@ export const projectGroupsApi = {
       }
     }
 
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: {
-          ...normalizedItem,
-          id: numericId
-        }
-      })
-    }
 
     const response = await httpClient.patch(`/api/admin/project-groups/${numericId}`, normalizedItem)
     return {
@@ -148,11 +117,6 @@ export const projectGroupsApi = {
       }
     }
 
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true
-      })
-    }
 
     return httpClient.delete(`/api/admin/project-groups/${numericId}`)
   }

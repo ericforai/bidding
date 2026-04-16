@@ -1,10 +1,9 @@
-// Input: httpClient and API mode switch for approval-related requests
+// Input: httpClient for approval-related requests
 // Output: approvalApi - approval workflow accessors for frontend consumers
 // Pos: src/api/modules/ - Frontend API module layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 import httpClient from '../client.js'
-import { isMockMode } from '../config.js'
 
 function formatDateTime(value) {
   if (!value) return ''
@@ -38,8 +37,7 @@ function statusLabel(status) {
     PENDING: '待审批',
     APPROVED: '已通过',
     REJECTED: '已驳回',
-    CANCELLED: '已取消',
-  }
+    CANCELLED: '已取消' }
   return map[String(status || '').toUpperCase()] || (status || '未知状态')
 }
 
@@ -71,93 +69,13 @@ function normalizeApproval(item = {}) {
           approverName: action.operatorName || action.operator || '系统',
           status: String(action.actionType || '').toLowerCase().includes('reject') ? 'rejected' : 'approved',
           comment: action.comment || '',
-          actionTime: formatDateTime(action.createdAt || action.actionTime),
-        }))
+          actionTime: formatDateTime(action.createdAt || action.actionTime) }))
       : [],
     time: formatRelativeTime(item.submittedAt || item.submitTime || item.createdAt),
-    raw: item,
-  }
-}
-
-function buildMockPendingApprovals() {
-  const now = Date.now()
-  return [
-    {
-      id: 'mock-approval-1',
-      projectId: 1,
-      projectName: '某央企项目',
-      title: '某央企项目 - 投标预算审批',
-      approvalType: 'budget_review',
-      status: 'PENDING',
-      requesterName: '小王',
-      applicantDept: '投标管理部',
-      currentApproverName: '张经理',
-      priority: 1,
-      description: '申请追加投标预算与打印装订费用。',
-      submittedAt: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
-      dueDate: new Date(now + 24 * 60 * 60 * 1000).toISOString(),
-      isNearDueDate: true,
-      actions: [],
-    },
-    {
-      id: 'mock-approval-2',
-      projectId: 2,
-      projectName: '西部云项目',
-      title: '西部云项目 - 立项申请',
-      approvalType: 'project_review',
-      status: 'PENDING',
-      requesterName: '小王',
-      applicantDept: '华南销售部',
-      currentApproverName: '李总',
-      priority: 2,
-      description: '申请项目立项并启动内部资源协调。',
-      submittedAt: new Date(now - 5 * 60 * 60 * 1000).toISOString(),
-      dueDate: new Date(now + 12 * 60 * 60 * 1000).toISOString(),
-      isNearDueDate: true,
-      actions: [],
-    },
-  ].map(normalizeApproval)
-}
-
-function buildMockProjectApprovals(projectId) {
-  return [
-    {
-      id: `mock-history-${projectId}-1`,
-      projectId: Number(projectId),
-      projectName: `项目#${projectId}`,
-      title: '立项审批',
-      approvalType: 'project_review',
-      status: 'APPROVED',
-      requesterName: '小王',
-      applicantDept: '华南销售部',
-      currentApproverName: '李总',
-      priority: 1,
-      description: '项目立项已完成审批，可进入编制阶段。',
-      submittedAt: '2026-03-11T09:30:00',
-      completedAt: '2026-03-11T11:00:00',
-      actions: [
-        {
-          actionType: 'SUBMIT',
-          operatorName: '小王',
-          comment: '提交立项申请',
-          createdAt: '2026-03-11T09:30:00',
-        },
-        {
-          actionType: 'APPROVE',
-          operatorName: '李总',
-          comment: '同意立项，按计划推进。',
-          createdAt: '2026-03-11T11:00:00',
-        },
-      ],
-    },
-  ].map(normalizeApproval)
+    raw: item }
 }
 
 async function getPendingApprovals(params = {}) {
-  if (isMockMode()) {
-    const data = buildMockPendingApprovals()
-    return { success: true, data }
-  }
 
   const response = await httpClient.get('/api/approvals/pending', { params })
   const rows = Array.isArray(response?.data?.content)
@@ -169,18 +87,14 @@ async function getPendingApprovals(params = {}) {
   return {
     ...response,
     data: rows.map(normalizeApproval),
-    page: response?.data?.pageable ?? null,
-  }
+    totalCount: response?.data?.totalElements ?? rows.length,
+    page: response?.data?.pageable ?? null }
 }
 
 async function getProjectApprovals(projectId, params = {}) {
-  if (isMockMode()) {
-    return { success: true, data: buildMockProjectApprovals(projectId) }
-  }
 
   const response = await httpClient.get('/api/approvals/my', {
-    params: { page: 0, size: 100, ...params },
-  })
+    params: { page: 0, size: 100, ...params } })
 
   const rows = Array.isArray(response?.data?.content)
     ? response.data.content
@@ -192,18 +106,13 @@ async function getProjectApprovals(projectId, params = {}) {
     ...response,
     data: rows
       .filter((item) => String(item.projectId) === String(projectId))
-      .map(normalizeApproval),
-  }
+      .map(normalizeApproval) }
 }
 
 async function getMyApprovals(params = {}) {
-  if (isMockMode()) {
-    return { success: true, data: buildMockProjectApprovals(1) }
-  }
 
   const response = await httpClient.get('/api/approvals/my', {
-    params: { page: 0, size: 20, ...params },
-  })
+    params: { page: 0, size: 20, ...params } })
   const rows = Array.isArray(response?.data?.content)
     ? response.data.content
     : Array.isArray(response?.data)
@@ -213,40 +122,20 @@ async function getMyApprovals(params = {}) {
   return {
     ...response,
     data: rows.map(normalizeApproval),
-    page: response?.data?.pageable ?? null,
-  }
+    page: response?.data?.pageable ?? null }
 }
 
 async function submitApproval(payload) {
-  if (isMockMode()) {
-    return {
-      success: true,
-      data: normalizeApproval({
-        ...payload,
-        id: `mock-submit-${Date.now()}`,
-        status: 'PENDING',
-        requesterName: payload.requesterName || '当前用户',
-        currentApproverName: '张经理',
-        submittedAt: new Date().toISOString(),
-      }),
-    }
-  }
 
   const response = await httpClient.post('/api/approvals/submit', payload)
   return response
 }
 
 async function approve(id, payload) {
-  if (isMockMode()) {
-    return { success: true, data: { id, status: 'APPROVED', ...payload } }
-  }
   return httpClient.post(`/api/approvals/${id}/approve`, payload)
 }
 
 async function reject(id, payload) {
-  if (isMockMode()) {
-    return { success: true, data: { id, status: 'REJECTED', ...payload } }
-  }
   return httpClient.post(`/api/approvals/${id}/reject`, payload)
 }
 
@@ -256,7 +145,6 @@ export const approvalApi = {
   getMyApprovals,
   submitApproval,
   approve,
-  reject,
-}
+  reject }
 
 export default approvalApi

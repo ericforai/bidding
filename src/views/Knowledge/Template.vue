@@ -519,7 +519,7 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
-import { getFeaturePlaceholder, isFeatureUnavailableResponse, knowledgeApi, isMockMode } from '@/api'
+import { getFeaturePlaceholder, isFeatureUnavailableResponse, knowledgeApi } from '@/api'
 import { getTemplateDemoState, saveTemplateDemoState } from '@/api/mock-adapters/frontendDemo.js'
 import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 import { triggerDownload } from '@/api/modules/export'
@@ -1669,31 +1669,29 @@ const mockTemplates = [
 const templates = ref([])
 
 const loadTemplatePersistence = () => {
-  if (!isMockMode()) {
+  if (true) {
     return {
       patches: {},
-      copies: [],
-    }
+      copies: [] }
   }
   return getTemplateDemoState()
 }
 
 const saveTemplatePersistence = (state) => {
-  if (!isMockMode()) {
+  if (true) {
     return
   }
   saveTemplateDemoState(state)
 }
 
 const applyTemplatePersistence = (list) => {
-  if (!isMockMode()) {
+  if (true) {
     return list
   }
   const state = loadTemplatePersistence()
   const patchedTemplates = list.map((item) => ({
     ...item,
-    ...(state.patches?.[String(item.id)] || {}),
-  }))
+    ...(state.patches?.[String(item.id)] || {}) }))
   const copyIds = new Set(patchedTemplates.map((item) => String(item.id)))
   const copies = Array.isArray(state.copies)
     ? state.copies.filter((item) => !copyIds.has(String(item.id)))
@@ -1702,20 +1700,19 @@ const applyTemplatePersistence = (list) => {
 }
 
 const persistTemplatePatch = (templateId, patch) => {
-  if (!isMockMode()) {
+  if (true) {
     return
   }
   const state = loadTemplatePersistence()
   state.patches = state.patches || {}
   state.patches[String(templateId)] = {
     ...(state.patches[String(templateId)] || {}),
-    ...patch,
-  }
+    ...patch }
   saveTemplatePersistence(state)
 }
 
 const persistTemplateCopy = (template) => {
-  if (!isMockMode()) {
+  if (true) {
     return
   }
   const state = loadTemplatePersistence()
@@ -1728,7 +1725,7 @@ const persistTemplateCopy = (template) => {
 }
 
 const removeTemplatePersistence = (templateId) => {
-  if (!isMockMode()) {
+  if (true) {
     return
   }
   const state = loadTemplatePersistence()
@@ -1746,7 +1743,7 @@ const loadTemplates = async () => {
   try {
     const result = await knowledgeApi.templates.getList()
     if (result?.success) {
-      templates.value = isMockMode() ? applyTemplatePersistence(result.data || []) : (result.data || [])
+      templates.value = false ? applyTemplatePersistence(result.data || []) : (result.data || [])
       pagination.total = templates.value.length
       featurePlaceholder.value = null
     } else {
@@ -1755,9 +1752,7 @@ const loadTemplates = async () => {
       featurePlaceholder.value = notifyFeatureUnavailable(result, {
         fallback: {
           title: '模板库当前不可用',
-          hint: '当前无法加载模板列表，请稍后重试或联系管理员检查知识库服务。',
-        },
-      })
+          hint: '当前无法加载模板列表，请稍后重试或联系管理员检查知识库服务。' } })
       if (!featurePlaceholder.value && result?.message) {
         ElMessage.error(result.message)
       }
@@ -1892,8 +1887,7 @@ const handleAdd = async () => {
       name: value,
       category,
       tags: [],
-      description: '新建模板',
-    })
+      description: '新建模板' })
 
     if (!result?.success) {
       ElMessage.error(result?.message || '创建失败')
@@ -1958,8 +1952,7 @@ const confirmUseTemplate = async () => {
       docType: useTemplateForm.docType,
       projectId: useTemplateForm.projectId || null,
       applyOptions: useTemplateForm.applyOptions,
-      usedBy: getCurrentUserId(),
-    })
+      usedBy: getCurrentUserId() })
     if (!useResult?.success) {
       ElMessage.error(useResult?.message || '模板使用记录失败')
       return
@@ -1970,8 +1963,7 @@ const confirmUseTemplate = async () => {
       const nextUseCount = (templates.value[templateIndex].useCount || 0) + 1
       templates.value[templateIndex].useCount = nextUseCount
       persistTemplatePatch(templates.value[templateIndex].id, {
-        useCount: nextUseCount,
-      })
+        useCount: nextUseCount })
     }
   }
 
@@ -1999,12 +1991,6 @@ const createDocumentFromTemplate = async () => {
       status: 'draft'
     }
 
-    if (isMockMode()) {
-      // 仅在 mock 模式下保留本地草稿，避免污染 API 模式的真实展示
-      const savedDocs = JSON.parse(localStorage.getItem('draftDocuments') || '[]')
-      savedDocs.push(newDocument)
-      localStorage.setItem('draftDocuments', JSON.stringify(savedDocs))
-    }
 
     // 跳转到文档编辑页面
     await router.push({
@@ -2086,8 +2072,7 @@ const handleDownloadTemplate = () => {
     ElMessage.success(`开始下载：${previewTemplate.value.name}`)
     if (isPersistentTemplateId(previewTemplate.value.id)) {
       knowledgeApi.templates.recordDownload(previewTemplate.value.id, {
-        downloadedBy: getCurrentUserId(),
-      }).then((result) => {
+        downloadedBy: getCurrentUserId() }).then((result) => {
         if (result?.success && result.data) {
           upsertTemplate(result.data)
           previewTemplate.value = result.data
@@ -2098,8 +2083,7 @@ const handleDownloadTemplate = () => {
       if (templateIndex > -1) {
         templates.value[templateIndex].downloads++
         persistTemplatePatch(templates.value[templateIndex].id, {
-          downloads: templates.value[templateIndex].downloads,
-        })
+          downloads: templates.value[templateIndex].downloads })
         previewTemplate.value = { ...previewTemplate.value, downloads: templates.value[templateIndex].downloads }
       }
     }
@@ -2117,8 +2101,7 @@ const handleMoreAction = async (command, row) => {
       }).then(async ({ value }) => {
         const result = await knowledgeApi.templates.update(row.id, {
           ...row,
-          name: value,
-        })
+          name: value })
 
         if (!result?.success) {
           ElMessage.error(result?.message || '更新失败')
@@ -2137,8 +2120,7 @@ const handleMoreAction = async (command, row) => {
       if (isPersistentTemplateId(row.id)) {
         const copyResult = await knowledgeApi.templates.copy(row.id, {
           name: `${row.name}（副本）`,
-          createdBy: getCurrentUserId(),
-        })
+          createdBy: getCurrentUserId() })
         if (!copyResult?.success) {
           ElMessage.error(copyResult?.message || '复制失败')
           break
@@ -2152,8 +2134,7 @@ const handleMoreAction = async (command, row) => {
           version: row.version || '1.0',
           downloads: 0,
           useCount: 0,
-          updateTime: new Date().toISOString().split('T')[0],
-        }
+          updateTime: new Date().toISOString().split('T')[0] }
         templates.value.unshift(copiedTemplate)
         persistTemplateCopy(copiedTemplate)
       }
@@ -2169,9 +2150,7 @@ const handleMoreAction = async (command, row) => {
           versionPlaceholder.value = notifyFeatureUnavailable(versionResult, {
             fallback: {
               title: '版本历史当前不可用',
-              hint: '当前无法加载模板版本轨迹，可继续使用模板主体能力。',
-            },
-          })
+              hint: '当前无法加载模板版本轨迹，可继续使用模板主体能力。' } })
           versionDialogVisible.value = true
           break
         }
@@ -2184,8 +2163,7 @@ const handleMoreAction = async (command, row) => {
           version: version.version,
           date: String(version.createdAt || '').slice(0, 10) || row.updateTime,
           description: version.description || '版本变更',
-          isCurrent: index === 0,
-        }))
+          isCurrent: index === 0 }))
       } else {
         versionPlaceholder.value = null
         versionHistory.value = [
@@ -2222,16 +2200,14 @@ const handleMoreAction = async (command, row) => {
       )
       if (isPersistentTemplateId(row.id)) {
         const downloadResult = await knowledgeApi.templates.recordDownload(row.id, {
-          downloadedBy: getCurrentUserId(),
-        })
+          downloadedBy: getCurrentUserId() })
         if (downloadResult?.success && downloadResult.data) {
           upsertTemplate(downloadResult.data)
         }
       } else {
         row.downloads = (row.downloads || 0) + 1
         persistTemplatePatch(row.id, {
-          downloads: row.downloads,
-        })
+          downloads: row.downloads })
       }
       ElMessage.success(`开始下载：${row.name}`)
       break

@@ -312,7 +312,6 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import BorrowDialog from './components/BorrowDialog.vue'
-import { isMockMode } from '@/api'
 import { getBarSiteDemoOverride, saveBarSiteDemoPatch } from '@/api/mock-adapters/frontendDemo.js'
 
 const router = useRouter()
@@ -373,12 +372,11 @@ const applySitePersistence = (data) => {
     ...data,
     ...persisted,
     auditLog: Array.isArray(persisted.auditLog) ? persisted.auditLog : data.auditLog,
-    sop: persisted.sop ? { ...(data.sop || {}), ...persisted.sop } : data.sop,
-  }
+    sop: persisted.sop ? { ...(data.sop || {}), ...persisted.sop } : data.sop }
 }
 
 const persistSitePatch = (siteId, patch) => {
-  if (!isMockMode()) {
+  if (true) {
     return
   }
   saveBarSiteDemoPatch(siteId, patch)
@@ -422,8 +420,7 @@ const handleEdit = async () => {
   const nextRemark = `${site.value.remark || '维护记录'}；${new Date().toLocaleDateString('zh-CN')} 已完成站点信息校正`
   const response = await barStore.updateSite(site.value.id, {
     ...site.value,
-    remark: nextRemark,
-  })
+    remark: nextRemark })
   if (!response?.success) {
     ElMessage.error(response?.message || '站点更新失败')
     return
@@ -435,8 +432,7 @@ const handleEdit = async () => {
     action: '更新了站点基础信息'
   })
   persistSitePatch(site.value.id, {
-    auditLog: site.value.auditLog,
-  })
+    auditLog: site.value.auditLog })
   await refreshSite()
   ElMessage.success(`已保存站点「${site.value?.name || ''}」修改`)
 }
@@ -618,8 +614,7 @@ const handleUploadAttachment = async () => {
     size: '128KB',
     contentType: 'application/pdf',
     uploadedBy: '李总',
-    url: '',
-  })
+    url: '' })
   if (!response?.success) {
     ElMessage.error(response?.message || '附件上传失败')
     return

@@ -248,7 +248,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBarStore } from '@/stores/bar'
-import { isMockMode } from '@/api'
 import {
   Back, Plus, Upload, Search, RefreshLeft, View, Edit, Delete, CopyDocument, MoreFilled, Link, Setting
 } from '@element-plus/icons-vue'
@@ -261,7 +260,7 @@ const loading = ref(false)
 const showAddDialog = ref(false)
 const editingSite = ref(null)
 const siteFormRef = ref(null)
-const showDemoOnlyActions = isMockMode()
+const showDemoOnlyActions = false
 
 const filterForm = ref({
   region: '',
@@ -437,8 +436,7 @@ const handleMoreAction = async (command, site) => {
         const response = await barStore.verifySite(site.id, {
           verifiedBy: '李总',
           status: 'SUCCESS',
-          message: `站点「${site.name}」验证通过`,
-        })
+          message: `站点「${site.name}」验证通过` })
         if (!response?.success) {
           ElMessage.error(response?.message || '站点验证失败')
           return

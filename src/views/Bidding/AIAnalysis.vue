@@ -246,7 +246,7 @@ import {
   Plus
 } from '@element-plus/icons-vue'
 import WinScoreChart from '@/components/ai/WinScoreChart.vue'
-import { aiApi, isMockMode, tendersApi } from '@/api'
+import { aiApi, tendersApi } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -295,7 +295,7 @@ const progressColors = [
   { color: '#67c23a', percentage: 100 }
 ]
 
-const isApiMode = !isMockMode()
+const isApiMode = true
 
 const dimensionDetails = computed(() => {
   if (!analysisData.value) return []

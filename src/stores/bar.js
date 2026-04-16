@@ -4,12 +4,12 @@
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 import { defineStore } from 'pinia'
-import { isMockMode, resourcesApi } from '@/api'
+import {  resourcesApi } from '@/api'
 
 function computeCapability(site) {
   const accounts = Array.isArray(site.accounts) ? site.accounts : []
   const uks = Array.isArray(site.uks) ? site.uks : []
-  const hasDetailedChildData = isMockMode() || accounts.length > 0 || uks.length > 0
+  const hasDetailedChildData = false || accounts.length > 0 || uks.length > 0
 
   const hasAccount = accounts.length > 0
   const hasAvailableUK = uks.some((uk) => uk.status === 'available')
@@ -37,16 +37,14 @@ function computeCapability(site) {
     ukCount: uks.length,
     availableUkCount: uks.filter((uk) => uk.status === 'available').length,
     primaryOwner: accounts[0]?.owner || '',
-    primaryPhone: accounts[0]?.phone || '',
-  }
+    primaryPhone: accounts[0]?.phone || '' }
 }
 
 function buildAuditLog(verifications = [], certificates = [], attachments = []) {
   const verifyLogs = verifications.map((item) => ({
     time: item.verifiedAt || '',
     user: item.verifiedBy || 'system',
-    action: item.message || '执行了站点验证',
-  }))
+    action: item.message || '执行了站点验证' }))
 
   const borrowLogs = certificates.flatMap((certificate) => {
     const records = Array.isArray(certificate.borrowRecords) ? certificate.borrowRecords : []
@@ -55,15 +53,13 @@ function buildAuditLog(verifications = [], certificates = [], attachments = []) 
       user: record.borrower || '',
       action: record.status === 'RETURNED'
         ? `归还 ${certificate.type} (${certificate.serialNo})`
-        : `借用 ${certificate.type} (${certificate.serialNo})`,
-    }))
+        : `借用 ${certificate.type} (${certificate.serialNo})` }))
   })
 
   const attachmentLogs = attachments.map((item) => ({
     time: item.uploadedAt || '',
     user: item.uploadedBy || 'system',
-    action: `上传附件 ${item.name}`,
-  }))
+    action: `上传附件 ${item.name}` }))
 
   return [...verifyLogs, ...borrowLogs, ...attachmentLogs]
     .filter((item) => item.time || item.action)
@@ -74,14 +70,12 @@ export const useBarStore = defineStore('bar', {
   state: () => ({
     sites: [],
     currentSite: null,
-    loading: false,
-  }),
+    loading: false }),
 
   getters: {
     activeSites: (state) => state.sites.filter((site) => site.status === 'active'),
     riskSites: (state) => state.sites.filter((site) => site.hasRisk),
-    getSiteByUrl: (state) => (url) => state.sites.find((site) => site.url === url),
-  },
+    getSiteByUrl: (state) => (url) => state.sites.find((site) => site.url === url) },
 
   actions: {
     async getSites(params = {}) {
@@ -93,7 +87,7 @@ export const useBarStore = defineStore('bar', {
         }
 
         const sites = Array.isArray(response.data) ? response.data : []
-        if (!isMockMode()) {
+        if (true) {
           const withCertificates = await Promise.all(sites.map(async (site) => {
             const accountsResponse = await resourcesApi.barSiteAccounts.getList(site.id)
             const certificatesResponse = await resourcesApi.certificates.getList(site.id)
@@ -110,8 +104,7 @@ export const useBarStore = defineStore('bar', {
               uks: certificatesResponse?.success && Array.isArray(certificatesResponse.data)
                 ? certificatesResponse.data
                 : [],
-              lastVerifyTime: verifications[0]?.verifiedAt || site.lastVerifyTime,
-            }
+              lastVerifyTime: verifications[0]?.verifiedAt || site.lastVerifyTime }
           }))
           this.sites = withCertificates
         } else {
@@ -136,7 +129,7 @@ export const useBarStore = defineStore('bar', {
       }
 
       let site = response.data
-      if (site && !isMockMode()) {
+      if (site && true) {
         const [accountsResponse, certificatesResponse, verificationResponse, sopResponse, attachmentsResponse] = await Promise.all([
           resourcesApi.barSiteAccounts.getList(id),
           resourcesApi.certificates.getList(id),
@@ -153,8 +146,7 @@ export const useBarStore = defineStore('bar', {
             ...certificate,
             borrowRecords: borrowRecordsResponse?.success && Array.isArray(borrowRecordsResponse.data)
               ? borrowRecordsResponse.data
-              : [],
-          }
+              : [] }
         }))
         const verifications = verificationResponse?.success && Array.isArray(verificationResponse.data)
           ? verificationResponse.data
@@ -169,8 +161,7 @@ export const useBarStore = defineStore('bar', {
           sop: sopResponse?.success ? sopResponse.data : null,
           attachments,
           lastVerifyTime: verifications[0]?.verifiedAt || site.lastVerifyTime,
-          auditLog: buildAuditLog(verifications, certificatesWithRecords, attachments),
-        }
+          auditLog: buildAuditLog(verifications, certificatesWithRecords, attachments) }
       }
 
       this.currentSite = site
@@ -205,8 +196,7 @@ export const useBarStore = defineStore('bar', {
       return {
         found: true,
         site,
-        capability: computeCapability(site),
-      }
+        capability: computeCapability(site) }
     },
 
     async createSite(data) {
@@ -252,7 +242,7 @@ export const useBarStore = defineStore('bar', {
     },
 
     async addAccount(siteId, accountData) {
-      if (!isMockMode()) {
+      if (true) {
         const response = await resourcesApi.barSiteAccounts.create(siteId, accountData)
         if (response?.success) {
           await this.getSiteById(siteId)
@@ -266,8 +256,7 @@ export const useBarStore = defineStore('bar', {
       const newAccount = {
         id: `A${Date.now()}`,
         status: 'active',
-        ...accountData,
-      }
+        ...accountData }
       site.accounts = Array.isArray(site.accounts) ? site.accounts : []
       site.accounts.push(newAccount)
       this.updateSiteRisk(siteId)
@@ -275,7 +264,7 @@ export const useBarStore = defineStore('bar', {
     },
 
     async updateAccount(siteId, accountId, data) {
-      if (!isMockMode()) {
+      if (true) {
         const response = await resourcesApi.barSiteAccounts.update(siteId, accountId, data)
         if (response?.success) {
           await this.getSiteById(siteId)
@@ -293,7 +282,7 @@ export const useBarStore = defineStore('bar', {
     },
 
     async deleteAccount(siteId, accountId) {
-      if (!isMockMode()) {
+      if (true) {
         const response = await resourcesApi.barSiteAccounts.delete(siteId, accountId)
         if (response?.success) {
           await this.getSiteById(siteId)
@@ -313,7 +302,7 @@ export const useBarStore = defineStore('bar', {
     },
 
     async addUk(siteId, ukData) {
-      if (!isMockMode()) {
+      if (true) {
         return resourcesApi.certificates.create(siteId, ukDataToPayload(ukData))
       }
 
@@ -323,8 +312,7 @@ export const useBarStore = defineStore('bar', {
       const newUk = {
         id: `UK${Date.now()}`,
         status: 'available',
-        ...ukData,
-      }
+        ...ukData }
       site.uks = Array.isArray(site.uks) ? site.uks : []
       site.uks.push(newUk)
       this.updateSiteRisk(siteId)
@@ -332,7 +320,7 @@ export const useBarStore = defineStore('bar', {
     },
 
     async updateUk(siteId, ukId, data) {
-      if (!isMockMode()) {
+      if (true) {
         return resourcesApi.certificates.update(siteId, ukId, ukDataToPayload(data))
       }
 
@@ -346,7 +334,7 @@ export const useBarStore = defineStore('bar', {
     },
 
     async deleteUk(siteId, ukId) {
-      if (!isMockMode()) {
+      if (true) {
         return resourcesApi.certificates.delete(siteId, ukId)
       }
 
@@ -362,14 +350,13 @@ export const useBarStore = defineStore('bar', {
     },
 
     async borrowUk(siteId, ukId, borrowData) {
-      if (!isMockMode()) {
+      if (true) {
         return resourcesApi.certificates.borrow(siteId, ukId, {
           borrower: borrowData.borrower,
           projectId: borrowData.projectId ? Number(borrowData.projectId) : null,
           purpose: borrowData.purpose,
           remark: borrowData.remark,
-          expectedReturnDate: borrowData.returnDate,
-        })
+          expectedReturnDate: borrowData.returnDate })
       }
 
       const site = this.sites.find((item) => String(item.id) === String(siteId))
@@ -387,15 +374,14 @@ export const useBarStore = defineStore('bar', {
       site.auditLog.unshift({
         time: new Date().toLocaleString('zh-CN'),
         user: borrowData.borrower,
-        action: `借用 ${uk.type} (${uk.serialNo})`,
-      })
+        action: `借用 ${uk.type} (${uk.serialNo})` })
 
       this.updateSiteRisk(siteId)
       return { success: true, data: uk }
     },
 
     async returnUk(siteId, ukId) {
-      if (!isMockMode()) {
+      if (true) {
         return resourcesApi.certificates.return(siteId, ukId, {})
       }
 
@@ -417,8 +403,7 @@ export const useBarStore = defineStore('bar', {
       site.auditLog.unshift({
         time: new Date().toLocaleString('zh-CN'),
         user: borrower,
-        action: `归还 ${uk.type} (${uk.serialNo})`,
-      })
+        action: `归还 ${uk.type} (${uk.serialNo})` })
 
       this.updateSiteRisk(siteId)
       return { success: true, data: uk }
@@ -480,9 +465,7 @@ export const useBarStore = defineStore('bar', {
       const accountRisk = accounts.some((account) => account.phone && !account.phone.includes('****'))
       site.hasRisk = ukRisk || accountRisk
       site.riskLevel = site.hasRisk ? 'high' : 'low'
-    },
-  },
-})
+    } } })
 
 function ukDataToPayload(data) {
   return {
@@ -492,6 +475,5 @@ function ukDataToPayload(data) {
     holder: data.holder,
     location: data.location,
     expiryDate: data.expiryDate,
-    remark: data.remark,
-  }
+    remark: data.remark }
 }

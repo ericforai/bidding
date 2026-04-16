@@ -443,7 +443,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Download, Document, FolderOpened, User, Loading } from '@element-plus/icons-vue'
-import { dashboardApi, projectsApi, isMockMode, getFeaturePlaceholder, isFeatureUnavailableResponse } from '@/api'
+import { dashboardApi, projectsApi, getFeaturePlaceholder, isFeatureUnavailableResponse } from '@/api'
 import { getDemoDashboardProjects } from '@/api/mock-adapters/frontendDemo.js'
 import LineChart from '@/components/charts/LineChart.vue'
 import PieChart from '@/components/charts/PieChart.vue'
@@ -480,7 +480,7 @@ const drillDownData = ref({
   stats: null
 })
 const currentDrillDownContext = ref(null)
-const isDemoMode = isMockMode()
+const isDemoMode = false
 const metricDrawerVisible = ref(false)
 const metricDrawerType = ref('')
 const metricDrawerTitle = ref('')
@@ -536,15 +536,13 @@ const metricTypeByCardKey = {
   bids: 'projects',
   winRate: 'win-rate',
   amount: 'revenue',
-  cost: 'projects',
-}
+  cost: 'projects' }
 
 const metricTitleMap = {
   revenue: '中标金额明细',
   'win-rate': '中标率明细',
   team: '人员绩效明细',
-  projects: '进行中项目明细',
-}
+  projects: '进行中项目明细' }
 
 const metricDrillDownItems = computed(() => metricDrillDownResponse.value?.items || [])
 const metricDrillDownSummary = computed(() => metricDrillDownResponse.value?.summary || {})
@@ -572,16 +570,13 @@ const buildEmptyDashboardData = () => ({
   statusDistribution: {},
   backendSummary: {
     activeProjects: 0,
-    pendingTasks: 0,
-  },
-})
+    pendingTasks: 0 } })
 
 const buildEmptyMetricDrillDownResponse = () => ({
   items: [],
   summary: { totalCount: 0, totalAmount: 0 },
   filters: { dimensions: [] },
-  pagination: { page: 1, size: metricPaginationState.value.size || 10, total: 0, totalPages: 0, hasNext: false },
-})
+  pagination: { page: 1, size: metricPaginationState.value.size || 10, total: 0, totalPages: 0, hasNext: false } })
 
 const metricDrillDownColumns = computed(() => {
   const columnMap = {
@@ -628,8 +623,7 @@ const metricDrillDownColumns = computed(() => {
       { key: 'amount', label: '预算(万)', width: 120, type: 'amount' },
       { key: 'createdAt', label: '开始时间', minWidth: 140, type: 'datetime' },
       { key: 'deadline', label: '截止时间', minWidth: 140, type: 'datetime' },
-    ],
-  }
+    ] }
 
   return columnMap[metricDrawerType.value] || []
 })
@@ -976,8 +970,7 @@ const loadData = async () => {
     }
     const nextData = {
       ...buildEmptyDashboardData(),
-      ...(response.data || {}),
-    }
+      ...(response.data || {}) }
 
     const productLinesResponse = await dashboardApi.getProductLines()
     if (productLinesResponse?.success) {
@@ -991,14 +984,11 @@ const loadData = async () => {
       const placeholder = notifyFeatureUnavailable(productLinesResponse, {
         fallback: {
           title: '产品线分析当前不可用',
-          hint: '其余指标仍基于真实后端数据加载，可稍后重试或联系管理员检查分析服务。',
-        },
-        level: 'warning',
-      })
+          hint: '其余指标仍基于真实后端数据加载，可稍后重试或联系管理员检查分析服务。' },
+        level: 'warning' })
       pageFeaturePlaceholders.value = {
         ...pageFeaturePlaceholders.value,
-        productLines: placeholder || getFeaturePlaceholder(productLinesResponse),
-      }
+        productLines: placeholder || getFeaturePlaceholder(productLinesResponse) }
       nextData.productLines = []
     } else if (productLinesResponse?.message) {
       ElMessage.warning(productLinesResponse.message)
@@ -1018,8 +1008,7 @@ const buildMetricDrillDownParams = () => {
   const [startDate, endDate] = Array.isArray(dateRange.value) ? dateRange.value : []
   const params = {
     page: metricPaginationState.value.page,
-    size: metricPaginationState.value.size,
-  }
+    size: metricPaginationState.value.size }
 
   if (startDate) {
     params.startDate = new Date(startDate).toISOString().slice(0, 10)
@@ -1070,9 +1059,7 @@ const openMetricDrillDown = async (type, options = {}) => {
       metricDrillDownPlaceholder.value = notifyFeatureUnavailable(response, {
         fallback: {
           title: '下钻明细当前不可用',
-          hint: '当前无法返回该指标的明细数据，请稍后重试或联系管理员检查分析服务。',
-        },
-      }) || getFeaturePlaceholder(response)
+          hint: '当前无法返回该指标的明细数据，请稍后重试或联系管理员检查分析服务。' } }) || getFeaturePlaceholder(response)
       return
     }
     if (!response?.success) {
@@ -1099,9 +1086,7 @@ const syncMetricQuery = async (type, extraQuery = {}) => {
     query: {
       ...route.query,
       drilldown: type,
-      ...extraQuery,
-    },
-  })
+      ...extraQuery } })
 }
 
 const clearMetricQuery = async () => {
@@ -1122,12 +1107,10 @@ const handleMetricOverviewClick = async (metricKey) => {
 const handleMetricFilterChange = async (key, value) => {
   metricFilterValues.value = {
     ...metricFilterValues.value,
-    [key]: value,
-  }
+    [key]: value }
   metricPaginationState.value = {
     ...metricPaginationState.value,
-    page: 1,
-  }
+    page: 1 }
 
   const extraQuery = {}
   if (key === 'status') extraQuery.status = value === 'ALL' ? undefined : value
@@ -1144,8 +1127,7 @@ const reloadMetricDrillDown = async () => {
 const handleMetricPageChange = async (page) => {
   metricPaginationState.value = {
     ...metricPaginationState.value,
-    page,
-  }
+    page }
   await openMetricDrillDown(metricDrawerType.value, { resetPaging: false })
 }
 
@@ -1182,22 +1164,19 @@ const formatMetricCell = (column, value, row = {}) => {
         REVIEWING: '审核中',
         SEALING: '封装中',
         BIDDING: '投标中',
-        ARCHIVED: '已归档',
-      }[value] || value
+        ARCHIVED: '已归档' }[value] || value
     }
     if (metricDrawerType.value === 'win-rate' && column.key === 'outcome') {
       return {
         WON: '已中标',
         LOST: '未中标',
-        IN_PROGRESS: '进行中',
-      }[value] || value
+        IN_PROGRESS: '进行中' }[value] || value
     }
     if (metricDrawerType.value === 'team' && column.key === 'role') {
       return {
         ADMIN: '管理员',
         MANAGER: '经理',
-        STAFF: '员工',
-      }[value] || value
+        STAFF: '员工' }[value] || value
     }
   }
 
@@ -1214,8 +1193,7 @@ const getMetricStatusTagType = (value, type) => {
       PENDING: 'info',
       TRACKING: 'warning',
       BIDDED: 'success',
-      ABANDONED: 'danger',
-    }[value] || 'info'
+      ABANDONED: 'danger' }[value] || 'info'
   }
   if (type === 'projects') {
     return {
@@ -1224,22 +1202,19 @@ const getMetricStatusTagType = (value, type) => {
       REVIEWING: 'primary',
       SEALING: 'warning',
       BIDDING: 'success',
-      ARCHIVED: 'info',
-    }[value] || 'info'
+      ARCHIVED: 'info' }[value] || 'info'
   }
   if (type === 'win-rate') {
     return {
       WON: 'success',
       LOST: 'danger',
-      IN_PROGRESS: 'warning',
-    }[value] || 'info'
+      IN_PROGRESS: 'warning' }[value] || 'info'
   }
   if (type === 'team') {
     return {
       ADMIN: 'danger',
       MANAGER: 'primary',
-      STAFF: 'success',
-    }[value] || 'info'
+      STAFF: 'success' }[value] || 'info'
   }
   return 'info'
 }
@@ -1261,8 +1236,7 @@ const handleDateChange = () => {
   if (metricDrawerVisible.value && metricDrawerType.value) {
     metricPaginationState.value = {
       ...metricPaginationState.value,
-      page: 1,
-    }
+      page: 1 }
     openMetricDrillDown(metricDrawerType.value, { resetPaging: false })
   }
   ElMessage.info('日期范围已更新')
@@ -1748,54 +1722,31 @@ const previewFile = (file) => {
 // 下载文件
 const downloadFile = (file) => {
   try {
-    // 创建下载链接
-    let downloadUrl = file.url || `/api/files/download/${file.id}`
+    const downloadUrl = file.url || `/api/files/download/${file.id}`
+    const token = getAccessToken()
 
-    // 如果是 mock 模式，使用模拟数据
-    if (import.meta.env.VITE_API_MODE === 'mock') {
-      // 创建模拟文件内容
-      const mockContent = `文件名: ${file.name}\n大小: ${file.size || '未知'}\n创建时间: ${file.uploadTime || new Date().toLocaleString()}\n\n这是模拟文件内容。`
-      const blob = new Blob([mockContent], { type: 'text/plain;charset=utf-8' })
-      downloadUrl = URL.createObjectURL(blob)
-
-      // 触发下载
-      const link = document.createElement('a')
-      link.href = downloadUrl
-      link.download = file.name
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-
-      // 释放对象 URL
-      URL.revokeObjectURL(downloadUrl)
-    } else {
-      // 实际 API 模式 - 使用 fetch 下载并添加认证头
-      const token = getAccessToken()
-      fetch(downloadUrl, {
-        method: 'GET',
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+    fetch(downloadUrl, {
+      method: 'GET',
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+      .then(response => {
+        if (!response.ok) throw new Error('下载失败')
+        return response.blob()
       })
-        .then(response => {
-          if (!response.ok) throw new Error('下载失败')
-          return response.blob()
-        })
-        .then(blob => {
-          const url = URL.createObjectURL(blob)
-          const link = document.createElement('a')
-          link.href = url
-          link.download = file.name
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          URL.revokeObjectURL(url)
-        })
-        .catch(error => {
-          ElMessage.error(`文件下载失败: ${error.message}`)
-        })
-      return
-    }
-
-    ElMessage.success(`开始下载: ${file.name}`)
+      .then(blob => {
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = file.name
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+        ElMessage.success(`开始下载: ${file.name}`)
+      })
+      .catch(error => {
+        ElMessage.error(`文件下载失败: ${error.message}`)
+      })
   } catch (error) {
     ElMessage.error(`下载失败: ${error.message}`)
   }

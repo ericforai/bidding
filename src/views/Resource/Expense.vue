@@ -333,7 +333,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Plus, Download, Bell, WarningFilled } from '@element-plus/icons-vue'
-import { projectsApi, resourcesApi, isMockMode } from '@/api'
+import { projectsApi, resourcesApi } from '@/api'
 import { exportApi } from '@/api/modules/export'
 import { useUserStore } from '@/stores/user'
 
@@ -362,15 +362,14 @@ const approvalForm = ref({
   result: 'approved',
   comment: ''
 })
-const isMockResourceMode = computed(() => isMockMode())
+const isMockResourceMode = computed(() => false)
 const availableProjects = ref([])
 
 const expenseCategoryMap = {
   保证金: 'OTHER',
   标书费: 'OTHER',
   差旅费: 'TRANSPORTATION',
-  其他: 'OTHER',
-}
+  其他: 'OTHER' }
 
 const resolveExpenseCategory = (type) => expenseCategoryMap[type] || 'OTHER'
 
@@ -381,13 +380,11 @@ const getProjectNameById = (projectId, fallback = '') => {
 
 const hydrateExpenseProjectNames = (items = []) => items.map((item) => ({
   ...item,
-  project: getProjectNameById(item.projectId, item.project),
-}))
+  project: getProjectNameById(item.projectId, item.project) }))
 
 const hydrateApprovalProjectNames = (items = []) => items.map((item) => ({
   ...item,
-  project: getProjectNameById(item.projectId, item.project),
-}))
+  project: getProjectNameById(item.projectId, item.project) }))
 
 const loadExpenses = async () => {
   const response = await resourcesApi.expenses.getList(searchForm.value)
@@ -410,15 +407,14 @@ const loadProjectOptions = async () => {
     .filter((project) => project?.id && project?.name)
     .map((project) => ({
       id: project.id,
-      name: project.name,
-    }))
+      name: project.name }))
 
   fees.value = hydrateExpenseProjectNames(fees.value)
   approvalRecords.value = hydrateApprovalProjectNames(approvalRecords.value)
 }
 
 // 审批记录：Mock 模式使用硬编码数据，API 模式使用空数组（由后端填充）
-const approvalRecords = ref(isMockMode() ? [
+const approvalRecords = ref(false ? [
   {
     id: 1,
     project: '某央企项目',
@@ -482,14 +478,11 @@ const displayedApprovalRecords = computed(() => {
       applyTime: expense.date || record?.applyTime || '-',
       approver: expense.approvedBy || record?.approver || '',
       approvalStatus: expense.approvalStatus || record?.approvalStatus || 'pending',
-      remark: expense.approvalComment || record?.remark || expense.description || '',
-    }
+      remark: expense.approvalComment || record?.remark || expense.description || '' }
   }).filter((item) => item.approvalStatus)
 })
 
 const loadApprovalRecords = async () => {
-  if (isMockMode()) return
-
   const response = await resourcesApi.expenses.getApprovalRecords()
   if (!response?.success) {
     ElMessage.error(response?.message || '审批记录加载失败')
@@ -601,8 +594,7 @@ const handleExport = () => {
     状态: item.status,
     审批状态: item.approvalStatus,
     发生日期: item.date,
-    备注: item.description || '',
-  })), `expenses-${new Date().toISOString().slice(0, 10)}.csv`).then((result) => {
+    备注: item.description || '' })), `expenses-${new Date().toISOString().slice(0, 10)}.csv`).then((result) => {
     if (!result?.success) {
       ElMessage.error('导出失败')
       return
@@ -614,7 +606,6 @@ const handleExport = () => {
 const handleDetail = async (row) => {
   currentExpenseDetail.value = row
   showDetailDialog.value = true
-  if (isMockMode()) return
 
   const response = await resourcesApi.expenses.getDetail(row.id)
   if (!response?.success) {
@@ -625,7 +616,7 @@ const handleDetail = async (row) => {
 }
 
 const handleReturn = (row) => {
-  if (!isMockMode()) {
+  if (true) {
     resourcesApi.expenses.requestReturn(row.id, {
       actor: userStore.userName,
       comment: `${userStore.userName} 发起保证金退还申请`
@@ -654,7 +645,7 @@ const handleSubmitApply = async () => {
     date: new Date().toISOString().split('T')[0]
   }
 
-  const response = isMockMode()
+  const response = false
     ? await resourcesApi.expenses.create(payload)
     : await resourcesApi.expenses.create({
         projectId: Number(applyForm.value.project),
@@ -663,8 +654,7 @@ const handleSubmitApply = async () => {
         date: new Date().toISOString().split('T')[0],
         expenseType: applyForm.value.type,
         description: applyForm.value.remark,
-        createdBy: userStore.userName,
-      })
+        createdBy: userStore.userName })
   if (!response?.success) {
     ElMessage.error(response?.message || '费用申请提交失败')
     return
@@ -678,8 +668,7 @@ const handleSubmitApply = async () => {
     type: '保证金',
     project: '',
     amount: 0,
-    remark: '',
-  }
+    remark: '' }
 }
 
 // 发送保证金归还提醒
@@ -699,7 +688,7 @@ const confirmRemind = () => {
 
 // 确认退还
 const handleConfirmReturn = (row) => {
-  if (!isMockMode()) {
+  if (true) {
     resourcesApi.expenses.confirmReturn(row.id, {
       actor: userStore.userName,
       comment: `${userStore.userName} 确认保证金已退还`
@@ -733,7 +722,7 @@ const handleApprove = (row) => {
 
 // 确认审批
 const confirmApproval = () => {
-  if (!isMockMode()) {
+  if (true) {
     resourcesApi.expenses.approve(currentApprovalItem.value?.id, {
       result: approvalForm.value.result === 'approved' ? 'APPROVED' : 'REJECTED',
       comment: approvalForm.value.comment,

@@ -1,161 +1,127 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+本文件提供本仓库的执行入口、常用命令、验证清单和环境坑点。
+它的目标不是描述理想状态，而是帮助代理和开发者快速对齐当前仓库的真实情况。
 
-## 开发命令
+## 仓库路径
+
+- 项目根目录：`/Users/user/xiyu/xiyu-bid-poc`
+- 后端目录：`/Users/user/xiyu/xiyu-bid-poc/backend`
+
+## 当前项目口径
+
+- 对外项目名称统一为“西域数智化投标管理平台”。
+- 仓库名、包名、构件名中的 `xiyu-bid-poc`、`bid-poc` 属于历史遗留。
+- 当前项目按真实 API 交付模式协作，不再把 Mock 当作正常路径。
+- 仓库中仍保留少量 `frontendDemo`、`demoPersistence` 等遗留内容；这些只代表待清理技术债，不代表允许继续使用的架构策略。
+
+## 推荐命令
+
+### 启动
 
 ```bash
-npm run dev      # 启动开发服务器 (端口: 1314)
-npm run build    # 生产环境构建
-npm run preview  # 预览构建结果
+# 推荐：一键联调
+cd /Users/user/xiyu/xiyu-bid-poc
+npm run dev:all
 ```
+
+```bash
+# 手动方式：后端
+cd /Users/user/xiyu/xiyu-bid-poc/backend
+mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=18080"
+```
+
+```bash
+# 手动方式：前端（真实 API 模式）
+cd /Users/user/xiyu/xiyu-bid-poc
+VITE_API_MODE=api VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --host 127.0.0.1 --port 1314
+```
+
+### 前端与文档验证
+
+```bash
+cd /Users/user/xiyu/xiyu-bid-poc
+npm run check:front-data-boundaries
+npm run check:doc-governance
+npm run build
+npm run test:unit
+npm run test:e2e
+```
+
+### 后端验证
+
+```bash
+cd /Users/user/xiyu/xiyu-bid-poc/backend
+mvn test -Dtest=<相关测试类>
+mvn test -Dtest=ArchitectureTest
+mvn test
+```
+
+## 当前验证清单（按可信度排序）
+
+### 1. 当前可直接信任的前端基线
+
+以下命令截至 2026-04-16 当前可通过：
+
+```bash
+npm run check:front-data-boundaries
+npm run check:doc-governance
+npm run build
+```
+
+### 2. 后端验证口径
+
+- `ArchitectureTest` 已恢复为**全绿基线**。
+- 2026-04-16 已完成两类历史问题修复：
+  - `E2eDemoDataInitializer` 引发的 `config -> service` 违规依赖
+  - `RateLimitService` 与 `ExportConfig` 引发的 `config <-> service` 循环依赖
+- 因此，后端任务完成时必须：
+  - 跑受影响测试
+  - 如涉及架构边界，再跑 `mvn test -Dtest=ArchitectureTest`
+  - 如出现失败，按新增问题处理并说明影响范围
+  - 不得再把当前仓库写成“存在已知存量失败”
 
 ## 端口约定
 
-- 前端本地开发服务端口固定为 `1314`
-- 默认访问地址固定为 `http://127.0.0.1:1314` 或 `http://localhost:1314`
-- `vite.config.js`、`playwright.config.js`、日常联调、截图和演示统一以 `1314` 为准
-- `14173` 这类端口仅允许用于临时排查；排查结束后必须关闭，不作为项目约定，不作为演示入口，不写入测试基线
-- 如果本机同时存在 `1314` 和其他临时 Vite 端口，优先保留 `1314`
+- 前端开发与演示统一使用 `1314`
+- 后端 API 统一使用 `18080`
+- 默认访问地址：`http://127.0.0.1:1314`
+- 默认后端健康检查：`http://127.0.0.1:18080/actuator/health`
 
-## 验证清单 (Verification Checklist)
+## 环境坑点
 
-所有涉及生产代码（Frontend / Backend）变更的任务，完成后必须作为交付条件经过以下红线扫描：
-1. **防止数据回退污染审查**: 运行 `npm run check:front-data-boundaries`，打回任何企图私自使用旧版 mock 兜底的代码。
-2. **文档治理与双向同步验证**: 运行 `npm run check:doc-governance`。
-3. **架构隐式依赖阻断排查**: 运行 `cd backend && mvn test -Dtest=ArchitectureTest` 确保没有 Controller 직连 Repository 或其他违反六边形架构预设的坏味道。
-4. **后端功能与生命周期基准测试**: 运行 `cd backend && mvn clean compile test`。
-5. **部署可达性打桩打包**: 至少确保终端命令 `npm run build` 没有抛出任何模块解析异常。
+1. **`npm run dev` 只会启动前端**
+   如果任务需要真实链路联调，优先使用 `npm run dev:all`，不要误以为单独前端已经代表系统启动完成。
 
-## 核心环境坑点与规避 (Pitfalls)
+2. **根目录 `start.sh` 会强制真实 API 模式**
+   当前脚本会给后端注入 `SPRING_PROFILES_ACTIVE=e2e`，给前端注入 `VITE_API_MODE=api` 和 `VITE_API_BASE_URL=http://127.0.0.1:18080`。
 
-1. **Spring Security 身份识别错位报错**：在后端 Controller 获取用户上下文时，如果强推 `Authentication.getName()` 到 `Long` 类型 ID 必定抛出 `ClassCastException` 崩溃，因其返回的是业务字符串 `username`。一定要通过 `authService.resolveUserByUsername()` 这个专用工具实现安全身份映射。
-2. **前后端接口端口联调错乱**：后端微服务启动默认绑定 **`18080`** 端口，而非某些陈旧 Spring Boot 记忆中的 `8080`。当 VITE 的 API Base 报错连接拒绝时，首先排查是 8080 导致还是 18080 导致。
-3. **废弃旧版Mock兜底**：系统已全面移除前端 `mock` 回退机制，专注于真实服务端响应闭环。若前端列表白屏，去查报错或联调真正的后端。
-4. **依赖注入越权红线**：禁止在控制层（Controller）隐式使用或注入 `Repository`。如果项目需求促使你这样做，这属于绝对反模式操作，项目内置 ArchUnit CI 随时可能将其识别为构建失败——所有的存储互动必须委托收口给对应 Domain 的 Service。
+3. **后端默认端口不是 8080，而是 18080**
+   当前文档、脚本、E2E 和联调路径都以 `18080` 为准。
 
-## 项目架构
+4. **仓库仍有 Mock 遗留，但不应继续使用**
+   `src/api/config.js`、部分 API 模块、部分 Store 和路由里仍有双模式痕迹；它们是历史技术债，不是允许继续依赖的路径。
 
-西域数智化投标管理平台 — 60天交付项目（2026-04-27 启动，2026-06-25 上线）。
-面向西域集团的私有化部署、源码交付项目，当前处于实施准备阶段。
+5. **`check-front-data-boundaries` 不是全能扫描器**
+   它能拦一部分明显违规导入，但还不能覆盖所有 `isMockMode()` 或 API 模块内部的双模式遗留；代码审查时仍需人工检查。
 
-### 技术栈
-- **前端框架**: Vue 3 (Composition API)
-- **构建工具**: Vite 5
-- **UI组件库**: Element Plus
-- **状态管理**: Pinia
-- **路由**: Vue Router 4
-- **图表**: ECharts
-- **样式**: Sass + CSS变量
+6. **安全配置当前比目标生产策略更宽松**
+   当前 `SecurityConfig` 仍放行 `/api/auth/sessions`、`/actuator/info`、`/h2-console/**`，默认 CORS 也兼容若干历史开发端口。不要继续扩大这些范围；如需调整，必须同步文档与代码。
 
-### 目录结构
+7. **仓库命名仍带 `POC`**
+   `package.json`、`pom.xml` 中仍使用 `poc` 命名，这是历史遗留。对外表达、汇报和文档正文不要继续强化 POC 口径。
 
-```
-src/
-├── api/
-│   └── mock.js           # [已废弃] 遗留演示配置 (不再新加业务数据)
-├── config/
-│   └── ai-prompts.js     # AI功能配置（投标准备、标书编制、团队协作）
-├── components/
-│   ├── layout/           # 布局组件（MainLayout, Header, Sidebar）
-│   ├── charts/           # ECharts图表组件（LineChart, BarChart, PieChart）
-│   ├── ai/               # AI相关组件（合规检查、版本管理、协作中心等）
-│   └── common/           # 通用组件（TaskBoard, AnimatedNumber等）
-├── stores/
-│   ├── user.js           # 用户状态（登录、角色切换）
-│   ├── project.js        # 项目状态
-│   └── bidding.js        # 标讯状态
-├── styles/               # 设计系统CSS变量
-└── views/                # 页面组件（按功能模块组织）
-```
+## 路径提示
 
-### 路由结构
+- 前端业务代码：`src/`
+- 后端业务代码：`backend/src/main/java/com/xiyu/bid/`
+- 后端测试：`backend/src/test/java/com/xiyu/bid/`
+- E2E：`e2e/`
+- 治理脚本：`scripts/`
+- 交付与规范文档：`docs/`
 
-- `/login` - 登录页
-- `/dashboard` - 工作台
-- `/bidding` - 标讯中心
-- `/project` - 投标项目
-- `/knowledge/*` - 知识资产（资质/案例/模板）
-- `/resource/*` - 资源管理（费用/账户）
-- `/analytics/dashboard` - 数据分析（需admin/manager角色）
-- `/ai-center` - AI智能中心
+## 执行原则
 
-### 状态管理模式
-
-项目使用 Pinia 进行状态管理，stores 位于 `src/stores/`：
-- 页面首次加载直接向底层真实 API 根据 Router/Store Hooks 索要数据
-- 用户状态持久化到 localStorage
-- 使用 Composition API 风格的 `defineStore`
-
-### 数据层架构
-
-项目已全面转入真实产品交付状态，**彻底废弃双模式并丢弃旧有的 Mock 模式**。
-前端所有的业务数据和持久化流转，必须通过 `src/api/modules/` 向后端发起 REST API 数据交互请求。
-
-### AI功能配置
-
-AI相关功能配置在 `src/config/ai-prompts.js`：
-- 三大类别：投标准备、标书编制、团队协作
-- 每个功能包含 promptTemplate、formConfig 配置
-- 通过 `aiConfigs` 对象管理所有AI功能
-
-### 设计系统
-
-CSS变量定义在 `src/styles/variables.css`，包括：
-- 颜色系统（主色、语义色、灰度）
-- 间距系统
-- 圆角、阴影等
-
-全局样式在 `App.vue` 中导入。
-
-### 路径别名
-
-`@` 别名指向 `src` 目录，在导入时使用：
-```js
-import Something from '@/components/...'
-```
-
-## 常见任务
-
-### 添加新页面
-1. 在 `src/views/` 对应模块下创建 Vue 文件
-2. 在 `src/router/index.js` 添加路由配置
-3. 如需权限控制，添加 `meta.roles`
-
-
-
-### 添加AI功能
-在 `src/config/ai-prompts.js` 的 `aiConfigs` 中添加新配置，包含：
-- `id`, `name`, `icon`, `category`
-- `promptTemplate`: role, task, outputFormat
-- `formConfig`: 表单配置
-
-### 使用Element Plus组件
-所有图标已全局注册，可直接使用：
-```vue
-<el-icon><Plus /></el-icon>
-```
-
-## Wiki 知识库
-
-项目配备了三层 LLM Wiki 知识库，用于结构化管理项目知识：
-
-- **治理规范**: `WIKI.md`（项目根目录）— 定义 Wiki 的维护规则和工作流
-- **源文档索引**: `.wiki/INDEX.md` — 对项目 70+ 源文档的分类编目
-- **知识页面**: `.wiki/pages/*.md` — LLM 合成的 11 个知识页面
-
-**使用方式**：
-1. 回答项目相关问题时，优先查阅 `.wiki/pages/` 中的合成知识
-2. 需要细节时，通过页面 frontmatter 的 `sources` 字段追溯到原始文档
-3. 新增源文档时，按 `WIKI.md` 中的摄入工作流更新 Wiki
-
-## 项目说明
-
-- 这是一个 60 天交付项目（非 POC），目标是向客户交付可上线的投标管理平台
-- 项目已全面淘汰落后的 Mock 模式，系统强制依赖真实后端接口串联才能进入功能链路
-- 后端技术栈：Spring Boot 3.2 + Java 21 + PostgreSQL + Redis
-- 部署方式：私有化部署，源码级交付
-- 开发服务器默认运行在 http://localhost:1314
-- 后端 API 默认运行在 http://localhost:18080
-- 本地方案联调记录、测试回放默认都使用 `1314` 开发环境端口
-- 关键文档：`docs/DELIVERY_BLOCKERS_SCHEDULE.md`（交付阻塞项）、`docs/GO_LIVE_CHECKLIST.md`（上线清单）
+- 真实 API 是唯一支持路径。
+- 文档要反映“当前事实 + 待清理事项”，不要再把目标状态写成现状。
+- 发现架构测试、Mock 遗留或安全配置与文档不一致时，应优先修正文档口径，或在同次任务中同步收口代码，而不是继续掩盖。 

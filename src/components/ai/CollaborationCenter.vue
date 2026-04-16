@@ -145,7 +145,7 @@
 import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Bell } from '@element-plus/icons-vue'
-import { collaborationApi, isMockMode } from '@/api'
+import { collaborationApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
@@ -169,13 +169,12 @@ const dialogVisible = computed({
 
 const activeTab = ref('chapters')
 const loading = ref(false)
-const isApiMode = computed(() => !isMockMode())
+const isApiMode = computed(() => true)
 
 const users = computed(() =>
   (userStore.users || []).map((user) => ({
     value: user.name,
-    label: user.name,
-  }))
+    label: user.name }))
 )
 
 const chapters = ref([])
@@ -188,8 +187,7 @@ const flattenSections = (sections = []) => sections.flatMap((section) => {
     owner: section.owner || '',
     dueDate: section.dueDate || '',
     locked: Boolean(section.locked),
-    status: section.status || (section.owner ? 'editing' : 'pending'),
-  }
+    status: section.status || (section.owner ? 'editing' : 'pending') }
   return [normalized, ...flattenSections(section.children || [])]
 })
 
@@ -212,8 +210,7 @@ const loadData = async () => {
     chapters.value = treeResponse?.success && Array.isArray(treeResponse.data)
       ? flattenSections(treeResponse.data).map((item, index) => ({
           ...item,
-          chapter: item.chapter || `${index + 1}. ${item.title || item.name || '未命名章节'}`,
-        }))
+          chapter: item.chapter || `${index + 1}. ${item.title || item.name || '未命名章节'}` }))
       : []
 
     changeHistory.value = threadResponse?.success && Array.isArray(threadResponse.data)
@@ -222,8 +219,7 @@ const loadData = async () => {
           author: item.author || '未知用户',
           avatar: item.avatar || '协',
           timestamp: item.timestamp || '',
-          description: item.content || item.title || '暂无内容',
-        }))
+          description: item.content || item.title || '暂无内容' }))
       : []
 
     if (!treeResponse?.success && !threadResponse?.success) {
@@ -310,8 +306,7 @@ const handleOwnerChange = async (row) => {
     sectionId: row.id,
     owner: row.owner,
     assignedBy,
-    dueDate: row.dueDate || null,
-  })
+    dueDate: row.dueDate || null })
 
   if (!response?.success) {
     await loadData()
@@ -350,8 +345,7 @@ const handleRemind = async (row) => {
     sectionId: row.id,
     recipient: row.owner,
     remindedBy,
-    message: `请尽快完成章节「${row.chapter}」`,
-  })
+    message: `请尽快完成章节「${row.chapter}」` })
 
   if (!response?.success) {
     ElMessage.error(response?.message || '发送提醒失败')
@@ -374,8 +368,7 @@ const handleToggleLock = async (row) => {
   const response = await collaborationApi.editor.updateLock(props.projectId, {
     sectionId: row.id,
     locked: row.locked,
-    userId,
-  })
+    userId })
 
   if (!response?.success) {
     row.locked = previousLocked

@@ -1,11 +1,10 @@
-// Input: projectsApi (from @/api), demo project adapter (from @/api/mock-adapters)
+// Input: projectsApi (from @/api)
 // Output: useProjectStore - Pinia store for project management
 // Pos: src/stores/ - State management layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 import { defineStore } from 'pinia'
-import { isMockMode, projectsApi } from '@/api'
-import { getDemoProjectById } from '@/api/mock-adapters/frontendDemo.js'
+import { projectsApi } from '@/api'
 
 export const useProjectStore = defineStore('project', {
   state: () => ({
@@ -23,16 +22,10 @@ export const useProjectStore = defineStore('project', {
     async getProjects(filters = {}) {
       try {
         const result = await projectsApi.getList(filters)
-        if (result?.success) {
-          this.projects = result.data || []
-        } else if (!isMockMode()) {
-          this.projects = []
-        }
+        this.projects = result?.success ? (result.data || []) : []
       } catch (error) {
-        if (!isMockMode()) {
-          console.warn('API 调用失败，返回空项目列表:', error.message)
-          this.projects = []
-        }
+        console.warn('API 调用失败，返回空项目列表:', error.message)
+        this.projects = []
       }
       return this.projects
     },
@@ -52,18 +45,9 @@ export const useProjectStore = defineStore('project', {
           return project
         }
       } catch (error) {
-        if (isMockMode()) {
-          console.warn('API 获取项目详情失败，使用 mock 数据:', error.message)
-        } else {
-          console.warn('API 获取项目详情失败，返回空结果:', error.message)
-        }
+        console.warn('API 获取项目详情失败，返回空结果:', error.message)
       }
 
-      if (isMockMode()) {
-        const mockProject = getDemoProjectById(id)
-        this.currentProject = mockProject || null
-        return mockProject
-      }
       this.currentProject = null
       return null
     },
@@ -96,7 +80,6 @@ export const useProjectStore = defineStore('project', {
         const task = project.tasks.find(t => t.id === taskId)
         if (task) {
           task.status = status
-          // 更新项目进度
           const doneCount = project.tasks.filter(t => t.status === 'done').length
           project.progress = Math.round((doneCount / project.tasks.length) * 100)
         }

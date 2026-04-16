@@ -24,7 +24,7 @@
     </div>
 
     <!-- 统计指标卡片 -->
-    <div class="metrics-grid">
+    <div class="metrics-grid" v-loading="metricsLoading">
       <div
         v-for="metric in metrics"
         :key="metric.key"
@@ -874,12 +874,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, markRaw, shallowRef } from 'vue'
+import { ref, computed, onMounted, markRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useBiddingStore } from '@/stores/bidding'
-import { approvalApi, isMockMode, projectsApi } from '@/api'
+import { approvalApi, projectsApi, dashboardApi } from '@/api'
 import { tasksApi } from '@/api/modules/dashboard.js'
+import { getTimeGreeting } from '@/views/Dashboard/workbench-utils.js'
 import {
   Plus, DataAnalysis, ArrowRight, Calendar, User, Clock, Check,
   Document, Briefcase, TrendCharts, Flag, FolderOpened, Wallet
@@ -914,196 +915,177 @@ const pendingCount = computed(() => {
   return priorityTodos.value.filter(t => !t.done).length
 })
 
+// ========== 工作台真实数据 ==========
+const summaryStats = ref(null)
+const metricsLoading = ref(true)
+const pendingApprovalsTotalCount = ref(0)
+const myProjectCount = computed(() => supportRequestProjects.value?.length || 0)
+
+async function loadWorkbenchSummary() {
+  try {
+    const result = await dashboardApi.getSummary()
+    if (result?.success) {
+      summaryStats.value = result.data
+    }
+  } catch (error) {
+    console.error('加载工作台摘要失败:', error)
+  }
+}
+
+// 格式化辅助
+const formatCurrency = (val) => {
+  if (!val && val !== 0) return '--'
+  const wan = Number(val) / 10000
+  return wan >= 1 ? `¥${wan.toFixed(0)}万` : `¥${Number(val).toFixed(0)}`
+}
+const formatPercent = (val) => (val != null ? `${Number(val).toFixed(1)}%` : '--')
+const formatCount = (val, suffix = '') => (val != null ? `${val}${suffix}` : '--')
+
 // ========== 角色化视图配置 ==========
 
-// 管理层 (admin) - 李总
-const adminMetrics = shallowRef([
-  {
-    key: 'totalRevenue',
-    label: '年度中标金额',
-    value: '¥2,450万',
-    icon: Icons.TrendCharts,
-    iconBg: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)',
-    iconColor: '#059669',
-    change: '+15.2%',
-    changeClass: 'up',
-    variant: 'green'
-  },
-  {
-    key: 'winRate',
-    label: '整体中标率',
-    value: '68.5%',
-    icon: Icons.Flag,
-    iconBg: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
-    iconColor: '#D97706',
-    change: '+5.2%',
-    changeClass: 'up',
-    variant: 'amber'
-  },
-  {
-    key: 'teamSize',
-    label: '投标团队',
-    value: '45人',
-    icon: Icons.User,
-    iconBg: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)',
-    iconColor: '#1E40AF',
-    change: '+3',
-    changeClass: 'up',
-    variant: 'blue'
-  },
-  {
-    key: 'activeProjects',
-    label: '进行中项目',
-    value: '18个',
-    icon: Icons.Briefcase,
-    iconBg: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)',
-    iconColor: '#DC2626',
-    change: '+2',
-    changeClass: 'up',
-    variant: 'red'
-  }
-])
+// 管理层 (admin) - 动态指标
+const adminMetrics = computed(() => {
+  const s = summaryStats.value
+  return [
+    {
+      key: 'totalRevenue',
+      label: '年度中标金额',
+      value: s ? formatCurrency(s.totalBudget) : '--',
+      icon: Icons.TrendCharts,
+      iconBg: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)',
+      iconColor: '#059669',
+      change: '--',
+      changeClass: 'neutral',
+      variant: 'green'
+    },
+    {
+      key: 'winRate',
+      label: '整体中标率',
+      value: s ? formatPercent(s.successRate) : '--',
+      icon: Icons.Flag,
+      iconBg: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+      iconColor: '#D97706',
+      change: '--',
+      changeClass: 'neutral',
+      variant: 'amber'
+    },
+    {
+      key: 'totalTenders',
+      label: '总标讯数',
+      value: s ? formatCount(s.totalTenders, '条') : '--',
+      icon: Icons.Document,
+      iconBg: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)',
+      iconColor: '#1E40AF',
+      change: '--',
+      changeClass: 'neutral',
+      variant: 'blue'
+    },
+    {
+      key: 'activeProjects',
+      label: '进行中项目',
+      value: s ? formatCount(s.activeProjects, '个') : '--',
+      icon: Icons.Briefcase,
+      iconBg: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)',
+      iconColor: '#DC2626',
+      change: '--',
+      changeClass: 'neutral',
+      variant: 'red'
+    }
+  ]
+})
 
-// 销售经理 (manager - 华南销售部) - 小王
-const salesMetrics = shallowRef([
-  {
-    key: 'newTenders',
-    label: '本周新标讯',
-    value: '23',
-    icon: Icons.Document,
-    iconBg: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)',
-    iconColor: '#1E40AF',
-    change: '+8',
-    changeClass: 'up',
-    variant: 'blue'
-  },
-  {
-    key: 'myOpportunities',
-    label: '跟进机会',
-    value: '12',
-    icon: Icons.TrendCharts,
-    iconBg: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)',
-    iconColor: '#059669',
-    change: '+3',
-    changeClass: 'up',
-    variant: 'green'
-  },
-  {
-    key: 'customerVisits',
-    label: '本周拜访',
-    value: '5',
-    icon: Icons.User,
-    iconBg: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
-    iconColor: '#D97706',
-    change: '0',
-    changeClass: 'neutral',
-    variant: 'amber'
-  },
-  {
-    key: 'pendingProposals',
-    label: '待立项',
-    value: '4',
-    icon: Icons.Briefcase,
-    iconBg: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)',
-    iconColor: '#DC2626',
-    change: '-1',
-    changeClass: 'down',
-    variant: 'red'
-  }
-])
-
-// 投标经理 (manager - 投标管理部) - 张经理
-const biddingMetrics = shallowRef([
+// 投标经理 (manager) - 动态指标
+const biddingMetrics = computed(() => [
   {
     key: 'myProjects',
     label: '负责项目',
-    value: '8',
+    value: formatCount(myProjectCount.value, '个'),
     icon: Icons.Briefcase,
     iconBg: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)',
     iconColor: '#1E40AF',
-    change: '+2',
-    changeClass: 'up',
+    change: '--',
+    changeClass: 'neutral',
     variant: 'blue'
   },
   {
     key: 'urgentTasks',
-    label: '紧急任务',
-    value: '5',
+    label: '待处理任务',
+    value: formatCount(pendingCount.value, '项'),
     icon: Icons.Flag,
     iconBg: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)',
     iconColor: '#DC2626',
-    change: '+1',
-    changeClass: 'up',
+    change: '--',
+    changeClass: 'neutral',
     variant: 'red'
   },
   {
-    key: 'teamWorkload',
-    label: '团队工作量',
-    value: '85%',
+    key: 'pendingApprovals',
+    label: '待审批',
+    value: formatCount(pendingApprovalsTotalCount.value, '项'),
     icon: Icons.TrendCharts,
     iconBg: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
     iconColor: '#D97706',
-    change: '+5%',
-    changeClass: 'up',
+    change: '--',
+    changeClass: 'neutral',
     variant: 'amber'
   },
   {
-    key: 'resourceStatus',
-    label: '资源可用',
-    value: '3人',
+    key: 'activeProjects',
+    label: '进行中项目',
+    value: summaryStats.value ? formatCount(summaryStats.value.activeProjects, '个') : '--',
     icon: Icons.User,
     iconBg: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)',
     iconColor: '#059669',
-    change: '0',
+    change: '--',
     changeClass: 'neutral',
     variant: 'green'
   }
 ])
 
-// 技术员工 (staff) - 李工
-const staffMetrics = shallowRef([
+// 技术员工 (staff) - 动态指标
+const staffMetrics = computed(() => [
   {
     key: 'myTasks',
     label: '我的任务',
-    value: '6',
+    value: formatCount(pendingCount.value, '项'),
     icon: Icons.Document,
     iconBg: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)',
     iconColor: '#1E40AF',
-    change: '+2',
-    changeClass: 'up',
+    change: '--',
+    changeClass: 'neutral',
     variant: 'blue'
   },
   {
     key: 'completedThisWeek',
-    label: '本周完成',
-    value: '3',
+    label: '已完成',
+    value: formatCount(priorityTodos.value.filter(t => t.done).length, '项'),
     icon: Icons.Check,
     iconBg: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)',
     iconColor: '#059669',
-    change: '+1',
-    changeClass: 'up',
+    change: '--',
+    changeClass: 'neutral',
     variant: 'green'
   },
   {
     key: 'pendingReviews',
-    label: '待评审',
-    value: '2',
+    label: '待审批',
+    value: formatCount(pendingApprovalsTotalCount.value, '项'),
     icon: Icons.Flag,
     iconBg: 'linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%)',
     iconColor: '#DC2626',
-    change: '0',
+    change: '--',
     changeClass: 'neutral',
     variant: 'red'
   },
   {
-    key: 'workHours',
-    label: '本周工时',
-    value: '32h',
-    icon: Icons.Clock,
+    key: 'activeProjects',
+    label: '参与项目',
+    value: formatCount(myProjectCount.value, '个'),
+    icon: Icons.Briefcase,
     iconBg: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
     iconColor: '#D97706',
-    change: '-4h',
-    changeClass: 'down',
+    change: '--',
+    changeClass: 'neutral',
     variant: 'amber'
   }
 ])
@@ -1112,36 +1094,31 @@ const staffMetrics = shallowRef([
 const metrics = computed(() => {
   const role = currentUserRole.value
   if (role === 'admin') return adminMetrics.value
-  if (currentUserName.value === '小王') return salesMetrics.value  // 销售经理
-  if (currentUserName.value === '张经理') return biddingMetrics.value  // 投标经理
+  if (role === 'manager') return biddingMetrics.value
   return staffMetrics.value
 })
 
-// 横幅标题 - 角色化
+// 横幅标题 - 动态问候
 const bannerTitle = computed(() => {
-  const role = currentUserRole.value
-  const name = currentUserName.value
-  if (role === 'admin') return `下午好，李总`
-  if (name === '小王') return `下午好，小王`
-  if (name === '张经理') return `下午好，张经理`
-  return `下午好，${name}`
+  return `${getTimeGreeting()}，${currentUserName.value}`
 })
 
-// 横幅副标题 - 角色化
+// 横幅副标题 - 真实数据
 const bannerSubtitle = computed(() => {
-  const role = currentUserRole.value
-  const pending = pendingCount.value
   const today = currentDate.value
+  const s = summaryStats.value
+  const role = currentUserRole.value
   if (role === 'admin') {
-    return `今天是${today}，团队有18个进行中的项目，3个待审批事项`
+    const projects = s ? s.activeProjects : '--'
+    const approvals = pendingApprovalsTotalCount.value
+    return `今天是${today}，团队有${projects}个进行中的项目，${approvals}个待审批事项`
   }
-  if (currentUserName.value === '小王') {
-    return `今天是${today}，本周新增23条标讯，您有${pending}项待处理任务`
+  if (role === 'manager') {
+    const projects = myProjectCount.value
+    const tasks = pendingCount.value
+    return `今天是${today}，您负责${projects}个项目，${tasks}项待处理任务`
   }
-  if (currentUserName.value === '张经理') {
-    return `今天是${today}，您负责8个项目，团队工作量85%`
-  }
-  return `今天是${today}，您有${pending}项待处理任务`
+  return `今天是${today}，您有${pendingCount.value}项待处理任务`
 })
 
 // 横幅操作按钮 - 角色化
@@ -1153,16 +1130,10 @@ const bannerActions = computed(() => {
       { key: 'team', label: '团队管理', type: 'default', icon: Icons.User, handler: () => router.push('/settings') }
     ]
   }
-  if (currentUserName.value === '小王') {
-    return [
-      { key: 'tenders', label: '查看标讯', type: 'primary', icon: Icons.Document, handler: () => router.push('/bidding') },
-      { key: 'add', label: '添加机会', type: 'default', icon: Icons.Plus, handler: handleCreateProject }
-    ]
-  }
-  if (currentUserName.value === '张经理') {
+  if (role === 'manager') {
     return [
       { key: 'projects', label: '我的项目', type: 'primary', icon: Icons.Briefcase, handler: () => router.push('/project') },
-      { key: 'tasks', label: '任务分配', type: 'default', icon: Icons.Check, handler: () => {} }
+      { key: 'tenders', label: '查看标讯', type: 'default', icon: Icons.Document, handler: () => router.push('/bidding') }
     ]
   }
   return [
@@ -1235,8 +1206,7 @@ const normalizeApiTodo = (task) => {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false,
-    })
+      hour12: false })
     : '待排期'
 
   return {
@@ -1247,15 +1217,10 @@ const normalizeApiTodo = (task) => {
     done,
     type: 'task',
     sourceType: 'task',
-    rawStatus: task.status,
-  }
+    rawStatus: task.status }
 }
 
 async function loadPriorityTodos() {
-  if (isMockMode()) {
-    return
-  }
-
   const assigneeId = userStore.currentUser?.id
   if (!assigneeId) {
     apiTodoItems.value = []
@@ -1275,7 +1240,7 @@ async function loadPriorityTodos() {
 
 // 根据角色过滤待办
 const priorityTodos = computed(() => {
-  if (!isMockMode()) {
+  if (true) {
     return [...systemWarningTodos.value, ...apiTodoItems.value].slice(0, 8)
   }
 
@@ -1428,13 +1393,13 @@ const handleApprovalSuccess = async () => {
 async function loadPendingApprovals() {
   try {
     const result = await approvalApi.getPendingApprovals({ page: 0, size: 8 })
+    pendingApprovalsTotalCount.value = result?.totalCount ?? 0
     pendingApprovals.value = Array.isArray(result?.data) ? result.data.map((item) => ({
       ...item,
       title: item.title || `${item.projectName} - ${item.typeName}`,
       type: item.approvalType || 'project_review',
       department: item.applicantDept || '投标管理部',
-      time: item.time || item.submitTime || '',
-    })) : []
+      time: item.time || item.submitTime || '' })) : []
   } catch (error) {
     console.error('加载待审批事项失败:', error)
     pendingApprovals.value = []
@@ -1449,10 +1414,6 @@ const approvalStatusToProcessStatus = (status) => {
 }
 
 async function loadMyProcesses() {
-  if (isMockMode()) {
-    return
-  }
-
   try {
     const result = await approvalApi.getMyApprovals({ page: 0, size: 8 })
     myProcesses.value = Array.isArray(result?.data) ? result.data.map((item) => ({
@@ -1545,7 +1506,7 @@ const handleTaskComplete = async (task) => {
     return
   }
 
-  if (!isMockMode()) {
+  if (true) {
     if (task.done) {
       return
     }
@@ -1573,8 +1534,6 @@ const handleTaskComplete = async (task) => {
 const handleReview = (review) => {
   ElMessage.info(`打开评审: ${review.title}`)
 }
-
-const isMockModeEnabled = computed(() => isMockMode())
 
 // 快速发起处理
 const handleQuickAction = (type) => {
@@ -1819,13 +1778,18 @@ const handleCalendarAction = (event) => {
   ElMessage.info(`${event.actionLabel}：${event.project}`)
 }
 
-// 日历加载
+// 数据加载
 onMounted(async () => {
-  await biddingStore.getCalendar()
-  await loadPendingApprovals()
-  await loadMyProcesses()
-  await loadSupportRequestProjects()
-  await loadPriorityTodos()
+  metricsLoading.value = true
+  await Promise.allSettled([
+    biddingStore.getCalendar(),
+    loadPendingApprovals(),
+    loadMyProcesses(),
+    loadSupportRequestProjects(),
+    loadPriorityTodos(),
+    loadWorkbenchSummary()
+  ])
+  metricsLoading.value = false
   resetSupportRequestForm()
   selectedDateKey.value = formatDateKey(new Date())
   const firstUpcomingEvent = normalizedCalendarEvents.value

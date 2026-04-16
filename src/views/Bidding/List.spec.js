@@ -6,17 +6,15 @@ import List from './List.vue'
 
 // Mock API 模块
 vi.mock('@/api', () => ({
-  isMockMode: vi.fn(() => true),
   tendersApi: {
-    getTenders: vi.fn(() => Promise.resolve({ success: true, data: [] })),
+    getList: vi.fn(() => Promise.resolve({ success: true, data: [] })),
     fetchExternalTenders: vi.fn(() => Promise.resolve({ success: true })),
     fetchFromCeb: vi.fn(() => Promise.resolve({ success: true }))
   },
   authApi: {
     getCurrentUser: vi.fn(() => ({ role: 'ADMIN' }))
   },
-  API_CONFIG: { mode: 'mock' },
-  isMockLoginEnabled: vi.fn(() => false),
+  API_CONFIG: { mode: 'api' },
   isCommercialMode: vi.fn(() => false),
   getApiUrl: vi.fn((path) => path)
 }))
@@ -74,7 +72,8 @@ describe('List.vue (标讯中心)', () => {
         stubs: {
           'el-icon': true,
           'el-table': true,
-          'el-table-column': true
+          'el-table-column': true,
+          Link: true
         }
       }
     })
@@ -91,7 +90,8 @@ describe('List.vue (标讯中心)', () => {
         stubs: {
           'el-icon': true,
           'el-table': true,
-          'el-table-column': true
+          'el-table-column': true,
+          Link: true
         }
       }
     })

@@ -972,11 +972,11 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Key, Document, Menu, Lock, User, OfficeBuilding, Folder, InfoFilled, Search, Download } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { API_CONFIG, auditApi, authApi, isMockMode, projectGroupsApi, projectsApi, settingsApi } from '@/api'
+import { API_CONFIG, auditApi, authApi, projectGroupsApi, projectsApi, settingsApi } from '@/api'
 import { persistRuntimeSettings } from '@/api/modules/settings'
 import ProjectGroupSettingsPanel from '@/components/system/ProjectGroupSettingsPanel.vue'
 
-const activeTab = ref(isMockMode() ? 'user' : 'dataScope')
+const activeTab = ref(false ? 'user' : 'dataScope')
 const userStore = useUserStore()
 const managedUsers = ref([])
 const showUserDialog = ref(false)
@@ -1171,7 +1171,7 @@ const auditPagination = ref({
 
 // 过滤后的审计日志
 const filteredAuditLogs = computed(() => {
-  if (!isMockMode()) {
+  if (true) {
     return auditLogs.value
   }
 
@@ -1221,7 +1221,7 @@ const filteredAuditLogs = computed(() => {
 
 // 统计数据
 const todayAuditCount = computed(() => {
-  if (!isMockMode() && auditSummary.value) {
+  if (true && auditSummary.value) {
     return auditSummary.value.todayCount || 0
   }
   const today = new Date().toISOString().split('T')[0]
@@ -1229,21 +1229,21 @@ const todayAuditCount = computed(() => {
 })
 
 const weekAuditCount = computed(() => {
-  if (!isMockMode() && auditSummary.value) {
+  if (true && auditSummary.value) {
     return auditSummary.value.weekCount || 0
   }
   return auditLogs.value.length
 })
 
 const failedAuditCount = computed(() => {
-  if (!isMockMode() && auditSummary.value) {
+  if (true && auditSummary.value) {
     return auditSummary.value.failedCount || 0
   }
   return auditLogs.value.filter(log => log.status === 'failed').length
 })
 
 const activeUserCount = computed(() => {
-  if (!isMockMode() && auditSummary.value) {
+  if (true && auditSummary.value) {
     return auditSummary.value.activeUserCount || 0
   }
   const users = new Set(auditLogs.value.map(log => log.operator))
@@ -1294,7 +1294,7 @@ const getModuleLabel = (module) => {
 // 审计搜索
 const handleAuditSearch = () => {
   auditPagination.value.page = 1
-  if (!isMockMode()) {
+  if (true) {
     loadAuditLogs()
     return
   }
@@ -1311,7 +1311,7 @@ const handleAuditReset = () => {
     department: '',
     dateRange: []
   }
-  if (!isMockMode()) {
+  if (true) {
     loadAuditLogs()
     return
   }
@@ -1355,11 +1355,6 @@ const buildAuditQuery = () => {
 }
 
 const loadAuditLogs = async () => {
-  if (isMockMode()) {
-    auditPagination.value.total = auditLogs.value.length
-    return
-  }
-
   try {
     const response = await auditApi.getLogs(buildAuditQuery())
     if (!response?.success) {
@@ -1386,7 +1381,7 @@ const getDataScopeText = (scope) => {
 }
 
 const refreshCurrentUserSession = async () => {
-  if (!userStore.currentUser || isMockMode()) {
+  if (!userStore.currentUser || false) {
     return
   }
 
@@ -1881,8 +1876,8 @@ async function testApiLayer() {
   }
 
   try {
-    addResult('配置检查', true, `${isMockMode() ? 'Mock' : 'API'} 模式, 地址: ${API_CONFIG.baseURL}`)
-    addResult('正式上线范围', true, '以统一 API 层和真实 /api/* 契约为准，Mock 仅用于演示模式')
+    addResult('配置检查', true, `API 模式, 地址: ${API_CONFIG.baseURL}`)
+    addResult('正式上线范围', true, '以统一 API 层和真实 /api/* 契约为准，不再提供 Mock 运行路径')
 
     // 测试 API 模块导入
     try {

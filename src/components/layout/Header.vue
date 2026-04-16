@@ -163,7 +163,6 @@ import {
   Search, Bell, ArrowDown, User, Setting,
   SwitchButton, Expand, Fold, Refresh, Menu, Check, Close
 } from '@element-plus/icons-vue'
-import { isMockMode } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { hasMenuAccessForRole } from '@/api/modules/settings'
 
@@ -178,7 +177,7 @@ const emit = defineEmits(['toggleCollapse', 'mobileMenuClick'])
 
 const router = useRouter()
 const userStore = useUserStore()
-const isApiDeliveryMode = computed(() => !isMockMode())
+const isApiDeliveryMode = computed(() => true)
 
 const searchKeyword = ref('')
 const unreadCount = ref(isApiDeliveryMode.value ? 0 : 3)

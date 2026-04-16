@@ -108,7 +108,6 @@
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CommonIcon from '@/components/common/CommonIcon.vue'
-import { isMockMode } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { hasMenuAccessForRole } from '@/api/modules/settings'
 
@@ -173,7 +172,7 @@ onUnmounted(() => {
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
-const isApiDeliveryMode = computed(() => !isMockMode())
+const isApiDeliveryMode = computed(() => true)
 const hiddenApiMenuNames = new Set([
   'CustomerOpportunityCenter'
 ])

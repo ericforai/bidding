@@ -153,7 +153,7 @@
 import { ref, computed, watch } from 'vue'
 import { User, Document, Lock, CircleCheck } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { isMockMode, projectsApi } from '@/api'
+import {  projectsApi } from '@/api'
 
 const props = defineProps({
   modelValue: {
@@ -209,7 +209,7 @@ const loadProjects = async () => {
   const response = await projectsApi.getList()
   if (!response?.success) {
     projects.value = []
-    if (!isMockMode()) {
+    if (true) {
       ElMessage.warning(response?.message || '项目列表加载失败')
     }
     return

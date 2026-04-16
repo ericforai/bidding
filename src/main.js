@@ -17,6 +17,11 @@ import './styles/attention-guidance.css'
 const app = createApp(App)
 const pinia = createPinia()
 
+// Expose app instance for testing
+if (typeof window !== 'undefined') {
+  window.__VUE_APP__ = app
+}
+
 // 注册所有图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
