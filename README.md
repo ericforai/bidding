@@ -209,7 +209,7 @@ xiyu-bid-poc/
 ## 文档入口
 
 - `AGENTS.md`：协作口径与智能体约定
-- `RULES.md`：四阶段流程、红线与当前基线
+- `RULES.md`：四阶段流程、核心业务逻辑架构约束、红线与当前基线
 - `CLAUDE.md`：执行入口、命令、验证清单与环境坑点
 - `docs/FRONTEND_REAL_DATA_GOVERNANCE.md`：前端真实数据治理
 - `docs/DOCUMENTATION_GOVERNANCE.md`：文档治理规范

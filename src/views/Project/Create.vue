@@ -604,18 +604,7 @@ const basicForm = reactive({
 })
 
 // 常见竞争对手选项
-const competitorOptions = ref([
-  '华为技术有限公司',
-  '腾讯云计算有限公司',
-  '阿里巴巴云计算有限公司',
-  '百度智能云',
-  '京东科技',
-  '科大讯飞股份有限公司',
-  '浪潮集团有限公司',
-  '中软国际',
-  '东软集团',
-  '用友网络'
-])
+const competitorOptions = ref([])
 
 // 竞争对手分析数据
 const competitorAnalysis = ref([])
@@ -772,21 +761,7 @@ const disabledDate = (time) => {
 }
 
 const syncFromCRM = async () => {
-  syncing.value = true
-  try {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    basicForm.name = '某央企智慧办公平台采购项目'
-    basicForm.customer = '某央企集团'
-    basicForm.budget = 500
-    basicForm.industry = '政府'
-    basicForm.region = '北京'
-    syncedFromCRM.value = true
-    ElMessage.success('CRM数据同步成功')
-  } catch (error) {
-    ElMessage.error('CRM数据同步失败')
-  } finally {
-    syncing.value = false
-  }
+  ElMessage.info('CRM同步功能暂未开放，请手动填写项目信息')
 }
 
 const addTask = () => {

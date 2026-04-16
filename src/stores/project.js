@@ -5,6 +5,7 @@
 
 import { defineStore } from 'pinia'
 import { projectsApi } from '@/api'
+import { normalizeTaskStatusForApi } from '@/views/Project/project-utils.js'
 
 export const useProjectStore = defineStore('project', {
   state: () => ({
@@ -75,14 +76,32 @@ export const useProjectStore = defineStore('project', {
     },
 
     async updateTaskStatus(projectId, taskId, status) {
-      const project = this.projects.find(p => p.id === projectId)
-      if (project) {
-        const task = project.tasks.find(t => t.id === taskId)
-        if (task) {
-          task.status = status
-          const doneCount = project.tasks.filter(t => t.status === 'done').length
-          project.progress = Math.round((doneCount / project.tasks.length) * 100)
+      const apiStatus = normalizeTaskStatusForApi(status) ?? status
+      try {
+        const result = await projectsApi.updateTaskStatus(projectId, taskId, apiStatus)
+        if (!result?.success) {
+          console.warn('Task status update returned non-success:', result)
+          return result
         }
+        // Immutably update local state (using string-coerced id comparison for route-param safety)
+        this.projects = this.projects.map(p => {
+          if (String(p.id) !== String(projectId)) return p
+          const updatedTasks = (p.tasks || []).map(t =>
+            String(t.id) === String(taskId) ? { ...t, status } : t
+          )
+          const doneCount = updatedTasks.filter(t => t.status === 'done').length
+          const total = updatedTasks.length
+          const progress = total > 0 ? Math.round((doneCount / total) * 100) : 0
+          return { ...p, tasks: updatedTasks, progress }
+        })
+        if (String(this.currentProject?.id) === String(projectId)) {
+          const updated = this.projects.find(p => String(p.id) === String(projectId))
+          if (updated) this.currentProject = updated
+        }
+        return result
+      } catch (error) {
+        console.warn('Failed to update task status:', error)
+        throw error
       }
     }
   }
