@@ -8,7 +8,7 @@
           <p class="page-subtitle">AI智能匹配，发现优质商机</p>
         </div>
         <div class="header-actions">
-          <el-button v-if="isMockModeEnabled" @click="handleOpenCustomerOpportunityCenter">
+          <el-button v-if="customerOpportunityCenterEnabled" @click="handleOpenCustomerOpportunityCenter">
             <el-icon><UserFilled /></el-icon>
             客户商机中心
           </el-button>
@@ -1315,7 +1315,6 @@ import {
   Phone, Close, EditPen, Loading
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { isMockMode } from '@/api'
 import {
   getBreakoutTopics,
   getStatsSummary,
@@ -2148,7 +2147,7 @@ const handleViewAllRecommend = () => {
   viewMode.value = 'all'
 }
 
-const isMockModeEnabled = computed(() => isMockMode())
+const customerOpportunityCenterEnabled = computed(() => false)
 
 const handleOpenCustomerOpportunityCenter = () => {
   router.push('/bidding/customer-opportunities')
@@ -2823,8 +2822,8 @@ const loadTrendRadarData = async () => {
       getStatsSummary()
     ])
 
-    // 如果没有真实数据且在 mock 模式下，直接使用默认 fallback 数据
-    const isMock = isMockMode()
+    // 如果没有真实数据，则使用默认 fallback 数据
+    const isMock = false
 
     // 只有在有真实数据且经过过滤后仍有数据时才更新
     if (topics && topics.length > 0) {

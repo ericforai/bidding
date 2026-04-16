@@ -167,7 +167,7 @@ import {
   Bell,
   Iphone
 } from '@element-plus/icons-vue'
-import { aiApi, isMockMode } from '@/api'
+import { aiApi } from '@/api'
 
 const props = defineProps({
   projectId: String,
@@ -206,7 +206,7 @@ const drawerVisible = computed({
 })
 
 const isNumericProjectId = computed(() => /^\d+$/.test(String(props.projectId || '')))
-const shouldUseRealCards = computed(() => !isMockMode() && !props.showDemoFeatures && isNumericProjectId.value)
+const shouldUseRealCards = computed(() => true && !props.showDemoFeatures && isNumericProjectId.value)
 
 const scoreCoverageText = computed(() => {
   if (shouldUseRealCards.value && aiCards.value.score) {

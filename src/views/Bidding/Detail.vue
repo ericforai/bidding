@@ -231,7 +231,7 @@ import {
   ArrowRight
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { tendersApi, isMockMode } from '@/api'
+import { tendersApi } from '@/api'
 
 const router = useRouter()
 const route = useRoute()

@@ -40,28 +40,46 @@ const shouldSkipRefresh = (config = {}) => {
 }
 
 const handleAuthFailure = async () => {
-  if (authFailureHandled) {
+  // Use a simple time-based throttle instead of a boolean flag to avoid permanent lock
+  if (handleAuthFailure._lastAlert && Date.now() - handleAuthFailure._lastAlert < 2000) {
+    clearSessionState()
     return
   }
+  
+  handleAuthFailure._lastAlert = Date.now()
+  console.log('[DEBUG] handleAuthFailure triggered')
+  
+  // Use a fallback for ElMessage in tests if needed
+  try {
+    ElMessage.error('登录已过期，请重新登录')
+  } catch (e) {
+    console.warn('ElMessage failed:', e)
+  }
 
-  authFailureHandled = true
-  ElMessage.error('登录已过期，请重新登录')
   clearSessionState()
 
   try {
     const { useUserStore } = await import('@/stores/user.js')
-    useUserStore().resetSession()
+    const userStore = useUserStore()
+    userStore.resetSession()
   } catch (syncError) {
-    console.warn('Failed to reset auth store after auth failure:', syncError)
+    console.warn('Failed to reset auth store:', syncError)
   }
 
-  if (router.currentRoute.value.path !== '/login') {
-    router.push('/login').catch((navError) => {
-      if (navError.name !== 'NavigationDuplicated') {
-        console.error('Navigation to login failed:', navError)
-      }
-    })
-  }
+  // Always attempt redirect after session clear
+  setTimeout(() => {
+    const currentPath = router.currentRoute.value.path
+    console.log('[DEBUG] redirecting from:', currentPath)
+    
+    if (currentPath !== '/login') {
+      router.push('/login').catch((navError) => {
+        if (navError.name !== 'NavigationDuplicated' && 
+            !navError.message?.includes('Redirected when going from')) {
+          console.error('Navigation to login failed:', navError)
+        }
+      })
+    }
+  }, 100)
 }
 
 // 创建 axios 实例
@@ -129,9 +147,9 @@ httpClient.interceptors.response.use(
       // 服务器返回错误状态码
       switch (response.status) {
         case 401:
-          if (!shouldSkipRefresh(config)) {
-            await handleAuthFailure()
-          }
+          // We handle failure either if it's a normal request failing refresh,
+          // OR if it's a direct 401 from a request where we skip refresh (like /refresh itself)
+          await handleAuthFailure()
           break
         case 403:
           ElMessage.error('没有权限访问该资源')

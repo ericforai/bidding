@@ -183,7 +183,7 @@ import {
   CircleCheckFilled
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { knowledgeApi, isMockMode } from '@/api'
+import { knowledgeApi } from '@/api'
 import { getCaseDemoOverride, saveCaseDemoPatch } from '@/api/mock-adapters/frontendDemo.js'
 
 const router = useRouter()
@@ -213,7 +213,7 @@ const relatedCases = computed(() => {
 })
 
 const applyCasePersistence = (data) => {
-  if (!isMockMode()) {
+  if (true) {
     return data
   }
   const persisted = getCaseDemoOverride(data.id)
@@ -262,8 +262,8 @@ const loadCaseDetail = async (caseId) => {
       ...found,
       location: found.location || '北京',
       period: found.period || '6个月',
-      useCount: found.useCount || (isMockMode() ? Math.floor(Math.random() * 20) + 1 : 0),
-      viewCount: found.viewCount || (isMockMode() ? Math.floor(Math.random() * 100) + 50 : 0),
+      useCount: found.useCount || (false ? Math.floor(Math.random() * 20) + 1 : 0),
+      viewCount: found.viewCount || (false ? Math.floor(Math.random() * 100) + 50 : 0),
       technologies: found.technologies || ['Vue.js', 'Spring Boot', 'PostgreSQL', 'Redis']
     })
     isEdited.value = caseData.value.title?.includes('（已编辑）') || false
@@ -272,7 +272,7 @@ const loadCaseDetail = async (caseId) => {
       ? listResult.data
       : []
 
-    if (!isMockMode() && /^\d+$/.test(String(caseId))) {
+    if (true && /^\d+$/.test(String(caseId))) {
       const [shareResult, referenceResult] = await Promise.all([
         knowledgeApi.cases.getShareRecords(caseId),
         knowledgeApi.cases.getReferenceRecords(caseId)
@@ -315,9 +315,6 @@ const handleUseCase = () => {
       ...caseData.value,
       useCount: Number(caseData.value.useCount || 0) + 1
     }
-    if (isMockMode()) {
-      persistCasePatch(caseData.value.id, { useCount: caseData.value.useCount })
-    }
     ElMessage.success('案例已添加到引用列表')
   }).catch(() => {
     ElMessage.error('案例引用失败')
@@ -351,13 +348,6 @@ const handleEdit = () => {
       ...result.data,
       summary: result.data.summary || nextSummary
     })
-    if (isMockMode()) {
-      persistCasePatch(caseData.value.id, {
-        title: caseData.value.title,
-        summary: caseData.value.summary,
-        description: caseData.value.description
-      })
-    }
     ElMessage.success('案例内容已更新')
   }).catch(() => {
     ElMessage.error('案例更新失败')

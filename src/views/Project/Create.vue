@@ -553,7 +553,7 @@ import {
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ScoreCoverage from '@/components/ai/ScoreCoverage.vue'
 import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
-import { aiApi, isMockMode, tendersApi } from '@/api'
+import { aiApi, tendersApi } from '@/api'
 import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 
 const router = useRouter()
@@ -828,8 +828,7 @@ const runAIAnalysis = async () => {
     const response = await aiApi.score.generatePreview({
       industry: basicForm.industry,
       tags: detailForm.tags,
-      budget: basicForm.budget,
-    })
+      budget: basicForm.budget })
 
     if (response?.success && response.data) {
       aiSummary.value = response.data.aiSummary
@@ -842,23 +841,18 @@ const runAIAnalysis = async () => {
         winScore: 0,
         winLevel: 'low',
         risks: [],
-        suggestions: [],
-      }
+        suggestions: [] }
       scoreAnalysis.value = {
         scoreCategories: [],
-        gapItems: [],
-      }
+        gapItems: [] }
       aiGeneratedTasks.value = []
       scorePreviewPlaceholder.value = notifyFeatureUnavailable(response, {
         fallback: {
           title: '评分预览当前不可用',
-          hint: '项目创建流程会继续保留，评分建议可在分析服务恢复后补充。',
-        },
-      }) || {
+          hint: '项目创建流程会继续保留，评分建议可在分析服务恢复后补充。' } }) || {
         title: '评分预览不可用',
         message: response?.message || '当前场景未生成评分结果',
-        hint: '项目创建流程不受影响。',
-      }
+        hint: '项目创建流程不受影响。' }
       if (!scorePreviewPlaceholder.value.feature) {
         ElMessage.info(scorePreviewPlaceholder.value.message)
       }
@@ -933,7 +927,7 @@ const handleSubmit = async () => {
           }))
       : []
 
-    const projectData = isMockMode()
+    const projectData = false
       ? {
           ...basicForm,
           ...detailForm,
@@ -1022,7 +1016,7 @@ onMounted(async () => {
     basicForm.manager = userStore.currentUser.name
   }
 
-  if (!isMockMode()) {
+  if (true) {
     const tenderResult = await tendersApi.getList()
     if (tenderResult?.success) {
       availableTenders.value = Array.isArray(tenderResult.data) ? tenderResult.data : []

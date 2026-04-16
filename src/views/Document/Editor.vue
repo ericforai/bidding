@@ -287,14 +287,14 @@ import {
   Loading
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { collaborationApi, isMockMode, projectsApi } from '@/api'
+import { collaborationApi, projectsApi } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
 const currentStructureId = ref(null)
 const activeSectionId = ref(null)
 const isRemoteProjectId = computed(() => /^\d+$/.test(String(route.params.id || '')))
-const canUseLocalEditorActions = computed(() => isMockMode() && !isRemoteProjectId.value)
+const canUseLocalEditorActions = computed(() => false && !isRemoteProjectId.value)
 const canUseEditorExportActions = computed(() => isRemoteProjectId.value || canUseLocalEditorActions.value)
 const canUseEditorArchiveActions = computed(() => isRemoteProjectId.value || canUseLocalEditorActions.value)
 
@@ -508,8 +508,7 @@ const ensureEditorStructure = async (projectId) => {
   }
 
   const created = await collaborationApi.editor.createStructure(projectId, {
-    name: `${projectInfo.value.name || '项目'} 文档结构`,
-  })
+    name: `${projectInfo.value.name || '项目'} 文档结构` })
   return created?.data || null
 }
 
@@ -519,12 +518,9 @@ const loadProjectInfo = async (projectId) => {
     if (result?.success && result?.data) {
       projectInfo.value = {
         id: result.data.id,
-        name: result.data.name || projectInfo.value.name,
-      }
+        name: result.data.name || projectInfo.value.name }
     }
-  } catch (error) {
-
-  }
+  } catch (error) {}
 }
 
 const loadExportArtifacts = async (projectId) => {
@@ -691,8 +687,7 @@ const handleNodeDrop = (draggingNode, dropNode, position) => {
 
   collaborationApi.editor.reorderSections(route.params.id, {
     structureId: currentStructureId.value,
-    sectionOrders: buildSectionOrders(sectionData.value.sections),
-  }).then(() => {
+    sectionOrders: buildSectionOrders(sectionData.value.sections) }).then(() => {
     syncCurrentSectionReference()
     ElMessage.success('章节顺序已同步')
   }).catch((error) => {
@@ -982,8 +977,7 @@ const handleConfirmSection = () => {
   if (editingSectionId.value && isRemoteProjectId.value) {
     const targetSection = findSectionById(editingSectionId.value)
     collaborationApi.editor.updateSection(route.params.id, resolveSectionApiId(targetSection), {
-      title: sectionForm.value.name,
-    }).then((result) => {
+      title: sectionForm.value.name }).then((result) => {
       if (targetSection) {
         targetSection.name = result?.data?.name || sectionForm.value.name
       }
@@ -1011,8 +1005,7 @@ const handleConfirmSection = () => {
       sectionType: parent ? 'SECTION' : 'CHAPTER',
       title: sectionForm.value.name,
       content: sectionForm.value.type === 'section' ? `## ${sectionForm.value.name}\n\n在此处添加内容...` : '',
-      orderIndex: parent?.children?.length ? parent.children.length + 1 : sectionData.value.sections.length + 1,
-    }).then((result) => {
+      orderIndex: parent?.children?.length ? parent.children.length + 1 : sectionData.value.sections.length + 1 }).then((result) => {
       const newSection = result?.data
       if (!newSection) return
 
@@ -1085,8 +1078,7 @@ const handleExport = () => {
   collaborationApi.exports.createExport(route.params.id, {
     format: 'json',
     exportedBy: null,
-    exportedByName: '当前用户',
-  }).then(async (result) => {
+    exportedByName: '当前用户' }).then(async (result) => {
     if (!result?.success || !result?.data) {
       ElMessage.error(result?.message || '导出失败')
       return
@@ -1144,12 +1136,10 @@ const handleSave = () => {
     title: currentSection.value.name,
     content: currentSection.value.content,
     metadata: currentSection.value.metadata || '',
-    orderIndex: currentSection.value.orderIndex ?? 0,
-  }).then((result) => {
+    orderIndex: currentSection.value.orderIndex ?? 0 }).then((result) => {
     currentSection.value = {
       ...currentSection.value,
-      ...(result?.data || {}),
-    }
+      ...(result?.data || {}) }
     activeSectionId.value = currentSection.value.id
     syncCurrentSectionReference()
     ElMessage.success('保存成功')

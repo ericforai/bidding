@@ -1,17 +1,16 @@
-// Input: tendersApi, API mode switch, and frontend demo adapters for bidding views
+// Input: tendersApi
 // Output: useBiddingStore - Pinia store for tenders, todos, and calendar state
 // Pos: src/stores/ - State management layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 import { defineStore } from 'pinia'
-import { tendersApi, isMockMode } from '@/api'
-import { getDemoCalendar, getDemoTodos } from '@/api/mock-adapters/frontendDemo.js'
+import { tendersApi } from '@/api'
 
 export const useBiddingStore = defineStore('bidding', {
   state: () => ({
     tenders: [],
-    todos: getDemoTodos(),
-    calendar: getDemoCalendar()
+    todos: [],
+    calendar: []
   }),
 
   getters: {
@@ -30,16 +29,10 @@ export const useBiddingStore = defineStore('bidding', {
     async getTenders(filters = {}) {
       try {
         const result = await tendersApi.getList(filters)
-        if (result?.success) {
-          this.tenders = result.data || []
-        } else if (!isMockMode()) {
-          this.tenders = []
-        }
+        this.tenders = result?.success ? (result.data || []) : []
       } catch (error) {
-        if (!isMockMode()) {
-          console.warn('API 调用失败，返回空列表:', error.message)
-          this.tenders = []
-        }
+        console.warn('API 调用失败，返回空列表:', error.message)
+        this.tenders = []
       }
       return this.tenders
     },
@@ -52,9 +45,6 @@ export const useBiddingStore = defineStore('bidding', {
     },
 
     async getTodos() {
-      if (!isMockMode()) {
-        return []
-      }
       return this.todos
     },
 
@@ -66,9 +56,6 @@ export const useBiddingStore = defineStore('bidding', {
     },
 
     async getCalendar() {
-      if (!isMockMode()) {
-        return []
-      }
       return this.calendar
     }
   }

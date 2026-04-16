@@ -1245,7 +1245,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
 import { useBarStore } from '@/stores/bar'
-import { knowledgeApi, isMockMode, projectsApi, collaborationApi, approvalApi } from '@/api'
+import { knowledgeApi, projectsApi, collaborationApi, approvalApi } from '@/api'
 import { complianceApi, scoreAnalysisApi } from '@/api/modules/ai.js'
 import { getDemoAutoTasks, getDemoMobileCard, getDemoProjectById } from '@/api/mock-adapters/frontendDemo.js'
 import {
@@ -1274,7 +1274,7 @@ const router = useRouter()
 const projectStore = useProjectStore()
 const userStore = useUserStore()
 const barStore = useBarStore()
-const isDemoMode = isMockMode()
+const isDemoMode = false
 const demoAutoTasks = ref([])
 const demoMobileCard = ref(null)
 const isApiProject = computed(() => !isDemoMode && /^\d+$/.test(String(route.params.id || '')))
@@ -1725,8 +1725,7 @@ const buildScorePanel = (analysis = {}) => {
     price: findScore(['价格竞争力', '价格', '报价']),
     qualification: findScore(['企业资质', '资质', '合规性']),
     comment: analysis?.summary || '',
-    suggestions: dimensions.map((dimension) => dimension?.comments).filter(Boolean),
-  }
+    suggestions: dimensions.map((dimension) => dimension?.comments).filter(Boolean) }
 }
 
 // AI检查相关函数
@@ -1974,8 +1973,7 @@ const handleSubmitApproval = () => {
     projectId: project.value?.id,
     projectName: project.value?.name,
     title: `${project.value?.name || '当前项目'} - ${approvalType.value.typeName}`,
-    description: `发起 ${project.value?.name || '当前项目'} 的审批流程。`,
-  }
+    description: `发起 ${project.value?.name || '当前项目'} 的审批流程。` }
   approvalDialogVisible.value = true
 }
 
@@ -2156,8 +2154,7 @@ const handleScoreDraftGenerated = (tasks) => {
   project.value.tasks = tasks.map((task) => ({
     ...task,
     deliverables: Array.isArray(task.deliverables) ? task.deliverables : [],
-    hasDeliverable: Boolean(task.hasDeliverable),
-  }))
+    hasDeliverable: Boolean(task.hasDeliverable) }))
 
   activities.value.unshift({
     id: Date.now(),
@@ -2181,8 +2178,7 @@ const handleAddTask = () => {
     priority: 'medium',
     status: 'todo',
     deliverables: [],
-    hasDeliverable: false,
-  }
+    hasDeliverable: false }
 
   if (!isApiProject.value) {
     if (!Array.isArray(project.value.tasks)) {
@@ -2193,8 +2189,7 @@ const handleAddTask = () => {
       id: Date.now(),
       user: userStore.userName,
       action: `新增了任务「${newTask.name}」`,
-      time: new Date().toLocaleString('zh-CN', { hour12: false }),
-    })
+      time: new Date().toLocaleString('zh-CN', { hour12: false }) })
     ElMessage.success('已新增演示任务')
     return
   }
@@ -2205,8 +2200,7 @@ const handleAddTask = () => {
     assigneeId: userStore.currentUser?.id || null,
     assigneeName: userStore.userName,
     priority: 'MEDIUM',
-    dueDate: dueDate.toISOString(),
-  }).then((result) => {
+    dueDate: dueDate.toISOString() }).then((result) => {
     if (!result?.success || !result?.data) {
       throw new Error(result?.message || '新增任务失败')
     }
@@ -2216,14 +2210,12 @@ const handleAddTask = () => {
     project.value.tasks.unshift({
       ...result.data,
       deliverables: [],
-      hasDeliverable: false,
-    })
+      hasDeliverable: false })
     activities.value.unshift({
       id: Date.now(),
       user: userStore.userName,
       action: `新增了任务「${result.data.name}」`,
-      time: new Date().toLocaleString('zh-CN', { hour12: false }),
-    })
+      time: new Date().toLocaleString('zh-CN', { hour12: false }) })
     ElMessage.success('任务已新增')
   }).catch((error) => {
     ElMessage.error(error.message || '新增任务失败')
@@ -2405,8 +2397,7 @@ const handleUpload = async (file) => {
     name: file.name,
     uploader: userStore.userName,
     time: new Date().toLocaleString('zh-CN', { hour12: false }),
-    size: `${Math.max(1, Math.round((file.size || 1024 * 1024) / 1024 / 1024))}MB`,
-  }
+    size: `${Math.max(1, Math.round((file.size || 1024 * 1024) / 1024 / 1024))}MB` }
 
   if (!isApiProject.value) {
     if (!Array.isArray(project.value.documents)) {
@@ -2414,14 +2405,12 @@ const handleUpload = async (file) => {
     }
     project.value.documents.unshift({
       id: `DOC_${Date.now()}`,
-      ...docPayload,
-    })
+      ...docPayload })
     activities.value.unshift({
       id: Date.now(),
       user: userStore.userName,
       action: `上传了文档「${file.name}」`,
-      time: new Date().toLocaleString('zh-CN', { hour12: false }),
-    })
+      time: new Date().toLocaleString('zh-CN', { hour12: false }) })
     ElMessage.success(`已上传演示文档：${file.name}`)
     return false
   }
@@ -2446,8 +2435,7 @@ const handleUpload = async (file) => {
       id: Date.now(),
       user: userStore.userName,
       action: `上传了文档「${result.data.name}」`,
-      time: new Date().toLocaleString('zh-CN', { hour12: false }),
-    })
+      time: new Date().toLocaleString('zh-CN', { hour12: false }) })
     ElMessage.success(`已上传文档：${result.data.name}`)
   } catch (error) {
     ElMessage.error(error.message || '上传文档失败')
@@ -2503,8 +2491,7 @@ const handleCreateDocument = async (docName, size = '1.2MB') => {
     id: Date.now(),
     user: userStore.userName,
     action: `新增了项目文档「${result.data.name}」`,
-    time: new Date().toLocaleString('zh-CN', { hour12: false }),
-  })
+    time: new Date().toLocaleString('zh-CN', { hour12: false }) })
   ElMessage.success('项目文档已新增')
 }
 
@@ -2518,8 +2505,7 @@ const handleAddDocument = async () => {
       name: docName,
       uploader: userStore.userName,
       time: new Date().toLocaleString('zh-CN', { hour12: false }),
-      size: '1.2MB',
-    }
+      size: '1.2MB' }
     if (!Array.isArray(project.value.documents)) {
       project.value.documents = []
     }
@@ -2528,8 +2514,7 @@ const handleAddDocument = async () => {
       id: Date.now(),
       user: userStore.userName,
       action: `新增了项目文档「${mockDoc.name}」`,
-      time: new Date().toLocaleString('zh-CN', { hour12: false }),
-    })
+      time: new Date().toLocaleString('zh-CN', { hour12: false }) })
     ElMessage.success('已新增演示文档')
     return
   }
@@ -2557,16 +2542,14 @@ const handleShare = async () => {
     const result = await projectsApi.createShareLink(route.params.id, {
       createdBy: userStore.currentUser?.id || null,
       createdByName: userStore.userName,
-      baseUrl: window.location.origin,
-    })
+      baseUrl: window.location.origin })
     const shareLink = result?.data?.url || fallbackLink
     await navigator.clipboard.writeText(shareLink)
     activities.value.unshift({
       id: Date.now(),
       user: userStore.userName,
       action: '生成了项目分享链接',
-      time: new Date().toLocaleString('zh-CN', { hour12: false }),
-    })
+      time: new Date().toLocaleString('zh-CN', { hour12: false }) })
     ElMessage.success('项目分享链接已复制到剪贴板')
   } catch (error) {
     ElMessage.error(error.message || '生成分享链接失败')
@@ -2578,8 +2561,7 @@ const handleExport = () => {
     collaborationApi.exports.createExport(route.params.id, {
       format: 'json',
       exportedBy: userStore.currentUser?.id || null,
-      exportedByName: userStore.userName,
-    }).then((result) => {
+      exportedByName: userStore.userName }).then((result) => {
       if (!result?.success || !result?.data) {
         ElMessage.error(result?.message || '导出资料失败')
         return
@@ -2593,8 +2575,7 @@ const handleExport = () => {
         id: Date.now(),
         user: userStore.userName,
         action: `导出了项目资料「${result.data.fileName}」`,
-        time: new Date().toLocaleString('zh-CN', { hour12: false }),
-      })
+        time: new Date().toLocaleString('zh-CN', { hour12: false }) })
       ElMessage.success(`已导出 ${result.data.fileName}`)
     }).catch(() => {
       ElMessage.error('导出资料失败')
@@ -2606,8 +2587,7 @@ const handleExport = () => {
     project: project.value,
     expenses: projectExpenses.value,
     activities: activities.value,
-    exportedAt: new Date().toISOString(),
-  }
+    exportedAt: new Date().toISOString() }
   downloadTextFile(
     `${project.value?.name || '项目资料'}_导出.json`,
     JSON.stringify(payload, null, 2),
@@ -2624,8 +2604,7 @@ const handleArchiveDocuments = async () => {
       id: Date.now(),
       user: userStore.userName,
       action: '归档了项目资料',
-      time: new Date().toLocaleString('zh-CN', { hour12: false }),
-    })
+      time: new Date().toLocaleString('zh-CN', { hour12: false }) })
     ElMessage.success('已完成本地归档记录')
     return
   }
@@ -2634,8 +2613,7 @@ const handleArchiveDocuments = async () => {
     const result = await collaborationApi.exports.archive(route.params.id, {
       archivedBy: userStore.currentUser?.id || null,
       archivedByName: userStore.userName,
-      archiveReason: '项目资料整理完成，归档留存',
-    })
+      archiveReason: '项目资料整理完成，归档留存' })
     if (!result?.success || !result?.data) {
       throw new Error(result?.message || '归档资料失败')
     }
@@ -2646,8 +2624,7 @@ const handleArchiveDocuments = async () => {
       id: Date.now(),
       user: userStore.userName,
       action: `归档了项目资料（${result.data.archiveReason}）`,
-      time: new Date().toLocaleString('zh-CN', { hour12: false }),
-    })
+      time: new Date().toLocaleString('zh-CN', { hour12: false }) })
     ElMessage.success('项目资料归档成功')
   } catch (error) {
     ElMessage.error(error.message || '归档资料失败')
@@ -2664,8 +2641,7 @@ const handleSetReminder = async () => {
       id: Date.now(),
       user: userStore.userName,
       action: '设置了项目跟进提醒',
-      time: new Date().toLocaleString('zh-CN', { hour12: false }),
-    })
+      time: new Date().toLocaleString('zh-CN', { hour12: false }) })
     ElMessage.success('已设置本地提醒，默认明天 09:00 提醒')
     return
   }
@@ -2677,8 +2653,7 @@ const handleSetReminder = async () => {
       remindAt: remindAt.toISOString(),
       createdBy: userStore.currentUser?.id || null,
       createdByName: userStore.userName,
-      recipient: '项目负责人',
-    })
+      recipient: '项目负责人' })
     if (!result?.success || !result?.data) {
       throw new Error(result?.message || '设置提醒失败')
     }
@@ -2686,8 +2661,7 @@ const handleSetReminder = async () => {
       id: Date.now(),
       user: userStore.userName,
       action: `设置了项目提醒：${result.data.title}`,
-      time: new Date().toLocaleString('zh-CN', { hour12: false }),
-    })
+      time: new Date().toLocaleString('zh-CN', { hour12: false }) })
     ElMessage.success('项目提醒已创建')
   } catch (error) {
     ElMessage.error(error.message || '设置提醒失败')
@@ -2708,8 +2682,7 @@ const loadProjectWorkflowData = async (projectId) => {
     ? taskResult.data.map((task) => ({
       ...task,
       deliverables: task.deliverables || [],
-      hasDeliverable: Boolean(task.hasDeliverable),
-    }))
+      hasDeliverable: Boolean(task.hasDeliverable) }))
     : []
 
   project.value.documents = documentResult?.success && Array.isArray(documentResult.data)

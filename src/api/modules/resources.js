@@ -5,11 +5,9 @@
 
 /**
  * 资源管理模块 API
- * 支持双模式切换，并在 API 模式下对齐当前后端契约
+ * 真实 API 资源管理访问层
  */
 import httpClient from '../client.js'
-import { mockData } from '../mock.js'
-import { isMockMode } from '../config.js'
 
 function isNumericId(id) {
   return /^\d+$/.test(String(id))
@@ -18,8 +16,7 @@ function isNumericId(id) {
 function invalidIdMessage(entityName) {
   return {
     success: false,
-    message: `Current backend only supports numeric ${entityName} IDs in API mode`,
-  }
+    message: `Current backend only supports numeric ${entityName} IDs in API mode` }
 }
 
 function formatDate(value) {
@@ -50,8 +47,7 @@ function normalizePlatformLabel(platformType, fallback) {
     BID_PLATFORM: '投标平台',
     PROCUREMENT_PLATFORM: '采购平台',
     GOVERNMENT_PLATFORM: '政府平台',
-    OTHER: '其他平台',
-  }
+    OTHER: '其他平台' }
   return fallback || map[type] || type || '未知平台'
 }
 
@@ -65,8 +61,7 @@ function normalizeAccount(item = {}) {
     lastUsed: formatDateTime(item.updatedAt || item.borrowedAt || item.lastUsed),
     borrower: item.borrower || (item.borrowedBy ? `用户#${item.borrowedBy}` : ''),
     dueAt: formatDateTime(item.dueAt),
-    raw: item,
-  }
+    raw: item }
 }
 
 function normalizeExpenseCategory(category) {
@@ -78,8 +73,7 @@ function normalizeExpenseCategory(category) {
     TRANSPORTATION: '差旅费',
     SUBCONTRACTING: '其他',
     OVERHEAD: '其他',
-    OTHER: '其他',
-  }
+    OTHER: '其他' }
   return map[value] || category || '其他'
 }
 
@@ -127,15 +121,13 @@ function normalizeExpense(item = {}) {
     approvedAt: item.approvedAt || '',
     approvalComment: item.approvalComment || '',
     returnComment: item.returnComment || '',
-    raw: item,
-  }
+    raw: item }
 }
 
 function normalizeExpenseMutationResponse(response) {
   return {
     ...response,
-    data: response?.data ? normalizeExpense(response.data) : response?.data,
-  }
+    data: response?.data ? normalizeExpense(response.data) : response?.data }
 }
 
 function parseBarMeta(remark) {
@@ -151,8 +143,7 @@ function parseBarMeta(remark) {
       siteType: meta.s || '',
       loginType: meta.l || '',
       remark: meta.m || '',
-      lastVerifyTime: meta.v || '',
-    }
+      lastVerifyTime: meta.v || '' }
   } catch {
     return {}
   }
@@ -166,8 +157,7 @@ function createBarRemark(site = {}) {
     s: site.siteType || '',
     l: site.loginType || '',
     m: site.remark || '',
-    v: site.lastVerifyTime || '',
-  }
+    v: site.lastVerifyTime || '' }
 
   return `BAR_SITE_META:${JSON.stringify(meta)}`
 }
@@ -193,8 +183,7 @@ function normalizeBarAssetType(type) {
     VEHICLE: '车辆资产',
     INVENTORY: '库存资产',
     LICENSE: '数字证书/许可',
-    OTHER: '其他资产',
-  }
+    OTHER: '其他资产' }
   return map[value] || '其他资产'
 }
 
@@ -226,8 +215,7 @@ function normalizeBarSite(item = {}) {
     assetType: item.type || 'OTHER',
     assetValue: Number(item.value || 0),
     acquireDate: formatDate(item.acquireDate),
-    raw: item,
-  }
+    raw: item }
 }
 
 function normalizeBarSiteAccount(item = {}) {
@@ -239,8 +227,7 @@ function normalizeBarSiteAccount(item = {}) {
     phone: item.phone || '',
     email: item.email || '',
     status: item.status || 'active',
-    raw: item,
-  }
+    raw: item }
 }
 
 function normalizeBarSiteAttachment(item = {}) {
@@ -252,8 +239,7 @@ function normalizeBarSiteAttachment(item = {}) {
     url: item.url || '',
     uploadedBy: item.uploadedBy || '',
     uploadedAt: formatDateTime(item.uploadedAt),
-    raw: item,
-  }
+    raw: item }
 }
 
 function normalizeBarVerification(item = {}) {
@@ -263,8 +249,7 @@ function normalizeBarVerification(item = {}) {
     verifiedAt: formatDateTime(item.verifiedAt),
     status: String(item.status || '').toUpperCase() || 'SUCCESS',
     message: item.message || '',
-    raw: item,
-  }
+    raw: item }
 }
 
 function normalizeBarSop(item = {}) {
@@ -275,8 +260,7 @@ function normalizeBarSop(item = {}) {
     requiredDocs: Array.isArray(item.requiredDocs) ? item.requiredDocs : [],
     faqs: Array.isArray(item.faqs) ? item.faqs : [],
     history: Array.isArray(item.history) ? item.history : [],
-    estimatedTime: item.estimatedTime || '',
-  }
+    estimatedTime: item.estimatedTime || '' }
 }
 
 function createBarAssetPayload(site = {}) {
@@ -287,8 +271,7 @@ function createBarAssetPayload(site = {}) {
     value: Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : 1,
     status: mapSiteStatusToAssetStatus(site.status),
     acquireDate: site.acquireDate || new Date().toISOString().split('T')[0],
-    remark: createBarRemark(site),
-  }
+    remark: createBarRemark(site) }
 }
 
 function filterBarSites(sites, params = {}) {
@@ -325,8 +308,7 @@ function normalizeCertificate(item = {}) {
     borrowPurpose: item.borrowPurpose || '',
     expectedReturn: formatDate(item.expectedReturnDate),
     remark: item.remark || '',
-    raw: item,
-  }
+    raw: item }
 }
 
 function normalizeApprovalRecord(item = {}) {
@@ -342,8 +324,7 @@ function normalizeApprovalRecord(item = {}) {
     approver: item.approver || '',
     approvalStatus: String(item.result || item.approvalStatus || '').toLowerCase() || 'pending',
     remark: item.comment || item.remark || '',
-    raw: item,
-  }
+    raw: item }
 }
 
 function filterAccounts(accounts, params = {}) {
@@ -369,18 +350,8 @@ function filterExpenses(expenses, params = {}) {
   })
 }
 
-function mockDelay(data, total = null, timeout = 200) {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve({ success: true, data, total: total ?? data.length }), timeout)
-  })
-}
-
 export const accountsApi = {
   async getList(params = {}) {
-    if (isMockMode()) {
-      const data = filterAccounts(mockData.accounts.map(normalizeAccount), params)
-      return mockDelay(data)
-    }
 
     const response = await httpClient.get('/api/platform/accounts')
     const page = response?.data
@@ -391,10 +362,6 @@ export const accountsApi = {
   },
 
   async getDetail(id) {
-    if (isMockMode()) {
-      const item = mockData.accounts.find((account) => String(account.id) === String(id))
-      return Promise.resolve({ success: true, data: item ? normalizeAccount(item) : null })
-    }
     if (!isNumericId(id)) {
       return Promise.resolve(invalidIdMessage('account'))
     }
@@ -404,79 +371,41 @@ export const accountsApi = {
   },
 
   async create(data) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizeAccount({ ...data, id: `A${Date.now()}` }),
-      })
-    }
     return httpClient.post('/api/platform/accounts', data)
   },
 
   async update(id, data) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: normalizeAccount({ ...data, id }) })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('account'))
 
     return httpClient.put(`/api/platform/accounts/${id}`, data)
   },
 
   async delete(id) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('account'))
 
     return httpClient.delete(`/api/platform/accounts/${id}`)
   },
 
   async borrow(id, payload) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizeAccount({
-          id,
-          ...payload,
-          status: 'in_use',
-          borrower: payload.borrower,
-        }),
-      })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('account'))
 
     return httpClient.post(`/api/platform/accounts/${id}/borrow`, payload)
   },
 
   async return(id) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizeAccount({ id, status: 'available', borrower: '' }),
-      })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('account'))
 
     return httpClient.post(`/api/platform/accounts/${id}/return`)
   },
 
   async getPassword(id) {
-    if (isMockMode()) {
-      const item = mockData.accounts.find((account) => String(account.id) === String(id))
-      return Promise.resolve({ success: true, data: { password: item?.password || '' } })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('account'))
 
     return httpClient.get(`/api/platform/accounts/${id}/password`)
-  },
-}
+  } }
 
 export const barSitesApi = {
   async getList(params = {}) {
-    if (isMockMode()) {
-      const sites = filterBarSites(mockData.barSites || [], params)
-      return mockDelay(sites, null, 300)
-    }
 
     const response = await httpClient.get('/api/resources/bar-assets')
     const page = response?.data
@@ -486,10 +415,6 @@ export const barSitesApi = {
   },
 
   async getDetail(id) {
-    if (isMockMode()) {
-      const site = mockData.barSites?.find((item) => String(item.id) === String(id))
-      return Promise.resolve({ success: true, data: site || null })
-    }
     if (!isNumericId(id)) {
       return Promise.resolve(invalidIdMessage('bar asset'))
     }
@@ -499,41 +424,12 @@ export const barSitesApi = {
   },
 
   async create(data) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: {
-          id: `S${Date.now()}`,
-          status: 'active',
-          hasRisk: false,
-          riskLevel: 'low',
-          accounts: [],
-          uks: [],
-          attachments: [],
-          auditLog: [],
-          sop: null,
-          lastVerifyTime: new Date().toISOString().split('T')[0],
-          ...data,
-        },
-      })
-    }
 
     const response = await httpClient.post('/api/resources/bar-assets', createBarAssetPayload(data))
     return { ...response, data: normalizeBarSite(response?.data) }
   },
 
   async update(id, data) {
-    if (isMockMode()) {
-      const existing = mockData.barSites?.find((item) => String(item.id) === String(id)) || {}
-      return Promise.resolve({
-        success: true,
-        data: {
-          ...existing,
-          ...data,
-          id,
-        },
-      })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('bar asset'))
 
     const response = await httpClient.put(`/api/resources/bar-assets/${id}`, createBarAssetPayload(data))
@@ -541,12 +437,6 @@ export const barSitesApi = {
   },
 
   async updateStatus(id, status) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: { id, status: status === 'inactive' ? 'inactive' : 'active' },
-      })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('bar asset'))
 
     const response = await httpClient.patch(`/api/resources/bar-assets/${id}/status`, { status })
@@ -554,18 +444,6 @@ export const barSitesApi = {
   },
 
   async verify(id, payload = {}) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizeBarVerification({
-          id: `VERIFY-${Date.now()}`,
-          verifiedBy: payload.verifiedBy || 'system',
-          verifiedAt: new Date().toISOString(),
-          status: payload.status || 'SUCCESS',
-          message: payload.message || '站点连通性校验通过',
-        }),
-      })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('bar asset'))
 
     const response = await httpClient.post(`/api/resources/bar-assets/${id}/verify`, payload)
@@ -573,34 +451,22 @@ export const barSitesApi = {
   },
 
   async getVerificationRecords(id) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: [] })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('bar asset'))
 
     const response = await httpClient.get(`/api/resources/bar-assets/${id}/verification-records`)
     return {
       ...response,
-      data: Array.isArray(response?.data) ? response.data.map(normalizeBarVerification) : [],
-    }
+      data: Array.isArray(response?.data) ? response.data.map(normalizeBarVerification) : [] }
   },
 
   async delete(id) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('bar asset'))
 
     return httpClient.delete(`/api/resources/bar-assets/${id}`)
-  },
-}
+  } }
 
 export const barSiteAccountsApi = {
   async getList(siteId) {
-    if (isMockMode()) {
-      const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
-      return Promise.resolve({ success: true, data: site?.accounts || [] })
-    }
     if (!isNumericId(siteId)) {
       return Promise.resolve(invalidIdMessage('bar site account'))
     }
@@ -610,17 +476,10 @@ export const barSiteAccountsApi = {
     const content = Array.isArray(page?.content) ? page.content : Array.isArray(response?.data) ? response.data : []
     return {
       ...response,
-      data: content.map(normalizeBarSiteAccount),
-    }
+      data: content.map(normalizeBarSiteAccount) }
   },
 
   async create(siteId, data) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: { id: `A${Date.now()}`, status: 'active', ...data },
-      })
-    }
     if (!isNumericId(siteId)) return Promise.resolve(invalidIdMessage('bar asset'))
 
     const response = await httpClient.post(`/api/resources/bar-assets/${siteId}/accounts`, data)
@@ -628,9 +487,6 @@ export const barSiteAccountsApi = {
   },
 
   async update(siteId, accountId, data) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: { ...data, id: accountId } })
-    }
     if (!isNumericId(siteId) || !isNumericId(accountId)) return Promise.resolve(invalidIdMessage('bar site account'))
 
     const response = await httpClient.put(`/api/resources/bar-assets/${siteId}/accounts/${accountId}`, data)
@@ -638,21 +494,13 @@ export const barSiteAccountsApi = {
   },
 
   async delete(siteId, accountId) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true })
-    }
     if (!isNumericId(siteId) || !isNumericId(accountId)) return Promise.resolve(invalidIdMessage('bar site account'))
 
     return httpClient.delete(`/api/resources/bar-assets/${siteId}/accounts/${accountId}`)
-  },
-}
+  } }
 
 export const barSiteSopApi = {
   async get(siteId) {
-    if (isMockMode()) {
-      const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
-      return Promise.resolve({ success: true, data: site?.sop || null })
-    }
     if (!isNumericId(siteId)) {
       return Promise.resolve(invalidIdMessage('bar asset'))
     }
@@ -662,22 +510,14 @@ export const barSiteSopApi = {
   },
 
   async update(siteId, data) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data })
-    }
     if (!isNumericId(siteId)) return Promise.resolve(invalidIdMessage('bar asset'))
 
     const response = await httpClient.put(`/api/resources/bar-assets/${siteId}/sop`, data)
     return { ...response, data: normalizeBarSop(response?.data || {}) }
-  },
-}
+  } }
 
 export const barSiteAttachmentsApi = {
   async getList(siteId) {
-    if (isMockMode()) {
-      const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
-      return Promise.resolve({ success: true, data: site?.attachments || [] })
-    }
     if (!isNumericId(siteId)) {
       return Promise.resolve(invalidIdMessage('bar site attachment'))
     }
@@ -687,14 +527,10 @@ export const barSiteAttachmentsApi = {
     const content = Array.isArray(page?.content) ? page.content : Array.isArray(response?.data) ? response.data : []
     return {
       ...response,
-      data: content.map(normalizeBarSiteAttachment),
-    }
+      data: content.map(normalizeBarSiteAttachment) }
   },
 
   async create(siteId, data) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: { id: `ATT-${Date.now()}`, ...data } })
-    }
     if (!isNumericId(siteId)) return Promise.resolve(invalidIdMessage('bar asset'))
 
     const response = await httpClient.post(`/api/resources/bar-assets/${siteId}/attachments`, data)
@@ -702,21 +538,13 @@ export const barSiteAttachmentsApi = {
   },
 
   async delete(siteId, attachmentId) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true })
-    }
     if (!isNumericId(siteId) || !isNumericId(attachmentId)) return Promise.resolve(invalidIdMessage('bar site attachment'))
 
     return httpClient.delete(`/api/resources/bar-assets/${siteId}/attachments/${attachmentId}`)
-  },
-}
+  } }
 
 export const barCertificatesApi = {
   async getList(siteId) {
-    if (isMockMode()) {
-      const site = mockData.barSites?.find((item) => String(item.id) === String(siteId))
-      return Promise.resolve({ success: true, data: site?.uks || [] })
-    }
     if (!isNumericId(siteId)) {
       return Promise.resolve(invalidIdMessage('bar certificate'))
     }
@@ -729,16 +557,6 @@ export const barCertificatesApi = {
   },
 
   async create(siteId, data) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: {
-          id: `UK${Date.now()}`,
-          status: 'available',
-          ...data,
-        },
-      })
-    }
     if (!isNumericId(siteId)) return Promise.resolve(invalidIdMessage('bar asset'))
 
     const response = await httpClient.post(`/api/resources/bar-assets/${siteId}/certificates`, data)
@@ -746,9 +564,6 @@ export const barCertificatesApi = {
   },
 
   async update(siteId, certificateId, data) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: { ...data, id: certificateId } })
-    }
     if (!isNumericId(siteId) || !isNumericId(certificateId)) {
       return Promise.resolve(invalidIdMessage('bar certificate'))
     }
@@ -758,9 +573,6 @@ export const barCertificatesApi = {
   },
 
   async delete(siteId, certificateId) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true })
-    }
     if (!isNumericId(siteId) || !isNumericId(certificateId)) {
       return Promise.resolve(invalidIdMessage('bar certificate'))
     }
@@ -769,20 +581,6 @@ export const barCertificatesApi = {
   },
 
   async borrow(siteId, certificateId, data) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizeCertificate({
-          id: certificateId,
-          ...data,
-          currentBorrower: data.borrower,
-          currentProjectId: data.projectId,
-          borrowPurpose: data.purpose,
-          expectedReturnDate: data.expectedReturnDate,
-          status: 'BORROWED',
-        }),
-      })
-    }
     if (!isNumericId(siteId) || !isNumericId(certificateId)) {
       return Promise.resolve(invalidIdMessage('bar certificate'))
     }
@@ -792,12 +590,6 @@ export const barCertificatesApi = {
   },
 
   async return(siteId, certificateId, data = {}) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizeCertificate({ id: certificateId, status: 'AVAILABLE' }),
-      })
-    }
     if (!isNumericId(siteId) || !isNumericId(certificateId)) {
       return Promise.resolve(invalidIdMessage('bar certificate'))
     }
@@ -807,23 +599,15 @@ export const barCertificatesApi = {
   },
 
   async getBorrowRecords(siteId, certificateId) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: [] })
-    }
     if (!isNumericId(siteId) || !isNumericId(certificateId)) {
       return Promise.resolve(invalidIdMessage('bar certificate'))
     }
 
     return httpClient.get(`/api/resources/bar-assets/${siteId}/certificates/${certificateId}/borrow-records`)
-  },
-}
+  } }
 
 export const expensesApi = {
   async getList(params = {}) {
-    if (isMockMode()) {
-      const data = filterExpenses(mockData.fees.map(normalizeExpense), params)
-      return mockDelay(data)
-    }
 
     const response = await httpClient.get('/api/resources/expenses')
     const page = response?.data
@@ -834,21 +618,11 @@ export const expensesApi = {
   },
 
   async create(data) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizeExpense({ ...data, id: `E${Date.now()}` }),
-      })
-    }
     const response = await httpClient.post('/api/resources/expenses', data)
     return normalizeExpenseMutationResponse(response)
   },
 
   async getDetail(id) {
-    if (isMockMode()) {
-      const item = mockData.fees.find((fee) => String(fee.id) === String(id))
-      return Promise.resolve({ success: true, data: item ? normalizeExpense(item) : null })
-    }
     if (!isNumericId(id)) {
       return Promise.resolve(invalidIdMessage('expense'))
     }
@@ -858,21 +632,14 @@ export const expensesApi = {
   },
 
   async getApprovalRecords(projectId) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: [] })
-    }
 
     const response = await httpClient.get('/api/resources/expenses/approval-records', {
-      params: projectId ? { projectId } : undefined,
-    })
+      params: projectId ? { projectId } : undefined })
     const records = Array.isArray(response?.data) ? response.data.map(normalizeApprovalRecord) : []
     return { ...response, data: records }
   },
 
   async approve(id, data) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('expense'))
 
     const response = await httpClient.post(`/api/resources/expenses/${id}/approve`, data)
@@ -880,9 +647,6 @@ export const expensesApi = {
   },
 
   async requestReturn(id, data) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('expense'))
 
     const response = await httpClient.post(`/api/resources/expenses/${id}/return-request`, data)
@@ -890,15 +654,11 @@ export const expensesApi = {
   },
 
   async confirmReturn(id, data) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('expense'))
 
     const response = await httpClient.post(`/api/resources/expenses/${id}/confirm-return`, data)
     return normalizeExpenseMutationResponse(response)
-  },
-}
+  } }
 
 export default {
   accounts: accountsApi,
@@ -907,5 +667,4 @@ export default {
   barSiteSop: barSiteSopApi,
   barSiteAttachments: barSiteAttachmentsApi,
   certificates: barCertificatesApi,
-  expenses: expensesApi,
-}
+  expenses: expensesApi }

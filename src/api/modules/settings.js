@@ -4,7 +4,6 @@
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 import httpClient from '../client.js'
-import { isMockMode } from '../config.js'
 
 const normalizeRole = (role) => String(role || '').trim().toLowerCase()
 const normalizePermissionList = (permissions) => (
@@ -178,12 +177,6 @@ export const hasMenuAccessForRole = (role, permissionKeys = []) => {
 
 export const settingsApi = {
   async getDataScopeConfig() {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizeConfig(fallbackConfig)
-      })
-    }
 
     const response = await httpClient.get('/api/admin/settings/data-scope')
     return {
@@ -194,12 +187,6 @@ export const settingsApi = {
 
   async saveDataScopeConfig(payload) {
     const normalizedPayload = normalizeConfig(payload)
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizedPayload
-      })
-    }
 
     const response = await httpClient.put('/api/admin/settings/data-scope', normalizedPayload)
     return {
@@ -209,12 +196,6 @@ export const settingsApi = {
   },
 
   async getUsers() {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: []
-      })
-    }
 
     const response = await httpClient.get('/api/admin/users')
     return {
@@ -261,12 +242,6 @@ export const settingsApi = {
   },
 
   async getRoles() {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizeConfig(fallbackConfig).roles
-      })
-    }
 
     const response = await httpClient.get('/api/admin/roles')
     return {
@@ -322,30 +297,11 @@ export const settingsApi = {
   },
 
   async getSystemSettings() {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: {
-          systemConfig: {
-            sysName: '西域数智化投标管理平台',
-            depositWarnDays: 7,
-            qualWarnDays: 30,
-            enableAI: true
-          }
-        }
-      })
-    }
 
     return httpClient.get('/api/settings')
   },
 
   async updateSystemSettings(payload) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: payload
-      })
-    }
 
     return httpClient.put('/api/settings', payload)
   }

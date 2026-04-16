@@ -375,7 +375,7 @@ import {
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
-import { getFeaturePlaceholder, isFeatureUnavailableResponse, knowledgeApi, isMockMode } from '@/api'
+import { getFeaturePlaceholder, isFeatureUnavailableResponse, knowledgeApi } from '@/api'
 import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 import { triggerDownload } from '@/api/modules/export'
 import { getAccessToken } from '@/api/session.js'
@@ -489,9 +489,7 @@ const loadQualifications = async () => {
       featurePlaceholder.value = notifyFeatureUnavailable(result, {
         fallback: {
           title: '资质库暂未接入',
-          hint: '请先在 mock 环境演示，或等待真实后端提供资质列表接口。',
-        },
-      })
+          hint: '请先在 mock 环境演示，或等待真实后端提供资质列表接口。' } })
       if (!featurePlaceholder.value && result?.message) {
         ElMessage.error(result.message)
       }
@@ -696,7 +694,7 @@ const handleConfirmUpload = async () => {
 
   qualifications.value.unshift(result.data)
   uploadDialogVisible.value = false
-  ElMessage.success(isMockMode() ? '上传成功' : '资质元数据已创建，文件上传后端暂未接入')
+  ElMessage.success(false ? '上传成功' : '资质元数据已创建，文件上传后端暂未接入')
 }
 
 // 查看
@@ -707,7 +705,7 @@ const handleView = (row) => {
 
 // 下载
 const handleDownload = (row) => {
-  if (isMockMode() || !row.fileUrl) {
+  if (false || !row.fileUrl) {
     // Mock 模式或无文件URL时模拟下载
     ElMessage.success(`开始下载：${row.name}`)
     return

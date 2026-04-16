@@ -8,12 +8,12 @@
       <div class="header-actions">
         <el-button
           @click="refreshInsights"
-          :loading="isMockMode && isScanning"
-          :disabled="!isMockMode"
+          :loading="customerOpportunityDemoEnabled && isScanning"
+          :disabled="!customerOpportunityDemoEnabled"
           class="btn-refresh"
         >
           <el-icon><Refresh /></el-icon>
-          {{ isMockMode ? '刷新洞察' : '洞察未接入' }}
+          {{ customerOpportunityDemoEnabled ? '刷新洞察' : '洞察未接入' }}
         </el-button>
         <el-button type="primary" class="btn-primary" @click="createProject" v-if="selectedCustomer">
           {{ selectedCustomer.prediction.convertedProjectId ? '查看项目' : '转为正式项目' }}
@@ -23,7 +23,7 @@
 
     <!-- AI Scanning Overlay -->
     <transition name="fade">
-      <div v-if="isMockMode && isScanning" class="scanning-overlay">
+      <div v-if="customerOpportunityDemoEnabled && isScanning" class="scanning-overlay">
         <div class="scan-grid"></div>
         <div class="scan-line"></div>
         <div class="scan-content">
@@ -90,26 +90,26 @@
                 placeholder="搜索名称..."
                 clearable
                 size="default"
-                :disabled="!isMockMode"
+                :disabled="!customerOpportunityDemoEnabled"
                 class="search-input"
               >
                 <template #prefix>
                   <el-icon><Search /></el-icon>
                 </template>
               </el-input>
-              <el-select v-model="filters.sales" placeholder="销售负责人" size="default" clearable :disabled="!isMockMode" class="filter-item">
+              <el-select v-model="filters.sales" placeholder="销售负责人" size="default" clearable :disabled="!customerOpportunityDemoEnabled" class="filter-item">
                 <el-option label="全部销售" value="" />
                 <el-option v-for="user in salesUsers" :key="user.id" :label="user.name" :value="user.name" />
               </el-select>
             </div>
             <div class="filter-row">
-              <el-select v-model="filters.region" placeholder="全部地区" size="default" clearable :disabled="!isMockMode" class="filter-item">
+              <el-select v-model="filters.region" placeholder="全部地区" size="default" clearable :disabled="!customerOpportunityDemoEnabled" class="filter-item">
                 <el-option v-for="region in regions" :key="region" :label="region" :value="region" />
               </el-select>
-              <el-select v-model="filters.industry" placeholder="全部行业" size="default" clearable :disabled="!isMockMode" class="filter-item">
+              <el-select v-model="filters.industry" placeholder="全部行业" size="default" clearable :disabled="!customerOpportunityDemoEnabled" class="filter-item">
                 <el-option v-for="ind in industries" :key="ind" :label="ind" :value="ind" />
               </el-select>
-              <el-select v-model="filters.status" placeholder="全部分类" size="default" clearable :disabled="!isMockMode" class="filter-item">
+              <el-select v-model="filters.status" placeholder="全部分类" size="default" clearable :disabled="!customerOpportunityDemoEnabled" class="filter-item">
                 <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
             </div>
@@ -126,7 +126,7 @@
             class="premium-table"
           >
             <template #empty>
-              <el-empty :description="isMockMode ? '暂无符合条件的客户' : '客户商机数据源未接入，当前仅保留演示模式'" />
+              <el-empty :description="customerOpportunityDemoEnabled ? '暂无符合条件的客户' : '客户商机数据源未接入'" />
             </template>
             <el-table-column prop="customerName" label="客户名称" min-width="220" show-overflow-tooltip>
               <template #default="{ row }">
@@ -268,7 +268,7 @@
               </p>
             </div>
           </div>
-          <div v-else-if="isMockMode" class="smart-onboarding">
+          <div v-else-if="customerOpportunityDemoEnabled" class="smart-onboarding">
             <div class="onboarding-content">
               <div class="ai-avatar-large shadow-glow">
                 <el-icon><MagicStick /></el-icon>
@@ -372,12 +372,11 @@ import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Refresh, User, InfoFilled, MagicStick, Search, CaretTop, CaretBottom, Star, TrendCharts } from '@element-plus/icons-vue'
-import { isMockMode as getIsMockMode } from '@/api/config.js'
 import { useCustomerOpportunityCenterData } from '@/api/modules/customerOpportunity.js'
 
 const router = useRouter()
 const loading = ref(true)
-const isMockMode = getIsMockMode()
+const customerOpportunityDemoEnabled = false
 const { customerInsights, customerPurchases, customerPredictions, salesUsers } = useCustomerOpportunityCenterData()
 const filters = ref({ status: '', keyword: '', sales: '', region: '', industry: '' })
 
@@ -393,7 +392,7 @@ const historyDrawer = ref(false)
 const isScanning = ref(false)
 
 onMounted(() => {
-  const delay = isMockMode ? 800 : 220
+  const delay = customerOpportunityDemoEnabled ? 800 : 220
   setTimeout(() => {
     loading.value = false
   }, delay)
@@ -441,12 +440,12 @@ const categoryStats = computed(() => {
 })
 
 const boardSummaries = computed(() => {
-  if (!isMockMode) {
+  if (!customerOpportunityDemoEnabled) {
     return [
       { label: '客户池', value: '--', note: '真实客户数据源未接入', tag: '未接入', tagType: 'info', placeholder: true, trendLabel: 'API' },
-      { label: '采购记录', value: '--', note: '历史采购服务仅在演示模式可见', tag: '未接入', tagType: 'info', placeholder: true, trendLabel: 'API' },
+      { label: '采购记录', value: '--', note: '历史采购服务待真实数据源接入', tag: '未接入', tagType: 'info', placeholder: true, trendLabel: 'API' },
       { label: '预测商机', value: '--', note: '预测结果不会在真实模式下伪造', tag: '未接入', tagType: 'info', placeholder: true, trendLabel: 'API' },
-      { label: '项目转化', value: '--', note: '转项目链路需在 mock 模式体验', tag: '未接入', tagType: 'info', placeholder: true, trendLabel: 'API' }
+      { label: '项目转化', value: '--', note: '转项目链路待真实数据源接入', tag: '未接入', tagType: 'info', placeholder: true, trendLabel: 'API' }
     ]
   }
   const customers = customerInsights.value
@@ -548,7 +547,7 @@ const buildDeadlineFromWindow = (windowValue) => {
 }
 
 const refreshInsights = () => {
-  if (!isMockMode) {
+  if (!customerOpportunityDemoEnabled) {
     ElMessage.info('客户商机中心在真实模式下暂未接入数据源')
     return
   }
@@ -560,13 +559,13 @@ const refreshInsights = () => {
 }
 
 const selectFirstHighValue = () => {
-  if (!isMockMode) return
+  if (!customerOpportunityDemoEnabled) return
   const first = customerInsights.value.find(c => c.opportunityScore >= 85)
   if (first) activeCustomerId.value = first.customerId
 }
 
 const createProject = () => {
-  if (!selectedCustomer.value || !isMockMode) return
+  if (!selectedCustomer.value || !customerOpportunityDemoEnabled) return
 
   if (selectedCustomer.value.prediction.convertedProjectId) {
     router.push(`/project/${selectedCustomer.value.prediction.convertedProjectId}`)

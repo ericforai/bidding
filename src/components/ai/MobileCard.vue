@@ -148,7 +148,6 @@
 <script setup>
 import { computed } from 'vue'
 import { Share, Cellphone, Warning } from '@element-plus/icons-vue'
-import { isMockMode } from '@/api/config'
 import { getDemoMobileCard } from '@/api/mock-adapters/frontendDemo.js'
 
 const props = defineProps({
@@ -177,10 +176,6 @@ const currentData = computed(() => {
   const projectData = props.data?.[props.projectId] || null
   if (projectData) {
     return projectData
-  }
-
-  if (isMockMode()) {
-    return getDemoMobileCard(props.projectId)
   }
 
   return null

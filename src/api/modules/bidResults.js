@@ -4,14 +4,12 @@
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 import httpClient from '../client.js'
-import { isMockMode } from '../config.js'
 
 const normalizeOverview = (data = {}) => ({
   lastSyncTime: data?.lastSyncTime || '',
   pendingCount: Number(data?.pendingCount || 0),
   uploadPending: Number(data?.uploadPending || 0),
-  competitorCount: Number(data?.competitorCount || 0),
-})
+  competitorCount: Number(data?.competitorCount || 0) })
 
 const normalizeFetchResult = (item = {}) => ({
   id: item?.id,
@@ -22,8 +20,7 @@ const normalizeFetchResult = (item = {}) => ({
   result: item?.result || 'lost',
   amount: item?.amount ?? null,
   fetchTime: item?.fetchTime || '',
-  status: item?.status || 'pending',
-})
+  status: item?.status || 'pending' })
 
 const normalizeReminder = (item = {}) => ({
   id: item?.id,
@@ -35,8 +32,7 @@ const normalizeReminder = (item = {}) => ({
   type: item?.type || 'report',
   status: item?.status || 'pending',
   remindTime: item?.remindTime || '',
-  lastReminderComment: item?.lastReminderComment || '',
-})
+  lastReminderComment: item?.lastReminderComment || '' })
 
 const normalizeCompetitorReport = (item = {}) => ({
   company: item?.company || '',
@@ -46,8 +42,7 @@ const normalizeCompetitorReport = (item = {}) => ({
   payment: item?.payment || '',
   winRate: item?.winRate || '',
   projectCount: Number(item?.projectCount || 0),
-  trend: item?.trend || 'flat',
-})
+  trend: item?.trend || 'flat' })
 
 const normalizeDetail = (data = {}) => ({
   id: data?.id,
@@ -61,70 +56,51 @@ const normalizeDetail = (data = {}) => ({
   fetchTime: data?.fetchTime || '',
   ignoredReason: data?.ignoredReason || '',
   ownerName: data?.ownerName || '',
-  reminderTypes: Array.isArray(data?.reminderTypes) ? data.reminderTypes : [],
-})
-
-const buildUnsupportedMode = () => ({
-  success: false,
-  message: 'Bid result delivery APIs are only available in API mode',
-})
+  reminderTypes: Array.isArray(data?.reminderTypes) ? data.reminderTypes : [] })
 
 export const bidResultsApi = {
   async getOverview() {
-    if (isMockMode()) return Promise.resolve(buildUnsupportedMode())
     const response = await httpClient.get('/api/bid-results/overview')
     return { ...response, data: normalizeOverview(response?.data) }
   },
   async sync() {
-    if (isMockMode()) return Promise.resolve(buildUnsupportedMode())
     return httpClient.post('/api/bid-results/sync')
   },
   async fetch() {
-    if (isMockMode()) return Promise.resolve(buildUnsupportedMode())
     return httpClient.post('/api/bid-results/fetch')
   },
   async getFetchResults() {
-    if (isMockMode()) return Promise.resolve(buildUnsupportedMode())
     const response = await httpClient.get('/api/bid-results/fetch-results')
     return { ...response, data: Array.isArray(response?.data) ? response.data.map(normalizeFetchResult) : [] }
   },
   async confirm(id) {
-    if (isMockMode()) return Promise.resolve(buildUnsupportedMode())
     const response = await httpClient.post(`/api/bid-results/fetch-results/${id}/confirm`)
     return { ...response, data: normalizeFetchResult(response?.data) }
   },
   async ignore(id, comment = '') {
-    if (isMockMode()) return Promise.resolve(buildUnsupportedMode())
     return httpClient.post(`/api/bid-results/fetch-results/${id}/ignore`, { comment })
   },
   async confirmBatch(ids = []) {
-    if (isMockMode()) return Promise.resolve(buildUnsupportedMode())
     return httpClient.post('/api/bid-results/fetch-results/confirm-batch', { ids })
   },
   async getReminders() {
-    if (isMockMode()) return Promise.resolve(buildUnsupportedMode())
     const response = await httpClient.get('/api/bid-results/reminders')
     return { ...response, data: Array.isArray(response?.data) ? response.data.map(normalizeReminder) : [] }
   },
   async sendReminder(resultId, comment = '') {
-    if (isMockMode()) return Promise.resolve(buildUnsupportedMode())
     const response = await httpClient.post('/api/bid-results/reminders/send', { resultId, comment })
     return { ...response, data: normalizeReminder(response?.data) }
   },
   async sendReminderBatch(ids = [], comment = '') {
-    if (isMockMode()) return Promise.resolve(buildUnsupportedMode())
     return httpClient.post('/api/bid-results/reminders/send-batch', { ids, comment })
   },
   async getDetail(id) {
-    if (isMockMode()) return Promise.resolve(buildUnsupportedMode())
     const response = await httpClient.get(`/api/bid-results/${id}`)
     return { ...response, data: normalizeDetail(response?.data) }
   },
   async getCompetitorReport() {
-    if (isMockMode()) return Promise.resolve(buildUnsupportedMode())
     const response = await httpClient.get('/api/bid-results/competitor-report')
     return { ...response, data: Array.isArray(response?.data) ? response.data.map(normalizeCompetitorReport) : [] }
-  },
-}
+  } }
 
 export default bidResultsApi

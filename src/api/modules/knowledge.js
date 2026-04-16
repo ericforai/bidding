@@ -5,11 +5,9 @@
 
 /**
  * 知识库模块 API (资质、案例、模板)
- * 支持双模式切换，并在 API 模式下对齐现有后端契约
+ * 真实 API 知识库访问层
  */
 import httpClient from '../client.js'
-import { mockData } from '../mock.js'
-import { isMockMode } from '../config.js'
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000
 
@@ -24,15 +22,13 @@ const qualificationTypeMap = {
   CONSTRUCTION: 'enterprise',
   DESIGN: 'personnel',
   SERVICE: 'product',
-  OTHER: 'industry',
-}
+  OTHER: 'industry' }
 
 const qualificationLevelMap = {
   enterprise: 'FIRST',
   personnel: 'SECOND',
   product: 'THIRD',
-  industry: 'OTHER',
-}
+  industry: 'OTHER' }
 
 const caseIndustryMap = {
   government: 'INFRASTRUCTURE',
@@ -57,8 +53,7 @@ const caseIndustryMap = {
   TRANSPORTATION: 'transport',
   ENVIRONMENTAL: 'government',
   REAL_ESTATE: 'government',
-  OTHER: 'government',
-}
+  OTHER: 'government' }
 
 const templateCategoryMap = {
   technical: 'TECHNICAL',
@@ -78,8 +73,7 @@ const templateCategoryMap = {
   LEGAL: 'quotation',
   QUALIFICATION: 'qualification',
   CONTRACT: 'contract',
-  OTHER: 'implementation',
-}
+  OTHER: 'implementation' }
 
 function isNumericId(id) {
   return /^\d+$/.test(String(id))
@@ -132,8 +126,7 @@ function normalizeQualification(item) {
     status: mapQualificationStatus(expiryDate, item?.status),
     remainingDays: remainingDays ?? 0,
     fileUrl: item?.fileUrl || '',
-    level: item?.level || qualificationLevelMap[qualificationTypeMap[item?.type] || item?.type] || 'OTHER',
-  }
+    level: item?.level || qualificationLevelMap[qualificationTypeMap[item?.type] || item?.type] || 'OTHER' }
 }
 
 function buildQualificationPayload(data = {}) {
@@ -143,8 +136,7 @@ function buildQualificationPayload(data = {}) {
     level: qualificationLevelMap[data.type] || data.level || 'OTHER',
     issueDate: data.issueDate || null,
     expiryDate: data.expiryDate || null,
-    fileUrl: data.fileUrl || '',
-  }
+    fileUrl: data.fileUrl || '' }
 }
 
 function normalizeCase(item) {
@@ -160,8 +152,7 @@ function normalizeCase(item) {
     priceStrategy: item?.priceStrategy || '',
     successFactors: item?.successFactors || [],
     lessons: item?.lessons || '',
-    attachments: item?.attachments || [],
-  }
+    attachments: item?.attachments || [] }
 
   return {
     id: item?.id,
@@ -182,8 +173,7 @@ function normalizeCase(item) {
     technologies,
     viewCount: Number(item?.viewCount || 0),
     useCount: Number(item?.useCount || 0),
-    archivedInfo,
-  }
+    archivedInfo }
 }
 
 function buildCasePayload(data = {}) {
@@ -205,8 +195,7 @@ function buildCasePayload(data = {}) {
     highlights: Array.isArray(data.highlights) ? data.highlights : [],
     technologies: Array.isArray(data.technologies) ? data.technologies : [],
     viewCount: Number(data.viewCount || 0),
-    useCount: Number(data.useCount || 0),
-  }
+    useCount: Number(data.useCount || 0) }
 }
 
 function normalizeTemplate(item) {
@@ -227,8 +216,7 @@ function normalizeTemplate(item) {
     fileUrl: item?.fileUrl || '',
     content: item?.content || '',
     structure: Array.isArray(item?.structure) ? item.structure : [],
-    createdBy: item?.createdBy || null,
-  }
+    createdBy: item?.createdBy || null }
 }
 
 function buildTemplatePayload(data = {}) {
@@ -239,8 +227,7 @@ function buildTemplatePayload(data = {}) {
     description: data.description || '',
     fileSize: data.fileSize || '',
     tags: Array.isArray(data.tags) ? data.tags : [],
-    createdBy: data.createdBy ?? null,
-  }
+    createdBy: data.createdBy ?? null }
 }
 
 function filterQualifications(items, params = {}) {
@@ -301,53 +288,31 @@ function filterTemplates(items, params = {}) {
   })
 }
 
-function getMockQualifications(params = {}) {
-  return filterQualifications(mockData.qualifications.map(normalizeQualification), params)
-}
-
-function getMockCases(params = {}) {
-  return filterCases(mockData.cases.map(normalizeCase), params)
-}
-
-function getMockTemplates(params = {}) {
-  return filterTemplates(mockData.templates.map(normalizeTemplate), params)
-}
-
-async function fetchAndFilter(path, params, normalizer, filterFn, fallbackFactory) {
+async function fetchAndFilter(path, params, normalizer, filterFn) {
   const response = await httpClient.get(path)
   const normalized = Array.isArray(response?.data) ? response.data.map(normalizer) : []
   const filtered = filterFn(normalized, params)
-  const data = normalized.length > 0 ? filtered : fallbackFactory(params)
+  const data = filtered
 
   return {
     ...response,
     data,
-    total: data.length,
-  }
+    total: data.length }
 }
 
 function invalidIdMessage(entityName) {
   return {
     success: false,
-    message: `Current backend only supports numeric ${entityName} IDs in API mode`,
-  }
+    message: `Current backend only supports numeric ${entityName} IDs in API mode` }
 }
 
 export const qualificationsApi = {
   async getList(params) {
-    if (isMockMode()) {
-      const data = filterQualifications(mockData.qualifications.map(normalizeQualification), params)
-      return Promise.resolve({ success: true, data, total: data.length })
-    }
 
-    return fetchAndFilter('/api/knowledge/qualifications', params, normalizeQualification, filterQualifications, getMockQualifications)
+    return fetchAndFilter('/api/knowledge/qualifications', params, normalizeQualification, filterQualifications)
   },
 
   async getDetail(id) {
-    if (isMockMode()) {
-      const item = mockData.qualifications.find((qualification) => String(qualification.id) === String(id))
-      return Promise.resolve({ success: true, data: item ? normalizeQualification(item) : null })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('qualification'))
 
     const response = await httpClient.get(`/api/knowledge/qualifications/${id}`)
@@ -355,25 +320,12 @@ export const qualificationsApi = {
   },
 
   async create(data) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizeQualification({
-          ...data,
-          id: `Q${Date.now()}`,
-          status: 'valid',
-        }),
-      })
-    }
 
     const response = await httpClient.post('/api/knowledge/qualifications', buildQualificationPayload(data))
     return { ...response, data: normalizeQualification({ ...response?.data, ...data }) }
   },
 
   async update(id, data) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: normalizeQualification({ ...data, id }) })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('qualification'))
 
     const response = await httpClient.put(`/api/knowledge/qualifications/${id}`, buildQualificationPayload(data))
@@ -381,60 +333,30 @@ export const qualificationsApi = {
   },
 
   async delete(id) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('qualification'))
     return httpClient.delete(`/api/knowledge/qualifications/${id}`)
-  },
-}
+  } }
 
 export const casesApi = {
   async getList(params) {
-    if (isMockMode()) {
-      const data = filterCases(mockData.cases.map(normalizeCase), params)
-      return Promise.resolve({ success: true, data, total: data.length })
-    }
 
-    return fetchAndFilter('/api/knowledge/cases', params, normalizeCase, filterCases, getMockCases)
+    return fetchAndFilter('/api/knowledge/cases', params, normalizeCase, filterCases)
   },
 
   async getDetail(id) {
-    if (isMockMode()) {
-      const item = mockData.cases.find((caseItem) => String(caseItem.id) === String(id))
-      return Promise.resolve({ success: true, data: item ? normalizeCase(item) : null })
-    }
-    if (!isNumericId(id)) {
-      const item = mockData.cases.find((caseItem) => String(caseItem.id) === String(id))
-      return Promise.resolve({ success: true, data: item ? normalizeCase(item) : null })
-    }
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('case'))
 
     const response = await httpClient.get(`/api/knowledge/cases/${id}`)
     return { ...response, data: normalizeCase(response?.data) }
   },
 
   async create(data) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizeCase({
-          ...data,
-          id: `C${Date.now()}`,
-          year: new Date().getFullYear(),
-          viewCount: 0,
-          useCount: 0,
-        }),
-      })
-    }
 
     const response = await httpClient.post('/api/knowledge/cases', buildCasePayload(data))
     return { ...response, data: normalizeCase({ ...response?.data, ...data, viewCount: 0, useCount: 0 }) }
   },
 
   async update(id, data) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: normalizeCase({ ...data, id }) })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('case'))
 
     const response = await httpClient.put(`/api/knowledge/cases/${id}`, buildCasePayload(data))
@@ -442,92 +364,45 @@ export const casesApi = {
   },
 
   async delete(id) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('case'))
     return httpClient.delete(`/api/knowledge/cases/${id}`)
   },
 
   async getShareRecords(id) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: [] })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('case'))
     return httpClient.get(`/api/knowledge/cases/${id}/share-records`)
   },
 
   async createShareRecord(id, data = {}) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: {
-          id: `share_${Date.now()}`,
-          caseId: id,
-          url: `${data.baseUrl || window.location.origin}/knowledge/case/detail?id=${id}`,
-          createdBy: data.createdBy ?? null,
-          createdByName: data.createdByName || '演示用户',
-          createdAt: new Date().toISOString(),
-        },
-      })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('case'))
     return httpClient.post(`/api/knowledge/cases/${id}/share-records`, {
       createdBy: data.createdBy ?? null,
       createdByName: data.createdByName || '',
       baseUrl: data.baseUrl || window.location.origin,
-      expiresAt: data.expiresAt ?? null,
-    })
+      expiresAt: data.expiresAt ?? null })
   },
 
   async getReferenceRecords(id) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: [] })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('case'))
     return httpClient.get(`/api/knowledge/cases/${id}/references`)
   },
 
   async createReferenceRecord(id, data = {}) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: {
-          id: `ref_${Date.now()}`,
-          caseId: id,
-          referencedBy: data.referencedBy ?? null,
-          referencedByName: data.referencedByName || '演示用户',
-          referenceTarget: data.referenceTarget || '未命名目标',
-          referenceContext: data.referenceContext || '',
-          referencedAt: new Date().toISOString(),
-        },
-      })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('case'))
     return httpClient.post(`/api/knowledge/cases/${id}/references`, {
       referencedBy: data.referencedBy ?? null,
       referencedByName: data.referencedByName || '',
       referenceTarget: data.referenceTarget || '',
-      referenceContext: data.referenceContext || '',
-    })
-  },
-}
+      referenceContext: data.referenceContext || '' })
+  } }
 
 export const templatesApi = {
   async getList(params) {
-    if (isMockMode()) {
-      const data = filterTemplates(mockData.templates.map(normalizeTemplate), params)
-      return Promise.resolve({ success: true, data, total: data.length })
-    }
 
-    return fetchAndFilter('/api/knowledge/templates', params, normalizeTemplate, filterTemplates, getMockTemplates)
+    return fetchAndFilter('/api/knowledge/templates', params, normalizeTemplate, filterTemplates)
   },
 
   async getDetail(id) {
-    if (isMockMode()) {
-      const item = mockData.templates.find((template) => String(template.id) === String(id))
-      return Promise.resolve({ success: true, data: item ? normalizeTemplate(item) : null })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
 
     const response = await httpClient.get(`/api/knowledge/templates/${id}`)
@@ -535,27 +410,12 @@ export const templatesApi = {
   },
 
   async create(data) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizeTemplate({
-          ...data,
-          id: `TP${Date.now()}`,
-          downloads: 0,
-          version: '1.0',
-          updateTime: new Date().toISOString().slice(0, 10),
-        }),
-      })
-    }
 
     const response = await httpClient.post('/api/knowledge/templates', buildTemplatePayload(data))
     return { ...response, data: normalizeTemplate({ ...response?.data, ...data }) }
   },
 
   async update(id, data) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: normalizeTemplate({ ...data, id }) })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
 
     const response = await httpClient.put(`/api/knowledge/templates/${id}`, buildTemplatePayload(data))
@@ -563,60 +423,26 @@ export const templatesApi = {
   },
 
   async delete(id) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
     return httpClient.delete(`/api/knowledge/templates/${id}`)
   },
 
   async copy(id, data = {}) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizeTemplate({
-          ...data,
-          id: `TP${Date.now()}`,
-          version: '1.0',
-          downloads: 0,
-          useCount: 0,
-          updateTime: new Date().toISOString().slice(0, 10),
-        }),
-      })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
 
     const response = await httpClient.post(`/api/knowledge/templates/${id}/copy`, {
       name: data.name,
-      createdBy: data.createdBy ?? null,
-    })
+      createdBy: data.createdBy ?? null })
     return { ...response, data: normalizeTemplate(response?.data) }
   },
 
   async getVersions(id) {
-    if (isMockMode()) {
-      return Promise.resolve({ success: true, data: [] })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
 
     return httpClient.get(`/api/knowledge/templates/${id}/versions`)
   },
 
   async recordUse(id, data = {}) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: {
-          id: `use_${Date.now()}`,
-          documentName: data.documentName,
-          docType: data.docType,
-          projectId: data.projectId ?? null,
-          applyOptions: Array.isArray(data.applyOptions) ? data.applyOptions : [],
-          usedBy: data.usedBy ?? null,
-          usedAt: new Date().toISOString(),
-        },
-      })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
 
     return httpClient.post(`/api/knowledge/templates/${id}/use-records`, {
@@ -624,33 +450,18 @@ export const templatesApi = {
       docType: data.docType,
       projectId: data.projectId ?? null,
       applyOptions: Array.isArray(data.applyOptions) ? data.applyOptions : [],
-      usedBy: data.usedBy ?? null,
-    })
+      usedBy: data.usedBy ?? null })
   },
 
   async recordDownload(id, data = {}) {
-    if (isMockMode()) {
-      return Promise.resolve({
-        success: true,
-        data: normalizeTemplate({
-          ...data,
-          id,
-          downloads: Number(data.downloads || 0),
-          useCount: Number(data.useCount || 0),
-        }),
-      })
-    }
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
 
     const response = await httpClient.post(`/api/knowledge/templates/${id}/downloads`, {
-      downloadedBy: data.downloadedBy ?? null,
-    })
+      downloadedBy: data.downloadedBy ?? null })
     return { ...response, data: normalizeTemplate(response?.data) }
-  },
-}
+  } }
 
 export default {
   qualifications: qualificationsApi,
   cases: casesApi,
-  templates: templatesApi,
-}
+  templates: templatesApi }

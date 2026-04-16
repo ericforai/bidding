@@ -250,14 +250,9 @@ export const ApiExamples = {
 // 示例 4: 检测当前模式
 // ============================================
 
-import { isMockMode } from '@/api/config'
 
 export function showCurrentMode() {
-  if (isMockMode()) {
-    console.log('📦 当前使用 Mock 数据模式')
-  } else {
-    console.log('🔌 当前使用真实 API 模式')
-  }
+  console.log('🔌 当前使用真实 API 模式')
 }
 
 // ============================================
@@ -273,8 +268,7 @@ export async function getDataWithFallback() {
     return {
       success: false,
       data: [],
-      message: '真实 API 获取失败，未再回退到演示数据',
-    }
+      message: '真实 API 获取失败，未再回退到演示数据' }
   }
 }
 

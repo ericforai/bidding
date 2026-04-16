@@ -193,7 +193,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { Plus, InfoFilled, Clock } from '@element-plus/icons-vue'
-import { isMockMode } from '@/api'
 import { getDemoAutomationPanelData } from '@/api/mock-adapters/frontendDemo.js'
 
 const props = defineProps({
@@ -223,7 +222,7 @@ const urgencyFilter = ref('all')
 const ruleDialogVisible = ref(false)
 const editingRule = ref(null)
 
-const useDemoFallback = isMockMode()
+const useDemoFallback = false
 const demoPanelData = getDemoAutomationPanelData()
 
 const getSectionData = (key, demoValue = []) => {

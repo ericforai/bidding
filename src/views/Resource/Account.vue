@@ -199,7 +199,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Platform, View, Edit, Delete, CopyDocument, MoreFilled, Key, RefreshLeft, Hide } from '@element-plus/icons-vue'
-import { resourcesApi, isMockMode } from '@/api'
+import { resourcesApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 
 const searchForm = ref({
@@ -229,8 +229,7 @@ const createForm = ref({
   accountName: '',
   platformType: 'BID_PLATFORM',
   username: '',
-  password: '',
-})
+  password: '' })
 const editingAccountId = ref(null)
 
 const loadAccounts = async () => {
@@ -259,15 +258,14 @@ const handleEdit = (row) => {
     accountName: raw.accountName || row.platform || '',
     platformType: raw.platformType || 'BID_PLATFORM',
     username: raw.username || row.username || '',
-    password: '',
-  }
+    password: '' }
   showCreateDialog.value = true
 }
 
 const handleCopyPassword = async (row) => {
   let password = row.password || ''
 
-  if (!password && !isMockMode()) {
+  if (!password && true) {
     const response = await resourcesApi.accounts.getPassword(row.id)
     if (!response?.success || !response?.data?.password) {
       ElMessage.info(response?.message || '当前账号密码不可直接查看')
@@ -288,7 +286,7 @@ const handleMoreAction = async (command, row) => {
     case 'view':
       currentAccountDetail.value = row
       showDetailDialog.value = true
-      if (!isMockMode()) {
+      {
         const response = await resourcesApi.accounts.getDetail(row.id)
         if (!response?.success) {
           ElMessage.error(response?.message || '账户详情加载失败')
@@ -304,34 +302,25 @@ const handleMoreAction = async (command, row) => {
           cancelButtonText: '取消',
           type: 'warning'
         })
-        if (isMockMode()) {
-          ElMessage.success('密码已重置')
-        } else {
-          const resetResponse = await resourcesApi.accounts.update(row.id, { resetPassword: true })
-          if (!resetResponse?.success) {
-            ElMessage.error(resetResponse?.message || '重置密码失败')
-            return
-          }
-          ElMessage.success('密码已重置')
+        const resetResponse = await resourcesApi.accounts.update(row.id, { resetPassword: true })
+        if (!resetResponse?.success) {
+          ElMessage.error(resetResponse?.message || '重置密码失败')
+          return
         }
+        ElMessage.success('密码已重置')
       } catch {
         // 用户取消
       }
       break
     case 'toggle': {
       const newStatus = row.status === 'available' ? 'disabled' : 'available'
-      if (isMockMode()) {
-        row.status = newStatus
-        ElMessage.success(`已${newStatus === 'available' ? '启用' : '禁用'}账户：${row.platform}`)
-      } else {
-        const toggleResponse = await resourcesApi.accounts.update(row.id, { status: newStatus.toUpperCase() })
-        if (!toggleResponse?.success) {
-          ElMessage.error(toggleResponse?.message || '状态更新失败')
-          return
-        }
-        await loadAccounts()
-        ElMessage.success(`已${newStatus === 'available' ? '启用' : '禁用'}账户：${row.platform}`)
+      const toggleResponse = await resourcesApi.accounts.update(row.id, { status: newStatus.toUpperCase() })
+      if (!toggleResponse?.success) {
+        ElMessage.error(toggleResponse?.message || '状态更新失败')
+        return
       }
+      await loadAccounts()
+      ElMessage.success(`已${newStatus === 'available' ? '启用' : '禁用'}账户：${row.platform}`)
       break
     }
     case 'delete':
@@ -361,8 +350,7 @@ const handleCreate = () => {
     accountName: '',
     platformType: 'BID_PLATFORM',
     username: '',
-    password: '',
-  }
+    password: '' }
   showCreateDialog.value = true
 }
 
@@ -371,8 +359,7 @@ const submitCreate = async () => {
   const payload = {
     accountName: createForm.value.accountName.trim(),
     platformType: createForm.value.platformType,
-    username: createForm.value.username.trim(),
-  }
+    username: createForm.value.username.trim() }
 
   // Password is required for create, optional for edit
   if (createForm.value.password) {
@@ -406,12 +393,10 @@ const submitCreate = async () => {
 const handleSubmitBorrow = async () => {
   if (!currentAccount.value) return
 
-  const payload = isMockMode()
-    ? { borrower: userStore.userName }
-    : {
-        borrowedBy: Number(userStore.currentUser?.id || 0),
-        dueHours: 24
-      }
+  const payload = {
+    borrowedBy: Number(userStore.currentUser?.id || 0),
+    dueHours: 24
+  }
 
   const response = await resourcesApi.accounts.borrow(currentAccount.value.id, payload)
   if (!response?.success) {

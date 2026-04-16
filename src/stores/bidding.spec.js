@@ -13,7 +13,6 @@ vi.mock('@/api', () => ({
   tendersApi: {
     getList: vi.fn()
   },
-  isMockMode: vi.fn(() => false)
 }))
 
 // Mock frontendDemo
@@ -34,7 +33,7 @@ describe('Bidding Store', () => {
   it('初始状态应该正确', () => {
     const store = useBiddingStore()
     expect(store.tenders).toEqual([])
-    expect(store.todos).has.length(2)
+    expect(store.todos).toEqual([])
   })
 
   it('getters: highPriorityTenders 应该只返回评分 >= 85 的标讯', () => {

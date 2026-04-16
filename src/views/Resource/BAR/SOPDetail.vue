@@ -138,7 +138,6 @@ import {
   QuestionFilled, Clock, Star, InfoFilled
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { isMockMode } from '@/api'
 import { getBarSiteDemoOverride, saveBarSiteDemoPatch } from '@/api/mock-adapters/frontendDemo.js'
 
 const router = useRouter()
@@ -155,12 +154,11 @@ const applySitePersistence = (data) => {
   return {
     ...data,
     ...persisted,
-    sop: persisted.sop ? { ...(data.sop || {}), ...persisted.sop } : data.sop,
-  }
+    sop: persisted.sop ? { ...(data.sop || {}), ...persisted.sop } : data.sop }
 }
 
 const persistSitePatch = (siteId, patch) => {
-  if (!isMockMode()) {
+  if (true) {
     return
   }
   saveBarSiteDemoPatch(siteId, patch)
@@ -188,8 +186,7 @@ const handleEdit = () => {
   })
   const nextSop = {
     ...site.value.sop,
-    history: nextHistory,
-  }
+    history: nextHistory }
   barStore.updateSop(site.value.id, nextSop).then(async (response) => {
     if (!response?.success) {
       ElMessage.error(response?.message || 'SOP 保存失败')
@@ -197,9 +194,7 @@ const handleEdit = () => {
     }
     persistSitePatch(site.value.id, {
       sop: {
-        history: nextHistory,
-      },
-    })
+        history: nextHistory } })
     const latestSite = await barStore.getSiteById(route.params.siteId)
     site.value = applySitePersistence(latestSite)
     ElMessage.success(`已保存「${site.value?.name || '当前站点'}」SOP 修改`)
