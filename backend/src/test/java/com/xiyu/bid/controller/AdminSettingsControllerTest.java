@@ -1,8 +1,9 @@
 package com.xiyu.bid.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiyu.bid.admin.controller.AdminSettingsController;
 import com.xiyu.bid.dto.DataScopeConfigResponse;
-import com.xiyu.bid.service.DataScopeConfigService;
+import com.xiyu.bid.admin.service.DataScopeConfigService;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.util.List;

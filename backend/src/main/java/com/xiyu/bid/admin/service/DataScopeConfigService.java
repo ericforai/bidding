@@ -1,4 +1,4 @@
-package com.xiyu.bid.service;
+package com.xiyu.bid.admin.service;
 import com.xiyu.bid.entity.RoleProfileCatalog;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -8,6 +8,7 @@ import com.xiyu.bid.dto.DataScopeConfigResponse;
 import com.xiyu.bid.entity.RoleProfile;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.RoleProfileRepository;
+import com.xiyu.bid.service.RoleProfileService;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.settings.entity.SystemSetting;
 import com.xiyu.bid.settings.repository.SystemSettingRepository;

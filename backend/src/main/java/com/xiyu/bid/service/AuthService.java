@@ -3,6 +3,7 @@
 // Pos: Auth/认证支撑层
 // 维护声明: 仅维护认证链路；权限规则调整请同步 controller 与 security 配置.
 package com.xiyu.bid.service;
+import com.xiyu.bid.admin.service.DataScopeConfigService;
 import com.xiyu.bid.entity.RoleProfileCatalog;
 
 import com.xiyu.bid.dto.AuthResponse;
