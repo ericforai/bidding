@@ -1305,8 +1305,13 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBiddingStore } from '@/stores/bidding'
 import { useUserStore } from '@/stores/user'
-import { tendersApi } from '@/api'
+import { tendersApi, batchApi } from '@/api'
 import { crawlerApi } from '@/api/modules/tenders'
+import {
+  normalizeTenderForCreate,
+  normalizeBatchResult,
+  toBackendStatus
+} from './bidding-utils.js'
 import {
   Search, Plus, Download, Star, TrendCharts, List, Share, CircleCheck,
   MoreFilled, Check, User, Calendar, Flag, Briefcase, ChatDotRound,
@@ -1532,22 +1537,7 @@ const assignForm = ref({
 
 // 分发记录
 const showRecordDialog = ref(false)
-const distributeRecords = ref([
-  {
-    tenderTitle: '某市政府数字化采购项目',
-    assignee: '小王',
-    type: 'auto',
-    time: '2024-01-15 10:30',
-    operator: '当前用户'
-  },
-  {
-    tenderTitle: '某能源集团信息化建设',
-    assignee: '张销售',
-    type: 'manual',
-    time: '2024-01-14 14:20',
-    operator: '当前用户'
-  }
-])
+const distributeRecords = ref([])
 
 // 市场洞察
 const showMarketInsight = ref(false)
@@ -1795,51 +1785,8 @@ const savingConfig = ref(false)
 const testingConnection = ref(false)
 const lastSyncTime = ref('暂未同步')
 
-// 模拟外部标讯数据
-const mockExternalTenders = [
-  {
-    id: 'ext_001',
-    title: '某省政务云平台扩容采购项目',
-    budget: 580,
-    region: '北京',
-    industry: '政府',
-    deadline: '2025-03-15',
-    source: 'external',
-    sourcePlatform: '中国政府采购网',
-    aiScore: 92,
-    aiReason: '与公司云计算产品高度匹配',
-    tags: ['云计算', '政务云', '扩容'],
-    status: 'new'
-  },
-  {
-    id: 'ext_002',
-    title: '某市智慧交通管理系统建设',
-    budget: 320,
-    region: '上海',
-    industry: '交通',
-    deadline: '2025-03-20',
-    source: 'external',
-    sourcePlatform: '各省招标网',
-    aiScore: 88,
-    aiReason: '交通行业智能化改造项目',
-    tags: ['智慧交通', '系统集成'],
-    status: 'new'
-  },
-  {
-    id: 'ext_003',
-    title: '某能源集团ERP系统升级',
-    budget: 450,
-    region: '深圳',
-    industry: '能源',
-    deadline: '2025-03-25',
-    source: 'external',
-    sourcePlatform: '第三方商机服务',
-    aiScore: 85,
-    aiReason: '能源行业信息化建设项目',
-    tags: ['ERP', '系统升级'],
-    status: 'new'
-  }
-]
+// 外部标讯数据（由 API 获取填充）
+const externalTenders = ref([])
 
 // 获取外部标讯相关
 const fetchingTenders = ref(false)
@@ -2000,23 +1947,18 @@ const getScoreTagType = (score) => {
 const getStatusType = (status) => {
   const map = {
     new: 'info',
-    contacted: '',
-    following: 'warning',
-    quoting: 'primary',
-    bidding: 'success',
-    abandoned: 'danger'
+    PENDING: 'info', TRACKING: 'warning', BIDDED: 'success', ABANDONED: 'danger',
+    contacted: '', following: 'warning', quoting: 'primary',
+    bidding: 'success', abandoned: 'danger'
   }
   return map[status] || 'info'
 }
 
 const getStatusText = (status) => {
   const map = {
-    new: '新建',
-    contacted: '已联系',
-    following: '跟进中',
-    quoting: '报价中',
-    bidding: '投标中',
-    abandoned: '已放弃'
+    PENDING: '待处理', TRACKING: '跟踪中', BIDDED: '已投标', ABANDONED: '已放弃',
+    new: '新建', contacted: '已联系', following: '跟进中',
+    quoting: '报价中', bidding: '投标中', abandoned: '已放弃'
   }
   return map[status] || status
 }
@@ -2126,14 +2068,21 @@ const handleAIAnalysis = (id) => {
   }, 800)
 }
 
-const handleToggleFollow = (id) => {
-  const index = followedTenders.value.indexOf(id)
-  if (index > -1) {
-    followedTenders.value.splice(index, 1)
-    ElMessage.info('已取消收藏')
-  } else {
-    followedTenders.value.push(id)
-    ElMessage.success('已收藏')
+const handleToggleFollow = async (id) => {
+  try {
+    const isCurrentlyFollowed = followedTenders.value.includes(id)
+    const newStatus = isCurrentlyFollowed ? 'PENDING' : 'TRACKING'
+    const result = await tendersApi.update(id, { status: newStatus })
+    if (result?.success) {
+      if (isCurrentlyFollowed) {
+        followedTenders.value = followedTenders.value.filter(fid => fid !== id)
+      } else {
+        followedTenders.value = [...followedTenders.value, id]
+      }
+      ElMessage.success(isCurrentlyFollowed ? '已取消关注' : '已关注')
+    }
+  } catch (error) {
+    ElMessage.error('操作失败')
   }
 }
 
@@ -2258,27 +2207,39 @@ const handleDistribute = async () => {
       })
     }
 
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // 按指派人分组，调用批量分配 API
+    const assigneeGroups = {}
+    for (const item of distribution) {
+      const key = item.assignee
+      if (!assigneeGroups[key]) assigneeGroups[key] = []
+      assigneeGroups[key].push(item.tenderId)
+    }
+
+    await Promise.all(
+      Object.entries(assigneeGroups).map(([assigneeId, taskIds]) =>
+        batchApi.assignTasks(taskIds, assigneeId)
+      )
+    )
 
     // 添加到分发记录
-    distribution.forEach(item => {
-      distributeRecords.value.unshift({
-        tenderTitle: item.tenderTitle,
-        assignee: item.assigneeName,
-        type: item.type,
-        time: new Date().toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        operator: '当前用户'
-      })
+    const now = new Date().toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
     })
+    const newRecords = distribution.map(item => ({
+      tenderTitle: item.tenderTitle,
+      assignee: item.assigneeName,
+      type: item.type,
+      time: now,
+      operator: '当前用户'
+    }))
+    distributeRecords.value = [...newRecords, ...distributeRecords.value]
 
     ElMessage.success(`成功分发 ${distribution.length} 条标讯`)
+    await biddingStore.getTenders()
     showDistributeDialog.value = false
     handleClearSelection()
   } catch (error) {
@@ -2308,27 +2269,20 @@ const handleBatchClaim = async () => {
     )
 
     const tenderIds = selectedTenders.value.map(t => t.id)
-    const userId = userStore.user?.id || 'U001'
+    const userId = userStore.currentUser?.id || userStore.user?.id
 
-    const result = await tendersApi.batchClaim(tenderIds, userId)
-
-    if (result.success) {
-      // 更新本地数据状态
-      selectedTenders.value.forEach(tender => {
-        tender.status = 'following'
-        tender.assignee = userId
-      })
-
-      ElMessage.success(`成功领取 ${result.data?.claimed || tenderIds.length} 条标讯`)
+    const result = await batchApi.claimTenders(tenderIds, userId)
+    const summary = normalizeBatchResult(result)
+    if (summary.ok) {
+      ElMessage.success(summary.message)
       handleClearSelection()
-      // 刷新列表数据
       await biddingStore.getTenders()
     } else {
-      ElMessage.error(result.message || '领取失败，请重试')
+      ElMessage.warning(summary.message)
     }
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('领取失败，请重试')
+      ElMessage.error('批量认领失败')
     }
   }
 }
@@ -2348,23 +2302,18 @@ const handleBatchFollow = async () => {
     return
   }
 
-  // 使用批量更新状态API
-  const tenderIds = selectedTenders.value.map(t => t.id)
-  const result = await tendersApi.batchUpdateStatus(tenderIds, 'following')
-
-  if (result.success) {
-    followedTenders.value.push(...newFollows)
-    // 更新本地数据状态
-    selectedTenders.value.forEach(tender => {
-      tender.status = 'following'
-    })
-
-    ElMessage.success(`已关注 ${result.data?.updated || newFollows.length} 条标讯`)
+  try {
+    const tenderIds = selectedTenders.value.map(t => t.id)
+    const results = await Promise.all(
+      tenderIds.map(id => tendersApi.update(id, { status: 'TRACKING' }))
+    )
+    const successCount = results.filter(r => r?.success).length
+    followedTenders.value = [...followedTenders.value, ...newFollows]
+    ElMessage.success(`成功关注 ${successCount} 条标讯`)
     handleClearSelection()
-    // 刷新列表数据
     await biddingStore.getTenders()
-  } else {
-    ElMessage.error(result.message || '关注失败，请重试')
+  } catch (error) {
+    ElMessage.error('批量关注失败')
   }
 }
 
@@ -2404,9 +2353,19 @@ const handleSingleClaim = async (row) => {
       }
     )
 
-    ElMessage.success('领取成功')
-  } catch {
-    // 用户取消
+    const userId = userStore.currentUser?.id || userStore.user?.id
+    const result = await batchApi.claimTenders([row.id], userId)
+    const summary = normalizeBatchResult(result)
+    if (summary.ok) {
+      ElMessage.success('认领成功')
+      await biddingStore.getTenders()
+    } else {
+      ElMessage.warning(summary.message)
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('认领失败')
+    }
   }
 }
 
@@ -2442,22 +2401,12 @@ const handleAssign = async () => {
   assignLoading.value = true
 
   try {
-    // 使用批量分配API
-    const result = await tendersApi.batchAssign(
-      [assignForm.value.tenderId],
-      assignForm.value.assignee
-    )
+    const result = await batchApi.assignTasks([assignForm.value.tenderId], assignForm.value.assignee)
+    const summary = normalizeBatchResult(result)
 
-    if (result.success) {
-      // 更新本地数据
-      const tender = biddingStore.tenders?.find(t => t.id === assignForm.value.tenderId)
-      if (tender) {
-        tender.assignee = assignForm.value.assignee
-        tender.status = 'contacted'
-      }
-
+    if (summary.ok) {
       // 添加到分发记录
-      distributeRecords.value.unshift({
+      distributeRecords.value = [{
         tenderTitle: assignForm.value.tenderTitle,
         assignee: salesMap[assignForm.value.assignee],
         type: 'manual',
@@ -2469,14 +2418,13 @@ const handleAssign = async () => {
           minute: '2-digit'
         }),
         operator: '当前用户'
-      })
+      }, ...distributeRecords.value]
 
       ElMessage.success(`已将"${assignForm.value.tenderTitle}"指派给${salesMap[assignForm.value.assignee]}`)
       showAssignDialog.value = false
-      // 刷新列表数据
       await biddingStore.getTenders()
     } else {
-      ElMessage.error(result.message || '指派失败，请重试')
+      ElMessage.warning(summary.message)
     }
   } catch (error) {
     ElMessage.error('指派失败，请重试')
@@ -2497,14 +2445,17 @@ const handleDeleteTender = async (row) => {
       }
     )
 
-    const index = biddingStore.tenders?.findIndex(t => t.id === row.id)
-    if (index !== undefined && index > -1) {
-      biddingStore.tenders.splice(index, 1)
+    const result = await tendersApi.delete(row.id)
+    if (result?.success) {
+      ElMessage.success('删除成功')
+      await biddingStore.getTenders()
+    } else {
+      ElMessage.error(result?.message || '删除失败')
     }
-
-    ElMessage.success('删除成功')
-  } catch {
-    // 用户取消
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
   }
 }
 
@@ -2522,15 +2473,18 @@ const handleStatusChange = async (row, newStatus) => {
       }
     )
 
-    // 更新状态
-    const index = biddingStore.tenders?.findIndex(t => t.id === row.id)
-    if (index !== undefined && index > -1) {
-      biddingStore.tenders[index].status = newStatus
+    const backendStatus = toBackendStatus(newStatus)
+    const result = await tendersApi.update(row.id, { status: backendStatus })
+    if (result?.success) {
+      ElMessage.success(`状态已更新为"${getStatusText(newStatus)}"`)
+      await biddingStore.getTenders()
+    } else {
+      ElMessage.error(result?.message || '状态更新失败')
     }
-
-    ElMessage.success(`状态已更新为"${getStatusText(newStatus)}"`)
-  } catch {
-    // 用户取消
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('状态更新失败')
+    }
   }
 }
 
@@ -2571,10 +2525,10 @@ const handleUpdateStatus = async (row, newStatus) => {
       }
     )
 
-    // 更新状态
-    const index = biddingStore.tenders?.findIndex(t => t.id === row.id)
-    if (index !== undefined && index > -1) {
-      biddingStore.tenders[index].status = newStatus
+    const backendStatus = toBackendStatus(newStatus)
+    const result = await tendersApi.update(row.id, { status: backendStatus })
+    if (result?.success) {
+      await biddingStore.getTenders()
 
       // 如果是参与投标，可以引导用户创建项目
       if (newStatus === 'bidding') {
@@ -2584,7 +2538,6 @@ const handleUpdateStatus = async (row, newStatus) => {
           duration: 3000,
           showClose: true
         })
-        // 可以延迟跳转到项目创建页
         setTimeout(() => {
           router.push({
             path: '/project/create',
@@ -2594,9 +2547,13 @@ const handleUpdateStatus = async (row, newStatus) => {
       } else {
         ElMessage.success(`状态已更新为"${statusText}"`)
       }
+    } else {
+      ElMessage.error(result?.message || '状态更新失败')
     }
-  } catch {
-    // 用户取消
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('状态更新失败')
+    }
   }
 }
 
@@ -2622,40 +2579,29 @@ const loadSavedConfig = () => {
   }
 }
 
-const saveSourceConfig = async () => {
+const saveSourceConfig = () => {
   if (sourceConfig.value.platforms.length === 0) {
     ElMessage.warning('请至少选择一个标讯源平台')
     return
   }
 
-  savingConfig.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 800))
-    localStorage.setItem('tenderSourceConfig', JSON.stringify(sourceConfig.value))
+    const { apiKey, ...safeConfig } = sourceConfig.value
+    localStorage.setItem('tenderSourceConfig', JSON.stringify(safeConfig))
     ElMessage.success('标讯源配置已保存')
     showSourceConfig.value = false
   } catch (error) {
     ElMessage.error('保存失败，请重试')
-  } finally {
-    savingConfig.value = false
   }
 }
 
-const testConnection = async () => {
+const testConnection = () => {
   if (sourceConfig.value.platforms.length === 0) {
     ElMessage.warning('请先选择标讯源平台')
     return
   }
 
-  testingConnection.value = true
-  try {
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    ElMessage.success('连接测试成功！')
-  } catch (error) {
-    ElMessage.error('连接测试失败')
-  } finally {
-    testingConnection.value = false
-  }
+  ElMessage.info('连接测试功能待后端支持，当前配置已本地保存')
 }
 
 // ========== 获取外部标讯相关 ==========
@@ -2669,80 +2615,39 @@ const handleFetchExternalTenders = async () => {
 
   fetchingTenders.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 2000))
-
-    let results = mockExternalTenders
-    if (sourceConfig.value.keywords.length > 0) {
-      results = results.filter(t =>
-        sourceConfig.value.keywords.some(kw =>
-          t.title.includes(kw) || t.tags.some(tag => tag.includes(kw))
-        )
-      )
-    }
-
-    if (sourceConfig.value.regions.length > 0) {
-      results = results.filter(t => sourceConfig.value.regions.includes(t.region))
-    }
-
-    if (sourceConfig.value.minBudget > 0) {
-      results = results.filter(t => t.budget >= sourceConfig.value.minBudget)
-    }
-    if (sourceConfig.value.maxBudget > 0) {
-      results = results.filter(t => t.budget <= sourceConfig.value.maxBudget)
-    }
-
-    fetchResults.value = {
-      total: results.length,
-      matched: results.length,
-      imported: 0,
-      allImported: false,
-      list: results.map(t => ({ ...t, imported: false }))
-    }
-
-    const now = new Date()
-    lastSyncTime.value = now.toLocaleString('zh-CN', {
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-
-    if (results.length > 0) {
-      showFetchResult.value = true
-      ElMessage.success(`成功获取 ${results.length} 条标讯`)
+    const keyword = sourceConfig.value.keywords?.[0] || ''
+    const result = await crawlerApi.trigger({ keyword, pageSize: 20 })
+    if (result?.success || result?.data) {
+      const d = result.data || {}
+      const now = new Date()
+      lastSyncTime.value = now.toLocaleString('zh-CN', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+      ElMessage.success(`标讯获取成功：新增 ${d.saved ?? 0} 条，跳过 ${d.skipped ?? 0} 条`)
+      await biddingStore.getTenders()
     } else {
-      ElMessage.info('未获取到匹配的标讯，请调整筛选条件')
+      ElMessage.error(result?.message || '获取失败')
     }
   } catch (error) {
-    ElMessage.error('获取标讯失败')
+    ElMessage.error('获取外部标讯失败')
   } finally {
     fetchingTenders.value = false
   }
 }
 
-const importSingleTender = (tender) => {
-  tender.imported = true
-  fetchResults.value.imported++
-  fetchResults.value.allImported = fetchResults.value.list.every(t => t.imported)
-
-  if (biddingStore.tenders) {
-    biddingStore.tenders.unshift({ ...tender })
-  }
-
-  ElMessage.success('标讯已入库')
+const importSingleTender = async () => {
+  // Import is now handled by the crawler API directly
+  ElMessage.info('标讯已通过爬虫服务导入，请刷新列表查看')
+  await biddingStore.getTenders()
 }
 
-const importAllTenders = () => {
-  const unimported = fetchResults.value.list.filter(t => !t.imported)
-  unimported.forEach(t => {
-    t.imported = true
-    if (biddingStore.tenders) {
-      biddingStore.tenders.unshift({ ...t })
-    }
-  })
-  fetchResults.value.imported = fetchResults.value.list.length
-  fetchResults.value.allImported = true
-  ElMessage.success(`成功入库 ${unimported.length} 条标讯`)
+const importAllTenders = async () => {
+  // Import is now handled by the crawler API directly
+  ElMessage.info('标讯已通过爬虫服务导入，请刷新列表查看')
+  await biddingStore.getTenders()
 }
 
 // ========== 人工录入相关 ==========
@@ -2772,37 +2677,21 @@ const saveManualTender = async () => {
     await manualFormRef.value.validate()
 
     savingManual.value = true
-    await new Promise(resolve => setTimeout(resolve, 1000))
 
-    const newTender = {
-      id: `manual_${Date.now()}`,
-      title: manualForm.value.title,
-      budget: manualForm.value.budget,
-      region: manualForm.value.region,
-      industry: manualForm.value.industry,
-      deadline: manualForm.value.deadline
-        ? new Date(manualForm.value.deadline).toLocaleDateString('zh-CN')
-        : '',
-      source: 'manual',
-      purchaser: manualForm.value.purchaser,
-      contact: manualForm.value.contact,
-      phone: manualForm.value.phone,
-      description: manualForm.value.description,
-      tags: manualForm.value.tags,
-      aiScore: Math.floor(Math.random() * 20) + 70,
-      aiReason: '人工录入标讯',
-      status: 'new'
+    const payload = normalizeTenderForCreate(manualForm.value)
+    const result = await tendersApi.create(payload)
+    if (result?.success) {
+      ElMessage.success('标讯录入成功')
+      showManualAdd.value = false
+      resetManualForm()
+      await biddingStore.getTenders()
+    } else {
+      ElMessage.error(result?.message || '标讯录入失败')
     }
-
-    if (biddingStore.tenders) {
-      biddingStore.tenders.unshift(newTender)
-    }
-
-    ElMessage.success('标讯已成功入库')
-    showManualAdd.value = false
-    resetManualForm()
   } catch (error) {
-    // 验证失败
+    if (error !== 'cancel') {
+      ElMessage.error('标讯录入失败')
+    }
   } finally {
     savingManual.value = false
   }
