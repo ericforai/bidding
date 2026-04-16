@@ -82,7 +82,7 @@ onMounted(() => {
 async function loadThreads() {
   if (!projectId.value) return
   try {
-    const res = await collaborationApi.getThreads(projectId.value)
+    const res = await collaborationApi.getThreads({ projectId: projectId.value })
     threads.value = res.data || []
   } catch (e) {
     ElMessage.error('加载讨论失败')
@@ -92,7 +92,7 @@ async function loadThreads() {
 async function selectThread(thread) {
   selectedThread.value = thread
   try {
-    const res = await collaborationApi.getThreadDetail(thread.id)
+    const res = await collaborationApi.getThread(thread.id)
     comments.value = res.data?.comments || []
   } catch (e) {
     comments.value = []
@@ -103,7 +103,7 @@ async function selectThread(thread) {
 async function addComment() {
   if (!newComment.value.trim()) return
   try {
-    await collaborationApi.createComment(selectedThread.value.id, { content: newComment.value })
+    await collaborationApi.addComment(selectedThread.value.id, { content: newComment.value })
     ElMessage.success('评论已发送')
     newComment.value = ''
     selectThread(selectedThread.value)
