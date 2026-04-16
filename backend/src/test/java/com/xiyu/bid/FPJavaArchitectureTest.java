@@ -123,6 +123,37 @@ class FPJavaArchitectureTest {
             .isEmpty();
     }
 
+    @Test
+    void pure_core_business_methods_must_return_values() {
+        List<String> voidMethods = productionClasses.stream()
+            .filter(FPJavaArchitectureTest::isPureCoreClass)
+            .flatMap(javaClass -> javaClass.getMethods().stream()
+                .filter(FPJavaArchitectureTest::isBusinessMethod)
+                .filter(FPJavaArchitectureTest::returnsVoid)
+                .map(method -> javaClass.getName() + "#" + method.getName()))
+            .sorted()
+            .toList();
+
+        assertThat(voidMethods)
+            .as("Pure core/domain business methods should return values instead of hiding state changes in void methods")
+            .isEmpty();
+    }
+
+    @Test
+    void pure_core_must_not_use_exceptions_for_business_flow() {
+        List<String> exceptionUsages = productionClasses.stream()
+            .filter(FPJavaArchitectureTest::isPureCoreClass)
+            .flatMap(javaClass -> javaClass.getMethods().stream()
+                .filter(FPJavaArchitectureTest::usesExceptions)
+                .map(method -> javaClass.getName() + "#" + method.getName()))
+            .sorted()
+            .toList();
+
+        assertThat(exceptionUsages)
+            .as("Pure core/domain business flow should return Result/Optional/ValidationResult instead of throwing or catching exceptions")
+            .isEmpty();
+    }
+
     private static boolean isPureCoreClass(JavaClass javaClass) {
         String packageName = javaClass.getPackageName();
         return PURE_CORE_PACKAGE_MARKERS.stream().anyMatch(packageName::contains)
@@ -144,6 +175,23 @@ class FPJavaArchitectureTest {
         return method.getName().startsWith("set")
             && method.getName().length() > 3
             && Character.isUpperCase(method.getName().charAt(3));
+    }
+
+    private static boolean isBusinessMethod(JavaMethod method) {
+        return !method.getModifiers().contains(JavaModifier.SYNTHETIC)
+            && !method.getModifiers().contains(JavaModifier.BRIDGE)
+            && !method.getModifiers().contains(JavaModifier.ABSTRACT);
+    }
+
+    private static boolean returnsVoid(JavaMethod method) {
+        return "void".equals(method.getRawReturnType().getName());
+    }
+
+    private static boolean usesExceptions(JavaMethod method) {
+        return !method.getExceptionTypes().isEmpty()
+            || !method.getTryCatchBlocks().isEmpty()
+            || method.getConstructorCallsFromSelf().stream()
+                .anyMatch(call -> call.getTargetOwner().isAssignableTo(Throwable.class));
     }
 
     private static String formatDependency(JavaClass javaClass, Dependency dependency) {

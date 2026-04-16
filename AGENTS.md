@@ -13,8 +13,11 @@
 4. 纯核心不得修改入参，不得读写数据库、API、文件、时间、随机数或日志。
 5. 预期内业务失败用 Result / Optional / ValidationResult 返回，不用异常做业务分支。
 6. DTO、VO、命令对象、领域值对象优先用 record 或 final 不可变对象。
-7. JPA Entity、框架适配类可按框架约束例外处理，但不得承载复杂业务规则。
-8. 完成前必须说明：纯核心在哪里，副作用在哪里，跑了哪些验证。
+7. 纯核心业务方法必须返回值，不得用 `void` 方法隐藏状态变化。
+8. JPA Entity、框架适配类可按框架约束例外处理，但不得承载复杂业务规则。
+9. 默认遵守 Split-First Rule：先拆 Application Service、Domain Policy、Mapper、Repository/Gateway，再实现。
+10. 单个 Java 文件软上限 200 行、硬上限 300 行；超过上限前必须先拆分职责。
+11. 完成前必须说明：纯核心在哪里，副作用在哪里，跑了哪些验证。
 
 ## 协作口径
 
@@ -22,6 +25,7 @@
 - **项目品牌**：对外统一使用“西域数智化投标管理平台”全称；仅在引用仓库路径、包名、脚本名时保留 `xiyu-bid-poc` 等历史标识。
 - **开场约定**：AI 代理开启新任务或接收复杂任务时，应先说明当前项目采用“真实 API 单一路径”的交付开发模式；仓库中仍存在少量本地 demo 适配残留，但它们只属于待删除遗留，不是允许的开发、联调、演示或验收路径。随后按 `RULES.md` 中的四阶段流程（plan → tdd → code-review → refactor-clean）和核心业务逻辑架构约束展开工作。
 - **架构约束**：详细解释见 `RULES.md`；后端纯核心门禁由 `FPJavaArchitectureTest` 执行。
+- **可维护性约束**：受保护模块的防上帝类门禁由 `MaintainabilityArchitectureTest` 执行。
 
 ## Mock 政策（统一决策）
 
@@ -80,6 +84,7 @@ VITE_API_MODE=api VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --host
 - **前端改动**：优先运行 `npx vitest run <相关测试文件>`，并至少执行 `npm run check:front-data-boundaries`、`npm run check:doc-governance`、`npm run build`。
 - **后端改动**：运行 `mvn test -Dtest=<相关测试类>`；如涉及架构边界，再运行 `mvn test -Dtest=ArchitectureTest`，并把结果作为常规门禁如实汇报。
 - **纯核心改动**：如新增或修改 `..core..` / `..domain..` 非 Entity 代码，必须运行 `mvn test -Dtest=FPJavaArchitectureTest`。
+- **结构性后端改动**：如新增或扩展受保护模块的 Service，必须运行 `mvn test -Dtest=MaintainabilityArchitectureTest`。
 - **核心链路改动**：运行 `npm run test:e2e`。
 - **禁止取巧**：不得通过删除测试、弱化断言、改写验收口径来掩盖问题。
 

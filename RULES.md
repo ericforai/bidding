@@ -46,6 +46,21 @@
 - 如因框架约束必须在外壳层更新状态，必须先把核心计算提炼到独立函数、Service 或领域方法中。
 - 后端新写纯核心代码时，优先放入 `..core..` 或 `..domain..` 包；这些包下的非 `..entity..` 类受 `FPJavaArchitectureTest` 强制约束。
 
+### 2.0 Split-First Rule（防上帝类默认口径）
+
+任何后端功能实现前，必须先按职责拆分，而不是直接堆进一个 `*Service`：
+
+- **Application Service**：只做编排，负责取数、调用纯核心、事务、保存和边界转换。
+- **Domain Policy / Rules**：只做业务规则、校验、状态流转、金额/评分/权限计算，默认保持纯函数或近似纯函数。
+- **Mapper / Assembler**：只做 DTO / Entity / ViewModel 转换，不承载业务判断。
+- **Repository / Gateway**：只做数据库或外部系统访问，不承载业务规则。
+- **Decision / Result Object**：复杂业务分支优先返回显式结果对象，不允许靠超长 `Service` 方法藏状态变化。
+
+默认文件预算：
+- 单个 Java 文件软上限 `200` 行。
+- 单个 Java 文件硬上限 `300` 行。
+- 超过硬上限前必须先拆分职责，不得继续追加代码把文件做成上帝类。
+
 ### 2.1 纯核心与命令式外壳
 
 业务计算、校验、状态流转、金额计算、评分计算、权限判断必须优先放在纯核心中。
@@ -153,6 +168,8 @@ Vue 组件和 Pinia Store 可以进行受控状态更新，但更新前的业务
 - 纯核心不得依赖 Controller、Repository、Config、Adapter、Gateway。
 - 纯核心不得依赖 Spring Web/Data/JDBC、JPA、日志、文件、网络等命令式外壳或 I/O API。
 - 纯核心不得依赖项目业务异常包；预期业务失败应通过 Result / Optional / ValidationResult 返回。
+- 纯核心业务方法不得返回 `void`；状态变化必须通过返回值表达。
+- 纯核心业务方法不得声明、构造或捕获异常来表达业务流程。
 - 纯核心数据默认使用 record 或 final 字段，不暴露 setter。
 
 执行命令：
@@ -165,6 +182,36 @@ mvn test -Dtest=FPJavaArchitectureTest
 说明：
 - 这是面向新增纯核心包的硬门禁，不会把当前存量 DTO、Service、JPA Entity 一次性纳入红灯区。
 - 如果某段逻辑需要被 FP-Java Profile 保护，应主动迁入 `core` / `domain` 非 Entity 包，而不是继续留在事务编排 Service 中。
+
+### 2.6 Split-First 可执行门禁
+
+后端使用 `MaintainabilityArchitectureTest` 约束受保护模块中的 `Service` 形状，阻止新功能第一次落地就长成上帝类。
+
+当前受保护模块：
+- `calendar`
+- `collaboration`
+- `competitionintel`
+- `scoreanalysis`
+- `roi`
+- `versionhistory`
+- `documenteditor`
+- `documents`
+
+门禁内容：
+- 受保护模块的 `Service` 文件默认不得超过 `300` 行。
+- 受保护模块的 `Service` 默认不得依赖超过 `5` 个实例协作者。
+- 受保护模块的 `Service` 默认不得暴露超过 `8` 个公开方法。
+
+执行命令：
+
+```bash
+cd /Users/user/xiyu/xiyu-bid-poc/backend
+mvn test -Dtest=MaintainabilityArchitectureTest
+```
+
+说明：
+- 这是棘轮式门禁，不是假装全仓已经收口。当前少量超标的历史 `Service` 先保留小范围白名单，后续重构时逐个摘除。
+- 新增代码不允许以“历史上也很大”为理由继续扩散；一旦进入受保护模块，就必须按 Split-First Rule 拆分。
 
 ---
 
@@ -227,6 +274,7 @@ mvn test
   - 至少运行与本次变更相关的测试
   - 若触及架构边界，运行 `ArchitectureTest`
   - 若新增或修改 `..core..` / `..domain..` 非 Entity 纯核心代码，运行 `FPJavaArchitectureTest`
+  - 若新增或扩展受保护模块的 `Service`，运行 `MaintainabilityArchitectureTest`
   - 如出现失败，按新引入问题处理
   - 不得再把当前仓库写成“存在已知存量失败”
 
