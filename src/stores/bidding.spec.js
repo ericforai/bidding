@@ -1,4 +1,4 @@
-// Input: bidding store, mocked tenders API, demo todo/calendar adapters
+// Input: bidding store, mocked tenders API
 // Output: store state and action regression coverage
 // Pos: stores/测试 - bidding store spec
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
@@ -11,17 +11,9 @@ import { tendersApi } from '@/api'
 // Mock API
 vi.mock('@/api', () => ({
   tendersApi: {
-    getList: vi.fn()
+    getList: vi.fn(),
+    update: vi.fn()
   },
-}))
-
-// Mock frontendDemo
-vi.mock('@/api/mock-adapters/frontendDemo.js', () => ({
-  getDemoCalendar: () => [],
-  getDemoTodos: () => [
-    { id: 1, title: '待办1', priority: 'high' },
-    { id: 2, title: '待办2', priority: 'low' }
-  ]
 }))
 
 describe('Bidding Store', () => {
@@ -33,7 +25,6 @@ describe('Bidding Store', () => {
   it('初始状态应该正确', () => {
     const store = useBiddingStore()
     expect(store.tenders).toEqual([])
-    expect(store.todos).toEqual([])
   })
 
   it('getters: highPriorityTenders 应该只返回评分 >= 85 的标讯', () => {
@@ -58,12 +49,31 @@ describe('Bidding Store', () => {
     expect(tendersApi.getList).toHaveBeenCalledOnce()
   })
 
-  it('actions: updateTenderStatus 应该更新本地状态', () => {
+  it('actions: updateTenderStatus 应该调用 API 并刷新列表', async () => {
     const store = useBiddingStore()
-    store.tenders = [{ id: '100', status: 'new' }]
-    
-    store.updateTenderStatus('100', 'following')
-    
-    expect(store.tenders[0].status).toBe('following')
+    tendersApi.update.mockResolvedValue({ success: true })
+    tendersApi.getList.mockResolvedValue({ success: true, data: [{ id: '100', status: 'TRACKING' }] })
+
+    const result = await store.updateTenderStatus('100', 'TRACKING')
+
+    expect(result).toEqual({ success: true })
+    expect(tendersApi.update).toHaveBeenCalledWith('100', { status: 'TRACKING' })
+    expect(tendersApi.getList).toHaveBeenCalledOnce()
+    expect(store.tenders[0].status).toBe('TRACKING')
+  })
+
+  it('getters: newTenders 应该匹配 PENDING 状态', () => {
+    const store = useBiddingStore()
+    store.tenders = [
+      { id: 1, status: 'PENDING' },
+      { id: 2, status: 'TRACKING' },
+      { id: 3, status: 'BIDDED' }
+    ]
+    expect(store.newTenders).toHaveLength(1)
+    expect(store.newTenders[0].id).toBe(1)
+    expect(store.followingTenders).toHaveLength(1)
+    expect(store.followingTenders[0].id).toBe(2)
+    expect(store.biddingTenders).toHaveLength(1)
+    expect(store.biddingTenders[0].id).toBe(3)
   })
 })
