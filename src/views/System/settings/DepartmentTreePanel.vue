@@ -101,7 +101,7 @@ const removeRow = (index, row) => {
     ElMessage.warning('该部门仍有关联用户，请先迁移用户归属')
     return
   }
-  rows.value.splice(index, 1)
+  rows.value = rows.value.filter((_, i) => i !== index)
 }
 
 const validate = () => {

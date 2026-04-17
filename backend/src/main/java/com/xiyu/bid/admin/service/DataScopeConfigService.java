@@ -42,6 +42,8 @@ public class DataScopeConfigService {
     private final RoleProfileRepository roleProfileRepository;
     private final RoleProfileBootstrap roleProfileBootstrap;
 
+    // Manual constructor: encapsulates Store/Assembler as implementation details
+    // so Spring only sees the thin application-service surface.
     @Autowired
     public DataScopeConfigService(
             SystemSettingRepository systemSettingRepository,

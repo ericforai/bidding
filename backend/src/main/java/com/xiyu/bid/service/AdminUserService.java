@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 public class AdminUserService {
 
     private static final long MIN_ENABLED_ADMINS = 1L;
+    private static final Set<Long> DISABLED_ROLE_SENTINEL = Set.of(-1L);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -131,7 +132,7 @@ public class AdminUserService {
                 departmentCode,
                 request.getRoleId(),
                 deptNameByCode.keySet(),
-                Set.of(Boolean.TRUE.equals(nextRoleProfile.getEnabled()) ? nextRoleProfile.getId() : -1L)
+                Boolean.TRUE.equals(nextRoleProfile.getEnabled()) ? Set.of(nextRoleProfile.getId()) : DISABLED_ROLE_SENTINEL
         );
         if (!validation.valid()) {
             throw new IllegalArgumentException(validation.message());

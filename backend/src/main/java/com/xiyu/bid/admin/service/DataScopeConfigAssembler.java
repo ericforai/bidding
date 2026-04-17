@@ -145,7 +145,16 @@ public class DataScopeConfigAssembler {
     }
 
     private DataScopeConfigResponse.UserOptionItem toUserOptionItem(User user) {
-        return DataScopeConfigResponse.UserOptionItem.builder().id(user.getId()).name(user.getFullName()).roleId(user.getRoleProfile() == null ? null : user.getRoleProfile().getId()).role(user.getRoleCode()).roleName(user.getRoleName()).deptCode(DepartmentGraphPolicy.normalizeCode(user.getDepartmentCode())).dept(DepartmentGraphPolicy.normalizeName(user.getDepartmentName())).build();
+        Long roleId = user.getRoleProfile() == null ? null : user.getRoleProfile().getId();
+        return DataScopeConfigResponse.UserOptionItem.builder()
+                .id(user.getId())
+                .name(user.getFullName())
+                .roleId(roleId)
+                .role(user.getRoleCode())
+                .roleName(user.getRoleName())
+                .deptCode(DepartmentGraphPolicy.normalizeCode(user.getDepartmentCode()))
+                .dept(DepartmentGraphPolicy.normalizeName(user.getDepartmentName()))
+                .build();
     }
 
     private DataScopeConfigResponse.UserItem toUserItem(User user) {

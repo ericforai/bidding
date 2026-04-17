@@ -38,7 +38,7 @@ public final class DepartmentGraphPolicy {
                 .map(node -> new DepartmentNode(
                         normalizeCode(node.code()),
                         normalizeName(node.name()),
-                        normalizeParent(node.parentCode(), node.code()),
+                        normalizeParent(node.parentCode()),
                         node.sortOrder()
                 ))
                 .distinct()
@@ -100,12 +100,8 @@ public final class DepartmentGraphPolicy {
         return false;
     }
 
-    private static String normalizeParent(String parentCode, String currentCode) {
-        if (!hasText(parentCode)) {
-            return null;
-        }
-        String parent = normalizeCode(parentCode);
-        return parent.equals(normalizeCode(currentCode)) ? parent : parent;
+    private static String normalizeParent(String parentCode) {
+        return hasText(parentCode) ? normalizeCode(parentCode) : null;
     }
 
     private static boolean hasText(String value) {

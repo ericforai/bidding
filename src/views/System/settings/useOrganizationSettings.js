@@ -47,7 +47,7 @@ export function useOrganizationSettings() {
         userStore.applyAuthSession({ user: result.data }, true)
       }
     } catch (error) {
-      console.warn('Failed to refresh session after organization update:', error)
+      // Session refresh failure is non-blocking; next API call will re-authenticate if needed
     }
   }
 
