@@ -37,6 +37,7 @@ class MaintainabilityArchitectureTest {
         "calendar",
         "collaboration",
         "competitionintel",
+        "marketinsight",
         "scoreanalysis",
         "roi",
         "versionhistory",
