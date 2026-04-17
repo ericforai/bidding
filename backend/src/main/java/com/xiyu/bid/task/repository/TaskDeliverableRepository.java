@@ -25,6 +25,15 @@ public interface TaskDeliverableRepository
             Long taskId);
 
     /**
+     * Find deliverables for a task, oldest first (creation ascending).
+     *
+     * @param taskId the task id
+     * @return ordered list of deliverables
+     */
+    List<TaskDeliverable> findByTaskIdOrderByCreatedAtAsc(
+            Long taskId);
+
+    /**
      * Find deliverables for multiple tasks.
      *
      * @param taskIds collection of task ids

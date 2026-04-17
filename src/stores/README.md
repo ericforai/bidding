@@ -12,6 +12,7 @@
 |------|------|------|
 | `user.js` | Pinia Store | 用户状态管理（登录、角色切换、会话恢复） |
 | `project.js` | Pinia Store | 投标项目状态管理（列表、详情、CRUD、任务状态）|
+| `bidProcess.js` | Pinia Store | 标书编制流程状态管理（启动、初稿上传、聚合详情） |
 | `bidding.js` | Pinia Store | 标讯状态管理（标讯列表、待办、日历） |
 | `bar.js` | Pinia Store | BAR 投标资产台账状态管理（站点、账号、UK） |
 

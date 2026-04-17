@@ -10,7 +10,8 @@ import { normalizeTaskStatusForApi } from '@/views/Project/project-utils.js'
 export const useProjectStore = defineStore('project', {
   state: () => ({
     projects: [],
-    currentProject: null
+    currentProject: null,
+    latestBidSubmission: null
   }),
 
   getters: {
@@ -165,10 +166,25 @@ export const useProjectStore = defineStore('project', {
     async submitToBidDocument(projectId) {
       try {
         const result = await projectsApi.submitToBidDocument(projectId)
+        if (result?.data?.accepted === true) {
+          await this.fetchLatestBidSubmission(projectId)
+        }
         return result
       } catch (error) {
         console.warn('Failed to submit to bid document:', error)
         throw error
+      }
+    },
+
+    async fetchLatestBidSubmission(projectId) {
+      try {
+        const result = await projectsApi.getLatestSubmissionMaterials(projectId)
+        this.latestBidSubmission = result?.success ? (result.data || null) : null
+        return this.latestBidSubmission
+      } catch (error) {
+        console.warn('Failed to fetch latest bid submission:', error)
+        this.latestBidSubmission = null
+        return null
       }
     }
   }

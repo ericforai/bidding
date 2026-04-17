@@ -217,6 +217,33 @@
               <el-step title="封装提交" :description="getStepStatusText('submit')" />
             </el-steps>
 
+            <div v-if="latestSubmission && latestSubmission.materials?.length" class="submission-materials">
+              <div class="submission-materials-header">
+                <el-icon><Document /></el-icon>
+                <span class="submission-materials-title">提交素材清单</span>
+                <el-tag size="small" type="success">共 {{ latestSubmission.materialCount }} 项</el-tag>
+                <span class="submission-materials-meta">
+                  {{ formatSubmittedAt(latestSubmission.submittedAt) }} 由 {{ latestSubmission.submittedByName || 'system' }} 提交
+                </span>
+              </div>
+              <el-table :data="latestSubmission.materials" size="small" border stripe style="margin-top: 12px">
+                <el-table-column prop="taskTitle" label="来源任务" min-width="180" show-overflow-tooltip />
+                <el-table-column prop="deliverableName" label="交付物" min-width="200" show-overflow-tooltip />
+                <el-table-column label="类型" width="110">
+                  <template #default="{ row }">
+                    <el-tag size="small" :type="materialTypeTag(row.deliverableType)">
+                      {{ materialTypeLabel(row.deliverableType) }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="版本" width="70" align="center">
+                  <template #default="{ row }">v{{ row.deliverableVersion }}</template>
+                </el-table-column>
+                <el-table-column prop="uploaderName" label="上传人" width="100" show-overflow-tooltip />
+                <el-table-column prop="fileSize" label="大小" width="90" />
+              </el-table>
+            </div>
+
             <div class="process-actions">
               <el-button
                 :type="bidProcess.steps.draft.completed ? 'success' : 'primary'"
@@ -986,6 +1013,61 @@
         <!-- 内部评审 -->
         <el-tab-pane label="内部评审" name="review">
           <div class="review-section">
+            <!-- P2 真联调：当前评审单 -->
+            <div class="current-review-panel" v-if="currentBidReview">
+              <el-descriptions title="当前评审单" :column="2" border size="small">
+                <el-descriptions-item label="评审单ID">{{ currentBidReview.id }}</el-descriptions-item>
+                <el-descriptions-item label="状态">
+                  <el-tag :type="reviewOutcomeTagType(currentBidReview.status || currentBidReview.outcome)" size="small">
+                    {{ reviewOutcomeText(currentBidReview.status || currentBidReview.outcome) }}
+                  </el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item label="目标初稿ID">{{ currentBidReview.targetDraftId || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="发起时间">{{ currentBidReview.createdAt || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="评审说明" :span="2">{{ currentBidReview.note || '-' }}</el-descriptions-item>
+              </el-descriptions>
+              <div class="review-decision" v-if="canDecideCurrentReview">
+                <el-input
+                  v-model="reviewDecisionForm.comment"
+                  type="textarea"
+                  :rows="2"
+                  placeholder="请输入评审意见（驳回时建议填写具体原因）"
+                  style="margin-top: 12px;"
+                />
+                <div class="decision-actions" style="margin-top: 12px; text-align: right;">
+                  <el-button type="danger" @click="handleDecideReview('REJECT')" :loading="reviewDeciding">
+                    驳回（回到起草）
+                  </el-button>
+                  <el-button type="success" @click="handleDecideReview('APPROVE')" :loading="reviewDeciding">
+                    通过（进入用印）
+                  </el-button>
+                </div>
+              </div>
+            </div>
+
+            <!-- P2 真联调：历史评审 -->
+            <el-divider v-if="reviewHistoryList.length > 0">历史评审</el-divider>
+            <el-table
+              v-if="reviewHistoryList.length > 0"
+              :data="reviewHistoryList"
+              border
+              size="small"
+              style="width: 100%; margin-bottom: 20px;"
+            >
+              <el-table-column prop="id" label="评审单ID" width="100" />
+              <el-table-column prop="targetDraftId" label="初稿ID" width="100" />
+              <el-table-column label="结果" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="reviewOutcomeTagType(row.outcome || row.status)" size="small">
+                    {{ reviewOutcomeText(row.outcome || row.status) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="comment" label="决策意见" min-width="200" show-overflow-tooltip />
+              <el-table-column prop="decidedAt" label="决策时间" width="180" />
+            </el-table>
+
+            <el-divider>评审人员（本地登记，辅助发起评审）</el-divider>
             <div class="section-header">
               <span>评审人员</span>
               <el-button type="primary" size="small" :icon="Plus" @click="handleAddReviewer">
@@ -1053,8 +1135,13 @@
           </div>
           <div class="dialog-footer">
             <el-button @click="processDialogVisible = false">关闭</el-button>
-            <el-button type="primary" @click="handleCompleteReview" :disabled="!canCompleteReview()">
-              完成评审
+            <el-button
+              type="primary"
+              @click="handleSubmitReview"
+              :disabled="!canSubmitReview"
+              :loading="reviewSubmitting"
+            >
+              {{ isReviewInProgress ? '评审进行中' : '发起评审' }}
             </el-button>
           </div>
         </el-tab-pane>
@@ -1245,6 +1332,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
 import { useBarStore } from '@/stores/bar'
+import { useBidProcessStore } from '@/stores/bidProcess'
 import { knowledgeApi, projectsApi, collaborationApi, approvalApi } from '@/api'
 import { complianceApi, scoreAnalysisApi } from '@/api/modules/ai.js'
 import { feesApi } from '@/api/modules/fees.js'
@@ -1276,11 +1364,45 @@ const route = useRoute()
 const router = useRouter()
 const projectStore = useProjectStore()
 const userStore = useUserStore()
+const bidProcessStore = useBidProcessStore()
 const barStore = useBarStore()
 const isDemoMode = false
 const demoAutoTasks = ref([])
 const demoMobileCard = ref(null)
 const isApiProject = computed(() => !isDemoMode && /^\d+$/.test(String(route.params.id || '')))
+
+const latestSubmission = computed(() => projectStore.latestBidSubmission)
+
+const materialTypeLabel = (type) => {
+  const map = {
+    DOCUMENT: '文档',
+    QUALIFICATION: '资质',
+    TECHNICAL: '技术',
+    QUOTATION: '报价',
+    OTHER: '其它'
+  }
+  return map[type] || type
+}
+
+const materialTypeTag = (type) => {
+  const map = {
+    DOCUMENT: '',
+    QUALIFICATION: 'warning',
+    TECHNICAL: 'success',
+    QUOTATION: 'danger',
+    OTHER: 'info'
+  }
+  return map[type] || ''
+}
+
+const formatSubmittedAt = (iso) => {
+  if (!iso) return ''
+  try {
+    return new Date(iso).toLocaleString('zh-CN', { hour12: false })
+  } catch {
+    return iso
+  }
+}
 
 const downloadTextFile = (filename, content, mimeType = 'text/plain;charset=utf-8') => {
   const blob = new Blob([content], { type: mimeType })
@@ -1382,6 +1504,29 @@ const reviewers = ref([])
 const reviewerForm = ref({
   userId: '',
   role: ''
+})
+
+// P2 真联调：评审决策表单
+const reviewDecisionForm = ref({ comment: '' })
+const reviewSubmitting = ref(false)
+const reviewDeciding = ref(false)
+
+const currentBidReview = computed(() => bidProcessStore.currentReview)
+const reviewHistoryList = computed(() => bidProcessStore.reviewHistory)
+const isReviewInProgress = computed(() => bidProcessStore.currentPhase === 'REVIEWING')
+const canSubmitReview = computed(() => {
+  if (!isApiProject.value) return false
+  if (reviewSubmitting.value) return false
+  if (isReviewInProgress.value) return false
+  return (bidProcessStore.drafts?.length || 0) > 0
+})
+const canDecideCurrentReview = computed(() => {
+  if (!currentBidReview.value) return false
+  const status = currentBidReview.value.status || currentBidReview.value.outcome
+  if (status && String(status).toUpperCase() !== 'PENDING') return false
+  if (!isReviewInProgress.value) return false
+  const role = currentUserRole.value
+  return role === 'admin' || role === 'manager'
 })
 
 const availableReviewers = computed(() => {
@@ -2601,23 +2746,60 @@ const loadProjectWorkflowData = async (projectId) => {
 }
 
 // 标书编制流程相关处理函数
-const handleInitiateProcess = () => {
+// P1：draft 段对接真实 BidProcess API；P2：review 段对接真实 API；seal/submit 两段保留本地 ref 占位（TODO P3/P4）
+const PHASE_ORDER = ['NONE', 'DRAFTING', 'REVIEWING', 'SEAL_REQUESTED', 'SEAL_APPROVED', 'PACKAGING', 'SUBMITTED', 'ARCHIVED']
+const phaseIndex = (phase) => {
+  const idx = PHASE_ORDER.indexOf(String(phase || 'NONE'))
+  return idx < 0 ? 0 : idx
+}
+
+const syncBidProcessFromStore = () => {
+  const detail = bidProcessStore.detail
+  if (!detail) return
+  const hasDrafts = Array.isArray(detail.drafts) && detail.drafts.length > 0
+  const draftCompleted = hasDrafts
+  const phaseIdx = phaseIndex(detail.phase)
+  // review 段视角：只要 phase 进入 SEAL_REQUESTED 及以后，即认为评审阶段已完成
+  const reviewCompleted = phaseIdx >= phaseIndex('SEAL_REQUESTED')
+  const reviewStepOrder = 1
+  const sealStepOrder = 2
+  const nextStep = reviewCompleted
+    ? Math.max(bidProcess.value.currentStep || 0, sealStepOrder)
+    : Math.max(bidProcess.value.currentStep || 0, draftCompleted ? reviewStepOrder : 0)
   bidProcess.value = {
+    ...bidProcess.value,
     initiated: true,
-    initiator: userStore.userName,
-    initiateTime: new Date().toLocaleString('zh-CN'),
-    currentStep: 0,
+    initiator: bidProcess.value.initiator || userStore.userName,
+    initiateTime: bidProcess.value.initiateTime || (detail.createdAt || new Date().toLocaleString('zh-CN')),
+    currentStep: nextStep,
     steps: {
-      draft: { completed: false, time: '' },
-      review: { completed: false, time: '' },
-      seal: { completed: false, time: '' },
-      submit: { completed: false, time: '' }
-    },
-    deliverables: []
+      ...bidProcess.value.steps,
+      draft: {
+        completed: draftCompleted,
+        time: hasDrafts ? (detail.drafts[0].uploadedAt || '') : bidProcess.value.steps.draft.time
+      },
+      review: {
+        completed: reviewCompleted,
+        time: reviewCompleted
+          ? (detail.reviewHistory?.find(r => String(r.outcome || r.status).toUpperCase() === 'APPROVED')?.decidedAt
+             || bidProcess.value.steps.review.time)
+          : bidProcess.value.steps.review.time
+      }
+    }
   }
-  ElMessage.success('标书编制流程已发起')
-  processDialogVisible.value = true
-  activeProcessTab.value = 'draft'
+}
+
+const handleInitiateProcess = async () => {
+  const projectId = route.params.id
+  try {
+    await bidProcessStore.start(projectId)
+    syncBidProcessFromStore()
+    ElMessage.success('标书编制流程已发起')
+    processDialogVisible.value = true
+    activeProcessTab.value = 'draft'
+  } catch (error) {
+    ElMessage.error(bidProcessStore.error || error?.response?.data?.message || error?.message || '发起流程失败')
+  }
 }
 
 const handleDraftSubmit = () => {
@@ -2626,9 +2808,11 @@ const handleDraftSubmit = () => {
 }
 
 const handleDraftFileSuccess = (response, file) => {
+  const url = response?.data?.url || response?.url || file.url || ''
   draftForm.value.files.push({
     name: file.name,
-    url: response.data?.url || file.url
+    url,
+    fileReference: url
   })
 }
 
@@ -2636,26 +2820,42 @@ const ensureDemoUpload = () => {
   return true
 }
 
-const handleSaveDraft = () => {
+const handleSaveDraft = async () => {
   if (!draftForm.value.templateId) {
     ElMessage.warning('请选择使用模板')
     return
   }
 
-  bidProcess.value.steps.draft.completed = true
-  bidProcess.value.steps.draft.time = new Date().toLocaleString('zh-CN')
-  bidProcess.value.currentStep = 1
+  const firstFile = draftForm.value.files[0]
+  const fileReference = firstFile?.url || firstFile?.fileReference || ''
+  if (!fileReference) {
+    ElMessage.warning('请先上传初稿文件')
+    return
+  }
 
-  // 添加交付物
-  bidProcess.value.deliverables.push({
-    name: '标书初稿',
-    type: '初稿',
-    uploader: userStore.userName,
-    time: new Date().toLocaleString('zh-CN')
-  })
+  const projectId = route.params.id
+  const title = firstFile?.name || `初稿 v${(bidProcessStore.drafts?.length || 0) + 1}`
+  try {
+    const draft = await bidProcessStore.uploadDraft(projectId, {
+      title,
+      fileReference,
+      note: draftForm.value.remark || ''
+    })
+    syncBidProcessFromStore()
 
-  ElMessage.success('初稿已保存')
-  processDialogVisible.value = false
+    // 同步交付物视图（沿用既有本地 ref 呈现，评审/用印/封装仍用占位）
+    bidProcess.value.deliverables.push({
+      name: draft?.title || '标书初稿',
+      type: '初稿',
+      uploader: userStore.userName,
+      time: draft?.uploadedAt || new Date().toLocaleString('zh-CN')
+    })
+
+    ElMessage.success('初稿已保存')
+    processDialogVisible.value = false
+  } catch (error) {
+    ElMessage.error(bidProcessStore.error || error?.response?.data?.message || error?.message || '保存初稿失败')
+  }
 }
 
 const handleReview = () => {
@@ -2707,20 +2907,74 @@ const handleRemoveReviewer = (index) => {
   reviewers.value.splice(index, 1)
 }
 
-const handleCompleteReview = () => {
-  bidProcess.value.steps.review.completed = true
-  bidProcess.value.steps.review.time = new Date().toLocaleString('zh-CN')
-  bidProcess.value.currentStep = 2
+const handleSubmitReview = async () => {
+  const projectId = route.params.id
+  if (!isApiProject.value) {
+    ElMessage.warning('仅真实 API 模式支持发起评审')
+    return
+  }
+  if (isReviewInProgress.value) {
+    ElMessage.warning('已有进行中的评审，请先完成决策')
+    return
+  }
+  const draftList = bidProcessStore.drafts || []
+  const latestDraft = draftList[0]
+  if (!latestDraft?.id) {
+    ElMessage.warning('请先提交初稿')
+    return
+  }
+  reviewSubmitting.value = true
+  try {
+    const reviewerIds = reviewers.value.map(r => r.id).filter(Boolean)
+    await bidProcessStore.submitReview(projectId, {
+      draftId: latestDraft.id,
+      reviewerIds,
+      note: ''
+    })
+    syncBidProcessFromStore()
+    ElMessage.success('评审已发起')
+  } catch (error) {
+    ElMessage.error(bidProcessStore.error || error?.response?.data?.message || error?.message || '发起评审失败')
+  } finally {
+    reviewSubmitting.value = false
+  }
+}
 
-  bidProcess.value.deliverables.push({
-    name: '评审报告',
-    type: '评审',
-    uploader: userStore.userName,
-    time: new Date().toLocaleString('zh-CN')
-  })
+const handleDecideReview = async (decision) => {
+  const review = currentBidReview.value
+  if (!review?.id) {
+    ElMessage.warning('当前无待决策的评审单')
+    return
+  }
+  if (decision === 'REJECT' && !(reviewDecisionForm.value.comment || '').trim()) {
+    ElMessage.warning('驳回时请填写评审意见')
+    return
+  }
+  const projectId = route.params.id
+  reviewDeciding.value = true
+  try {
+    await bidProcessStore.decideReview(review.id, {
+      decision,
+      comment: reviewDecisionForm.value.comment || ''
+    }, projectId)
+    syncBidProcessFromStore()
+    reviewDecisionForm.value.comment = ''
+    ElMessage.success(decision === 'APPROVE' ? '评审已通过' : '评审已驳回')
+  } catch (error) {
+    ElMessage.error(bidProcessStore.error || error?.response?.data?.message || error?.message || '评审决策失败')
+  } finally {
+    reviewDeciding.value = false
+  }
+}
 
-  ElMessage.success('评审已完成')
-  processDialogVisible.value = false
+const reviewOutcomeTagType = (outcome) => {
+  const typeMap = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger', CANCELLED: 'info' }
+  return typeMap[String(outcome || '').toUpperCase()] || 'info'
+}
+
+const reviewOutcomeText = (outcome) => {
+  const textMap = { PENDING: '待决策', APPROVED: '已通过', REJECTED: '已驳回', CANCELLED: '已取消' }
+  return textMap[String(outcome || '').toUpperCase()] || outcome || '-'
 }
 
 const handleSealApply = () => {
@@ -2816,6 +3070,16 @@ onMounted(async () => {
 
   // 从store获取项目
   await projectStore.getProjectById(projectId)
+
+  if (isApiProject.value) {
+    projectStore.fetchLatestBidSubmission(projectId)
+    try {
+      await bidProcessStore.loadDetail(projectId)
+      syncBidProcessFromStore()
+    } catch (error) {
+      ElMessage.error(bidProcessStore.error || error?.response?.data?.message || error?.message || '加载标书编制流程失败')
+    }
+  }
 
   const templateResult = await knowledgeApi.templates.getList()
   templates.value = templateResult?.success && Array.isArray(templateResult.data)
@@ -3082,6 +3346,28 @@ function getApprovalStatusText(status) {
   padding: 16px;
   background: #f5f7fa;
   border-radius: 8px;
+}
+
+.submission-materials {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f5f7fa;
+  border-radius: 4px;
+}
+.submission-materials-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.submission-materials-title {
+  font-weight: 600;
+  color: #303133;
+}
+.submission-materials-meta {
+  margin-left: auto;
+  color: #909399;
+  font-size: 12px;
 }
 
 .deliverables-section {

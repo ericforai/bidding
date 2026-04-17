@@ -6,6 +6,14 @@ import java.util.List;
 /**
  * Pure core policy for bid-document submission validation.
  * No state, no dependencies, no side effects.
+ *
+ * <p>Validation rules (applied in order, accumulating gaps):
+ * <ol start="0">
+ *   <li>Rule 0: The project must have at least one task.</li>
+ *   <li>Rule 1: All tasks must be completed (no incomplete tasks).</li>
+ *   <li>Rule 2: At least one task must have an associated deliverable
+ *       (only enforced when the project has tasks).</li>
+ * </ol>
  */
 public final class BidSubmissionPolicy {
 
@@ -33,6 +41,11 @@ public final class BidSubmissionPolicy {
         List<TaskGap> gaps = new ArrayList<>();
         int effectiveMin = minPerTask > 0
                 ? minPerTask : DEFAULT_MIN_PER_TASK;
+
+        // Rule 0: Must have at least one task
+        if (totalTasks <= 0) {
+            gaps.add(new TaskGap(null, null, "项目没有任何任务，无法提交"));
+        }
 
         // Rule 1: All tasks must be completed
         int incomplete = totalTasks - completedTasks;

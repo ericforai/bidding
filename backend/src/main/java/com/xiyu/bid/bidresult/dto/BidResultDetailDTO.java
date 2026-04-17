@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -18,8 +19,15 @@ public class BidResultDetailDTO {
     private String result;
     private BigDecimal amount;
     private String status;
+    private String registrationType;
     private LocalDateTime fetchTime;
     private String ignoredReason;
     private String ownerName;
     private List<String> reminderTypes;
+    private LocalDate contractStartDate;
+    private LocalDate contractEndDate;
+    private Integer contractDurationMonths;
+    private String remark;
+    private Integer skuCount;
+    private String winAnnounceDocUrl;
 }

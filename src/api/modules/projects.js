@@ -352,6 +352,24 @@ export const projectsApi = {
     }
 
     return httpClient.get(`/api/projects/${projectId}/bid-process-status`)
+  },
+
+  async listBidSubmissions(projectId) {
+
+    if (!isNumericId(projectId)) {
+      return apiModeFailure('project')
+    }
+
+    return httpClient.get(`/api/projects/${projectId}/bid-submissions`)
+  },
+
+  async getLatestSubmissionMaterials(projectId) {
+
+    if (!isNumericId(projectId)) {
+      return apiModeFailure('project')
+    }
+
+    return httpClient.get(`/api/projects/${projectId}/bid-submissions/latest/materials`)
   }
 }
 

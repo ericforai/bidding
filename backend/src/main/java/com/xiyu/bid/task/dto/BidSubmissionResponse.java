@@ -1,6 +1,5 @@
 package com.xiyu.bid.task.dto;
 
-import com.xiyu.bid.task.core.BidSubmissionPolicy;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -37,5 +36,5 @@ public class BidSubmissionResponse {
     private int tasksWithDeliverables;
 
     /** List of gaps if submission was rejected. */
-    private List<BidSubmissionPolicy.TaskGap> gaps;
+    private List<TaskGapDTO> gaps;
 }

@@ -1,13 +1,14 @@
 package com.xiyu.bid.task.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xiyu.bid.projectworkflow.controller.ProjectWorkflowController;
-import com.xiyu.bid.task.core.BidSubmissionPolicy;
+import com.xiyu.bid.projectworkflow.controller.ProjectBidSubmissionController;
 import com.xiyu.bid.task.dto.BidSubmissionResponse;
 import com.xiyu.bid.task.dto.DeliverableCoverageDTO;
 import com.xiyu.bid.task.dto.TaskDeliverableCreateRequest;
 import com.xiyu.bid.task.dto.TaskDeliverableDTO;
-import com.xiyu.bid.task.service.BidProcessService;
+import com.xiyu.bid.task.dto.TaskGapDTO;
+import com.xiyu.bid.task.service.BidProcessQueryService;
+import com.xiyu.bid.task.service.BidSubmissionService;
 import com.xiyu.bid.task.service.TaskDeliverableService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,12 +16,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -32,19 +35,23 @@ class TaskDeliverableContractTest {
     private TaskDeliverableService taskDeliverableService;
 
     @Mock
-    private BidProcessService bidProcessService;
+    private BidSubmissionService bidSubmissionService;
 
     @Mock
-    private ProjectWorkflowController projectWorkflowController; // we'll use standalone setup
+    private BidProcessQueryService bidProcessQueryService;
+
+    @Mock
+    private ProjectBidSubmissionController projectBidSubmissionController; // we'll use standalone setup
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new ProjectWorkflowController(
-                null, taskDeliverableService, bidProcessService))
+        mockMvc = MockMvcBuilders.standaloneSetup(new ProjectBidSubmissionController(
+                taskDeliverableService, bidSubmissionService, bidProcessQueryService))
                 .setControllerAdvice(new com.xiyu.bid.exception.GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .build();
         objectMapper = new ObjectMapper().findAndRegisterModules();
     }
@@ -99,7 +106,7 @@ class TaskDeliverableContractTest {
         var response = BidSubmissionResponse.builder()
                 .accepted(true).message("已提交至标书编写流程")
                 .totalTasks(3).completedTasks(3).tasksWithDeliverables(2).build();
-        when(bidProcessService.submitToBidDocument(1L)).thenReturn(response);
+        when(bidSubmissionService.submitToBidDocument(eq(1L), any())).thenReturn(response);
 
         mockMvc.perform(post("/api/projects/1/submit-to-bid-document"))
                 .andExpect(status().isOk())
@@ -112,8 +119,8 @@ class TaskDeliverableContractTest {
         var response = BidSubmissionResponse.builder()
                 .accepted(false).message("提交校验未通过")
                 .totalTasks(3).completedTasks(2).tasksWithDeliverables(0)
-                .gaps(List.of(new BidSubmissionPolicy.TaskGap(null, null, "有 1 个任务未完成"))).build();
-        when(bidProcessService.submitToBidDocument(1L)).thenReturn(response);
+                .gaps(List.of(new TaskGapDTO(null, null, "有 1 个任务未完成"))).build();
+        when(bidSubmissionService.submitToBidDocument(eq(1L), any())).thenReturn(response);
 
         mockMvc.perform(post("/api/projects/1/submit-to-bid-document"))
                 .andExpect(status().isOk())

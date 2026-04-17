@@ -1,12 +1,15 @@
 package com.xiyu.bid.repository;
 
 import com.xiyu.bid.entity.Project;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 项目数据访问接口
@@ -39,6 +42,14 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
      */
     @Query("SELECT p FROM Project p WHERE p.status <> 'ARCHIVED'")
     List<Project> findActiveProjects();
+
+    /**
+     * 获取项目写锁，用于串行化对同一项目的并发写入（例如投标提交）。
+     * 必须在 @Transactional 上下文内调用。
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Project p WHERE p.id = :id")
+    Optional<Project> findByIdForUpdate(Long id);
 
     @Query("""
             SELECT DISTINCT p

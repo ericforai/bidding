@@ -37,6 +37,7 @@ export { bidResultsApi } from './modules/bidResults.js'
 export { batchApi } from './modules/batch.js'
 export { marketInsightApi } from './modules/marketInsight.js'
 export { customerOpportunityApi } from './modules/customerOpportunity.js'
+export { competitionIntelApi } from './modules/competitionIntel.js'
 
 export default {
   auth: () => import('./modules/auth.js').then(m => m.authApi),

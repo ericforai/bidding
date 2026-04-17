@@ -242,10 +242,16 @@ export const scoreAnalysisApi = {
   },
 
   async generatePreview(context) {
+    const projectId = isNumericId(context?.projectId) ? Number(context.projectId) : null
+    const tenderId = isNumericId(context?.tenderId) ? Number(context.tenderId) : null
+
+    if (projectId == null && tenderId == null) {
+      return Promise.reject(new Error('projectId 或 tenderId 至少提供一个'))
+    }
 
     const response = await httpClient.post('/api/projects/score-preview', {
-      projectId: context?.projectId || null,
-      tenderId: context?.tenderId || null,
+      projectId,
+      tenderId,
       projectName: context?.projectName || context?.name || '',
       industry: context?.industry || '',
       budget: Number(context?.budget || 0),

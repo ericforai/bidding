@@ -826,7 +826,34 @@ const prevStep = () => {
 const runAIAnalysis = async () => {
   analyzing.value = true
   try {
+    const previewProjectId = isEditMode.value && /^\d+$/.test(String(editProjectId.value || ''))
+      ? Number(editProjectId.value)
+      : null
+    const previewTenderId = /^\d+$/.test(String(selectedTenderId.value || ''))
+      ? Number(selectedTenderId.value)
+      : null
+
+    if (!previewProjectId && !previewTenderId) {
+      aiSummary.value = {
+        winScore: 0,
+        winLevel: 'low',
+        risks: [],
+        suggestions: [] }
+      scoreAnalysis.value = {
+        scoreCategories: [],
+        gapItems: [] }
+      aiGeneratedTasks.value = []
+      scorePreviewPlaceholder.value = {
+        title: '评分预览暂不可用',
+        message: '尚未关联标讯或项目，无法生成评分预览。',
+        hint: '请先选择来源标讯后再尝试生成评分预览；项目创建流程不受影响。' }
+      ElMessage.info(scorePreviewPlaceholder.value.message)
+      return
+    }
+
     const response = await aiApi.score.generatePreview({
+      projectId: previewProjectId,
+      tenderId: previewTenderId,
       industry: basicForm.industry,
       tags: detailForm.tags,
       budget: basicForm.budget })
@@ -859,7 +886,8 @@ const runAIAnalysis = async () => {
       }
     }
   } catch (error) {
-    ElMessage.error('AI分析失败')
+    const detail = error?.response?.data?.message || error?.message
+    ElMessage.error(detail ? `AI分析失败：${detail}` : 'AI分析失败')
   } finally {
     analyzing.value = false
   }

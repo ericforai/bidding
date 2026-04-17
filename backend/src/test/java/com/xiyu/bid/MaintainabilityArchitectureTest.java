@@ -42,7 +42,8 @@ class MaintainabilityArchitectureTest {
         "roi",
         "versionhistory",
         "documenteditor",
-        "documents"
+        "documents",
+        "bidresult"
     );
 
     private static final int MAX_SERVICE_LINES = 300;

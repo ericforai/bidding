@@ -9,7 +9,8 @@ const normalizeOverview = (data = {}) => ({
   lastSyncTime: data?.lastSyncTime || '',
   pendingCount: Number(data?.pendingCount || 0),
   uploadPending: Number(data?.uploadPending || 0),
-  competitorCount: Number(data?.competitorCount || 0) })
+  competitorCount: Number(data?.competitorCount || 0)
+})
 
 const normalizeFetchResult = (item = {}) => ({
   id: item?.id,
@@ -20,7 +21,15 @@ const normalizeFetchResult = (item = {}) => ({
   result: item?.result || 'lost',
   amount: item?.amount ?? null,
   fetchTime: item?.fetchTime || '',
-  status: item?.status || 'pending' })
+  status: item?.status || 'pending',
+  registrationType: item?.registrationType || null,
+  contractStartDate: item?.contractStartDate || null,
+  contractEndDate: item?.contractEndDate || null,
+  contractDurationMonths: item?.contractDurationMonths ?? null,
+  remark: item?.remark || '',
+  skuCount: item?.skuCount ?? null,
+  winAnnounceDocUrl: item?.winAnnounceDocUrl || ''
+})
 
 const normalizeReminder = (item = {}) => ({
   id: item?.id,
@@ -32,17 +41,36 @@ const normalizeReminder = (item = {}) => ({
   type: item?.type || 'report',
   status: item?.status || 'pending',
   remindTime: item?.remindTime || '',
-  lastReminderComment: item?.lastReminderComment || '' })
+  lastReminderComment: item?.lastReminderComment || ''
+})
 
 const normalizeCompetitorReport = (item = {}) => ({
   company: item?.company || '',
-  skuCount: item?.skuCount || '',
+  skuCount: Number(item?.skuCount || 0),
   category: item?.category || '',
   discount: item?.discount || '',
-  payment: item?.payment || '',
+  paymentTerms: item?.paymentTerms || '',
   winRate: item?.winRate || '',
   projectCount: Number(item?.projectCount || 0),
-  trend: item?.trend || 'flat' })
+  trend: item?.trend || 'flat'
+})
+
+const normalizeCompetitorWin = (item = {}) => ({
+  id: item?.id,
+  competitorId: item?.competitorId ?? null,
+  competitorName: item?.competitorName || '',
+  projectId: item?.projectId ?? null,
+  projectName: item?.projectName || '',
+  skuCount: item?.skuCount ?? 0,
+  category: item?.category || '',
+  discount: item?.discount || '',
+  paymentTerms: item?.paymentTerms || '',
+  wonAt: item?.wonAt || '',
+  amount: item?.amount ?? null,
+  notes: item?.notes || '',
+  recordedByName: item?.recordedByName || '',
+  createdAt: item?.createdAt || ''
+})
 
 const normalizeDetail = (data = {}) => ({
   id: data?.id,
@@ -53,10 +81,18 @@ const normalizeDetail = (data = {}) => ({
   result: data?.result || 'lost',
   amount: data?.amount ?? null,
   status: data?.status || 'pending',
+  registrationType: data?.registrationType || null,
   fetchTime: data?.fetchTime || '',
   ignoredReason: data?.ignoredReason || '',
   ownerName: data?.ownerName || '',
-  reminderTypes: Array.isArray(data?.reminderTypes) ? data.reminderTypes : [] })
+  reminderTypes: Array.isArray(data?.reminderTypes) ? data.reminderTypes : [],
+  contractStartDate: data?.contractStartDate || null,
+  contractEndDate: data?.contractEndDate || null,
+  contractDurationMonths: data?.contractDurationMonths ?? null,
+  remark: data?.remark || '',
+  skuCount: data?.skuCount ?? null,
+  winAnnounceDocUrl: data?.winAnnounceDocUrl || ''
+})
 
 export const bidResultsApi = {
   async getOverview() {
@@ -72,6 +108,14 @@ export const bidResultsApi = {
   async getFetchResults() {
     const response = await httpClient.get('/api/bid-results/fetch-results')
     return { ...response, data: Array.isArray(response?.data) ? response.data.map(normalizeFetchResult) : [] }
+  },
+  async registerAward(payload = {}) {
+    const response = await httpClient.post('/api/bid-results/register', payload)
+    return { ...response, data: normalizeFetchResult(response?.data) }
+  },
+  async updateAward(id, payload = {}) {
+    const response = await httpClient.patch(`/api/bid-results/${id}`, payload)
+    return { ...response, data: normalizeFetchResult(response?.data) }
   },
   async confirm(id) {
     const response = await httpClient.post(`/api/bid-results/fetch-results/${id}/confirm`)
@@ -101,6 +145,15 @@ export const bidResultsApi = {
   async getCompetitorReport() {
     const response = await httpClient.get('/api/bid-results/competitor-report')
     return { ...response, data: Array.isArray(response?.data) ? response.data.map(normalizeCompetitorReport) : [] }
-  } }
+  },
+  async listCompetitorWins() {
+    const response = await httpClient.get('/api/bid-results/competitor-wins')
+    return { ...response, data: Array.isArray(response?.data) ? response.data.map(normalizeCompetitorWin) : [] }
+  },
+  async registerCompetitorWin(payload = {}) {
+    const response = await httpClient.post('/api/bid-results/competitor-wins', payload)
+    return { ...response, data: normalizeCompetitorWin(response?.data) }
+  }
+}
 
 export default bidResultsApi
