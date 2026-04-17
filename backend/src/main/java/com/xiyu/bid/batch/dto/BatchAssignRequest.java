@@ -14,7 +14,11 @@ import java.util.List;
 public class BatchAssignRequest {
     @NotEmpty(message = "任务ID列表不能为空")
     private List<@NotNull(message = "任务ID不能为空") Long> taskIds;
-    @NotNull(message = "分配人ID不能为空")
     private Long assigneeId;
+    private String assigneeDeptCode;
+    private String assigneeDeptName;
+    private String assigneeRoleCode;
+    private String assigneeRoleName;
+    private Boolean allowCrossDeptCollaboration;
     private String remark;
 }

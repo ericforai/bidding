@@ -5,6 +5,7 @@ import com.xiyu.bid.dto.AdminUserDTO;
 import com.xiyu.bid.dto.AdminUserStatusUpdateRequest;
 import com.xiyu.bid.dto.AdminUserUpdateRequest;
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.dto.UserOrganizationUpdateRequest;
 import com.xiyu.bid.service.AdminUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -74,6 +75,20 @@ public class AdminUserController {
         return ResponseEntity.ok(ApiResponse.success(
                 "User status updated successfully",
                 adminUserService.updateStatus(id, request, authentication.getName())
+        ));
+    }
+
+    @PutMapping("/{id}/organization")
+    @PreAuthorize(ADMIN_ONLY)
+    public ResponseEntity<ApiResponse<AdminUserDTO>> updateOrganization(
+            @PathVariable Long id,
+            @Valid @RequestBody UserOrganizationUpdateRequest request,
+            Authentication authentication
+    ) {
+        log.info("PUT /api/admin/users/{}/organization - updating organization", id);
+        return ResponseEntity.ok(ApiResponse.success(
+                "User organization updated successfully",
+                adminUserService.updateOrganization(id, request, authentication.getName())
         ));
     }
 

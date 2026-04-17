@@ -18,9 +18,12 @@ public class ProjectTaskViewDTO {
     private String name;
     private String description;
     private Long assigneeId;
+    private String assigneeDeptCode;
+    private String assigneeRoleCode;
     private String owner;
     private String assignee;
     private String department;
+    private String roleName;
     private String status;
     private String priority;
     private String dueDate;

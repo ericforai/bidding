@@ -69,4 +69,25 @@ class AdminSettingsControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.deptDataScope[0].deptCode").value("SALES"));
     }
+
+    @Test
+    void saveDepartmentTree_ShouldReturnNormalizedPayload() throws Exception {
+        DataScopeConfigResponse response = DataScopeConfigResponse.builder()
+                .deptTree(List.of(DataScopeConfigResponse.DepartmentTreeItem.builder()
+                        .deptCode("SALES")
+                        .deptName("销售部")
+                        .sortOrder(1)
+                        .build()))
+                .build();
+        when(dataScopeConfigService.saveDepartments(any())).thenReturn(response);
+
+        mockMvc.perform(put("/api/admin/settings/departments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"deptTree":[{"deptCode":"SALES","deptName":"销售部","sortOrder":1}]}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.deptTree[0].deptCode").value("SALES"));
+    }
 }

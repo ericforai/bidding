@@ -26,6 +26,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
      */
     List<Task> findByAssigneeId(Long assigneeId);
 
+    List<Task> findByAssigneeIdIn(Collection<Long> assigneeIds);
+
     /**
      * 根据状态查找任务
      */

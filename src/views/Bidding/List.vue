@@ -657,18 +657,12 @@
         </el-form-item>
         <el-form-item label="指派给" required>
           <el-select v-model="assignForm.assignee" placeholder="选择销售人员" style="width: 100%">
-            <el-option-group label="华东区">
-              <el-option label="小王" value="U001" />
-              <el-option label="李经理" value="U002" />
-            </el-option-group>
-            <el-option-group label="华南区">
-              <el-option label="张销售" value="U003" />
-              <el-option label="陈专员" value="U004" />
-            </el-option-group>
-            <el-option-group label="华北区">
-              <el-option label="刘主管" value="U005" />
-              <el-option label="赵经理" value="U006" />
-            </el-option-group>
+            <el-option
+              v-for="sales in salesStaff"
+              :key="sales.id"
+              :label="`${sales.name}｜${sales.roleName}｜${sales.deptName}`"
+              :value="sales.id"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="优先级">
@@ -1306,6 +1300,7 @@ import { useRouter } from 'vue-router'
 import { useBiddingStore } from '@/stores/bidding'
 import { useUserStore } from '@/stores/user'
 import { tendersApi, batchApi } from '@/api'
+import { tasksApi } from '@/api/modules/dashboard'
 import { crawlerApi } from '@/api/modules/tenders'
 import {
   normalizeTenderForCreate,
@@ -1411,14 +1406,12 @@ const distributeForm = ref({
 })
 
 // 销售人员数据
-const salesStaff = ref([
-  { id: 'U001', name: '小王', role: '销售经理', region: '华东', workload: 3, avatar: '' },
-  { id: 'U002', name: '李经理', role: '资深销售', region: '华东', workload: 2, avatar: '' },
-  { id: 'U003', name: '张销售', role: '销售专员', region: '华南', workload: 4, avatar: '' },
-  { id: 'U004', name: '陈专员', role: '销售专员', region: '华南', workload: 2, avatar: '' },
-  { id: 'U005', name: '刘主管', role: '销售主管', region: '华北', workload: 3, avatar: '' },
-  { id: 'U006', name: '赵经理', role: '区域经理', region: '华北', workload: 2, avatar: '' }
-])
+const salesStaff = ref([])
+
+const assigneeLookup = computed(() => salesStaff.value.reduce((acc, user) => {
+  acc[String(user.id)] = user
+  return acc
+}, {}))
 
 // 分配预览
 const distributionPreview = computed(() => {
@@ -1433,9 +1426,9 @@ const distributionPreview = computed(() => {
     switch (distributeForm.value.rule) {
       case 'region':
         // 按区域分组预览
-        const regionMap = { '华东': ['U001', 'U002'], '华南': ['U003', 'U004'], '华北': ['U005', 'U006'] }
+        const regionMap = buildAssigneeBuckets()
         Object.entries(regionMap).forEach(([region, salesIds]) => {
-          const regionTenders = selected.filter(t => t.region === region)
+          const regionTenders = selected.filter(t => t.region === region || region === 'default')
           if (regionTenders.length > 0) {
             salesIds.forEach(salesId => {
               const sales = salesStaff.value.find(s => s.id === salesId)
@@ -1450,39 +1443,10 @@ const distributionPreview = computed(() => {
         })
         break
       case 'product':
-        // 按产品线预览
-        preview.push({
-          salesId: 'U001',
-          salesName: '小王',
-          count: Math.ceil(selected.length / 3),
-          tenders: selected.slice(0, Math.ceil(selected.length / 3))
-        })
-        preview.push({
-          salesId: 'U003',
-          salesName: '张销售',
-          count: Math.ceil(selected.length / 3),
-          tenders: selected.slice(Math.ceil(selected.length / 3), Math.ceil(selected.length * 2 / 3))
-        })
-        preview.push({
-          salesId: 'U005',
-          salesName: '刘主管',
-          count: selected.length - Math.ceil(selected.length * 2 / 3),
-          tenders: selected.slice(Math.ceil(selected.length * 2 / 3))
-        })
+        buildRoundRobinPreview(preview, selected, salesStaff.value)
         break
       case 'ai':
-        preview.push({
-          salesId: 'U002',
-          salesName: '李经理',
-          count: selected.filter(t => t.aiScore >= 90).length,
-          tenders: selected.filter(t => t.aiScore >= 90)
-        })
-        preview.push({
-          salesId: 'U001',
-          salesName: '小王',
-          count: selected.filter(t => t.aiScore < 90).length,
-          tenders: selected.filter(t => t.aiScore < 90)
-        })
+        buildRoundRobinPreview(preview, [...selected].sort((left, right) => Number(right.aiScore || 0) - Number(left.aiScore || 0)), salesStaff.value)
         break
       case 'average':
         const perSales = Math.ceil(selected.length / salesStaff.value.length)
@@ -1521,6 +1485,35 @@ const toggleSalesAssign = (salesId) => {
   } else {
     distributeForm.value.assignees.push(salesId)
   }
+}
+
+const buildAssigneeBuckets = () => {
+  const buckets = salesStaff.value.reduce((acc, user) => {
+    const key = user.region || 'default'
+    if (!acc[key]) acc[key] = []
+    acc[key].push(user.id)
+    return acc
+  }, {})
+  if (Object.keys(buckets).length === 0) {
+    buckets.default = []
+  }
+  return buckets
+}
+
+const buildRoundRobinPreview = (preview, tenders, assignees) => {
+  if (!Array.isArray(assignees) || assignees.length === 0) return
+  const bucket = assignees.map((sales) => ({
+    salesId: sales.id,
+    salesName: sales.name,
+    count: 0,
+    tenders: []
+  }))
+  tenders.forEach((tender, index) => {
+    const target = bucket[index % bucket.length]
+    target.count += 1
+    target.tenders.push(tender)
+  })
+  preview.push(...bucket)
 }
 
 // 指派对话框
@@ -1826,37 +1819,48 @@ const manualFormRules = {
   deadline: [{ required: true, message: '请选择截止日期', trigger: 'change' }]
 }
 
-// 销售人员映射
-const salesMap = {
-  U001: '小王',
-  U002: '李经理',
-  U003: '张销售',
-  U004: '陈专员',
-  U005: '刘主管',
-  U006: '赵经理'
+const resolveAssigneePayload = (assigneeId, remark = '') => {
+  const assignee = assigneeLookup.value[String(assigneeId)]
+  return {
+    assigneeId,
+    assigneeDeptCode: assignee?.deptCode || '',
+    assigneeDeptName: assignee?.deptName || '未配置部门',
+    assigneeRoleCode: assignee?.roleCode || '',
+    assigneeRoleName: assignee?.roleName || '',
+    remark
+  }
 }
 
-// 区域销售映射
-const regionSalesMap = {
-  '北京': ['U005', 'U006'],
-  '上海': ['U001', 'U002'],
-  '广州': ['U003', 'U004'],
-  '深圳': ['U003', 'U004'],
-  '成都': ['U001', 'U002']
-}
-
-// 行业销售映射
-const industrySalesMap = {
-  '政府': ['U005', 'U006'],
-  '能源': ['U003', 'U004'],
-  '交通': ['U001', 'U002'],
-  '数据中心': ['U001', 'U002']
+const loadAssignmentCandidates = async () => {
+  try {
+    const result = await tasksApi.getAssignmentCandidates()
+    salesStaff.value = Array.isArray(result?.data)
+      ? result.data.map((item) => ({
+        id: item.userId,
+        name: item.name || '未命名成员',
+        role: item.roleName || item.roleCode || '未配置角色',
+        roleCode: item.roleCode || '',
+        roleName: item.roleName || item.roleCode || '',
+        deptCode: item.deptCode || '',
+        deptName: item.deptName || '未配置部门',
+        region: item.deptName || '默认分组',
+        workload: 0,
+        avatar: ''
+      }))
+      : []
+  } catch (error) {
+    console.error('加载任务分配候选人失败:', error)
+    salesStaff.value = []
+  }
 }
 
 onMounted(async () => {
   checkMobile()
   window.addEventListener('resize', handleResize)
-  await biddingStore.getTenders()
+  await Promise.allSettled([
+    biddingStore.getTenders(),
+    loadAssignmentCandidates()
+  ])
   loadSavedConfig()
 })
 
@@ -2157,27 +2161,28 @@ const handleDistribute = async () => {
     const distribution = []
 
     if (distributeForm.value.type === 'auto') {
+      if (salesStaff.value.length === 0) {
+        ElMessage.warning('当前范围内没有可分配成员，请先维护组织关系')
+        return
+      }
       // 智能分发
       selectedTenders.value.forEach(tender => {
         let assignees = []
 
         switch (distributeForm.value.rule) {
           case 'region':
-            assignees = regionSalesMap[tender.region] || ['U001']
+            assignees = buildAssigneeBuckets()[tender.region] || salesStaff.value.map((user) => user.id)
             break
           case 'product':
-            assignees = industrySalesMap[tender.industry] || ['U001']
+            assignees = salesStaff.value.map((user) => user.id)
             break
           case 'ai':
-            // 高评分优先给资深销售
-            if (tender.aiScore >= 90) {
-              assignees = ['U002', 'U005', 'U006']
-            } else {
-              assignees = ['U001', 'U003', 'U004']
-            }
+            assignees = [...salesStaff.value]
+              .sort((left, right) => String(left.roleName || '').localeCompare(String(right.roleName || '')))
+              .map((user) => user.id)
             break
           case 'average':
-            assignees = ['U001', 'U002', 'U003', 'U004', 'U005', 'U006']
+            assignees = salesStaff.value.map((user) => user.id)
             break
         }
 
@@ -2187,7 +2192,7 @@ const handleDistribute = async () => {
           tenderId: tender.id,
           tenderTitle: tender.title,
           assignee,
-          assigneeName: salesMap[assignee],
+          assigneeName: assigneeLookup.value[String(assignee)]?.name || '未命名成员',
           type: 'auto'
         })
       })
@@ -2201,7 +2206,7 @@ const handleDistribute = async () => {
           tenderId: tender.id,
           tenderTitle: tender.title,
           assignee,
-          assigneeName: salesMap[assignee],
+          assigneeName: assigneeLookup.value[String(assignee)]?.name || '未命名成员',
           type: 'manual'
         })
       })
@@ -2217,7 +2222,7 @@ const handleDistribute = async () => {
 
     await Promise.all(
       Object.entries(assigneeGroups).map(([assigneeId, taskIds]) =>
-        batchApi.assignTasks(taskIds, assigneeId)
+        batchApi.assignTasks(taskIds, resolveAssigneePayload(Number(assigneeId), distributeForm.value.remark))
       )
     )
 
@@ -2234,7 +2239,7 @@ const handleDistribute = async () => {
       assignee: item.assigneeName,
       type: item.type,
       time: now,
-      operator: '当前用户'
+      operator: userStore.userName
     }))
     distributeRecords.value = [...newRecords, ...distributeRecords.value]
 
@@ -2401,14 +2406,18 @@ const handleAssign = async () => {
   assignLoading.value = true
 
   try {
-    const result = await batchApi.assignTasks([assignForm.value.tenderId], assignForm.value.assignee)
+    const result = await batchApi.assignTasks(
+      [assignForm.value.tenderId],
+      resolveAssigneePayload(assignForm.value.assignee, assignForm.value.remark)
+    )
     const summary = normalizeBatchResult(result)
 
     if (summary.ok) {
+      const targetAssignee = assigneeLookup.value[String(assignForm.value.assignee)]
       // 添加到分发记录
       distributeRecords.value = [{
         tenderTitle: assignForm.value.tenderTitle,
-        assignee: salesMap[assignForm.value.assignee],
+        assignee: targetAssignee?.name || '未命名成员',
         type: 'manual',
         time: new Date().toLocaleString('zh-CN', {
           year: 'numeric',
@@ -2417,10 +2426,10 @@ const handleAssign = async () => {
           hour: '2-digit',
           minute: '2-digit'
         }),
-        operator: '当前用户'
+        operator: userStore.userName
       }, ...distributeRecords.value]
 
-      ElMessage.success(`已将"${assignForm.value.tenderTitle}"指派给${salesMap[assignForm.value.assignee]}`)
+      ElMessage.success(`已将"${assignForm.value.tenderTitle}"指派给${targetAssignee?.name || '未命名成员'}`)
       showAssignDialog.value = false
       await biddingStore.getTenders()
     } else {

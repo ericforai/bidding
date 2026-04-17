@@ -412,30 +412,47 @@
               </h3>
             </div>
             <div class="team-tasks-list">
-              <div
-                v-for="member in teamMembers"
-                :key="member.id"
-                class="member-task-item"
-              >
-                <div class="member-avatar">{{ member.name.charAt(0) }}</div>
-                <div class="member-info">
-                  <span class="member-name">{{ member.name }}</span>
-                  <div class="member-tasks">
-                    <el-tag
-                      v-for="task in member.tasks.slice(0, 2)"
-                      :key="task.id"
-                      size="small"
-                      :type="task.priority === 'high' ? 'danger' : 'info'"
-                    >
-                      {{ task.title }}
-                    </el-tag>
-                    <span v-if="member.tasks.length > 2" class="more-tasks">+{{ member.tasks.length - 2 }}</span>
+              <template v-if="teamMembers.length > 0">
+                <div
+                  v-for="member in teamMembers"
+                  :key="member.id"
+                  class="member-task-item"
+                >
+                  <div class="member-avatar">{{ member.name.charAt(0) }}</div>
+                  <div class="member-info">
+                    <span class="member-name">{{ member.name }}</span>
+                    <div class="member-meta-line">
+                      <span>{{ member.roleName }}</span>
+                      <span>{{ member.department }}</span>
+                    </div>
+                    <div class="member-tasks">
+                      <el-tag
+                        v-for="task in member.tasks.slice(0, 2)"
+                        :key="task.id"
+                        size="small"
+                        :type="task.priority === 'high' ? 'danger' : (task.priority === 'urgent' ? 'warning' : 'info')"
+                      >
+                        {{ task.title }}
+                      </el-tag>
+                      <span v-if="member.tasks.length > 2" class="more-tasks">+{{ member.tasks.length - 2 }}</span>
+                    </div>
+                  </div>
+                  <div class="member-workload">
+                    <span class="workload-label">工作量</span>
+                    <span class="workload-value" :class="'workload-' + member.workloadLevel">{{ member.workload }}</span>
+                    <span class="workload-detail">待办{{ member.todoCount }} / 逾期{{ member.overdueCount }}</span>
                   </div>
                 </div>
-                <div class="member-workload">
-                  <span class="workload-label">工作量</span>
-                  <span class="workload-value" :class="'workload-' + member.workloadLevel">{{ member.workload }}</span>
-                </div>
+              </template>
+              <div v-else class="team-tasks-empty">
+                <el-empty :image-size="88">
+                  <template #description>
+                    <div class="team-empty-copy">
+                      <div class="team-empty-title">{{ teamWorkloadMeta.emptyReason || '暂无任务数据' }}</div>
+                      <div class="team-empty-hint" v-if="!teamWorkloadMeta.orgConfigured">请先维护部门、角色和用户归属。</div>
+                    </div>
+                  </template>
+                </el-empty>
               </div>
             </div>
           </div>
@@ -1178,6 +1195,10 @@ const followUpCustomers = computed(() => extractCustomersFromProjects(rawProject
 
 // ========== 投标经理数据 (张经理) ==========
 const teamMembers = ref([])
+const teamWorkloadMeta = ref({
+  orgConfigured: true,
+  emptyReason: ''
+})
 
 // ========== 技术员工数据 (李工) ==========
 
@@ -1209,11 +1230,50 @@ async function loadPendingApprovals() {
       ...item,
       title: item.title || `${item.projectName} - ${item.typeName}`,
       type: item.approvalType || 'project_review',
-      department: item.applicantDept || '投标管理部',
+      department: item.applicantDept || item.departmentName || '未配置部门',
       time: item.time || item.submitTime || '' })) : []
   } catch (error) {
     console.error('加载待审批事项失败:', error)
     pendingApprovals.value = []
+  }
+}
+
+function normalizeTeamMember(member = {}) {
+  const score = Number(member.workloadScore || 0)
+  return {
+    id: member.userId,
+    name: member.name || '未命名成员',
+    roleName: member.roleName || member.roleCode || '未配置角色',
+    department: member.deptName || '未配置部门',
+    todoCount: Number(member.todoCount || 0),
+    overdueCount: Number(member.overdueCount || 0),
+    workload: `${score}分`,
+    workloadLevel: member.workloadLevel || 'low',
+    tasks: Array.isArray(member.tasks) ? member.tasks.map((task) => ({
+      id: task.id,
+      title: task.title,
+      priority: String(task.priority || 'MEDIUM').toLowerCase()
+    })) : []
+  }
+}
+
+async function loadTeamWorkload() {
+  try {
+    const result = await tasksApi.getTeamWorkload()
+    teamWorkloadMeta.value = {
+      orgConfigured: Boolean(result?.data?.orgConfigured),
+      emptyReason: result?.data?.emptyReason || ''
+    }
+    teamMembers.value = Array.isArray(result?.data?.members)
+      ? result.data.members.map(normalizeTeamMember)
+      : []
+  } catch (error) {
+    console.error('加载团队任务分配失败:', error)
+    teamMembers.value = []
+    teamWorkloadMeta.value = {
+      orgConfigured: true,
+      emptyReason: '团队任务分配加载失败'
+    }
   }
 }
 
@@ -1605,6 +1665,7 @@ onMounted(async () => {
     loadMyProcesses(),
     loadSupportRequestProjects(),
     loadPriorityTodos(),
+    loadTeamWorkload(),
     loadWorkbenchSummary(),
     loadProjects(),
     loadSystemAlerts()
@@ -2674,6 +2735,14 @@ export default {
   flex-wrap: wrap;
 }
 
+.member-meta-line {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: #6B7280;
+  margin-top: 2px;
+}
+
 .member-tasks .el-tag {
   font-size: 10px;
   padding: 1px 6px;
@@ -2687,6 +2756,9 @@ export default {
 
 .member-workload {
   text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .workload-label {
@@ -2704,6 +2776,32 @@ export default {
 .workload-value.workload-high { color: #EF4444; }
 .workload-value.workload-medium { color: #F59E0B; }
 .workload-value.workload-low { color: #10B981; }
+
+.workload-detail {
+  font-size: 11px;
+  color: #94A3B8;
+}
+
+.team-tasks-empty {
+  padding: 8px 0;
+}
+
+.team-empty-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.team-empty-title {
+  font-size: 14px;
+  color: #334155;
+}
+
+.team-empty-hint {
+  font-size: 12px;
+  color: #94A3B8;
+}
 
 /* ==================== 我的任务 (技术员工) ==================== */
 .my-tasks-list {
