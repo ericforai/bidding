@@ -6,7 +6,10 @@ package com.xiyu.bid.task.controller;
 
 import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.task.dto.TaskAssignmentCandidateDTO;
+import com.xiyu.bid.task.dto.TaskAssignmentRequest;
 import com.xiyu.bid.task.dto.TaskDTO;
+import com.xiyu.bid.task.dto.TeamTaskWorkloadDTO;
 import com.xiyu.bid.task.service.TaskService;
 import com.xiyu.bid.util.InputSanitizer;
 import jakarta.validation.Valid;
@@ -15,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -81,9 +86,10 @@ public class TaskController {
     @GetMapping("/my")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "READ", entityType = "Task", description = "获取我的任务")
-    public ResponseEntity<ApiResponse<List<TaskDTO>>> getMyTasks(@RequestParam(required = false) Long assigneeId) {
-        if (assigneeId == null) return ResponseEntity.ok(ApiResponse.success("Tasks retrieved successfully", List.of()));
-        List<TaskDTO> tasks = taskService.getTasksByAssigneeId(assigneeId);
+    public ResponseEntity<ApiResponse<List<TaskDTO>>> getMyTasks(
+            @RequestParam(required = false) Long assigneeId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        List<TaskDTO> tasks = taskService.getAccessibleTasksByAssigneeId(assigneeId, userDetails.getUsername());
         return ResponseEntity.ok(ApiResponse.success("Tasks retrieved successfully", tasks));
     }
 
@@ -98,9 +104,32 @@ public class TaskController {
     @PatchMapping("/{id}/assign")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "UPDATE", entityType = "Task", description = "分配任务")
-    public ResponseEntity<ApiResponse<TaskDTO>> assignTask(@PathVariable Long id, @RequestBody Long assigneeId) {
-        TaskDTO updatedTask = taskService.assignTask(id, assigneeId);
+    public ResponseEntity<ApiResponse<TaskDTO>> assignTask(
+            @PathVariable Long id,
+            @Valid @RequestBody TaskAssignmentRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        TaskDTO updatedTask = taskService.assignTask(id, request, userDetails.getUsername());
         return ResponseEntity.ok(ApiResponse.success("Task assigned successfully", updatedTask));
+    }
+
+    @GetMapping("/assignment-candidates")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "READ", entityType = "Task", description = "获取任务分配候选人")
+    public ResponseEntity<ApiResponse<List<TaskAssignmentCandidateDTO>>> getAssignmentCandidates(
+            @RequestParam(required = false) String deptCode,
+            @RequestParam(required = false) String roleCode,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        List<TaskAssignmentCandidateDTO> candidates = taskService.getAssignmentCandidates(deptCode, roleCode, userDetails.getUsername());
+        return ResponseEntity.ok(ApiResponse.success("Task assignment candidates retrieved successfully", candidates));
+    }
+
+    @GetMapping("/team-workload")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "READ", entityType = "Task", description = "获取团队任务负载")
+    public ResponseEntity<ApiResponse<TeamTaskWorkloadDTO>> getTeamTaskWorkload(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        TeamTaskWorkloadDTO workload = taskService.getTeamTaskWorkload(userDetails.getUsername());
+        return ResponseEntity.ok(ApiResponse.success("Team task workload retrieved successfully", workload));
     }
 
     @GetMapping("/upcoming")

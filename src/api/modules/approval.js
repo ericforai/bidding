@@ -53,7 +53,7 @@ function normalizeApproval(item = {}) {
     statusDescription: item.statusDescription || statusLabel(item.status),
     requesterName: item.requesterName || item.applicantName || '未知申请人',
     applicantName: item.requesterName || item.applicantName || '未知申请人',
-    applicantDept: item.applicantDept || '投标管理部',
+    applicantDept: item.applicantDept || item.departmentName || '未配置部门',
     currentApproverName: item.currentApproverName || '待分配',
     priority: Number(item.priority || 0),
     description: item.description || '暂无说明',

@@ -14,8 +14,20 @@ export const batchApi = {
     return httpClient.post('/api/batch/tenders/claim', { itemIds, userId, itemType })
   },
 
-  async assignTasks(taskIds, assigneeId, remark = '') {
-    return httpClient.post('/api/batch/tasks/assign', { taskIds, assigneeId, remark })
+  async assignTasks(taskIds, assignment = {}, remark = '') {
+    const payload = typeof assignment === 'object' && assignment !== null
+      ? {
+          ...assignment,
+          taskIds,
+          remark: assignment.remark ?? remark
+        }
+      : {
+          taskIds,
+          assigneeId: assignment,
+          remark
+        }
+
+    return httpClient.post('/api/batch/tasks/assign', payload)
   }
 }
 

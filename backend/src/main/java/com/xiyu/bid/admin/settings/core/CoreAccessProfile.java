@@ -1,0 +1,9 @@
+package com.xiyu.bid.admin.settings.core;
+
+import java.util.List;
+
+public record CoreAccessProfile(String dataScope, List<Long> explicitProjectIds, List<String> allowedDepartmentCodes) {
+    public static CoreAccessProfile empty() {
+        return new CoreAccessProfile("self", List.of(), List.of());
+    }
+}

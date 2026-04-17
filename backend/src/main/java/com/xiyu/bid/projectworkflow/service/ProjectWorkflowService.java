@@ -77,11 +77,16 @@ public class ProjectWorkflowService {
 
     public ProjectTaskViewDTO createProjectTask(Long projectId, ProjectTaskCreateRequest request) {
         requireProject(projectId);
+        User assigneeUser = resolveAssignee(request.getAssigneeId());
         Task task = Task.builder()
                 .projectId(projectId)
                 .title(request.getTitle().trim())
                 .description(trimToNull(request.getDescription()))
                 .assigneeId(request.getAssigneeId())
+                .assigneeDeptCode(assigneeUser != null ? assigneeUser.getDepartmentCode() : trimToNull(request.getAssigneeDeptCode()))
+                .assigneeDeptName(assigneeUser != null ? assigneeUser.getDepartmentName() : defaultString(trimToNull(request.getAssigneeDeptName()), "未配置部门"))
+                .assigneeRoleCode(assigneeUser != null ? assigneeUser.getRoleCode() : trimToNull(request.getAssigneeRoleCode()))
+                .assigneeRoleName(assigneeUser != null ? assigneeUser.getRoleName() : trimToNull(request.getAssigneeRoleName()))
                 .priority(request.getPriority())
                 .status(Task.Status.TODO)
                 .dueDate(request.getDueDate())
@@ -260,15 +265,25 @@ public class ProjectWorkflowService {
                 .name(task.getTitle())
                 .description(task.getDescription())
                 .assigneeId(task.getAssigneeId())
+                .assigneeDeptCode(task.getAssigneeDeptCode())
+                .assigneeRoleCode(task.getAssigneeRoleCode())
                 .owner(assigneeName)
                 .assignee(assigneeName)
-                .department("投标管理部")
+                .department(defaultString(task.getAssigneeDeptName(), "未配置部门"))
+                .roleName(defaultString(task.getAssigneeRoleName(), "未配置角色"))
                 .status(mapStatus(task.getStatus()))
                 .priority(mapPriority(task.getPriority()))
                 .dueDate(task.getDueDate() != null ? task.getDueDate().format(DISPLAY_DATE) : "")
                 .createdAt(task.getCreatedAt())
                 .updatedAt(task.getUpdatedAt())
                 .build();
+    }
+
+    private User resolveAssignee(Long assigneeId) {
+        if (assigneeId == null) {
+            return null;
+        }
+        return userRepository.findById(assigneeId).orElse(null);
     }
 
     private ProjectDocumentDTO toDocumentDTO(ProjectDocument document) {

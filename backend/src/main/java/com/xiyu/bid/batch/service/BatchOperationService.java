@@ -18,8 +18,11 @@ import com.xiyu.bid.fees.entity.Fee;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TaskRepository;
 import com.xiyu.bid.repository.TenderRepository;
+import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.audit.service.AuditLogService;
 import com.xiyu.bid.audit.service.IAuditLogService;
+import com.xiyu.bid.service.ProjectAccessScopeService;
+import com.xiyu.bid.task.dto.TaskAssignmentRequest;
 import com.xiyu.bid.util.InputSanitizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,8 +52,10 @@ public class BatchOperationService {
     private final TenderRepository tenderRepository;
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
     private final IAuditLogService auditLogService;
     private final com.xiyu.bid.fees.repository.FeeRepository feeRepository;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     private static final int MAX_BATCH_SIZE = 100;
 
@@ -165,11 +170,57 @@ public class BatchOperationService {
         isolation = Isolation.READ_COMMITTED
     )
     @PreAuthorize("hasAuthority('ASSIGN_TASK')")
-    public BatchOperationResponse batchAssignTasks(BatchAssignRequest request) {
+    public BatchOperationResponse batchAssignTasks(BatchAssignRequest request, User currentUser) {
         if (request == null) {
             throw new IllegalArgumentException("Batch assign request cannot be null");
         }
-        return batchAssignTasks(request.getTaskIds(), request.getAssigneeId());
+        validateBatchInput(request.getTaskIds(), "Task IDs");
+
+        TaskAssignmentRequest assignmentRequest = TaskAssignmentRequest.builder()
+                .assigneeId(request.getAssigneeId())
+                .assigneeDeptCode(request.getAssigneeDeptCode())
+                .assigneeDeptName(request.getAssigneeDeptName())
+                .assigneeRoleCode(request.getAssigneeRoleCode())
+                .assigneeRoleName(request.getAssigneeRoleName())
+                .allowCrossDeptCollaboration(Boolean.TRUE.equals(request.getAllowCrossDeptCollaboration()))
+                .remark(request.getRemark())
+                .build();
+
+        AssignmentSnapshot assignment = resolveAssignmentSnapshot(assignmentRequest, currentUser);
+        BatchOperationResponse response = BatchOperationResponse.builder()
+                .operationType("ASSIGN")
+                .operationTime(LocalDateTime.now())
+                .build();
+        response.setTotalCount(request.getTaskIds().size());
+
+        List<Task> tasksToUpdate = new ArrayList<>();
+        for (Long taskId : request.getTaskIds()) {
+            try {
+                Optional<Task> taskOpt = taskRepository.findById(taskId);
+                if (taskOpt.isEmpty()) {
+                    response.addError(taskId, "Task not found with ID: " + taskId, "NOT_FOUND");
+                    continue;
+                }
+                Task task = taskOpt.get();
+                task.setAssigneeId(assignment.assigneeId());
+                task.setAssigneeDeptCode(assignment.assigneeDeptCode());
+                task.setAssigneeDeptName(assignment.assigneeDeptName());
+                task.setAssigneeRoleCode(assignment.assigneeRoleCode());
+                task.setAssigneeRoleName(assignment.assigneeRoleName());
+                tasksToUpdate.add(task);
+                response.addSuccess(taskId);
+            } catch (RuntimeException e) {
+                response.addError(taskId, "Failed to assign task: " + e.getMessage(), "ASSIGN_ERROR");
+            }
+        }
+
+        if (!tasksToUpdate.isEmpty()) {
+            taskRepository.saveAll(tasksToUpdate);
+        }
+
+        recordBatchOperationLog(response, "TASK", "ASSIGN", currentUser == null ? assignment.assigneeId() : currentUser.getId());
+        response.setSuccess(response.getFailureCount() == 0);
+        return response;
     }
 
     /**
@@ -516,6 +567,83 @@ public class BatchOperationService {
     private boolean isOwnedBy(Tender tender, Long userId) {
         // This is a simplified check - in a real system you'd have an owner field
         return true;
+    }
+
+    private AssignmentSnapshot resolveAssignmentSnapshot(TaskAssignmentRequest request, User currentUser) {
+        if (request == null || !request.hasAssignmentTarget()) {
+            throw new IllegalArgumentException("Assignment target cannot be empty");
+        }
+
+        if (request.getAssigneeId() != null) {
+            User assignee = userRepository.findById(request.getAssigneeId())
+                    .orElseThrow(() -> new IllegalArgumentException("Assignee not found"));
+            if (!Boolean.TRUE.equals(assignee.getEnabled())) {
+                throw new IllegalArgumentException("目标责任人已停用，无法分配");
+            }
+            assertDeptAccess(currentUser, assignee.getDepartmentCode(), Boolean.TRUE.equals(request.getAllowCrossDeptCollaboration()));
+            return AssignmentSnapshot.fromUser(assignee);
+        }
+
+        assertDeptAccess(currentUser, request.getAssigneeDeptCode(), Boolean.TRUE.equals(request.getAllowCrossDeptCollaboration()));
+        return new AssignmentSnapshot(
+                null,
+                normalizeText(request.getAssigneeDeptCode()),
+                normalizeText(request.getAssigneeDeptName(), "未配置部门"),
+                normalizeText(request.getAssigneeRoleCode()),
+                normalizeText(request.getAssigneeRoleName())
+        );
+    }
+
+    private void assertDeptAccess(User currentUser, String targetDeptCode, boolean allowCrossDeptCollaboration) {
+        if (currentUser == null || isAdmin(currentUser)) {
+            return;
+        }
+        List<String> allowedDeptCodes = new ArrayList<>(projectAccessScopeService.getAllowedDepartmentCodes(currentUser));
+        if (currentUser.getDepartmentCode() != null && !currentUser.getDepartmentCode().isBlank()) {
+            allowedDeptCodes.add(currentUser.getDepartmentCode().trim());
+        }
+        String normalizedTargetDept = normalizeText(targetDeptCode);
+        if (normalizedTargetDept == null || allowedDeptCodes.isEmpty()) {
+            return;
+        }
+        if (!allowedDeptCodes.contains(normalizedTargetDept)) {
+            throw new IllegalArgumentException(allowCrossDeptCollaboration
+                    ? "跨部门协作不在当前数据权限范围内"
+                    : "当前用户无权向该部门分配任务");
+        }
+    }
+
+    private boolean isAdmin(User user) {
+        return user != null && "admin".equalsIgnoreCase(user.getRoleCode());
+    }
+
+    private String normalizeText(String value) {
+        return normalizeText(value, null);
+    }
+
+    private String normalizeText(String value, String fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        return value.trim();
+    }
+
+    private record AssignmentSnapshot(
+            Long assigneeId,
+            String assigneeDeptCode,
+            String assigneeDeptName,
+            String assigneeRoleCode,
+            String assigneeRoleName
+    ) {
+        private static AssignmentSnapshot fromUser(User user) {
+            return new AssignmentSnapshot(
+                    user.getId(),
+                    user.getDepartmentCode(),
+                    user.getDepartmentName(),
+                    user.getRoleCode(),
+                    user.getRoleName()
+            );
+        }
     }
 
     private void validateBatchInput(List<?> ids, String fieldName) {

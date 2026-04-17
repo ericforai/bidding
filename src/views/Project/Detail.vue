@@ -2124,7 +2124,7 @@ const handleAddTask = () => {
     name: `新增任务 ${nextIndex}`,
     owner: userStore.userName,
     assignee: userStore.userName,
-    department: '投标管理部',
+    department: userStore.currentUser?.dept || '未配置部门',
     dueDate: dueDate.toISOString().split('T')[0],
     priority: 'medium',
     status: 'todo',
@@ -2150,6 +2150,10 @@ const handleAddTask = () => {
     description: '',
     assigneeId: userStore.currentUser?.id || null,
     assigneeName: userStore.userName,
+    assigneeDeptCode: userStore.currentUser?.deptCode || '',
+    assigneeDeptName: userStore.currentUser?.dept || '',
+    assigneeRoleCode: userStore.currentUser?.roleCode || '',
+    assigneeRoleName: userStore.currentUser?.roleName || '',
     priority: 'MEDIUM',
     dueDate: dueDate.toISOString() }).then((result) => {
     if (!result?.success || !result?.data) {
