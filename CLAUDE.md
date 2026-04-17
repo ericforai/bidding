@@ -28,8 +28,23 @@ npm run dev:all
 ```bash
 # 手动方式：后端
 cd /Users/user/xiyu/xiyu-bid-poc/backend
-mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=18080"
+# 推荐：使用 start.sh（已内置默认环境变量）
+./start.sh
+
+# 或直接使用 mvn（需手动传入必需环境变量）
+JWT_SECRET="xiyu-bid-poc-local-dev-secret-key-please-change-in-prod-32bytes-min" \
+DB_PASSWORD="XiyuDB!2026" \
+CORS_ALLOWED_ORIGINS="http://localhost:1314,http://127.0.0.1:1314" \
+mvn spring-boot:run -Dspring-boot.run.profiles=dev \
+  -Dspring-boot.run.arguments="--server.port=18080"
 ```
+
+> 后端必需环境变量（未设置会导致启动失败）：
+> - `JWT_SECRET`：JWT 签名密钥（至少 32 字节），`backend/start.sh` 已提供本地默认值
+> - `DB_PASSWORD`：PostgreSQL 密码，与容器 `xiyu-bid-rehearsal-postgres` 一致（默认 `XiyuDB!2026`）
+> - `CORS_ALLOWED_ORIGINS`：允许的前端源地址，默认包含 `http://localhost:1314` 与 `http://127.0.0.1:1314`
+>
+> 生产部署必须通过真实环境注入这些值，**不得依赖上述默认值**。
 
 ```bash
 # 手动方式：前端（真实 API 模式）
@@ -81,6 +96,17 @@ npm run build
   - 如出现失败，按新增问题处理并说明影响范围
   - 不得再把当前仓库写成“存在已知存量失败”
 
+## 默认登录凭据
+
+| 环境 | 用户名 | 密码 | 角色 | 来源 |
+|------|--------|------|------|------|
+| dev / prod | `admin` | `XiyuAdmin2026!` | ADMIN | V57 迁移 + DefaultAdminInitializer |
+| e2e | `lizong` | `123456` | ADMIN | E2eDemoDataInitializer |
+| e2e | `zhangjingli` | `123456` | MANAGER | E2eDemoDataInitializer |
+| e2e | `xiaowang` | `123456` | STAFF | E2eDemoDataInitializer |
+
+生产环境通过 `ADMIN_PASSWORD` 环境变量覆盖默认密码。任何 profile 启动后数据库至少有一个可登录账户。
+
 ## 端口约定
 
 - 前端开发与演示统一使用 `1314`
@@ -111,10 +137,16 @@ npm run build
 7. **仓库命名仍带 `POC`**
    `package.json`、`pom.xml` 中仍使用 `poc` 命名，这是历史遗留。对外表达、汇报和文档正文不要继续强化 POC 口径。
 
+8. **后端启动必须提供必需环境变量**
+   直接运行 `mvn spring-boot:run` 会因为缺少 `JWT_SECRET`、`DB_PASSWORD` 而启动失败。
+   本地开发推荐使用 `backend/start.sh`（已内置默认值），或参考“推荐命令 / 手动方式：后端”传入完整环境变量。
+   生产部署必须通过真实环境注入，**不得使用 `start.sh` 中的本地默认值**。
+
 ## 路径提示
 
 - 前端业务代码：`src/`
 - 后端业务代码：`backend/src/main/java/com/xiyu/bid/`
+- 后端启动初始化：`backend/src/main/java/com/xiyu/bid/bootstrap/`（独立于 config 包，避免 ArchitectureTest RULE 9）
 - 后端测试：`backend/src/test/java/com/xiyu/bid/`
 - E2E：`e2e/`
 - 治理脚本：`scripts/`
