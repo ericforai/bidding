@@ -22,15 +22,17 @@ const FEE_STATUS_MAP = {
 const TASK_STATUS_TO_API = {
   todo: 'TODO',
   doing: 'IN_PROGRESS',
+  review: 'REVIEW',
   done: 'COMPLETED',
-  review: 'IN_REVIEW'
+  cancelled: 'CANCELLED'
 }
 
 const TASK_STATUS_FROM_API = {
   TODO: 'todo',
   IN_PROGRESS: 'doing',
+  REVIEW: 'review',
   COMPLETED: 'done',
-  IN_REVIEW: 'review'
+  CANCELLED: 'cancelled'
 }
 
 const ACTION_TYPE_LABEL = {

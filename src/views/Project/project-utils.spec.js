@@ -217,7 +217,7 @@ describe('normalizeTaskStatusForApi', () => {
     ['todo', 'TODO'],
     ['doing', 'IN_PROGRESS'],
     ['done', 'COMPLETED'],
-    ['review', 'IN_REVIEW']
+    ['review', 'REVIEW']
   ])('maps frontend status "%s" to backend "%s"', (input, expected) => {
     expect(normalizeTaskStatusForApi(input)).toBe(expected)
   })
@@ -240,7 +240,7 @@ describe('normalizeTaskStatusFromApi', () => {
     ['TODO', 'todo'],
     ['IN_PROGRESS', 'doing'],
     ['COMPLETED', 'done'],
-    ['IN_REVIEW', 'review']
+    ['REVIEW', 'review']
   ])('maps backend status "%s" to frontend "%s"', (input, expected) => {
     expect(normalizeTaskStatusFromApi(input)).toBe(expected)
   })

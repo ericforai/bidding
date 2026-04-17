@@ -5,15 +5,41 @@
 package com.xiyu.bid.projectworkflow.controller;
 
 import com.xiyu.bid.dto.ApiResponse;
-import com.xiyu.bid.projectworkflow.dto.*;
+import com.xiyu.bid.projectworkflow.dto.ProjectDocumentCreateRequest;
+import com.xiyu.bid.projectworkflow.dto.ProjectDocumentDTO;
+import com.xiyu.bid.projectworkflow.dto.ProjectReminderCreateRequest;
+import com.xiyu.bid.projectworkflow.dto.ProjectReminderDTO;
+import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftDTO;
+import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftGenerateRequest;
+import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftParseResponse;
+import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftUpdateRequest;
+import com.xiyu.bid.projectworkflow.dto.ProjectShareLinkCreateRequest;
+import com.xiyu.bid.projectworkflow.dto.ProjectShareLinkDTO;
+import com.xiyu.bid.projectworkflow.dto.ProjectTaskCreateRequest;
+import com.xiyu.bid.projectworkflow.dto.ProjectTaskStatusUpdateRequest;
+import com.xiyu.bid.projectworkflow.dto.ProjectTaskViewDTO;
 import com.xiyu.bid.projectworkflow.service.ProjectWorkflowService;
+import com.xiyu.bid.task.dto.BidSubmissionResponse;
+import com.xiyu.bid.task.dto.DeliverableCoverageDTO;
+import com.xiyu.bid.task.dto.TaskDeliverableCreateRequest;
+import com.xiyu.bid.task.dto.TaskDeliverableDTO;
+import com.xiyu.bid.task.service.BidProcessService;
+import com.xiyu.bid.task.service.TaskDeliverableService;
 import com.xiyu.bid.util.InputSanitizer;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -24,6 +50,8 @@ import java.util.List;
 public class ProjectWorkflowController {
 
     private final ProjectWorkflowService projectWorkflowService;
+    private final TaskDeliverableService taskDeliverableService;
+    private final BidProcessService bidProcessService;
 
     @GetMapping("/tasks")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
@@ -153,6 +181,65 @@ public class ProjectWorkflowController {
     public ResponseEntity<ApiResponse<Void>> clearProjectScoreDrafts(@PathVariable Long projectId) {
         projectWorkflowService.clearNonGeneratedDrafts(projectId);
         return ResponseEntity.ok(ApiResponse.success("Project score drafts cleared successfully", null));
+    }
+
+    // --- Deliverable endpoints ---
+
+    @GetMapping("/tasks/{taskId}/deliverables")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<List<TaskDeliverableDTO>>> getTaskDeliverables(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                taskDeliverableService.getDeliverablesByTaskId(projectId, taskId)));
+    }
+
+    @PostMapping("/tasks/{taskId}/deliverables")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<TaskDeliverableDTO>> createTaskDeliverable(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId,
+            @Valid @RequestBody TaskDeliverableCreateRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("交付物已上传",
+                        taskDeliverableService.createDeliverable(projectId, taskId, request, "system")));
+    }
+
+    @DeleteMapping("/tasks/{taskId}/deliverables/{deliverableId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<Void>> deleteTaskDeliverable(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId,
+            @PathVariable Long deliverableId) {
+        taskDeliverableService.deleteDeliverable(projectId, taskId, deliverableId);
+        return ResponseEntity.ok(ApiResponse.success("交付物已删除", null));
+    }
+
+    @GetMapping("/tasks/{taskId}/deliverables/coverage")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<DeliverableCoverageDTO>> getDeliverableCoverage(
+            @PathVariable Long projectId,
+            @PathVariable Long taskId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                taskDeliverableService.getDeliverableCoverage(taskId, null)));
+    }
+
+    // --- Bid submission endpoints ---
+
+    @PostMapping("/submit-to-bid-document")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<BidSubmissionResponse>> submitToBidDocument(
+            @PathVariable Long projectId) {
+        return ResponseEntity.ok(ApiResponse.success("ok",
+                bidProcessService.submitToBidDocument(projectId)));
+    }
+
+    @GetMapping("/bid-process-status")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<BidProcessService.BidProcessStatusDTO>> getBidProcessStatus(
+            @PathVariable Long projectId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                bidProcessService.getBidProcessStatus(projectId)));
     }
 
     private void sanitizeTaskRequest(ProjectTaskCreateRequest request) {

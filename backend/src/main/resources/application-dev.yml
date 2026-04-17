@@ -12,6 +12,14 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
+app:
+  bootstrap:
+    admin:
+      username: admin
+      password: XiyuAdmin2026!
+      email: admin@xiyu-local
+      full-name: 系统管理员
+
 rate:
   limit:
     login:

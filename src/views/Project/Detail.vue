@@ -2124,7 +2124,7 @@ const handleAddTask = () => {
     name: `新增任务 ${nextIndex}`,
     owner: userStore.userName,
     assignee: userStore.userName,
-    department: '投标管理部',
+    department: userStore.currentUser?.dept || '未配置部门',
     dueDate: dueDate.toISOString().split('T')[0],
     priority: 'medium',
     status: 'todo',
@@ -2150,6 +2150,10 @@ const handleAddTask = () => {
     description: '',
     assigneeId: userStore.currentUser?.id || null,
     assigneeName: userStore.userName,
+    assigneeDeptCode: userStore.currentUser?.deptCode || '',
+    assigneeDeptName: userStore.currentUser?.dept || '',
+    assigneeRoleCode: userStore.currentUser?.roleCode || '',
+    assigneeRoleName: userStore.currentUser?.roleName || '',
     priority: 'MEDIUM',
     dueDate: dueDate.toISOString() }).then((result) => {
     if (!result?.success || !result?.data) {
@@ -2220,18 +2224,12 @@ const handleTaskStatusChange = async (task, newStatus) => {
   }
 }
 
-// 添加交付物
-const handleAddDeliverable = (taskId, deliverable) => {
+// 添加交付物（委托给 projectStore，由 TaskBoard.vue 已调用过 API，此处仅同步 UI 状态）
+const handleAddDeliverable = async (taskId, deliverable) => {
   if (!project.value?.tasks) return
 
   const task = project.value.tasks.find(t => t.id === taskId)
   if (task) {
-    if (!task.deliverables) {
-      task.deliverables = []
-    }
-    task.deliverables.push(deliverable)
-    task.hasDeliverable = true
-
     // 添加动态记录
     activities.value.unshift({
       id: Date.now(),
@@ -2244,24 +2242,17 @@ const handleAddDeliverable = (taskId, deliverable) => {
   }
 }
 
-// 删除交付物
-const handleRemoveDeliverable = (taskId, deliverableId) => {
+// 删除交付物（委托给 projectStore，由 TaskBoard.vue 已调用过 API）
+const handleRemoveDeliverable = async (taskId, deliverableId) => {
   if (!project.value?.tasks) return
 
   const task = project.value.tasks.find(t => t.id === taskId)
-  if (task && task.deliverables) {
-    const deliverable = task.deliverables.find(d => d.id === deliverableId)
-    task.deliverables = task.deliverables.filter(d => d.id !== deliverableId)
-
-    if (task.deliverables.length === 0) {
-      task.hasDeliverable = false
-    }
-
+  if (task) {
     // 添加动态记录
     activities.value.unshift({
       id: Date.now(),
       user: userStore.userName,
-      action: `删除了任务"${task.name}"的交付物: ${deliverable?.name}`,
+      action: `删除了任务"${task.name}"的交付物`,
       time: new Date().toLocaleString('zh-CN', { hour12: false })
     })
 
@@ -2269,50 +2260,44 @@ const handleRemoveDeliverable = (taskId, deliverableId) => {
   }
 }
 
-// 提交至标书编写流程
-const handleSubmitToDocument = (projectId) => {
+// 提交至标书编写流程（调用后端校验 API）
+const handleSubmitToDocument = async (projectId) => {
   if (!project.value?.tasks) return
 
-  // 检查所有任务是否完成
-  const allCompleted = project.value.tasks.every(t => t.status === 'done')
+  try {
+    const result = await projectStore.submitToBidDocument(projectId)
+    const data = result?.data
 
-  if (!allCompleted) {
-    ElMessage.warning('请先完成所有任务后再提交至标书编写流程')
-    return
-  }
-
-  // 检查是否已有交付物
-  const tasksWithDeliverables = project.value.tasks.filter(t => t.deliverables && t.deliverables.length > 0)
-
-  if (tasksWithDeliverables.length === 0) {
-    ElMessage.warning('请至少上传一个任务的交付物后再提交')
-    return
-  }
-
-  ElMessageBox.confirm(
-    `所有任务已完成，确认提交至标书编写流程？\n\n已完成任务数: ${project.value.tasks.length}\n已上传交付物: ${tasksWithDeliverables.length} 个任务`,
-    '提交确认',
-    {
-      confirmButtonText: '确认提交',
-      cancelButtonText: '取消',
-      type: 'success'
+    if (!data?.accepted) {
+      ElMessage.warning(data?.message || '提交校验未通过，请检查任务完成状态和交付物')
+      return
     }
-  ).then(() => {
-    // 发起标书编制流程
-    handleInitiateProcess()
 
-    // 添加动态记录
-    activities.value.unshift({
-      id: Date.now(),
-      user: userStore.userName,
-      action: '所有任务已完成，提交至标书编写流程',
-      time: new Date().toLocaleString('zh-CN', { hour12: false })
+    ElMessageBox.confirm(
+      `${data.message || '所有校验通过'}\n\n总任务数: ${data.totalTasks}\n已完成: ${data.completedTasks}\n有交付物: ${data.tasksWithDeliverables}`,
+      '提交确认',
+      {
+        confirmButtonText: '确认提交',
+        cancelButtonText: '取消',
+        type: 'success'
+      }
+    ).then(() => {
+      handleInitiateProcess()
+
+      activities.value.unshift({
+        id: Date.now(),
+        user: userStore.userName,
+        action: '所有任务已完成，提交至标书编写流程',
+        time: new Date().toLocaleString('zh-CN', { hour12: false })
+      })
+
+      ElMessage.success('已提交至标书编写流程，可开始编制标书')
+    }).catch(() => {
+      // 用户取消
     })
-
-    ElMessage.success('已提交至标书编写流程，可开始编制标书')
-  }).catch(() => {
-    // 用户取消
-  })
+  } catch (error) {
+    ElMessage.error(error?.message || '提交失败')
+  }
 }
 
 const handleUpload = async (file) => {

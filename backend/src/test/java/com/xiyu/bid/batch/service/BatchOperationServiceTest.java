@@ -10,7 +10,9 @@ import com.xiyu.bid.fees.entity.Fee;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TaskRepository;
 import com.xiyu.bid.repository.TenderRepository;
+import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.audit.service.IAuditLogService;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,9 @@ class BatchOperationServiceTest {
     private ProjectRepository projectRepository;
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private IAuditLogService auditLogService;
 
     @InjectMocks
@@ -49,6 +54,9 @@ class BatchOperationServiceTest {
 
     @Mock
     private com.xiyu.bid.fees.repository.FeeRepository feeRepository;
+
+    @Mock
+    private ProjectAccessScopeService projectAccessScopeService;
 
     private Tender testTender1;
     private Tender testTender2;

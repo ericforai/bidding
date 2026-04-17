@@ -1,6 +1,8 @@
 package com.xiyu.bid.service;
 import com.xiyu.bid.entity.RoleProfileCatalog;
 
+import com.xiyu.bid.admin.settings.core.OrganizationValidationPolicy;
+import com.xiyu.bid.admin.settings.core.OrganizationValidationResult;
 import com.xiyu.bid.dto.CreateRoleRequest;
 import com.xiyu.bid.dto.RoleDTO;
 import com.xiyu.bid.dto.UpdateRoleRequest;
@@ -92,8 +94,9 @@ public class RoleProfileService {
             throw new IllegalStateException("System admin role cannot be disabled");
         }
         int userCount = countUsers(role);
-        if (!enabled && userCount > 0) {
-            throw new IllegalStateException("Role is assigned to users and cannot be disabled directly");
+        OrganizationValidationResult validation = OrganizationValidationPolicy.validateRoleDeactivation(enabled, userCount);
+        if (!validation.valid()) {
+            throw new IllegalStateException(validation.message());
         }
         role.setEnabled(enabled);
         return toDto(roleProfileRepository.save(role), userCount);

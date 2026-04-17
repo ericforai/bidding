@@ -103,6 +103,73 @@ export const useProjectStore = defineStore('project', {
         console.warn('Failed to update task status:', error)
         throw error
       }
+    },
+
+    async addDeliverable(projectId, taskId, data) {
+      try {
+        const result = await projectsApi.createTaskDeliverable(projectId, taskId, data)
+        if (!result?.success) {
+          console.warn('Deliverable creation returned non-success:', result)
+          return result
+        }
+        const newDeliverable = result.data
+        // Immutably update local state
+        this.projects = this.projects.map(p => {
+          if (String(p.id) !== String(projectId)) return p
+          const updatedTasks = (p.tasks || []).map(t => {
+            if (String(t.id) !== String(taskId)) return t
+            const deliverables = [...(t.deliverables || []), newDeliverable]
+            return { ...t, deliverables, hasDeliverable: true }
+          })
+          return { ...p, tasks: updatedTasks }
+        })
+        if (String(this.currentProject?.id) === String(projectId)) {
+          const updated = this.projects.find(p => String(p.id) === String(projectId))
+          if (updated) this.currentProject = updated
+        }
+        return result
+      } catch (error) {
+        console.warn('Failed to create deliverable:', error)
+        throw error
+      }
+    },
+
+    async removeDeliverable(projectId, taskId, deliverableId) {
+      try {
+        const result = await projectsApi.deleteTaskDeliverable(projectId, taskId, deliverableId)
+        if (!result?.success) {
+          console.warn('Deliverable deletion returned non-success:', result)
+          return result
+        }
+        // Immutably update local state
+        this.projects = this.projects.map(p => {
+          if (String(p.id) !== String(projectId)) return p
+          const updatedTasks = (p.tasks || []).map(t => {
+            if (String(t.id) !== String(taskId)) return t
+            const deliverables = (t.deliverables || []).filter(d => d.id !== deliverableId && String(d.id) !== String(deliverableId))
+            return { ...t, deliverables, hasDeliverable: deliverables.length > 0 }
+          })
+          return { ...p, tasks: updatedTasks }
+        })
+        if (String(this.currentProject?.id) === String(projectId)) {
+          const updated = this.projects.find(p => String(p.id) === String(projectId))
+          if (updated) this.currentProject = updated
+        }
+        return result
+      } catch (error) {
+        console.warn('Failed to delete deliverable:', error)
+        throw error
+      }
+    },
+
+    async submitToBidDocument(projectId) {
+      try {
+        const result = await projectsApi.submitToBidDocument(projectId)
+        return result
+      } catch (error) {
+        console.warn('Failed to submit to bid document:', error)
+        throw error
+      }
     }
   }
 })

@@ -35,6 +35,8 @@ export { settingsApi } from './modules/settings.js'
 export { projectGroupsApi } from './modules/projectGroups.js'
 export { bidResultsApi } from './modules/bidResults.js'
 export { batchApi } from './modules/batch.js'
+export { marketInsightApi } from './modules/marketInsight.js'
+export { customerOpportunityApi } from './modules/customerOpportunity.js'
 
 export default {
   auth: () => import('./modules/auth.js').then(m => m.authApi),
@@ -51,5 +53,7 @@ export default {
   audit: () => import('./modules/audit.js').then(m => m.default),
   settings: () => import('./modules/settings.js').then(m => m.settingsApi),
   projectGroups: () => import('./modules/projectGroups.js').then(m => m.projectGroupsApi),
-  batch: () => import('./modules/batch.js').then(m => m.batchApi)
+  batch: () => import('./modules/batch.js').then(m => m.batchApi),
+  marketInsight: () => import('./modules/marketInsight.js').then(m => m.marketInsightApi),
+  customerOpportunity: () => import('./modules/customerOpportunity.js').then(m => m.customerOpportunityApi)
 }

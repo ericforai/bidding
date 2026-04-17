@@ -657,18 +657,12 @@
         </el-form-item>
         <el-form-item label="指派给" required>
           <el-select v-model="assignForm.assignee" placeholder="选择销售人员" style="width: 100%">
-            <el-option-group label="华东区">
-              <el-option label="小王" value="U001" />
-              <el-option label="李经理" value="U002" />
-            </el-option-group>
-            <el-option-group label="华南区">
-              <el-option label="张销售" value="U003" />
-              <el-option label="陈专员" value="U004" />
-            </el-option-group>
-            <el-option-group label="华北区">
-              <el-option label="刘主管" value="U005" />
-              <el-option label="赵经理" value="U006" />
-            </el-option-group>
+            <el-option
+              v-for="sales in salesStaff"
+              :key="sales.id"
+              :label="`${sales.name}｜${sales.roleName}｜${sales.deptName}`"
+              :value="sales.id"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="优先级">
@@ -1094,13 +1088,6 @@
                 </template>
               </el-table-column>
             </el-table>
-            <div class="insight-summary">
-              <el-alert type="success" :closable="false" show-icon>
-                <template #title>
-                  <strong>AI洞察:</strong> {{ industryInsight }}
-                </template>
-              </el-alert>
-            </div>
           </div>
         </el-tab-pane>
 
@@ -1136,13 +1123,6 @@
                 </template>
               </el-table-column>
             </el-table>
-            <div class="insight-summary">
-              <el-alert type="warning" :closable="false" show-icon>
-                <template #title>
-                  <strong>策略建议:</strong> {{ purchaserInsight }}
-                </template>
-              </el-alert>
-            </div>
           </div>
         </el-tab-pane>
 
@@ -1151,47 +1131,13 @@
           <div class="insight-content">
             <div class="insight-header">
               <h4>AI推荐高潜力机会</h4>
-              <el-tag type="success" size="small">智能匹配</el-tag>
+              <el-tag type="success" size="small">客户商机中心</el-tag>
             </div>
-            <el-row :gutter="16">
-              <el-col :span="12" v-for="item in potentialOpportunities" :key="item.id">
-                <el-card class="opportunity-card" shadow="hover">
-                  <div class="opportunity-header">
-                    <h5>{{ item.title }}</h5>
-                    <el-tag :type="item.priority === 'high' ? 'danger' : item.priority === 'medium' ? 'warning' : 'info'" size="small">
-                      {{ item.priority === 'high' ? '高优先级' : item.priority === 'medium' ? '中优先级' : '普通' }}
-                    </el-tag>
-                  </div>
-                  <div class="opportunity-info">
-                    <div class="info-row">
-                      <span class="label">采购方:</span>
-                      <span class="value">{{ item.purchaser }}</span>
-                    </div>
-                    <div class="info-row">
-                      <span class="label">预算:</span>
-                      <span class="value">{{ item.budget }}万元</span>
-                    </div>
-                    <div class="info-row">
-                      <span class="label">地区:</span>
-                      <span class="value">{{ item.region }}</span>
-                    </div>
-                  </div>
-                  <p class="opportunity-reason">
-                    <el-icon><InfoFilled /></el-icon>
-                    {{ item.reason }}
-                  </p>
-                  <div class="opportunity-footer">
-                    <div class="match-bar">
-                      <span class="match-label">匹配度</span>
-                      <el-progress :percentage="item.match" :color="getMatchColor(item.match)" :stroke-width="8" />
-                    </div>
-                    <el-button type="primary" size="small" @click="handleOpportunityAction(item.id)">
-                      立即跟进
-                    </el-button>
-                  </div>
-                </el-card>
-              </el-col>
-            </el-row>
+            <el-empty description="高潜力机会识别已迁移至「客户商机中心」，基于真实标讯历史与机会评分模型综合研判。">
+              <el-button type="primary" @click="goToCustomerOpportunityCenter">
+                前往客户商机中心
+              </el-button>
+            </el-empty>
           </div>
         </el-tab-pane>
 
@@ -1202,57 +1148,8 @@
               <h4>未来市场趋势预测</h4>
               <el-tag type="info" size="small">AI预测</el-tag>
             </div>
-            <el-row :gutter="20">
-              <el-col :span="12">
-                <el-card class="forecast-card">
-                  <template #header>
-                    <div class="card-header-small">
-                      <el-icon><TrendCharts /></el-icon>
-                      <span>下月招标趋势</span>
-                    </div>
-                  </template>
-                  <div class="forecast-data">
-                    <div class="forecast-item">
-                      <span class="forecast-label">预计发布量</span>
-                      <span class="forecast-value">+18%</span>
-                    </div>
-                    <div class="forecast-item">
-                      <span class="forecast-label">热门行业</span>
-                      <span class="forecast-value">数据中心</span>
-                    </div>
-                    <div class="forecast-item">
-                      <span class="forecast-label">活跃地区</span>
-                      <span class="forecast-value">华东</span>
-                    </div>
-                  </div>
-                </el-card>
-              </el-col>
-              <el-col :span="12">
-                <el-card class="forecast-card">
-                  <template #header>
-                    <div class="card-header-small">
-                      <el-icon><Calendar /></el-icon>
-                      <span>季度预测</span>
-                    </div>
-                  </template>
-                  <div class="forecast-data">
-                    <div class="forecast-item">
-                      <span class="forecast-label">Q1 预计总量</span>
-                      <span class="forecast-value">1,280条</span>
-                    </div>
-                    <div class="forecast-item">
-                      <span class="forecast-label">同比变化</span>
-                      <span class="forecast-value forecast-up">+25%</span>
-                    </div>
-                    <div class="forecast-item">
-                      <span class="forecast-label">市场活跃度</span>
-                      <span class="forecast-value">高</span>
-                    </div>
-                  </div>
-                </el-card>
-              </el-col>
-            </el-row>
-            <el-card class="forecast-tips" style="margin-top: 16px">
+            <el-empty v-if="!forecastTips.length" description="暂无预测建议，当前标讯数据不足以生成趋势研判" />
+            <el-card v-else class="forecast-tips">
               <template #header>
                 <div class="card-header-small">
                   <el-icon><MagicStick /></el-icon>
@@ -1306,6 +1203,7 @@ import { useRouter } from 'vue-router'
 import { useBiddingStore } from '@/stores/bidding'
 import { useUserStore } from '@/stores/user'
 import { tendersApi, batchApi } from '@/api'
+import { tasksApi } from '@/api/modules/dashboard'
 import { crawlerApi } from '@/api/modules/tenders'
 import {
   normalizeTenderForCreate,
@@ -1320,14 +1218,7 @@ import {
   Phone, Close, EditPen, Loading
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import {
-  getBreakoutTopics,
-  getStatsSummary,
-  transformToIndustryTrends,
-  transformToOpportunities,
-  generateInsight,
-  generateForecastTips
-} from '@/api/trendradar'
+import { marketInsightApi } from '@/api/modules/marketInsight.js'
 import { useExport } from '@/composables/useExport'
 import { ExportType } from '@/api'
 
@@ -1411,14 +1302,12 @@ const distributeForm = ref({
 })
 
 // 销售人员数据
-const salesStaff = ref([
-  { id: 'U001', name: '小王', role: '销售经理', region: '华东', workload: 3, avatar: '' },
-  { id: 'U002', name: '李经理', role: '资深销售', region: '华东', workload: 2, avatar: '' },
-  { id: 'U003', name: '张销售', role: '销售专员', region: '华南', workload: 4, avatar: '' },
-  { id: 'U004', name: '陈专员', role: '销售专员', region: '华南', workload: 2, avatar: '' },
-  { id: 'U005', name: '刘主管', role: '销售主管', region: '华北', workload: 3, avatar: '' },
-  { id: 'U006', name: '赵经理', role: '区域经理', region: '华北', workload: 2, avatar: '' }
-])
+const salesStaff = ref([])
+
+const assigneeLookup = computed(() => salesStaff.value.reduce((acc, user) => {
+  acc[String(user.id)] = user
+  return acc
+}, {}))
 
 // 分配预览
 const distributionPreview = computed(() => {
@@ -1433,9 +1322,9 @@ const distributionPreview = computed(() => {
     switch (distributeForm.value.rule) {
       case 'region':
         // 按区域分组预览
-        const regionMap = { '华东': ['U001', 'U002'], '华南': ['U003', 'U004'], '华北': ['U005', 'U006'] }
+        const regionMap = buildAssigneeBuckets()
         Object.entries(regionMap).forEach(([region, salesIds]) => {
-          const regionTenders = selected.filter(t => t.region === region)
+          const regionTenders = selected.filter(t => t.region === region || region === 'default')
           if (regionTenders.length > 0) {
             salesIds.forEach(salesId => {
               const sales = salesStaff.value.find(s => s.id === salesId)
@@ -1450,39 +1339,10 @@ const distributionPreview = computed(() => {
         })
         break
       case 'product':
-        // 按产品线预览
-        preview.push({
-          salesId: 'U001',
-          salesName: '小王',
-          count: Math.ceil(selected.length / 3),
-          tenders: selected.slice(0, Math.ceil(selected.length / 3))
-        })
-        preview.push({
-          salesId: 'U003',
-          salesName: '张销售',
-          count: Math.ceil(selected.length / 3),
-          tenders: selected.slice(Math.ceil(selected.length / 3), Math.ceil(selected.length * 2 / 3))
-        })
-        preview.push({
-          salesId: 'U005',
-          salesName: '刘主管',
-          count: selected.length - Math.ceil(selected.length * 2 / 3),
-          tenders: selected.slice(Math.ceil(selected.length * 2 / 3))
-        })
+        buildRoundRobinPreview(preview, selected, salesStaff.value)
         break
       case 'ai':
-        preview.push({
-          salesId: 'U002',
-          salesName: '李经理',
-          count: selected.filter(t => t.aiScore >= 90).length,
-          tenders: selected.filter(t => t.aiScore >= 90)
-        })
-        preview.push({
-          salesId: 'U001',
-          salesName: '小王',
-          count: selected.filter(t => t.aiScore < 90).length,
-          tenders: selected.filter(t => t.aiScore < 90)
-        })
+        buildRoundRobinPreview(preview, [...selected].sort((left, right) => Number(right.aiScore || 0) - Number(left.aiScore || 0)), salesStaff.value)
         break
       case 'average':
         const perSales = Math.ceil(selected.length / salesStaff.value.length)
@@ -1523,6 +1383,35 @@ const toggleSalesAssign = (salesId) => {
   }
 }
 
+const buildAssigneeBuckets = () => {
+  const buckets = salesStaff.value.reduce((acc, user) => {
+    const key = user.region || 'default'
+    if (!acc[key]) acc[key] = []
+    acc[key].push(user.id)
+    return acc
+  }, {})
+  if (Object.keys(buckets).length === 0) {
+    buckets.default = []
+  }
+  return buckets
+}
+
+const buildRoundRobinPreview = (preview, tenders, assignees) => {
+  if (!Array.isArray(assignees) || assignees.length === 0) return
+  const bucket = assignees.map((sales) => ({
+    salesId: sales.id,
+    salesName: sales.name,
+    count: 0,
+    tenders: []
+  }))
+  tenders.forEach((tender, index) => {
+    const target = bucket[index % bucket.length]
+    target.count += 1
+    target.tenders.push(tender)
+  })
+  preview.push(...bucket)
+}
+
 // 指派对话框
 const showAssignDialog = ref(false)
 const assignLoading = ref(false)
@@ -1545,225 +1434,9 @@ const activeInsightTab = ref('industry')
 const loadingTrendData = ref(false)
 const trendDataLoaded = ref(false)
 
-// 行业趋势数据（MRO工业品分类 - 严格按照指定分类）
-const industryTrends = ref([
-  // 1. 工具、工具耗材、焊接
-  { industry: '工具', count: 331, amount: 21100, growth: 32, trend: 'up', hotLevel: 5, color: 'blue' },
-  { industry: '工具耗材', count: 268, amount: 8600, growth: 18, trend: 'up', hotLevel: 4, color: 'blue' },
-  { industry: '焊接', count: 98, amount: 15800, growth: 22, trend: 'up', hotLevel: 4, color: 'blue' },
-  // 2. 刀具、量具、机床、磨具
-  { industry: '刀具', count: 112, amount: 18600, growth: 18, trend: 'up', hotLevel: 4, color: 'green' },
-  { industry: '量具', count: 87, amount: 12400, growth: 15, trend: 'stable', hotLevel: 3, color: 'green' },
-  { industry: '机床', count: 76, amount: 38500, growth: 42, trend: 'up', hotLevel: 5, color: 'green' },
-  { industry: '磨具', count: 94, amount: 9800, growth: 12, trend: 'stable', hotLevel: 3, color: 'green' },
-  // 3. 润滑胶粘、车间化学品
-  { industry: '润滑胶粘', count: 284, amount: 19800, growth: 15, trend: 'up', hotLevel: 4, color: 'orange' },
-  { industry: '车间化学品', count: 72, amount: 6400, growth: 5, trend: 'stable', hotLevel: 3, color: 'orange' },
-  // 4. 劳保安全、消防
-  { industry: '劳保安全', count: 413, amount: 37600, growth: 42, trend: 'up', hotLevel: 5, color: 'red' },
-  { industry: '消防', count: 134, amount: 18500, growth: 32, trend: 'up', hotLevel: 4, color: 'red' },
-  // 5. 搬运、存储、工位、包材
-  { industry: '搬运', count: 92, amount: 28600, growth: 25, trend: 'up', hotLevel: 4, color: 'purple' },
-  { industry: '存储', count: 178, amount: 16800, growth: 20, trend: 'up', hotLevel: 4, color: 'purple' },
-  { industry: '工位', count: 115, amount: 8900, growth: 12, trend: 'stable', hotLevel: 3, color: 'purple' },
-  { industry: '包材', count: 203, amount: 12400, growth: 15, trend: 'up', hotLevel: 4, color: 'purple' },
-  // 6. 清洁、办公、制冷暖通
-  { industry: '清洁', count: 167, amount: 7800, growth: 10, trend: 'stable', hotLevel: 3, color: 'cyan' },
-  { industry: '办公', count: 289, amount: 18600, growth: 8, trend: 'stable', hotLevel: 3, color: 'cyan' },
-  { industry: '制冷暖通', count: 223, amount: 53300, growth: 25, trend: 'up', hotLevel: 4, color: 'cyan' },
-  // 7. 工控低压电工照明
-  { industry: '工控低压', count: 333, amount: 57600, growth: 30, trend: 'up', hotLevel: 5, color: 'yellow' },
-  { industry: '电工照明', count: 410, amount: 36300, growth: 24, trend: 'up', hotLevel: 4, color: 'yellow' },
-  // 8. 轴承、皮带、机械、电子
-  { industry: '轴承', count: 142, amount: 24500, growth: 20, trend: 'up', hotLevel: 4, color: 'pink' },
-  { industry: '皮带', count: 98, amount: 11200, growth: 12, trend: 'stable', hotLevel: 3, color: 'pink' },
-  { industry: '机械电子', count: 268, amount: 32000, growth: 28, trend: 'up', hotLevel: 4, color: 'pink' },
-  // 9. 气动、液压管阀、泵
-  { industry: '气动', count: 126, amount: 18500, growth: 22, trend: 'up', hotLevel: 4, color: 'indigo' },
-  { industry: '液压管阀', count: 264, amount: 60500, growth: 26, trend: 'up', hotLevel: 4, color: 'indigo' },
-  { industry: '泵', count: 145, amount: 22000, growth: 18, trend: 'up', hotLevel: 4, color: 'indigo' },
-  // 10. 紧固、密封、建工材料
-  { industry: '紧固', count: 268, amount: 14500, growth: 12, trend: 'stable', hotLevel: 3, color: 'lime' },
-  { industry: '密封', count: 135, amount: 9800, growth: 10, trend: 'stable', hotLevel: 3, color: 'lime' },
-  { industry: '建工材料', count: 178, amount: 22000, growth: 18, trend: 'up', hotLevel: 4, color: 'lime' },
-  // 11. 工业检测、实验室产品
-  { industry: '工业检测', count: 86, amount: 28600, growth: 30, trend: 'up', hotLevel: 4, color: 'teal' },
-  { industry: '实验室产品', count: 72, amount: 24500, growth: 25, trend: 'up', hotLevel: 4, color: 'teal' },
-  // 12. 企业福礼、紧急救护
-  { industry: '企业福礼', count: 312, amount: 9600, growth: 5, trend: 'stable', hotLevel: 3, color: 'grey' },
-  { industry: '紧急救护', count: 145, amount: 12800, growth: 15, trend: 'up', hotLevel: 3, color: 'grey' }
-])
-
-// 行业洞察总结（MRO工业品相关）
-const industryInsight = ref(
-  '劳保安全类产品需求持续增长，近3个月标讯数量同比增长38%，主要集中在华东和华南地区。制造业升级带动电动工具、焊接设备需求旺盛，工控低压类产品在新能源行业应用广泛。建议重点关注工控产品、搬运设备等高增长品类。'
-)
-
-// 采购方规律数据（MRO工业品客户）
-const purchaserPatterns = ref([
-  {
-    name: '国家电网某分公司',
-    industry: '能源电力',
-    frequency: 18,
-    period: '3月、6月、9月',
-    avgBudget: 450,
-    opportunity: 5
-  },
-  {
-    name: '某大型制造集团',
-    industry: '制造业',
-    frequency: 24,
-    period: '1月、4月、7月、10月',
-    avgBudget: 680,
-    opportunity: 5
-  },
-  {
-    name: '某汽车制造企业',
-    industry: '汽车',
-    frequency: 12,
-    period: '2月、5月、8月、11月',
-    avgBudget: 520,
-    opportunity: 4
-  },
-  {
-    name: '某化工园区管委会',
-    industry: '化工',
-    frequency: 8,
-    period: '3月、9月',
-    avgBudget: 380,
-    opportunity: 4
-  },
-  {
-    name: '某电子科技公司',
-    industry: '电子',
-    frequency: 15,
-    period: '每季度',
-    avgBudget: 320,
-    opportunity: 4
-  },
-  {
-    name: '某物流集团',
-    industry: '物流仓储',
-    frequency: 10,
-    period: '4月、10月',
-    avgBudget: 580,
-    opportunity: 5
-  },
-  {
-    name: '某三甲医院',
-    industry: '医疗',
-    frequency: 6,
-    period: '6月、12月',
-    avgBudget: 280,
-    opportunity: 3
-  },
-  {
-    name: '某建筑工程公司',
-    industry: '建筑',
-    frequency: 20,
-    period: '3月、8月',
-    avgBudget: 890,
-    opportunity: 5
-  }
-])
-
-// 采购方洞察总结
-const purchaserInsight = ref(
-  '制造业和物流仓储类客户采购频次高、预算充足，建议建立长期合作关系。国家电网、大型建筑工程等项目机会大但竞争激烈，建议提前布局。'
-)
-
-// 高潜力机会数据（MRO工业品相关）
-const potentialOpportunities = ref([
-  {
-    id: 'op001',
-    title: '某制造业工厂劳保用品年度采购',
-    purchaser: '某大型制造企业',
-    budget: 680,
-    region: '华东',
-    priority: 'high',
-    match: 95,
-    reason: '历史数据显示该客户年均采购劳保用品1200万，近期有年度招标计划，与我方劳保用品产品线高度匹配。'
-  },
-  {
-    id: 'op002',
-    title: '国家电网变电站检修工具采购',
-    purchaser: '国家电网某分公司',
-    budget: 520,
-    region: '华北',
-    priority: 'high',
-    match: 92,
-    reason: '该客户近期发布变电站检修项目，需要电动工具、手动工具等，预算充足，我方有成功案例可参考。'
-  },
-  {
-    id: 'op003',
-    title: '某汽车厂生产线搬运设备升级',
-    purchaser: '某汽车制造集团',
-    budget: 1280,
-    region: '华南',
-    priority: 'high',
-    match: 90,
-    reason: '客户计划升级自动化生产线，需要叉车、AGV等搬运设备，符合我方优势产品区域。'
-  },
-  {
-    id: 'op004',
-    title: '某化工企业安全消防设备采购',
-    purchaser: '某化工园区管委会',
-    budget: 450,
-    region: '华东',
-    priority: 'high',
-    match: 88,
-    reason: '化工行业安全要求提升，客户急需更新消防器材和安全设备，项目资金已到位。'
-  },
-  {
-    id: 'op005',
-    title: '某电子厂工控系统改造项目',
-    purchaser: '某电子科技公司',
-    budget: 850,
-    region: '西南',
-    priority: 'medium',
-    match: 85,
-    reason: '客户生产线自动化改造需要PLC、传感器等工控产品，我方有完整解决方案。'
-  },
-  {
-    id: 'op006',
-    title: '某医院实验室检测设备采购',
-    purchaser: '某三甲医院',
-    budget: 620,
-    region: '华北',
-    priority: 'medium',
-    match: 82,
-    reason: '医院新建检验科需要显微镜、离心机等实验室产品，该地区竞争相对较少。'
-  },
-  {
-    id: 'op007',
-    title: '某食品厂包装材料年度采购',
-    purchaser: '某食品集团公司',
-    budget: 380,
-    region: '华东',
-    priority: 'medium',
-    match: 80,
-    reason: '客户需要包装箱、缠绕膜、封箱胶带等包材，年采购量大，合作稳定。'
-  },
-  {
-    id: 'op008',
-    title: '某物流仓储货架系统扩建',
-    purchaser: '某物流集团',
-    budget: 960,
-    region: '华南',
-    priority: 'high',
-    match: 88,
-    reason: '客户扩建仓储中心需要大量货架、托盘、周转箱等存储设备，预算充足。'
-  }
-])
-
-// 预测建议（MRO工业品相关）
-const forecastTips = ref([
-  { text: '劳保安全类产品预计Q2需求旺盛，建议提前备货安全帽、防护眼镜等', color: '#67c23a' },
-  { text: '制造业升级带动电动工具、焊接设备需求增长，华东地区机会明显', color: '#409eff' },
-  { text: '工控低压类产品在新能源行业需求强劲，建议重点跟进', color: '#e6a23c' },
-  { text: '企业福礼采购季节即将到来，建议提前对接企业客户', color: '#909399' },
-  { text: '清洁办公类产品需求稳定，建议维护现有客户关系', color: '#67c23a' }
-])
+const industryTrends = ref([])
+const purchaserPatterns = ref([])
+const forecastTips = ref([])
 
 // ========== 外部标讯源配置 ==========
 const showSourceConfig = ref(false)
@@ -1826,37 +1499,48 @@ const manualFormRules = {
   deadline: [{ required: true, message: '请选择截止日期', trigger: 'change' }]
 }
 
-// 销售人员映射
-const salesMap = {
-  U001: '小王',
-  U002: '李经理',
-  U003: '张销售',
-  U004: '陈专员',
-  U005: '刘主管',
-  U006: '赵经理'
+const resolveAssigneePayload = (assigneeId, remark = '') => {
+  const assignee = assigneeLookup.value[String(assigneeId)]
+  return {
+    assigneeId,
+    assigneeDeptCode: assignee?.deptCode || '',
+    assigneeDeptName: assignee?.deptName || '未配置部门',
+    assigneeRoleCode: assignee?.roleCode || '',
+    assigneeRoleName: assignee?.roleName || '',
+    remark
+  }
 }
 
-// 区域销售映射
-const regionSalesMap = {
-  '北京': ['U005', 'U006'],
-  '上海': ['U001', 'U002'],
-  '广州': ['U003', 'U004'],
-  '深圳': ['U003', 'U004'],
-  '成都': ['U001', 'U002']
-}
-
-// 行业销售映射
-const industrySalesMap = {
-  '政府': ['U005', 'U006'],
-  '能源': ['U003', 'U004'],
-  '交通': ['U001', 'U002'],
-  '数据中心': ['U001', 'U002']
+const loadAssignmentCandidates = async () => {
+  try {
+    const result = await tasksApi.getAssignmentCandidates()
+    salesStaff.value = Array.isArray(result?.data)
+      ? result.data.map((item) => ({
+        id: item.userId,
+        name: item.name || '未命名成员',
+        role: item.roleName || item.roleCode || '未配置角色',
+        roleCode: item.roleCode || '',
+        roleName: item.roleName || item.roleCode || '',
+        deptCode: item.deptCode || '',
+        deptName: item.deptName || '未配置部门',
+        region: item.deptName || '默认分组',
+        workload: 0,
+        avatar: ''
+      }))
+      : []
+  } catch (error) {
+    console.error('加载任务分配候选人失败:', error)
+    salesStaff.value = []
+  }
 }
 
 onMounted(async () => {
   checkMobile()
   window.addEventListener('resize', handleResize)
-  await biddingStore.getTenders()
+  await Promise.allSettled([
+    biddingStore.getTenders(),
+    loadAssignmentCandidates()
+  ])
   loadSavedConfig()
 })
 
@@ -2157,27 +1841,28 @@ const handleDistribute = async () => {
     const distribution = []
 
     if (distributeForm.value.type === 'auto') {
+      if (salesStaff.value.length === 0) {
+        ElMessage.warning('当前范围内没有可分配成员，请先维护组织关系')
+        return
+      }
       // 智能分发
       selectedTenders.value.forEach(tender => {
         let assignees = []
 
         switch (distributeForm.value.rule) {
           case 'region':
-            assignees = regionSalesMap[tender.region] || ['U001']
+            assignees = buildAssigneeBuckets()[tender.region] || salesStaff.value.map((user) => user.id)
             break
           case 'product':
-            assignees = industrySalesMap[tender.industry] || ['U001']
+            assignees = salesStaff.value.map((user) => user.id)
             break
           case 'ai':
-            // 高评分优先给资深销售
-            if (tender.aiScore >= 90) {
-              assignees = ['U002', 'U005', 'U006']
-            } else {
-              assignees = ['U001', 'U003', 'U004']
-            }
+            assignees = [...salesStaff.value]
+              .sort((left, right) => String(left.roleName || '').localeCompare(String(right.roleName || '')))
+              .map((user) => user.id)
             break
           case 'average':
-            assignees = ['U001', 'U002', 'U003', 'U004', 'U005', 'U006']
+            assignees = salesStaff.value.map((user) => user.id)
             break
         }
 
@@ -2187,7 +1872,7 @@ const handleDistribute = async () => {
           tenderId: tender.id,
           tenderTitle: tender.title,
           assignee,
-          assigneeName: salesMap[assignee],
+          assigneeName: assigneeLookup.value[String(assignee)]?.name || '未命名成员',
           type: 'auto'
         })
       })
@@ -2201,7 +1886,7 @@ const handleDistribute = async () => {
           tenderId: tender.id,
           tenderTitle: tender.title,
           assignee,
-          assigneeName: salesMap[assignee],
+          assigneeName: assigneeLookup.value[String(assignee)]?.name || '未命名成员',
           type: 'manual'
         })
       })
@@ -2217,7 +1902,7 @@ const handleDistribute = async () => {
 
     await Promise.all(
       Object.entries(assigneeGroups).map(([assigneeId, taskIds]) =>
-        batchApi.assignTasks(taskIds, assigneeId)
+        batchApi.assignTasks(taskIds, resolveAssigneePayload(Number(assigneeId), distributeForm.value.remark))
       )
     )
 
@@ -2234,7 +1919,7 @@ const handleDistribute = async () => {
       assignee: item.assigneeName,
       type: item.type,
       time: now,
-      operator: '当前用户'
+      operator: userStore.userName
     }))
     distributeRecords.value = [...newRecords, ...distributeRecords.value]
 
@@ -2401,14 +2086,18 @@ const handleAssign = async () => {
   assignLoading.value = true
 
   try {
-    const result = await batchApi.assignTasks([assignForm.value.tenderId], assignForm.value.assignee)
+    const result = await batchApi.assignTasks(
+      [assignForm.value.tenderId],
+      resolveAssigneePayload(assignForm.value.assignee, assignForm.value.remark)
+    )
     const summary = normalizeBatchResult(result)
 
     if (summary.ok) {
+      const targetAssignee = assigneeLookup.value[String(assignForm.value.assignee)]
       // 添加到分发记录
       distributeRecords.value = [{
         tenderTitle: assignForm.value.tenderTitle,
-        assignee: salesMap[assignForm.value.assignee],
+        assignee: targetAssignee?.name || '未命名成员',
         type: 'manual',
         time: new Date().toLocaleString('zh-CN', {
           year: 'numeric',
@@ -2417,10 +2106,10 @@ const handleAssign = async () => {
           hour: '2-digit',
           minute: '2-digit'
         }),
-        operator: '当前用户'
+        operator: userStore.userName
       }, ...distributeRecords.value]
 
-      ElMessage.success(`已将"${assignForm.value.tenderTitle}"指派给${salesMap[assignForm.value.assignee]}`)
+      ElMessage.success(`已将"${assignForm.value.tenderTitle}"指派给${targetAssignee?.name || '未命名成员'}`)
       showAssignDialog.value = false
       await biddingStore.getTenders()
     } else {
@@ -2699,83 +2388,23 @@ const saveManualTender = async () => {
 
 // ========== 市场洞察相关 ==========
 
-// 加载 TrendRadar 数据
-const loadTrendRadarData = async () => {
-  if (trendDataLoaded.value) return // 避免重复加载
+// 从后端聚合接口加载市场洞察数据
+const loadMarketInsight = async () => {
+  if (trendDataLoaded.value) return
 
   loadingTrendData.value = true
   try {
-    // 并行获取热点数据和统计信息
-    const [topics, stats] = await Promise.all([
-      getBreakoutTopics(50, 2),
-      getStatsSummary()
-    ])
-
-    // 如果没有真实数据，则使用默认 fallback 数据
-    const isMock = false
-
-    // 只有在有真实数据且经过过滤后仍有数据时才更新
-    if (topics && topics.length > 0) {
-      const filteredTopics = topics.filter(t => {
-        // 过滤政治敏感内容
-        const text = (t.normalized_title + ' ' + (t.sample_titles || []).join(' ')).toLowerCase()
-        const politicsKeywords = ['空袭', '袭击', '战争', '东部战区', '战区', '导弹', '俄乌', '巴以', '哈马斯', '以色列', '伊朗', '朝鲜']
-        return !politicsKeywords.some(kw => text.includes(kw.toLowerCase()))
-      })
-
-      if (filteredTopics.length > 0) {
-        // 更新行业趋势数据
-        const transformed = transformToIndustryTrends(filteredTopics)
-        if (transformed.length > 0) {
-          industryTrends.value = transformed
-        }
-
-        // 更新高潜力机会数据
-        const opportunities = transformToOpportunities(filteredTopics)
-        if (opportunities.length > 0) {
-          potentialOpportunities.value = opportunities
-        }
-
-        // 更新洞察文本
-        industryInsight.value = generateInsight(filteredTopics, stats)
-
-        // 更新预测建议
-        forecastTips.value = generateForecastTips(filteredTopics)
-
-        trendDataLoaded.value = true
-
-        // Mock 模式下提示信息更友好
-        if (isMock) {
-          ElMessage.success({
-            message: '已加载 AI 模型模拟的市场分析数据',
-            duration: 2000
-          })
-        } else {
-          ElMessage.success({
-            message: `已从 TrendRadar 加载 ${filteredTopics.length} 条热点趋势数据`,
-            duration: 2000
-          })
-        }
-      } else {
-        // 过滤后没有数据
-        if (isMock) {
-          trendDataLoaded.value = true
-        } else {
-          ElMessage.info('当前实时热点均为非工业相关内容，已展示推荐 MRO 趋势')
-        }
-      }
-    } else {
-      // 完全没有返回数据
-      if (isMock) {
-        trendDataLoaded.value = true
-      } else {
-        ElMessage.info('TrendRadar 暂时无法返回实时数据，已加载基准市场洞察')
-      }
-    }
-  } catch (error) {
-    console.error('加载 TrendRadar 数据失败:', error)
-    // 连接失败时静默保留 mock 数据，不弹出警告干扰用户
+    const response = await marketInsightApi.getInsight()
+    const payload = response?.data || {}
+    industryTrends.value = Array.isArray(payload.industryTrends) ? payload.industryTrends : []
+    purchaserPatterns.value = Array.isArray(payload.purchaserPatterns) ? payload.purchaserPatterns : []
+    forecastTips.value = Array.isArray(payload.forecastTips) ? payload.forecastTips : []
     trendDataLoaded.value = true
+  } catch (error) {
+    ElMessage.warning('市场洞察数据加载失败，请稍后重试')
+    industryTrends.value = []
+    purchaserPatterns.value = []
+    forecastTips.value = []
   } finally {
     loadingTrendData.value = false
   }
@@ -2784,13 +2413,13 @@ const loadTrendRadarData = async () => {
 // 刷新趋势数据
 const refreshTrendData = async () => {
   trendDataLoaded.value = false
-  await loadTrendRadarData()
+  await loadMarketInsight()
 }
 
 // 监听对话框打开
 watch(showMarketInsight, (newVal) => {
   if (newVal) {
-    loadTrendRadarData()
+    loadMarketInsight()
   }
 })
 
@@ -2801,18 +2430,9 @@ const getOpportunityText = (score) => {
   return '较低'
 }
 
-const getMatchColor = (percentage) => {
-  if (percentage >= 90) return '#67c23a'
-  if (percentage >= 80) return '#e6a23c'
-  return '#409eff'
-}
-
-const handleOpportunityAction = (id) => {
-  const opportunity = potentialOpportunities.value.find(item => item.id === id)
-  if (opportunity) {
-    showMarketInsight.value = false
-    ElMessage.success(`已创建跟进任务: ${opportunity.title}`)
-  }
+const goToCustomerOpportunityCenter = () => {
+  showMarketInsight.value = false
+  router.push('/bidding/customer-opportunities')
 }
 </script>
 

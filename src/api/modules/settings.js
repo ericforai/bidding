@@ -195,6 +195,16 @@ export const settingsApi = {
     }
   },
 
+  async saveDepartmentTree(deptTree = []) {
+    const response = await httpClient.put('/api/admin/settings/departments', {
+      deptTree: Array.isArray(deptTree) ? deptTree.map(normalizeDeptTreeItem) : []
+    })
+    return {
+      ...response,
+      data: normalizeConfig(response?.data)
+    }
+  },
+
   async getUsers() {
 
     const response = await httpClient.get('/api/admin/users')
@@ -235,6 +245,18 @@ export const settingsApi = {
 
   async updateUserStatus(userId, enabled) {
     const response = await httpClient.patch(`/api/admin/users/${userId}/status`, { enabled })
+    return {
+      ...response,
+      data: response?.data
+    }
+  },
+
+  async updateUserOrganization(userId, payload) {
+    const response = await httpClient.put(`/api/admin/users/${userId}/organization`, {
+      departmentCode: payload?.departmentCode || '',
+      roleId: payload?.roleId ?? null,
+      enabled: Boolean(payload?.enabled)
+    })
     return {
       ...response,
       data: response?.data
