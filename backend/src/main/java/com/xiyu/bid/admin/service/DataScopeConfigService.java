@@ -21,7 +21,7 @@ import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.roleprofile.RoleProfileBootstrap;
 import com.xiyu.bid.settings.repository.SystemSettingRepository;
 import lombok.Builder;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +31,6 @@ import java.util.Optional;
 import java.util.Set;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DataScopeConfigService {
 
@@ -43,6 +42,7 @@ public class DataScopeConfigService {
     private final RoleProfileRepository roleProfileRepository;
     private final RoleProfileBootstrap roleProfileBootstrap;
 
+    @Autowired
     public DataScopeConfigService(
             SystemSettingRepository systemSettingRepository,
             UserRepository userRepository,
@@ -55,6 +55,20 @@ public class DataScopeConfigService {
                 userRepository,
                 roleProfileRepository,
                 roleProfileBootstrap);
+    }
+
+    DataScopeConfigService(
+            DataScopeConfigStore configStore,
+            DataScopeConfigAssembler assembler,
+            UserRepository userRepository,
+            RoleProfileRepository roleProfileRepository,
+            RoleProfileBootstrap roleProfileBootstrap
+    ) {
+        this.configStore = configStore;
+        this.assembler = assembler;
+        this.userRepository = userRepository;
+        this.roleProfileRepository = roleProfileRepository;
+        this.roleProfileBootstrap = roleProfileBootstrap;
     }
 
     public DataScopeConfigResponse getConfig() {

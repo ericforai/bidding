@@ -1,7 +1,9 @@
 package com.xiyu.bid.controller;
 
 import com.xiyu.bid.entity.Task;
+import com.xiyu.bid.task.dto.TaskAssignmentCandidateDTO;
 import com.xiyu.bid.task.dto.TaskDTO;
+import com.xiyu.bid.task.dto.TeamTaskWorkloadDTO;
 import com.xiyu.bid.task.service.TaskService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,5 +84,55 @@ class DashboardTodoContractTest {
                 .andExpect(jsonPath("$.data.status").value("COMPLETED"));
 
         verify(taskService).updateTaskStatus(eq(101L), eq(Task.Status.COMPLETED));
+    }
+
+    @Test
+    @WithMockUser(username = "manager", roles = {"MANAGER"})
+    void getTeamWorkload_ShouldNotBeHandledAsTaskId() throws Exception {
+        TeamTaskWorkloadDTO workload = TeamTaskWorkloadDTO.builder()
+                .scope("部门团队")
+                .orgConfigured(true)
+                .members(List.of(TeamTaskWorkloadDTO.TeamMemberWorkloadDTO.builder()
+                        .userId(7L)
+                        .name("王工")
+                        .deptCode("TECH")
+                        .deptName("技术部")
+                        .workloadScore(6)
+                        .workloadLevel("medium")
+                        .build()))
+                .build();
+
+        when(taskService.getTeamTaskWorkload("manager")).thenReturn(workload);
+
+        mockMvc.perform(get("/api/tasks/team-workload"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.members[0].userId").value(7))
+                .andExpect(jsonPath("$.data.members[0].workloadLevel").value("medium"));
+    }
+
+    @Test
+    @WithMockUser(username = "manager", roles = {"MANAGER"})
+    void getAssignmentCandidates_ShouldNotBeHandledAsTaskId() throws Exception {
+        TaskAssignmentCandidateDTO candidate = TaskAssignmentCandidateDTO.builder()
+                .userId(8L)
+                .name("张经理")
+                .deptCode("BID")
+                .deptName("投标管理部")
+                .roleCode("bid_manager")
+                .roleName("投标经理")
+                .enabled(true)
+                .build();
+
+        when(taskService.getAssignmentCandidates("BID", "bid_manager", "manager"))
+                .thenReturn(List.of(candidate));
+
+        mockMvc.perform(get("/api/tasks/assignment-candidates")
+                        .param("deptCode", "BID")
+                        .param("roleCode", "bid_manager"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].userId").value(8))
+                .andExpect(jsonPath("$.data[0].roleCode").value("bid_manager"));
     }
 }

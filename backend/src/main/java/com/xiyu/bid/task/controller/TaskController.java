@@ -59,7 +59,7 @@ public class TaskController {
         return ResponseEntity.ok(ApiResponse.success("Tasks retrieved successfully", tasks));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "READ", entityType = "Task", description = "根据ID获取任务")
     public ResponseEntity<ApiResponse<TaskDTO>> getTaskById(@PathVariable Long id) {
@@ -67,7 +67,7 @@ public class TaskController {
         return ResponseEntity.ok(ApiResponse.success("Task retrieved successfully", task));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{id:\\d+}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "UPDATE", entityType = "Task", description = "更新任务")
     public ResponseEntity<ApiResponse<TaskDTO>> updateTask(@PathVariable Long id, @Valid @RequestBody TaskDTO taskDTO) {
@@ -76,7 +76,7 @@ public class TaskController {
         return ResponseEntity.ok(ApiResponse.success("Task updated successfully", updatedTask));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id:\\d+}")
     @PreAuthorize("hasRole('ADMIN')")
     @Auditable(action = "DELETE", entityType = "Task", description = "删除任务")
     public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
@@ -102,7 +102,7 @@ public class TaskController {
         return ResponseEntity.ok(ApiResponse.success("Tasks retrieved successfully", tasks));
     }
 
-    @PatchMapping("/{id}/status")
+    @PatchMapping("/{id:\\d+}/status")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "UPDATE", entityType = "Task", description = "更新任务状态")
     public ResponseEntity<ApiResponse<TaskDTO>> updateTaskStatus(@PathVariable Long id, @RequestBody com.xiyu.bid.entity.Task.Status status) {
@@ -110,7 +110,7 @@ public class TaskController {
         return ResponseEntity.ok(ApiResponse.success("Task status updated successfully", updatedTask));
     }
 
-    @PatchMapping("/{id}/assign")
+    @PatchMapping("/{id:\\d+}/assign")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "UPDATE", entityType = "Task", description = "分配任务")
     public ResponseEntity<ApiResponse<TaskDTO>> assignTask(
