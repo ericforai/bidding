@@ -140,6 +140,7 @@
 import { ref, computed } from 'vue'
 import { MoreFilled, User, Calendar, Document, MagicStick, Upload, DocumentAdd, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { useProjectStore } from '@/stores/project'
 
 const props = defineProps({
   tasks: {
@@ -154,6 +155,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['task-click', 'status-change', 'generate-tasks', 'submit-to-document', 'add-deliverable', 'remove-deliverable'])
+
+const projectStore = useProjectStore()
 
 const showUploadDialog = ref(false)
 const currentTask = ref(null)
@@ -245,36 +248,62 @@ const handleFileChange = (file) => {
   deliverableForm.value.file = file.raw
 }
 
-const handleSaveDeliverable = () => {
+const handleSaveDeliverable = async () => {
   if (!currentTask.value || !deliverableForm.value.name) {
     ElMessage.warning('请填写交付物名称')
     return
   }
 
-  const deliverable = {
-    id: Date.now().toString(),
-    name: deliverableForm.value.name,
-    type: deliverableForm.value.type,
-    url: '#',
-    uploader: '当前用户',
-    time: new Date().toLocaleString('zh-CN')
+  try {
+    const typeMap = {
+      document: 'DOCUMENT',
+      qualification: 'QUALIFICATION',
+      technical: 'TECHNICAL',
+      quotation: 'QUOTATION',
+      other: 'OTHER'
+    }
+
+    await projectStore.addDeliverable(props.projectId, currentTask.value.id, {
+      name: deliverableForm.value.name,
+      deliverableType: typeMap[deliverableForm.value.type] || 'DOCUMENT',
+      size: deliverableForm.value.file ? `${(deliverableForm.value.file.size / 1024).toFixed(1)}KB` : null,
+      fileType: deliverableForm.value.file?.type || null
+    })
+
+    emit('add-deliverable', currentTask.value.id, { name: deliverableForm.value.name })
+
+    showUploadDialog.value = false
+    deliverableForm.value = { name: '', type: 'document', file: null }
+    fileList.value = []
+
+    ElMessage.success('交付物已保存')
+  } catch (error) {
+    ElMessage.error(error?.message || '交付物上传失败')
   }
-
-  emit('add-deliverable', currentTask.value.id, deliverable)
-
-  showUploadDialog.value = false
-  deliverableForm.value = { name: '', type: 'document', file: null }
-  fileList.value = []
-
-  ElMessage.success('交付物已保存')
 }
 
-const handleRemoveDeliverable = (task, deliverable) => {
-  emit('remove-deliverable', task.id, deliverable.id)
+const handleRemoveDeliverable = async (task, deliverable) => {
+  try {
+    await projectStore.removeDeliverable(props.projectId, task.id, deliverable.id)
+    emit('remove-deliverable', task.id, deliverable.id)
+    ElMessage.success('交付物已删除')
+  } catch (error) {
+    ElMessage.error(error?.message || '交付物删除失败')
+  }
 }
 
-const handleSubmitToDocument = () => {
-  emit('submit-to-document', props.projectId)
+const handleSubmitToDocument = async () => {
+  try {
+    const result = await projectStore.submitToBidDocument(props.projectId)
+    if (result?.data?.accepted) {
+      ElMessage.success(result.data.message || '已提交至标书编写流程')
+      emit('submit-to-document', props.projectId)
+    } else {
+      ElMessage.warning(result?.data?.message || '提交校验未通过')
+    }
+  } catch (error) {
+    ElMessage.error(error?.message || '提交失败')
+  }
 }
 </script>
 

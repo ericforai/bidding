@@ -72,4 +72,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
      * 删除项目的所有任务
      */
     void deleteByProjectId(Long projectId);
+
+    long countByProjectIdAndStatus(Long projectId, Task.Status status);
+
+    List<Task> findByProjectIdAndStatusIn(Long projectId, Collection<Task.Status> statuses);
 }

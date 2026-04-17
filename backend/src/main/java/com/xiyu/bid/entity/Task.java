@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 任务实体
+ * Task entity representing a project task.
  */
 @Entity
 @Table(name = "tasks")
@@ -28,79 +28,111 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Task {
 
+    /** Column length for department/role code/name fields. */
+    private static final int LEN_CODE = 100;
+    /** Column length for role code. */
+    private static final int LEN_ROLE_CODE = 64;
+
+    /** Unique identifier. */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Owning project id. */
     @Column(name = "project_id", nullable = false)
     private Long projectId;
 
+    /** Task title. */
     @Column(nullable = false)
     private String title;
 
+    /** Task description. */
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    /** Assignee user id. */
     @Column(name = "assignee_id")
     private Long assigneeId;
 
-    @Column(name = "assignee_dept_code", length = 100)
+    /** Assignee department code. */
+    @Column(name = "assignee_dept_code", length = LEN_CODE)
     private String assigneeDeptCode;
 
-    @Column(name = "assignee_dept_name", length = 100)
+    /** Assignee department name. */
+    @Column(name = "assignee_dept_name", length = LEN_CODE)
     private String assigneeDeptName;
 
-    @Column(name = "assignee_role_code", length = 64)
+    /** Assignee role code. */
+    @Column(name = "assignee_role_code", length = LEN_ROLE_CODE)
     private String assigneeRoleCode;
 
-    @Column(name = "assignee_role_name", length = 100)
+    /** Assignee role name. */
+    @Column(name = "assignee_role_name", length = LEN_CODE)
     private String assigneeRoleName;
 
+    /** Current task status. */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Status status = Status.TODO;
 
+    /** Task priority level. */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Priority priority = Priority.MEDIUM;
 
+    /** Due date for completion. */
     @Column(name = "due_date")
     private LocalDateTime dueDate;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    /** Creation timestamp. */
+    @Column(name = "created_at", nullable = false,
+            updatable = false)
     private LocalDateTime createdAt;
 
+    /** Last update timestamp. */
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    /** Auto-set timestamps on persist. */
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
 
+    /** Auto-update timestamp on update. */
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
 
     /**
-     * 任务状态枚举
+     * 任务状态枚举.
      */
     public enum Status {
+        /** Not started yet. */
         TODO,
+        /** Work in progress. */
         IN_PROGRESS,
+        /** Pending review. */
+        REVIEW,
+        /** Fully completed. */
         COMPLETED,
+        /** Cancelled. */
         CANCELLED
     }
 
     /**
-     * 任务优先级枚举
+     * 任务优先级枚举.
      */
     public enum Priority {
+        /** Low priority. */
         LOW,
+        /** Medium priority. */
         MEDIUM,
+        /** High priority. */
         HIGH,
+        /** Urgent priority. */
         URGENT
     }
 }

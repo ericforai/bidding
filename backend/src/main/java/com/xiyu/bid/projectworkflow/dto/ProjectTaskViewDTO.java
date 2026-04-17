@@ -29,4 +29,5 @@ public class ProjectTaskViewDTO {
     private String dueDate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Integer deliverableCount;
 }

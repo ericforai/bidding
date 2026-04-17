@@ -516,8 +516,9 @@ public class ProjectWorkflowService {
         return switch (status) {
             case TODO -> "todo";
             case IN_PROGRESS -> "doing";
+            case REVIEW -> "review";
             case COMPLETED -> "done";
-            case CANCELLED -> "review";
+            case CANCELLED -> "cancelled";
         };
     }
 
