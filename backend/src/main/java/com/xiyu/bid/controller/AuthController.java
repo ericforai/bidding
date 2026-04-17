@@ -82,6 +82,9 @@ public class AuthController {
         if (request.getUsername() != null) {
             request.setUsername(InputSanitizer.sanitizeString(request.getUsername(), 50));
         }
+        if (request.getPassword() != null) {
+            request.setPassword(request.getPassword().trim());
+        }
         AuthSessionResult sessionResult = authService.login(request);
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, buildRefreshCookie(sessionResult.getRefreshToken(), Boolean.TRUE.equals(request.getRememberMe())).toString())
