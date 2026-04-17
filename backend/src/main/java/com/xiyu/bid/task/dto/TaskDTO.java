@@ -22,6 +22,10 @@ public class TaskDTO {
     private String title;
     private String description;
     private Long assigneeId;
+    private String assigneeDeptCode;
+    private String assigneeDeptName;
+    private String assigneeRoleCode;
+    private String assigneeRoleName;
     private Task.Status status;
     private Task.Priority priority;
     private LocalDateTime dueDate;

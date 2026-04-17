@@ -49,7 +49,7 @@ class DashboardTodoContractTest {
                 .dueDate(LocalDateTime.of(2026, 3, 20, 18, 0))
                 .build();
 
-        when(taskService.getTasksByAssigneeId(7L)).thenReturn(List.of(task));
+        when(taskService.getAccessibleTasksByAssigneeId(7L, "alice")).thenReturn(List.of(task));
 
         mockMvc.perform(get("/api/tasks/my").param("assigneeId", "7"))
                 .andExpect(status().isOk())

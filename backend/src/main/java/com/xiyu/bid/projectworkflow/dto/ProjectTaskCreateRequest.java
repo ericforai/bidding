@@ -25,6 +25,14 @@ public class ProjectTaskCreateRequest {
 
     private String assigneeName;
 
+    private String assigneeDeptCode;
+
+    private String assigneeDeptName;
+
+    private String assigneeRoleCode;
+
+    private String assigneeRoleName;
+
     @NotNull(message = "任务优先级不能为空")
     private Task.Priority priority;
 
