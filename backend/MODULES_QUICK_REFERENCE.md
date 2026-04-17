@@ -1,4 +1,4 @@
-# 标讯管理和项目管理模块 - 快速参考
+# 标讯管理、项目管理与任务交付物模块 - 快速参考
 
 ## 模块概览
 
@@ -6,6 +6,7 @@
 |------|------|----------|-----------|----------|
 | 标讯管理 | Tender | 4 (PENDING, TRACKING, BIDDED, ABANDONED) | 9 | 4 |
 | 项目管理 | Project | 6 (INITIATED, PREPARING, REVIEWING, SEALING, BIDDING, ARCHIVED) | 13 | 4 |
+| **任务交付物** | **Task, TaskDeliverable** | **5 (TODO, IN_PROGRESS, REVIEW, COMPLETED, CANCELLED) + 5 种 DeliverableType** | **19 (+6)** | **37 (+31)** |
 
 ## 关键文件位置
 
@@ -29,7 +30,7 @@ src/test/java/com/xiyu/bid/
 ### 项目管理模块
 ```
 src/main/java/com/xiyu/bid/
-├── entity/Project.java                         # 实体
+├── entity/Project.java                         # 实体（含 Task.Status 枚举）
 ├── dto/ProjectDTO.java                         # 数据传输对象
 ├── dto/ProjectRequest.java                     # 请求对象（带验证）
 ├── repository/ProjectRepository.java           # 数据访问层
@@ -41,6 +42,36 @@ src/test/java/com/xiyu/bid/
 ├── repository/ProjectRepositoryTest.java       # Repository测试
 ├── service/ProjectServiceTest.java             # Service测试
 └── integration/ProjectIntegrationTest.java     # 集成测试
+```
+
+### 任务交付物模块（新增）
+```
+src/main/java/com/xiyu/bid/task/
+├── core/
+│   ├── TaskTransitionPolicy.java              # 状态流转守卫策略（纯静态）
+│   ├── DeliverableAssociationPolicy.java      # 交付物关联规则策略（纯静态）
+│   └── BidSubmissionPolicy.java             # 标书提交校验策略（纯静态）
+├── entity/
+│   └── TaskDeliverable.java                 # 交付物实体
+├── repository/
+│   └── TaskDeliverableRepository.java      # 交付物数据访问
+├── dto/
+│   ├── TaskDeliverableDTO.java               # 交付物 DTO
+│   ├── TaskDeliverableCreateRequest.java    # 创建请求 DTO
+│   ├── DeliverableCoverageDTO.java            # 覆盖度 DTO
+│   ├── BidSubmissionResponse.java             # 提交响应 DTO
+│   └── TaskDeliverableAssembler.java         # Entity↔DTO 转换
+├── service/
+│   ├── TaskDeliverableService.java          # 交付物 CRUD 编排服务
+│   └── BidProcessService.java             # 标书提交流程服务
+
+src/test/java/com/xiyu/bid/task/
+├── core/
+│   ├── TaskTransitionPolicyTest.java         # 策略测试 (14 cases)
+│   ├── DeliverableAssociationPolicyTest.java  # 策略测试 (11 cases)
+│   └── BidSubmissionPolicyTest.java         # 策略测试 (6 cases)
+└── controller/
+    └── TaskDeliverableContractTest.java    # API 契约测试 (6 cases)
 ```
 
 ## API端点速查
