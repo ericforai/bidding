@@ -41,19 +41,31 @@ class ProjectWorkflowServiceTest {
         projectRepository = mock(ProjectRepository.class);
         taskRepository = mock(TaskRepository.class);
         projectScoreDraftRepository = mock(ProjectScoreDraftRepository.class);
+        ProjectAccessScopeService projectAccessScopeService = mock(ProjectAccessScopeService.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        ObjectMapper objectMapper = new ObjectMapper();
+        ProjectWorkflowGuard projectWorkflowGuard = new ProjectWorkflowGuard(projectRepository, projectAccessScopeService);
 
-        service = new ProjectWorkflowService(
-                projectRepository,
-                mock(ProjectAccessScopeService.class),
+        ProjectTaskWorkflowService taskWorkflowService = new ProjectTaskWorkflowService(
+                projectWorkflowGuard,
                 taskRepository,
-                mock(UserRepository.class),
+                userRepository
+        );
+        ProjectDocumentWorkflowService documentWorkflowService = new ProjectDocumentWorkflowService(
+                projectWorkflowGuard,
+                userRepository,
                 mock(ProjectDocumentRepository.class),
                 mock(ProjectReminderRepository.class),
-                mock(ProjectShareLinkRepository.class),
+                mock(ProjectShareLinkRepository.class)
+        );
+        ProjectScoreDraftWorkflowService scoreDraftWorkflowService = new ProjectScoreDraftWorkflowService(
+                projectWorkflowGuard,
                 projectScoreDraftRepository,
                 mock(ScoreDraftParserService.class),
-                new ObjectMapper()
+                taskWorkflowService,
+                objectMapper
         );
+        service = new ProjectWorkflowService(taskWorkflowService, documentWorkflowService, scoreDraftWorkflowService);
 
         when(projectRepository.findById(1001L)).thenReturn(Optional.of(Project.builder().id(1001L).build()));
     }
