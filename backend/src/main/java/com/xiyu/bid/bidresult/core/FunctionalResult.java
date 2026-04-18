@@ -8,14 +8,14 @@ import java.util.function.Function;
  * A functional Result wrapper representing either a Success (S) or a Failure (F).
  */
 public final class FunctionalResult<S, F> {
-    private final S success;
-    private final F failure;
-    private final boolean isSuccess;
+    private final S successValue;
+    private final F failureValue;
+    private final boolean successState;
 
     private FunctionalResult(S success, F failure, boolean isSuccess) {
-        this.success = success;
-        this.failure = failure;
-        this.isSuccess = isSuccess;
+        this.successValue = success;
+        this.failureValue = failure;
+        this.successState = isSuccess;
     }
 
     public static <S, F> FunctionalResult<S, F> success(S value) {
@@ -27,37 +27,37 @@ public final class FunctionalResult<S, F> {
     }
 
     public boolean isSuccess() {
-        return isSuccess;
+        return successState;
     }
 
     public boolean isFailure() {
-        return !isSuccess;
+        return !successState;
     }
 
     public <T> FunctionalResult<T, F> map(Function<? super S, ? extends T> mapper) {
-        if (isSuccess) {
-            return success(mapper.apply(success));
+        if (successState) {
+            return success(mapper.apply(successValue));
         }
-        return failure(failure);
+        return failure(failureValue);
     }
 
     public <T> FunctionalResult<T, F> flatMap(Function<? super S, FunctionalResult<T, F>> mapper) {
-        if (isSuccess) {
-            return mapper.apply(success);
+        if (successState) {
+            return mapper.apply(successValue);
         }
-        return failure(failure);
+        return failure(failureValue);
     }
 
     public void ifSuccess(Consumer<? super S> action) {
-        if (isSuccess) {
-            action.accept(success);
+        if (successState) {
+            action.accept(successValue);
         }
     }
 
     public S orElseThrow(Function<? super F, ? extends RuntimeException> exceptionSupplier) {
-        if (isSuccess) {
-            return success;
+        if (successState) {
+            return successValue;
         }
-        throw exceptionSupplier.apply(failure);
+        throw exceptionSupplier.apply(failureValue);
     }
 }
