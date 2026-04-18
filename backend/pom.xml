@@ -365,6 +365,7 @@
                             <effort>Max</effort>
                             <threshold>Medium</threshold>
                             <onlyAnalyze>${quality.onlyAnalyze}</onlyAnalyze>
+                            <excludeFilterFile>${project.basedir}/config/spotbugs-exclude.xml</excludeFilterFile>
                             <failOnError>${quality.failOnViolation}</failOnError>
                         </configuration>
                         <executions>
