@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public interface BidResultReminderRepository extends JpaRepository<BidResultReminder, Long> {
     List<BidResultReminder> findAllByOrderByRemindTimeDesc();
+    List<BidResultReminder> findByProjectIdOrderByRemindTimeDesc(Long projectId);
     long countByStatus(BidResultReminder.ReminderStatus status);
     Optional<BidResultReminder> findFirstByProjectIdAndReminderTypeOrderByRemindTimeDesc(Long projectId, BidResultReminder.ReminderType reminderType);
 }

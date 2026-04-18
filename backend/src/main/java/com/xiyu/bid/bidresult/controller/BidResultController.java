@@ -12,6 +12,7 @@ import com.xiyu.bid.bidresult.service.BidResultService;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -63,13 +65,16 @@ public class BidResultController {
     @PreAuthorize(ADMIN_MANAGER_STAFF_EXPR)
     public ApiResponse<BidResultFetchResultDTO> confirm(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
-        return ApiResponse.success(bidResultService.confirmFetchResult(id, user.getId()));
+        return ApiResponse.success(bidResultService.confirmFetchResult(id, user.getId(), user.getRole()));
     }
 
     @PostMapping("/fetch-results/{id}/ignore")
     @PreAuthorize(ADMIN_MANAGER_STAFF_EXPR)
-    public ApiResponse<Void> ignore(@PathVariable Long id, @RequestBody(required = false) BidResultActionRequest request) {
-        bidResultService.ignoreFetchResult(id, request == null ? null : request.getComment());
+    public ApiResponse<Void> ignore(@PathVariable Long id,
+                                    @RequestBody(required = false) BidResultActionRequest request,
+                                    @AuthenticationPrincipal UserDetails userDetails) {
+        User user = getCurrentUser(userDetails);
+        bidResultService.ignoreFetchResult(id, request == null ? null : request.getComment(), user.getId(), user.getRole());
         return ApiResponse.success("已忽略该记录", null);
     }
 
@@ -78,7 +83,7 @@ public class BidResultController {
     public ApiResponse<BidResultSyncResponseDTO> confirmBatch(@RequestBody BidResultActionRequest request,
                                                               @AuthenticationPrincipal UserDetails userDetails) {
         User user = getCurrentUser(userDetails);
-        int count = bidResultService.confirmBatch(request.getIds(), user.getId());
+        int count = bidResultService.confirmBatch(request.getIds(), user.getId(), user.getRole());
         return ApiResponse.success(BidResultSyncResponseDTO.builder().affectedCount(count).message("批量确认完成").build());
     }
 
@@ -109,8 +114,9 @@ public class BidResultController {
 
     @GetMapping("/{id}")
     @PreAuthorize(ADMIN_MANAGER_STAFF_EXPR)
-    public ApiResponse<BidResultDetailDTO> getDetail(@PathVariable Long id) {
-        return ApiResponse.success(bidResultService.getDetail(id));
+    public ApiResponse<BidResultDetailDTO> getDetail(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
+        User user = getCurrentUser(userDetails);
+        return ApiResponse.success(bidResultService.getDetail(id, user.getId(), user.getRole()));
     }
 
     @GetMapping("/competitor-report")
@@ -123,7 +129,7 @@ public class BidResultController {
         try {
             return authService.resolveUserByUsername(userDetails.getUsername());
         } catch (org.springframework.security.core.userdetails.UsernameNotFoundException ex) {
-            throw new IllegalStateException("Authenticated user not found", ex);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authenticated user not found", ex);
         }
     }
 }

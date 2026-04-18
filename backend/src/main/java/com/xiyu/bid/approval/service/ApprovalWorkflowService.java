@@ -13,6 +13,7 @@ import com.xiyu.bid.approval.repository.ApprovalActionRepository;
 import com.xiyu.bid.approval.repository.ApprovalRequestRepository;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.exception.BusinessException;
+import com.xiyu.bid.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -56,7 +57,8 @@ public class ApprovalWorkflowService {
         boolean hasPending = existingRequests.stream()
                 .anyMatch(r -> r.getStatus() == ApprovalStatus.PENDING);
         if (hasPending) {
-            throw new BusinessException("该项目已有待审批的请求，请等待处理完成");
+            throw new BusinessException(ErrorCode.APPROVAL_DUPLICATE_PENDING,
+                    "该项目已有待审批的请求，请等待处理完成");
         }
 
         // 确定审批人
@@ -122,12 +124,14 @@ public class ApprovalWorkflowService {
 
         // 状态检查
         if (!request.canBeApproved()) {
-            throw new BusinessException("当前状态不允许审批: " + request.getStatus().getDescription());
+            throw new BusinessException(ErrorCode.APPROVAL_ALREADY_DECIDED,
+                    "当前状态不允许审批: " + request.getStatus().getDescription());
         }
 
         // 权限检查
         if (!canApprove(request, approverId)) {
-            throw new BusinessException("您没有权限审批此请求");
+            throw new BusinessException(ErrorCode.APPROVAL_NO_PERMISSION,
+                    "您没有权限审批此请求");
         }
 
         ApprovalStatus previousStatus = request.getStatus();
@@ -161,12 +165,14 @@ public class ApprovalWorkflowService {
 
         // 状态检查
         if (!request.canBeApproved()) {
-            throw new BusinessException("当前状态不允许审批: " + request.getStatus().getDescription());
+            throw new BusinessException(ErrorCode.APPROVAL_ALREADY_DECIDED,
+                    "当前状态不允许审批: " + request.getStatus().getDescription());
         }
 
         // 权限检查
         if (!canApprove(request, approverId)) {
-            throw new BusinessException("您没有权限审批此请求");
+            throw new BusinessException(ErrorCode.APPROVAL_NO_PERMISSION,
+                    "您没有权限审批此请求");
         }
 
         ApprovalStatus previousStatus = request.getStatus();
@@ -459,7 +465,9 @@ public class ApprovalWorkflowService {
      */
     private ApprovalRequest getApprovalRequestEntity(UUID requestId) {
         return requestRepository.findById(requestId)
-                .orElseThrow(() -> new BusinessException("审批请求不存在: " + requestId));
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.APPROVAL_NOT_FOUND,
+                        "审批请求不存在: " + requestId));
     }
 
     /**

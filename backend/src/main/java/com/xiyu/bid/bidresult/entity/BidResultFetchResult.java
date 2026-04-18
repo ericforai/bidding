@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
         @Index(name = "idx_bid_result_fetch_tender", columnList = "tender_id")
 })
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class BidResultFetchResult {

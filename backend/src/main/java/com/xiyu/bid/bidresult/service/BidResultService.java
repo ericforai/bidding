@@ -17,11 +17,13 @@ import com.xiyu.bid.competitionintel.service.CompetitionIntelService;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.entity.User;
+import com.xiyu.bid.exception.BusinessException;
 import com.xiyu.bid.exception.ResourceNotFoundException;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TenderRepository;
 import com.xiyu.bid.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +44,7 @@ public class BidResultService {
 
     private static final String INTERNAL_SYNC_SOURCE = "ERP/CRM";
     private static final String PUBLIC_FETCH_SOURCE = "公开信息抓取";
+    private static final int MAX_BATCH_SIZE = 200;
 
     private final BidResultFetchResultRepository fetchResultRepository;
     private final BidResultReminderRepository reminderRepository;
@@ -96,29 +99,37 @@ public class BidResultService {
     }
 
     @Transactional
-    public BidResultFetchResultDTO confirmFetchResult(Long id, Long userId) {
+    public BidResultFetchResultDTO confirmFetchResult(Long id, Long userId, User.Role role) {
         BidResultFetchResult entity = getFetchResult(id);
-        entity.setStatus(BidResultFetchResult.Status.CONFIRMED);
-        entity.setConfirmedAt(LocalDateTime.now());
-        entity.setConfirmedBy(userId);
-        BidResultFetchResult saved = fetchResultRepository.save(entity);
+        assertProjectOwnership(entity.getProjectId(), userId, role);
+        BidResultFetchResult saved = fetchResultRepository.save(entity.toBuilder()
+                .status(BidResultFetchResult.Status.CONFIRMED)
+                .confirmedAt(LocalDateTime.now())
+                .confirmedBy(userId)
+                .build());
         ensurePendingReminderForResult(saved, "结果已确认，待上传中标资料", userId, "系统");
         return toFetchResultDTO(saved);
     }
 
     @Transactional
-    public void ignoreFetchResult(Long id, String comment) {
+    public void ignoreFetchResult(Long id, String comment, Long userId, User.Role role) {
         BidResultFetchResult entity = getFetchResult(id);
-        entity.setStatus(BidResultFetchResult.Status.IGNORED);
-        entity.setIgnoredReason(Optional.ofNullable(comment).filter(text -> !text.isBlank()).orElse("人工忽略"));
-        fetchResultRepository.save(entity);
+        assertProjectOwnership(entity.getProjectId(), userId, role);
+        fetchResultRepository.save(entity.toBuilder()
+                .status(BidResultFetchResult.Status.IGNORED)
+                .ignoredReason(Optional.ofNullable(comment).filter(text -> !text.isBlank()).orElse("人工忽略"))
+                .build());
     }
 
     @Transactional
-    public int confirmBatch(List<Long> ids, Long userId) {
+    public int confirmBatch(List<Long> ids, Long userId, User.Role role) {
+        List<Long> safe = Optional.ofNullable(ids).orElse(List.of());
+        if (safe.size() > MAX_BATCH_SIZE) {
+            throw new BusinessException("批量数量不得超过 " + MAX_BATCH_SIZE);
+        }
         int count = 0;
-        for (Long id : Optional.ofNullable(ids).orElse(List.of())) {
-            confirmFetchResult(id, userId);
+        for (Long id : safe) {
+            confirmFetchResult(id, userId, role);
             count++;
         }
         return count;
@@ -144,8 +155,12 @@ public class BidResultService {
 
     @Transactional
     public int sendReminders(List<Long> resultIds, String comment, Long operatorId, String operatorName) {
+        List<Long> safe = Optional.ofNullable(resultIds).orElse(List.of());
+        if (safe.size() > MAX_BATCH_SIZE) {
+            throw new BusinessException("批量数量不得超过 " + MAX_BATCH_SIZE);
+        }
         int count = 0;
-        for (Long resultId : Optional.ofNullable(resultIds).orElse(List.of())) {
+        for (Long resultId : safe) {
             sendReminder(resultId, comment, operatorId, operatorName);
             count++;
         }
@@ -153,13 +168,15 @@ public class BidResultService {
     }
 
     @Transactional(readOnly = true)
-    public BidResultDetailDTO getDetail(Long id) {
+    public BidResultDetailDTO getDetail(Long id, Long callerId, User.Role role) {
         BidResultFetchResult result = getFetchResult(id);
-        List<String> reminderTypes = reminderRepository.findAllByOrderByRemindTimeDesc().stream()
-                .filter(reminder -> Objects.equals(reminder.getProjectId(), result.getProjectId()))
-                .map(reminder -> reminder.getReminderType().name())
-                .distinct()
-                .toList();
+        assertProjectOwnership(result.getProjectId(), callerId, role);
+        List<String> reminderTypes = result.getProjectId() == null
+                ? List.of()
+                : reminderRepository.findByProjectIdOrderByRemindTimeDesc(result.getProjectId()).stream()
+                        .map(reminder -> reminder.getReminderType().name())
+                        .distinct()
+                        .toList();
 
         return BidResultDetailDTO.builder()
                 .id(result.getId())
@@ -215,8 +232,24 @@ public class BidResultService {
 
     private int upsertProjectDerivedResults(String source, boolean pendingStatus) {
         List<Project> projects = projectRepository.findAll();
-        List<Tender> tenders = tenderRepository.findAllById(projects.stream().map(Project::getTenderId).toList());
-        Map<Long, Tender> tenderById = tenders.stream().collect(Collectors.toMap(Tender::getId, item -> item));
+        List<Long> tenderIds = projects.stream()
+                .map(Project::getTenderId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, Tender> tenderById = tenderRepository.findAllById(tenderIds).stream()
+                .collect(Collectors.toMap(Tender::getId, item -> item));
+        BidResultFetchResult.Status lookupStatus = pendingStatus
+                ? BidResultFetchResult.Status.PENDING
+                : BidResultFetchResult.Status.CONFIRMED;
+        Map<Long, BidResultFetchResult> latestByTender = tenderIds.isEmpty()
+                ? Map.of()
+                : fetchResultRepository
+                        .findByTenderIdInAndStatusOrderByFetchTimeDesc(tenderIds, lookupStatus).stream()
+                        .collect(Collectors.toMap(
+                                BidResultFetchResult::getTenderId,
+                                item -> item,
+                                (first, second) -> first));
 
         int affected = 0;
         for (Project project : projects) {
@@ -224,10 +257,12 @@ public class BidResultService {
             if (tender == null) {
                 continue;
             }
-            Optional<BidResultFetchResult> existing = fetchResultRepository
-                    .findFirstByTenderIdAndStatusOrderByFetchTimeDesc(tender.getId(), pendingStatus ? BidResultFetchResult.Status.PENDING : BidResultFetchResult.Status.CONFIRMED);
-
-            if (existing.isPresent() && sameProject(existing.get(), project)) {
+            BidResultFetchResult.Result derived = deriveResult(tender, project);
+            if (derived == null) {
+                continue;
+            }
+            BidResultFetchResult existing = latestByTender.get(tender.getId());
+            if (existing != null && sameProject(existing, project)) {
                 continue;
             }
 
@@ -236,7 +271,7 @@ public class BidResultService {
                     .tenderId(tender.getId())
                     .projectId(project.getId())
                     .projectName(project.getName())
-                    .result(deriveResult(tender, project))
+                    .result(derived)
                     .amount(Optional.ofNullable(tender.getBudget()).orElse(BigDecimal.ZERO))
                     .fetchTime(LocalDateTime.now())
                     .status(pendingStatus ? BidResultFetchResult.Status.PENDING : BidResultFetchResult.Status.CONFIRMED)
@@ -259,9 +294,21 @@ public class BidResultService {
         if (tender.getStatus() == Tender.Status.ABANDONED) {
             return BidResultFetchResult.Result.LOST;
         }
-        return project.getStatus() == Project.Status.BIDDING
-                ? BidResultFetchResult.Result.WON
-                : BidResultFetchResult.Result.LOST;
+        return null;
+    }
+
+    private void assertProjectOwnership(Long projectId, Long callerId, User.Role callerRole) {
+        if (callerRole == User.Role.ADMIN || callerRole == User.Role.MANAGER) {
+            return;
+        }
+        if (projectId == null || callerId == null) {
+            return;
+        }
+        projectRepository.findById(projectId).ifPresent(project -> {
+            if (!Objects.equals(project.getManagerId(), callerId)) {
+                throw new AccessDeniedException("无权操作他人项目的投标结果");
+            }
+        });
     }
 
     private void logSync(BidResultSyncLog.OperationType operationType, String source, Long operatorId, String operatorName,
