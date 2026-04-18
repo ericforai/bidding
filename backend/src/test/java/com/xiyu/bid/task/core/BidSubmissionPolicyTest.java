@@ -2,6 +2,10 @@ package com.xiyu.bid.task.core;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class BidSubmissionPolicyTest {
@@ -50,5 +54,21 @@ class BidSubmissionPolicyTest {
 
         var result2 = BidSubmissionPolicy.validateSubmission(3, 3, 3, -1);
         assertThat(result2.submittable()).isTrue();
+    }
+
+    @Test
+    void submissionValidationResult_ShouldDefensivelyCopyGaps() {
+        ArrayList<BidSubmissionPolicy.TaskGap> gaps = new ArrayList<>(List.of(
+                new BidSubmissionPolicy.TaskGap(1L, "任务A", "缺少交付物")
+        ));
+
+        BidSubmissionPolicy.SubmissionValidationResult result =
+                new BidSubmissionPolicy.SubmissionValidationResult(false, "fail", gaps);
+
+        gaps.add(new BidSubmissionPolicy.TaskGap(2L, "任务B", "未完成"));
+
+        assertThat(result.gaps()).hasSize(1);
+        assertThatThrownBy(() -> result.gaps().add(new BidSubmissionPolicy.TaskGap(3L, "任务C", "其他")))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 }

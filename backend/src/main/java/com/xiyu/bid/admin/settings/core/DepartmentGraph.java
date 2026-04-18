@@ -8,6 +8,12 @@ import java.util.Map;
 import java.util.Objects;
 
 public record DepartmentGraph(Map<String, DepartmentNode> definitions, List<DepartmentOption> options, List<DepartmentNode> tree) {
+    public DepartmentGraph {
+        definitions = definitions == null ? Map.of() : Map.copyOf(definitions);
+        options = options == null ? List.of() : List.copyOf(options);
+        tree = tree == null ? List.of() : List.copyOf(tree);
+    }
+
     public List<String> descendantsOf(String rootCode) {
         if (rootCode == null || !definitions.containsKey(rootCode)) {
             return List.of();

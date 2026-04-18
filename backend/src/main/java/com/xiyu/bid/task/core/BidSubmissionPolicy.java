@@ -67,6 +67,9 @@ public final class BidSubmissionPolicy {
             boolean submittable,
             String reason,
             List<TaskGap> gaps) {
+        public SubmissionValidationResult {
+            gaps = gaps == null ? List.of() : List.copyOf(gaps);
+        }
     }
 
     /**

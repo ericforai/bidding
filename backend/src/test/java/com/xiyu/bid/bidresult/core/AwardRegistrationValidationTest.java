@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -62,5 +64,19 @@ class AwardRegistrationValidationTest {
         AwardRegistrationValidation.ValidationResult result = AwardRegistrationValidation.validate(reg);
         assertFalse(result.valid());
         assertTrue(result.errors().contains("合同结束日期不得早于开始日期"));
+    }
+
+    @Test
+    @DisplayName("ValidationResult should defensively copy error list")
+    void validationResultShouldDefensivelyCopyErrors() {
+        ArrayList<String> errors = new ArrayList<>(List.of("A", "B"));
+
+        AwardRegistrationValidation.ValidationResult result =
+                AwardRegistrationValidation.ValidationResult.failure(errors);
+
+        errors.add("C");
+
+        assertEquals(List.of("A", "B"), result.errors());
+        assertThrows(UnsupportedOperationException.class, () -> result.errors().add("D"));
     }
 }

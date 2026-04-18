@@ -2,8 +2,10 @@ package com.xiyu.bid.task.core;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class DeliverableAssociationPolicyTest {
@@ -101,5 +103,22 @@ class DeliverableAssociationPolicyTest {
                 List.of(DeliverableAssociationPolicy.DeliverableType.DOCUMENT));
         assertThat(coverage.typeCoverages().get(0).label()).isEqualTo("文档");
         assertThat(coverage.typeCoverages().get(1).label()).isEqualTo("报价单");
+    }
+
+    @Test
+    void completionCoverage_ShouldDefensivelyCopyTypeCoverages() {
+        ArrayList<DeliverableAssociationPolicy.TypeCoverage> typeCoverages = new ArrayList<>(List.of(
+                new DeliverableAssociationPolicy.TypeCoverage("DOCUMENT", "文档", true, 1)
+        ));
+
+        DeliverableAssociationPolicy.CompletionCoverage coverage =
+                new DeliverableAssociationPolicy.CompletionCoverage(1, 1, 100.0, typeCoverages);
+
+        typeCoverages.add(new DeliverableAssociationPolicy.TypeCoverage("TECHNICAL", "技术方案", false, 0));
+
+        assertThat(coverage.typeCoverages()).hasSize(1);
+        assertThatThrownBy(() -> coverage.typeCoverages().add(
+                new DeliverableAssociationPolicy.TypeCoverage("QUOTATION", "报价单", false, 0)))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 }

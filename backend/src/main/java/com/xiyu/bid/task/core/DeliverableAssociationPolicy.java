@@ -176,6 +176,9 @@ public final class DeliverableAssociationPolicy {
             int covered,
             double percentage,
             List<TypeCoverage> typeCoverages) {
+        public CompletionCoverage {
+            typeCoverages = typeCoverages == null ? List.of() : List.copyOf(typeCoverages);
+        }
     }
 
     /**
