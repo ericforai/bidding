@@ -6,9 +6,9 @@ import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftGenerateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftUpdateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectTaskViewDTO;
-import com.xiyu.bid.projectworkflow.entity.ProjectScoreDraft;
 import com.xiyu.bid.projectworkflow.repository.ProjectDocumentRepository;
 import com.xiyu.bid.projectworkflow.repository.ProjectReminderRepository;
+import com.xiyu.bid.projectworkflow.entity.ProjectScoreDraft;
 import com.xiyu.bid.projectworkflow.repository.ProjectScoreDraftRepository;
 import com.xiyu.bid.projectworkflow.repository.ProjectShareLinkRepository;
 import com.xiyu.bid.repository.ProjectRepository;
@@ -34,6 +34,10 @@ class ProjectWorkflowServiceTest {
     private ProjectRepository projectRepository;
     private TaskRepository taskRepository;
     private ProjectScoreDraftRepository projectScoreDraftRepository;
+    private ProjectDocumentRepository projectDocumentRepository;
+    private ProjectReminderRepository projectReminderRepository;
+    private ProjectShareLinkRepository projectShareLinkRepository;
+    private UserRepository userRepository;
     private ProjectWorkflowService service;
 
     @BeforeEach
@@ -41,18 +45,58 @@ class ProjectWorkflowServiceTest {
         projectRepository = mock(ProjectRepository.class);
         taskRepository = mock(TaskRepository.class);
         projectScoreDraftRepository = mock(ProjectScoreDraftRepository.class);
+        projectDocumentRepository = mock(ProjectDocumentRepository.class);
+        projectReminderRepository = mock(ProjectReminderRepository.class);
+        projectShareLinkRepository = mock(ProjectShareLinkRepository.class);
+        userRepository = mock(UserRepository.class);
+        ProjectAccessScopeService projectAccessScopeService = mock(ProjectAccessScopeService.class);
+        ScoreDraftParserService scoreDraftParserService = mock(ScoreDraftParserService.class);
+        ObjectMapper objectMapper = new ObjectMapper();
 
-        service = new ProjectWorkflowService(
+        ProjectWorkflowGuardService guardService = new ProjectWorkflowGuardService(
                 projectRepository,
-                mock(ProjectAccessScopeService.class),
+                projectAccessScopeService,
                 taskRepository,
-                mock(UserRepository.class),
-                mock(ProjectDocumentRepository.class),
-                mock(ProjectReminderRepository.class),
-                mock(ProjectShareLinkRepository.class),
+                projectDocumentRepository,
+                projectScoreDraftRepository
+        );
+        ProjectTaskWorkflowService projectTaskWorkflowService = new ProjectTaskWorkflowService(
+                guardService,
+                taskRepository,
+                userRepository
+        );
+        ProjectDocumentWorkflowService projectDocumentWorkflowService = new ProjectDocumentWorkflowService(
+                guardService,
+                projectDocumentRepository,
+                userRepository,
+                new ProjectDocumentViewAssembler(),
+                mock(ProjectDocumentBindingGateway.class)
+        );
+        ProjectReminderWorkflowService projectReminderWorkflowService = new ProjectReminderWorkflowService(
+                guardService,
+                projectReminderRepository,
+                userRepository,
+                new ProjectReminderViewAssembler()
+        );
+        ProjectShareLinkWorkflowService projectShareLinkWorkflowService = new ProjectShareLinkWorkflowService(
+                guardService,
+                projectShareLinkRepository,
+                userRepository,
+                new ProjectShareLinkViewAssembler()
+        );
+        ProjectScoreDraftWorkflowService projectScoreDraftWorkflowService = new ProjectScoreDraftWorkflowService(
+                guardService,
                 projectScoreDraftRepository,
-                mock(ScoreDraftParserService.class),
-                new ObjectMapper()
+                scoreDraftParserService,
+                projectTaskWorkflowService,
+                objectMapper
+        );
+        service = new ProjectWorkflowService(
+                projectTaskWorkflowService,
+                projectDocumentWorkflowService,
+                projectReminderWorkflowService,
+                projectShareLinkWorkflowService,
+                projectScoreDraftWorkflowService
         );
 
         when(projectRepository.findById(1001L)).thenReturn(Optional.of(Project.builder().id(1001L).build()));

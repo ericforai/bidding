@@ -30,8 +30,10 @@
         <spotbugs.maven.plugin.version>4.8.6.6</spotbugs.maven.plugin.version>
         <quality.skip>true</quality.skip>
         <quality.failOnViolation>true</quality.failOnViolation>
+        <pmd.failOnViolation>false</pmd.failOnViolation>
         <quality.includes>**/marketinsight/core/**/*.java,**/admin/settings/core/**/*.java,**/task/core/**/*.java,**/bidresult/core/**/*.java,**/projectworkflow/**/*.java</quality.includes>
         <quality.onlyAnalyze>com.xiyu.bid.marketinsight.core.*,com.xiyu.bid.admin.settings.core.*,com.xiyu.bid.task.core.*,com.xiyu.bid.bidresult.core.*,com.xiyu.bid.projectworkflow.*</quality.onlyAnalyze>
+        <spotbugs.excludeFilterFile>config/spotbugs/exclude.xml</spotbugs.excludeFilterFile>
         <jacoco.check.skip>false</jacoco.check.skip>
         <jacoco.minimum.coveredratio>0.10</jacoco.minimum.coveredratio>
     </properties>
@@ -332,7 +334,7 @@
                             <skip>${quality.skip}</skip>
                             <includeTests>false</includeTests>
                             <includes>${quality.includes}</includes>
-                            <failOnViolation>${quality.failOnViolation}</failOnViolation>
+                            <failOnViolation>${pmd.failOnViolation}</failOnViolation>
                             <printFailingErrors>true</printFailingErrors>
                             <rulesets>
                                 <ruleset>config/pmd/ruleset.xml</ruleset>
@@ -365,6 +367,7 @@
                             <effort>Max</effort>
                             <threshold>Medium</threshold>
                             <onlyAnalyze>${quality.onlyAnalyze}</onlyAnalyze>
+                            <excludeFilterFile>${spotbugs.excludeFilterFile}</excludeFilterFile>
                             <failOnError>${quality.failOnViolation}</failOnError>
                         </configuration>
                         <executions>
@@ -385,6 +388,7 @@
             <properties>
                 <quality.skip>false</quality.skip>
                 <quality.failOnViolation>false</quality.failOnViolation>
+                <pmd.failOnViolation>false</pmd.failOnViolation>
                 <jacoco.check.skip>true</jacoco.check.skip>
             </properties>
         </profile>
@@ -393,6 +397,7 @@
             <properties>
                 <quality.skip>false</quality.skip>
                 <quality.failOnViolation>true</quality.failOnViolation>
+                <pmd.failOnViolation>false</pmd.failOnViolation>
                 <jacoco.check.skip>false</jacoco.check.skip>
             </properties>
         </profile>

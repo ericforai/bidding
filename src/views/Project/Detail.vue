@@ -29,9 +29,6 @@
           <el-button type="primary" :icon="DocumentChecked" @click="handleSubmitApproval" v-if="canSubmit">
             提交审批
           </el-button>
-          <el-button type="success" :icon="Coin" @click="handleRecordResult" v-if="canRecordResult">
-            录入结果
-          </el-button>
           <el-button type="warning" :icon="DataAnalysis" @click="goToResultPage">
             结果闭环
           </el-button>
@@ -83,6 +80,29 @@
               :status="getProgressStatus(project?.progress)"
               :stroke-width="20"
             />
+          </div>
+        </el-card>
+
+        <el-card class="result-summary-card">
+          <template #header>
+            <div class="card-title">
+              <el-icon><DataAnalysis /></el-icon>
+              <span>结果摘要</span>
+            </div>
+          </template>
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="结果状态">
+              <el-tag :type="resultSummary.tagType">{{ resultSummary.statusText }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="中标金额">{{ resultSummary.amountText }}</el-descriptions-item>
+            <el-descriptions-item label="合同期限">{{ resultSummary.contractText }}</el-descriptions-item>
+            <el-descriptions-item label="SKU数量">{{ resultSummary.skuText }}</el-descriptions-item>
+            <el-descriptions-item label="附件状态">{{ resultSummary.attachmentText }}</el-descriptions-item>
+            <el-descriptions-item label="竞争对手">{{ resultSummary.competitorText }}</el-descriptions-item>
+            <el-descriptions-item label="备注信息" :span="2">{{ resultSummary.remarkText }}</el-descriptions-item>
+          </el-descriptions>
+          <div class="result-summary-actions">
+            <el-button type="warning" @click="goToResultPage">前往结果闭环页处理</el-button>
           </div>
         </el-card>
 
@@ -723,165 +743,6 @@
       </el-descriptions>
     </el-dialog>
 
-    <!-- 结果录入对话框 -->
-    <el-dialog v-model="resultDialogVisible" title="投标结果录入" width="750px">
-      <el-form :model="resultForm" label-width="120px">
-        <!-- 投标结果选择 -->
-        <el-form-item label="投标结果">
-          <el-radio-group v-model="resultForm.result">
-            <el-radio value="won">中标</el-radio>
-            <el-radio value="lost">未中标</el-radio>
-          </el-radio-group>
-        </el-form-item>
-
-        <!-- 中标专属信息 -->
-        <template v-if="resultForm.result === 'won'">
-          <el-form-item label="中标金额">
-            <el-input-number v-model="resultForm.amount" :min="0" :precision="2" :max="99999" />
-            <span style="margin-left: 8px; color: #909399;">万元</span>
-          </el-form-item>
-          <el-form-item label="合同期限">
-            <el-date-picker
-              v-model="resultForm.contractPeriod"
-              type="daterange"
-              range-separator="至"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
-              format="YYYY-MM-DD"
-              value-format="YYYY-MM-DD"
-              style="width: 100%;"
-            />
-          </el-form-item>
-          <el-form-item label="中标SKU数量">
-            <el-input v-model="resultForm.skuCount" placeholder="如: 1500个SKU" style="width: 200px;" />
-          </el-form-item>
-          <el-form-item label="中标通知书">
-            <el-upload
-              :action="uploadAction"
-              :headers="uploadHeaders"
-              :before-upload="ensureDemoUpload"
-              :on-success="handleUploadSuccess"
-              :on-remove="handleUploadRemove"
-              :file-list="noticeFileList"
-              :limit="1"
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-            >
-              <el-button type="primary" :icon="Upload">上传中标通知书</el-button>
-              <template #tip>
-                <div style="font-size: 12px; color: #909399; margin-top: 4px;">
-                  支持 PDF、Word、图片格式，最大 10MB
-                </div>
-              </template>
-            </el-upload>
-          </el-form-item>
-        </template>
-
-        <!-- 竞争对手信息 -->
-        <el-form-item label="竞争对手信息">
-          <el-table
-            :data="resultForm.competitors"
-            size="small"
-            border
-            style="width: 100%;"
-            max-height="200"
-          >
-            <el-table-column prop="name" label="公司名称" width="140" />
-            <el-table-column prop="skuCount" label="SKU数量" width="100" />
-            <el-table-column prop="category" label="品类" width="120" />
-            <el-table-column prop="discount" label="折扣" width="90" />
-            <el-table-column prop="payment" label="账期" width="90" />
-            <el-table-column label="操作" width="70" fixed="right">
-              <template #default="{ $index }">
-                <el-button
-                  link
-                  type="danger"
-                  size="small"
-                  :icon="Delete"
-                  @click="removeCompetitor($index)"
-                >
-                  删除
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-          <el-button
-            type="primary"
-            :icon="Plus"
-            size="small"
-            plain
-            style="margin-top: 8px;"
-            @click="addCompetitor"
-          >
-            添加竞争对手
-          </el-button>
-        </el-form-item>
-
-        <!-- 复盘报告 -->
-        <el-divider content-position="left">复盘报告</el-divider>
-        <el-form-item label="技术亮点">
-          <el-input
-            v-model="resultForm.techHighlights"
-            type="textarea"
-            :rows="3"
-            placeholder="记录本次投标中的技术亮点和创新点"
-          />
-        </el-form-item>
-        <el-form-item label="报价策略">
-          <el-input
-            v-model="resultForm.priceStrategy"
-            type="textarea"
-            :rows="3"
-            placeholder="记录报价策略及效果分析"
-          />
-        </el-form-item>
-        <el-form-item label="客户反馈">
-          <el-input
-            v-model="resultForm.customerFeedback"
-            type="textarea"
-            :rows="3"
-            placeholder="记录客户对本次投标的评价和反馈"
-          />
-        </el-form-item>
-        <el-form-item label="改进建议">
-          <el-input
-            v-model="resultForm.improvements"
-            type="textarea"
-            :rows="2"
-            placeholder="总结经验教训，提出改进建议"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="resultDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSaveResult">提交结果</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 竞争对手编辑对话框 -->
-    <el-dialog v-model="competitorDialogVisible" title="添加竞争对手" width="500px">
-      <el-form :model="competitorForm" label-width="100px">
-        <el-form-item label="公司名称" required>
-          <el-input v-model="competitorForm.name" placeholder="请输入竞争对手公司名称" />
-        </el-form-item>
-        <el-form-item label="SKU数量">
-          <el-input v-model="competitorForm.skuCount" placeholder="如: 1200个" />
-        </el-form-item>
-        <el-form-item label="品类">
-          <el-input v-model="competitorForm.category" placeholder="如: 办公用品" />
-        </el-form-item>
-        <el-form-item label="折扣">
-          <el-input v-model="competitorForm.discount" placeholder="如: 85折" />
-        </el-form-item>
-        <el-form-item label="账期">
-          <el-input v-model="competitorForm.payment" placeholder="如: 月结30天" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="competitorDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="confirmAddCompetitor">确定</el-button>
-      </template>
-    </el-dialog>
-
     <!-- AI功能弹窗组件 -->
     <CompetitionIntel
       v-model="showCompetitionIntel"
@@ -1302,8 +1163,6 @@ const assetCheckResult = ref(null)
 
 // 对话框状态
 const taskDialogVisible = ref(false)
-const resultDialogVisible = ref(false)
-const competitorDialogVisible = ref(false)
 const processDialogVisible = ref(false)
 const reviewerDialogVisible = ref(false)
 const scoreDraftDialogVisible = ref(false)
@@ -1322,33 +1181,10 @@ const showROIAnalysis = ref(false)
 const showAutoTasks = ref(false)
 const showMobileCard = ref(false)
 
-// 结果录入表单
-const noticeFileList = ref([])
 const uploadAction = ref(isDemoMode ? '/api/upload' : '')
 const uploadHeaders = computed(() => {
   const token = getAccessToken()
   return token ? { Authorization: `Bearer ${token}` } : {}
-})
-
-const resultForm = ref({
-  result: '',
-  amount: null,
-  contractPeriod: null,
-  skuCount: '',
-  noticeFile: '',
-  competitors: [],
-  techHighlights: '',
-  priceStrategy: '',
-  customerFeedback: '',
-  improvements: ''
-})
-
-const competitorForm = ref({
-  name: '',
-  skuCount: '',
-  category: '',
-  discount: '',
-  payment: ''
 })
 
 // 标书编制流程相关
@@ -1558,8 +1394,28 @@ const canSubmit = computed(() => {
   return project.value?.status === 'drafting' || project.value?.status === 'reviewing'
 })
 
-const canRecordResult = computed(() => {
-  return project.value?.status === 'bidding'
+const resultSummary = computed(() => {
+  const source = project.value?.resultSummary || project.value?.resultData || {}
+  const status = String(source.result || project.value?.resultStatus || project.value?.status || '').toLowerCase()
+  const isWon = status === 'won'
+  const isLost = status === 'lost'
+  const contractStart = source.contractStartDate || source.contractPeriod?.[0] || ''
+  const contractEnd = source.contractEndDate || source.contractPeriod?.[1] || ''
+  const competitorCount = Array.isArray(source.competitors) ? source.competitors.length : (source.competitorCount || 0)
+  const notice = source.noticeFile || source.noticeFileUrl || source.noticeDocumentName || source.noticeDocumentId
+  const report = source.analysisReport || source.analysisFile || source.analysisDocumentName || source.analysisDocumentId
+  const amount = source.amount ?? project.value?.resultAmount ?? null
+
+  return {
+    statusText: isWon ? '已中标' : isLost ? '未中标' : '待登记',
+    tagType: isWon ? 'success' : isLost ? 'danger' : 'info',
+    amountText: amount ? `¥${amount}${String(amount).includes('万') ? '' : ' 万'}` : '-',
+    contractText: contractStart || contractEnd ? `${contractStart || '-'} 至 ${contractEnd || '-'}` : '-',
+    skuText: source.skuCount ? `${source.skuCount}` : '-',
+    attachmentText: notice || report ? '已归档' : '待上传',
+    competitorText: competitorCount ? `${competitorCount} 条记录` : '暂无',
+    remarkText: source.remark || source.customerFeedback || source.improvements || '暂无'
+  }
 })
 
 // 状态映射函数
@@ -1947,96 +1803,11 @@ const handleQuickReject = () => {
   approvalDialogVisible.value = true
 }
 
-const handleRecordResult = () => {
-  resultForm.value = {
-    result: '',
-    amount: null,
-    contractPeriod: null,
-    skuCount: '',
-    noticeFile: '',
-    competitors: [],
-    techHighlights: '',
-    priceStrategy: '',
-    customerFeedback: '',
-    improvements: ''
-  }
-  noticeFileList.value = []
-  resultDialogVisible.value = true
-}
-
 const goToResultPage = () => {
-  router.push('/resource/bid-result')
-}
-
-const handleUploadSuccess = (response, file) => {
-  if (response.code === 200) {
-    resultForm.value.noticeFile = response.data.url
-    ElMessage.success('上传成功')
-  } else {
-    ElMessage.error(response.message || '上传失败')
-  }
-}
-
-const handleUploadRemove = () => {
-  resultForm.value.noticeFile = ''
-}
-
-const addCompetitor = () => {
-  competitorForm.value = {
-    name: '',
-    skuCount: '',
-    category: '',
-    discount: '',
-    payment: ''
-  }
-  competitorDialogVisible.value = true
-}
-
-const confirmAddCompetitor = () => {
-  if (!competitorForm.value.name) {
-    ElMessage.warning('请输入竞争对手公司名称')
-    return
-  }
-  resultForm.value.competitors.push({ ...competitorForm.value })
-  competitorDialogVisible.value = false
-  ElMessage.success('添加成功')
-}
-
-const removeCompetitor = (index) => {
-  resultForm.value.competitors.splice(index, 1)
-}
-
-const handleSaveResult = async () => {
-  if (!resultForm.value.result) {
-    ElMessage.warning('请选择投标结果')
-    return
-  }
-
-  if (resultForm.value.result === 'won' && !resultForm.value.amount) {
-    ElMessage.warning('请填写中标金额')
-    return
-  }
-
-  try {
-    await projectStore.updateProject(route.params.id, {
-      status: resultForm.value.result,
-      resultAmount: resultForm.value.amount,
-      resultData: {
-        contractPeriod: resultForm.value.contractPeriod,
-        skuCount: resultForm.value.skuCount,
-        noticeFile: resultForm.value.noticeFile,
-        competitors: resultForm.value.competitors,
-        techHighlights: resultForm.value.techHighlights,
-        priceStrategy: resultForm.value.priceStrategy,
-        customerFeedback: resultForm.value.customerFeedback,
-        improvements: resultForm.value.improvements
-      }
-    })
-    ElMessage.success('结果录入成功')
-    resultDialogVisible.value = false
-  } catch {
-    ElMessage.error('结果录入失败')
-  }
+  router.push({
+    path: '/resource/bid-result',
+    query: project.value?.id ? { projectId: String(project.value.id) } : undefined
+  })
 }
 
 // 根据项目类型获取任务模板
@@ -3629,5 +3400,11 @@ function getApprovalStatusText(status) {
 .asset-check-content .check-actions .el-button {
   flex: 1;
   min-width: 100px;
+}
+
+.result-summary-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
 }
 </style>

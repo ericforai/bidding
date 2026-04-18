@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface CompetitorWinRecordRepository extends JpaRepository<CompetitorWinRecord, Long> {
     List<CompetitorWinRecord> findAllByOrderByWonAtDesc();
+    List<CompetitorWinRecord> findByProjectIdOrderByWonAtDesc(Long projectId);
 
     @Query("SELECT COUNT(DISTINCT c.competitorId) FROM CompetitorWinRecord c")
     long countDistinctCompetitors();

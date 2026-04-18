@@ -61,11 +61,7 @@ class MaintainabilityArchitectureTest {
         "com.xiyu.bid.versionhistory.service.VersionHistoryService",
         "com.xiyu.bid.documenteditor.service.DocumentEditorService",
         "com.xiyu.bid.analytics.service.DashboardAnalyticsService",
-        "com.xiyu.bid.batch.service.BatchOperationService",
-        "com.xiyu.bid.projectworkflow.service.ProjectWorkflowService",
-        "com.xiyu.bid.projectworkflow.service.ScoreDraftParserService",
         "com.xiyu.bid.compliance.service.ComplianceCheckService",
-        "com.xiyu.bid.approval.service.ApprovalWorkflowService",
         "com.xiyu.bid.export.service.ExcelExportService"
     );
 
@@ -75,11 +71,7 @@ class MaintainabilityArchitectureTest {
         "com.xiyu.bid.analytics.service.DashboardAnalyticsService$ProjectSnapshotAggregate",
         "com.xiyu.bid.analytics.service.DashboardAnalyticsService$TeamAggregate",
         "com.xiyu.bid.batch.service.BatchOperationService",
-        "com.xiyu.bid.export.service.ExcelExportService",
-        "com.xiyu.bid.projectworkflow.service.ProjectWorkflowService",
-        "com.xiyu.bid.projectworkflow.service.ProjectWorkflowService$ScoreDraftUpdateDecision",
-        "com.xiyu.bid.projectworkflow.service.ProjectWorkflowService$TaskCreationPlan",
-        "com.xiyu.bid.projectworkflow.service.ScoreDraftParserService$DraftSeed"
+        "com.xiyu.bid.export.service.ExcelExportService"
     );
 
     private static final Set<String> SERVICE_PUBLIC_METHOD_BUDGET_EXEMPTIONS = Set.of(
@@ -88,8 +80,7 @@ class MaintainabilityArchitectureTest {
         "com.xiyu.bid.analytics.service.DashboardAnalyticsService",
         "com.xiyu.bid.analytics.service.DashboardAnalyticsService$ProjectSnapshotAggregate",
         "com.xiyu.bid.approval.service.ApprovalWorkflowService",
-        "com.xiyu.bid.projectworkflow.service.ProjectWorkflowService",
-        "com.xiyu.bid.projectworkflow.service.ProjectWorkflowService$ScoreDraftUpdateDecision"
+        "com.xiyu.bid.projectworkflow.service.ProjectWorkflowService"
     );
 
     private final JavaClasses productionClasses = new ClassFileImporter()

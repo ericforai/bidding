@@ -2,47 +2,16 @@ package com.xiyu.bid.projectworkflow.parser;
 
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Component
 public class ScoreDraftTextParser {
 
-    private static final Pattern SECTION_HEADING = Pattern.compile(
-            "^(?:(?:第[一二三四五六七八九十]+章)?\\s*)?(?:\\d+(?:\\.\\d+)*)?\\s*.*?(商务|技术|价格)评分标准(?:表|如下|说明)?(?:（[^）]+）)?$"
-    );
-    private static final Pattern DIGITS_ONLY = Pattern.compile("^\\d+(?:\\.\\d+)?$");
-    private static final Pattern SCORE_IN_RULE = Pattern.compile("(最高\\s*\\d+(?:\\.\\d+)?分|满分\\s*\\d+(?:\\.\\d+)?分|得\\s*\\d+(?:\\.\\d+)?分|\\d+(?:\\.\\d+)?分)");
-    private static final Set<String> TABLE_HEADERS = Set.of(
-            "序号", "评价项目", "评分标准", "评标分值", "评审内容", "评分因素", "分值", "评分细则",
-            "评分标准说明", "评分项目", "分数", "评分因素及标准", "条款号", "详细", "评审", "标准"
-    );
-    private static final List<String> RULE_STARTERS = List.of(
-            "供应商", "根据", "按", "提供", "最大程度", "接受平台", "结算周期",
-            "办公用品", "方案应包含", "1、", "（一）", "若该商品"
-    );
-    private static final List<String> TITLE_REJECT_PREFIXES = List.of(
-            "根据", "提供", "最大程度", "接受平台", "办公用品", "方案应包含", "1、", "（一）", "若该商品"
-    );
-
     public List<ParsedSection> parse(String fileName, String extractedText) {
-        List<String> lines = Arrays.stream(normalizeExtractedText(extractedText).split("\n"))
-                .map(String::trim)
-                .filter(line -> !line.isBlank())
-                .toList();
-
-        Map<String, List<String>> sections = splitSections(lines);
+        List<String> lines = ScoreDraftLineClassifier.normalizeLines(extractedText);
+        Map<String, List<String>> sections = ScoreDraftLineClassifier.splitSections(lines);
         List<ParsedSection> parsedSections = new ArrayList<>();
         int sectionIndex = 0;
 
@@ -58,51 +27,6 @@ public class ScoreDraftTextParser {
         return parsedSections;
     }
 
-    private String normalizeExtractedText(String text) {
-        return Optional.ofNullable(text)
-                .orElse("")
-                .replace("\r\n", "\n")
-                .replace('\r', '\n')
-                .replace('\u0007', '\n')
-                .replace('\u000b', '\n')
-                .replace('\u000c', '\n')
-                .replace('\u00A0', ' ')
-                .replaceAll("[\\t]+", "\n")
-                .replaceAll(" +", " ")
-                .replaceAll("\\n{2,}", "\n");
-    }
-
-    private Map<String, List<String>> splitSections(List<String> lines) {
-        Map<String, Integer> starts = new LinkedHashMap<>();
-        for (int index = 0; index < lines.size(); index++) {
-            String line = lines.get(index);
-            if (line.contains("详见第三章") || line.contains("详见评审程序及办法")) {
-                continue;
-            }
-            Matcher matcher = SECTION_HEADING.matcher(line);
-            if (matcher.matches()) {
-                String category = switch (matcher.group(1)) {
-                    case "商务" -> "business";
-                    case "技术" -> "technical";
-                    case "价格" -> "price";
-                    default -> null;
-                };
-                if (category != null && !starts.containsKey(category)) {
-                    starts.put(category, index);
-                }
-            }
-        }
-
-        Map<String, List<String>> sections = new LinkedHashMap<>();
-        List<Map.Entry<String, Integer>> entries = new ArrayList<>(starts.entrySet());
-        for (int index = 0; index < entries.size(); index++) {
-            int start = entries.get(index).getValue() + 1;
-            int end = index + 1 < entries.size() ? entries.get(index + 1).getValue() : lines.size();
-            sections.put(entries.get(index).getKey(), lines.subList(start, end));
-        }
-        return sections;
-    }
-
     private List<DraftSeed> parseBusinessSection(List<String> sectionLines) {
         return parseSerialChunks(sectionLines, false);
     }
@@ -113,9 +37,9 @@ public class ScoreDraftTextParser {
 
     private List<DraftSeed> parseSerialChunks(List<String> sectionLines, boolean scoreBeforeRule) {
         List<String> lines = sectionLines.stream()
-                .map(this::normalizeLineForParsing)
+                .map(ScoreDraftLineClassifier::normalizeLineForParsing)
                 .filter(line -> !line.isBlank())
-                .filter(line -> !TABLE_HEADERS.contains(line))
+                .filter(line -> !ScoreDraftLineClassifier.isTableHeader(line))
                 .takeWhile(line -> !line.startsWith("3.9 ") && !line.equals("合计"))
                 .toList();
 
@@ -123,7 +47,7 @@ public class ScoreDraftTextParser {
         List<String> current = null;
         for (int index = 0; index < lines.size(); index++) {
             String line = lines.get(index);
-            if (looksLikeRowStart(lines, index)) {
+            if (ScoreDraftLineClassifier.looksLikeRowStart(lines, index)) {
                 if (current != null && !current.isEmpty()) {
                     chunks.add(current);
                 }
@@ -144,36 +68,12 @@ public class ScoreDraftTextParser {
         return drafts;
     }
 
-    private boolean looksLikeRowStart(List<String> lines, int index) {
-        if (!isSerialLine(lines.get(index)) || index + 1 >= lines.size()) {
-            return false;
-        }
-        return isPotentialTitle(lines.get(index + 1));
-    }
-
-    private boolean isPotentialTitle(String line) {
-        if (line == null) {
-            return false;
-        }
-        String text = line.trim();
-        if (text.isBlank() || TABLE_HEADERS.contains(text) || isScoreOnlyLine(text)) {
-            return false;
-        }
-        if (text.length() > 80 || text.contains("http")) {
-            return false;
-        }
-        if (text.contains("，") || text.contains("。") || text.contains("；") || text.contains("：") || text.contains("得")) {
-            return false;
-        }
-        return TITLE_REJECT_PREFIXES.stream().noneMatch(text::startsWith);
-    }
-
     private List<DraftSeed> parseSerialChunk(List<String> chunk, boolean scoreBeforeRule) {
         if (chunk.size() < 2) {
             return List.of();
         }
 
-        String title = cleanTitle(chunk.get(1));
+        String title = ScoreDraftLineClassifier.cleanTitle(chunk.get(1));
         if (title.isBlank()) {
             return List.of();
         }
@@ -183,18 +83,30 @@ public class ScoreDraftTextParser {
             return List.of();
         }
 
-        if (scoreBeforeRule && isScoreOnlyLine(remaining.get(0)) && remaining.size() > 1) {
-            String score = formatScoreText(remaining.remove(0));
-            return List.of(buildSeed(title, title, joinLines(remaining), score));
+        if (scoreBeforeRule
+                && ScoreDraftLineClassifier.isScoreOnlyLine(remaining.get(0))
+                && remaining.size() > 1) {
+            String score = ScoreDraftSeedFactory.formatScoreText(remaining.remove(0));
+            return List.of(ScoreDraftSeedFactory.buildSeed(
+                    title,
+                    title,
+                    ScoreDraftLineClassifier.joinLines(remaining),
+                    score
+            ));
         }
 
         List<DraftSeed> results = new ArrayList<>();
         List<String> buffer = new ArrayList<>();
         int unitIndex = 1;
         for (String line : remaining) {
-            if (isScoreOnlyLine(line) && !buffer.isEmpty()) {
+            if (ScoreDraftLineClassifier.isScoreOnlyLine(line) && !buffer.isEmpty()) {
                 String unitTitle = unitIndex == 1 ? title : title + "（子项" + unitIndex + "）";
-                results.add(buildSeed(unitTitle, title, joinLines(buffer), formatScoreText(line)));
+                results.add(ScoreDraftSeedFactory.buildSeed(
+                        unitTitle,
+                        title,
+                        ScoreDraftLineClassifier.joinLines(buffer),
+                        ScoreDraftSeedFactory.formatScoreText(line)
+                ));
                 buffer.clear();
                 unitIndex++;
             } else {
@@ -203,39 +115,46 @@ public class ScoreDraftTextParser {
         }
 
         if (!buffer.isEmpty()) {
-            String merged = joinLines(buffer);
-            String inferredScore = inferScoreText(merged);
-            results.add(buildSeed(unitIndex == 1 ? title : title + "（子项" + unitIndex + "）", title, merged, inferredScore));
+            String merged = ScoreDraftLineClassifier.joinLines(buffer);
+            String inferredScore = ScoreDraftSeedFactory.inferScoreText(merged);
+            results.add(ScoreDraftSeedFactory.buildSeed(
+                    unitIndex == 1 ? title : title + "（子项" + unitIndex + "）",
+                    title,
+                    merged,
+                    inferredScore
+            ));
         }
         return results;
     }
 
     private List<DraftSeed> parseTechnicalSection(List<String> sectionLines) {
         List<String> lines = sectionLines.stream()
-                .map(this::normalizeLineForParsing)
+                .map(ScoreDraftLineClassifier::normalizeLineForParsing)
                 .filter(line -> !line.isBlank())
-                .filter(line -> !TABLE_HEADERS.contains(line))
+                .filter(line -> !ScoreDraftLineClassifier.isTableHeader(line))
                 .takeWhile(line -> !line.equals("合计") && !line.startsWith("3.8 "))
                 .toList();
 
         List<DraftSeed> drafts = new ArrayList<>();
         int index = 0;
         while (index < lines.size()) {
-            String title = cleanTitle(lines.get(index));
+            String title = ScoreDraftLineClassifier.cleanTitle(lines.get(index));
             if (title.isBlank()) {
                 index++;
                 continue;
             }
-            if (index + 1 >= lines.size() || !isScoreOnlyLine(lines.get(index + 1))) {
+            if (index + 1 >= lines.size() || !ScoreDraftLineClassifier.isScoreOnlyLine(lines.get(index + 1))) {
                 index++;
                 continue;
             }
 
-            String score = formatScoreText(lines.get(index + 1));
+            String score = ScoreDraftSeedFactory.formatScoreText(lines.get(index + 1));
             index += 2;
             List<String> ruleLines = new ArrayList<>();
             while (index < lines.size()) {
-                if (index + 1 < lines.size() && !isScoreOnlyLine(lines.get(index)) && isScoreOnlyLine(lines.get(index + 1))) {
+                if (index + 1 < lines.size()
+                        && !ScoreDraftLineClassifier.isScoreOnlyLine(lines.get(index))
+                        && ScoreDraftLineClassifier.isScoreOnlyLine(lines.get(index + 1))) {
                     break;
                 }
                 if (lines.get(index).equals("合计")) {
@@ -245,7 +164,7 @@ public class ScoreDraftTextParser {
                 index++;
             }
 
-            String ruleText = joinLines(ruleLines);
+            String ruleText = ScoreDraftLineClassifier.joinLines(ruleLines);
             if (!ruleText.isBlank()) {
                 drafts.addAll(buildTechnicalSeeds(title, ruleText, score));
             }
@@ -254,221 +173,26 @@ public class ScoreDraftTextParser {
     }
 
     private List<DraftSeed> buildTechnicalSeeds(String title, String ruleText, String score) {
-        List<String> clauses = splitNumberedClauses(ruleText);
+        List<String> clauses = ScoreDraftLineClassifier.splitNumberedClauses(ruleText);
         List<String> scoredClauses = clauses.stream()
                 .map(String::trim)
-                .filter(clause -> !clause.isBlank())
-                .filter(clause -> inferScoreText(clause) != null)
+                .filter(clause -> !clause.isBlank() && ScoreDraftSeedFactory.inferScoreText(clause) != null)
                 .toList();
 
         if (scoredClauses.size() <= 1) {
-            return List.of(buildSeed(title, title, ruleText, score));
+            return List.of(ScoreDraftSeedFactory.buildSeed(title, title, ruleText, score));
         }
 
         List<DraftSeed> seeds = new ArrayList<>();
         for (int index = 0; index < scoredClauses.size(); index++) {
             String clauseTitle = title + "（子项" + (index + 1) + "）";
-            seeds.add(buildSeed(clauseTitle, title, scoredClauses.get(index), inferScoreText(scoredClauses.get(index))));
+            seeds.add(ScoreDraftSeedFactory.buildSeed(
+                    clauseTitle,
+                    title,
+                    scoredClauses.get(index),
+                    ScoreDraftSeedFactory.inferScoreText(scoredClauses.get(index))
+            ));
         }
         return seeds;
-    }
-
-    private List<String> splitNumberedClauses(String text) {
-        String normalized = Optional.ofNullable(text).orElse("")
-                .replaceAll("(?<!^)\\s*(?=(?:\\d+、|（[一二三四五六七八九十]+）))", "\n");
-        return Arrays.stream(normalized.split("\n"))
-                .map(String::trim)
-                .filter(line -> !line.isBlank())
-                .toList();
-    }
-
-    private DraftSeed buildSeed(String scoreItemTitle, String baseTitle, String ruleText, String scoreText) {
-        String normalizedRule = normalizeRuleText(ruleText);
-        String normalizedScore = normalizeScoreText(scoreText, normalizedRule);
-        String taskAction = inferTaskAction(baseTitle, normalizedRule);
-        return new DraftSeed(
-                scoreItemTitle,
-                normalizedRule,
-                normalizedScore,
-                taskAction,
-                buildTaskTitle(taskAction, scoreItemTitle, normalizedScore),
-                buildDescription(scoreItemTitle, normalizedScore, normalizedRule),
-                inferDeliverables(baseTitle, normalizedRule)
-        );
-    }
-
-    private String normalizeLineForParsing(String line) {
-        return Optional.ofNullable(line)
-                .orElse("")
-                .replaceAll("^第[一二三四五六七八九十]+章.*$", "")
-                .replaceAll("^条款号$", "")
-                .replaceAll("^详细$", "")
-                .replaceAll("^评审$", "")
-                .replaceAll("^标准$", "")
-                .trim();
-    }
-
-    private boolean isSerialLine(String line) {
-        return DIGITS_ONLY.matcher(line).matches();
-    }
-
-    private boolean isScoreOnlyLine(String line) {
-        return DIGITS_ONLY.matcher(line).matches() || line.matches("^(?:最高|满分)?\\s*\\d+(?:\\.\\d+)?分$");
-    }
-
-    private String cleanTitle(String raw) {
-        String title = Optional.ofNullable(raw).orElse("").trim();
-        if (title.isBlank()) {
-            return "";
-        }
-
-        Matcher combined = Pattern.compile("^(\\d+)\\s*(.+)$").matcher(title);
-        if (combined.matches()) {
-            title = combined.group(2).trim();
-        }
-
-        for (String starter : RULE_STARTERS) {
-            int index = title.indexOf(starter);
-            if (index > 0) {
-                return title.substring(0, index).trim();
-            }
-        }
-        return title;
-    }
-
-    private String joinLines(List<String> lines) {
-        return lines.stream()
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(line -> !line.isBlank())
-                .reduce((left, right) -> left + "\n" + right)
-                .orElse("");
-    }
-
-    private String normalizeRuleText(String ruleText) {
-        return Optional.ofNullable(ruleText)
-                .orElse("")
-                .replaceAll("\\n{2,}", "\n")
-                .trim();
-    }
-
-    private String normalizeScoreText(String scoreText, String ruleText) {
-        if (scoreText != null && !scoreText.isBlank()) {
-            return formatScoreText(scoreText);
-        }
-        String inferred = inferScoreText(ruleText);
-        return inferred != null ? inferred : "未明确分值";
-    }
-
-    private String inferScoreText(String ruleText) {
-        if (ruleText == null || ruleText.isBlank()) {
-            return null;
-        }
-        Matcher matcher = SCORE_IN_RULE.matcher(ruleText);
-        String preferred = null;
-        BigDecimal maxValue = BigDecimal.valueOf(-1);
-        String maxScoreText = null;
-        while (matcher.find()) {
-            String candidate = matcher.group(1).replace("得", "").trim();
-            if (candidate.contains("最高") || candidate.contains("满分")) {
-                preferred = candidate;
-            }
-            BigDecimal numericValue = extractNumericScore(candidate);
-            if (numericValue.compareTo(maxValue) > 0) {
-                maxValue = numericValue;
-                maxScoreText = candidate;
-            }
-        }
-        if (preferred != null) {
-            return formatScoreText(preferred);
-        }
-        return maxScoreText != null ? formatScoreText(maxScoreText) : null;
-    }
-
-    private BigDecimal extractNumericScore(String scoreText) {
-        Matcher matcher = Pattern.compile("(\\d+(?:\\.\\d+)?)").matcher(Optional.ofNullable(scoreText).orElse(""));
-        if (matcher.find()) {
-            return new BigDecimal(matcher.group(1));
-        }
-        return BigDecimal.ZERO;
-    }
-
-    private String formatScoreText(String raw) {
-        String text = Optional.ofNullable(raw).orElse("").trim();
-        if (text.isBlank()) {
-            return "未明确分值";
-        }
-        if (text.contains("分")) {
-            return text.replaceAll("\\s+", "");
-        }
-        return text + "分";
-    }
-
-    private String inferTaskAction(String title, String ruleText) {
-        String text = (Optional.ofNullable(title).orElse("") + " " + Optional.ofNullable(ruleText).orElse("")).toLowerCase(Locale.ROOT);
-        if (containsAny(text, "资质", "证书", "认证", "许可")) {
-            return "准备";
-        }
-        if (containsAny(text, "业绩", "案例", "合同", "财务报表")) {
-            return "整理";
-        }
-        if (containsAny(text, "报价", "折扣率", "价格", "结算周期")) {
-            return "复核";
-        }
-        if (containsAny(text, "方案", "实施", "服务", "仓储", "配送", "对接")) {
-            return "编写";
-        }
-        return "处理";
-    }
-
-    private boolean containsAny(String text, String... keywords) {
-        return Arrays.stream(keywords).anyMatch(text::contains);
-    }
-
-    private String buildTaskTitle(String action, String title, String scoreText) {
-        return action + title + "（" + scoreText + "）";
-    }
-
-    private String buildDescription(String scoreItemTitle,
-                                    String scoreValueText,
-                                    String scoreRuleText) {
-        return """
-                评分目标：%s
-                分值规则：%s
-                评分原文：%s
-                执行要求：请准备该项得分所需材料，并确保响应内容可以直接支撑评审打分。
-                完成标准：材料齐全、论据清晰、可直接支撑该项得分判断。
-                """.formatted(scoreItemTitle, scoreValueText, scoreRuleText);
-    }
-
-    private List<String> inferDeliverables(String title, String ruleText) {
-        String text = Optional.ofNullable(title).orElse("") + "\n" + Optional.ofNullable(ruleText).orElse("");
-        Set<String> deliverables = new LinkedHashSet<>();
-
-        if (containsAny(text, "资质", "证书", "认证", "许可证")) {
-            deliverables.add("资质证书复印件");
-            deliverables.add("有效期说明");
-        }
-        if (containsAny(text, "业绩", "案例", "合同")) {
-            deliverables.add("合同关键页");
-            deliverables.add("验收证明");
-            deliverables.add("项目简介");
-        }
-        if (containsAny(text, "财务", "营业收入", "审计")) {
-            deliverables.add("审计报告或财务报表");
-        }
-        if (containsAny(text, "方案", "实施", "仓储", "配送", "对接", "服务")) {
-            deliverables.add("方案正文");
-            deliverables.add("实施或服务说明");
-        }
-        if (containsAny(text, "价格", "报价", "折扣率", "结算周期")) {
-            deliverables.add("报价表");
-            deliverables.add("测算依据");
-            deliverables.add("承诺函或说明");
-        }
-        if (deliverables.isEmpty()) {
-            deliverables.add("响应说明材料");
-        }
-        return new ArrayList<>(deliverables);
     }
 }

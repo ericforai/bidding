@@ -16,8 +16,26 @@ public record AwardRegistration(
         Integer contractDurationMonths,
         String remark,
         Integer skuCount,
-        String winAnnounceDocUrl
+        String attachmentReference
 ) {
+    public BidResultAttachmentRef attachmentRef() {
+        if (attachmentReference == null || attachmentReference.isBlank()) {
+            return null;
+        }
+        String trimmed = attachmentReference.trim();
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            return null;
+        }
+        String[] parts = trimmed.split(":", 2);
+        if (parts.length != 2) {
+            return null;
+        }
+        return new BidResultAttachmentRef(
+                Long.parseLong(parts[1]),
+                BidResultAttachmentRef.AttachmentType.valueOf(parts[0])
+        );
+    }
+
     public enum ResultOutcome {
         WON,
         LOST
