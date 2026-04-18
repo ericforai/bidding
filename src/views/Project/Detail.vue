@@ -233,11 +233,11 @@
                 {{ bidProcess.steps.review.completed ? '评审已完成' : '发起评审' }}
               </el-button>
               <el-button
-                :type="bidProcess.steps.seal.completed ? 'success' : 'primary'"
+                :type="bidProcess.steps.seal.completed ? 'success' : 'info'"
                 :disabled="!canOperateStep('seal')"
                 @click="handleSealApply"
               >
-                {{ bidProcess.steps.seal.completed ? '用印已完成' : '用印申请' }}
+                {{ bidProcess.steps.seal.completed ? '用印已完成' : '用印申请（规划中）' }}
               </el-button>
               <el-button
                 :type="bidProcess.steps.submit.completed ? 'success' : 'primary'"
@@ -1053,17 +1053,28 @@
           </div>
           <div class="dialog-footer">
             <el-button @click="processDialogVisible = false">关闭</el-button>
-            <el-button type="primary" @click="handleCompleteReview" :disabled="!canCompleteReview()">
-              完成评审
+            <el-button type="primary" @click="handleSubmitBidReview" :disabled="!canSubmitBidReview">
+              发起标书评审
             </el-button>
+            <el-tag v-if="isBidReviewApproved" type="success" effect="light" style="margin-left: 8px;">
+              标书评审已通过
+            </el-tag>
           </div>
         </el-tab-pane>
 
-        <!-- 用印申请 -->
-        <el-tab-pane label="用印申请" name="seal">
-          <el-form :model="sealForm" label-width="120px">
-            <el-form-item label="用印类型" required>
-              <el-checkbox-group v-model="sealForm.sealTypes">
+        <!-- 用印申请（V2 规划中，当前仅展示） -->
+        <el-tab-pane label="用印申请（规划中）" name="seal">
+          <el-alert
+            type="info"
+            :closable="false"
+            title="用印申请功能将在 V2 版本上线"
+            description="当前版本不提供真实用印审批流程，此页面仅用于展示规划中的字段结构。请使用公司线下或既有用印系统流转。"
+            show-icon
+            style="margin-bottom: 16px;"
+          />
+          <el-form label-width="120px" :disabled="true">
+            <el-form-item label="用印类型">
+              <el-checkbox-group :model-value="[]">
                 <el-checkbox label="official">公章</el-checkbox>
                 <el-checkbox label="contract">合同章</el-checkbox>
                 <el-checkbox label="legal">法人章</el-checkbox>
@@ -1071,118 +1082,32 @@
               </el-checkbox-group>
             </el-form-item>
             <el-form-item label="用印事由">
-              <el-input
-                v-model="sealForm.reason"
-                type="textarea"
-                :rows="2"
-                placeholder="请说明用印事由"
-              />
-            </el-form-item>
-            <el-form-item label="用印文件">
-              <el-upload
-                :action="uploadAction"
-                :headers="uploadHeaders"
-                :before-upload="ensureDemoUpload"
-                :on-success="handleSealFileSuccess"
-                :file-list="sealFileList"
-                :limit="5"
-                accept=".pdf,.doc,.docx"
-              >
-                <el-button type="primary" :icon="Upload">上传待盖章文件</el-button>
-                <template #tip>
-                  <div class="el-upload__tip">
-                    请上传需要盖章的文件，最多5个
-                  </div>
-                </template>
-              </el-upload>
+              <el-input type="textarea" :rows="2" placeholder="V2 上线后可填写" />
             </el-form-item>
             <el-form-item label="用印数量">
-              <el-input-number v-model="sealForm.count" :min="1" :max="100" />
+              <el-input-number :model-value="1" :min="1" :max="100" />
               <span style="margin-left: 8px;">份</span>
-            </el-form-item>
-            <el-form-item label="期望完成时间">
-              <el-date-picker
-                v-model="sealForm.expectedTime"
-                type="datetime"
-                placeholder="选择期望完成时间"
-                format="YYYY-MM-DD HH:mm"
-                value-format="YYYY-MM-DD HH:mm"
-              />
             </el-form-item>
           </el-form>
           <div class="dialog-footer">
-            <el-button @click="processDialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="handleSubmitSeal">提交用印申请</el-button>
+            <el-button @click="processDialogVisible = false">关闭</el-button>
+            <el-button type="primary" :disabled="true">提交用印申请（暂未开放）</el-button>
           </div>
         </el-tab-pane>
 
         <!-- 封装提交 -->
         <el-tab-pane label="封装提交" name="submit">
-          <el-form :model="submitForm" label-width="120px">
-            <el-form-item label="标书封装检查">
-              <el-checkbox-group v-model="submitForm.checkList">
-                <el-checkbox label="tech">技术方案已完成</el-checkbox>
-                <el-checkbox label="business">商务文件已完成</el-checkbox>
-                <el-checkbox label="qualification">资质文件已准备</el-checkbox>
-                <el-checkbox label="price">报价文件已确认</el-checkbox>
-                <el-checkbox label="seal">用印已完成</el-checkbox>
-                <el-checkbox label="package">标书已装订</el-checkbox>
-              </el-checkbox-group>
-            </el-form-item>
-            <el-form-item label="封装方式">
-              <el-radio-group v-model="submitForm.packageType">
-                <el-radio value="paper">纸质封装</el-radio>
-                <el-radio value="electronic">电子标书</el-radio>
-                <el-radio value="both">纸质+电子</el-radio>
-              </el-radio-group>
-            </el-form-item>
-            <el-form-item label="密封要求">
-              <el-input
-                v-model="submitForm.sealRequirement"
-                type="textarea"
-                :rows="2"
-                placeholder="请输入密封要求，如：密封条加盖公章"
-              />
-            </el-form-item>
-            <el-form-item label="递交方式">
-              <el-radio-group v-model="submitForm.deliveryMethod">
-                <el-radio value="online">线上递交</el-radio>
-                <el-radio value="offline">现场递交</el-radio>
-                <el-radio value="courier">快递递交</el-radio>
-              </el-radio-group>
-            </el-form-item>
-            <el-form-item label="递交时间" v-if="submitForm.deliveryMethod !== 'online'">
-              <el-date-picker
-                v-model="submitForm.deliveryTime"
-                type="datetime"
-                placeholder="选择递交时间"
-                format="YYYY-MM-DD HH:mm"
-                value-format="YYYY-MM-DD HH:mm"
-              />
-            </el-form-item>
-            <el-form-item label="递交地址" v-if="submitForm.deliveryMethod === 'offline' || submitForm.deliveryMethod === 'courier'">
-              <el-input
-                v-model="submitForm.deliveryAddress"
-                placeholder="请输入递交地址"
-              />
-            </el-form-item>
-            <el-form-item label="备注">
-              <el-input
-                v-model="submitForm.remark"
-                type="textarea"
-                :rows="2"
-                placeholder="其他需要说明的事项"
-              />
-            </el-form-item>
-          </el-form>
+          <el-alert
+            type="info"
+            :closable="false"
+            title="提交后系统将校验：所有任务 COMPLETED，且每个任务至少关联一份交付物。校验不通过会返回缺口列表。"
+            show-icon
+            style="margin-bottom: 16px;"
+          />
           <div class="dialog-footer">
             <el-button @click="processDialogVisible = false">取消</el-button>
-            <el-button
-              type="primary"
-              @click="handleSubmitPackage"
-              :disabled="submitForm.checkList.length < 6"
-            >
-              确认封装提交
+            <el-button type="primary" @click="submitCurrentProjectToBidDocument">
+              提交到标书文档
             </el-button>
           </div>
         </el-tab-pane>
@@ -1240,7 +1165,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
@@ -1271,6 +1196,7 @@ import MobileCard from '@/components/ai/MobileCard.vue'
 import ApprovalDialog from '@/components/common/ApprovalDialog.vue'
 import ScoreDraftDialog from '@/components/project/ScoreDraftDialog.vue'
 import { getAccessToken } from '@/api/session.js'
+import { useBidReviewStatus, BID_REVIEW_TYPE_CODE, BID_REVIEW_TYPE_NAME } from '@/composables/useBidReviewStatus.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -1308,6 +1234,8 @@ const processDialogVisible = ref(false)
 const reviewerDialogVisible = ref(false)
 const scoreDraftDialogVisible = ref(false)
 const approvalDialogVisible = ref(false)
+// 发起标书评审的 in-flight 锁：点击 → 审批弹窗关闭前一直禁用按钮，防止双击发起重复审批
+const submittingBidReview = ref(false)
 const currentTask = ref(null)
 const currentApprovalItem = ref({})
 const approvalMode = ref('submit')
@@ -1367,6 +1295,24 @@ const bidProcess = ref({
   deliverables: []
 })
 
+// 标书评审派生状态：根据 approvalHistory 中已通过的 bid_review 记录自动推进 review step
+const { isBidReviewApproved, hasPendingBidReview } = useBidReviewStatus(approvalHistory, bidProcess, {
+  onAdvance: () => {
+    if (bidProcess.value.currentStep < 2) {
+      bidProcess.value.currentStep = 2
+    }
+    const hasReport = bidProcess.value.deliverables.some(d => d.type === '评审')
+    if (!hasReport) {
+      bidProcess.value.deliverables.push({
+        name: '评审报告',
+        type: '评审',
+        uploader: userStore.userName,
+        time: new Date().toLocaleString('zh-CN'),
+      })
+    }
+  },
+})
+
 // 初稿表单
 const draftFileList = ref([])
 const draftForm = ref({
@@ -1396,26 +1342,7 @@ const canApproveCurrent = computed(() => {
 })
 const currentUserRole = computed(() => userStore.currentUser?.role || '')
 
-// 用印表单
-const sealFileList = ref([])
-const sealForm = ref({
-  sealTypes: [],
-  reason: '',
-  files: [],
-  count: 1,
-  expectedTime: ''
-})
-
-// 封装提交表单
-const submitForm = ref({
-  checkList: [],
-  packageType: 'paper',
-  sealRequirement: '',
-  deliveryMethod: 'online',
-  deliveryTime: '',
-  deliveryAddress: '',
-  remark: ''
-})
+// 用印申请 V2 规划中，当前仅保留 tab 占位，不维护本地表单状态。
 
 // 模板数据
 const templates = ref([])
@@ -1812,7 +1739,8 @@ const getStepStatusText = (step) => {
 }
 
 const getStepOrder = (step) => {
-  const order = { draft: 0, review: 1, seal: 2, submit: 3 }
+  // seal 为 V2 规划占位，submit 与 seal 并列在 review 之后，不阻塞提交链路。
+  const order = { draft: 0, review: 1, seal: 2, submit: 2 }
   return order[step] ?? 0
 }
 
@@ -1872,11 +1800,12 @@ const getReviewedCount = () => {
   return reviewers.value.filter(r => r.status !== 'pending').length
 }
 
-const canCompleteReview = () => {
+const canSubmitBidReview = computed(() => {
   return reviewers.value.length > 0 &&
-         reviewers.value.every(r => r.status === 'approved') &&
-         !bidProcess.value.steps.review.completed
-}
+         !bidProcess.value.steps.review.completed &&
+         !hasPendingBidReview.value &&
+         !submittingBidReview.value
+})
 
 // 导航函数
 const goBack = () => {
@@ -2259,6 +2188,9 @@ const handleRemoveDeliverable = async (taskId, deliverableId) => {
     ElMessage.success('交付物已删除')
   }
 }
+
+// 封装弹窗里的命名包装：避免模板里写内联箭头函数
+const submitCurrentProjectToBidDocument = () => handleSubmitToDocument(route.params.id)
 
 // 提交至标书编写流程（调用后端校验 API）
 const handleSubmitToDocument = async (projectId) => {
@@ -2707,90 +2639,40 @@ const handleRemoveReviewer = (index) => {
   reviewers.value.splice(index, 1)
 }
 
-const handleCompleteReview = () => {
-  bidProcess.value.steps.review.completed = true
-  bidProcess.value.steps.review.time = new Date().toLocaleString('zh-CN')
-  bidProcess.value.currentStep = 2
-
-  bidProcess.value.deliverables.push({
-    name: '评审报告',
-    type: '评审',
-    uploader: userStore.userName,
-    time: new Date().toLocaleString('zh-CN')
-  })
-
-  ElMessage.success('评审已完成')
+const handleSubmitBidReview = () => {
+  if (!canSubmitBidReview.value) {
+    ElMessage.warning('请先添加评审人，或等待当前标书评审审批完成')
+    return
+  }
+  submittingBidReview.value = true
+  approvalType.value = { type: BID_REVIEW_TYPE_CODE, typeName: BID_REVIEW_TYPE_NAME }
   processDialogVisible.value = false
+  handleSubmitApproval()
 }
+
+// 审批弹窗关闭（无论成功/取消）即释放 in-flight 锁；成功时 hasPendingBidReview 会在 loadApprovalHistory 后接管
+watch(approvalDialogVisible, (visible) => {
+  if (!visible) {
+    submittingBidReview.value = false
+  }
+})
 
 const handleSealApply = () => {
   if (!bidProcess.value.steps.review.completed) {
-    ElMessage.warning('请先完成内部评审')
+    ElMessage.warning('请先完成标书评审')
     return
   }
   activeProcessTab.value = 'seal'
   processDialogVisible.value = true
 }
 
-const handleSealFileSuccess = (response, file) => {
-  sealForm.value.files.push({
-    name: file.name,
-    url: response.data?.url || file.url
-  })
-}
-
-const handleSubmitSeal = () => {
-  if (sealForm.value.sealTypes.length === 0) {
-    ElMessage.warning('请选择用印类型')
-    return
-  }
-
-  bidProcess.value.steps.seal.completed = true
-  bidProcess.value.steps.seal.time = new Date().toLocaleString('zh-CN')
-  bidProcess.value.currentStep = 3
-
-  bidProcess.value.deliverables.push({
-    name: '用印文件',
-    type: '用印',
-    uploader: userStore.userName,
-    time: new Date().toLocaleString('zh-CN')
-  })
-
-  ElMessage.success('用印申请已提交')
-  processDialogVisible.value = false
-}
-
 const handleSubmit = () => {
-  if (!bidProcess.value.steps.seal.completed) {
-    ElMessage.warning('请先完成用印申请')
+  if (!bidProcess.value.steps.review.completed) {
+    ElMessage.warning('请先完成标书评审')
     return
   }
   activeProcessTab.value = 'submit'
   processDialogVisible.value = true
-}
-
-const handleSubmitPackage = () => {
-  if (submitForm.value.checkList.length < 6) {
-    ElMessage.warning('请完成所有封装检查项')
-    return
-  }
-
-  bidProcess.value.steps.submit.completed = true
-  bidProcess.value.steps.submit.time = new Date().toLocaleString('zh-CN')
-  bidProcess.value.currentStep = 4
-
-  bidProcess.value.deliverables.push({
-    name: '封装标书',
-    type: '封装',
-    uploader: userStore.userName,
-    time: new Date().toLocaleString('zh-CN')
-  })
-
-  ElMessage.success('标书已封装提交')
-  processDialogVisible.value = false
-
-  // 更新项目状态
-  projectStore.updateProject(route.params.id, { status: 'bidding' })
 }
 
 const handleDownloadDeliverable = (item) => {
