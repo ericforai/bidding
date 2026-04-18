@@ -16,6 +16,7 @@
 - [ ] `npm run build`
 - [ ] `VITE_API_MODE=api npm run build`
 - [ ] If backend changed, the relevant Maven compile/test commands passed.
+- [ ] If backend quality-gate config or protected modules changed, I ran the documented quality audit/strict commands and included the result in the PR description.
 
 ## UI Evidence
 - [ ] Not applicable
@@ -26,6 +27,7 @@
 - [ ] No schema or contract changes
 - [ ] Contains API or schema changes
 - [ ] Contains mock-data-only changes
+- [ ] Contains quality-gate scope or governance changes
 
 ## Rollback
 - Describe the fastest rollback path if this PR needs to be reverted.

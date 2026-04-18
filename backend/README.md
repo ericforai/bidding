@@ -59,6 +59,7 @@ mvn clean package
 - 默认扫描范围收敛到 `core` 包和 `projectworkflow`，避免一开始全仓爆炸。
 - 需要扩大或缩小范围时，可覆盖 `-Dquality.includes=...` 和 `-Dquality.onlyAnalyze=...`。
 - 覆盖率门槛由 `jacoco.minimum.coveredratio` 控制；审计模式默认跳过覆盖率阻断。
+- 治理规则、扩圈标准和 CI 约定见 `backend/QUALITY_GATE_GUIDE.md`。
 
 ## 环境变量
 - `DB_PASSWORD` - 数据库密码（必填）

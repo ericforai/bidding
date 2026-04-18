@@ -10,6 +10,7 @@
 ## 当前状态
 - `quality-audit` 已可执行：会运行 Checkstyle、PMD、SpotBugs，但不会阻断构建。
 - `quality-strict` 已可执行：会在当前默认范围内阻断构建。
+- `QUALITY_GATE_GUIDE.md` 已定义运行方式、扩圈准入标准和 CI 使用原则。
 - 当前默认范围：
   - `marketinsight.core`
   - `admin.settings.core`
@@ -28,9 +29,9 @@
     在默认范围内只剩高价值问题。
 
 ## 第二阶段：核心值对象防御性复制
-- 状态：待处理
-- 当前阻塞：
-  - `quality-strict` 下 SpotBugs 暴露 26 个 `EI_EXPOSE_REP / EI_EXPOSE_REP2`
+- 状态：已完成
+- 已完成：
+  - `quality-strict` 下 26 个 `EI_EXPOSE_REP / EI_EXPOSE_REP2` 已清零
 - 根因：
   - 多个 `core` record/值对象直接持有并返回可变 `List`/`Map`
 - 处理策略：
@@ -47,14 +48,14 @@
   - `task/core/DeliverableAssociationPolicy`
 
 ## 第三阶段：默认 strict 绿灯
-- 状态：待处理
+- 状态：已完成
 - 目标：
   - 默认范围下 `quality-strict` 全绿
 - 验证命令：
   - `mvn -Pjava-quality,java-quality-spotbugs,quality-strict -DforkCount=0 -Dtest=FPJavaArchitectureTest,ScoreDraftPolicyTest,ProjectWorkflowServiceTest test checkstyle:check pmd:check spotbugs:check`
 
 ## 第四阶段：逐步扩圈
-- 状态：待处理
+- 状态：进行中
 - 顺序建议：
   1. `projectworkflow` 扩到相邻纯逻辑模块
   2. `bidresult` / `task` 的非 core 但已稳定模块
@@ -63,6 +64,7 @@
   - 先 audit
   - 问题分类
   - 再 strict
+  - 扩圈时必须同步更新 `quality.includes`、`quality.onlyAnalyze` 与计划文档
 
 ## 第五阶段：覆盖率 ratchet
 - 状态：待处理
