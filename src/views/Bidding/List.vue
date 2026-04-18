@@ -242,7 +242,7 @@
         >
           <el-table-column type="selection" width="50" />
           <el-table-column prop="title" label="标讯标题" min-width="280" show-overflow-tooltip>
-            <template #default="{ row }">
+            <template #default="{ row = {} } = {}">
               <div class="title-cell">
                 <el-link v-if="row.originalUrl" :href="row.originalUrl" target="_blank" type="primary" :underline="false">
                   <span class="title-text">{{ row.title }}</span>
@@ -254,21 +254,21 @@
             </template>
           </el-table-column>
           <el-table-column prop="budget" label="预算" width="100" align="center">
-            <template #default="{ row }">
+            <template #default="{ row = {} } = {}">
               <span>{{ row.budget }}万元</span>
             </template>
           </el-table-column>
           <el-table-column prop="region" label="地区" width="100" align="center" />
           <el-table-column prop="industry" label="行业" width="100" align="center" />
           <el-table-column prop="source" label="来源" width="100" align="center">
-            <template #default="{ row }">
+            <template #default="{ row = {} } = {}">
               <el-tag v-if="row.source" :type="getSourceTagType(row.source)" size="small">
                 {{ getSourceText(row.source) }}
               </el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="aiScore" label="AI评分" width="100" align="center">
-            <template #default="{ row }">
+            <template #default="{ row = {} } = {}">
               <span class="ai-score-highlight" :class="row.aiScore >= 85 ? 'ai-score-high' : row.aiScore >= 70 ? 'ai-score-medium' : 'ai-score-low'">
                 {{ row.aiScore }}
               </span>
@@ -276,14 +276,14 @@
           </el-table-column>
           <el-table-column prop="deadline" label="截止日期" width="120" align="center" />
           <el-table-column prop="status" label="状态" width="100" align="center">
-            <template #default="{ row }">
+            <template #default="{ row = {} } = {}">
               <span class="status-badge" :class="'status-' + row.status">
                 {{ getStatusText(row.status) }}
               </span>
             </template>
           </el-table-column>
           <el-table-column label="操作" width="320" align="center" fixed="right">
-            <template #default="{ row }">
+            <template #default="{ row = {} } = {}">
               <div class="table-actions">
                 <el-tooltip content="查看详情" placement="top">
                   <el-button class="action-btn btn-view" size="small" :icon="View" @click="handleViewDetail(row.id)" />
@@ -703,7 +703,7 @@
         <el-table-column prop="tenderTitle" label="标讯标题" min-width="200" show-overflow-tooltip />
         <el-table-column prop="assignee" label="被分配人" width="120" />
         <el-table-column prop="type" label="分发方式" width="100">
-          <template #default="{ row }">
+          <template #default="{ row = {} } = {}">
             <el-tag :type="row.type === 'auto' ? 'success' : 'primary'" size="small">
               {{ row.type === 'auto' ? '智能分发' : '手动指定' }}
             </el-tag>
@@ -992,20 +992,20 @@
         <el-table-column prop="title" label="标讯标题" min-width="200" show-overflow-tooltip />
         <el-table-column prop="sourcePlatform" label="来源" width="120" />
         <el-table-column prop="budget" label="预算" width="100">
-          <template #default="{ row }">
+          <template #default="{ row = {} } = {}">
             {{ row.budget }}万元
           </template>
         </el-table-column>
         <el-table-column prop="region" label="地区" width="80" />
         <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
+          <template #default="{ row = {} } = {}">
             <el-tag :type="row.imported ? 'success' : 'info'" size="small">
               {{ row.imported ? '已入库' : '待入库' }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
-          <template #default="{ row }">
+          <template #default="{ row = {} } = {}">
             <el-button v-if="!row.imported" link type="primary" size="small" @click="importSingleTender(row)">
               入库
             </el-button>
@@ -1053,7 +1053,7 @@
             </div>
             <el-table :data="industryTrends" size="small" stripe>
               <el-table-column prop="industry" label="行业" width="150">
-                <template #default="{ row }">
+                <template #default="{ row = {} } = {}">
                   <div class="industry-cell">
                     <span :class="['industry-dot', row.color]"></span>
                     {{ row.industry }}
@@ -1062,12 +1062,12 @@
               </el-table-column>
               <el-table-column prop="count" label="标讯数量" width="120" align="center" />
               <el-table-column prop="amount" label="总预算(万元)" width="130" align="center">
-                <template #default="{ row }">
-                  {{ row.amount.toLocaleString() }}
+                <template #default="{ row = {} } = {}">
+                  {{ row.amount?.toLocaleString() ?? "" }}
                 </template>
               </el-table-column>
               <el-table-column prop="growth" label="同比增长" width="120" align="center">
-                <template #default="{ row }">
+                <template #default="{ row = {} } = {}">
                   <span :class="row.growth > 0 ? 'growth-up' : 'growth-down'">
                     {{ row.growth > 0 ? '+' : '' }}{{ row.growth }}%
                     <el-icon v-if="row.growth > 0"><ArrowRight /></el-icon>
@@ -1076,14 +1076,14 @@
                 </template>
               </el-table-column>
               <el-table-column prop="trend" label="趋势" width="100" align="center">
-                <template #default="{ row }">
+                <template #default="{ row = {} } = {}">
                   <el-tag :type="row.trend === 'up' ? 'success' : row.trend === 'down' ? 'danger' : 'info'" size="small">
                     {{ row.trend === 'up' ? '上升' : row.trend === 'down' ? '下降' : '平稳' }}
                   </el-tag>
                 </template>
               </el-table-column>
               <el-table-column prop="hotLevel" label="热度" width="140" align="center">
-                <template #default="{ row }">
+                <template #default="{ row = {} } = {}">
                   <el-rate v-model="row.hotLevel" disabled size="small" />
                 </template>
               </el-table-column>
@@ -1102,7 +1102,7 @@
               <el-table-column prop="name" label="采购方" min-width="180" show-overflow-tooltip />
               <el-table-column prop="industry" label="所属行业" width="120" />
               <el-table-column prop="frequency" label="年招标频次" width="110" align="center">
-                <template #default="{ row }">
+                <template #default="{ row = {} } = {}">
                   <el-tag :type="row.frequency >= 10 ? 'danger' : row.frequency >= 5 ? 'warning' : 'info'" size="small">
                     {{ row.frequency }}次
                   </el-tag>
@@ -1110,12 +1110,12 @@
               </el-table-column>
               <el-table-column prop="period" label="常用招标月份" width="150" align="center" />
               <el-table-column prop="avgBudget" label="平均预算(万元)" width="130" align="center">
-                <template #default="{ row }">
-                  {{ row.avgBudget.toLocaleString() }}
+                <template #default="{ row = {} } = {}">
+                  {{ row.avgBudget?.toLocaleString() ?? "" }}
                 </template>
               </el-table-column>
               <el-table-column label="机会评估" width="150" align="center">
-                <template #default="{ row }">
+                <template #default="{ row = {} } = {}">
                   <div class="opportunity-rating">
                     <el-rate v-model="row.opportunity" disabled size="small" />
                     <el-text size="small" type="success">{{ getOpportunityText(row.opportunity) }}</el-text>
@@ -1187,7 +1187,7 @@
           :stroke-width="12"
           :color="progressColors"
         >
-          <template #default="{ percentage }">
+          <template #default="{ percentage = 0 } = {}">
             {{ Math.round(percentage) }}%
           </template>
         </el-progress>
