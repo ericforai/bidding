@@ -64,7 +64,6 @@ class MaintainabilityArchitectureTest {
         "com.xiyu.bid.batch.service.BatchOperationService",
         "com.xiyu.bid.projectworkflow.service.ProjectWorkflowService",
         "com.xiyu.bid.projectworkflow.service.ScoreDraftParserService",
-        "com.xiyu.bid.compliance.service.ComplianceCheckService",
         "com.xiyu.bid.approval.service.ApprovalWorkflowService",
         "com.xiyu.bid.export.service.ExcelExportService"
     );
