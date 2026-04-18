@@ -9,7 +9,8 @@
 | 文件 | 地位 | 功能 |
 |------|------|------|
 | `controller/ProjectWorkflowController.java` | Controller | 项目流程接口 |
-| `service/ProjectWorkflowService.java` | Service | 项目流程编排；评分草稿更新和任务生成规则先形成无 I/O 决策，再由事务外壳保存 |
+| `core/ScoreDraftPolicy.java` | Core | 评分草稿更新与任务生成的纯规则，返回显式决策和值对象，不直接做 I/O |
+| `service/ProjectWorkflowService.java` | Service | 项目流程编排；调用 `ScoreDraftPolicy` 形成无 I/O 决策，再由事务外壳保存 |
 | `service/ScoreDraftParserService.java` | Service | 评分草稿解析 |
 | `entity/ProjectDocument.java` | Entity | 项目文档实体 |
 | `entity/ProjectReminder.java` | Entity | 项目提醒实体 |

@@ -40,12 +40,25 @@ mvn clean compile
 # 运行测试
 mvn test
 
+# 质量审计（只报问题，不阻断）
+mvn -Pjava-quality,java-quality-spotbugs,quality-audit checkstyle:check pmd:check spotbugs:check
+
+# 渐进收严（当前默认只扫 core 包和 projectworkflow）
+mvn -Pjava-quality,java-quality-spotbugs,quality-strict -DforkCount=0 test checkstyle:check pmd:check spotbugs:check
+
 # 启动应用
 mvn spring-boot:run
 
 # 打包
 mvn clean package
 ```
+
+## 质量门禁策略
+- `quality-audit`: 审计模式，打开质量插件但不阻断构建，适合先盘点问题。
+- `quality-strict`: 严格模式，问题即失败，适合已清理过的目标范围。
+- 默认扫描范围收敛到 `core` 包和 `projectworkflow`，避免一开始全仓爆炸。
+- 需要扩大或缩小范围时，可覆盖 `-Dquality.includes=...` 和 `-Dquality.onlyAnalyze=...`。
+- 覆盖率门槛由 `jacoco.minimum.coveredratio` 控制；审计模式默认跳过覆盖率阻断。
 
 ## 环境变量
 - `DB_PASSWORD` - 数据库密码（必填）

@@ -24,6 +24,7 @@ import com.xiyu.bid.projectworkflow.dto.ProjectShareLinkDTO;
 import com.xiyu.bid.projectworkflow.dto.ProjectTaskCreateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectTaskStatusUpdateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectTaskViewDTO;
+import com.xiyu.bid.projectworkflow.core.ScoreDraftPolicy;
 import com.xiyu.bid.projectworkflow.entity.ProjectDocument;
 import com.xiyu.bid.projectworkflow.entity.ProjectScoreDraft;
 import com.xiyu.bid.projectworkflow.entity.ProjectReminder;
@@ -206,7 +207,16 @@ public class ProjectWorkflowService {
     public ProjectScoreDraftDTO updateProjectScoreDraft(Long projectId, Long draftId, ProjectScoreDraftUpdateRequest request) {
         requireProject(projectId);
         ProjectScoreDraft draft = requireDraft(projectId, draftId);
-        ScoreDraftUpdateDecision decision = decideScoreDraftUpdate(draft, request);
+        ScoreDraftPolicy.UpdateDecision decision = ScoreDraftPolicy.decideUpdate(new ScoreDraftPolicy.UpdateCommand(
+                toCoreStatus(draft.getStatus()),
+                request.getAssigneeId(),
+                request.getAssigneeName(),
+                request.getDueDate(),
+                request.getGeneratedTaskTitle(),
+                request.getGeneratedTaskDescription(),
+                toCoreStatus(request.getStatus()),
+                request.getSkipReason()
+        ));
         if (!decision.ok()) {
             throw toScoreDraftRuleException(decision.failure());
         }
@@ -220,7 +230,9 @@ public class ProjectWorkflowService {
                 .map(draftId -> requireDraft(projectId, draftId))
                 .toList();
 
-        ScoreDraftGenerationDecision decision = decideScoreDraftGeneration(drafts);
+        ScoreDraftPolicy.GenerationDecision decision = ScoreDraftPolicy.decideGeneration(
+                drafts.stream().map(draft -> toCoreStatus(draft.getStatus())).toList()
+        );
         if (!decision.ok()) {
             throw toScoreDraftRuleException(decision.failure());
         }
@@ -389,61 +401,7 @@ public class ProjectWorkflowService {
         return toTaskView(saved, draft.getAssigneeName());
     }
 
-    private ScoreDraftUpdateDecision decideScoreDraftUpdate(ProjectScoreDraft draft, ProjectScoreDraftUpdateRequest request) {
-        if (draft.getStatus() == ProjectScoreDraft.Status.GENERATED) {
-            return ScoreDraftUpdateDecision.failure(ScoreDraftRuleFailure.GENERATED_NOT_EDITABLE);
-        }
-
-        Long assigneeId = request.getAssigneeId();
-        String assigneeName = trimToNull(request.getAssigneeName());
-        ProjectScoreDraft.Status status = resolveNextDraftStatus(request.getStatus(), assigneeId, assigneeName);
-        String skipReason = resolveSkipReason(status, request.getSkipReason());
-
-        if (status == ProjectScoreDraft.Status.READY && assigneeId == null && assigneeName == null) {
-            return ScoreDraftUpdateDecision.failure(ScoreDraftRuleFailure.READY_REQUIRES_ASSIGNEE);
-        }
-
-        return ScoreDraftUpdateDecision.success(
-                assigneeId,
-                assigneeName,
-                request.getDueDate(),
-                trimNullable(request.getGeneratedTaskTitle()),
-                trimNullable(request.getGeneratedTaskDescription()),
-                status,
-                skipReason
-        );
-    }
-
-    private ScoreDraftGenerationDecision decideScoreDraftGeneration(List<ProjectScoreDraft> drafts) {
-        boolean allReady = drafts.stream().allMatch(draft -> draft.getStatus() == ProjectScoreDraft.Status.READY);
-        return allReady
-                ? ScoreDraftGenerationDecision.success()
-                : ScoreDraftGenerationDecision.failure(ScoreDraftRuleFailure.ONLY_READY_DRAFTS_CAN_GENERATE_TASKS);
-    }
-
-    private ProjectScoreDraft.Status resolveNextDraftStatus(
-            ProjectScoreDraft.Status requestedStatus,
-            Long assigneeId,
-            String assigneeName
-    ) {
-        if (requestedStatus != null) {
-            return requestedStatus;
-        }
-        if (assigneeId != null || assigneeName != null) {
-            return ProjectScoreDraft.Status.READY;
-        }
-        return ProjectScoreDraft.Status.DRAFT;
-    }
-
-    private String resolveSkipReason(ProjectScoreDraft.Status status, String requestedSkipReason) {
-        String skipReason = trimToNull(requestedSkipReason);
-        if (status == ProjectScoreDraft.Status.SKIPPED && skipReason == null) {
-            return "人工暂不生成";
-        }
-        return skipReason;
-    }
-
-    private void applyScoreDraftUpdate(ProjectScoreDraft draft, ScoreDraftUpdateDecision decision) {
+    private void applyScoreDraftUpdate(ProjectScoreDraft draft, ScoreDraftPolicy.UpdateDecision decision) {
         draft.setAssigneeId(decision.assigneeId());
         draft.setAssigneeName(decision.assigneeName());
         draft.setDueDate(decision.dueDate());
@@ -453,7 +411,7 @@ public class ProjectWorkflowService {
         if (decision.generatedTaskDescription() != null) {
             draft.setGeneratedTaskDescription(decision.generatedTaskDescription());
         }
-        draft.setStatus(decision.status());
+        draft.setStatus(toEntityStatus(decision.status()));
         draft.setSkipReason(decision.skipReason());
     }
 
@@ -480,12 +438,26 @@ public class ProjectWorkflowService {
                 .build();
     }
 
-    private RuntimeException toScoreDraftRuleException(ScoreDraftRuleFailure failure) {
+    private RuntimeException toScoreDraftRuleException(ScoreDraftPolicy.RuleFailure failure) {
         return switch (failure) {
             case GENERATED_NOT_EDITABLE -> new IllegalStateException("已生成正式任务的草稿不可修改");
             case READY_REQUIRES_ASSIGNEE -> new IllegalArgumentException("生成正式任务前必须指定责任人");
             case ONLY_READY_DRAFTS_CAN_GENERATE_TASKS -> new IllegalArgumentException("仅 READY 状态的评分草稿可生成正式任务");
         };
+    }
+
+    private ScoreDraftPolicy.DraftStatus toCoreStatus(ProjectScoreDraft.Status status) {
+        if (status == null) {
+            return null;
+        }
+        return ScoreDraftPolicy.DraftStatus.valueOf(status.name());
+    }
+
+    private ProjectScoreDraft.Status toEntityStatus(ScoreDraftPolicy.DraftStatus status) {
+        if (status == null) {
+            return null;
+        }
+        return ProjectScoreDraft.Status.valueOf(status.name());
     }
 
     private Task.Priority resolvePriority(String scoreValueText) {
@@ -545,64 +517,6 @@ public class ProjectWorkflowService {
     private String defaultString(String value, String fallback) {
         String normalized = trimToNull(value);
         return normalized != null ? normalized : fallback;
-    }
-
-    private String trimNullable(String value) {
-        return value != null ? value.trim() : null;
-    }
-
-    private record ScoreDraftUpdateDecision(
-            boolean ok,
-            ScoreDraftRuleFailure failure,
-            Long assigneeId,
-            String assigneeName,
-            LocalDateTime dueDate,
-            String generatedTaskTitle,
-            String generatedTaskDescription,
-            ProjectScoreDraft.Status status,
-            String skipReason
-    ) {
-        static ScoreDraftUpdateDecision success(
-                Long assigneeId,
-                String assigneeName,
-                LocalDateTime dueDate,
-                String generatedTaskTitle,
-                String generatedTaskDescription,
-                ProjectScoreDraft.Status status,
-                String skipReason
-        ) {
-            return new ScoreDraftUpdateDecision(
-                    true,
-                    null,
-                    assigneeId,
-                    assigneeName,
-                    dueDate,
-                    generatedTaskTitle,
-                    generatedTaskDescription,
-                    status,
-                    skipReason
-            );
-        }
-
-        static ScoreDraftUpdateDecision failure(ScoreDraftRuleFailure failure) {
-            return new ScoreDraftUpdateDecision(false, failure, null, null, null, null, null, null, null);
-        }
-    }
-
-    private record ScoreDraftGenerationDecision(boolean ok, ScoreDraftRuleFailure failure) {
-        static ScoreDraftGenerationDecision success() {
-            return new ScoreDraftGenerationDecision(true, null);
-        }
-
-        static ScoreDraftGenerationDecision failure(ScoreDraftRuleFailure failure) {
-            return new ScoreDraftGenerationDecision(false, failure);
-        }
-    }
-
-    private enum ScoreDraftRuleFailure {
-        GENERATED_NOT_EDITABLE,
-        READY_REQUIRES_ASSIGNEE,
-        ONLY_READY_DRAFTS_CAN_GENERATE_TASKS
     }
 
     private record TaskCreationPlan(
