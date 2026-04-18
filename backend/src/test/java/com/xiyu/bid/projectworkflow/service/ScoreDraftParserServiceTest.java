@@ -1,6 +1,10 @@
 package com.xiyu.bid.projectworkflow.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiyu.bid.projectworkflow.parser.ScoreDraftDraftAssembler;
+import com.xiyu.bid.projectworkflow.parser.ScoreDraftFileTypePolicy;
+import com.xiyu.bid.projectworkflow.parser.ScoreDraftTextParser;
+import com.xiyu.bid.projectworkflow.parser.WordTextExtractor;
 import com.xiyu.bid.projectworkflow.entity.ProjectScoreDraft;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
@@ -16,75 +20,29 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ScoreDraftParserServiceTest {
 
-    private final ScoreDraftParserService parserService = new ScoreDraftParserService(new ObjectMapper());
+    private final ScoreDraftParserService parserService = new ScoreDraftParserService(
+            new ScoreDraftFileTypePolicy(),
+            new WordTextExtractor(),
+            new ScoreDraftTextParser(),
+            new ScoreDraftDraftAssembler(new ObjectMapper())
+    );
 
     @Test
-    void parseExtractedText_ShouldSplitRegularScoreSectionsIntoMinimalUnits() {
-        String text = """
-                第三章 评审程序及办法
-                3.6 商务评分标准（20分）
-                序号
-                评价项目
-                评分标准
-                评标分值
-                1
-                供应商综合实力
-                注册资金10000万元及以上，得2分，其他得0分。
-                2
-                2022、2023连续2年，供应商年度营业收入累计不低于40亿元人民币，得2分，其他得0分。
-                2
-                2
-                供应商资质
-                供应商具备ISO14001环境管理体系证书、质量管理体系认证证书ISO9001、ISO45001职业健康安全管理体系证书；每个资质证书2分，满分6分。
-                6
-                3.7 技术评分标准（50分）
-                评分项目
-                分数
-                评分因素及标准
-                整体方案
-                15
-                最大程度满足采购文件要求，从科学性、先进性、可行性等综合评价，按照优、良、中、差，依次得14-15分、9-13分、3-8分、0-2分。
-                平台系统对接实施方案
-                3
-                根据本项目采购文件要求做平台系统对接实施方案，从方案质量、合理性、适用性等进行综合评审。
-                3.8 价格评分标准（30分）
-                序号
-                评价项目
-                分值
-                评分细则
-                1
-                品类折扣率
-                25
-                接受平台的价格管控，确保用户单位享受优惠价格。平均折扣率等于基准价的得25分。
-                2
-                结算周期
-                5
-                结算周期：采购单位收到发票后90个自然日现汇得2分，采购单位收到发票付6个月以内银承或中兵保兑得3分。
-                3.9 报价要求
-                """;
+    void parse_ShouldRejectEmptyInput() {
+        MockMultipartFile file = new MockMultipartFile("file", "评分标准.docx", "application/octet-stream", new byte[0]);
 
-        List<ProjectScoreDraft> drafts = parserService.parseExtractedText(1001L, "评分标准.doc", text);
-
-        assertThat(drafts).hasSize(7);
-        assertThat(drafts).extracting(ProjectScoreDraft::getCategory)
-                .containsExactly("business", "business", "business", "technical", "technical", "price", "price");
-        assertThat(drafts).extracting(ProjectScoreDraft::getScoreItemTitle)
-                .contains("供应商综合实力", "供应商综合实力（子项2）", "供应商资质", "整体方案", "平台系统对接实施方案", "品类折扣率");
-        assertThat(drafts).extracting(ProjectScoreDraft::getScoreValueText)
-                .contains("2分", "6分", "15分", "25分");
-        assertThat(drafts.get(0).getGeneratedTaskTitle()).contains("供应商综合实力");
-        assertThat(drafts.get(0).getSuggestedDeliverables()).contains("响应说明材料");
+        assertThatThrownBy(() -> parserService.parse(1001L, file))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("请上传评分标准文件");
     }
 
     @Test
     void parse_ShouldReadDocxAndExtractScoreDrafts() throws Exception {
-        byte[] docxBytes = buildTableDocx();
-
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "评分标准.docx",
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                docxBytes
+                buildTableDocx()
         );
 
         List<ProjectScoreDraft> drafts = parserService.parse(1002L, file);
@@ -106,6 +64,20 @@ class ScoreDraftParserServiceTest {
         assertThatThrownBy(() -> parserService.parse(1003L, file))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("暂不支持 PDF");
+    }
+
+    @Test
+    void parse_ShouldRejectUnrecognizedScoreDrafts() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "评分标准.docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                buildDocx("普通说明文字\n没有评分章节")
+        );
+
+        assertThatThrownBy(() -> parserService.parse(1004L, file))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("未识别到规整评分标准");
     }
 
     private byte[] buildDocx(String content) throws Exception {
