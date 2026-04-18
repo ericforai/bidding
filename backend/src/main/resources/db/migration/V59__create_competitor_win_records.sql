@@ -17,15 +17,6 @@ CREATE TABLE IF NOT EXISTS competitor_win_records (
     created_at TIMESTAMP(6) NOT NULL
 );
 
--- Add recorded_name column if it's missing (in case the table existed but without this column)
-DO $$ 
-BEGIN 
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name='competitor_win_records' AND column_name='recorded_name') THEN
-        ALTER TABLE competitor_win_records ADD COLUMN recorded_name VARCHAR(100);
-    END IF;
-END $$;
-
 CREATE INDEX IF NOT EXISTS idx_competitor_win_competitor ON competitor_win_records (competitor_id);
 CREATE INDEX IF NOT EXISTS idx_competitor_win_project ON competitor_win_records (project_id);
 CREATE INDEX IF NOT EXISTS idx_competitor_win_won_at ON competitor_win_records (won_at);
