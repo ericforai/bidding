@@ -191,11 +191,18 @@ mvn test -Dtest=FPJavaArchitectureTest
 - `calendar`
 - `collaboration`
 - `competitionintel`
+- `marketinsight`
 - `scoreanalysis`
 - `roi`
 - `versionhistory`
 - `documenteditor`
 - `documents`
+- `analytics`
+- `approval`
+- `batch`
+- `compliance`
+- `export`
+- `projectworkflow`
 
 门禁内容：
 - 受保护模块的 `Service` 文件默认不得超过 `300` 行。
@@ -211,7 +218,17 @@ mvn test -Dtest=MaintainabilityArchitectureTest
 
 说明：
 - 这是棘轮式门禁，不是假装全仓已经收口。当前少量超标的历史 `Service` 先保留小范围白名单，后续重构时逐个摘除。
-- 新增代码不允许以“历史上也很大”为理由继续扩散；一旦进入受保护模块，就必须按 Split-First Rule 拆分。
+- 新增代码不允许以”历史上也很大”为理由继续扩散；一旦进入受保护模块，就必须按 Split-First Rule 拆分。
+
+### 2.6.1 棘轮口径（白名单的使用与退出）
+
+- 白名单集合（`SERVICE_LINE_BUDGET_EXEMPTIONS` / `SERVICE_DEPENDENCY_BUDGET_EXEMPTIONS` / `SERVICE_PUBLIC_METHOD_BUDGET_EXEMPTIONS`）只收录**当前已超标的历史 Service**，不是通行证。
+- 下次触碰白名单内 Service 时必须朝门禁方向减少：
+  - 行数只能减不能加。
+  - 协作者数量只能减不能加。
+  - 公开方法数量只能减不能加。
+- 一旦某条目对应的类回落到门禁阈值以下，必须**从白名单中移除**；不允许以”也在白名单里”为由继续堆。
+- 新增 Service 不允许直接进入白名单；必须按 Split-First Rule 在落地时就符合 300/5/8 预算。
 
 ---
 

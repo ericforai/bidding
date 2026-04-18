@@ -34,6 +34,16 @@ class FPJavaArchitectureTest {
 
     private static final List<String> PURE_CORE_PACKAGE_MARKERS = List.of(".core.", ".domain.");
 
+    private static final List<String> EXPECTED_PURE_CORE_PACKAGES = List.of(
+        "com.xiyu.bid.marketinsight.core",
+        "com.xiyu.bid.admin.settings.core",
+        "com.xiyu.bid.task.core",
+        "com.xiyu.bid.bidresult.core"
+        // TODO(bidprocess): add "com.xiyu.bid.bidprocess.core" here as soon as
+        // the first non-entity class lands under that package. Until then, the
+        // non-empty assertion would red-light on an empty directory.
+    );
+
     private static final List<String> FORBIDDEN_SHELL_PACKAGE_MARKERS = List.of(
         ".controller.",
         ".repository.",
@@ -151,6 +161,23 @@ class FPJavaArchitectureTest {
 
         assertThat(exceptionUsages)
             .as("Pure core/domain business flow should return Result/Optional/ValidationResult instead of throwing or catching exceptions")
+            .isEmpty();
+    }
+
+    @Test
+    void each_expected_pure_core_package_must_contain_at_least_one_class() {
+        List<String> emptyPackages = EXPECTED_PURE_CORE_PACKAGES.stream()
+            .filter(expectedPackage -> productionClasses.stream()
+                .filter(javaClass -> javaClass.getPackageName().equals(expectedPackage)
+                    || javaClass.getPackageName().startsWith(expectedPackage + "."))
+                .filter(javaClass -> !javaClass.getPackageName().contains(".entity"))
+                .findAny()
+                .isEmpty())
+            .sorted()
+            .toList();
+
+        assertThat(emptyPackages)
+            .as("Each declared pure core package must contain at least one non-entity class so FP-Java gates have real coverage")
             .isEmpty();
     }
 
