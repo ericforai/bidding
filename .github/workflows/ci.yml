@@ -59,6 +59,11 @@ jobs:
         env:
           PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
 
+      - name: Run backend architecture tests
+        run: mvn -DforkCount=0 -Dtest=FPJavaArchitectureTest,MaintainabilityArchitectureTest test
+        env:
+          PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
+
       - name: Run baseline and resource integration tests
         run: mvn -Dtest=FlywayBaselineContextTest,ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest test
         env:
