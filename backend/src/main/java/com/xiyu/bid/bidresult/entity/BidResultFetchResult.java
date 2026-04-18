@@ -93,6 +93,12 @@ public class BidResultFetchResult {
     @Column(name = "win_announce_doc_url", length = 500)
     private String winAnnounceDocUrl;
 
+    @Column(name = "notice_document_id")
+    private Long noticeDocumentId;
+
+    @Column(name = "analysis_document_id")
+    private Long analysisDocumentId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

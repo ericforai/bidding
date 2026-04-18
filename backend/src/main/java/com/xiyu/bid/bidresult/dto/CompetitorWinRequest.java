@@ -8,6 +8,7 @@ import java.time.LocalDate;
 @Data
 public class CompetitorWinRequest {
     private Long competitorId;
+    private String competitorName;
     private Long projectId;
     private Integer skuCount;
     private String category;

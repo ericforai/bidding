@@ -6,20 +6,17 @@ import com.xiyu.bid.dto.TemplateDTO;
 import com.xiyu.bid.dto.TemplateDownloadRecordRequest;
 import com.xiyu.bid.dto.TemplateUseRecordRequest;
 import com.xiyu.bid.entity.Template;
-import com.xiyu.bid.platform.util.PasswordEncryptionUtil;
 import com.xiyu.bid.repository.TemplateDownloadRecordRepository;
 import com.xiyu.bid.repository.TemplateRepository;
 import com.xiyu.bid.repository.TemplateUseRecordRepository;
 import com.xiyu.bid.repository.TemplateVersionRepository;
-import com.xiyu.bid.support.TestPasswordEncryptionUtil;
+import com.xiyu.bid.support.NoOpPasswordEncryptionTestConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -39,6 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles("test")
+@Import(NoOpPasswordEncryptionTestConfig.class)
 class TemplateAdvancedIntegrationTest {
 
     @Autowired
@@ -60,15 +58,6 @@ class TemplateAdvancedIntegrationTest {
     private TemplateDownloadRecordRepository templateDownloadRecordRepository;
 
     private Template template;
-
-    @TestConfiguration
-    static class TestBeans {
-        @Bean(name = "passwordEncryptionUtil")
-        @Primary
-        PasswordEncryptionUtil passwordEncryptionUtil() {
-            return new TestPasswordEncryptionUtil();
-        }
-    }
 
     @BeforeEach
     void setUp() {

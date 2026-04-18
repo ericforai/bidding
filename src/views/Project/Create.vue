@@ -317,7 +317,7 @@
               </div>
             </div>
 
-            <el-button type="dashed" :icon="Plus" @click="addTask" class="add-task-btn">
+            <el-button :icon="Plus" @click="addTask" class="add-task-btn">
               添加任务
             </el-button>
           </el-form>

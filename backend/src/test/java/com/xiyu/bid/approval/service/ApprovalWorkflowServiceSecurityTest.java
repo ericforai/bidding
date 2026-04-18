@@ -9,7 +9,6 @@ import com.xiyu.bid.exception.BusinessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
@@ -34,13 +33,18 @@ class ApprovalWorkflowServiceSecurityTest {
     @Mock
     private ApprovalActionRepository actionRepository;
 
-    @InjectMocks
+    @Mock
+    private ApprovalActionRecorder actionRecorder;
+
     private ApprovalWorkflowService approvalWorkflowService;
 
     private ApprovalRequest pendingRequest;
 
     @BeforeEach
     void setUp() {
+        ApprovalQueryService queryService = new ApprovalQueryService(requestRepository, actionRepository);
+        ApprovalCommandService commandService = new ApprovalCommandService(requestRepository, actionRecorder, queryService);
+        approvalWorkflowService = new ApprovalWorkflowService(commandService, queryService);
         pendingRequest = ApprovalRequest.builder()
                 .id(UUID.randomUUID())
                 .projectId(100L)

@@ -3,7 +3,6 @@ package com.xiyu.bid.bidresult.core;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -32,7 +31,7 @@ public final class AwardRegistrationValidation {
                 check(reg.contractDurationMonths() != null && reg.contractDurationMonths() < 0, "合同月数不得为负"),
                 check(reg.skuCount() != null && reg.skuCount() < 0, "SKU 数量不得为负"),
                 check(reg.remark() != null && reg.remark().length() > 2000, "备注不得超过 2000 字"),
-                validateUrl(reg.winAnnounceDocUrl()).orElse(null)
+                validateAttachment(reg)
         )
         .filter(Objects::nonNull)
         .toList();
@@ -44,15 +43,26 @@ public final class AwardRegistrationValidation {
         return condition ? message : null;
     }
 
-    private static Optional<String> validateUrl(String url) {
-        if (url == null || url.isBlank()) return Optional.empty();
-        String trimmed = url.trim();
-        if (trimmed.length() > 500) return Optional.of("通知书 URL 不得超过 500 字符");
-        String lower = trimmed.toLowerCase(java.util.Locale.ROOT);
-        if (!(lower.startsWith("http://") || lower.startsWith("https://"))) {
-            return Optional.of("通知书 URL 必须以 http:// 或 https:// 开头");
+    private static String validateAttachment(AwardRegistration reg) {
+        if (reg.attachmentReference() != null) {
+            String trimmed = reg.attachmentReference().trim();
+            if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+                return null;
+            }
         }
-        return Optional.empty();
+        BidResultAttachmentRef attachmentRef;
+        try {
+            attachmentRef = reg.attachmentRef();
+        } catch (RuntimeException ex) {
+            return "附件引用格式不正确";
+        }
+        if (attachmentRef == null || !attachmentRef.isPresent()) {
+            return null;
+        }
+        if (attachmentRef.attachmentType() != AttachmentRequirementResolver.requiredFor(reg.result())) {
+            return "附件类型与投标结果不匹配";
+        }
+        return null;
     }
 
     public record ValidationResult(boolean valid, List<String> errors) {
