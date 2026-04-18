@@ -9,7 +9,13 @@
 | 文件 | 地位 | 功能 |
 |------|------|------|
 | `controller/DocumentEditorController.java` | Controller | 文档编辑接口 |
-| `service/DocumentEditorService.java` | Service | 文档编辑编排 |
+| `service/DocumentEditorService.java` | Service | 文档编辑 facade，维持原有 API |
+| `service/DocumentStructureService.java` | Service | 文档结构创建与查询 |
+| `service/DocumentSectionCommandService.java` | Service | 章节新增、更新、删除、重排 |
+| `service/DocumentSectionCollaborationService.java` | Service | 分配、锁定、提醒等协作动作 |
+| `service/DocumentSectionTreeService.java` | Service | 章节树查询与富化组装 |
+| `service/DocumentEditorGuard.java` | Guard | 项目/结构/章节归属校验 |
+| `service/DocumentEditorMapper.java` | Mapper | 结构、章节、提醒 DTO 组装 |
 | `entity/DocumentStructure.java` | Entity | 文档结构实体 |
 | `entity/DocumentSection.java` | Entity | 文档章节实体 |
 | `entity/DocumentReminder.java` | Entity | 文档提醒实体 |

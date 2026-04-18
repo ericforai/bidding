@@ -59,7 +59,6 @@ class MaintainabilityArchitectureTest {
         "com.xiyu.bid.scoreanalysis.service.ScoreAnalysisService",
         "com.xiyu.bid.roi.service.ROIAnalysisService",
         "com.xiyu.bid.versionhistory.service.VersionHistoryService",
-        "com.xiyu.bid.documenteditor.service.DocumentEditorService",
         "com.xiyu.bid.analytics.service.DashboardAnalyticsService",
         "com.xiyu.bid.batch.service.BatchOperationService",
         "com.xiyu.bid.projectworkflow.service.ProjectWorkflowService",
@@ -70,7 +69,6 @@ class MaintainabilityArchitectureTest {
     );
 
     private static final Set<String> SERVICE_DEPENDENCY_BUDGET_EXEMPTIONS = Set.of(
-        "com.xiyu.bid.documenteditor.service.DocumentEditorService",
         "com.xiyu.bid.analytics.service.DashboardAnalyticsService",
         "com.xiyu.bid.analytics.service.DashboardAnalyticsService$ProjectSnapshotAggregate",
         "com.xiyu.bid.analytics.service.DashboardAnalyticsService$TeamAggregate",
