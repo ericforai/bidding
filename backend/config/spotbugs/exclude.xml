@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+        <Or>
+            <Class name="com.xiyu.bid.settings.service.SettingsService"/>
+            <Class name="com.xiyu.bid.projectworkflow.service.ProjectWorkflowService"/>
+            <Class name="com.xiyu.bid.analytics.service.DashboardAnalyticsService"/>
+        </Or>
+    </Match>
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+        <Or>
+            <Package name="~com\\.xiyu\\.bid\\..*\\.dto(\\..*)?"/>
+            <Package name="~com\\.xiyu\\.bid\\..*\\.controller(\\..*)?"/>
+            <Class name="~.*(DTO|Request|Response|Builder)$"/>
+        </Or>
+    </Match>
+</FindBugsFilter>
