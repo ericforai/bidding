@@ -4,6 +4,7 @@
 
 ## 职责
 资源模块统一管理平台账户、费用、BAR 证书和站点子资源，覆盖借用、审批、归还和校验流程。这里是资源域的总入口，负责把多个资源子能力维持在同一套边界内。
+费用子域新增“保证金退还跟踪”链路：纯核心只负责根据已确认开标结果、预计退还日期和已提醒时间做提醒判定；应用服务负责扫描候选费用、写入提醒历史和手工发送提醒。
 
 ## 边界清单
 | 文件 | 地位 | 功能 |
@@ -15,9 +16,14 @@
 | `controller/BarSiteSubresourceController.java` | Controller | BAR 站点子资源接口 |
 | `service/AccountService.java` | Service | 账户业务逻辑 |
 | `service/ExpenseService.java` | Service | 费用业务逻辑 |
+| `application/service/ScanDepositReturnTrackingAppService.java` | App Service | 自动扫描保证金退还跟踪并生成提醒 |
+| `application/service/SendExpenseReturnReminderAppService.java` | App Service | 手工发送保证金退还提醒 |
 | `service/BarAssetService.java` | Service | BAR 资产业务逻辑 |
 | `service/BarCertificateService.java` | Service | BAR 证书业务逻辑 |
 | `service/BarSiteSubresourceService.java` | Service | 站点子资源业务逻辑 |
+| `domain/service/DepositReturnReminderPolicy.java` | Domain Service | 纯核心提醒判定 |
+| `domain/model/DepositReturnTrackingSnapshot.java` | Domain Model | 提醒判定快照 |
+| `domain/model/DepositReturnReminderDecision.java` | Domain Model | 提醒判定结果 |
 | `entity/` | Entity | Account、BarAsset、Expense、BarCertificate、BarSite* 实体 |
 | `repository/` | Repository | 资源数据访问 |
 | `dto/` | DTO | 资源请求/响应模型 |

@@ -1,6 +1,8 @@
 package com.xiyu.bid.resources.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiyu.bid.bidresult.entity.BidResultFetchResult;
+import com.xiyu.bid.bidresult.repository.BidResultFetchResultRepository;
 import com.xiyu.bid.platform.util.PasswordEncryptionUtil;
 import com.xiyu.bid.resources.dto.ExpenseApproveRequest;
 import com.xiyu.bid.resources.dto.ExpenseReturnActionRequest;
@@ -51,6 +53,9 @@ class ExpenseControllerIntegrationTest {
     @Autowired
     private ExpenseApprovalRecordRepository approvalRecordRepository;
 
+    @Autowired
+    private BidResultFetchResultRepository bidResultFetchResultRepository;
+
     private Expense guaranteeExpense;
     private Expense normalExpense;
 
@@ -85,6 +90,7 @@ class ExpenseControllerIntegrationTest {
     @BeforeEach
     void setUp() {
         approvalRecordRepository.deleteAll();
+        bidResultFetchResultRepository.deleteAll();
         expenseRepository.deleteAll();
 
         guaranteeExpense = expenseRepository.save(Expense.builder()
@@ -93,9 +99,21 @@ class ExpenseControllerIntegrationTest {
                 .expenseType("保证金")
                 .amount(new BigDecimal("120000.00"))
                 .date(LocalDate.now().minusDays(2))
+                .expectedReturnDate(LocalDate.now().plusDays(5))
                 .description("投标保证金")
                 .createdBy("creator")
                 .status(Expense.ExpenseStatus.PENDING_APPROVAL)
+                .build());
+
+        bidResultFetchResultRepository.save(BidResultFetchResult.builder()
+                .source("公开信息抓取")
+                .projectId(guaranteeExpense.getProjectId())
+                .projectName("测试项目")
+                .result(BidResultFetchResult.Result.LOST)
+                .fetchTime(java.time.LocalDateTime.now().minusDays(1))
+                .status(BidResultFetchResult.Status.CONFIRMED)
+                .confirmedAt(java.time.LocalDateTime.now().minusDays(1))
+                .confirmedBy(1L)
                 .build());
 
         normalExpense = expenseRepository.save(Expense.builder()
@@ -231,6 +249,28 @@ class ExpenseControllerIntegrationTest {
                 .andExpect(jsonPath("$.data[0].expenseId").value(guaranteeExpense.getId().intValue()))
                 .andExpect(jsonPath("$.data[0].approver").value("manager"))
                 .andExpect(jsonPath("$.data[0].result").value("APPROVED"));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void manualReturnReminder_ShouldPersistLastReminderTime() throws Exception {
+        approveGuaranteeExpense();
+
+        ExpenseReturnActionRequest request = new ExpenseReturnActionRequest();
+        request.setActor("finance-user");
+        request.setComment("财务手工提醒");
+
+        mockMvc.perform(post("/api/resources/expenses/{id}/return-reminder", guaranteeExpense.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.id").value(guaranteeExpense.getId()))
+                .andExpect(jsonPath("$.data.expectedReturnDate").value(guaranteeExpense.getExpectedReturnDate().toString()))
+                .andExpect(jsonPath("$.data.lastReturnReminderAt").isNotEmpty());
+
+        Expense refreshed = expenseRepository.findById(guaranteeExpense.getId()).orElseThrow();
+        assertThat(refreshed.getLastReturnReminderAt()).isNotNull();
     }
 
     private void approveGuaranteeExpense() throws Exception {

@@ -65,6 +65,12 @@ public class Expense {
     @Column(name = "return_confirmed_at")
     private LocalDateTime returnConfirmedAt;
 
+    @Column(name = "expected_return_date")
+    private LocalDate expectedReturnDate;
+
+    @Column(name = "last_return_reminder_at")
+    private LocalDateTime lastReturnReminderAt;
+
     @Column(name = "return_comment", length = 500)
     private String returnComment;
 
@@ -110,6 +116,10 @@ public class Expense {
         }
     }
 
+    public void updateExpectedReturnDate(LocalDate expectedReturnDate) {
+        this.expectedReturnDate = expectedReturnDate;
+    }
+
     public void markApproved(String approver, String comment, ExpenseStatus nextStatus) {
         if (status != ExpenseStatus.PENDING_APPROVAL && status != ExpenseStatus.REJECTED) {
             throw new IllegalStateException("Expense is not in an approvable state");
@@ -151,6 +161,10 @@ public class Expense {
         if (this.approvedBy == null || this.approvedBy.isBlank()) {
             this.approvedBy = actor;
         }
+    }
+
+    public void recordReturnReminder(LocalDateTime remindedAt) {
+        this.lastReturnReminderAt = remindedAt;
     }
 
     public boolean isReturnable() {

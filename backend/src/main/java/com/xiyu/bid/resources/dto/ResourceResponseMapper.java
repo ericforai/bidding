@@ -134,6 +134,8 @@ public final class ResourceResponseMapper {
             .approvedAt(expense.getApprovedAt())
             .returnRequestedAt(expense.getReturnRequestedAt())
             .returnConfirmedAt(expense.getReturnConfirmedAt())
+            .expectedReturnDate(expense.getExpectedReturnDate())
+            .lastReturnReminderAt(expense.getLastReturnReminderAt())
             .returnComment(expense.getReturnComment())
             .createdAt(expense.getCreatedAt())
             .updatedAt(expense.getUpdatedAt())
