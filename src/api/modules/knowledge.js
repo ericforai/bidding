@@ -8,6 +8,7 @@
  * 真实 API 知识库访问层
  */
 import httpClient from '../client.js'
+import { qualificationsApi } from './qualification.js'
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000
 
@@ -305,37 +306,6 @@ function invalidIdMessage(entityName) {
     success: false,
     message: `Current backend only supports numeric ${entityName} IDs in API mode` }
 }
-
-export const qualificationsApi = {
-  async getList(params) {
-
-    return fetchAndFilter('/api/knowledge/qualifications', params, normalizeQualification, filterQualifications)
-  },
-
-  async getDetail(id) {
-    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('qualification'))
-
-    const response = await httpClient.get(`/api/knowledge/qualifications/${id}`)
-    return { ...response, data: normalizeQualification(response?.data) }
-  },
-
-  async create(data) {
-
-    const response = await httpClient.post('/api/knowledge/qualifications', buildQualificationPayload(data))
-    return { ...response, data: normalizeQualification({ ...response?.data, ...data }) }
-  },
-
-  async update(id, data) {
-    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('qualification'))
-
-    const response = await httpClient.put(`/api/knowledge/qualifications/${id}`, buildQualificationPayload(data))
-    return { ...response, data: normalizeQualification({ ...response?.data, ...data, id }) }
-  },
-
-  async delete(id) {
-    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('qualification'))
-    return httpClient.delete(`/api/knowledge/qualifications/${id}`)
-  } }
 
 export const casesApi = {
   async getList(params) {
