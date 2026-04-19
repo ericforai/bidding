@@ -153,6 +153,13 @@ public class Expense {
         }
     }
 
+    public void markPaid() {
+        if (status != ExpenseStatus.APPROVED) {
+            throw new IllegalStateException("Only approved expenses can be registered as paid");
+        }
+        this.status = ExpenseStatus.PAID;
+    }
+
     public boolean isReturnable() {
         return DEPOSIT_EXPENSE_TYPE.equals(this.expenseType);
     }
