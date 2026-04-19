@@ -60,7 +60,32 @@ export function useExpensePageActions({
     showApplyDialog.value = true
   }
 
+  const validateApplyForm = () => {
+    if (!applyForm.value.type) {
+      ElMessage.warning('请选择费用类型')
+      return false
+    }
+
+    if (!applyForm.value.project) {
+      ElMessage.warning(
+        availableProjects.value?.length
+          ? '请选择关联项目'
+          : '暂无可关联项目，请先创建投标项目'
+      )
+      return false
+    }
+
+    if (!(Number(applyForm.value.amount) > 0)) {
+      ElMessage.warning('请输入大于 0 的费用金额')
+      return false
+    }
+
+    return true
+  }
+
   const submitApply = async () => {
+    if (!validateApplyForm()) return
+
     applySubmitting.value = true
     try {
       const response = await resourcesApi.expenses.create({
@@ -82,6 +107,8 @@ export function useExpensePageActions({
       applyForm.value = defaultApplyForm()
       await refreshPage()
       ElMessage.success('费用申请已提交，等待审批')
+    } catch (error) {
+      ElMessage.error(error?.message || '费用申请提交失败')
     } finally {
       applySubmitting.value = false
     }
