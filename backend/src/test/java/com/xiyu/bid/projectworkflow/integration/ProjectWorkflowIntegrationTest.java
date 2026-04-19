@@ -136,7 +136,7 @@ class ProjectWorkflowIntegrationTest {
                 .description("整理商务偏离表")
                 .assigneeId(ownerUser.getId())
                 .assigneeName("李总")
-                .priority(Task.Priority.HIGH)
+                .priority(ProjectTaskCreateRequest.Priority.HIGH)
                 .dueDate(LocalDateTime.of(2026, 3, 15, 18, 0))
                 .build();
 
@@ -155,7 +155,7 @@ class ProjectWorkflowIntegrationTest {
         Long taskId = objectMapper.readTree(taskResponse).path("data").path("id").asLong();
 
         ProjectTaskStatusUpdateRequest statusRequest = ProjectTaskStatusUpdateRequest.builder()
-                .status(Task.Status.IN_PROGRESS)
+                .status(ProjectTaskStatusUpdateRequest.Status.IN_PROGRESS)
                 .build();
 
         mockMvc.perform(patch("/api/projects/{projectId}/tasks/{taskId}/status", project.getId(), taskId)

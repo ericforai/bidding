@@ -102,7 +102,16 @@ public class ArchitectureTest {
         "com.xiyu.bid.roi.dto..",
         "com.xiyu.bid.versionhistory.dto..",
         "com.xiyu.bid.documenteditor.dto..",
-        "com.xiyu.bid.documents.dto.."
+        "com.xiyu.bid.documents.dto..",
+        "com.xiyu.bid.settings.dto..",
+        "com.xiyu.bid.projectworkflow.dto..",
+        "com.xiyu.bid.analytics.dto.."
+    };
+
+    private static final String[] DTO_ENTITY_FREE_PACKAGES = {
+        "com.xiyu.bid.settings.dto..",
+        "com.xiyu.bid.projectworkflow.dto..",
+        "com.xiyu.bid.analytics.dto.."
     };
 
     private static final Set<String> ALLOWED_ROOT_CONTROLLERS = Set.of(
@@ -275,6 +284,18 @@ public class ArchitectureTest {
             .should().dependOnClassesThat()
             .resideInAPackage("..service..")
             .because("新模块DTO不应依赖Service");
+
+    /**
+     * RULE 5.1: 已纳入 DTO 收口的模块 DTO 不应依赖 Entity
+     * 防止 Controller 虽然只返回 DTO，但接口契约仍透传实体枚举或实体类型
+     */
+    @ArchTest
+    public static final ArchRule dto_ready_module_dto_should_not_depend_on_entity =
+        noClasses()
+            .that().resideInAnyPackage(DTO_ENTITY_FREE_PACKAGES)
+            .should().dependOnClassesThat()
+            .resideInAPackage("..entity..")
+            .because("已完成 DTO 收口的模块 DTO 不应继续依赖 Entity 类型");
 
     /**
      * RULE 6: 禁止循环依赖

@@ -12,7 +12,19 @@ import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.exception.ResourceNotFoundException;
-import com.xiyu.bid.projectworkflow.dto.*;
+import com.xiyu.bid.projectworkflow.dto.ProjectDocumentCreateRequest;
+import com.xiyu.bid.projectworkflow.dto.ProjectDocumentDTO;
+import com.xiyu.bid.projectworkflow.dto.ProjectReminderCreateRequest;
+import com.xiyu.bid.projectworkflow.dto.ProjectReminderDTO;
+import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftDTO;
+import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftGenerateRequest;
+import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftParseResponse;
+import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftUpdateRequest;
+import com.xiyu.bid.projectworkflow.dto.ProjectShareLinkCreateRequest;
+import com.xiyu.bid.projectworkflow.dto.ProjectShareLinkDTO;
+import com.xiyu.bid.projectworkflow.dto.ProjectTaskCreateRequest;
+import com.xiyu.bid.projectworkflow.dto.ProjectTaskStatusUpdateRequest;
+import com.xiyu.bid.projectworkflow.dto.ProjectTaskViewDTO;
 import com.xiyu.bid.projectworkflow.entity.ProjectDocument;
 import com.xiyu.bid.projectworkflow.entity.ProjectScoreDraft;
 import com.xiyu.bid.projectworkflow.entity.ProjectReminder;
@@ -71,7 +83,7 @@ public class ProjectWorkflowService {
                 .title(request.getTitle().trim())
                 .description(trimToNull(request.getDescription()))
                 .assigneeId(request.getAssigneeId())
-                .priority(request.getPriority())
+                .priority(toEntityTaskPriority(request.getPriority()))
                 .status(Task.Status.TODO)
                 .dueDate(request.getDueDate())
                 .build();
@@ -86,7 +98,7 @@ public class ProjectWorkflowService {
         if (!projectId.equals(task.getProjectId())) {
             throw new IllegalArgumentException("Task does not belong to the specified project");
         }
-        task.setStatus(request.getStatus());
+        task.setStatus(toEntityTaskStatus(request.getStatus()));
         Task saved = taskRepository.save(task);
         return toTaskView(saved);
     }
@@ -204,7 +216,7 @@ public class ProjectWorkflowService {
             draft.setGeneratedTaskDescription(request.getGeneratedTaskDescription().trim());
         }
         if (request.getStatus() != null) {
-            draft.setStatus(request.getStatus());
+            draft.setStatus(toEntityDraftStatus(request.getStatus()));
         } else if (draft.getAssigneeId() != null || trimToNull(draft.getAssigneeName()) != null) {
             draft.setStatus(ProjectScoreDraft.Status.READY);
         } else {
@@ -343,7 +355,7 @@ public class ProjectWorkflowService {
                 .assigneeId(draft.getAssigneeId())
                 .assigneeName(draft.getAssigneeName())
                 .dueDate(draft.getDueDate())
-                .status(draft.getStatus())
+                .status(toDraftDtoStatus(draft.getStatus()))
                 .skipReason(draft.getSkipReason())
                 .sourcePage(draft.getSourcePage())
                 .sourceTableIndex(draft.getSourceTableIndex())
@@ -358,13 +370,13 @@ public class ProjectWorkflowService {
         return ProjectScoreDraftParseResponse.builder()
                 .drafts(draftDTOs)
                 .totalCount(draftDTOs.size())
-                .draftCount(countByStatus(draftDTOs, ProjectScoreDraft.Status.DRAFT))
-                .readyCount(countByStatus(draftDTOs, ProjectScoreDraft.Status.READY))
-                .skippedCount(countByStatus(draftDTOs, ProjectScoreDraft.Status.SKIPPED))
+                .draftCount(countByStatus(draftDTOs, ProjectScoreDraftDTO.Status.DRAFT))
+                .readyCount(countByStatus(draftDTOs, ProjectScoreDraftDTO.Status.READY))
+                .skippedCount(countByStatus(draftDTOs, ProjectScoreDraftDTO.Status.SKIPPED))
                 .build();
     }
 
-    private long countByStatus(Collection<ProjectScoreDraftDTO> drafts, ProjectScoreDraft.Status status) {
+    private long countByStatus(Collection<ProjectScoreDraftDTO> drafts, ProjectScoreDraftDTO.Status status) {
         return drafts.stream().filter(draft -> draft.getStatus() == status).count();
     }
 
@@ -439,6 +451,22 @@ public class ProjectWorkflowService {
             case HIGH -> "high";
             case URGENT -> "urgent";
         };
+    }
+
+    private Task.Priority toEntityTaskPriority(ProjectTaskCreateRequest.Priority priority) {
+        return priority == null ? null : Task.Priority.valueOf(priority.name());
+    }
+
+    private Task.Status toEntityTaskStatus(ProjectTaskStatusUpdateRequest.Status status) {
+        return status == null ? null : Task.Status.valueOf(status.name());
+    }
+
+    private ProjectScoreDraft.Status toEntityDraftStatus(ProjectScoreDraftUpdateRequest.Status status) {
+        return status == null ? null : ProjectScoreDraft.Status.valueOf(status.name());
+    }
+
+    private ProjectScoreDraftDTO.Status toDraftDtoStatus(ProjectScoreDraft.Status status) {
+        return status == null ? null : ProjectScoreDraftDTO.Status.valueOf(status.name());
     }
 
     private String trimToNull(String value) {

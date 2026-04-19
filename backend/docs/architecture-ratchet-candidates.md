@@ -20,7 +20,16 @@
 - `controller -> repository` 禁令
 - `service -> controller` 禁令
 
-其中 `controller -> entity` 当前只继续覆盖 DTO 收口程度更高的模块；`fees`、`resources`、`casework` 仍存在明显实体透传，后续应在 DTO 化后再继续加严。
+其中 `controller -> entity` 已继续覆盖到：
+
+- `settings`
+- `fees`
+- `projectworkflow`
+- `resources`
+- `casework`
+- `analytics`
+
+并且 `settings`、`projectworkflow`、`analytics` 的 DTO 包已补上“不依赖 entity”的门禁，避免接口层继续透传实体枚举或实体类型。
 
 ## 纯逻辑候选点
 
