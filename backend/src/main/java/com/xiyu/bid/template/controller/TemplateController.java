@@ -7,8 +7,11 @@ package com.xiyu.bid.template.controller;
 import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.template.dto.*;
-import com.xiyu.bid.template.dto.TemplateDTO;
 import com.xiyu.bid.template.service.TemplateService;
+import com.xiyu.bid.templatecatalog.application.command.TemplateQueryCriteria;
+import com.xiyu.bid.templatecatalog.domain.valueobject.DocumentType;
+import com.xiyu.bid.templatecatalog.domain.valueobject.IndustryType;
+import com.xiyu.bid.templatecatalog.domain.valueobject.ProductType;
 import com.xiyu.bid.util.InputSanitizer;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,8 +43,18 @@ public class TemplateController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "READ", entityType = "Template", description = "获取所有模板")
-    public ResponseEntity<ApiResponse<List<TemplateDTO>>> getAllTemplates() {
-        List<TemplateDTO> templates = templateService.getAllTemplates();
+    public ResponseEntity<ApiResponse<List<TemplateDTO>>> getAllTemplates(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String productType,
+            @RequestParam(required = false) String industry,
+            @RequestParam(required = false) String documentType) {
+        TemplateQueryCriteria criteria = TemplateQueryCriteria.builder()
+                .name(name == null ? null : InputSanitizer.sanitizeString(name, 200))
+                .productType(ProductType.fromValue(productType))
+                .industry(IndustryType.fromValue(industry))
+                .documentType(DocumentType.fromValue(documentType))
+                .build();
+        List<TemplateDTO> templates = templateService.getAllTemplates(criteria);
         return ResponseEntity.ok(ApiResponse.success("Templates retrieved successfully", templates));
     }
 

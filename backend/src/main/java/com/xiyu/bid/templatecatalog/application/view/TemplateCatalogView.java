@@ -1,4 +1,4 @@
-package com.xiyu.bid.template.dto;
+package com.xiyu.bid.templatecatalog.application.view;
 
 import com.xiyu.bid.entity.Template;
 import com.xiyu.bid.templatecatalog.domain.valueobject.DocumentType;
@@ -12,15 +12,11 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * 模板数据传输对象
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TemplateDTO {
-
+public class TemplateCatalogView {
     private Long id;
     private String name;
     private Template.Category category;

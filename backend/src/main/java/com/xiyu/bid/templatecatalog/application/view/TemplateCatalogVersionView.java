@@ -1,4 +1,4 @@
-package com.xiyu.bid.dto;
+package com.xiyu.bid.templatecatalog.application.view;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TemplateVersionDTO {
+public class TemplateCatalogVersionView {
     private Long id;
     private String version;
     private String description;

@@ -1,4 +1,4 @@
-// Input: httpClient, API mode config, knowledge normalizers and demo adapters
+// Input: httpClient, qualification module, and split template adapter
 // Output: knowledgeApi - qualification, case, and template accessors
 // Pos: src/api/modules/ - Frontend API module layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
@@ -9,6 +9,7 @@
  */
 import httpClient from '../client.js'
 import { qualificationsApi } from './qualification.js'
+import { templatesApi } from './templates.js'
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000
 
@@ -55,26 +56,6 @@ const caseIndustryMap = {
   ENVIRONMENTAL: 'government',
   REAL_ESTATE: 'government',
   OTHER: 'government' }
-
-const templateCategoryMap = {
-  technical: 'TECHNICAL',
-  commercial: 'COMMERCIAL',
-  implementation: 'OTHER',
-  quotation: 'LEGAL',
-  qualification: 'QUALIFICATION',
-  contract: 'CONTRACT',
-  技术方案: 'technical',
-  商务文件: 'commercial',
-  行业方案: 'implementation',
-  实施方案: 'implementation',
-  资质文件: 'qualification',
-  合同范本: 'contract',
-  TECHNICAL: 'technical',
-  COMMERCIAL: 'commercial',
-  LEGAL: 'quotation',
-  QUALIFICATION: 'qualification',
-  CONTRACT: 'contract',
-  OTHER: 'implementation' }
 
 function isNumericId(id) {
   return /^\d+$/.test(String(id))
@@ -199,38 +180,6 @@ function buildCasePayload(data = {}) {
     useCount: Number(data.useCount || 0) }
 }
 
-function normalizeTemplate(item) {
-  const category = templateCategoryMap[item?.category] || 'implementation'
-  const updateTime = formatDate(item?.updatedAt || item?.createdAt || item?.updateTime)
-
-  return {
-    id: item?.id,
-    name: item?.name || '未命名模板',
-    category,
-    tags: Array.isArray(item?.tags) ? item.tags : [],
-    description: item?.description || '暂无真实模板描述',
-    downloads: Number(item?.downloads || 0),
-    useCount: Number(item?.useCount || 0),
-    updateTime: updateTime || '-',
-    version: item?.currentVersion || item?.version || '1.0',
-    fileSize: item?.fileSize || '未知',
-    fileUrl: item?.fileUrl || '',
-    content: item?.content || '',
-    structure: Array.isArray(item?.structure) ? item.structure : [],
-    createdBy: item?.createdBy || null }
-}
-
-function buildTemplatePayload(data = {}) {
-  return {
-    name: data.name,
-    category: templateCategoryMap[data.category] || 'OTHER',
-    fileUrl: data.fileUrl || '',
-    description: data.description || '',
-    fileSize: data.fileSize || '',
-    tags: Array.isArray(data.tags) ? data.tags : [],
-    createdBy: data.createdBy ?? null }
-}
-
 function filterQualifications(items, params = {}) {
   return items.filter((item) => {
     if (params.name && !String(item.name || '').toLowerCase().includes(String(params.name).toLowerCase())) {
@@ -258,30 +207,6 @@ function filterCases(items, params = {}) {
         String(item.customer || '').toLowerCase().includes(keyword) ||
         item.highlights.some((highlight) => String(highlight).toLowerCase().includes(keyword))
       if (!matchesKeyword) {
-        return false
-      }
-    }
-    return true
-  })
-}
-
-function filterTemplates(items, params = {}) {
-  return items.filter((item) => {
-    if (params.category && params.category !== 'all' && item.category !== params.category) {
-      return false
-    }
-    if (params.name) {
-      const keyword = String(params.name).toLowerCase()
-      const matchesKeyword =
-        String(item.name || '').toLowerCase().includes(keyword) ||
-        String(item.description || '').toLowerCase().includes(keyword)
-      if (!matchesKeyword) {
-        return false
-      }
-    }
-    if (Array.isArray(params.tags) && params.tags.length > 0) {
-      const matchesTags = params.tags.some((tag) => item.tags.includes(tag))
-      if (!matchesTags) {
         return false
       }
     }
@@ -366,70 +291,7 @@ export const casesApi = {
       referenceContext: data.referenceContext || '' })
   } }
 
-export const templatesApi = {
-  async getList(params) {
-
-    return fetchAndFilter('/api/knowledge/templates', params, normalizeTemplate, filterTemplates)
-  },
-
-  async getDetail(id) {
-    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
-
-    const response = await httpClient.get(`/api/knowledge/templates/${id}`)
-    return { ...response, data: normalizeTemplate(response?.data) }
-  },
-
-  async create(data) {
-
-    const response = await httpClient.post('/api/knowledge/templates', buildTemplatePayload(data))
-    return { ...response, data: normalizeTemplate({ ...response?.data, ...data }) }
-  },
-
-  async update(id, data) {
-    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
-
-    const response = await httpClient.put(`/api/knowledge/templates/${id}`, buildTemplatePayload(data))
-    return { ...response, data: normalizeTemplate({ ...response?.data, ...data, id }) }
-  },
-
-  async delete(id) {
-    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
-    return httpClient.delete(`/api/knowledge/templates/${id}`)
-  },
-
-  async copy(id, data = {}) {
-    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
-
-    const response = await httpClient.post(`/api/knowledge/templates/${id}/copy`, {
-      name: data.name,
-      createdBy: data.createdBy ?? null })
-    return { ...response, data: normalizeTemplate(response?.data) }
-  },
-
-  async getVersions(id) {
-    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
-
-    return httpClient.get(`/api/knowledge/templates/${id}/versions`)
-  },
-
-  async recordUse(id, data = {}) {
-    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
-
-    return httpClient.post(`/api/knowledge/templates/${id}/use-records`, {
-      documentName: data.documentName,
-      docType: data.docType,
-      projectId: data.projectId ?? null,
-      applyOptions: Array.isArray(data.applyOptions) ? data.applyOptions : [],
-      usedBy: data.usedBy ?? null })
-  },
-
-  async recordDownload(id, data = {}) {
-    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
-
-    const response = await httpClient.post(`/api/knowledge/templates/${id}/downloads`, {
-      downloadedBy: data.downloadedBy ?? null })
-    return { ...response, data: normalizeTemplate(response?.data) }
-  } }
+export { templatesApi }
 
 export default {
   qualifications: qualificationsApi,
