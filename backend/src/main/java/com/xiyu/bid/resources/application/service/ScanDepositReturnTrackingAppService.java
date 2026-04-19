@@ -96,6 +96,7 @@ public class ScanDepositReturnTrackingAppService {
     private AlertRule ensureAlertRule(int warnDays) {
         return alertRuleRepository.findByType(AlertRule.AlertType.DEPOSIT_RETURN).stream()
                 .findFirst()
+                .map(rule -> syncRuleThreshold(rule, warnDays))
                 .orElseGet(() -> alertRuleRepository.save(AlertRule.builder()
                         .name("保证金退还提醒")
                         .type(AlertRule.AlertType.DEPOSIT_RETURN)
@@ -131,5 +132,18 @@ public class ScanDepositReturnTrackingAppService {
                 decision.daysUntilDue(),
                 expense.getExpectedReturnDate()
         );
+    }
+
+    private AlertRule syncRuleThreshold(AlertRule rule, int warnDays) {
+        if (rule.getThreshold() != null
+                && rule.getThreshold().compareTo(BigDecimal.valueOf(warnDays)) == 0
+                && rule.getCondition() == AlertRule.ConditionType.LESS_THAN
+                && rule.getEnabled()) {
+            return rule;
+        }
+        rule.setThreshold(BigDecimal.valueOf(warnDays));
+        rule.setCondition(AlertRule.ConditionType.LESS_THAN);
+        rule.setEnabled(true);
+        return alertRuleRepository.save(rule);
     }
 }

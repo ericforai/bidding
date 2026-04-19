@@ -27,6 +27,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -94,5 +95,57 @@ class ScanDepositReturnTrackingAppServiceTest {
         assertThat(reminded).isEqualTo(1);
         assertThat(expense.getLastReturnReminderAt()).isNotNull();
         assertThat(captor.getValue().getRelatedId()).contains("DepositReturn:501:");
+    }
+
+    @Test
+    @DisplayName("自动扫描应把保证金规则阈值同步为系统设置值")
+    void shouldSyncDepositReturnRuleThresholdToSettings() {
+        Expense expense = Expense.builder()
+                .id(701L)
+                .projectId(801L)
+                .expenseType("保证金")
+                .status(Expense.ExpenseStatus.APPROVED)
+                .expectedReturnDate(LocalDate.now().plusDays(2))
+                .build();
+        BidResultFetchResult result = BidResultFetchResult.builder()
+                .projectId(801L)
+                .result(BidResultFetchResult.Result.LOST)
+                .status(BidResultFetchResult.Status.CONFIRMED)
+                .confirmedAt(LocalDateTime.now().minusDays(1))
+                .build();
+        AlertRule staleRule = AlertRule.builder()
+                .id(88L)
+                .name("保证金退还提醒")
+                .type(AlertRule.AlertType.DEPOSIT_RETURN)
+                .condition(AlertRule.ConditionType.GREATER_THAN)
+                .threshold(BigDecimal.valueOf(3))
+                .enabled(false)
+                .createdBy("tester")
+                .build();
+
+        when(settingsService.getSettings()).thenReturn(SettingsResponse.builder()
+                .systemConfig(SettingsResponse.SystemConfig.builder().depositWarnDays(9).build())
+                .build());
+        when(alertRuleRepository.findByType(AlertRule.AlertType.DEPOSIT_RETURN)).thenReturn(List.of(staleRule));
+        when(alertRuleRepository.save(argThat(rule ->
+                rule.getId().equals(88L)
+                        && rule.getThreshold().compareTo(BigDecimal.valueOf(9)) == 0
+                        && rule.getCondition() == AlertRule.ConditionType.LESS_THAN
+                        && rule.getEnabled()
+        ))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(expenseRepository.findByExpenseTypeAndExpectedReturnDateIsNotNullAndStatusNotOrderByExpectedReturnDateAsc(
+                "保证金", Expense.ExpenseStatus.RETURNED)).thenReturn(List.of(expense));
+        when(bidResultFetchResultRepository.findFirstByProjectIdAndStatusOrderByConfirmedAtDescFetchTimeDesc(
+                801L, BidResultFetchResult.Status.CONFIRMED)).thenReturn(Optional.of(result));
+        when(alertHistoryService.createAlertHistory(any())).thenReturn(AlertHistory.builder().id(2L).build());
+
+        scanDepositReturnTrackingAppService.scan();
+
+        verify(alertRuleRepository).save(argThat(rule ->
+                rule.getId().equals(88L)
+                        && rule.getThreshold().compareTo(BigDecimal.valueOf(9)) == 0
+                        && rule.getCondition() == AlertRule.ConditionType.LESS_THAN
+                        && rule.getEnabled()
+        ));
     }
 }

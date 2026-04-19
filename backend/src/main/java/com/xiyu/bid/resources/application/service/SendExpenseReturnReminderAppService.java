@@ -16,6 +16,7 @@ import com.xiyu.bid.resources.dto.ResourceResponseMapper;
 import com.xiyu.bid.resources.dto.ExpenseDTO;
 import com.xiyu.bid.resources.entity.Expense;
 import com.xiyu.bid.resources.repository.ExpenseRepository;
+import com.xiyu.bid.settings.dto.SettingsResponse;
 import com.xiyu.bid.settings.service.SettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,10 +24,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class SendExpenseReturnReminderAppService {
+
+    private static final int DEFAULT_WARN_DAYS = 7;
 
     private final ExpenseRepository expenseRepository;
     private final BidResultFetchResultRepository bidResultFetchResultRepository;
@@ -62,11 +66,12 @@ public class SendExpenseReturnReminderAppService {
 
         AlertRule rule = alertRuleRepository.findByType(AlertRule.AlertType.DEPOSIT_RETURN).stream()
                 .findFirst()
+                .map(existing -> syncRuleThreshold(existing, resolveWarnDays()))
                 .orElseGet(() -> alertRuleRepository.save(AlertRule.builder()
                         .name("保证金退还提醒")
                         .type(AlertRule.AlertType.DEPOSIT_RETURN)
                         .condition(AlertRule.ConditionType.LESS_THAN)
-                        .threshold(BigDecimal.valueOf(settingsService.getSettings().getSystemConfig().getDepositWarnDays()))
+                        .threshold(BigDecimal.valueOf(resolveWarnDays()))
                         .enabled(true)
                         .createdBy("system")
                         .build()));
@@ -88,5 +93,26 @@ public class SendExpenseReturnReminderAppService {
         alertHistoryService.createAlertHistory(request);
         expense.recordReturnReminder(LocalDateTime.now());
         return ResourceResponseMapper.toDto(expenseRepository.save(expense));
+    }
+
+    private int resolveWarnDays() {
+        return Optional.ofNullable(settingsService.getSettings())
+                .map(SettingsResponse::getSystemConfig)
+                .map(config -> config.getDepositWarnDays())
+                .filter(value -> value != null && value > 0)
+                .orElse(DEFAULT_WARN_DAYS);
+    }
+
+    private AlertRule syncRuleThreshold(AlertRule rule, int warnDays) {
+        if (rule.getThreshold() != null
+                && rule.getThreshold().compareTo(BigDecimal.valueOf(warnDays)) == 0
+                && rule.getCondition() == AlertRule.ConditionType.LESS_THAN
+                && rule.getEnabled()) {
+            return rule;
+        }
+        rule.setThreshold(BigDecimal.valueOf(warnDays));
+        rule.setCondition(AlertRule.ConditionType.LESS_THAN);
+        rule.setEnabled(true);
+        return alertRuleRepository.save(rule);
     }
 }

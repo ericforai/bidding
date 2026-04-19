@@ -13,11 +13,10 @@ function normalizeAlertRule(item) {
   return {
     id: item?.id,
     name: item?.name || '未命名规则',
-    type: item?.type || 'SYSTEM',
-    condition: item?.condition || {},
+    type: item?.type || 'DEADLINE',
+    condition: item?.condition || 'LESS_THAN',
+    threshold: Number(item?.threshold || 0),
     enabled: item?.enabled ?? true,
-    priority: item?.priority || 'MEDIUM',
-    description: item?.description || '',
     actions: item?.actions || [],
     createdAt: item?.createdAt || item?.createTime || '',
     updatedAt: item?.updatedAt || '' }

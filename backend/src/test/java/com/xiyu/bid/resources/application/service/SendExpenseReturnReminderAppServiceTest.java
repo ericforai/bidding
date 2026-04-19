@@ -28,6 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -114,5 +115,51 @@ class SendExpenseReturnReminderAppServiceTest {
         assertThatThrownBy(() -> sendExpenseReturnReminderAppService.send(503L, "finance-user", "备注"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Expense is not eligible for deposit return reminder");
+    }
+
+    @Test
+    @DisplayName("手工提醒在系统配置缺失时应使用默认提前天数创建规则")
+    void shouldCreateDefaultRuleWhenSystemConfigIsMissing() {
+        Expense expense = Expense.builder()
+                .id(504L)
+                .projectId(604L)
+                .category(Expense.ExpenseCategory.OTHER)
+                .expenseType("保证金")
+                .status(Expense.ExpenseStatus.APPROVED)
+                .expectedReturnDate(LocalDate.of(2026, 5, 6))
+                .build();
+        BidResultFetchResult result = BidResultFetchResult.builder()
+                .projectId(604L)
+                .result(BidResultFetchResult.Result.LOST)
+                .status(BidResultFetchResult.Status.CONFIRMED)
+                .confirmedAt(LocalDateTime.now().minusDays(1))
+                .build();
+        SettingsResponse settings = new SettingsResponse();
+
+        when(expenseRepository.findById(504L)).thenReturn(Optional.of(expense));
+        when(bidResultFetchResultRepository.findFirstByProjectIdAndStatusOrderByConfirmedAtDescFetchTimeDesc(
+                604L, BidResultFetchResult.Status.CONFIRMED)).thenReturn(Optional.of(result));
+        when(alertRuleRepository.findByType(AlertRule.AlertType.DEPOSIT_RETURN)).thenReturn(List.of());
+        when(settingsService.getSettings()).thenReturn(settings);
+        when(alertRuleRepository.save(argThat(rule ->
+                rule.getThreshold().compareTo(BigDecimal.valueOf(7)) == 0
+                        && rule.getType() == AlertRule.AlertType.DEPOSIT_RETURN
+        ))).thenAnswer(invocation -> {
+            AlertRule rule = invocation.getArgument(0);
+            rule.setId(77L);
+            return rule;
+        });
+        when(projectRepository.findById(604L)).thenReturn(Optional.empty());
+        when(alertHistoryService.createAlertHistory(any())).thenReturn(AlertHistory.builder().id(2L).build());
+        when(expenseRepository.save(expense)).thenReturn(expense);
+
+        sendExpenseReturnReminderAppService.send(504L, "finance-user", "配置缺失兜底");
+
+        verify(alertRuleRepository).save(argThat(rule ->
+                rule.getThreshold().compareTo(BigDecimal.valueOf(7)) == 0
+                        && rule.getType() == AlertRule.AlertType.DEPOSIT_RETURN
+        ));
+        verify(expenseRepository).save(expense);
+        assertThat(expense.getLastReturnReminderAt()).isNotNull();
     }
 }
