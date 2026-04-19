@@ -102,6 +102,12 @@ function normalizeExpense(item = {}) {
     approvalStatus = 'approved'
   }
 
+  const expectedReturnDate = formatDate(item.expectedReturnDate || item.returnDate)
+  const lastRemindedAt = formatDateTime(item.lastReturnReminderAt || item.lastRemindedAt)
+  const overdue = typeof item.overdue === 'boolean'
+    ? item.overdue
+    : Boolean(expectedReturnDate) && status !== 'returned' && new Date(expectedReturnDate) < new Date()
+
   return {
     id: item.id,
     project: item.project || item.projectName || (item.projectId ? `项目#${item.projectId}` : '未关联项目'),
@@ -112,13 +118,16 @@ function normalizeExpense(item = {}) {
     approvalStatus,
     backendStatus,
     date: item.date || formatDate(item.createdAt),
-    returnDate: item.returnDate || '',
-    returnRequestedAt: item.returnRequestedAt || '',
-    returnConfirmedAt: item.returnConfirmedAt || '',
+    returnDate: formatDate(item.returnDate || item.returnConfirmedAt),
+    expectedReturnDate,
+    lastRemindedAt,
+    overdue,
+    returnRequestedAt: formatDateTime(item.returnRequestedAt),
+    returnConfirmedAt: formatDateTime(item.returnConfirmedAt),
     description: item.description || '',
     createdBy: item.createdBy || '',
     approvedBy: item.approvedBy || '',
-    approvedAt: item.approvedAt || '',
+    approvedAt: formatDateTime(item.approvedAt),
     approvalComment: item.approvalComment || '',
     returnComment: item.returnComment || '',
     raw: item }
@@ -657,6 +666,13 @@ export const expensesApi = {
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('expense'))
 
     const response = await httpClient.post(`/api/resources/expenses/${id}/confirm-return`, data)
+    return normalizeExpenseMutationResponse(response)
+  },
+
+  async sendReturnReminder(id, data) {
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('expense'))
+
+    const response = await httpClient.post(`/api/resources/expenses/${id}/return-reminder`, data)
     return normalizeExpenseMutationResponse(response)
   } }
 
