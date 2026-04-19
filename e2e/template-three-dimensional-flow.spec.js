@@ -69,6 +69,10 @@ async function apiRequest(path, session, options = {}) {
   return response.json()
 }
 
+function formSelect(container, label) {
+  return container.locator('.el-form-item').filter({ hasText: label }).locator('.el-select').first()
+}
+
 test('template page supports three-dimensional filters and edit flow through real API', async ({ page }) => {
   await ensureUser()
   const session = await apiLogin()
@@ -98,13 +102,14 @@ test('template page supports three-dimensional filters and edit flow through rea
   }, session)
 
   await page.goto('/knowledge/template')
+  const filterPanel = page.locator('.search-card')
 
-  await page.getByLabel('产品类型').click()
-  await page.getByRole('option', { name: '智慧交通' }).click()
-  await page.getByLabel('行业').click()
-  await page.getByRole('option', { name: '交通' }).click()
-  await page.getByLabel('文档类型').click()
-  await page.getByRole('option', { name: '技术方案' }).click()
+  await formSelect(filterPanel, '产品类型').click()
+  await page.getByRole('option', { name: '智慧交通', exact: true }).click()
+  await formSelect(filterPanel, '行业').click()
+  await page.getByRole('option', { name: '交通', exact: true }).click()
+  await formSelect(filterPanel, '文档类型').click()
+  await page.getByRole('option', { name: '技术方案', exact: true }).click()
   await page.getByRole('button', { name: '搜索' }).click()
 
   const row = page.locator('.el-table__row').filter({ hasText: templateName }).first()
@@ -115,13 +120,13 @@ test('template page supports three-dimensional filters and edit flow through rea
 
   const editDialog = page.getByRole('dialog', { name: '编辑模板' })
   await expect(editDialog).toBeVisible()
-  await editDialog.getByLabel('行业').click()
-  await page.getByRole('option', { name: '政府' }).click()
+  await formSelect(editDialog, '行业').click()
+  await page.getByRole('option', { name: '政府', exact: true }).click()
   await editDialog.getByRole('button', { name: '保存' }).click()
 
   await page.getByRole('button', { name: '重置' }).click()
-  await page.getByLabel('行业').click()
-  await page.getByRole('option', { name: '政府' }).click()
+  await formSelect(filterPanel, '行业').click()
+  await page.getByRole('option', { name: '政府', exact: true }).click()
   await page.getByRole('button', { name: '搜索' }).click()
 
   await expect(page.locator('.el-table__row').filter({ hasText: templateName }).first()).toBeVisible()
