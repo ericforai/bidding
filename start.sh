@@ -58,7 +58,7 @@ else
   env \
     SPRING_PROFILES_ACTIVE=e2e \
     CORS_ALLOWED_ORIGINS="$CORS_ORIGINS" \
-    mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT}" \
+    mvn clean spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT}" \
     >> "$DEV_LOG" 2>&1 &
   BACKEND_PID=$!
   popd >/dev/null

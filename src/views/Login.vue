@@ -119,7 +119,6 @@
               :prefix-icon="Lock"
               show-password
               class="form-input"
-              @keyup.enter="handleLogin"
             />
           </el-form-item>
 
@@ -136,9 +135,9 @@
             <el-button
               type="primary"
               size="large"
+              native-type="submit"
               :loading="loading"
               class="login-button"
-              @click="handleLogin"
             >
               {{ loading ? '登录中...' : '登录' }}
             </el-button>
