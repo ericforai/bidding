@@ -5,7 +5,11 @@
 
 package com.xiyu.bid.casework.service;
 
-import com.xiyu.bid.casework.dto.*;
+import com.xiyu.bid.casework.dto.CaseDTO;
+import com.xiyu.bid.casework.dto.CaseReferenceRecordCreateRequest;
+import com.xiyu.bid.casework.dto.CaseReferenceRecordDTO;
+import com.xiyu.bid.casework.dto.CaseShareRecordCreateRequest;
+import com.xiyu.bid.casework.dto.CaseShareRecordDTO;
 import com.xiyu.bid.casework.entity.CaseReferenceRecord;
 import com.xiyu.bid.casework.entity.CaseShareRecord;
 import com.xiyu.bid.casework.repository.CaseReferenceRecordRepository;
@@ -39,7 +43,7 @@ public class CaseService {
     public CaseDTO createCase(CaseDTO dto) {
         log.info("Creating case: {}", dto.getTitle());
         Case caseStudy = Case.builder()
-                .title(dto.getTitle()).industry(dto.getIndustry()).outcome(dto.getOutcome()).amount(dto.getAmount())
+                .title(dto.getTitle()).industry(toEntityIndustry(dto.getIndustry())).outcome(toEntityOutcome(dto.getOutcome())).amount(dto.getAmount())
                 .projectDate(dto.getProjectDate()).description(dto.getDescription())
                 .customerName(trimToNull(dto.getCustomerName())).locationName(trimToNull(dto.getLocationName()))
                 .projectPeriod(trimToNull(dto.getProjectPeriod())).tags(copyList(dto.getTags()))
@@ -67,8 +71,8 @@ public class CaseService {
         Case existing = caseRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Case", id.toString()));
         Case updated = Case.builder()
                 .id(existing.getId()).title(dto.getTitle() != null ? dto.getTitle() : existing.getTitle())
-                .industry(dto.getIndustry() != null ? dto.getIndustry() : existing.getIndustry())
-                .outcome(dto.getOutcome() != null ? dto.getOutcome() : existing.getOutcome())
+                .industry(dto.getIndustry() != null ? toEntityIndustry(dto.getIndustry()) : existing.getIndustry())
+                .outcome(dto.getOutcome() != null ? toEntityOutcome(dto.getOutcome()) : existing.getOutcome())
                 .amount(dto.getAmount() != null ? dto.getAmount() : existing.getAmount())
                 .projectDate(dto.getProjectDate() != null ? dto.getProjectDate() : existing.getProjectDate())
                 .description(dto.getDescription() != null ? dto.getDescription() : existing.getDescription())
@@ -92,13 +96,13 @@ public class CaseService {
     }
 
     @Transactional(readOnly = true)
-    public List<CaseDTO> getCasesByIndustry(Case.Industry industry) {
-        return caseRepository.findByIndustry(industry, org.springframework.data.domain.PageRequest.of(0, 1000)).stream().map(this::toDTO).toList();
+    public List<CaseDTO> getCasesByIndustry(CaseDTO.Industry industry) {
+        return caseRepository.findByIndustry(toEntityIndustry(industry), org.springframework.data.domain.PageRequest.of(0, 1000)).stream().map(this::toDTO).toList();
     }
 
     @Transactional(readOnly = true)
-    public List<CaseDTO> getCasesByOutcome(Case.Outcome outcome) {
-        return caseRepository.findByOutcome(outcome, org.springframework.data.domain.PageRequest.of(0, 1000)).stream().map(this::toDTO).toList();
+    public List<CaseDTO> getCasesByOutcome(CaseDTO.Outcome outcome) {
+        return caseRepository.findByOutcome(toEntityOutcome(outcome), org.springframework.data.domain.PageRequest.of(0, 1000)).stream().map(this::toDTO).toList();
     }
 
     @Transactional(readOnly = true)
@@ -143,7 +147,7 @@ public class CaseService {
     }
 
     private CaseDTO toDTO(Case c) {
-        return CaseDTO.builder().id(c.getId()).title(c.getTitle()).industry(c.getIndustry()).outcome(c.getOutcome())
+        return CaseDTO.builder().id(c.getId()).title(c.getTitle()).industry(CaseDTO.Industry.valueOf(c.getIndustry().name())).outcome(CaseDTO.Outcome.valueOf(c.getOutcome().name()))
                 .amount(c.getAmount()).projectDate(c.getProjectDate()).description(c.getDescription())
                 .customerName(c.getCustomerName()).locationName(c.getLocationName()).projectPeriod(c.getProjectPeriod())
                 .tags(copyList(c.getTags())).highlights(copyList(c.getHighlights())).technologies(copyList(c.getTechnologies()))
@@ -167,6 +171,8 @@ public class CaseService {
         return (fallback != null && !fallback.isBlank()) ? fallback.trim() : "未命名用户";
     }
 
+    private Case.Industry toEntityIndustry(CaseDTO.Industry industry) { return industry == null ? null : Case.Industry.valueOf(industry.name()); }
+    private Case.Outcome toEntityOutcome(CaseDTO.Outcome outcome) { return outcome == null ? null : Case.Outcome.valueOf(outcome.name()); }
     private List<String> copyList(List<String> source) { return source == null ? new ArrayList<>() : new ArrayList<>(source); }
     private String trimToNull(String value) { if (value == null) return null; String t = value.trim(); return t.isEmpty() ? null : t; }
     private Long defaultLong(Long value) { return value == null ? 0L : value; }

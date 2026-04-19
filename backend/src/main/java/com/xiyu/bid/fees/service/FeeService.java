@@ -100,9 +100,10 @@ public class FeeService {
      * 根据状态获取费用列表
      */
     @Transactional(readOnly = true)
-    public List<FeeDTO> getFeesByStatus(Fee.Status status) {
-        log.debug("Fetching fees with status: {}", status);
-        return feeRepository.findByStatus(status).stream()
+    public List<FeeDTO> getFeesByStatus(FeeDTO.Status status) {
+        Fee.Status entityStatus = Fee.Status.valueOf(status.name());
+        log.debug("Fetching fees with status: {}", entityStatus);
+        return feeRepository.findByStatus(entityStatus).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -295,10 +296,10 @@ public class FeeService {
         return FeeDTO.builder()
                 .id(fee.getId())
                 .projectId(fee.getProjectId())
-                .feeType(fee.getFeeType())
+                .feeType(FeeDTO.FeeType.valueOf(fee.getFeeType().name()))
                 .amount(fee.getAmount())
                 .feeDate(fee.getFeeDate())
-                .status(fee.getStatus())
+                .status(FeeDTO.Status.valueOf(fee.getStatus().name()))
                 .paymentDate(fee.getPaymentDate())
                 .returnDate(fee.getReturnDate())
                 .paidBy(fee.getPaidBy())

@@ -8,8 +8,8 @@ import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.config.PaginationConstants;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.resources.dto.AccountCreateRequest;
+import com.xiyu.bid.resources.dto.AccountResponseDTO;
 import com.xiyu.bid.resources.dto.AccountUpdateRequest;
-import com.xiyu.bid.resources.entity.Account;
 import com.xiyu.bid.resources.service.AccountService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
@@ -33,21 +41,21 @@ public class AccountController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "CREATE", entityType = "Account", description = "Create account record")
-    public ResponseEntity<ApiResponse<Account>> createAccount(@Valid @RequestBody AccountCreateRequest request) {
-        Account account = accountService.createAccount(request);
+    public ResponseEntity<ApiResponse<AccountResponseDTO>> createAccount(@Valid @RequestBody AccountCreateRequest request) {
+        AccountResponseDTO account = accountService.createAccount(request);
         return ResponseEntity.ok(ApiResponse.success("Account created successfully", account));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<Account>> getAccountById(@PathVariable Long id) {
-        Account account = accountService.getAccountById(id);
+    public ResponseEntity<ApiResponse<AccountResponseDTO>> getAccountById(@PathVariable Long id) {
+        AccountResponseDTO account = accountService.getAccountById(id);
         return ResponseEntity.ok(ApiResponse.success(account));
     }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<Page<Account>>> getAllAccounts(
+    public ResponseEntity<ApiResponse<Page<AccountResponseDTO>>> getAllAccounts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "name") String sortBy,
@@ -59,14 +67,14 @@ public class AccountController {
 
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<Account> accounts = accountService.getAllAccounts(pageable);
+        Page<AccountResponseDTO> accounts = accountService.getAllAccounts(pageable);
         return ResponseEntity.ok(ApiResponse.success(accounts));
     }
 
     @GetMapping("/type/{type}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<Page<Account>>> getAccountsByType(
-            @PathVariable Account.AccountType type,
+    public ResponseEntity<ApiResponse<Page<AccountResponseDTO>>> getAccountsByType(
+            @PathVariable String type,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
@@ -75,13 +83,13 @@ public class AccountController {
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
-        Page<Account> accounts = accountService.getAccountsByType(type, pageable);
+        Page<AccountResponseDTO> accounts = accountService.getAccountsByType(type, pageable);
         return ResponseEntity.ok(ApiResponse.success(accounts));
     }
 
     @GetMapping("/industry/{industry}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<Page<Account>>> getAccountsByIndustry(
+    public ResponseEntity<ApiResponse<Page<AccountResponseDTO>>> getAccountsByIndustry(
             @PathVariable String industry,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -91,13 +99,13 @@ public class AccountController {
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
-        Page<Account> accounts = accountService.getAccountsByIndustry(industry, pageable);
+        Page<AccountResponseDTO> accounts = accountService.getAccountsByIndustry(industry, pageable);
         return ResponseEntity.ok(ApiResponse.success(accounts));
     }
 
     @GetMapping("/region/{region}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<Page<Account>>> getAccountsByRegion(
+    public ResponseEntity<ApiResponse<Page<AccountResponseDTO>>> getAccountsByRegion(
             @PathVariable String region,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -107,14 +115,14 @@ public class AccountController {
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
-        Page<Account> accounts = accountService.getAccountsByRegion(region, pageable);
+        Page<AccountResponseDTO> accounts = accountService.getAccountsByRegion(region, pageable);
         return ResponseEntity.ok(ApiResponse.success(accounts));
     }
 
     @GetMapping("/credit-level/{creditLevel}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<Page<Account>>> getAccountsByCreditLevel(
-            @PathVariable Account.CreditLevel creditLevel,
+    public ResponseEntity<ApiResponse<Page<AccountResponseDTO>>> getAccountsByCreditLevel(
+            @PathVariable String creditLevel,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
@@ -123,13 +131,13 @@ public class AccountController {
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
-        Page<Account> accounts = accountService.getAccountsByCreditLevel(creditLevel, pageable);
+        Page<AccountResponseDTO> accounts = accountService.getAccountsByCreditLevel(creditLevel, pageable);
         return ResponseEntity.ok(ApiResponse.success(accounts));
     }
 
     @GetMapping("/search")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<Page<Account>>> searchAccounts(
+    public ResponseEntity<ApiResponse<Page<AccountResponseDTO>>> searchAccounts(
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -139,18 +147,18 @@ public class AccountController {
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
-        Page<Account> accounts = accountService.searchAccounts(keyword, pageable);
+        Page<AccountResponseDTO> accounts = accountService.searchAccounts(keyword, pageable);
         return ResponseEntity.ok(ApiResponse.success(accounts));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "UPDATE", entityType = "Account", description = "Update account record")
-    public ResponseEntity<ApiResponse<Account>> updateAccount(
+    public ResponseEntity<ApiResponse<AccountResponseDTO>> updateAccount(
             @PathVariable Long id,
             @Valid @RequestBody AccountUpdateRequest request) {
 
-        Account account = accountService.updateAccount(id, request);
+        AccountResponseDTO account = accountService.updateAccount(id, request);
         return ResponseEntity.ok(ApiResponse.success("Account updated successfully", account));
     }
 

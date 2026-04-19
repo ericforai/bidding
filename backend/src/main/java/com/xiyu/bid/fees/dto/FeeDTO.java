@@ -1,6 +1,4 @@
 package com.xiyu.bid.fees.dto;
-
-import com.xiyu.bid.fees.entity.Fee;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,10 +18,10 @@ public class FeeDTO {
 
     private Long id;
     private Long projectId;
-    private Fee.FeeType feeType;
+    private FeeType feeType;
     private BigDecimal amount;
     private LocalDateTime feeDate;
-    private Fee.Status status;
+    private Status status;
     private LocalDateTime paymentDate;
     private LocalDateTime returnDate;
     private String paidBy;
@@ -31,4 +29,20 @@ public class FeeDTO {
     private String remarks;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public enum FeeType {
+        BID_BOND,
+        SERVICE_FEE,
+        DOCUMENT_FEE,
+        TRAVEL_FEE,
+        NOTARY_FEE,
+        OTHER_FEE
+    }
+
+    public enum Status {
+        PENDING,
+        PAID,
+        RETURNED,
+        CANCELLED
+    }
 }

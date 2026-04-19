@@ -8,11 +8,11 @@ import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.config.PaginationConstants;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.resources.dto.ExpenseApproveRequest;
+import com.xiyu.bid.resources.dto.ExpenseApprovalRecordDTO;
 import com.xiyu.bid.resources.dto.ExpenseCreateRequest;
+import com.xiyu.bid.resources.dto.ExpenseDTO;
 import com.xiyu.bid.resources.dto.ExpenseReturnActionRequest;
 import com.xiyu.bid.resources.dto.ExpenseUpdateRequest;
-import com.xiyu.bid.resources.entity.Expense;
-import com.xiyu.bid.resources.entity.ExpenseApprovalRecord;
 import com.xiyu.bid.resources.service.ExpenseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -39,21 +47,21 @@ public class ExpenseController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "CREATE", entityType = "Expense", description = "Create expense record")
-    public ResponseEntity<ApiResponse<Expense>> createExpense(@Valid @RequestBody ExpenseCreateRequest request) {
-        Expense expense = expenseService.createExpense(request);
+    public ResponseEntity<ApiResponse<ExpenseDTO>> createExpense(@Valid @RequestBody ExpenseCreateRequest request) {
+        ExpenseDTO expense = expenseService.createExpense(request);
         return ResponseEntity.ok(ApiResponse.success("Expense created successfully", expense));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<Expense>> getExpenseById(@PathVariable Long id) {
-        Expense expense = expenseService.getExpenseById(id);
+    public ResponseEntity<ApiResponse<ExpenseDTO>> getExpenseById(@PathVariable Long id) {
+        ExpenseDTO expense = expenseService.getExpenseById(id);
         return ResponseEntity.ok(ApiResponse.success(expense));
     }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<Page<Expense>>> getAllExpenses(
+    public ResponseEntity<ApiResponse<Page<ExpenseDTO>>> getAllExpenses(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
@@ -65,13 +73,13 @@ public class ExpenseController {
 
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<Expense> expenses = expenseService.getAllExpenses(pageable);
+        Page<ExpenseDTO> expenses = expenseService.getAllExpenses(pageable);
         return ResponseEntity.ok(ApiResponse.success(expenses));
     }
 
     @GetMapping("/project/{projectId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<Page<Expense>>> getExpensesByProjectId(
+    public ResponseEntity<ApiResponse<Page<ExpenseDTO>>> getExpensesByProjectId(
             @PathVariable Long projectId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -81,14 +89,14 @@ public class ExpenseController {
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
-        Page<Expense> expenses = expenseService.getExpensesByProjectId(projectId, pageable);
+        Page<ExpenseDTO> expenses = expenseService.getExpensesByProjectId(projectId, pageable);
         return ResponseEntity.ok(ApiResponse.success(expenses));
     }
 
     @GetMapping("/category/{category}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<Page<Expense>>> getExpensesByCategory(
-            @PathVariable Expense.ExpenseCategory category,
+    public ResponseEntity<ApiResponse<Page<ExpenseDTO>>> getExpensesByCategory(
+            @PathVariable String category,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
@@ -97,13 +105,13 @@ public class ExpenseController {
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
-        Page<Expense> expenses = expenseService.getExpensesByCategory(category, pageable);
+        Page<ExpenseDTO> expenses = expenseService.getExpensesByCategory(category, pageable);
         return ResponseEntity.ok(ApiResponse.success(expenses));
     }
 
     @GetMapping("/date-range")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<Page<Expense>>> getExpensesByDateRange(
+    public ResponseEntity<ApiResponse<Page<ExpenseDTO>>> getExpensesByDateRange(
             @RequestParam LocalDate startDate,
             @RequestParam LocalDate endDate,
             @RequestParam(defaultValue = "0") int page,
@@ -114,18 +122,18 @@ public class ExpenseController {
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
-        Page<Expense> expenses = expenseService.getExpensesByDateRange(startDate, endDate, pageable);
+        Page<ExpenseDTO> expenses = expenseService.getExpensesByDateRange(startDate, endDate, pageable);
         return ResponseEntity.ok(ApiResponse.success(expenses));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "UPDATE", entityType = "Expense", description = "Update expense record")
-    public ResponseEntity<ApiResponse<Expense>> updateExpense(
+    public ResponseEntity<ApiResponse<ExpenseDTO>> updateExpense(
             @PathVariable Long id,
             @Valid @RequestBody ExpenseUpdateRequest request) {
 
-        Expense expense = expenseService.updateExpense(id, request);
+        ExpenseDTO expense = expenseService.updateExpense(id, request);
         return ResponseEntity.ok(ApiResponse.success("Expense updated successfully", expense));
     }
 
@@ -153,39 +161,39 @@ public class ExpenseController {
 
     @GetMapping("/approval-records")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<List<ExpenseApprovalRecord>>> getApprovalRecords(
+    public ResponseEntity<ApiResponse<List<ExpenseApprovalRecordDTO>>> getApprovalRecords(
             @RequestParam(required = false) Long projectId) {
-        List<ExpenseApprovalRecord> records = expenseService.getApprovalRecords(projectId);
+        List<ExpenseApprovalRecordDTO> records = expenseService.getApprovalRecords(projectId);
         return ResponseEntity.ok(ApiResponse.success(records));
     }
 
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "APPROVE", entityType = "Expense", description = "Approve or reject expense")
-    public ResponseEntity<ApiResponse<Expense>> approveExpense(
+    public ResponseEntity<ApiResponse<ExpenseDTO>> approveExpense(
             @PathVariable Long id,
             @Valid @RequestBody ExpenseApproveRequest request) {
-        Expense expense = expenseService.approveExpense(id, request);
+        ExpenseDTO expense = expenseService.approveExpense(id, request);
         return ResponseEntity.ok(ApiResponse.success("Expense approval action completed", expense));
     }
 
     @PostMapping("/{id}/return-request")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "RETURN_REQUEST", entityType = "Expense", description = "Request expense return")
-    public ResponseEntity<ApiResponse<Expense>> requestReturn(
+    public ResponseEntity<ApiResponse<ExpenseDTO>> requestReturn(
             @PathVariable Long id,
             @Valid @RequestBody ExpenseReturnActionRequest request) {
-        Expense expense = expenseService.requestReturn(id, request);
+        ExpenseDTO expense = expenseService.requestReturn(id, request);
         return ResponseEntity.ok(ApiResponse.success("Expense return requested", expense));
     }
 
     @PostMapping("/{id}/confirm-return")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "CONFIRM_RETURN", entityType = "Expense", description = "Confirm expense return")
-    public ResponseEntity<ApiResponse<Expense>> confirmReturn(
+    public ResponseEntity<ApiResponse<ExpenseDTO>> confirmReturn(
             @PathVariable Long id,
             @Valid @RequestBody ExpenseReturnActionRequest request) {
-        Expense expense = expenseService.confirmReturn(id, request);
+        ExpenseDTO expense = expenseService.confirmReturn(id, request);
         return ResponseEntity.ok(ApiResponse.success("Expense return confirmed", expense));
     }
 }

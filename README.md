@@ -167,7 +167,7 @@ mvn test
 - `config -> service` 依赖：`E2eDemoDataInitializer` 不再直接依赖 `RoleProfileService`
 - `config <-> service` 循环依赖：`RateLimitService` 不再依赖 `ExportConfig`
 
-这意味着 `ArchitectureTest` 已可作为常规后端架构门禁执行；后续任务仍需据实报告验证结果。
+这意味着 `ArchitectureTest` 已可作为常规后端架构门禁执行；凡涉及模块边界、包迁移、职责收敛或架构治理的后端改动，默认运行并据实报告结果。
 
 ## E2E 基线
 

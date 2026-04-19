@@ -5,10 +5,13 @@
 package com.xiyu.bid.resources.service;
 
 import com.xiyu.bid.exception.ResourceNotFoundException;
-import com.xiyu.bid.resources.dto.ExpenseCreateRequest;
 import com.xiyu.bid.resources.dto.ExpenseApproveRequest;
+import com.xiyu.bid.resources.dto.ExpenseApprovalRecordDTO;
+import com.xiyu.bid.resources.dto.ExpenseCreateRequest;
+import com.xiyu.bid.resources.dto.ExpenseDTO;
 import com.xiyu.bid.resources.dto.ExpenseReturnActionRequest;
 import com.xiyu.bid.resources.dto.ExpenseUpdateRequest;
+import com.xiyu.bid.resources.dto.ResourceResponseMapper;
 import com.xiyu.bid.resources.entity.Expense;
 import com.xiyu.bid.resources.entity.ExpenseApprovalRecord;
 import com.xiyu.bid.resources.repository.ExpenseApprovalRecordRepository;
@@ -36,7 +39,7 @@ public class ExpenseService {
     private final ExpenseApprovalRecordRepository expenseApprovalRecordRepository;
 
     @Transactional
-    public Expense createExpense(ExpenseCreateRequest request) {
+    public ExpenseDTO createExpense(ExpenseCreateRequest request) {
         validateCreateRequest(request);
 
         Expense expense = Expense.builder()
@@ -50,36 +53,38 @@ public class ExpenseService {
                 .status(Expense.ExpenseStatus.PENDING_APPROVAL)
                 .build();
 
-        return expenseRepository.save(expense);
+        return ResourceResponseMapper.toDto(expenseRepository.save(expense));
     }
 
-    public Expense getExpenseById(Long id) {
+    public ExpenseDTO getExpenseById(Long id) {
         return expenseRepository.findById(id)
+                .map(ResourceResponseMapper::toDto)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense", String.valueOf(id)));
     }
 
-    public Page<Expense> getAllExpenses(Pageable pageable) {
-        return expenseRepository.findAll(pageable);
+    public Page<ExpenseDTO> getAllExpenses(Pageable pageable) {
+        return expenseRepository.findAll(pageable).map(ResourceResponseMapper::toDto);
     }
 
-    public Page<Expense> getExpensesByProjectId(Long projectId, Pageable pageable) {
-        return expenseRepository.findByProjectId(projectId, pageable);
+    public Page<ExpenseDTO> getExpensesByProjectId(Long projectId, Pageable pageable) {
+        return expenseRepository.findByProjectId(projectId, pageable).map(ResourceResponseMapper::toDto);
     }
 
-    public Page<Expense> getExpensesByCategory(Expense.ExpenseCategory category, Pageable pageable) {
-        return expenseRepository.findByCategory(category, pageable);
+    public Page<ExpenseDTO> getExpensesByCategory(String category, Pageable pageable) {
+        return expenseRepository.findByCategory(Expense.ExpenseCategory.valueOf(category), pageable)
+                .map(ResourceResponseMapper::toDto);
     }
 
-    public Page<Expense> getExpensesByDateRange(LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        return expenseRepository.findByDateBetween(startDate, endDate, pageable);
+    public Page<ExpenseDTO> getExpensesByDateRange(LocalDate startDate, LocalDate endDate, Pageable pageable) {
+        return expenseRepository.findByDateBetween(startDate, endDate, pageable).map(ResourceResponseMapper::toDto);
     }
 
     @Transactional
-    public Expense updateExpense(Long id, ExpenseUpdateRequest request) {
-        Expense expense = getExpenseById(id);
+    public ExpenseDTO updateExpense(Long id, ExpenseUpdateRequest request) {
+        Expense expense = getExpenseEntityById(id);
         expense.updateDetails(request.getCategory(), request.getAmount(), request.getDate(),
                 request.getExpenseType(), request.getDescription());
-        return expenseRepository.save(expense);
+        return ResourceResponseMapper.toDto(expenseRepository.save(expense));
     }
 
     @Transactional
@@ -108,10 +113,11 @@ public class ExpenseService {
         return statistics;
     }
 
-    public List<ExpenseApprovalRecord> getApprovalRecords(Long projectId) {
+    public List<ExpenseApprovalRecordDTO> getApprovalRecords(Long projectId) {
         if (projectId == null) {
             return expenseApprovalRecordRepository.findAll().stream()
                     .sorted((a, b) -> b.getActedAt().compareTo(a.getActedAt()))
+                    .map(ResourceResponseMapper::toDto)
                     .toList();
         }
 
@@ -119,12 +125,13 @@ public class ExpenseService {
                 .map(Expense::getId)
                 .flatMap(expenseId -> expenseApprovalRecordRepository.findByExpenseIdOrderByActedAtDesc(expenseId).stream())
                 .sorted((a, b) -> b.getActedAt().compareTo(a.getActedAt()))
+                .map(ResourceResponseMapper::toDto)
                 .toList();
     }
 
     @Transactional
-    public Expense approveExpense(Long id, ExpenseApproveRequest request) {
-        Expense expense = getExpenseById(id);
+    public ExpenseDTO approveExpense(Long id, ExpenseApproveRequest request) {
+        Expense expense = getExpenseEntityById(id);
         Expense.ExpenseStatus nextStatus = request.getResult() == ExpenseApproveRequest.ApprovalResult.APPROVED
                 ? Expense.ExpenseStatus.APPROVED
                 : Expense.ExpenseStatus.REJECTED;
@@ -142,21 +149,26 @@ public class ExpenseService {
                 .actedAt(LocalDateTime.now())
                 .build());
 
-        return saved;
+        return ResourceResponseMapper.toDto(saved);
     }
 
     @Transactional
-    public Expense requestReturn(Long id, ExpenseReturnActionRequest request) {
-        Expense expense = getExpenseById(id);
+    public ExpenseDTO requestReturn(Long id, ExpenseReturnActionRequest request) {
+        Expense expense = getExpenseEntityById(id);
         expense.requestReturn(request.getActor(), request.getComment());
-        return expenseRepository.save(expense);
+        return ResourceResponseMapper.toDto(expenseRepository.save(expense));
     }
 
     @Transactional
-    public Expense confirmReturn(Long id, ExpenseReturnActionRequest request) {
-        Expense expense = getExpenseById(id);
+    public ExpenseDTO confirmReturn(Long id, ExpenseReturnActionRequest request) {
+        Expense expense = getExpenseEntityById(id);
         expense.confirmReturn(request.getActor(), request.getComment());
-        return expenseRepository.save(expense);
+        return ResourceResponseMapper.toDto(expenseRepository.save(expense));
+    }
+
+    private Expense getExpenseEntityById(Long id) {
+        return expenseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Expense", String.valueOf(id)));
     }
 
     private void validateCreateRequest(ExpenseCreateRequest request) {

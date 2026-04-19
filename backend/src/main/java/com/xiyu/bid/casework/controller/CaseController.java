@@ -5,9 +5,13 @@
 package com.xiyu.bid.casework.controller;
 
 import com.xiyu.bid.annotation.Auditable;
-import com.xiyu.bid.casework.dto.*;
-import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.casework.service.CaseService;
+import com.xiyu.bid.casework.dto.CaseDTO;
+import com.xiyu.bid.casework.dto.CaseReferenceRecordCreateRequest;
+import com.xiyu.bid.casework.dto.CaseReferenceRecordDTO;
+import com.xiyu.bid.casework.dto.CaseShareRecordCreateRequest;
+import com.xiyu.bid.casework.dto.CaseShareRecordDTO;
+import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.util.InputSanitizer;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +19,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -72,7 +83,7 @@ public class CaseController {
     @GetMapping("/industry/{industry}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "READ", entityType = "Case", description = "根据行业获取案例")
-    public ResponseEntity<ApiResponse<List<CaseDTO>>> getCasesByIndustry(@PathVariable com.xiyu.bid.entity.Case.Industry industry) {
+    public ResponseEntity<ApiResponse<List<CaseDTO>>> getCasesByIndustry(@PathVariable CaseDTO.Industry industry) {
         List<CaseDTO> cases = caseService.getCasesByIndustry(industry);
         return ResponseEntity.ok(ApiResponse.success("Cases retrieved successfully", cases));
     }
@@ -80,7 +91,7 @@ public class CaseController {
     @GetMapping("/outcome/{outcome}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "READ", entityType = "Case", description = "根据结果获取案例")
-    public ResponseEntity<ApiResponse<List<CaseDTO>>> getCasesByOutcome(@PathVariable com.xiyu.bid.entity.Case.Outcome outcome) {
+    public ResponseEntity<ApiResponse<List<CaseDTO>>> getCasesByOutcome(@PathVariable CaseDTO.Outcome outcome) {
         List<CaseDTO> cases = caseService.getCasesByOutcome(outcome);
         return ResponseEntity.ok(ApiResponse.success("Cases retrieved successfully", cases));
     }

@@ -93,7 +93,7 @@ mvn test
   - `config <-> service` 循环依赖：`RateLimitService` 不再依赖 `ExportConfig`
 - 因此，当前后端验证要求是：
   - 至少运行与本次变更相关的测试
-  - 若触及架构边界，运行 `ArchitectureTest`
+  - 凡触及模块边界、包迁移、职责收敛或架构治理，默认运行 `ArchitectureTest`
   - 如出现失败，按新引入问题处理
   - 不得再把当前仓库写成“存在已知存量失败”
 

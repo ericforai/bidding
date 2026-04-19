@@ -6,17 +6,29 @@ package com.xiyu.bid.resources.controller;
 
 import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.dto.ApiResponse;
-import com.xiyu.bid.resources.dto.*;
-import com.xiyu.bid.resources.entity.BarAsset;
-import com.xiyu.bid.resources.entity.BarSiteAccount;
-import com.xiyu.bid.resources.entity.BarSiteAttachment;
-import com.xiyu.bid.resources.entity.BarSiteVerification;
+import com.xiyu.bid.resources.dto.BarAssetResponseDTO;
+import com.xiyu.bid.resources.dto.BarSiteAccountDTO;
+import com.xiyu.bid.resources.dto.BarSiteAccountRequest;
+import com.xiyu.bid.resources.dto.BarSiteAttachmentCreateRequest;
+import com.xiyu.bid.resources.dto.BarSiteAttachmentDTO;
+import com.xiyu.bid.resources.dto.BarSiteSopRequest;
+import com.xiyu.bid.resources.dto.BarSiteStatusUpdateRequest;
+import com.xiyu.bid.resources.dto.BarSiteVerificationDTO;
+import com.xiyu.bid.resources.dto.BarSiteVerificationRequest;
 import com.xiyu.bid.resources.service.BarSiteSubresourceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -29,14 +41,14 @@ public class BarSiteSubresourceController {
 
     @GetMapping("/accounts")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<List<BarSiteAccount>>> getAccounts(@PathVariable Long assetId) {
+    public ResponseEntity<ApiResponse<List<BarSiteAccountDTO>>> getAccounts(@PathVariable Long assetId) {
         return ResponseEntity.ok(ApiResponse.success(barSiteSubresourceService.getAccounts(assetId)));
     }
 
     @PostMapping("/accounts")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "CREATE", entityType = "BarSiteAccount", description = "Create BAR site account")
-    public ResponseEntity<ApiResponse<BarSiteAccount>> createAccount(
+    public ResponseEntity<ApiResponse<BarSiteAccountDTO>> createAccount(
             @PathVariable Long assetId,
             @Valid @RequestBody BarSiteAccountRequest request) {
         return ResponseEntity.ok(ApiResponse.success("Account created successfully",
@@ -46,7 +58,7 @@ public class BarSiteSubresourceController {
     @PutMapping("/accounts/{accountId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "UPDATE", entityType = "BarSiteAccount", description = "Update BAR site account")
-    public ResponseEntity<ApiResponse<BarSiteAccount>> updateAccount(
+    public ResponseEntity<ApiResponse<BarSiteAccountDTO>> updateAccount(
             @PathVariable Long assetId,
             @PathVariable Long accountId,
             @Valid @RequestBody BarSiteAccountRequest request) {
@@ -65,7 +77,7 @@ public class BarSiteSubresourceController {
     @PatchMapping("/status")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "UPDATE", entityType = "BarAsset", description = "Update BAR site status")
-    public ResponseEntity<ApiResponse<BarAsset>> updateStatus(
+    public ResponseEntity<ApiResponse<BarAssetResponseDTO>> updateStatus(
             @PathVariable Long assetId,
             @Valid @RequestBody BarSiteStatusUpdateRequest request) {
         return ResponseEntity.ok(ApiResponse.success("Status updated successfully",
@@ -75,7 +87,7 @@ public class BarSiteSubresourceController {
     @PostMapping("/verify")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "VERIFY", entityType = "BarAsset", description = "Verify BAR site")
-    public ResponseEntity<ApiResponse<BarSiteVerification>> verify(
+    public ResponseEntity<ApiResponse<BarSiteVerificationDTO>> verify(
             @PathVariable Long assetId,
             @RequestBody(required = false) BarSiteVerificationRequest request) {
         BarSiteVerificationRequest safeRequest = request != null ? request : new BarSiteVerificationRequest();
@@ -85,7 +97,7 @@ public class BarSiteSubresourceController {
 
     @GetMapping("/verification-records")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<List<BarSiteVerification>>> getVerificationRecords(@PathVariable Long assetId) {
+    public ResponseEntity<ApiResponse<List<BarSiteVerificationDTO>>> getVerificationRecords(@PathVariable Long assetId) {
         return ResponseEntity.ok(ApiResponse.success(barSiteSubresourceService.getVerificationRecords(assetId)));
     }
 
@@ -107,14 +119,14 @@ public class BarSiteSubresourceController {
 
     @GetMapping("/attachments")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<List<BarSiteAttachment>>> getAttachments(@PathVariable Long assetId) {
+    public ResponseEntity<ApiResponse<List<BarSiteAttachmentDTO>>> getAttachments(@PathVariable Long assetId) {
         return ResponseEntity.ok(ApiResponse.success(barSiteSubresourceService.getAttachments(assetId)));
     }
 
     @PostMapping("/attachments")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "CREATE", entityType = "BarSiteAttachment", description = "Create BAR site attachment")
-    public ResponseEntity<ApiResponse<BarSiteAttachment>> createAttachment(
+    public ResponseEntity<ApiResponse<BarSiteAttachmentDTO>> createAttachment(
             @PathVariable Long assetId,
             @Valid @RequestBody BarSiteAttachmentCreateRequest request) {
         return ResponseEntity.ok(ApiResponse.success("Attachment created successfully",
