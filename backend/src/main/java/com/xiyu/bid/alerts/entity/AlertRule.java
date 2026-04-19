@@ -62,7 +62,8 @@ public class AlertRule {
         DEADLINE,
         BUDGET,
         RISK,
-        DOCUMENT
+        DOCUMENT,
+        QUALIFICATION_EXPIRY
     }
 
     public enum ConditionType {

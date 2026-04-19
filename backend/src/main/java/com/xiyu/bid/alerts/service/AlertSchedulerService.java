@@ -1,5 +1,5 @@
-// Input: alerts repositories, DTOs, and support services
-// Output: Alert Scheduler business service operations
+// Input: alerts repositories, project/tender data, and delegated domain scanners
+// Output: Alert Scheduler business service operations for orchestrated rule-driven alerts
 // Pos: Service/业务层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.alerts.service;
@@ -8,6 +8,7 @@ import com.xiyu.bid.alerts.dto.AlertHistoryCreateRequest;
 import com.xiyu.bid.alerts.entity.AlertHistory;
 import com.xiyu.bid.alerts.entity.AlertRule;
 import com.xiyu.bid.alerts.repository.AlertRuleRepository;
+import com.xiyu.bid.businessqualification.application.service.ScanExpiringQualificationsAppService;
 import com.xiyu.bid.compliance.dto.RiskAssessmentDTO;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
@@ -36,6 +37,7 @@ public class AlertSchedulerService {
     private final ProjectRepository projectRepository;
     private final TenderRepository tenderRepository;
     private final ExpenseRepository expenseRepository;
+    private final ScanExpiringQualificationsAppService scanExpiringQualificationsAppService;
 
     /**
      * Scheduled task to check alert rules every 2 hours
@@ -85,6 +87,9 @@ public class AlertSchedulerService {
                 break;
             case DOCUMENT:
                 checkDocumentAlert(rule);
+                break;
+            case QUALIFICATION_EXPIRY:
+                checkQualificationExpiryAlert(rule);
                 break;
             default:
                 log.warn("Unknown alert type: {}", rule.getType());
@@ -291,6 +296,15 @@ public class AlertSchedulerService {
     }
 
     /**
+     * 检查资质到期提醒
+     * 阈值表示剩余天数，relatedId 固定使用 Qualification:{id}:{expiryDate} 以支持未解决提醒去重。
+     */
+    private void checkQualificationExpiryAlert(AlertRule rule) {
+        log.debug("Checking qualification expiry alert rule: {}", rule.getName());
+        scanExpiringQualificationsAppService.scan(rule.getThreshold().intValue());
+    }
+
+    /**
      * 检查指定文档是否存在（模拟实现，实际应查询文档表）
      */
     private boolean checkRequiredDocument(Long projectId, String docType) {
@@ -303,11 +317,15 @@ public class AlertSchedulerService {
      * 创建告警历史记录
      */
     private void createAlert(AlertRule rule, Long entityId, String entityType, String message) {
+        createAlert(rule, entityId, entityType, message, String.format("%s:%s", entityType, entityId));
+    }
+
+    private void createAlert(AlertRule rule, Long entityId, String entityType, String message, String relatedId) {
         AlertHistoryCreateRequest request = new AlertHistoryCreateRequest();
         request.setRuleId(rule.getId());
         request.setLevel(calculateSeverity(rule));
         request.setMessage(message);
-        request.setRelatedId(String.format("%s:%s", entityType, entityId));
+        request.setRelatedId(relatedId);
 
         alertHistoryService.createAlertHistory(request);
         log.info("Alert created: Rule={}, Entity={}, Message={}",
@@ -328,6 +346,7 @@ public class AlertSchedulerService {
             }
             case RISK -> AlertHistory.AlertLevel.MEDIUM;
             case DOCUMENT -> AlertHistory.AlertLevel.LOW;
+            case QUALIFICATION_EXPIRY -> AlertHistory.AlertLevel.HIGH;
         };
     }
 

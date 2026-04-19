@@ -1,0 +1,27 @@
+一旦我所属的文件夹有所变化，请更新我。
+
+# businessqualification
+
+商务资质库真实业务子域。
+
+## 文件清单
+
+| 文件 | 功能 |
+|------|------|
+| `domain/` | 资质有效期、借还状态、提醒策略等纯业务决策 |
+| `application/` | 创建、更新、借阅、归还、扫描提醒等用例编排 |
+| `infrastructure/` | JPA 实体、仓储适配、附件与借阅记录持久化 |
+| `../qualification/` | 旧 `/api/knowledge/qualifications` 的兼容协议适配层 |
+
+## 提醒
+
+- 资质到期提醒由 `ScanExpiringQualificationsAppService` 扫描产生
+- `AlertSchedulerService` 只负责按规则触发该扫描器
+- `relatedId` 协议固定为 `Qualification:{qualificationId}:{expiryDate}`
+
+## 兼容说明
+
+- 现有页面路由与 `/api/knowledge/qualifications` 地址保持不变
+- 兼容借还两套入口：
+  - `POST /api/knowledge/qualifications/{id}/return`
+  - `POST /api/knowledge/qualifications/borrow-records/{id}/return`

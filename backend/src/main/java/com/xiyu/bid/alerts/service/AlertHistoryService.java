@@ -1,5 +1,5 @@
-// Input: alerts repositories, DTOs, and support services
-// Output: Alert History business service operations
+// Input: alerts repositories, dedup lookup, and request DTOs
+// Output: Alert History business service operations with unresolved-alert dedup
 // Pos: Service/业务层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.alerts.service;
@@ -43,6 +43,17 @@ public class AlertHistoryService {
         // Verify rule exists
         AlertRule rule = alertRuleRepository.findById(request.getRuleId())
                 .orElseThrow(() -> new RuntimeException("AlertRule not found with id: " + request.getRuleId()));
+
+        AlertHistory existingAlert = null;
+        if (request.getRelatedId() != null && !request.getRelatedId().trim().isEmpty()) {
+            existingAlert = alertHistoryRepository.findFirstByRuleIdAndRelatedIdAndResolvedFalseOrderByCreatedAtDesc(
+                    request.getRuleId(), request.getRelatedId()).orElse(null);
+        }
+        if (existingAlert != null) {
+            log.debug("Returning existing unresolved alert for rule {} and relatedId {}",
+                    rule.getId(), request.getRelatedId());
+            return existingAlert;
+        }
 
         AlertHistory alertHistory = AlertHistory.builder()
                 .ruleId(request.getRuleId())
