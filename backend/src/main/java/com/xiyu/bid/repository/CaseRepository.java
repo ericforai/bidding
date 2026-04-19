@@ -1,9 +1,12 @@
 package com.xiyu.bid.repository;
 
 import com.xiyu.bid.entity.Case;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -14,7 +17,7 @@ import java.util.List;
  * 案例Repository接口
  */
 @Repository
-public interface CaseRepository extends JpaRepository<Case, Long> {
+public interface CaseRepository extends JpaRepository<Case, Long>, JpaSpecificationExecutor<Case> {
 
     /**
      * 根据行业查找案例（分页）
@@ -75,4 +78,42 @@ public interface CaseRepository extends JpaRepository<Case, Long> {
      * 根据结果查找案例（限制返回数量）
      */
     List<Case> findByOutcome(Case.Outcome outcome);
+
+    /**
+     * 按搜索文档、标题、产品线和客户名做服务端检索
+     */
+    @Query("""
+            select c
+            from Case c
+            where (
+                :keyword is null
+                or :keyword = ''
+                or lower(coalesce(c.searchDocument, '')) like lower(concat('%', :keyword, '%'))
+                or lower(coalesce(c.title, '')) like lower(concat('%', :keyword, '%'))
+                or lower(coalesce(c.productLine, '')) like lower(concat('%', :keyword, '%'))
+                or lower(coalesce(c.customerName, '')) like lower(concat('%', :keyword, '%'))
+                or lower(coalesce(c.archiveSummary, '')) like lower(concat('%', :keyword, '%'))
+            )
+            and (:productLine is null or :productLine = '' or lower(coalesce(c.productLine, '')) = lower(:productLine))
+            and (:status is null or :status = '' or lower(coalesce(c.status, '')) = lower(:status))
+            and (:visibility is null or :visibility = '' or lower(coalesce(c.visibility, '')) = lower(:visibility))
+            """)
+    Page<Case> searchCases(
+            @Param("keyword") String keyword,
+            @Param("productLine") String productLine,
+            @Param("status") String status,
+            @Param("visibility") String visibility,
+            Pageable pageable);
+
+    @Query("select distinct c.productLine from Case c where c.productLine is not null and trim(c.productLine) <> ''")
+    List<String> findDistinctProductLines();
+
+    @Query("select distinct c.status from Case c where c.status is not null and trim(c.status) <> ''")
+    List<String> findDistinctStatuses();
+
+    @Query("select distinct c.visibility from Case c where c.visibility is not null and trim(c.visibility) <> ''")
+    List<String> findDistinctVisibilities();
+
+    @Query("select distinct tag from Case c join c.tags tag where trim(tag) <> ''")
+    List<String> findDistinctTags();
 }

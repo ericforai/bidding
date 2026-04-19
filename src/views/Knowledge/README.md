@@ -15,7 +15,9 @@
 | `CaseDetail.vue` | View | 案例详情页 |
 | `Qualification.vue` | View | 资质文件页编排层，复用 `components/qualification/` 下的列表、借阅记录与对话框组件 |
 | `Template.vue` | View | 模板库页 |
+| `components/case/` | 子目录 | 案例列表、详情头部、表单与页面状态 composable |
 
 ## 最近更新
 
 - 2026-04-19: 资质页拆分为页面编排层 + `components/qualification/` 子组件，并移除页面内硬编码借阅记录。
+- 2026-04-19: 案例页拆分为列表/搜索/表单/详情头部组件与 composable，案例列表改为参数驱动查询并移除本地 mock 主路径。

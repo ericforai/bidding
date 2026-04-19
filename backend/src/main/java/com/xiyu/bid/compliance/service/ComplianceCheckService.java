@@ -13,8 +13,10 @@ import com.xiyu.bid.compliance.entity.ComplianceCheckResult;
 import com.xiyu.bid.compliance.entity.ComplianceRule;
 import com.xiyu.bid.compliance.repository.ComplianceCheckResultRepository;
 import com.xiyu.bid.compliance.repository.ComplianceRuleRepository;
+import com.xiyu.bid.entity.Case;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
+import com.xiyu.bid.repository.CaseRepository;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TenderRepository;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +42,7 @@ public class ComplianceCheckService {
     private final ComplianceCheckResultRepository complianceCheckResultRepository;
     private final ProjectRepository projectRepository;
     private final TenderRepository tenderRepository;
+    private final CaseRepository caseRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -391,19 +394,24 @@ public class ComplianceCheckService {
     private ComplianceIssue checkExperience(ComplianceRule rule, Project project) {
         try {
             Map<String, Object> ruleDef = objectMapper.readValue(rule.getRuleDefinition(), Map.class);
-            Number minYears = (Number) ruleDef.get("minYears");
+            Number minYears = (Number) ruleDef.getOrDefault("minYears", 0);
             Number minProjects = (Number) ruleDef.get("minProjects");
-
-            // 模拟检查逻辑（实际应从案例库查询）
-            boolean passed = true;
+            long recentWonProjects = caseRepository.findByOutcome(Case.Outcome.WON).stream()
+                    .filter(caseStudy -> caseStudy.getProjectDate() != null)
+                    .filter(caseStudy -> caseStudy.getProjectDate().isAfter(java.time.LocalDate.now().minusYears(minYears.longValue())))
+                    .count();
+            boolean passed = recentWonProjects >= minProjects.longValue();
+            String description = passed
+                    ? "Experience requirements met via historical case library"
+                    : "Historical case library does not contain enough recent winning projects";
 
             return ComplianceIssue.builder()
                     .ruleId(rule.getId())
                     .ruleName(rule.getName())
                     .ruleType(rule.getRuleType())
                     .severity(passed ? ComplianceIssue.Severity.LOW : ComplianceIssue.Severity.MEDIUM)
-                    .description(passed ? "Experience requirements met" : "Insufficient experience")
-                    .recommendation(passed ? null : "Gain more experience in similar projects")
+                    .description(description)
+                    .recommendation(passed ? null : "补充近年同类中标案例，或在案例库中沉淀更多已归档项目")
                     .passed(passed)
                     .build();
         } catch (JsonProcessingException e) {

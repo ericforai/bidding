@@ -5,175 +5,141 @@
 
 package com.xiyu.bid.casework.service;
 
+import com.xiyu.bid.casework.application.service.CaseCrudAppService;
+import com.xiyu.bid.casework.application.service.CasePromotionAppService;
+import com.xiyu.bid.casework.application.service.CaseReferenceAppService;
+import com.xiyu.bid.casework.application.service.CaseSearchAppService;
+import com.xiyu.bid.casework.application.service.CaseShareAppService;
+import com.xiyu.bid.casework.domain.model.CaseSearchCriteria;
+import com.xiyu.bid.casework.domain.model.CaseSearchOptions;
 import com.xiyu.bid.casework.dto.CaseDTO;
+import com.xiyu.bid.casework.dto.CasePromoteFromProjectRequest;
+import com.xiyu.bid.casework.dto.CaseRecommendationDTO;
 import com.xiyu.bid.casework.dto.CaseReferenceRecordCreateRequest;
 import com.xiyu.bid.casework.dto.CaseReferenceRecordDTO;
+import com.xiyu.bid.casework.dto.CaseSearchOptionsDTO;
+import com.xiyu.bid.casework.dto.CaseSearchResultDTO;
 import com.xiyu.bid.casework.dto.CaseShareRecordCreateRequest;
 import com.xiyu.bid.casework.dto.CaseShareRecordDTO;
-import com.xiyu.bid.casework.entity.CaseReferenceRecord;
-import com.xiyu.bid.casework.entity.CaseShareRecord;
-import com.xiyu.bid.casework.repository.CaseReferenceRecordRepository;
-import com.xiyu.bid.casework.repository.CaseShareRecordRepository;
-import com.xiyu.bid.entity.Case;
-import com.xiyu.bid.entity.User;
-import com.xiyu.bid.exception.ResourceNotFoundException;
-import com.xiyu.bid.repository.CaseRepository;
-import com.xiyu.bid.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 @Transactional
 public class CaseService {
 
-    private final CaseRepository caseRepository;
-    private final CaseShareRecordRepository caseShareRecordRepository;
-    private final CaseReferenceRecordRepository caseReferenceRecordRepository;
-    private final UserRepository userRepository;
+    private final CaseCrudAppService crudAppService;
+    private final CaseShareAppService shareAppService;
+    private final CaseReferenceAppService referenceAppService;
+    private final CaseSearchAppService searchAppService;
+    private final CasePromotionAppService promotionAppService;
 
-    @Transactional
     public CaseDTO createCase(CaseDTO dto) {
-        log.info("Creating case: {}", dto.getTitle());
-        Case caseStudy = Case.builder()
-                .title(dto.getTitle()).industry(toEntityIndustry(dto.getIndustry())).outcome(toEntityOutcome(dto.getOutcome())).amount(dto.getAmount())
-                .projectDate(dto.getProjectDate()).description(dto.getDescription())
-                .customerName(trimToNull(dto.getCustomerName())).locationName(trimToNull(dto.getLocationName()))
-                .projectPeriod(trimToNull(dto.getProjectPeriod())).tags(copyList(dto.getTags()))
-                .highlights(copyList(dto.getHighlights())).technologies(copyList(dto.getTechnologies()))
-                .viewCount(defaultLong(dto.getViewCount())).useCount(defaultLong(dto.getUseCount())).build();
-        Case saved = caseRepository.save(caseStudy);
-        log.info("Case created successfully with id: {}", saved.getId());
-        return toDTO(saved);
+        return crudAppService.create(dto);
     }
 
     @Transactional(readOnly = true)
     public List<CaseDTO> getAllCases() {
-        return caseRepository.findAll(org.springframework.data.domain.PageRequest.of(0, 1000)).stream().map(this::toDTO).toList();
+        return crudAppService.findAll();
     }
 
     @Transactional(readOnly = true)
     public CaseDTO getCaseById(Long id) {
-        Case caseStudy = caseRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Case", id.toString()));
-        return toDTO(caseStudy);
+        return crudAppService.findById(id);
     }
 
-    @Transactional
     public CaseDTO updateCase(Long id, CaseDTO dto) {
-        log.info("Updating case: {}", id);
-        Case existing = caseRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Case", id.toString()));
-        Case updated = Case.builder()
-                .id(existing.getId()).title(dto.getTitle() != null ? dto.getTitle() : existing.getTitle())
-                .industry(dto.getIndustry() != null ? toEntityIndustry(dto.getIndustry()) : existing.getIndustry())
-                .outcome(dto.getOutcome() != null ? toEntityOutcome(dto.getOutcome()) : existing.getOutcome())
-                .amount(dto.getAmount() != null ? dto.getAmount() : existing.getAmount())
-                .projectDate(dto.getProjectDate() != null ? dto.getProjectDate() : existing.getProjectDate())
-                .description(dto.getDescription() != null ? dto.getDescription() : existing.getDescription())
-                .customerName(dto.getCustomerName() != null ? trimToNull(dto.getCustomerName()) : existing.getCustomerName())
-                .locationName(dto.getLocationName() != null ? trimToNull(dto.getLocationName()) : existing.getLocationName())
-                .projectPeriod(dto.getProjectPeriod() != null ? trimToNull(dto.getProjectPeriod()) : existing.getProjectPeriod())
-                .tags(dto.getTags() != null ? copyList(dto.getTags()) : copyList(existing.getTags()))
-                .highlights(dto.getHighlights() != null ? copyList(dto.getHighlights()) : copyList(existing.getHighlights()))
-                .technologies(dto.getTechnologies() != null ? copyList(dto.getTechnologies()) : copyList(existing.getTechnologies()))
-                .viewCount(dto.getViewCount() != null ? dto.getViewCount() : existing.getViewCount())
-                .useCount(dto.getUseCount() != null ? dto.getUseCount() : existing.getUseCount())
-                .createdAt(existing.getCreatedAt()).updatedAt(existing.getUpdatedAt()).build();
-        return toDTO(caseRepository.save(updated));
+        return crudAppService.update(id, dto);
     }
 
-    @Transactional
     public void deleteCase(Long id) {
-        log.info("Deleting case: {}", id);
-        if (!caseRepository.existsById(id)) throw new ResourceNotFoundException("Case", id.toString());
-        caseRepository.deleteById(id);
+        crudAppService.delete(id);
     }
 
     @Transactional(readOnly = true)
     public List<CaseDTO> getCasesByIndustry(CaseDTO.Industry industry) {
-        return caseRepository.findByIndustry(toEntityIndustry(industry), org.springframework.data.domain.PageRequest.of(0, 1000)).stream().map(this::toDTO).toList();
+        return crudAppService.findByIndustry(industry);
     }
 
     @Transactional(readOnly = true)
     public List<CaseDTO> getCasesByOutcome(CaseDTO.Outcome outcome) {
-        return caseRepository.findByOutcome(toEntityOutcome(outcome), org.springframework.data.domain.PageRequest.of(0, 1000)).stream().map(this::toDTO).toList();
+        return crudAppService.findByOutcome(outcome);
     }
 
     @Transactional(readOnly = true)
     public List<CaseShareRecordDTO> getCaseShareRecords(Long caseId) {
-        requireCase(caseId);
-        return caseShareRecordRepository.findByCaseIdOrderByCreatedAtDesc(caseId).stream().map(this::toShareRecordDTO).toList();
+        return shareAppService.getShareRecords(caseId);
     }
 
-    @Transactional
     public CaseShareRecordDTO createCaseShareRecord(Long caseId, CaseShareRecordCreateRequest request) {
-        requireCase(caseId);
-        String token = UUID.randomUUID().toString().replace("-", "");
-        String baseUrl = request.getBaseUrl().trim().replaceAll("/+$", "");
-        CaseShareRecord shareRecord = CaseShareRecord.builder()
-                .caseId(caseId).token(token).url(baseUrl + "/knowledge/case/detail?id=" + caseId + "&share=" + token)
-                .createdBy(request.getCreatedBy()).createdByName(resolveDisplayName(request.getCreatedBy(), request.getCreatedByName()))
-                .expiresAt(request.getExpiresAt()).build();
-        return toShareRecordDTO(caseShareRecordRepository.save(shareRecord));
+        return shareAppService.createShareRecord(caseId, request);
     }
 
     @Transactional(readOnly = true)
     public List<CaseReferenceRecordDTO> getCaseReferenceRecords(Long caseId) {
-        requireCase(caseId);
-        return caseReferenceRecordRepository.findByCaseIdOrderByReferencedAtDesc(caseId).stream().map(this::toReferenceRecordDTO).toList();
+        return referenceAppService.getReferenceRecords(caseId);
     }
 
-    @Transactional
     public CaseReferenceRecordDTO createCaseReferenceRecord(Long caseId, CaseReferenceRecordCreateRequest request) {
-        Case caseStudy = requireCase(caseId);
-        CaseReferenceRecord referenceRecord = CaseReferenceRecord.builder()
-                .caseId(caseId).referencedBy(request.getReferencedBy())
-                .referencedByName(resolveDisplayName(request.getReferencedBy(), request.getReferencedByName()))
-                .referenceTarget(request.getReferenceTarget().trim()).referenceContext(trimToNull(request.getReferenceContext())).build();
-        CaseReferenceRecord saved = caseReferenceRecordRepository.save(referenceRecord);
-        caseStudy.setUseCount(defaultLong(caseStudy.getUseCount()) + 1);
-        caseRepository.save(caseStudy);
-        return toReferenceRecordDTO(saved);
+        return referenceAppService.createReferenceRecord(caseId, request);
     }
 
-    private Case requireCase(Long caseId) {
-        return caseRepository.findById(caseId).orElseThrow(() -> new ResourceNotFoundException("Case", caseId.toString()));
+    @Transactional(readOnly = true)
+    public CaseSearchResultDTO searchCases(
+            String keyword,
+            String industry,
+            String productLine,
+            String outcome,
+            Integer year,
+            BigDecimal amountMin,
+            BigDecimal amountMax,
+            List<String> tags,
+            String status,
+            String visibility,
+            int page,
+            int pageSize,
+            String sort) {
+        return searchAppService.search(new CaseSearchCriteria(
+                keyword,
+                industry,
+                productLine,
+                outcome,
+                year,
+                amountMin,
+                amountMax,
+                tags,
+                status,
+                visibility,
+                page,
+                pageSize,
+                sort));
     }
 
-    private CaseDTO toDTO(Case c) {
-        return CaseDTO.builder().id(c.getId()).title(c.getTitle()).industry(CaseDTO.Industry.valueOf(c.getIndustry().name())).outcome(CaseDTO.Outcome.valueOf(c.getOutcome().name()))
-                .amount(c.getAmount()).projectDate(c.getProjectDate()).description(c.getDescription())
-                .customerName(c.getCustomerName()).locationName(c.getLocationName()).projectPeriod(c.getProjectPeriod())
-                .tags(copyList(c.getTags())).highlights(copyList(c.getHighlights())).technologies(copyList(c.getTechnologies()))
-                .viewCount(defaultLong(c.getViewCount())).useCount(defaultLong(c.getUseCount()))
-                .createdAt(c.getCreatedAt()).updatedAt(c.getUpdatedAt()).build();
+    @Transactional(readOnly = true)
+    public CaseSearchOptionsDTO getSearchOptions() {
+        CaseSearchOptions options = searchAppService.getSearchOptions();
+        return CaseSearchOptionsDTO.builder()
+                .industries(options.industries())
+                .outcomes(options.outcomes())
+                .statuses(options.statuses())
+                .visibilities(options.visibilities())
+                .productLines(options.productLines())
+                .tags(options.tags())
+                .sortOptions(options.sortOptions())
+                .build();
     }
 
-    private CaseShareRecordDTO toShareRecordDTO(CaseShareRecord s) {
-        return CaseShareRecordDTO.builder().id(s.getId()).caseId(s.getCaseId()).token(s.getToken()).url(s.getUrl())
-                .createdBy(s.getCreatedBy()).createdByName(s.getCreatedByName()).expiresAt(s.getExpiresAt()).createdAt(s.getCreatedAt()).build();
+    @Transactional(readOnly = true)
+    public List<CaseRecommendationDTO> getRelatedCases(Long caseId, int limit) {
+        return searchAppService.getRelatedCases(caseId, limit);
     }
 
-    private CaseReferenceRecordDTO toReferenceRecordDTO(CaseReferenceRecord r) {
-        return CaseReferenceRecordDTO.builder().id(r.getId()).caseId(r.getCaseId()).referencedBy(r.getReferencedBy())
-                .referencedByName(r.getReferencedByName()).referenceTarget(r.getReferenceTarget())
-                .referenceContext(r.getReferenceContext()).referencedAt(r.getReferencedAt()).build();
+    public CaseDTO promoteFromProject(CasePromoteFromProjectRequest request) {
+        return promotionAppService.promoteFromProject(request);
     }
-
-    private String resolveDisplayName(Long userId, String fallback) {
-        if (userId != null) { User user = userRepository.findById(userId).orElse(null); if (user != null && user.getFullName() != null && !user.getFullName().isBlank()) return user.getFullName(); }
-        return (fallback != null && !fallback.isBlank()) ? fallback.trim() : "未命名用户";
-    }
-
-    private Case.Industry toEntityIndustry(CaseDTO.Industry industry) { return industry == null ? null : Case.Industry.valueOf(industry.name()); }
-    private Case.Outcome toEntityOutcome(CaseDTO.Outcome outcome) { return outcome == null ? null : Case.Outcome.valueOf(outcome.name()); }
-    private List<String> copyList(List<String> source) { return source == null ? new ArrayList<>() : new ArrayList<>(source); }
-    private String trimToNull(String value) { if (value == null) return null; String t = value.trim(); return t.isEmpty() ? null : t; }
-    private Long defaultLong(Long value) { return value == null ? 0L : value; }
 }

@@ -1,4 +1,4 @@
-// Input: httpClient, API mode config, knowledge normalizers and demo adapters
+// Input: httpClient, API mode config, knowledge normalizers and case query helpers
 // Output: knowledgeApi - qualification, case, and template accessors
 // Pos: src/api/modules/ - Frontend API module layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
@@ -161,12 +161,14 @@ function normalizeCase(item) {
     customer,
     customerName: customer,
     industry: normalizedIndustry,
+    outcome: item?.outcome || 'WON',
     amount: Number(item?.amount || 0),
     year: item?.year || (projectDate ? new Date(projectDate).getFullYear() : new Date().getFullYear()),
     location,
     locationName: location,
     period,
     projectPeriod: period,
+    productLine: item?.productLine || '',
     tags: Array.isArray(item?.tags) ? item.tags : [],
     highlights: Array.isArray(item?.highlights) ? item.highlights : [],
     description,
@@ -246,25 +248,123 @@ function filterQualifications(items, params = {}) {
   })
 }
 
-function filterCases(items, params = {}) {
-  return items.filter((item) => {
-    if (params.industry && item.industry !== params.industry) {
-      return false
-    }
-    if (params.keyword) {
-      const keyword = String(params.keyword).toLowerCase()
-      const matchesKeyword =
-        String(item.title || '').toLowerCase().includes(keyword) ||
-        String(item.customer || '').toLowerCase().includes(keyword) ||
-        item.highlights.some((highlight) => String(highlight).toLowerCase().includes(keyword))
-      if (!matchesKeyword) {
-        return false
-      }
-    }
-    return true
-  })
+function normalizeCaseNumber(value) {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : undefined
 }
 
+function normalizeCaseQuery(params = {}) {
+  return {
+    keyword: params.keyword ? String(params.keyword).trim() : undefined,
+    industry: params.industry || undefined,
+    productLine: params.productLine || undefined,
+    outcome: params.outcome || undefined,
+    year: params.year ? Number(params.year) : undefined,
+    amountMin: normalizeCaseNumber(params.amountMin),
+    amountMax: normalizeCaseNumber(params.amountMax),
+    tags: Array.isArray(params.tags) && params.tags.length > 0 ? params.tags : undefined,
+    page: params.page ? Number(params.page) : undefined,
+    pageSize: params.pageSize ? Number(params.pageSize) : undefined,
+    sort: params.sort || undefined
+  }
+}
+
+function filterCaseByQuery(item, params = {}) {
+  if (params.industry && item.industry !== params.industry) {
+    return false
+  }
+
+  if (params.productLine && String(item.productLine || '') !== String(params.productLine)) {
+    return false
+  }
+
+  if (params.outcome && String(item.outcome || '') !== String(params.outcome)) {
+    return false
+  }
+
+  if (params.year && Number(item.year) !== Number(params.year)) {
+    return false
+  }
+
+  if (params.amountMin != null && Number(item.amount) < Number(params.amountMin)) {
+    return false
+  }
+
+  if (params.amountMax != null && Number(item.amount) >= Number(params.amountMax)) {
+    return false
+  }
+
+  if (params.keyword) {
+    const keyword = String(params.keyword).toLowerCase()
+    const matchesKeyword =
+      String(item.title || '').toLowerCase().includes(keyword) ||
+      String(item.customer || '').toLowerCase().includes(keyword) ||
+      String(item.location || '').toLowerCase().includes(keyword) ||
+      String(item.summary || '').toLowerCase().includes(keyword) ||
+      item.highlights.some((highlight) => String(highlight).toLowerCase().includes(keyword))
+
+    if (!matchesKeyword) {
+      return false
+    }
+  }
+
+  if (Array.isArray(params.tags) && params.tags.length > 0) {
+    const hasAnyTag = params.tags.some((tag) => item.tags.includes(tag))
+    if (!hasAnyTag) {
+      return false
+    }
+  }
+
+  return true
+}
+
+function applyCasePagination(items, params = {}) {
+  const pageSize = Number(params.pageSize || 0)
+  const page = Number(params.page || 1)
+  if (!pageSize || pageSize <= 0) {
+    return items
+  }
+
+  const start = Math.max(page - 1, 0) * pageSize
+  return items.slice(start, start + pageSize)
+}
+
+function buildCaseListResponse(response, params = {}) {
+  if (response?.data && !Array.isArray(response.data) && Array.isArray(response.data.items)) {
+    return {
+      ...response,
+      data: response.data.items.map(normalizeCase),
+      total: Number(response.data.total ?? response.data.items.length ?? 0),
+      page: Number(response.data.page ?? params.page ?? 1),
+      pageSize: Number(response.data.pageSize ?? params.pageSize ?? response.data.items.length ?? 0),
+      totalPages: Number(response.data.totalPages ?? 1),
+      sort: response.data.sort || params.sort
+    }
+  }
+
+  const rawItems = Array.isArray(response?.data)
+    ? response.data
+    : Array.isArray(response?.data?.records)
+      ? response.data.records
+      : Array.isArray(response?.data?.items)
+        ? response.data.items
+        : []
+
+  const normalized = rawItems.map(normalizeCase)
+  const filtered = normalized.filter((item) => filterCaseByQuery(item, params))
+  const paged = applyCasePagination(filtered, params)
+  const total = Number.isFinite(Number(response?.total))
+    ? Number(response.total)
+    : Number.isFinite(Number(response?.data?.total))
+      ? Number(response.data.total)
+      : filtered.length
+
+  return {
+    ...response,
+    data: paged,
+    total
+  }
+}
 function filterTemplates(items, params = {}) {
   return items.filter((item) => {
     if (params.category && params.category !== 'all' && item.category !== params.category) {
@@ -309,8 +409,12 @@ function invalidIdMessage(entityName) {
 
 export const casesApi = {
   async getList(params) {
+    const query = normalizeCaseQuery(params)
+    const response = await httpClient.get('/api/knowledge/cases', {
+      params: query
+    })
 
-    return fetchAndFilter('/api/knowledge/cases', params, normalizeCase, filterCases)
+    return buildCaseListResponse(response, query)
   },
 
   async getDetail(id) {

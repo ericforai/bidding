@@ -27,3 +27,4 @@
 `auth.js` 返回的用户快照会保留会话级权限字段，例如 `allowedProjectIds` 和 `allowedDepts`，供 store 和路由恢复使用。
 
 - 2026-04-19: 新增 `qualification.js`，把资质 CRUD 从 `knowledge.js` 拆出，并为借阅接口未接入场景提供统一的前端未接入态响应。
+- 2026-04-19: `knowledge.js` 的案例列表改为携带查询参数请求真实接口，并在模块内统一做分页/筛选整形，供案例页和详情页复用。
