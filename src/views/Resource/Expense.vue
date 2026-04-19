@@ -7,7 +7,7 @@
       :total-pending="totalPending"
       :deposit-count="depositCount"
       :warning-count="warningCount"
-      @open-apply="showApplyDialog = true"
+      @open-apply="openApplyDialog"
       @export="handleExport"
       @detail="handleDetail"
       @return="handleReturn"
@@ -41,7 +41,7 @@
         <el-form-item label="申请说明"><el-input v-model="applyForm.remark" type="textarea" :rows="3" /></el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showApplyDialog = false">取消</el-button>
+        <el-button @click="closeApplyDialog">取消</el-button>
         <el-button type="primary" @click="handleSubmitApply">提交申请</el-button>
       </template>
     </el-dialog>
@@ -54,7 +54,7 @@
         <el-descriptions-item label="最近提醒">{{ currentRemindItem.lastRemindedAt || '首次提醒' }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
-        <el-button @click="showRemindDialog = false">取消</el-button>
+        <el-button @click="closeRemindDialog">取消</el-button>
         <el-button type="primary" @click="confirmRemind">发送提醒</el-button>
       </template>
     </el-dialog>
@@ -82,7 +82,7 @@
         </el-form>
       </div>
       <template #footer>
-        <el-button @click="showApprovalDialog = false">取消</el-button>
+        <el-button @click="closeApprovalDialog">取消</el-button>
         <el-button type="primary" @click="confirmApproval">提交审批</el-button>
       </template>
     </el-dialog>
@@ -148,6 +148,22 @@ const {
   confirmApproval,
   init
 } = useExpensePage()
+
+const openApplyDialog = () => {
+  showApplyDialog.value = true
+}
+
+const closeApplyDialog = () => {
+  showApplyDialog.value = false
+}
+
+const closeRemindDialog = () => {
+  showRemindDialog.value = false
+}
+
+const closeApprovalDialog = () => {
+  showApprovalDialog.value = false
+}
 
 onMounted(() => {
   init()
