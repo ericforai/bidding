@@ -1,5 +1,6 @@
 package com.xiyu.bid.service;
 
+import com.xiyu.bid.admin.service.DataScopeConfigService;
 import com.xiyu.bid.auth.JwtUtil;
 import com.xiyu.bid.dto.AuthSessionResult;
 import com.xiyu.bid.dto.LoginRequest;

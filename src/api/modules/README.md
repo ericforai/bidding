@@ -19,6 +19,7 @@
 | `fees.js` | API 模块 | 费用申请、审批、退还等调用 |
 | `knowledge.js` | API 模块 | 资质、案例、模板等知识资产调用 |
 | `qualification.js` | API 模块 | 资质 CRUD 与借阅记录/借阅申请接线，供知识页和 store 复用 |
+| `templates.js` | API 模块 | 模板库三维分类、模板 CRUD 与使用/下载/版本记录接线 |
 | `projectGroups.js` | API 模块 | 项目组正式领域模型的管理、删除与项目绑定配置 |
 | `projects.js` | API 模块 | 项目列表、详情、任务、评分、结果录入调用 |
 | `resources.js` | API 模块 | 平台账号、BAR、证书、资源能力聚合导出 |
@@ -29,3 +30,4 @@
 
 - 2026-04-19: 新增 `qualification.js`，把资质 CRUD 从 `knowledge.js` 拆出，并为借阅接口未接入场景提供统一的前端未接入态响应。
 - 2026-04-19: 新增 `expense.js`，把费用台账与多维统计从 `resources.js` 中拆出，并继续通过 `resourcesApi.expenses` 提供兼容入口。
+- 2026-04-19: 新增 `templates.js`，把模板三维分类与模板 CRUD 从 `knowledge.js` 拆出，`knowledge.js` 保留兼容聚合壳。

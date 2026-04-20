@@ -250,89 +250,25 @@ public class StateMachineValidator {
         }
     }
 
-    /**
-     * 预定义的状态机
-     */
     public static class Predefined {
-        /**
-         * 协作线程状态机
-         */
         public static StateMachineValidator collaborationThread() {
-            return builder()
-                .entity("collaboration_thread")
-                .states("OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED")
-                .initialState("OPEN")
-                .transition("OPEN", "IN_PROGRESS")
-                .transition("OPEN", "CLOSED")
-                .transition("IN_PROGRESS", "RESOLVED")
-                .transition("IN_PROGRESS", "CLOSED")
-                .transition("RESOLVED", "CLOSED")
-                .build();
+            return PredefinedStateMachines.collaborationThread();
         }
 
-        /**
-         * 项目状态机
-         */
         public static StateMachineValidator project() {
-            return builder()
-                .entity("project")
-                .states("DRAFT", "IN_PROGRESS", "REVIEW", "APPROVED", "REJECTED", "COMPLETED", "CANCELLED")
-                .initialState("DRAFT")
-                .transition("DRAFT", "IN_PROGRESS")
-                .transition("IN_PROGRESS", "REVIEW")
-                .transition("REVIEW", "APPROVED")
-                .transition("REVIEW", "REJECTED")
-                .transition("APPROVED", "COMPLETED")
-                .transition("DRAFT", "CANCELLED")
-                .transition("IN_PROGRESS", "CANCELLED")
-                .transition("REVIEW", "CANCELLED")
-                .build();
+            return PredefinedStateMachines.project();
         }
 
-        /**
-         * 任务状态机
-         */
         public static StateMachineValidator task() {
-            return builder()
-                .entity("task")
-                .states("TODO", "IN_PROGRESS", "REVIEW", "DONE", "CANCELLED")
-                .initialState("TODO")
-                .transition("TODO", "IN_PROGRESS")
-                .transition("TODO", "CANCELLED")
-                .transition("IN_PROGRESS", "REVIEW")
-                .transition("IN_PROGRESS", "CANCELLED")
-                .transition("REVIEW", "DONE")
-                .transition("REVIEW", "IN_PROGRESS")  // 返工
-                .build();
+            return PredefinedStateMachines.task();
         }
 
-        /**
-         * 费用状态机
-         */
         public static StateMachineValidator fee() {
-            return builder()
-                .entity("fee")
-                .states("PENDING", "PAID", "RETURNED", "CANCELLED")
-                .initialState("PENDING")
-                .transition("PENDING", "PAID")
-                .transition("PAID", "RETURNED")
-                .transition("PENDING", "CANCELLED")
-                .transition("RETURNED", "PAID")  // 重新支付
-                .build();
+            return PredefinedStateMachines.fee();
         }
 
-        /**
-         * 文档版本状态机
-         */
         public static StateMachineValidator documentVersion() {
-            return builder()
-                .entity("document_version")
-                .states("DRAFT", "PUBLISHED", "ARCHIVED")
-                .initialState("DRAFT")
-                .transition("DRAFT", "PUBLISHED")
-                .transition("PUBLISHED", "ARCHIVED")
-                .transition("ARCHIVED", "DRAFT")  // 从版本恢复
-                .build();
+            return PredefinedStateMachines.documentVersion();
         }
     }
 }

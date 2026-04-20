@@ -1,12 +1,21 @@
 package com.xiyu.bid.project.dto;
 
 import com.xiyu.bid.entity.Project;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -57,6 +66,40 @@ public class ProjectRequest {
 
     @Size(max = 2000, message = "来源推理摘要长度不能超过2000个字符")
     private String sourceReasoningSummary;
+
+    @Size(max = 50000, message = "竞争对手分析数据过大")
+    private String competitorAnalysisJson;
+    @Size(max = 50000, message = "任务数据过大")
+    private String tasksJson;
+    @Size(max = 100000, message = "AI分析数据过大")
+    private String aiAnalysisJson;
+
+    @Size(max = 255, message = "客户名称长度不能超过255个字符")
+    private String customer;
+
+    @DecimalMin(value = "0.00", message = "预算不能为负数")
+    @Digits(integer = 12, fraction = 2, message = "预算格式不正确")
+    private BigDecimal budget;
+
+    @Size(max = 50, message = "行业长度不能超过50个字符")
+    private String industry;
+
+    @Size(max = 100, message = "地区长度不能超过100个字符")
+    private String region;
+
+    @Size(max = 255, message = "平台名称长度不能超过255个字符")
+    private String platform;
+
+    private LocalDate deadline;
+
+    @Size(max = 5000, message = "项目描述长度不能超过5000个字符")
+    private String description;
+
+    @Size(max = 5000, message = "备注长度不能超过5000个字符")
+    private String remark;
+
+    @Size(max = 1000, message = "标签长度不能超过1000个字符")
+    private String tagsJson;
 
     @Size(max = 255, message = "客户负责人名称长度不能超过255个字符")
     private String customerManager;

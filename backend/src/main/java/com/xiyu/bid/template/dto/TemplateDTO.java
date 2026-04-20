@@ -1,6 +1,9 @@
 package com.xiyu.bid.template.dto;
 
 import com.xiyu.bid.entity.Template;
+import com.xiyu.bid.templatecatalog.domain.valueobject.DocumentType;
+import com.xiyu.bid.templatecatalog.domain.valueobject.IndustryType;
+import com.xiyu.bid.templatecatalog.domain.valueobject.ProductType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,6 +24,9 @@ public class TemplateDTO {
     private Long id;
     private String name;
     private Template.Category category;
+    private ProductType productType;
+    private IndustryType industry;
+    private DocumentType documentType;
     private String fileUrl;
     private String description;
     private String currentVersion;

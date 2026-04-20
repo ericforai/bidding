@@ -17,6 +17,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -26,7 +27,7 @@ import java.time.LocalDateTime;
         @Index(name = "idx_bid_result_fetch_tender", columnList = "tender_id")
 })
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class BidResultFetchResult {
@@ -70,6 +71,34 @@ public class BidResultFetchResult {
     @Column(name = "confirmed_by")
     private Long confirmedBy;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "registration_type", length = 20)
+    private RegistrationType registrationType;
+
+    @Column(name = "contract_start_date")
+    private LocalDate contractStartDate;
+
+    @Column(name = "contract_end_date")
+    private LocalDate contractEndDate;
+
+    @Column(name = "contract_duration_months")
+    private Integer contractDurationMonths;
+
+    @Column(name = "remark", length = 2000)
+    private String remark;
+
+    @Column(name = "sku_count")
+    private Integer skuCount;
+
+    @Column(name = "win_announce_doc_url", length = 500)
+    private String winAnnounceDocUrl;
+
+    @Column(name = "notice_document_id")
+    private Long noticeDocumentId;
+
+    @Column(name = "analysis_document_id")
+    private Long analysisDocumentId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -99,5 +128,11 @@ public class BidResultFetchResult {
         PENDING,
         CONFIRMED,
         IGNORED
+    }
+
+    public enum RegistrationType {
+        MANUAL,
+        SYNC,
+        FETCH
     }
 }

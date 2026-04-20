@@ -188,6 +188,7 @@ public class ArchitectureTest {
         classes.stream()
             .filter(javaClass -> javaClass.getPackageName().equals(packageName))
             .filter(javaClass -> !javaClass.getSimpleName().isBlank())
+            .filter(javaClass -> !"package-info".equals(javaClass.getSimpleName()))
             .filter(javaClass -> !javaClass.getName().contains("$"))
             .forEach(javaClass -> currentClasses.add(javaClass.getSimpleName()));
 

@@ -73,22 +73,27 @@ public class BatchOperationController {
     @PostMapping("/tasks/assign")
     @PreAuthorize(ADMIN_MANAGER_EXPR)
     public ResponseEntity<ApiResponse<BatchOperationResponse>> batchAssignTasks(
-            @Valid @RequestBody BatchAssignRequest request) {
+            @Valid @RequestBody BatchAssignRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
 
-        log.info("POST /api/batch/tasks/assign - Assigning {} tasks to user: {}",
-                request.getTaskIds().size(), request.getAssigneeId());
+        User currentUser = getCurrentUser(userDetails);
+
+        log.info("POST /api/batch/tasks/assign - Assigning {} tasks by user: {}",
+                request.getTaskIds().size(), currentUser.getId());
 
         if (request.getTaskIds() == null || request.getTaskIds().isEmpty()) {
             return ResponseEntity.badRequest().body(
                     ApiResponse.error(400, "Task IDs list cannot be empty"));
         }
-        if (request.getAssigneeId() == null) {
+        if (request.getAssigneeId() == null
+                && (request.getAssigneeDeptCode() == null || request.getAssigneeDeptCode().isBlank())
+                && (request.getAssigneeRoleCode() == null || request.getAssigneeRoleCode().isBlank())) {
             return ResponseEntity.badRequest().body(
-                    ApiResponse.error(400, "Assignee ID cannot be null"));
+                    ApiResponse.error(400, "Assignment target cannot be empty"));
         }
 
         sanitizeRequestRemark(request);
-        BatchOperationResponse response = batchOperationService.batchAssignTasks(request);
+        BatchOperationResponse response = batchOperationService.batchAssignTasks(request, currentUser);
 
         String message = buildSuccessMessage("assigned", "task", response.getSuccessCount());
         return ResponseEntity.ok(ApiResponse.success(message, response));
@@ -272,6 +277,18 @@ public class BatchOperationController {
     private void sanitizeRequestRemark(BatchAssignRequest request) {
         if (request.getRemark() != null && !request.getRemark().isEmpty()) {
             request.setRemark(InputSanitizer.sanitizeString(request.getRemark(), MAX_REMARK_LENGTH));
+        }
+        if (request.getAssigneeDeptCode() != null) {
+            request.setAssigneeDeptCode(InputSanitizer.sanitizeString(request.getAssigneeDeptCode(), 100));
+        }
+        if (request.getAssigneeDeptName() != null) {
+            request.setAssigneeDeptName(InputSanitizer.sanitizeString(request.getAssigneeDeptName(), 100));
+        }
+        if (request.getAssigneeRoleCode() != null) {
+            request.setAssigneeRoleCode(InputSanitizer.sanitizeString(request.getAssigneeRoleCode(), 64));
+        }
+        if (request.getAssigneeRoleName() != null) {
+            request.setAssigneeRoleName(InputSanitizer.sanitizeString(request.getAssigneeRoleName(), 100));
         }
     }
 

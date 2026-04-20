@@ -7,10 +7,10 @@ import lombok.Data;
 @Builder
 public class BidResultCompetitorReportRowDTO {
     private String company;
-    private String skuCount;
+    private long skuCount;
     private String category;
     private String discount;
-    private String payment;
+    private String paymentTerms;
     private String winRate;
     private long projectCount;
     private String trend;

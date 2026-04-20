@@ -1,4 +1,4 @@
-package com.xiyu.bid.documenteditor;
+package com.xiyu.bid.documenteditor.service;
 
 import com.xiyu.bid.documenteditor.dto.DocumentReminderDTO;
 import com.xiyu.bid.documenteditor.dto.DocumentSectionDTO;
@@ -15,12 +15,11 @@ import com.xiyu.bid.documenteditor.repository.DocumentSectionAssignmentRepositor
 import com.xiyu.bid.documenteditor.repository.DocumentSectionLockRepository;
 import com.xiyu.bid.documenteditor.repository.DocumentSectionRepository;
 import com.xiyu.bid.documenteditor.repository.DocumentStructureRepository;
-import com.xiyu.bid.documenteditor.service.DocumentEditorService;
-import com.xiyu.bid.audit.service.IAuditLogService;
+import com.xiyu.bid.documenteditor.dto.SectionCreateRequest;
+import com.xiyu.bid.documenteditor.dto.SectionReorderRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -46,10 +45,6 @@ class DocumentEditorServiceWorkflowTest {
     private DocumentSectionLockRepository lockRepository;
     @Mock
     private DocumentReminderRepository reminderRepository;
-    @Mock
-    private IAuditLogService auditLogService;
-
-    @InjectMocks
     private DocumentEditorService documentEditorService;
 
     private DocumentStructure structure;
@@ -57,6 +52,33 @@ class DocumentEditorServiceWorkflowTest {
 
     @BeforeEach
     void setUp() {
+        DocumentEditorGuard guard = new DocumentEditorGuard(structureRepository, sectionRepository);
+        DocumentStructureService structureService = new DocumentStructureService(structureRepository);
+        DocumentSectionCommandService sectionCommandService = new DocumentSectionCommandService(
+                guard,
+                sectionRepository,
+                assignmentRepository,
+                lockRepository
+        );
+        DocumentSectionCollaborationService sectionCollaborationService = new DocumentSectionCollaborationService(
+                guard,
+                assignmentRepository,
+                lockRepository,
+                reminderRepository
+        );
+        DocumentSectionTreeService sectionTreeService = new DocumentSectionTreeService(
+                guard,
+                sectionRepository,
+                assignmentRepository,
+                lockRepository
+        );
+        documentEditorService = new DocumentEditorService(
+                structureService,
+                sectionCommandService,
+                sectionCollaborationService,
+                sectionTreeService
+        );
+
         structure = DocumentStructure.builder()
                 .id(10L)
                 .projectId(100L)
@@ -184,5 +206,51 @@ class DocumentEditorServiceWorkflowTest {
         assertEquals("王工", tree.get(0).getOwner());
         assertTrue(tree.get(0).getLocked());
         assertEquals(LocalDate.of(2026, 4, 1), tree.get(0).getDueDate());
+    }
+
+    @Test
+    void addSection_shouldRejectParentFromDifferentStructure() {
+        SectionCreateRequest request = SectionCreateRequest.builder()
+                .structureId(10L)
+                .parentId(21L)
+                .sectionType(SectionType.SECTION)
+                .title("商务标")
+                .build();
+        DocumentSection foreignParent = DocumentSection.builder()
+                .id(21L)
+                .structureId(99L)
+                .build();
+
+        when(structureRepository.findByProjectId(100L)).thenReturn(Optional.of(structure));
+        when(sectionRepository.findById(21L)).thenReturn(Optional.of(foreignParent));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> documentEditorService.addSection(100L, request)
+        );
+
+        assertEquals("Parent section does not belong to the specified structure", exception.getMessage());
+    }
+
+    @Test
+    void reorderSections_shouldRejectForeignSection() {
+        SectionReorderRequest request = SectionReorderRequest.builder()
+                .structureId(10L)
+                .sectionOrders(java.util.Map.of(20L, 2))
+                .build();
+        DocumentSection foreignSection = DocumentSection.builder()
+                .id(20L)
+                .structureId(30L)
+                .build();
+
+        when(structureRepository.findByProjectId(100L)).thenReturn(Optional.of(structure));
+        when(sectionRepository.findById(20L)).thenReturn(Optional.of(foreignSection));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> documentEditorService.reorderSections(100L, request)
+        );
+
+        assertEquals("Section with id 20 does not belong to the specified structure", exception.getMessage());
     }
 }

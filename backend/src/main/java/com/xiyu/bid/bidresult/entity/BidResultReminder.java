@@ -62,6 +62,15 @@ public class BidResultReminder {
     @Column(name = "last_result_id")
     private Long lastResultId;
 
+    @Column(name = "attachment_document_id")
+    private Long attachmentDocumentId;
+
+    @Column(name = "uploaded_at")
+    private LocalDateTime uploadedAt;
+
+    @Column(name = "uploaded_by")
+    private Long uploadedBy;
+
     @Column(name = "created_by")
     private Long createdBy;
 

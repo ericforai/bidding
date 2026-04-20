@@ -128,11 +128,28 @@ updated: 2026-04-15
 |------|--------|------|
 | project | `com.xiyu.bid.project` | 项目管理（CRUD、状态流转、团队管理） |
 | projectworkflow | `com.xiyu.bid.projectworkflow` | 项目工作流（审批流程、阶段推进） |
-| task | `com.xiyu.bid.task` | 任务管理（任务拆解、看板、交付物） |
+| task (core) | `com.xiyu.bid.task.core` | 任务核心策略（状态流转守卫、交付物关联规则、标书提交校验） |
+| task (entity) | `com.xiyu.bid.task.entity` | 任务交付物实体（TaskDeliverable + V56 迁移） |
+| task (repository) | `com.xiyu.bid.task.repository` | 交付物数据访问层 |
+| task (dto) | `com.xiyu.bid.task.dto` | 交付物 DTO / Assembler |
+| task (service) | `com.xiyu.bid.task.service` | 交付物服务编排 + 标书提交流程 |
 
 **Project 状态枚举**：INITIATED、PREPARING、REVIEWING、SEALING、BIDDING、ARCHIVED
 
-**API 端点**：13 个（列表、详情、创建、更新、删除、状态变更、团队管理、按状态/经理/标讯查询、活跃项目、搜索、统计）
+**Task.Status 枚举（扩展后）**：TODO、IN_PROGRESS、REVIEW、COMPLETED、CANCELLED
+
+**API 端点**：19 个（原 13 个 + 新增 6 个）
+
+新增端点：
+
+| Method | Path | 用途 |
+|--------|------|------|
+| GET | `/projects/{id}/tasks/{taskId}/deliverables` | 获取任务交付物列表 |
+| POST | `/projects/{id}/tasks/{taskId}/deliverables` | 上传交付物 |
+| DELETE | `/projects/{id}/tasks/{taskId}/deliverables/{delId}` | 删除交付物 |
+| GET | `/projects/{id}/tasks/{taskId}/deliverables/coverage` | 交付物覆盖度 |
+| POST | `/projects/{id}/submit-to-bid-document` | 提交至标书编写 |
+| GET | `/projects/{id}/bid-process-status` | 标书流程状态 |
 
 ### 3.3 文档域
 

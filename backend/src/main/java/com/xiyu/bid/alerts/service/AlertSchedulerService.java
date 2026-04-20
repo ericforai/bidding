@@ -8,13 +8,11 @@ import com.xiyu.bid.alerts.dto.AlertHistoryCreateRequest;
 import com.xiyu.bid.alerts.entity.AlertHistory;
 import com.xiyu.bid.alerts.entity.AlertRule;
 import com.xiyu.bid.alerts.repository.AlertRuleRepository;
-import com.xiyu.bid.businessqualification.application.service.ScanExpiringQualificationsAppService;
 import com.xiyu.bid.compliance.dto.RiskAssessmentDTO;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TenderRepository;
-import com.xiyu.bid.resources.entity.Expense;
 import com.xiyu.bid.resources.repository.ExpenseRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +35,7 @@ public class AlertSchedulerService {
     private final ProjectRepository projectRepository;
     private final TenderRepository tenderRepository;
     private final ExpenseRepository expenseRepository;
-    private final ScanExpiringQualificationsAppService scanExpiringQualificationsAppService;
+    private final QualificationExpiryAlertService qualificationExpiryAlertService;
 
     /**
      * Scheduled task to check alert rules every 2 hours
@@ -52,7 +50,7 @@ public class AlertSchedulerService {
         for (AlertRule rule : enabledRules) {
             try {
                 checkAlertRule(rule);
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 log.error("Error checking alert rule {}: {}", rule.getId(), e.getMessage(), e);
             }
         }
@@ -301,7 +299,7 @@ public class AlertSchedulerService {
      */
     private void checkQualificationExpiryAlert(AlertRule rule) {
         log.debug("Checking qualification expiry alert rule: {}", rule.getName());
-        scanExpiringQualificationsAppService.scan(rule.getThreshold().intValue());
+        qualificationExpiryAlertService.createAlerts(rule.getThreshold().intValue());
     }
 
     /**

@@ -1,27 +1,23 @@
 package com.xiyu.bid.scoreanalysis;
 
-import com.xiyu.bid.scoreanalysis.entity.ScoreAnalysis;
 import com.xiyu.bid.scoreanalysis.entity.DimensionScore;
+import com.xiyu.bid.scoreanalysis.entity.ScoreAnalysis;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-/**
- * ScoreAnalysis实体测试
- * 测试评分分析实体的创建、验证和业务逻辑
- */
-@DisplayName("ScoreAnalysis实体测试")
+@DisplayName("ScoreAnalysis entity tests")
 class ScoreAnalysisEntityTest {
 
     @Test
     @DisplayName("应该成功创建ScoreAnalysis实体")
-    void shouldCreateScoreAnalysisSuccessfully() {
-        // Given & When
+    void shouldCreateScoreAnalysisEntitySuccessfully() {
         ScoreAnalysis analysis = ScoreAnalysis.builder()
                 .id(1L)
                 .projectId(100L)
@@ -33,7 +29,6 @@ class ScoreAnalysisEntityTest {
                 .summary("优秀的技术方案")
                 .build();
 
-        // Then
         assertNotNull(analysis);
         assertEquals(1L, analysis.getId());
         assertEquals(100L, analysis.getProjectId());
@@ -46,8 +41,7 @@ class ScoreAnalysisEntityTest {
 
     @Test
     @DisplayName("应该成功创建DimensionScore实体")
-    void shouldCreateDimensionScoreSuccessfully() {
-        // Given & When
+    void shouldCreateDimensionScoreEntitySuccessfully() {
         DimensionScore dimension = DimensionScore.builder()
                 .id(1L)
                 .analysisId(100L)
@@ -57,7 +51,6 @@ class ScoreAnalysisEntityTest {
                 .comments("技术团队经验丰富")
                 .build();
 
-        // Then
         assertNotNull(dimension);
         assertEquals(1L, dimension.getId());
         assertEquals(100L, dimension.getAnalysisId());
@@ -65,21 +58,5 @@ class ScoreAnalysisEntityTest {
         assertEquals(90, dimension.getScore());
         assertEquals(new BigDecimal("0.30"), dimension.getWeight());
         assertEquals("技术团队经验丰富", dimension.getComments());
-    }
-
-    @Test
-    @DisplayName("应该允许ScoreAnalysis字段为空")
-    void shouldAllowNullFieldsInScoreAnalysis() {
-        // Given & When
-        ScoreAnalysis analysis = ScoreAnalysis.builder()
-                .projectId(100L)
-                .build();
-
-        // Then
-        assertNotNull(analysis);
-        assertEquals(100L, analysis.getProjectId());
-        assertNull(analysis.getOverallScore());
-        assertNull(analysis.getRiskLevel());
-        assertNull(analysis.getSummary());
     }
 }

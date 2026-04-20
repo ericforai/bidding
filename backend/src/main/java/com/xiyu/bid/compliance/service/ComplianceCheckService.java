@@ -50,84 +50,21 @@ public class ComplianceCheckService {
      */
     @Transactional
     public ComplianceCheckResultDTO checkProjectCompliance(Long projectId) {
-        if (projectId == null) {
-            throw new IllegalArgumentException("Project ID cannot be null");
-        }
-
-        // 验证项目存在
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
-
+        requireId(projectId, "Project ID");
+        Project project = requireProject(projectId);
         log.info("Starting compliance check for project: {}", projectId);
 
-        // 获取所有启用的规则
-        List<ComplianceRule> rules = complianceRuleRepository.findByEnabledTrue();
-
-        // 执行合规检查
-        List<ComplianceIssue> issues = new ArrayList<>();
-        int totalRules = rules.size();
-        int failedRules = 0;
-
-        for (ComplianceRule rule : rules) {
-            try {
-                ComplianceIssue issue = checkRule(rule, project);
-                if (issue != null) {
-                    issues.add(issue);
-                    if (!issue.getPassed()) {
-                        failedRules++;
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Error checking rule {} for project {}", rule.getName(), projectId, e);
-                issues.add(ComplianceIssue.builder()
-                        .ruleId(rule.getId())
-                        .ruleName(rule.getName())
-                        .ruleType(rule.getRuleType())
-                        .severity(ComplianceIssue.Severity.MEDIUM)
-                        .description("Rule check failed: " + e.getMessage())
-                        .recommendation("Review rule configuration")
-                        .passed(false)
-                        .build());
-                failedRules++;
-            }
-        }
-
-        // 计算整体状态
-        ComplianceCheckResult.Status overallStatus = determineOverallStatus(issues, totalRules, failedRules);
-
-        // 计算风险分数
-        int riskScore = calculateRiskScore(issues, totalRules);
-
-        // 保存检查结果
-        ComplianceCheckResult result = ComplianceCheckResult.builder()
-                .projectId(projectId)
-                .overallStatus(overallStatus)
-                .riskScore(riskScore)
-                .checkedAt(LocalDateTime.now())
-                .checkedBy("system")
-                .build();
-
-        try {
-            String checkDetails = objectMapper.writeValueAsString(issues);
-            result.setCheckDetails(checkDetails);
-        } catch (JsonProcessingException e) {
-            log.error("Error serializing check details", e);
-        }
-
-        result = complianceCheckResultRepository.save(result);
+        ComplianceRun run = evaluateRules(
+                complianceRuleRepository.findByEnabledTrue(),
+                rule -> checkRule(rule, project),
+                "project " + projectId
+        );
+        ComplianceCheckResult result = persistProjectResult(projectId, run);
 
         log.info("Compliance check completed for project {}: status={}, riskScore={}",
-                projectId, overallStatus, riskScore);
+                projectId, run.evaluation().overallStatus(), run.evaluation().riskScore());
 
-        return ComplianceCheckResultDTO.builder()
-                .id(result.getId())
-                .projectId(result.getProjectId())
-                .overallStatus(result.getOverallStatus())
-                .issues(issues)
-                .riskScore(result.getRiskScore())
-                .checkedAt(result.getCheckedAt())
-                .checkedBy(result.getCheckedBy())
-                .build();
+        return toCheckResultDTO(result, run.issues());
     }
 
     /**
@@ -138,84 +75,21 @@ public class ComplianceCheckService {
      */
     @Transactional
     public ComplianceCheckResultDTO checkTenderCompliance(Long tenderId) {
-        if (tenderId == null) {
-            throw new IllegalArgumentException("Tender ID cannot be null");
-        }
-
-        // 验证标书存在
-        Tender tender = tenderRepository.findById(tenderId)
-                .orElseThrow(() -> new RuntimeException("Tender not found with id: " + tenderId));
-
+        requireId(tenderId, "Tender ID");
+        Tender tender = requireTender(tenderId);
         log.info("Starting compliance check for tender: {}", tenderId);
 
-        // 获取所有启用的规则
-        List<ComplianceRule> rules = complianceRuleRepository.findByEnabledTrue();
-
-        // 执行合规检查
-        List<ComplianceIssue> issues = new ArrayList<>();
-        int totalRules = rules.size();
-        int failedRules = 0;
-
-        for (ComplianceRule rule : rules) {
-            try {
-                ComplianceIssue issue = checkRuleForTender(rule, tender);
-                if (issue != null) {
-                    issues.add(issue);
-                    if (!issue.getPassed()) {
-                        failedRules++;
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Error checking rule {} for tender {}", rule.getName(), tenderId, e);
-                issues.add(ComplianceIssue.builder()
-                        .ruleId(rule.getId())
-                        .ruleName(rule.getName())
-                        .ruleType(rule.getRuleType())
-                        .severity(ComplianceIssue.Severity.MEDIUM)
-                        .description("Rule check failed: " + e.getMessage())
-                        .recommendation("Review rule configuration")
-                        .passed(false)
-                        .build());
-                failedRules++;
-            }
-        }
-
-        // 计算整体状态
-        ComplianceCheckResult.Status overallStatus = determineOverallStatus(issues, totalRules, failedRules);
-
-        // 计算风险分数
-        int riskScore = calculateRiskScore(issues, totalRules);
-
-        // 保存检查结果
-        ComplianceCheckResult result = ComplianceCheckResult.builder()
-                .tenderId(tenderId)
-                .overallStatus(overallStatus)
-                .riskScore(riskScore)
-                .checkedAt(LocalDateTime.now())
-                .checkedBy("system")
-                .build();
-
-        try {
-            String checkDetails = objectMapper.writeValueAsString(issues);
-            result.setCheckDetails(checkDetails);
-        } catch (JsonProcessingException e) {
-            log.error("Error serializing check details", e);
-        }
-
-        result = complianceCheckResultRepository.save(result);
+        ComplianceRun run = evaluateRules(
+                complianceRuleRepository.findByEnabledTrue(),
+                rule -> checkRuleForTender(rule, tender),
+                "tender " + tenderId
+        );
+        ComplianceCheckResult result = persistTenderResult(tenderId, run);
 
         log.info("Compliance check completed for tender {}: status={}, riskScore={}",
-                tenderId, overallStatus, riskScore);
+                tenderId, run.evaluation().overallStatus(), run.evaluation().riskScore());
 
-        return ComplianceCheckResultDTO.builder()
-                .id(result.getId())
-                .tenderId(result.getTenderId())
-                .overallStatus(result.getOverallStatus())
-                .issues(issues)
-                .riskScore(result.getRiskScore())
-                .checkedAt(result.getCheckedAt())
-                .checkedBy(result.getCheckedBy())
-                .build();
+        return toCheckResultDTO(result, run.issues());
     }
 
     /**
@@ -225,13 +99,8 @@ public class ComplianceCheckService {
      * @return 风险评估结果
      */
     public RiskAssessmentDTO assessRisk(Long projectId) {
-        if (projectId == null) {
-            throw new IllegalArgumentException("Project ID cannot be null");
-        }
-
-        // 验证项目存在
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
+        requireId(projectId, "Project ID");
+        Project project = requireProject(projectId);
 
         // 获取最新的合规检查结果
         ComplianceCheckResult latestResult = complianceCheckResultRepository
@@ -264,9 +133,7 @@ public class ComplianceCheckService {
      * 获取合规检查结果通过ID
      */
     public ComplianceCheckResult getCheckResultById(Long resultId) {
-        if (resultId == null) {
-            throw new IllegalArgumentException("Result ID cannot be null");
-        }
+        requireId(resultId, "Result ID");
 
         return complianceCheckResultRepository.findById(resultId)
                 .orElseThrow(() -> new RuntimeException("Compliance check result not found with id: " + resultId));
@@ -276,9 +143,7 @@ public class ComplianceCheckService {
      * 获取项目的所有合规检查结果
      */
     public List<ComplianceCheckResult> getCheckResultsByProjectId(Long projectId) {
-        if (projectId == null) {
-            throw new IllegalArgumentException("Project ID cannot be null");
-        }
+        requireId(projectId, "Project ID");
 
         return complianceCheckResultRepository.findByProjectId(projectId);
     }
@@ -329,7 +194,7 @@ public class ComplianceCheckService {
                     .passed(passed)
                     .build();
         } catch (JsonProcessingException e) {
-            return createErrorIssue(rule, "Invalid rule definition");
+            return ComplianceIssueFactory.definitionError(rule);
         }
     }
 
@@ -355,7 +220,7 @@ public class ComplianceCheckService {
                     .passed(passed)
                     .build();
         } catch (JsonProcessingException e) {
-            return createErrorIssue(rule, "Invalid rule definition");
+            return ComplianceIssueFactory.definitionError(rule);
         }
     }
 
@@ -381,7 +246,7 @@ public class ComplianceCheckService {
                     .passed(passed)
                     .build();
         } catch (JsonProcessingException e) {
-            return createErrorIssue(rule, "Invalid rule definition");
+            return ComplianceIssueFactory.definitionError(rule);
         }
     }
 
@@ -407,7 +272,7 @@ public class ComplianceCheckService {
                     .passed(passed)
                     .build();
         } catch (JsonProcessingException e) {
-            return createErrorIssue(rule, "Invalid rule definition");
+            return ComplianceIssueFactory.definitionError(rule);
         }
     }
 
@@ -432,13 +297,10 @@ public class ComplianceCheckService {
                     .passed(passed)
                     .build();
         } catch (JsonProcessingException e) {
-            return createErrorIssue(rule, "Invalid rule definition");
+            return ComplianceIssueFactory.definitionError(rule);
         }
     }
 
-    /**
-     * 检查标书文档
-     */
     private ComplianceIssue checkTenderDocuments(ComplianceRule rule, Tender tender) {
         return ComplianceIssue.builder()
                 .ruleId(rule.getId())
@@ -480,79 +342,86 @@ public class ComplianceCheckService {
                 .build();
     }
 
-    /**
-     * 创建错误问题
-     */
-    private ComplianceIssue createErrorIssue(ComplianceRule rule, String errorMessage) {
-        return ComplianceIssue.builder()
-                .ruleId(rule.getId())
-                .ruleName(rule.getName())
-                .ruleType(rule.getRuleType())
-                .severity(ComplianceIssue.Severity.MEDIUM)
-                .description(errorMessage)
-                .recommendation("Review and fix rule definition")
-                .passed(false)
+    private ComplianceRun evaluateRules(
+            List<ComplianceRule> rules,
+            RuleEvaluator evaluator,
+            String targetLabel
+    ) {
+        List<ComplianceIssue> issues = new ArrayList<>();
+        for (ComplianceRule rule : rules) {
+            try {
+                ComplianceIssue issue = evaluator.evaluate(rule);
+                if (issue != null) {
+                    issues.add(issue);
+                }
+            } catch (RuntimeException exception) {
+                log.error("Error checking rule {} for {}", rule.getName(), targetLabel, exception);
+                issues.add(ComplianceIssueFactory.executionFailure(rule, exception));
+            }
+        }
+        return new ComplianceRun(issues, ComplianceCheckPolicy.summarize(issues, rules.size()));
+    }
+
+    private ComplianceCheckResult persistProjectResult(Long projectId, ComplianceRun run) {
+        ComplianceCheckResult result = ComplianceCheckResult.builder()
+                .projectId(projectId)
+                .overallStatus(run.evaluation().overallStatus())
+                .riskScore(run.evaluation().riskScore())
+                .checkedAt(LocalDateTime.now())
+                .checkedBy("system")
+                .build();
+        return complianceCheckResultRepository.save(attachSerializedIssues(result, run.issues()));
+    }
+
+    private ComplianceCheckResult persistTenderResult(Long tenderId, ComplianceRun run) {
+        ComplianceCheckResult result = ComplianceCheckResult.builder()
+                .tenderId(tenderId)
+                .overallStatus(run.evaluation().overallStatus())
+                .riskScore(run.evaluation().riskScore())
+                .checkedAt(LocalDateTime.now())
+                .checkedBy("system")
+                .build();
+        return complianceCheckResultRepository.save(attachSerializedIssues(result, run.issues()));
+    }
+
+    private ComplianceCheckResult attachSerializedIssues(ComplianceCheckResult result, List<ComplianceIssue> issues) {
+        try {
+            result.setCheckDetails(objectMapper.writeValueAsString(issues));
+        } catch (JsonProcessingException exception) {
+            log.error("Error serializing check details", exception);
+        }
+        return result;
+    }
+
+    private ComplianceCheckResultDTO toCheckResultDTO(ComplianceCheckResult result, List<ComplianceIssue> issues) {
+        return ComplianceCheckResultDTO.builder()
+                .id(result.getId())
+                .projectId(result.getProjectId())
+                .tenderId(result.getTenderId())
+                .overallStatus(result.getOverallStatus())
+                .issues(issues)
+                .riskScore(result.getRiskScore())
+                .checkedAt(result.getCheckedAt())
+                .checkedBy(result.getCheckedBy())
                 .build();
     }
 
-    /**
-     * 确定整体合规状态
-     */
-    private ComplianceCheckResult.Status determineOverallStatus(
-            List<ComplianceIssue> issues, int totalRules, int failedRules) {
+    private Project requireProject(Long projectId) {
+        return projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
+    }
 
-        if (totalRules == 0) {
-            return ComplianceCheckResult.Status.COMPLIANT;
-        }
+    private Tender requireTender(Long tenderId) {
+        return tenderRepository.findById(tenderId)
+                .orElseThrow(() -> new RuntimeException("Tender not found with id: " + tenderId));
+    }
 
-        if (failedRules == 0) {
-            return ComplianceCheckResult.Status.COMPLIANT;
-        }
-
-        double failureRate = (double) failedRules / totalRules;
-
-        // 检查是否有严重问题
-        boolean hasCritical = issues.stream()
-                .anyMatch(i -> i.getSeverity() == ComplianceIssue.Severity.CRITICAL && !i.getPassed());
-
-        if (hasCritical) {
-            return ComplianceCheckResult.Status.NON_COMPLIANT;
-        }
-
-        if (failureRate >= 0.5) {
-            return ComplianceCheckResult.Status.NON_COMPLIANT;
-        } else if (failureRate >= 0.2) {
-            return ComplianceCheckResult.Status.PARTIAL_COMPLIANT;
-        } else {
-            return ComplianceCheckResult.Status.WARNING;
+    private void requireId(Long id, String label) {
+        if (id == null) {
+            throw new IllegalArgumentException(label + " cannot be null");
         }
     }
 
-    /**
-     * 计算风险分数
-     */
-    private int calculateRiskScore(List<ComplianceIssue> issues, int totalRules) {
-        if (totalRules == 0 || issues.isEmpty()) {
-            return 0;
-        }
-
-        int totalScore = 0;
-        for (ComplianceIssue issue : issues) {
-            int severityScore = switch (issue.getSeverity()) {
-                case CRITICAL -> 100;
-                case HIGH -> 75;
-                case MEDIUM -> 50;
-                case LOW -> 25;
-            };
-            totalScore += issue.getPassed() ? 0 : severityScore;
-        }
-
-        return Math.min(100, totalScore / totalRules);
-    }
-
-    /**
-     * 计算默认风险分数（基于项目状态）
-     */
     private int calculateDefaultRiskScore(Project project) {
         return switch (project.getStatus()) {
             case INITIATED -> 20;
@@ -573,5 +442,13 @@ public class ComplianceCheckService {
             case MEDIUM -> "Project has medium risk. Review compliance issues and address key concerns.";
             case HIGH -> "Project has high risk. Immediate action required to address compliance issues.";
         };
+    }
+
+    private record ComplianceRun(List<ComplianceIssue> issues, ComplianceCheckPolicy.Evaluation evaluation) {
+    }
+
+    @FunctionalInterface
+    private interface RuleEvaluator {
+        ComplianceIssue evaluate(ComplianceRule rule);
     }
 }

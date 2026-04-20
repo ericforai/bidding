@@ -23,10 +23,12 @@ public class QualificationExpiryPolicy {
     }
 
     public String alertLevel(QualificationStatus status) {
-        return switch (status) {
-            case EXPIRED -> "danger";
-            case EXPIRING -> "warning";
-            case VALID -> "none";
-        };
+        if (status == QualificationStatus.EXPIRED) {
+            return "danger";
+        }
+        if (status == QualificationStatus.EXPIRING) {
+            return "warning";
+        }
+        return "none";
     }
 }

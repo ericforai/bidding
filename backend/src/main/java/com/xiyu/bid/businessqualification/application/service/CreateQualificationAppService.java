@@ -3,6 +3,7 @@ package com.xiyu.bid.businessqualification.application.service;
 import com.xiyu.bid.businessqualification.application.command.QualificationUpsertCommand;
 import com.xiyu.bid.businessqualification.domain.model.BusinessQualification;
 import com.xiyu.bid.businessqualification.domain.port.BusinessQualificationRepository;
+import com.xiyu.bid.businessqualification.domain.service.QualificationValidationResult;
 import com.xiyu.bid.businessqualification.domain.valueobject.LoanStatus;
 import com.xiyu.bid.businessqualification.domain.valueobject.QualificationSubject;
 import com.xiyu.bid.businessqualification.domain.valueobject.ReminderPolicy;
@@ -21,32 +22,42 @@ public class CreateQualificationAppService {
 
     @Transactional
     public BusinessQualification create(QualificationUpsertCommand command) {
-        QualificationSubject subject = QualificationSubject.builder()
-                .type(command.getSubjectType())
-                .name(command.getSubjectName())
-                .build();
-        subject.validate();
+        QualificationSubject subject = QualificationSubject.of(
+                command.getSubjectType(),
+                command.getSubjectName()
+        );
+        requireValid(subject.validate());
 
-        BusinessQualification qualification = BusinessQualification.builder()
-                .name(command.getName())
-                .subject(subject)
-                .category(command.getCategory())
-                .certificateNo(command.getCertificateNo())
-                .issuer(command.getIssuer())
-                .holderName(command.getHolderName())
-                .validityPeriod(ValidityPeriod.builder()
-                        .issueDate(command.getIssueDate())
-                        .expiryDate(command.getExpiryDate())
-                        .build())
-                .reminderPolicy(ReminderPolicy.builder()
-                        .enabled(Boolean.TRUE.equals(command.getReminderEnabled()) || command.getReminderEnabled() == null)
-                        .reminderDays(command.getReminderDays() == null ? 30 : command.getReminderDays())
-                        .build())
-                .currentBorrowStatus(LoanStatus.AVAILABLE)
-                .fileUrl(command.getFileUrl())
-                .attachments(command.getAttachments() == null ? List.of() : command.getAttachments())
-                .build();
+        BusinessQualification qualification = BusinessQualification.create(
+                null,
+                command.getName(),
+                subject,
+                command.getCategory(),
+                command.getCertificateNo(),
+                command.getIssuer(),
+                command.getHolderName(),
+                new ValidityPeriod(command.getIssueDate(), command.getExpiryDate()),
+                new ReminderPolicy(
+                        Boolean.TRUE.equals(command.getReminderEnabled()) || command.getReminderEnabled() == null,
+                        command.getReminderDays() == null ? 30 : command.getReminderDays(),
+                        null
+                ),
+                LoanStatus.AVAILABLE,
+                null,
+                null,
+                null,
+                null,
+                null,
+                command.getFileUrl(),
+                command.getAttachments() == null ? List.of() : command.getAttachments()
+        );
 
         return repository.save(qualification);
+    }
+
+    private void requireValid(QualificationValidationResult validationResult) {
+        if (!validationResult.valid()) {
+            throw new IllegalArgumentException(validationResult.message());
+        }
     }
 }

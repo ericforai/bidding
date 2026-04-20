@@ -15,7 +15,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
@@ -139,15 +147,42 @@ public class ProjectController {
 
     private ProjectDTO convertRequestToDTO(ProjectRequest request) {
         return ProjectDTO.builder()
-                .name(request.getName()).tenderId(request.getTenderId()).status(request.getStatus())
-                .managerId(request.getManagerId()).teamMembers(request.getTeamMembers())
-                .startDate(request.getStartDate()).endDate(request.getEndDate())
-                .sourceModule(request.getSourceModule()).sourceCustomerId(request.getSourceCustomerId())
-                .sourceCustomer(request.getSourceCustomer()).sourceOpportunityId(request.getSourceOpportunityId())
-                .sourceReasoningSummary(request.getSourceReasoningSummary()).build();
+                .name(request.getName())
+                .tenderId(request.getTenderId())
+                .status(request.getStatus())
+                .managerId(request.getManagerId())
+                .teamMembers(request.getTeamMembers())
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .sourceModule(request.getSourceModule())
+                .sourceCustomerId(request.getSourceCustomerId())
+                .sourceCustomer(request.getSourceCustomer())
+                .sourceOpportunityId(request.getSourceOpportunityId())
+                .sourceReasoningSummary(request.getSourceReasoningSummary())
+                .competitorAnalysisJson(request.getCompetitorAnalysisJson())
+                .tasksJson(request.getTasksJson())
+                .aiAnalysisJson(request.getAiAnalysisJson())
+                .customer(request.getCustomer())
+                .budget(request.getBudget())
+                .industry(request.getIndustry())
+                .region(request.getRegion())
+                .platform(request.getPlatform())
+                .deadline(request.getDeadline())
+                .description(request.getDescription())
+                .remark(request.getRemark())
+                .tagsJson(request.getTagsJson())
+                .customerManager(request.getCustomerManager())
+                .customerManagerId(request.getCustomerManagerId())
+                .build();
     }
 
     private void sanitizeProjectRequest(ProjectRequest request) {
         if (request.getName() != null) request.setName(InputSanitizer.sanitizeString(request.getName(), 200));
+        if (request.getCustomer() != null) request.setCustomer(InputSanitizer.sanitizeString(request.getCustomer(), 255));
+        if (request.getIndustry() != null) request.setIndustry(InputSanitizer.sanitizeString(request.getIndustry(), 50));
+        if (request.getRegion() != null) request.setRegion(InputSanitizer.sanitizeString(request.getRegion(), 100));
+        if (request.getPlatform() != null) request.setPlatform(InputSanitizer.sanitizeString(request.getPlatform(), 255));
+        if (request.getDescription() != null) request.setDescription(InputSanitizer.sanitizeString(request.getDescription(), 5000));
+        if (request.getRemark() != null) request.setRemark(InputSanitizer.sanitizeString(request.getRemark(), 5000));
     }
 }

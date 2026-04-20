@@ -70,22 +70,35 @@ class QualificationServiceTest {
     void borrowAndReturn_ShouldDelegateToApplicationServices() {
         when(listQualificationsAppService.get(1L)).thenReturn(sampleQualification(1L, LocalDate.now().plusDays(90), LoanStatus.BORROWED));
         when(borrowQualificationAppService.borrow(eq(1L), any()))
-                .thenReturn(QualificationLoan.builder()
-                        .id(9L)
-                        .qualificationId(1L)
-                        .borrower("小王")
-                        .borrowedAt(LocalDateTime.now())
-                        .status(LoanStatus.BORROWED)
-                        .build());
+                .thenReturn(new QualificationLoan(
+                        9L,
+                        1L,
+                        "小王",
+                        null,
+                        null,
+                        null,
+                        null,
+                        LocalDateTime.now(),
+                        null,
+                        null,
+                        null,
+                        LoanStatus.BORROWED
+                ));
         when(returnQualificationAppService.returnLoan(eq(1L), any()))
-                .thenReturn(QualificationLoan.builder()
-                        .id(9L)
-                        .qualificationId(1L)
-                        .borrower("小王")
-                        .borrowedAt(LocalDateTime.now().minusDays(2))
-                        .returnedAt(LocalDateTime.now())
-                        .status(LoanStatus.RETURNED)
-                        .build());
+                .thenReturn(new QualificationLoan(
+                        9L,
+                        1L,
+                        "小王",
+                        null,
+                        null,
+                        null,
+                        null,
+                        LocalDateTime.now().minusDays(2),
+                        null,
+                        LocalDateTime.now(),
+                        null,
+                        LoanStatus.RETURNED
+                ));
 
         var borrowed = qualificationService.borrowQualification(1L, QualificationBorrowRequest.builder().borrower("小王").build());
         var returned = qualificationService.returnQualification(1L, QualificationReturnRequest.builder().returnRemark("已归档").build());
@@ -102,14 +115,20 @@ class QualificationServiceTest {
         BusinessQualification qualification = sampleQualification(1L, LocalDate.now().plusDays(60), LoanStatus.BORROWED);
         when(listQualificationsAppService.get(1L)).thenReturn(qualification);
         when(getQualificationBorrowRecordsAppService.getBorrowRecords(1L)).thenReturn(List.of(
-                QualificationLoan.builder()
-                        .id(7L)
-                        .qualificationId(1L)
-                        .borrower("小王")
-                        .borrowedAt(LocalDateTime.now().minusDays(3))
-                        .expectedReturnDate(LocalDate.now().plusDays(4))
-                        .status(LoanStatus.BORROWED)
-                        .build()));
+                new QualificationLoan(
+                        7L,
+                        1L,
+                        "小王",
+                        null,
+                        null,
+                        null,
+                        null,
+                        LocalDateTime.now().minusDays(3),
+                        LocalDate.now().plusDays(4),
+                        null,
+                        null,
+                        LoanStatus.BORROWED
+                )));
 
         var records = qualificationService.getBorrowRecords(1L);
 
@@ -118,22 +137,24 @@ class QualificationServiceTest {
     }
 
     private BusinessQualification sampleQualification(Long id, LocalDate expiryDate, LoanStatus loanStatus) {
-        return BusinessQualification.builder()
-                .id(id)
-                .name("高新技术企业证书")
-                .subject(QualificationSubject.builder().type(QualificationSubjectType.COMPANY).name("西域科技").build())
-                .category(QualificationCategory.PRODUCT)
-                .certificateNo("GX-001")
-                .issuer("科技局")
-                .holderName("张三")
-                .validityPeriod(ValidityPeriod.builder()
-                        .issueDate(LocalDate.now().minusYears(1))
-                        .expiryDate(expiryDate)
-                        .build())
-                .reminderPolicy(ReminderPolicy.builder().enabled(true).reminderDays(30).build())
-                .currentBorrowStatus(loanStatus)
-                .currentBorrower(loanStatus == LoanStatus.BORROWED ? "小王" : null)
-                .attachments(List.of())
-                .build();
+        return BusinessQualification.create(
+                id,
+                "高新技术企业证书",
+                QualificationSubject.of(QualificationSubjectType.COMPANY, "西域科技"),
+                QualificationCategory.PRODUCT,
+                "GX-001",
+                "科技局",
+                "张三",
+                new ValidityPeriod(LocalDate.now().minusYears(1), expiryDate),
+                new ReminderPolicy(true, 30, null),
+                loanStatus,
+                loanStatus == LoanStatus.BORROWED ? "小王" : null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of()
+        );
     }
 }

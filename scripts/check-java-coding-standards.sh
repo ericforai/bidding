@@ -200,10 +200,21 @@ done <<EOF
 $(filter_target_files "$SPOTBUGS_TARGET_PREFIXES" "${STAGED_JAVA_FILES[@]}")
 EOF
 
-PMD_TARGET_INCLUDES="$(build_quality_includes "${PMD_TARGET_FILES[@]}")"
-PMD_TARGET_ONLY_ANALYZE="$(build_quality_only_analyze "${PMD_TARGET_FILES[@]}")"
-SPOTBUGS_TARGET_INCLUDES="$(build_quality_includes "${SPOTBUGS_TARGET_FILES[@]}")"
-SPOTBUGS_TARGET_ONLY_ANALYZE="$(build_quality_only_analyze "${SPOTBUGS_TARGET_FILES[@]}")"
+if [ "${#PMD_TARGET_FILES[@]}" -gt 0 ]; then
+  PMD_TARGET_INCLUDES="$(build_quality_includes "${PMD_TARGET_FILES[@]}")"
+  PMD_TARGET_ONLY_ANALYZE="$(build_quality_only_analyze "${PMD_TARGET_FILES[@]}")"
+else
+  PMD_TARGET_INCLUDES=""
+  PMD_TARGET_ONLY_ANALYZE=""
+fi
+
+if [ "${#SPOTBUGS_TARGET_FILES[@]}" -gt 0 ]; then
+  SPOTBUGS_TARGET_INCLUDES="$(build_quality_includes "${SPOTBUGS_TARGET_FILES[@]}")"
+  SPOTBUGS_TARGET_ONLY_ANALYZE="$(build_quality_only_analyze "${SPOTBUGS_TARGET_FILES[@]}")"
+else
+  SPOTBUGS_TARGET_INCLUDES=""
+  SPOTBUGS_TARGET_ONLY_ANALYZE=""
+fi
 
 SPOTBUGS_MODE="${JAVA_STANDARDS_SPOTBUGS:-auto}"
 ENABLE_SPOTBUGS=0

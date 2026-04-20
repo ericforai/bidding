@@ -157,23 +157,24 @@ public class QualificationDtoMapper {
     }
 
     private QualificationAttachment toAttachment(QualificationAttachmentDTO dto) {
-        return QualificationAttachment.builder()
-                .id(dto.getId())
-                .fileName(dto.getFileName())
-                .fileUrl(dto.getFileUrl())
-                .uploadedAt(dto.getUploadedAt() == null ? LocalDateTime.now() : LocalDateTime.parse(dto.getUploadedAt()))
-                .build();
+        return new QualificationAttachment(
+                dto.getId(),
+                dto.getFileName(),
+                dto.getFileUrl(),
+                dto.getUploadedAt() == null ? LocalDateTime.now() : LocalDateTime.parse(dto.getUploadedAt())
+        );
     }
 
     private QualificationAttachment defaultAttachment(QualificationDTO dto) {
         if (dto.getFileUrl() == null || dto.getFileUrl().isBlank()) {
-            return QualificationAttachment.builder().build();
+            return new QualificationAttachment(null, null, null, null);
         }
-        return QualificationAttachment.builder()
-                .fileName(dto.getName() == null ? "附件" : dto.getName() + ".pdf")
-                .fileUrl(dto.getFileUrl())
-                .uploadedAt(LocalDateTime.now())
-                .build();
+        return new QualificationAttachment(
+                null,
+                dto.getName() == null ? "附件" : dto.getName() + ".pdf",
+                dto.getFileUrl(),
+                LocalDateTime.now()
+        );
     }
 
     private QualificationAttachmentDTO toAttachmentDto(QualificationAttachment attachment) {
