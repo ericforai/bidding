@@ -5,7 +5,7 @@
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
 
-required_env=(RELEASE_ARCHIVE APP_ROOT FRONTEND_PUBLIC_DIR BACKEND_SERVICE_NAME)
+required_env=(RELEASE_ARCHIVE APP_ROOT FRONTEND_PUBLIC_DIR BACKEND_SERVICE_NAME HEALTHCHECK_URL)
 for name in "${required_env[@]}"; do
   if [[ -z "${!name:-}" ]]; then
     printf 'Missing required env: %s\n' "$name" >&2
@@ -23,8 +23,6 @@ RELEASES_DIR="${RELEASES_DIR:-$APP_ROOT/releases}"
 CURRENT_LINK="${CURRENT_LINK:-$APP_ROOT/current}"
 BACKEND_RUNTIME_DIR="${BACKEND_RUNTIME_DIR:-$APP_ROOT/shared/backend}"
 BACKEND_JAR_PATH="${BACKEND_JAR_PATH:-$BACKEND_RUNTIME_DIR/app.jar}"
-BACKEND_PORT="${BACKEND_PORT:-8080}"
-HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://127.0.0.1:${BACKEND_PORT}/actuator/health}"
 SYSTEMCTL_BIN="${SYSTEMCTL_BIN:-systemctl}"
 SYSTEMCTL_SUDO="${SYSTEMCTL_SUDO:-false}"
 POST_DEPLOY_COMMAND="${POST_DEPLOY_COMMAND:-}"
