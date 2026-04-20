@@ -1,6 +1,5 @@
 package com.xiyu.bid.calendar.unit;
 
-import com.xiyu.bid.calendar.dto.CalendarEventDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -8,7 +7,6 @@ import org.springframework.http.MediaType;
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -22,7 +20,6 @@ class CalendarControllerQueryTest extends AbstractCalendarControllerTest {
     void shouldGetEventsByDateRangeSuccessfully() throws Exception {
         LocalDate start = LocalDate.of(2024, 3, 1);
         LocalDate end = LocalDate.of(2024, 3, 31);
-        when(calendarService.getEventsByMonth(anyInt(), anyInt())).thenReturn(List.of(testEventDTO));
 
         mockMvc.perform(get("/api/calendar")
                         .param("start", start.toString())
