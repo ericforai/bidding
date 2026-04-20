@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { addDays, isOverdue } from '@/composables/expensePageShared'
+import { isOverdue } from '@/composables/expensePageShared'
 
 export function useExpensePageDerived({ expenses, approvalRecords, searchForm }) {
   const filteredExpenses = computed(() => expenses.value.filter((item) => {
@@ -28,7 +28,7 @@ export function useExpensePageDerived({ expenses, approvalRecords, searchForm })
   const depositList = computed(() => expenses.value
     .filter((item) => item.type === '保证金')
     .map((item) => {
-      const expectedReturn = item.returnDate || addDays(item.paidAt || item.date, 60)
+      const expectedReturn = item.expectedReturnDate || ''
       return {
         ...item,
         expectedReturn,

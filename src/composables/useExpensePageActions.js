@@ -5,6 +5,7 @@ import {
   defaultApprovalForm,
   defaultPaymentForm,
   defaultSearchForm,
+  normalizePaymentDateTime,
   resolveExpenseCategory,
   today
 } from '@/composables/expensePageShared'
@@ -167,7 +168,7 @@ export function useExpensePageActions({
     try {
       const response = await resourcesApi.expenses.createPayment(currentExpense.value.id, {
         amount: paymentForm.value.amount,
-        paidAt: paymentForm.value.paidAt,
+        paidAt: normalizePaymentDateTime(paymentForm.value.paidAt),
         paidBy: paymentForm.value.paidBy,
         paymentMethod: paymentForm.value.paymentMethod,
         paymentReference: paymentForm.value.paymentReference,

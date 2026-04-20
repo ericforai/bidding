@@ -8,8 +8,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-const { createExpense, messageApi } = vi.hoisted(() => ({
+const { createExpense, createPayment, messageApi } = vi.hoisted(() => ({
   createExpense: vi.fn(),
+  createPayment: vi.fn(),
   messageApi: {
     warning: vi.fn(),
     error: vi.fn(),
@@ -22,7 +23,7 @@ vi.mock('@/api', () => ({
     expenses: {
       create: createExpense,
       approve: vi.fn(),
-      createPayment: vi.fn(),
+      createPayment,
       getDetail: vi.fn(),
       requestReturn: vi.fn(),
     },
@@ -83,5 +84,22 @@ describe('useExpensePageActions', () => {
     expect(messageApi.warning).toHaveBeenCalledWith('暂无可关联项目，请先创建投标项目')
     expect(context.applySubmitting.value).toBe(false)
     expect(context.showApplyDialog.value).toBe(true)
+  })
+
+  it('submitPayment(): upgrades date-only input to backend LocalDateTime payload', async () => {
+    const context = createContext()
+    context.currentExpense.value = { id: 42, amount: 8.5 }
+    context.showPaymentDialog.value = true
+    createPayment.mockResolvedValue({ success: true, data: { id: 42 } })
+
+    const actions = useExpensePageActions(context)
+
+    await actions.submitPayment()
+
+    expect(createPayment).toHaveBeenCalledWith(42, expect.objectContaining({
+      paidAt: '2026-04-20T00:00:00'
+    }))
+    expect(context.showPaymentDialog.value).toBe(false)
+    expect(messageApi.success).toHaveBeenCalledWith('支付登记成功')
   })
 })

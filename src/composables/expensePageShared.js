@@ -44,6 +44,16 @@ export function defaultPaymentForm(userName = '') {
   }
 }
 
+export function normalizePaymentDateTime(value) {
+  const text = String(value || '').trim()
+  if (!text) return ''
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return `${text}T00:00:00`
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(text)) return text.replace(' ', 'T')
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(text)) return `${text}:00`
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(text)) return text.replace(' ', 'T') + ':00'
+  return text
+}
+
 export function resolveExpenseCategory(type) {
   return EXPENSE_CATEGORY_MAP[type] || 'OTHER'
 }
