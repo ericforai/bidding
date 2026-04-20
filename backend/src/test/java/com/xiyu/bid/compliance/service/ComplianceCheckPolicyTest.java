@@ -1,8 +1,10 @@
 package com.xiyu.bid.compliance.service;
 
 import com.xiyu.bid.compliance.dto.ComplianceIssue;
+import com.xiyu.bid.compliance.dto.RiskAssessmentDTO;
 import com.xiyu.bid.compliance.entity.ComplianceCheckResult;
 import com.xiyu.bid.compliance.entity.ComplianceRule;
+import com.xiyu.bid.entity.Project;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -51,6 +53,20 @@ class ComplianceCheckPolicyTest {
         assertThat(evaluation.overallStatus()).isEqualTo(ComplianceCheckResult.Status.PARTIAL_COMPLIANT);
         assertThat(evaluation.riskScore()).isEqualTo(10);
         assertThat(evaluation.failedRules()).isEqualTo(1);
+    }
+
+    @Test
+    void defaultRiskScore_ShouldFollowProjectStatus() {
+        assertThat(ComplianceCheckPolicy.defaultRiskScore(Project.Status.BIDDING)).isEqualTo(50);
+        assertThat(ComplianceCheckPolicy.defaultRiskScore(Project.Status.ARCHIVED)).isEqualTo(10);
+    }
+
+    @Test
+    void recommendationFor_ShouldReturnStableMessages() {
+        assertThat(ComplianceCheckPolicy.recommendationFor(RiskAssessmentDTO.RiskLevel.LOW))
+                .contains("low risk");
+        assertThat(ComplianceCheckPolicy.recommendationFor(RiskAssessmentDTO.RiskLevel.HIGH))
+                .contains("Immediate action required");
     }
 
     private ComplianceIssue issue(ComplianceIssue.Severity severity, boolean passed) {

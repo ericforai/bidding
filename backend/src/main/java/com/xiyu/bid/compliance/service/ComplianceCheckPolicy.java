@@ -1,7 +1,9 @@
 package com.xiyu.bid.compliance.service;
 
 import com.xiyu.bid.compliance.dto.ComplianceIssue;
+import com.xiyu.bid.compliance.dto.RiskAssessmentDTO;
 import com.xiyu.bid.compliance.entity.ComplianceCheckResult;
+import com.xiyu.bid.entity.Project;
 
 import java.util.List;
 
@@ -21,15 +23,31 @@ final class ComplianceCheckPolicy {
         );
     }
 
+    static int defaultRiskScore(Project.Status status) {
+        return switch (status) {
+            case INITIATED -> 20;
+            case PREPARING -> 30;
+            case REVIEWING -> 40;
+            case SEALING -> 25;
+            case BIDDING -> 50;
+            case ARCHIVED -> 10;
+        };
+    }
+
+    static String recommendationFor(RiskAssessmentDTO.RiskLevel riskLevel) {
+        return switch (riskLevel) {
+            case LOW -> "Project is low risk. Proceed with normal bidding process.";
+            case MEDIUM -> "Project has medium risk. Review compliance issues and address key concerns.";
+            case HIGH -> "Project has high risk. Immediate action required to address compliance issues.";
+        };
+    }
+
     private static ComplianceCheckResult.Status determineOverallStatus(
             List<ComplianceIssue> issues,
             int totalRules,
             int failedRules
     ) {
-        if (totalRules == 0) {
-            return ComplianceCheckResult.Status.COMPLIANT;
-        }
-        if (failedRules == 0) {
+        if (totalRules == 0 || failedRules == 0) {
             return ComplianceCheckResult.Status.COMPLIANT;
         }
 

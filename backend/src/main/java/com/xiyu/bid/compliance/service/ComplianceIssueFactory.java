@@ -27,18 +27,22 @@ final class ComplianceIssueFactory {
     }
 
     static ComplianceIssue definitionError(ComplianceRule rule) {
-        return build(rule,
+        return build(
+                rule,
                 ComplianceIssue.Severity.MEDIUM,
                 "Invalid rule definition",
                 "Review and fix rule definition",
-                false);
+                false
+        );
     }
 
     static ComplianceIssue executionFailure(ComplianceRule rule, Exception exception) {
-        return build(rule,
+        return build(
+                rule,
                 ComplianceIssue.Severity.MEDIUM,
                 "Rule check failed: " + exception.getMessage(),
                 "Review rule configuration",
-                false);
+                false
+        );
     }
 }

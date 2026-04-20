@@ -9,7 +9,10 @@
 | 文件 | 地位 | 功能 |
 |------|------|------|
 | `controller/ComplianceController.java` | Controller | 合规检查接口 |
-| `service/ComplianceCheckService.java` | Service | 合规检查编排 |
+| `service/ComplianceCheckService.java` | Service | 合规检查入口编排、结果持久化、DTO 组装 |
+| `service/ComplianceCheckPolicy.java` | Policy | 总体状态、风险分和默认风险建议等纯决策 |
+| `service/ComplianceIssueFactory.java` | Factory | 统一构造规则失败与执行失败问题 |
+| `service/ComplianceRuleEvaluator.java` | Evaluator | 规则定义解析与项目/标书规则求值 |
 | `entity/ComplianceRule.java` | Entity | 合规规则实体 |
 | `entity/ComplianceCheckResult.java` | Entity | 合规检查结果实体 |
 | `repository/ComplianceRuleRepository.java` | Repository | 合规规则数据访问 |
