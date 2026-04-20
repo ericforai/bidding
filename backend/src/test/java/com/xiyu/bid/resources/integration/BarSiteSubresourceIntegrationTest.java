@@ -1,18 +1,16 @@
 package com.xiyu.bid.resources.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xiyu.bid.platform.util.PasswordEncryptionUtil;
 import com.xiyu.bid.resources.dto.*;
 import com.xiyu.bid.resources.entity.BarAsset;
 import com.xiyu.bid.resources.repository.*;
+import com.xiyu.bid.support.NoOpPasswordEncryptionTestConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -33,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles("test")
+@Import(NoOpPasswordEncryptionTestConfig.class)
 class BarSiteSubresourceIntegrationTest {
 
     @Autowired
@@ -57,24 +56,6 @@ class BarSiteSubresourceIntegrationTest {
     private BarSiteVerificationRepository barSiteVerificationRepository;
 
     private BarAsset asset;
-
-    @TestConfiguration
-    static class TestBeans {
-        @Bean(name = "passwordEncryptionUtil")
-        @Primary
-        PasswordEncryptionUtil passwordEncryptionUtil() {
-            return new PasswordEncryptionUtil() {
-                @Override
-                public void initialize() {}
-                @Override
-                public String encrypt(String plainPassword) { return plainPassword; }
-                @Override
-                public String decrypt(String encryptedPassword) { return encryptedPassword; }
-                @Override
-                public boolean isKeyValid() { return true; }
-            };
-        }
-    }
 
     @BeforeEach
     void setUp() {

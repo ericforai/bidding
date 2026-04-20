@@ -1,6 +1,5 @@
 package com.xiyu.bid.projectworkflow.dto;
 
-import com.xiyu.bid.entity.Task;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -15,6 +14,13 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProjectTaskCreateRequest {
+
+    public enum Priority {
+        LOW,
+        MEDIUM,
+        HIGH,
+        URGENT
+    }
 
     @NotBlank(message = "任务名称不能为空")
     private String title;
@@ -34,7 +40,7 @@ public class ProjectTaskCreateRequest {
     private String assigneeRoleName;
 
     @NotNull(message = "任务优先级不能为空")
-    private Task.Priority priority;
+    private Priority priority;
 
     private LocalDateTime dueDate;
 }

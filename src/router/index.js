@@ -199,8 +199,9 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
   let hasAuthState = Boolean(userStore.currentUser && userStore.token)
+  const shouldAttemptRestore = to.meta.requiresAuth || hasAuthState
 
-  if (!userStore.hasRestoredSession) {
+  if (!userStore.hasRestoredSession && shouldAttemptRestore) {
     await userStore.restoreSession()
     hasAuthState = Boolean(userStore.currentUser && userStore.token)
   }

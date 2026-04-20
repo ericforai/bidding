@@ -1,7 +1,6 @@
 package com.xiyu.bid.resources.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xiyu.bid.platform.util.PasswordEncryptionUtil;
 import com.xiyu.bid.resources.dto.BarCertificateBorrowRequest;
 import com.xiyu.bid.resources.dto.BarCertificateCreateRequest;
 import com.xiyu.bid.resources.dto.BarCertificateReturnRequest;
@@ -11,15 +10,13 @@ import com.xiyu.bid.resources.entity.BarCertificateBorrowRecord;
 import com.xiyu.bid.resources.repository.BarAssetRepository;
 import com.xiyu.bid.resources.repository.BarCertificateBorrowRecordRepository;
 import com.xiyu.bid.resources.repository.BarCertificateRepository;
-import com.xiyu.bid.support.TestPasswordEncryptionUtil;
+import com.xiyu.bid.support.NoOpPasswordEncryptionTestConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
@@ -41,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles("test")
+@Import(NoOpPasswordEncryptionTestConfig.class)
 class BarCertificateControllerIntegrationTest {
 
     @Autowired
@@ -59,15 +57,6 @@ class BarCertificateControllerIntegrationTest {
     private BarCertificateBorrowRecordRepository borrowRecordRepository;
 
     private BarAsset asset;
-
-    @TestConfiguration
-    static class TestBeans {
-        @Bean(name = "passwordEncryptionUtil")
-        @Primary
-        PasswordEncryptionUtil passwordEncryptionUtil() {
-            return new TestPasswordEncryptionUtil();
-        }
-    }
 
     @BeforeEach
     void setUp() {

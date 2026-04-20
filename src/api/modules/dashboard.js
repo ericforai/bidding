@@ -184,14 +184,6 @@ export const tasksApi = {
     return httpClient.get('/api/tasks/my', { params: { assigneeId } })
   },
 
-  async getTeamWorkload() {
-    return httpClient.get('/api/tasks/team-workload')
-  },
-
-  async getAssignmentCandidates(params = {}) {
-    return httpClient.get('/api/tasks/assignment-candidates', { params })
-  },
-
   async getList(params) {
     return httpClient.get('/api/tasks', { params })
   },
@@ -216,10 +208,6 @@ export const tasksApi = {
     return httpClient.patch(`/api/tasks/${id}/status`, JSON.stringify('COMPLETED'), {
       headers: {
         'Content-Type': 'application/json' } })
-  },
-
-  async assign(id, data) {
-    return httpClient.patch(`/api/tasks/${id}/assign`, data)
   } }
 
 export const todosApi = {

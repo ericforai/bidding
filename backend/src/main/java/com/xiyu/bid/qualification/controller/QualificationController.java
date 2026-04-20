@@ -1,25 +1,35 @@
-// Input: HTTP 请求、路径参数、认证上下文和 DTO
-// Output: 标准化 API 响应和用例入口
+// Input: qualification HTTP requests, query filters, and compatibility DTOs
+// Output: stable /api/knowledge/qualifications API backed by the real businessqualification domain
 // Pos: Controller/接口适配层
-// 维护声明: 仅维护协议适配与参数校验；业务规则下沉到 service.
+// 维护声明: 仅维护协议兼容与参数校验；业务规则下沉到 service.
 package com.xiyu.bid.qualification.controller;
 
 import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.qualification.dto.QualificationBorrowRecordDTO;
+import com.xiyu.bid.qualification.dto.QualificationBorrowRequest;
 import com.xiyu.bid.qualification.dto.QualificationDTO;
+import com.xiyu.bid.qualification.dto.QualificationOverviewDTO;
+import com.xiyu.bid.qualification.dto.QualificationReturnRequest;
 import com.xiyu.bid.qualification.service.QualificationService;
 import com.xiyu.bid.util.InputSanitizer;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/knowledge/qualifications")
 @RequiredArgsConstructor
@@ -32,24 +42,32 @@ public class QualificationController {
     @Auditable(action = "CREATE", entityType = "Qualification", description = "创建资质")
     public ResponseEntity<ApiResponse<QualificationDTO>> createQualification(@Valid @RequestBody QualificationDTO dto) {
         sanitizeQualificationDTO(dto);
-        QualificationDTO created = qualificationService.createQualification(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Qualification created successfully", created));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Qualification created successfully", qualificationService.createQualification(dto)));
     }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    @Auditable(action = "READ", entityType = "Qualification", description = "获取所有资质")
-    public ResponseEntity<ApiResponse<List<QualificationDTO>>> getAllQualifications() {
-        List<QualificationDTO> qualifications = qualificationService.getAllQualifications();
-        return ResponseEntity.ok(ApiResponse.success("Qualifications retrieved successfully", qualifications));
+    @Auditable(action = "READ", entityType = "Qualification", description = "获取资质列表")
+    public ResponseEntity<ApiResponse<List<QualificationDTO>>> getAllQualifications(
+            @RequestParam(required = false) String subjectType,
+            @RequestParam(required = false) String subjectName,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String borrowStatus,
+            @RequestParam(required = false) Integer expiringWithinDays,
+            @RequestParam(required = false) String keyword
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Qualifications retrieved successfully",
+                qualificationService.getAllQualifications(subjectType, subjectName, category, status, borrowStatus, expiringWithinDays, keyword)));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    @Auditable(action = "READ", entityType = "Qualification", description = "根据ID获取资质")
+    @Auditable(action = "READ", entityType = "Qualification", description = "获取资质详情")
     public ResponseEntity<ApiResponse<QualificationDTO>> getQualificationById(@PathVariable Long id) {
-        QualificationDTO qualification = qualificationService.getQualificationById(id);
-        return ResponseEntity.ok(ApiResponse.success("Qualification retrieved successfully", qualification));
+        return ResponseEntity.ok(ApiResponse.success("Qualification retrieved successfully",
+                qualificationService.getQualificationById(id)));
     }
 
     @PutMapping("/{id}")
@@ -57,8 +75,8 @@ public class QualificationController {
     @Auditable(action = "UPDATE", entityType = "Qualification", description = "更新资质")
     public ResponseEntity<ApiResponse<QualificationDTO>> updateQualification(@PathVariable Long id, @Valid @RequestBody QualificationDTO dto) {
         sanitizeQualificationDTO(dto);
-        QualificationDTO updated = qualificationService.updateQualification(id, dto);
-        return ResponseEntity.ok(ApiResponse.success("Qualification updated successfully", updated));
+        return ResponseEntity.ok(ApiResponse.success("Qualification updated successfully",
+                qualificationService.updateQualification(id, dto)));
     }
 
     @DeleteMapping("/{id}")
@@ -69,24 +87,99 @@ public class QualificationController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/{id}/borrow-records")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "READ", entityType = "QualificationBorrow", description = "查看资质借阅记录")
+    public ResponseEntity<ApiResponse<List<QualificationBorrowRecordDTO>>> getBorrowRecords(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("Borrow records retrieved successfully",
+                qualificationService.getBorrowRecords(id)));
+    }
+
+    @GetMapping("/borrow-records")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "READ", entityType = "QualificationBorrow", description = "查看资质借阅记录")
+    public ResponseEntity<ApiResponse<List<QualificationBorrowRecordDTO>>> getBorrowRecordsByQuery(@RequestParam Long qualificationId) {
+        return ResponseEntity.ok(ApiResponse.success("Borrow records retrieved successfully",
+                qualificationService.getBorrowRecords(qualificationId)));
+    }
+
+    @PostMapping("/{id}/borrow")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "BORROW", entityType = "Qualification", description = "借阅资质")
+    public ResponseEntity<ApiResponse<QualificationBorrowRecordDTO>> borrowQualification(
+            @PathVariable Long id,
+            @RequestBody QualificationBorrowRequest request
+    ) {
+        sanitizeBorrowRequest(request);
+        return ResponseEntity.ok(ApiResponse.success("Qualification borrowed successfully",
+                qualificationService.borrowQualification(id, request)));
+    }
+
+    @PostMapping("/{id}/return")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "RETURN", entityType = "Qualification", description = "归还资质")
+    public ResponseEntity<ApiResponse<QualificationBorrowRecordDTO>> returnQualification(
+            @PathVariable Long id,
+            @RequestBody(required = false) QualificationReturnRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Qualification returned successfully",
+                qualificationService.returnQualification(id, request == null ? new QualificationReturnRequest() : request)));
+    }
+
+    @PostMapping("/borrow-records/{id}/return")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "RETURN", entityType = "QualificationBorrow", description = "兼容归还资质")
+    public ResponseEntity<ApiResponse<QualificationBorrowRecordDTO>> returnQualificationByRecord(
+            @PathVariable Long id,
+            @RequestBody(required = false) QualificationReturnRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Qualification returned successfully",
+                qualificationService.returnQualificationByRecordId(id, request == null ? new QualificationReturnRequest() : request)));
+    }
+
+    @GetMapping("/overview")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "READ", entityType = "Qualification", description = "资质概览")
+    public ResponseEntity<ApiResponse<QualificationOverviewDTO>> getOverview() {
+        return ResponseEntity.ok(ApiResponse.success("Qualification overview retrieved successfully",
+                qualificationService.getOverview()));
+    }
+
+    @PostMapping("/scan-expiring")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<Integer>> scanExpiringQualifications(@RequestParam(defaultValue = "30") Integer thresholdDays) {
+        return ResponseEntity.ok(ApiResponse.success("Qualification scan completed",
+                qualificationService.scanExpiringQualifications(thresholdDays)));
+    }
+
     @GetMapping("/type/{type}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    @Auditable(action = "READ", entityType = "Qualification", description = "根据类型获取资质")
     public ResponseEntity<ApiResponse<List<QualificationDTO>>> getQualificationsByType(@PathVariable com.xiyu.bid.entity.Qualification.Type type) {
-        List<QualificationDTO> qualifications = qualificationService.getQualificationsByType(type);
-        return ResponseEntity.ok(ApiResponse.success("Qualifications retrieved successfully", qualifications));
+        return ResponseEntity.ok(ApiResponse.success("Qualifications retrieved successfully",
+                qualificationService.getQualificationsByType(type)));
     }
 
     @GetMapping("/valid")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    @Auditable(action = "READ", entityType = "Qualification", description = "获取有效资质")
     public ResponseEntity<ApiResponse<List<QualificationDTO>>> getValidQualifications() {
-        List<QualificationDTO> qualifications = qualificationService.getValidQualifications();
-        return ResponseEntity.ok(ApiResponse.success("Valid qualifications retrieved successfully", qualifications));
+        return ResponseEntity.ok(ApiResponse.success("Valid qualifications retrieved successfully",
+                qualificationService.getValidQualifications()));
     }
 
     private void sanitizeQualificationDTO(QualificationDTO dto) {
         if (dto.getName() != null) dto.setName(InputSanitizer.sanitizeString(dto.getName(), 200));
+        if (dto.getSubjectName() != null) dto.setSubjectName(InputSanitizer.sanitizeString(dto.getSubjectName(), 200));
+        if (dto.getCertificateNo() != null) dto.setCertificateNo(InputSanitizer.sanitizeString(dto.getCertificateNo(), 120));
+        if (dto.getIssuer() != null) dto.setIssuer(InputSanitizer.sanitizeString(dto.getIssuer(), 200));
+        if (dto.getHolderName() != null) dto.setHolderName(InputSanitizer.sanitizeString(dto.getHolderName(), 120));
         if (dto.getFileUrl() != null) dto.setFileUrl(InputSanitizer.sanitizeString(dto.getFileUrl(), 500));
+    }
+
+    private void sanitizeBorrowRequest(QualificationBorrowRequest request) {
+        if (request.getBorrower() != null) request.setBorrower(InputSanitizer.sanitizeString(request.getBorrower(), 120));
+        if (request.getDepartment() != null) request.setDepartment(InputSanitizer.sanitizeString(request.getDepartment(), 120));
+        if (request.getProjectId() != null) request.setProjectId(InputSanitizer.sanitizeString(request.getProjectId(), 64));
+        if (request.getPurpose() != null) request.setPurpose(InputSanitizer.sanitizeString(request.getPurpose(), 255));
+        if (request.getRemark() != null) request.setRemark(InputSanitizer.sanitizeString(request.getRemark(), 500));
     }
 }

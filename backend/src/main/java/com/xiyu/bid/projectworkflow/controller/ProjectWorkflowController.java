@@ -5,8 +5,6 @@
 package com.xiyu.bid.projectworkflow.controller;
 
 import com.xiyu.bid.dto.ApiResponse;
-import com.xiyu.bid.projectworkflow.dto.ProjectDocumentCreateRequest;
-import com.xiyu.bid.projectworkflow.dto.ProjectDocumentDTO;
 import com.xiyu.bid.projectworkflow.dto.ProjectReminderCreateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectReminderDTO;
 import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftDTO;
@@ -77,32 +75,6 @@ public class ProjectWorkflowController {
             @Valid @RequestBody ProjectTaskStatusUpdateRequest request) {
         return ResponseEntity.ok(ApiResponse.success("Project task status updated successfully",
                 projectWorkflowService.updateProjectTaskStatus(projectId, taskId, request)));
-    }
-
-    @GetMapping("/documents")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<List<ProjectDocumentDTO>>> getProjectDocuments(@PathVariable Long projectId) {
-        return ResponseEntity.ok(ApiResponse.success(projectWorkflowService.getProjectDocuments(projectId)));
-    }
-
-    @PostMapping("/documents")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<ProjectDocumentDTO>> createProjectDocument(
-            @PathVariable Long projectId,
-            @Valid @RequestBody ProjectDocumentCreateRequest request) {
-        sanitizeDocumentRequest(request);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Project document created successfully",
-                        projectWorkflowService.createProjectDocument(projectId, request)));
-    }
-
-    @DeleteMapping("/documents/{documentId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<Void>> deleteProjectDocument(
-            @PathVariable Long projectId,
-            @PathVariable Long documentId) {
-        projectWorkflowService.deleteProjectDocument(projectId, documentId);
-        return ResponseEntity.ok(ApiResponse.success("Project document deleted successfully", null));
     }
 
     @GetMapping("/reminders")
@@ -249,19 +221,6 @@ public class ProjectWorkflowController {
         }
         if (request.getAssigneeName() != null) {
             request.setAssigneeName(InputSanitizer.sanitizeString(request.getAssigneeName(), 100));
-        }
-    }
-
-    private void sanitizeDocumentRequest(ProjectDocumentCreateRequest request) {
-        request.setName(InputSanitizer.sanitizeString(request.getName(), 255));
-        if (request.getUploaderName() != null) {
-            request.setUploaderName(InputSanitizer.sanitizeString(request.getUploaderName(), 100));
-        }
-        if (request.getFileType() != null) {
-            request.setFileType(InputSanitizer.sanitizeString(request.getFileType(), 50));
-        }
-        if (request.getSize() != null) {
-            request.setSize(InputSanitizer.sanitizeString(request.getSize(), 50));
         }
     }
 

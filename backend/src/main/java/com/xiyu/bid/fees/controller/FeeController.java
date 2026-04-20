@@ -9,7 +9,6 @@ import com.xiyu.bid.fees.dto.FeeCreateRequest;
 import com.xiyu.bid.fees.dto.FeeDTO;
 import com.xiyu.bid.fees.dto.FeeStatisticsDTO;
 import com.xiyu.bid.fees.dto.FeeUpdateRequest;
-import com.xiyu.bid.fees.entity.Fee;
 import com.xiyu.bid.fees.service.FeeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +21,15 @@ import com.xiyu.bid.config.PaginationConstants;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -102,7 +109,7 @@ public class FeeController {
      */
     @GetMapping("/status/{status}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<List<FeeDTO>>> getFeesByStatus(@PathVariable Fee.Status status) {
+    public ResponseEntity<ApiResponse<List<FeeDTO>>> getFeesByStatus(@PathVariable FeeDTO.Status status) {
         log.info("GET /api/fees/status/{} - Fetching fees by status", status);
         List<FeeDTO> fees = feeService.getFeesByStatus(status);
         return ResponseEntity.ok(ApiResponse.success("Successfully retrieved fees by status", fees));

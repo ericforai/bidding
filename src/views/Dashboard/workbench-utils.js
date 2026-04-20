@@ -1,141 +1,148 @@
-// Input: hour (optional integer 0-23), apiProject, apiEvent, alert, projects[]
-// Output: getTimeGreeting, normalizeProjectForWorkbench, normalizeCalendarEvent,
-//         normalizeAlertForTodo, extractCustomersFromProjects
+// Input: hour (optional integer 0-23)
+// Output: dashboard normalization helpers and getTimeGreeting
 // Pos: src/views/Dashboard/ - Dashboard view utilities
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
+const PROJECT_STATUS_META = {
+  INITIATED: { status: '已立项', progress: 10 },
+  PREPARING: { status: '编制中', progress: 35 },
+  REVIEWING: { status: '评审中', progress: 60 },
+  SEALING: { status: '封装中', progress: 80 },
+  BIDDING: { status: '投标中', progress: 95 },
+  ARCHIVED: { status: '已归档', progress: 100 },
+}
+
+const CALENDAR_EVENT_TYPES = {
+  DEADLINE: 'deadline',
+  SUBMISSION: 'bid',
+  REVIEW: 'review',
+  MEETING: 'review',
+  MILESTONE: 'milestone',
+  REMINDER: 'reminder',
+}
+
+const ALERT_PRIORITY_MAP = {
+  CRITICAL: 'urgent',
+  HIGH: 'high',
+  MEDIUM: 'medium',
+  LOW: 'low',
+}
+
+function toDateOnly(value) {
+  return typeof value === 'string' ? value.slice(0, 10) : undefined
+}
+
+function resolveProjectPriority(endDate) {
+  if (!endDate) return 'low'
+  const target = new Date(endDate)
+  if (Number.isNaN(target.getTime())) return 'low'
+  const diffMs = target.getTime() - Date.now()
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+  if (diffDays <= 7) return 'high'
+  if (diffDays <= 30) return 'medium'
+  return 'low'
+}
+
+export function normalizeProjectForWorkbench(project) {
+  if (!project) {
+    return {
+      id: undefined,
+      name: '',
+      status: '',
+      progress: 0,
+      deadline: undefined,
+      manager: '',
+      priority: 'low',
+    }
+  }
+
+  const meta = PROJECT_STATUS_META[project.status] || { status: project.status || '', progress: 0 }
+  return {
+    id: project.id,
+    name: project.name || '',
+    status: meta.status,
+    progress: meta.progress,
+    deadline: project.endDate,
+    manager: project.managerName || '',
+    priority: resolveProjectPriority(project.endDate),
+  }
+}
+
+export function normalizeCalendarEvent(event) {
+  if (!event) {
+    return {
+      id: undefined,
+      date: undefined,
+      type: 'reminder',
+      title: '',
+      project: '',
+      urgent: false,
+      description: '',
+    }
+  }
+
+  return {
+    id: event.id,
+    date: event.eventDate,
+    type: CALENDAR_EVENT_TYPES[event.eventType] || 'reminder',
+    title: event.title || '',
+    project: event.title || '',
+    urgent: Boolean(event.isUrgent),
+    description: event.description || '',
+  }
+}
+
+export function normalizeAlertForTodo(alert) {
+  return {
+    id: `alert-${alert?.id}`,
+    title: alert?.message || '',
+    priority: ALERT_PRIORITY_MAP[alert?.level] || 'low',
+    type: 'warning',
+    done: Boolean(alert?.resolved),
+    deadline: toDateOnly(alert?.createdAt),
+    sourceType: 'alert',
+  }
+}
+
+export function extractCustomersFromProjects(projects) {
+  if (!Array.isArray(projects) || projects.length === 0) {
+    return []
+  }
+
+  const grouped = new Map()
+  projects.forEach((project) => {
+    if (!project?.customerManager) return
+    const key = project.customerManagerId
+    const current = grouped.get(key) || {
+      id: key,
+      name: project.customerManager,
+      company: '',
+      projectCount: 0,
+      statuses: [],
+    }
+    current.projectCount += 1
+    current.statuses.push(project.status)
+    grouped.set(key, current)
+  })
+
+  return Array.from(grouped.values()).map((customer) => {
+    const statuses = customer.statuses
+    const hasFollowing = statuses.some((status) => status === 'BIDDING' || status === 'REVIEWING')
+    const allArchived = statuses.length > 0 && statuses.every((status) => status === 'ARCHIVED')
+    return {
+      id: customer.id,
+      name: customer.name,
+      company: customer.company,
+      projectCount: customer.projectCount,
+      status: hasFollowing ? '跟进中' : allArchived ? '已完成' : '新客户',
+      statusType: hasFollowing ? 'warning' : allArchived ? 'success' : 'info',
+    }
+  })
+}
 
 export function getTimeGreeting(hour) {
   if (hour === undefined || hour === null) hour = new Date().getHours()
   if (hour >= 5 && hour <= 11) return '上午好'
   if (hour >= 12 && hour <= 17) return '下午好'
   return '晚上好'
-}
-
-// ---------------------------------------------------------------------------
-// Status / progress lookup tables
-// ---------------------------------------------------------------------------
-const PROJECT_STATUS_MAP = {
-  INITIATED: { label: '已立项', progress: 10 },
-  PREPARING: { label: '编制中', progress: 35 },
-  REVIEWING: { label: '评审中', progress: 60 },
-  SEALING:   { label: '封装中', progress: 80 },
-  BIDDING:   { label: '投标中', progress: 95 },
-  ARCHIVED:  { label: '已归档', progress: 100 },
-}
-
-const CALENDAR_TYPE_MAP = {
-  DEADLINE:   'deadline',
-  SUBMISSION: 'bid',
-  REVIEW:     'review',
-  MEETING:    'review',
-  MILESTONE:  'milestone',
-  REMINDER:   'reminder',
-}
-
-const ALERT_LEVEL_MAP = {
-  CRITICAL: 'urgent',
-  HIGH:     'high',
-  MEDIUM:   'medium',
-  LOW:      'low',
-}
-
-// ---------------------------------------------------------------------------
-// Priority derivation: days until deadline
-// ---------------------------------------------------------------------------
-function derivePriority(endDate) {
-  if (!endDate) return 'low'
-  const now = new Date()
-  const deadline = new Date(endDate)
-  const diffMs = deadline - now
-  const diffDays = diffMs / (1000 * 60 * 60 * 24)
-  if (diffDays <= 7) return 'high'
-  if (diffDays <= 30) return 'medium'
-  return 'low'
-}
-
-// ---------------------------------------------------------------------------
-// 1. normalizeProjectForWorkbench
-// ---------------------------------------------------------------------------
-export function normalizeProjectForWorkbench(apiProject) {
-  if (!apiProject) {
-    return { id: undefined, name: '', status: '', progress: 0, deadline: undefined, manager: '', priority: 'low' }
-  }
-  const statusInfo = PROJECT_STATUS_MAP[apiProject.status] || { label: '', progress: 0 }
-  return {
-    id:       apiProject.id,
-    name:     apiProject.name || '',
-    status:   statusInfo.label,
-    progress: statusInfo.progress,
-    deadline: apiProject.endDate,
-    manager:  apiProject.managerName || '',
-    priority: derivePriority(apiProject.endDate),
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 2. normalizeCalendarEvent
-// ---------------------------------------------------------------------------
-export function normalizeCalendarEvent(apiEvent) {
-  if (!apiEvent) {
-    return { id: undefined, date: undefined, type: 'reminder', title: '', project: '', urgent: false, description: '' }
-  }
-  return {
-    id:          apiEvent.id,
-    date:        apiEvent.eventDate,
-    type:        CALENDAR_TYPE_MAP[apiEvent.eventType] || 'reminder',
-    title:       apiEvent.title || '',
-    project:     apiEvent.title || '',
-    urgent:      Boolean(apiEvent.isUrgent),
-    description: apiEvent.description || '',
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 3. normalizeAlertForTodo
-// ---------------------------------------------------------------------------
-export function normalizeAlertForTodo(alert) {
-  if (!alert) {
-    return { id: 'alert-undefined', title: '', priority: 'low', type: 'warning', done: false, deadline: undefined, sourceType: 'alert' }
-  }
-  const dateStr = alert.createdAt ? alert.createdAt.slice(0, 10) : undefined
-  return {
-    id:         `alert-${alert.id}`,
-    title:      alert.message || '',
-    priority:   ALERT_LEVEL_MAP[alert.level] || 'low',
-    type:       'warning',
-    done:       Boolean(alert.resolved),
-    deadline:   dateStr,
-    sourceType: 'alert',
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 4. extractCustomersFromProjects
-// ---------------------------------------------------------------------------
-export function extractCustomersFromProjects(projects) {
-  if (!projects || projects.length === 0) return []
-
-  const customerMap = {}
-  for (const project of projects) {
-    if (!project.customerManager || !project.customerManagerId) continue
-    const key = project.customerManagerId
-    if (!customerMap[key]) {
-      customerMap[key] = { id: key, name: project.customerManager, statuses: [] }
-    }
-    customerMap[key].statuses.push(project.status)
-  }
-
-  return Object.values(customerMap).map(({ id, name, statuses }) => {
-    const hasActive = statuses.some(s => s === 'BIDDING' || s === 'REVIEWING')
-    const allArchived = statuses.every(s => s === 'ARCHIVED')
-    let status, statusType
-    if (hasActive) {
-      status = '跟进中'; statusType = 'warning'
-    } else if (allArchived) {
-      status = '已完成'; statusType = 'success'
-    } else {
-      status = '新客户'; statusType = 'info'
-    }
-    return { id, name, company: '', status, statusType, projectCount: statuses.length }
-  })
 }

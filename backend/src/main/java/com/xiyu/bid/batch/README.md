@@ -10,8 +10,16 @@
 |------|------|------|
 | `controller/` | 子目录 | 批量操作 API 边界 |
 | `controller/BatchOperationController.java` | Controller | 批量操作 API |
-| `service/` | 子目录 | 批量编排边界 |
-| `service/BatchOperationService.java` | Service | 批量分配、认领和删除逻辑 |
+| `service/` | 子目录 | 批量应用服务边界 |
+| `service/BatchOperationService.java` | Service | 兼容现有接口的 facade |
+| `service/BatchTenderCommandService.java` | Service | 标书批处理执行 |
+| `service/BatchTaskCommandService.java` | Service | 任务批处理执行 |
+| `service/BatchProjectCommandService.java` | Service | 项目批处理执行 |
+| `service/BatchFeeCommandService.java` | Service | 费用批处理执行 |
+| `service/BatchOperationLogService.java` | Service | 批处理审计日志收口 |
+| `core/` | 子目录 | 批处理纯规则内核 |
+| `core/BatchValidationPolicy.java` | Core | 批量输入与用户上下文校验 |
+| `core/BatchAssignmentPolicy.java` | Core | 跨部门分配与责任人规则 |
 | `dto/` | 子目录 | 批量操作请求/响应边界 |
 | `dto/BatchAssignRequest.java` | DTO | 批量分配请求 |
 | `dto/BatchClaimRequest.java` | DTO | 批量认领请求 |

@@ -30,4 +30,6 @@ public class BidResultFetchResultDTO {
     private String remark;
     private Integer skuCount;
     private String winAnnounceDocUrl;
+    private Long noticeDocumentId;
+    private Long analysisDocumentId;
 }

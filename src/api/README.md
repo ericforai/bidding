@@ -25,6 +25,7 @@
 | `auth.js` | 认证授权 |
 | `settings.js` | 系统设置中的数据权限与组织树 |
 | `projectGroups.js` | 项目组正式领域模型配置与删除 |
+| `qualification.js` | 资质 CRUD 与借阅合同式接线 |
 | `tenders.js` | 标讯管理 |
 | `projects.js` | 项目管理 |
 | `tasks.js` | 任务管理 |
@@ -43,3 +44,4 @@
 - 2026-03-18: 认证会话快照开始承载 `allowedProjectIds`，用于项目级数据权限恢复
 - 2026-03-19: 新增 `settings.js`，用于读取/保存真实数据权限配置，并让会话快照同时承载 `allowedDepts`
 - 2026-03-19: 新增 `projectGroups.js`，把项目组配置从数据权限配置中拆出，改走正式领域 API
+- 2026-04-19: 新增 `qualification.js` 并在 `index.js` 暴露独立 `qualificationsApi`，供资质页 store 与知识模块共享

@@ -6,18 +6,25 @@ package com.xiyu.bid.resources.controller;
 
 import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.resources.dto.BarCertificateBorrowRecordDTO;
 import com.xiyu.bid.resources.dto.BarCertificateBorrowRequest;
 import com.xiyu.bid.resources.dto.BarCertificateCreateRequest;
+import com.xiyu.bid.resources.dto.BarCertificateResponseDTO;
 import com.xiyu.bid.resources.dto.BarCertificateReturnRequest;
 import com.xiyu.bid.resources.dto.BarCertificateUpdateRequest;
-import com.xiyu.bid.resources.entity.BarCertificate;
-import com.xiyu.bid.resources.entity.BarCertificateBorrowRecord;
 import com.xiyu.bid.resources.service.BarCertificateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -30,14 +37,14 @@ public class BarCertificateController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<List<BarCertificate>>> getCertificates(@PathVariable Long assetId) {
+    public ResponseEntity<ApiResponse<List<BarCertificateResponseDTO>>> getCertificates(@PathVariable Long assetId) {
         return ResponseEntity.ok(ApiResponse.success(barCertificateService.getCertificates(assetId)));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "CREATE", entityType = "BarCertificate", description = "Create BAR certificate")
-    public ResponseEntity<ApiResponse<BarCertificate>> createCertificate(
+    public ResponseEntity<ApiResponse<BarCertificateResponseDTO>> createCertificate(
             @PathVariable Long assetId,
             @Valid @RequestBody BarCertificateCreateRequest request) {
         return ResponseEntity.ok(ApiResponse.success("Certificate created successfully",
@@ -47,7 +54,7 @@ public class BarCertificateController {
     @PutMapping("/{certificateId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "UPDATE", entityType = "BarCertificate", description = "Update BAR certificate")
-    public ResponseEntity<ApiResponse<BarCertificate>> updateCertificate(
+    public ResponseEntity<ApiResponse<BarCertificateResponseDTO>> updateCertificate(
             @PathVariable Long assetId,
             @PathVariable Long certificateId,
             @Valid @RequestBody BarCertificateUpdateRequest request) {
@@ -68,7 +75,7 @@ public class BarCertificateController {
     @PostMapping("/{certificateId}/borrow")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "BORROW", entityType = "BarCertificate", description = "Borrow BAR certificate")
-    public ResponseEntity<ApiResponse<BarCertificate>> borrowCertificate(
+    public ResponseEntity<ApiResponse<BarCertificateResponseDTO>> borrowCertificate(
             @PathVariable Long assetId,
             @PathVariable Long certificateId,
             @Valid @RequestBody BarCertificateBorrowRequest request) {
@@ -79,7 +86,7 @@ public class BarCertificateController {
     @PostMapping("/{certificateId}/return")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "RETURN", entityType = "BarCertificate", description = "Return BAR certificate")
-    public ResponseEntity<ApiResponse<BarCertificate>> returnCertificate(
+    public ResponseEntity<ApiResponse<BarCertificateResponseDTO>> returnCertificate(
             @PathVariable Long assetId,
             @PathVariable Long certificateId,
             @RequestBody(required = false) BarCertificateReturnRequest request) {
@@ -90,7 +97,7 @@ public class BarCertificateController {
 
     @GetMapping("/{certificateId}/borrow-records")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<List<BarCertificateBorrowRecord>>> getBorrowRecords(
+    public ResponseEntity<ApiResponse<List<BarCertificateBorrowRecordDTO>>> getBorrowRecords(
             @PathVariable Long assetId,
             @PathVariable Long certificateId) {
         return ResponseEntity.ok(ApiResponse.success(

@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Repository
 public interface AlertHistoryRepository extends JpaRepository<AlertHistory, Long> {
@@ -21,6 +22,8 @@ public interface AlertHistoryRepository extends JpaRepository<AlertHistory, Long
     Page<AlertHistory> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
 
     Page<AlertHistory> findByRelatedId(@Param("relatedId") String relatedId, Pageable pageable);
+
+    Optional<AlertHistory> findFirstByRuleIdAndRelatedIdAndResolvedFalseOrderByCreatedAtDesc(Long ruleId, String relatedId);
 
     long countByResolvedFalse();
 

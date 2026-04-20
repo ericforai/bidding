@@ -1,6 +1,5 @@
 package com.xiyu.bid.projectworkflow.dto;
 
-import com.xiyu.bid.entity.Task;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,6 +12,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ProjectTaskStatusUpdateRequest {
 
+    public enum Status {
+        TODO,
+        IN_PROGRESS,
+        COMPLETED,
+        CANCELLED
+    }
+
     @NotNull(message = "任务状态不能为空")
-    private Task.Status status;
+    private Status status;
 }

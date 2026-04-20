@@ -24,13 +24,11 @@ import com.xiyu.bid.analytics.dto.RegionalData;
 import com.xiyu.bid.analytics.dto.SummaryStats;
 import com.xiyu.bid.analytics.dto.TrendData;
 import com.xiyu.bid.analytics.repository.DashboardAnalyticsRepository;
-import com.xiyu.bid.documentexport.entity.DocumentExport;
 import com.xiyu.bid.documentexport.repository.DocumentExportRepository;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.entity.User;
-import com.xiyu.bid.projectworkflow.entity.ProjectDocument;
 import com.xiyu.bid.projectworkflow.repository.ProjectDocumentRepository;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TaskRepository;
@@ -61,7 +59,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -188,7 +185,8 @@ public class DashboardAnalyticsService {
         public Map<String, Long> getStatusDistribution() {
         Map<Tender.Status, Long> countsByStatus = new EnumMap<>(Tender.Status.class);
         for (DashboardAnalyticsRepository.StatusCountRow row : dashboardAnalyticsRepository.fetchStatusDistribution()) {
-            countsByStatus.put(row.status(), row.count() == null ? 0L : row.count());
+            Long count = row.count();
+            countsByStatus.put(row.status(), count == null ? Long.valueOf(0L) : count);
         }
         Map<String, Long> distribution = new LinkedHashMap<>();
         Arrays.stream(Tender.Status.values()).forEach(status ->
@@ -305,9 +303,6 @@ public class DashboardAnalyticsService {
         List<DashboardAnalyticsRepository.ProjectDocumentRow> projectDocuments = dashboardAnalyticsRepository.fetchProjectDocumentRows(projectIds);
         List<DashboardAnalyticsRepository.DocumentExportRow> documentExports = dashboardAnalyticsRepository.fetchDocumentExportRows(projectIds);
         Map<Long, User> userById = loadUsersById(collectProjectUserIds(matchedProjects));
-        Map<Long, DashboardAnalyticsRepository.TenderSummaryRow> tenderById = matchedTenders.stream()
-                .collect(Collectors.toMap(DashboardAnalyticsRepository.TenderSummaryRow::tenderId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
-
         List<AnalyticsDrillDownProjectDTO> projectItems = matchedProjects.stream()
                 .map(project -> {
                     return AnalyticsDrillDownProjectDTO.builder()
@@ -743,18 +738,6 @@ public class DashboardAnalyticsService {
                 .orElse("-");
     }
 
-    private String resolveProjectResult(Project project) {
-        if (project.getStatus() == Project.Status.ARCHIVED) {
-            return "won";
-        }
-        if (project.getStatus() == Project.Status.BIDDING
-                || project.getStatus() == Project.Status.REVIEWING
-                || project.getStatus() == Project.Status.SEALING) {
-            return "won";
-        }
-        return null;
-    }
-
     private String resolveProjectResult(Project.Status status) {
         if (status == null) {
             return null;
@@ -908,86 +891,6 @@ public class DashboardAnalyticsService {
                 .orElse("用户" + userId);
     }
 
-    private List<AnalyticsDrillDownTeamDTO> buildTeamItems(List<Project> projects, List<Task> tasks) {
-        Map<Long, List<Task>> tasksByAssignee = tasks.stream()
-                .filter(task -> task.getAssigneeId() != null)
-                .collect(Collectors.groupingBy(Task::getAssigneeId));
-
-        Set<Long> teamMemberIds = new LinkedHashSet<>();
-        projects.forEach(project -> {
-            if (project.getManagerId() != null) {
-                teamMemberIds.add(project.getManagerId());
-            }
-            if (project.getTeamMembers() != null) {
-                teamMemberIds.addAll(project.getTeamMembers());
-            }
-        });
-
-        return teamMemberIds.stream()
-                .map(userId -> {
-                    User user = userRepository.findById(userId).orElse(null);
-                    long participation = tasksByAssignee.getOrDefault(userId, Collections.emptyList()).size();
-                    long completedWins = tasksByAssignee.getOrDefault(userId, Collections.emptyList()).stream()
-                            .filter(task -> task.getStatus() == Task.Status.COMPLETED)
-                            .count();
-                    double winRate = participation > 0 ? (completedWins * 100.0) / participation : 0.0;
-
-                    return AnalyticsDrillDownTeamDTO.builder()
-                            .name(user != null ? user.getFullName() : ("用户" + userId))
-                            .role(user != null ? user.getRoleCode().toLowerCase(Locale.ROOT) : "member")
-                            .dept("-")
-                            .participation(participation)
-                            .winRate(winRate)
-                            .build();
-                })
-                .collect(Collectors.toList());
-    }
-
-    private List<AnalyticsDrillDownFileDTO> buildFileItems(List<Project> projects) {
-        return projects.stream()
-                .flatMap(project -> {
-                    List<AnalyticsDrillDownFileDTO> projectDocuments = projectDocumentRepository
-                            .findByProjectIdOrderByCreatedAtDesc(project.getId())
-                            .stream()
-                            .map(document -> mapProjectDocument(project, document))
-                            .collect(Collectors.toList());
-
-                    List<AnalyticsDrillDownFileDTO> exports = documentExportRepository
-                            .findByProjectIdOrderByExportedAtDesc(project.getId())
-                            .stream()
-                            .map(documentExport -> mapDocumentExport(project, documentExport))
-                            .collect(Collectors.toList());
-
-                    List<AnalyticsDrillDownFileDTO> merged = new ArrayList<>(projectDocuments);
-                    merged.addAll(exports);
-                    return merged.stream();
-                })
-                .sorted(Comparator.comparing(AnalyticsDrillDownFileDTO::getUploadTime, Comparator.nullsLast(Comparator.reverseOrder())))
-                .collect(Collectors.toList());
-    }
-
-    private AnalyticsDrillDownFileDTO mapProjectDocument(Project project, ProjectDocument document) {
-        return AnalyticsDrillDownFileDTO.builder()
-                .id("doc-" + document.getId())
-                .name(document.getName())
-                .project(project.getName())
-                .uploader(document.getUploaderName())
-                .uploadTime(document.getCreatedAt() == null ? null : document.getCreatedAt().toString())
-                .size(document.getSize())
-                .build();
-    }
-
-    private AnalyticsDrillDownFileDTO mapDocumentExport(Project project, DocumentExport export) {
-        return AnalyticsDrillDownFileDTO.builder()
-                .id("export-" + export.getId())
-                .name(export.getFileName())
-                .project(project.getName())
-                .uploader(export.getExportedByName())
-                .uploadTime(export.getExportedAt() == null ? null : export.getExportedAt().toString())
-                .size(export.getFileSize() == null ? "-" : export.getFileSize() + "B")
-                .build();
-    }
-
     private AnalyticsDrillDownResponseDTO buildMetricDrillDownResponse(
             String metricKey,
             String metricLabel,
@@ -1127,16 +1030,6 @@ public class DashboardAnalyticsService {
 
     private LocalDateTime getProjectReferenceDate(Project project) {
         return project.getStartDate() != null ? project.getStartDate() : project.getCreatedAt();
-    }
-
-    private String deriveOutcome(Tender tender, Project project) {
-        if (tender.getStatus() == Tender.Status.BIDDED && project != null) {
-            return "WON";
-        }
-        if (tender.getStatus() == Tender.Status.ABANDONED) {
-            return "LOST";
-        }
-        return "IN_PROGRESS";
     }
 
     private String deriveOutcome(DashboardAnalyticsRepository.TenderSummaryRow tender, ProjectSnapshotAggregate project) {
