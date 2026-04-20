@@ -62,14 +62,15 @@
   - 例如：`https://bid-api.example.com`
 - `PRODUCTION_WEB_BASE_URL`
   - 例如：`https://bid.example.com`
-- `PROD_VITE_API_BASE_URL`
-  - 前端正式构建时写入的 API 地址
 
 ### 选填 vars
 
 - `PROD_RELEASES_DIR`
 - `PROD_BACKEND_RUNTIME_DIR`
 - `PROD_BACKEND_JAR_PATH`
+- `PROD_DEPLOYED_RELEASE_RECORD`
+  - 默认为 `$PROD_APP_ROOT/deployed-release.json`
+  - 记录当前线上真实生效的 release、运行路径和打包元数据
 - `PROD_BACKEND_PORT`
 - `PROD_HEALTHCHECK_URL`
 - `PROD_SYSTEMCTL_SUDO`
@@ -108,8 +109,17 @@ Go / No-Go 口径：
 
 - 发布根目录：`$PROD_APP_ROOT`
 - 历史版本：`$PROD_APP_ROOT/releases/<release-id>`
-- 当前软链：`$PROD_APP_ROOT/current`
 - 后端运行目录：`$PROD_APP_ROOT/shared/backend`
+- 当前部署记录：`$PROD_APP_ROOT/deployed-release.json`
+
+这里的发布模型要特别注意：
+
+- `releases/<release-id>` 用于保存历史发布包解压结果
+- 前端真实生效路径是 `PROD_FRONTEND_PUBLIC_DIR`
+- 后端真实生效路径是 `PROD_BACKEND_JAR_PATH`
+- 当前线上版本以 `deployed-release.json` 为准，而不是软链指针
+
+这样可以避免出现“保留了 `current` 软链，但运行时并不真正依赖它”的误导语义。
 
 发布包默认包含：
 
@@ -123,10 +133,18 @@ Go / No-Go 口径：
 
 - 解压上传的 release archive
 - 可选执行数据库备份命令
-- 原子切换前端静态资源目录
+- 切换前端静态资源目录
 - 更新后端 jar
+- 写入当前部署记录
 - 重启 systemd 服务
 - 等待健康检查通过
+
+它还会做一层路径约束校验：
+
+- `FRONTEND_PUBLIC_DIR` 不能放在 `RELEASES_DIR` 下面
+- `BACKEND_RUNTIME_DIR` / `BACKEND_JAR_PATH` 不能放在 `RELEASES_DIR` 下面
+
+这样可以避免把“历史版本归档目录”和“当前运行目录”混成一套路径语义。
 
 它不负责：
 
