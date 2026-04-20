@@ -8,15 +8,16 @@ import com.xiyu.bid.competitionintel.entity.Competitor;
 import com.xiyu.bid.competitionintel.repository.CompetitionAnalysisRepository;
 import com.xiyu.bid.competitionintel.repository.CompetitorRepository;
 import com.xiyu.bid.audit.service.IAuditLogService;
+import com.xiyu.bid.support.NoOpPasswordEncryptionTestConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,10 +33,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 竞争情报控制器集成测试
  * 测试HTTP端点的完整请求响应流程
  */
-@SpringBootTest
+@SpringBootTest(properties = "spring.main.allow-bean-definition-overriding=true")
 @AutoConfigureMockMvc
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @ActiveProfiles("test")
+@Import(NoOpPasswordEncryptionTestConfig.class)
 class CompetitionIntelControllerIntegrationTest {
 
     @Autowired
