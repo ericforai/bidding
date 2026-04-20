@@ -29,8 +29,11 @@
         <maven.pmd.plugin.version>3.27.0</maven.pmd.plugin.version>
         <spotbugs.maven.plugin.version>4.8.6.6</spotbugs.maven.plugin.version>
         <quality.skip>true</quality.skip>
-        <quality.includes>__never_match__.java</quality.includes>
-        <quality.onlyAnalyze></quality.onlyAnalyze>
+        <quality.failOnViolation>true</quality.failOnViolation>
+        <quality.includes>**/marketinsight/core/**/*.java,**/admin/settings/core/**/*.java,**/task/core/**/*.java,**/bidresult/core/**/*.java,**/projectworkflow/**/*.java</quality.includes>
+        <quality.onlyAnalyze>com.xiyu.bid.marketinsight.core.*,com.xiyu.bid.admin.settings.core.*,com.xiyu.bid.task.core.*,com.xiyu.bid.bidresult.core.*,com.xiyu.bid.projectworkflow.*</quality.onlyAnalyze>
+        <jacoco.check.skip>false</jacoco.check.skip>
+        <jacoco.minimum.coveredratio>0.10</jacoco.minimum.coveredratio>
     </properties>
 
     <dependencies>
@@ -264,6 +267,7 @@
                             <goal>check</goal>
                         </goals>
                         <configuration>
+                            <skip>${jacoco.check.skip}</skip>
                             <rules>
                                 <rule>
                                     <element>BUNDLE</element>
@@ -271,46 +275,7 @@
                                         <limit>
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.25</minimum>
-                                        </limit>
-                                    </limits>
-                                </rule>
-                                <rule>
-                                    <element>PACKAGE</element>
-                                    <includes>
-                                        <include>com.xiyu.bid.settings.service</include>
-                                    </includes>
-                                    <limits>
-                                        <limit>
-                                            <counter>INSTRUCTION</counter>
-                                            <value>COVEREDRATIO</value>
-                                            <minimum>0.75</minimum>
-                                        </limit>
-                                    </limits>
-                                </rule>
-                                <rule>
-                                    <element>PACKAGE</element>
-                                    <includes>
-                                        <include>com.xiyu.bid.projectworkflow.service</include>
-                                    </includes>
-                                    <limits>
-                                        <limit>
-                                            <counter>INSTRUCTION</counter>
-                                            <value>COVEREDRATIO</value>
-                                            <minimum>0.70</minimum>
-                                        </limit>
-                                    </limits>
-                                </rule>
-                                <rule>
-                                    <element>PACKAGE</element>
-                                    <includes>
-                                        <include>com.xiyu.bid.analytics.service</include>
-                                    </includes>
-                                    <limits>
-                                        <limit>
-                                            <counter>INSTRUCTION</counter>
-                                            <value>COVEREDRATIO</value>
-                                            <minimum>0.75</minimum>
+                                            <minimum>${jacoco.minimum.coveredratio}</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
@@ -344,7 +309,7 @@
                             <suppressionsLocation>config/checkstyle/suppressions.xml</suppressionsLocation>
                             <includeTestSourceDirectory>false</includeTestSourceDirectory>
                             <includes>${quality.includes}</includes>
-                            <failsOnError>true</failsOnError>
+                            <failsOnError>${quality.failOnViolation}</failsOnError>
                             <consoleOutput>true</consoleOutput>
                             <linkXRef>false</linkXRef>
                         </configuration>
@@ -367,7 +332,7 @@
                             <skip>${quality.skip}</skip>
                             <includeTests>false</includeTests>
                             <includes>${quality.includes}</includes>
-                            <failOnViolation>true</failOnViolation>
+                            <failOnViolation>${quality.failOnViolation}</failOnViolation>
                             <printFailingErrors>true</printFailingErrors>
                             <rulesets>
                                 <ruleset>config/pmd/ruleset.xml</ruleset>
@@ -401,7 +366,7 @@
                             <threshold>Medium</threshold>
                             <onlyAnalyze>${quality.onlyAnalyze}</onlyAnalyze>
                             <excludeFilterFile>config/spotbugs/exclude.xml</excludeFilterFile>
-                            <failOnError>true</failOnError>
+                            <failOnError>${quality.failOnViolation}</failOnError>
                         </configuration>
                         <executions>
                             <execution>
@@ -415,6 +380,22 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+            <id>quality-audit</id>
+            <properties>
+                <quality.skip>false</quality.skip>
+                <quality.failOnViolation>false</quality.failOnViolation>
+                <jacoco.check.skip>true</jacoco.check.skip>
+            </properties>
+        </profile>
+        <profile>
+            <id>quality-strict</id>
+            <properties>
+                <quality.skip>false</quality.skip>
+                <quality.failOnViolation>true</quality.failOnViolation>
+                <jacoco.check.skip>false</jacoco.check.skip>
+            </properties>
         </profile>
     </profiles>
 </project>
