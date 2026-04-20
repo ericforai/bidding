@@ -21,7 +21,7 @@
         <ProjectDetailAssetCheckPane />
       </el-tab-pane>
       <el-tab-pane name="quality">
-        <template #label><div class="tab-label"><span>文书质量</span><el-badge v-if="detail.aiResult.value.quality" :value="detail.aiResult.value.quality.errors?.length || 0" type="warning" /></div></template>
+        <template #label><div class="tab-label"><span>文书质量</span><el-badge v-if="detail.qualityResult.value" :value="detail.qualityResult.value.errors?.length || 0" type="warning" /></div></template>
         <ProjectDetailQualityPane />
       </el-tab-pane>
       <el-tab-pane name="score">

@@ -80,6 +80,9 @@ public class ProjectQualityService {
         }
         ProjectQualityIssue issue = projectQualityIssueRepository.findById(issueId)
                 .orElseThrow(() -> new ResourceNotFoundException("ProjectQualityIssue", String.valueOf(issueId)));
+        if (!checkId.equals(issue.getCheckId())) {
+            throw new IllegalArgumentException("Quality issue does not belong to check " + checkId);
+        }
         issue.setAdopted(adopted);
         issue.setIgnored(ignored);
         projectQualityIssueRepository.save(issue);

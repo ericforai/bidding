@@ -874,13 +874,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, markRaw } from 'vue'
+import { ref, computed, onMounted, watch, markRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useBiddingStore } from '@/stores/bidding'
 import { approvalApi, projectsApi, dashboardApi } from '@/api'
+import { alertHistoryApi } from '@/api/modules/alerts.js'
 import { tasksApi } from '@/api/modules/dashboard.js'
-import { getTimeGreeting } from '@/views/Dashboard/workbench-utils.js'
+import { getTimeGreeting, normalizeAlertForTodo } from '@/views/Dashboard/workbench-utils.js'
+import { useWorkbenchSchedule } from '@/views/Dashboard/useWorkbenchSchedule.js'
 import {
   Plus, DataAnalysis, ArrowRight, Calendar, User, Clock, Check,
   Document, Briefcase, TrendCharts, Flag, FolderOpened, Wallet
@@ -909,6 +911,7 @@ const currentDate = computed(() => {
 // 当前用户角色
 const currentUserRole = computed(() => userStore.currentUser?.role || 'staff')
 const currentUserName = computed(() => userStore.currentUser?.name || '用户')
+const currentUserId = computed(() => userStore.currentUser?.id || null)
 
 // 待处理数量
 const pendingCount = computed(() => {
@@ -1167,35 +1170,8 @@ const activeProjects = computed(() => {
   return allProjects.value.filter(p => p.manager === name).slice(0, 3)
 })
 
-// 待办事项 - 角色化数据
-const mockRoleTodos = ref([
-  // ===== 系统自动预警（所有角色可见） =====
-  { id: 100, title: '保证金即将到期 - 西部云项目', role: 'all', priority: 'high', deadline: '还剩5天', done: false, type: 'warning', icon: 'Warning' },
-  { id: 101, title: '资质证书即将过期 - 营业执照', role: 'all', priority: 'medium', deadline: '还剩25天', done: false, type: 'warning', icon: 'Clock' },
-  { id: 102, title: '截标日倒计时 - 某央企智慧办公平台', role: 'all', priority: 'high', deadline: '还剩2天', done: false, type: 'warning', icon: 'Timer' },
-  { id: 103, title: '用印申请待审批 - 华南电力项目', role: 'all', priority: 'high', deadline: '今天 12:00', done: false, type: 'approval', icon: 'Document' },
-  // 管理层待办
-  { id: 1, title: '审批某央企项目投标预算', role: 'admin', priority: 'high', deadline: '今天 16:00', done: false },
-  { id: 2, title: 'Q1季度销售业绩复盘会议', role: 'admin', priority: 'medium', deadline: '03-05', done: false },
-  { id: 3, title: '团队绩效考核确认', role: 'admin', priority: 'medium', deadline: '03-10', done: false },
-  // 销售经理待办
-  { id: 4, title: '西部云项目客户拜访', role: 'sales', assignee: '小王', priority: 'high', deadline: '明天 14:00', done: false },
-  { id: 5, title: '华南电力项目需求确认', role: 'sales', assignee: '小王', priority: 'high', deadline: '03-06', done: false },
-  { id: 6, title: '更新客户跟进记录', role: 'sales', assignee: '小王', priority: 'low', deadline: '03-08', done: false },
-  // 投标经理待办
-  { id: 7, title: '某央企项目技术方案终审', role: 'bidding', assignee: '张经理', priority: 'high', deadline: '今天 18:00', done: false },
-  { id: 8, title: '协调李工完成技术方案', role: 'bidding', assignee: '张经理', priority: 'high', deadline: '明天 10:00', done: false },
-  { id: 9, title: '项目立项评审会', role: 'bidding', assignee: '张经理', priority: 'medium', deadline: '03-07', done: false },
-  // 技术员工待办
-  { id: 10, title: '某央企项目技术方案编写', role: 'staff', assignee: '李工', priority: 'high', deadline: '03-06', done: false },
-  { id: 11, title: 'MES项目需求分析', role: 'staff', assignee: '李工', priority: 'high', deadline: '03-08', done: false },
-  { id: 12, title: 'XX县项目技术文档整理', role: 'staff', assignee: '李工', priority: 'medium', deadline: '03-09', done: false },
-  { id: 13, title: '参与技术方案评审', role: 'staff', assignee: '李工', priority: 'medium', deadline: '03-05', done: false }
-])
-
 const apiTodoItems = ref([])
-
-const systemWarningTodos = computed(() => mockRoleTodos.value.filter(t => t.role === 'all'))
+const alertTodoItems = ref([])
 
 const normalizeApiTodo = (task) => {
   const priority = String(task?.priority || 'MEDIUM').toLowerCase()
@@ -1238,28 +1214,21 @@ async function loadPriorityTodos() {
   }
 }
 
+async function loadAlertTodos() {
+  try {
+    const result = await alertHistoryApi.getUnresolved({ page: 0, size: 8 })
+    alertTodoItems.value = Array.isArray(result?.data)
+      ? result.data.map(normalizeAlertForTodo)
+      : []
+  } catch (error) {
+    console.error('加载未处理告警失败:', error)
+    alertTodoItems.value = []
+  }
+}
+
 // 根据角色过滤待办
 const priorityTodos = computed(() => {
-  if (true) {
-    return [...systemWarningTodos.value, ...apiTodoItems.value].slice(0, 8)
-  }
-
-  const role = currentUserRole.value
-  const name = currentUserName.value
-
-  // 系统预警（所有角色可见）
-  const systemWarnings = systemWarningTodos.value
-
-  // 角色专属待办
-  let roleTodos = []
-  if (role === 'admin') {
-    roleTodos = mockRoleTodos.value.filter(t => t.role === 'admin')
-  } else {
-    roleTodos = mockRoleTodos.value.filter(t => t.assignee === name)
-  }
-
-  // 合并：系统预警优先，然后是角色待办
-  return [...systemWarnings, ...roleTodos].slice(0, 8)
+  return [...alertTodoItems.value, ...apiTodoItems.value].slice(0, 8)
 })
 
 // ========== 管理层数据 ==========
@@ -1499,9 +1468,15 @@ const handleTenderClick = (tender) => {
 
 const handleTaskComplete = async (task) => {
   if (task.type === 'warning') {
-    task.done = !task.done
-    if (task.done) {
+    try {
+      const result = await alertHistoryApi.acknowledge(task.sourceId)
+      if (!result?.success) {
+        throw new Error(result?.message || '确认告警失败')
+      }
+      await loadAlertTodos()
       ElMessage.success(`完成任务: ${task.title}`)
+    } catch (error) {
+      ElMessage.error(error?.message || '确认告警失败')
     }
     return
   }
@@ -1592,208 +1567,37 @@ const activities = ref([
 ])
 
 // ========== 投标日历相关 ==========
-const calendarDate = ref(new Date())
-const activeCalendarFilter = ref('all')
-const selectedDateKey = ref('')
-
-const calendarFilters = [
-  { label: '全部', value: 'all' },
-  { label: '截止', value: 'deadline' },
-  { label: '投标', value: 'bid' },
-  { label: '开标', value: 'opening' },
-  { label: '评审', value: 'review' },
-  { label: '高风险', value: 'urgent' }
-]
-
-// 从 store 获取日历数据
-const calendarEvents = computed(() => biddingStore.calendar || [])
-
-const parseDate = (dateStr) => new Date(`${dateStr}T00:00:00`)
-
-const formatDateKey = (date) => {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-const startOfToday = () => parseDate(formatDateKey(new Date()))
-
-const getDaysUntil = (dateStr) => {
-  const oneDay = 24 * 60 * 60 * 1000
-  return Math.round((parseDate(dateStr) - startOfToday()) / oneDay)
-}
-
-const getEventOwner = (event) => {
-  const ownerMap = {
-    deadline: '商务专员',
-    bid: '投标经理',
-    opening: '销售经理',
-    review: '技术负责人'
-  }
-  return ownerMap[event.type] || '项目负责人'
-}
-
-const getEventStage = (event) => {
-  const stageMap = {
-    deadline: '资料收口',
-    bid: '递交前确认',
-    opening: '现场准备',
-    review: '评审跟进'
-  }
-  return stageMap[event.type] || '节点处理中'
-}
-
-const getEventBlocker = (event) => {
-  const blockerMap = {
-    deadline: '待确认最终材料',
-    bid: '待核对报价与盖章',
-    opening: '待确认授权与签到',
-    review: '待准备答疑材料'
-  }
-  return blockerMap[event.type] || '待补充信息'
-}
-
-const getEventActionLabel = (event) => {
-  const actionMap = {
-    deadline: '去补材料',
-    bid: '去检查递交',
-    opening: '看开标准备',
-    review: '看评审清单'
-  }
-  return actionMap[event.type] || '查看详情'
-}
-
-const decorateCalendarEvent = (event) => {
-  const diffDays = getDaysUntil(event.date)
-  const isExpired = diffDays < 0
-  const isCritical = event.urgent || diffDays <= 1
-  const isWarning = !isCritical && diffDays <= 3
-
-  return {
-    ...event,
-    diffDays,
-    countdownLabel: isExpired ? '已逾期' : diffDays === 0 ? '今天' : `D-${diffDays}`,
-    riskLabel: isExpired ? '已逾期' : isCritical ? '高风险' : isWarning ? '需关注' : '常规',
-    riskTagType: isExpired ? 'danger' : isCritical ? 'info' : isWarning ? 'warning' : 'info',
-    priorityLevel: isExpired || isCritical ? 'priority-critical' : isWarning ? 'priority-warning' : 'priority-normal',
-    actionLabel: getEventActionLabel(event),
-    dayLabel: event.date.slice(5),
-    weekdayLabel: parseDate(event.date).toLocaleDateString('zh-CN', { weekday: 'short' }).replace('周', ''),
-    fieldSummary: {
-      owner: `负责人 ${getEventOwner(event)}`,
-      stage: `阶段 ${getEventStage(event)}`,
-      blocker: `阻塞 ${getEventBlocker(event)}`
-    }
-  }
-}
-
-const normalizedCalendarEvents = computed(() => calendarEvents.value.map(decorateCalendarEvent))
-
-const eventMatchesFilter = (event, filterValue = activeCalendarFilter.value) => {
-  if (filterValue === 'all') return true
-  if (filterValue === 'urgent') return event.urgent || event.priorityLevel === 'priority-critical'
-  return event.type === filterValue
-}
-
-const visibleCalendarEvents = computed(() => normalizedCalendarEvents.value.filter((event) => eventMatchesFilter(event)))
-
-// 获取指定日期的事件
-const getEventsForDate = (date) => {
-  const dateStr = formatDateKey(date)
-  return visibleCalendarEvents.value.filter(event => event.date === dateStr)
-}
-
-// 日历单元格自定义渲染
-const calendarCellClass = ({ date, viewType }) => {
-  if (viewType !== 'month') return ''
-  const events = getEventsForDate(date)
-  if (events.length === 0) return ''
-
-  if (events.some((event) => event.priorityLevel === 'priority-critical')) return 'calendar-day-urgent'
-  if (events.length >= 3) return 'calendar-day-crowded'
-  return 'calendar-day-has-event'
-}
-
-// 点击日期
-const handleDateClick = (date) => {
-  selectedDateKey.value = formatDateKey(date)
-  calendarDate.value = date
-}
-
-// 获取事件类型标签
-const getEventTypeTag = (type) => {
-  const map = {
-    'deadline': { type: 'danger', label: '截止' },
-    'bid': { type: 'primary', label: '投标' },
-    'opening': { type: 'success', label: '开标' },
-    'review': { type: 'warning', label: '评审' }
-  }
-  return map[type] || { type: 'info', label: '其他' }
-}
-
-const selectedDateEvents = computed(() =>
-  visibleCalendarEvents.value.filter((event) => event.date === selectedDateKey.value)
-)
-
-const selectedDateLabel = computed(() => {
-  const date = parseDate(selectedDateKey.value || formatDateKey(new Date()))
-  return date.toLocaleDateString('zh-CN', {
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long'
-  })
+const {
+  calendarDate,
+  activeCalendarFilter,
+  selectedDateKey,
+  calendarFilters,
+  visibleCalendarEvents,
+  selectedDateEvents,
+  selectedDateLabel,
+  monthCalendarSummary,
+  upcomingCalendarEvents,
+  getEventsForDate,
+  calendarCellClass,
+  handleDateClick,
+  getEventTypeTag,
+  selectCalendarEventDate,
+  handleCalendarAction,
+  loadScheduleOverview,
+  syncSelectedDate,
+  calendarMonthKey,
+} = useWorkbenchSchedule({
+  router,
+  assigneeIdRef: currentUserId,
+  onEventsLoaded: (events) => biddingStore.setCalendar(events),
 })
-
-const monthCalendarSummary = computed(() => {
-  const currentYear = calendarDate.value.getFullYear()
-  const currentMonth = calendarDate.value.getMonth()
-  const monthEvents = visibleCalendarEvents.value.filter((event) => {
-    const eventDate = parseDate(event.date)
-    return eventDate.getFullYear() === currentYear && eventDate.getMonth() === currentMonth
-  })
-  const nextDeadline = monthEvents
-    .filter((event) => event.type === 'deadline' && event.diffDays >= 0)
-    .sort((a, b) => a.diffDays - b.diffDays)[0]
-
-  return {
-    total: monthEvents.length,
-    urgent: monthEvents.filter((event) => event.urgent || event.priorityLevel === 'priority-critical').length,
-    nextDeadlineLabel: nextDeadline ? nextDeadline.countdownLabel : '暂无'
-  }
-})
-
-const upcomingCalendarEvents = computed(() =>
-  visibleCalendarEvents.value
-    .filter((event) => event.diffDays >= 0 && event.diffDays <= 7)
-    .sort((a, b) => a.diffDays - b.diffDays || a.date.localeCompare(b.date))
-)
-
-const selectCalendarEventDate = (event) => {
-  selectedDateKey.value = event.date
-  calendarDate.value = parseDate(event.date)
-}
-
-const handleCalendarAction = (event) => {
-  if (event?.projectId) {
-    router.push(`/project/${event.projectId}`)
-    return
-  }
-
-  router.push({
-    path: '/project',
-    query: {
-      calendarDate: event?.date || '',
-      calendarType: event?.eventType || event?.type || '',
-    },
-  })
-}
 
 // 数据加载
 onMounted(async () => {
   metricsLoading.value = true
   await Promise.allSettled([
-    biddingStore.getCalendar(),
+    loadScheduleOverview(),
+    loadAlertTodos(),
     loadPendingApprovals(),
     loadMyProcesses(),
     loadSupportRequestProjects(),
@@ -1802,15 +1606,15 @@ onMounted(async () => {
   ])
   metricsLoading.value = false
   resetSupportRequestForm()
-  selectedDateKey.value = formatDateKey(new Date())
-  const firstUpcomingEvent = normalizedCalendarEvents.value
-    .filter((event) => event.diffDays >= 0)
-    .sort((a, b) => a.diffDays - b.diffDays)[0]
+  syncSelectedDate()
+})
 
-  if (firstUpcomingEvent) {
-    selectedDateKey.value = firstUpcomingEvent.date
-    calendarDate.value = parseDate(firstUpcomingEvent.date)
+watch(calendarMonthKey, async (current, previous) => {
+  if (!previous || current === previous) {
+    return
   }
+  await loadScheduleOverview()
+  syncSelectedDate()
 })
 
 // 获取进度条颜色

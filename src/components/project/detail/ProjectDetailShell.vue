@@ -37,6 +37,7 @@ import { useProjectDetailDocumentActions } from '@/composables/projectDetail/use
 import { useProjectDetailFormatting } from '@/composables/projectDetail/useProjectDetailFormatting.js'
 import { useProjectDetailNavigation } from '@/composables/projectDetail/useProjectDetailNavigation.js'
 import { useProjectDetailResultActions } from '@/composables/projectDetail/useProjectDetailResultActions.js'
+import { useProjectDetailQuality } from '@/composables/projectDetail/useProjectDetailQuality.js'
 import { useProjectDetailState } from '@/composables/projectDetail/useProjectDetailState.js'
 import { useProjectDetailTaskActions } from '@/composables/projectDetail/useProjectDetailTaskActions.js'
 import { useProjectDetailWorkflow } from '@/composables/projectDetail/useProjectDetailWorkflow.js'
@@ -65,6 +66,7 @@ const workflow = useProjectDetailWorkflow({ ...baseContext, processDialogVisible
 const expenseAggregation = useProjectExpenseAggregation({ projectStore, project: state.project, isApiProject })
 const formatting = useProjectDetailFormatting({ project: state.project })
 const ai = useProjectDetailAI({ ...baseContext, project: state.project, state })
+const quality = useProjectDetailQuality({ ...baseContext, project: state.project })
 const navigation = useProjectDetailNavigation({ route, router, project: state.project, assetCheckResult: state.assetCheckResult })
 const documentActions = useProjectDetailDocumentActions({ route, project: state.project, projectExpenses: expenseAggregation.projectExpenses, userStore, projectsApi, isApiProject, message, state })
 const boot = useProjectDetailBoot({ ...baseContext, state, workflow, expenseAggregation, loadProjectWorkflowData: documentActions.loadProjectWorkflowData, demoAutoTasks, demoMobileCard })
@@ -86,10 +88,15 @@ const projectDetailContext = reactive({
   ...expenseAggregation,
   ...formatting,
   ...ai,
+  ...quality,
   ...navigation,
   ...documentActions,
   ...resultActions,
-  ...taskActions
+  ...taskActions,
+  runAICheck: async () => {
+    await ai.runAICheck()
+    await quality.runQualityCheck({ silent: true })
+  },
 })
 
 provide(projectDetailKey, projectDetailContext)

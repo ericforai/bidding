@@ -57,9 +57,7 @@ public class CalendarController {
             @RequestParam LocalDate end) {
         log.info("GET /api/calendar - Fetching events from {} to {}", start, end);
 
-        List<CalendarEventDTO> events = calendarService.getEventsByMonth(start.getYear(), start.getMonthValue()).stream()
-                .filter(item -> !item.getEventDate().isBefore(start) && !item.getEventDate().isAfter(end))
-                .toList();
+        List<CalendarEventDTO> events = calendarService.getEventsByDateRange(start, end);
 
         return ResponseEntity.ok(
                 ApiResponse.success("Successfully retrieved events", events)

@@ -1,5 +1,5 @@
 // Input: httpClient and project text quality endpoints
-// Output: projectQualityApi - run/query/adopt/ignore accessors for quality checks
+// Output: projectQualityApi - run/latest/adopt/ignore accessors for quality checks
 // Pos: src/api/modules/ai/ - Frontend quality API module layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -24,7 +24,7 @@ function normalizeQualityResult(data = {}) {
     projectId: data?.projectId,
     documentId: data?.documentId || null,
     documentName: data?.documentName || '',
-    status: data?.status || (issues.length > 0 ? 'COMPLETED' : 'EMPTY'),
+    status: data?.status || (data?.empty ? 'EMPTY' : (issues.length > 0 ? 'COMPLETED' : 'EMPTY')),
     checkedAt: data?.checkedAt || '',
     summary: data?.summary || '',
     issues,

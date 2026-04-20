@@ -554,6 +554,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import ScoreCoverage from '@/components/ai/ScoreCoverage.vue'
 import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
 import { aiApi, tendersApi } from '@/api'
+import customerOpportunityApi from '@/api/modules/customerOpportunity'
 import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 
 const router = useRouter()
@@ -948,6 +949,14 @@ const handleSubmit = async () => {
       : buildApiProjectPayload()
 
     const createdProject = await projectStore.createProject(projectData)
+
+    if (createdProject?.id && sourceInfo.opportunityId) {
+      try {
+        await customerOpportunityApi.convertToProject(sourceInfo.opportunityId, createdProject.id)
+      } catch (convertError) {
+        ElMessage.warning(convertError?.response?.data?.message || '项目已创建，但商机转化状态回写失败')
+      }
+    }
 
     ElMessage.success('项目创建成功')
     if (createdProject?.id) {

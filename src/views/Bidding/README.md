@@ -14,4 +14,5 @@
 | `List.vue` | View | 标讯列表页 |
 | `Detail.vue` | View | 标讯详情页 |
 | `AIAnalysis.vue` | View | 标讯 AI 分析页 |
-| `CustomerOpportunityCenter.vue` | View | 客户机会中心页 |
+| `CustomerOpportunityCenter.vue` | View | 客户机会中心容器页 |
+| `customer-opportunity/*` | View / Composable / UI | 客户池、看板、详情、历史抽屉与组合逻辑 |

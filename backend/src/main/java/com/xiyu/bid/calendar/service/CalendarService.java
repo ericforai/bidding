@@ -10,7 +10,6 @@ import com.xiyu.bid.calendar.dto.CalendarEventCreateRequest;
 import com.xiyu.bid.calendar.dto.CalendarEventDTO;
 import com.xiyu.bid.calendar.dto.CalendarEventUpdateRequest;
 import com.xiyu.bid.calendar.entity.CalendarEvent;
-import com.xiyu.bid.calendar.entity.EventType;
 import com.xiyu.bid.calendar.repository.CalendarEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -136,6 +135,19 @@ public class CalendarService {
         log.info("Found {} events for {}/{}", events.size(), year, month);
 
         return events.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<CalendarEventDTO> getEventsByDateRange(LocalDate start, LocalDate end) {
+        if (start == null || end == null) {
+            throw new IllegalArgumentException("Start and end are required");
+        }
+        if (end.isBefore(start)) {
+            throw new IllegalArgumentException("End date cannot be before start date");
+        }
+
+        return repository.findByEventDateBetween(start, end).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }

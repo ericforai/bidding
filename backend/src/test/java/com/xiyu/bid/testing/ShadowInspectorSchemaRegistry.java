@@ -28,6 +28,8 @@ final class ShadowInspectorSchemaRegistry {
             "score_analyses",
             "dimension_scores",
             "roi_analyses",
+            "project_quality_checks",
+            "project_quality_issues",
             "document_versions",
             "document_sections",
             "document_structures",
@@ -53,6 +55,8 @@ final class ShadowInspectorSchemaRegistry {
         AUDIT_ENTITY_TYPE_MAP.put("competition_analyses", "CompetitionAnalysis");
         AUDIT_ENTITY_TYPE_MAP.put("score_analyses", "ScoreAnalysis");
         AUDIT_ENTITY_TYPE_MAP.put("roi_analyses", "ROIAnalysis");
+        AUDIT_ENTITY_TYPE_MAP.put("project_quality_checks", "ProjectQualityCheck");
+        AUDIT_ENTITY_TYPE_MAP.put("project_quality_issues", "ProjectQualityIssue");
         AUDIT_ENTITY_TYPE_MAP.put("document_versions", "DocumentVersion");
         AUDIT_ENTITY_TYPE_MAP.put("document_sections", "DocumentSection");
         AUDIT_ENTITY_TYPE_MAP.put("document_structures", "DocumentStructure");

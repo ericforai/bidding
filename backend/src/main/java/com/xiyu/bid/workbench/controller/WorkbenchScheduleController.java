@@ -1,9 +1,8 @@
 package com.xiyu.bid.workbench.controller;
 
-import com.xiyu.bid.calendar.dto.CalendarEventDTO;
 import com.xiyu.bid.calendar.dto.ScheduleOverviewDTO;
-import com.xiyu.bid.calendar.service.CalendarService;
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.workbench.service.WorkbenchScheduleQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -14,8 +13,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
-import java.util.Comparator;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/workbench")
@@ -23,7 +20,7 @@ import java.util.List;
 @Slf4j
 public class WorkbenchScheduleController {
 
-    private final CalendarService calendarService;
+    private final WorkbenchScheduleQueryService workbenchScheduleQueryService;
 
     @GetMapping("/schedule-overview")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
@@ -32,19 +29,8 @@ public class WorkbenchScheduleController {
             @RequestParam LocalDate end,
             @RequestParam(required = false) Long assigneeId) {
         log.info("GET /api/workbench/schedule-overview - Fetching schedule overview from {} to {}, assignee={}", start, end, assigneeId);
-
-        List<CalendarEventDTO> events = calendarService.getEventsByMonth(start.getYear(), start.getMonthValue()).stream()
-                .filter(item -> !item.getEventDate().isBefore(start) && !item.getEventDate().isAfter(end))
-                .sorted(Comparator.comparing(CalendarEventDTO::getEventDate))
-                .toList();
-
-        ScheduleOverviewDTO response = ScheduleOverviewDTO.builder()
-                .start(start)
-                .end(end)
-                .total(events.size())
-                .urgent(events.stream().filter(item -> Boolean.TRUE.equals(item.getIsUrgent())).count())
-                .events(events)
-                .build();
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.success(
+                workbenchScheduleQueryService.getScheduleOverview(start, end, assigneeId)
+        ));
     }
 }

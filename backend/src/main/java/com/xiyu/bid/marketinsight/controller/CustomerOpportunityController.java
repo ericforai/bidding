@@ -1,17 +1,17 @@
-// Input: CustomerOpportunityService
+// Input: CustomerOpportunityAppService
 // Output: Customer Opportunity REST API endpoints
 // Pos: Controller/控制器层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.marketinsight.controller;
 
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.marketinsight.application.CustomerOpportunityAppService;
 import com.xiyu.bid.marketinsight.dto.CustomerInsightDTO;
 import com.xiyu.bid.marketinsight.dto.CustomerPredictionDTO;
 import com.xiyu.bid.marketinsight.dto.CustomerPurchaseDTO;
 import com.xiyu.bid.marketinsight.dto.request.CustomerInsightQuery;
 import com.xiyu.bid.marketinsight.dto.request.PredictionConvertRequest;
 import com.xiyu.bid.marketinsight.dto.request.PredictionStatusUpdateRequest;
-import com.xiyu.bid.marketinsight.service.CustomerOpportunityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,40 +35,34 @@ import java.util.Locale;
 @Slf4j
 public class CustomerOpportunityController {
 
-    private final CustomerOpportunityService customerOpportunityService;
+    private final CustomerOpportunityAppService customerOpportunityAppService;
 
     @GetMapping("/insights")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<List<CustomerInsightDTO>>> getCustomerInsights(@ModelAttribute CustomerInsightQuery query) {
         log.info("GET /api/customer-opportunities/insights - Fetching customer insights with filters");
-        List<CustomerInsightDTO> insights = customerOpportunityService.getCustomerInsights().stream()
-                .filter(item -> matches(item.getStatus(), query.getStatus()))
-                .filter(item -> matches(item.getSalesRep(), query.getSalesRep()))
-                .filter(item -> matches(item.getRegion(), query.getRegion()))
-                .filter(item -> matches(item.getIndustry(), query.getIndustry()))
-                .filter(item -> contains(item.getCustomerName(), query.getKeyword()))
-                .toList();
+        List<CustomerInsightDTO> insights = customerOpportunityAppService.getCustomerInsights(query);
         return ResponseEntity.ok(ApiResponse.success("Successfully retrieved customer insights", insights));
     }
 
     @GetMapping("/{purchaserHash}/purchases")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<List<CustomerPurchaseDTO>>> getCustomerPurchases(@PathVariable String purchaserHash) {
-        List<CustomerPurchaseDTO> purchases = customerOpportunityService.getCustomerPurchases(purchaserHash);
+        List<CustomerPurchaseDTO> purchases = customerOpportunityAppService.getCustomerPurchases(purchaserHash);
         return ResponseEntity.ok(ApiResponse.success("Successfully retrieved customer purchases", purchases));
     }
 
     @GetMapping("/{purchaserHash}/predictions")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<List<CustomerPredictionDTO>>> getCustomerPredictions(@PathVariable String purchaserHash) {
-        List<CustomerPredictionDTO> predictions = customerOpportunityService.getCustomerPredictions(purchaserHash);
+        List<CustomerPredictionDTO> predictions = customerOpportunityAppService.getCustomerPredictions(purchaserHash);
         return ResponseEntity.ok(ApiResponse.success("Successfully retrieved customer predictions", predictions));
     }
 
     @PostMapping("/refresh")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<Void>> refreshInsights() {
-        customerOpportunityService.refreshInsights();
+        customerOpportunityAppService.refreshInsights();
         return ResponseEntity.ok(ApiResponse.success("Customer insights refreshed successfully", null));
     }
 
@@ -77,7 +71,7 @@ public class CustomerOpportunityController {
     public ResponseEntity<ApiResponse<CustomerPredictionDTO>> transitionPrediction(
             @PathVariable Long id,
             @Valid @RequestBody PredictionStatusUpdateRequest body) {
-        CustomerPredictionDTO prediction = customerOpportunityService.transitionPrediction(id, body.getStatus().trim().toUpperCase(Locale.ROOT));
+        CustomerPredictionDTO prediction = customerOpportunityAppService.transitionPrediction(id, body.getStatus().trim().toUpperCase(Locale.ROOT));
         return ResponseEntity.ok(ApiResponse.success("Prediction status updated successfully", prediction));
     }
 
@@ -87,15 +81,7 @@ public class CustomerOpportunityController {
             @PathVariable Long id,
             @RequestBody(required = false) PredictionConvertRequest body) {
         Long projectId = body == null ? null : body.getProjectId();
-        CustomerPredictionDTO prediction = customerOpportunityService.convertPrediction(id, projectId);
+        CustomerPredictionDTO prediction = customerOpportunityAppService.convertPrediction(id, projectId);
         return ResponseEntity.ok(ApiResponse.success("Prediction converted successfully", prediction));
-    }
-
-    private boolean matches(String actual, String expected) {
-        return expected == null || expected.isBlank() || (actual != null && actual.equalsIgnoreCase(expected));
-    }
-
-    private boolean contains(String actual, String keyword) {
-        return keyword == null || keyword.isBlank() || (actual != null && actual.toLowerCase(Locale.ROOT).contains(keyword.toLowerCase(Locale.ROOT)));
     }
 }

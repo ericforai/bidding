@@ -37,6 +37,7 @@ export { auditApi } from './modules/audit.js'
 export { settingsApi } from './modules/settings.js'
 export { projectGroupsApi } from './modules/projectGroups.js'
 export { bidResultsApi } from './modules/bidResults.js'
+export { workbenchApi } from './modules/workbench.js'
 
 export default {
   auth: () => import('./modules/auth.js').then(m => m.authApi),
@@ -54,5 +55,6 @@ export default {
   export: () => import('./modules/export.js').then(m => m.exportApi),
   audit: () => import('./modules/audit.js').then(m => m.default),
   settings: () => import('./modules/settings.js').then(m => m.settingsApi),
-  projectGroups: () => import('./modules/projectGroups.js').then(m => m.projectGroupsApi)
+  projectGroups: () => import('./modules/projectGroups.js').then(m => m.projectGroupsApi),
+  workbench: () => import('./modules/workbench.js').then(m => m.workbenchApi)
 }

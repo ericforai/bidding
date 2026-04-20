@@ -6,10 +6,20 @@
 import httpClient from '../../client.js'
 
 function normalizeBatchResponse(response = {}) {
+  const payload = response?.data || {}
+  const successCount = Number(payload?.successCount || 0)
+  const failureCount = Number(payload?.failureCount || 0)
+  const partialSuccess = successCount > 0 && failureCount > 0
+
   return {
     ...response,
-    success: response?.success ?? true,
-    data: response?.data || null,
+    success: payload?.success !== false,
+    partialSuccess,
+    data: {
+      ...payload,
+      successIds: Array.isArray(payload?.successIds) ? payload.successIds : [],
+      errors: Array.isArray(payload?.errors) ? payload.errors : [],
+    },
   }
 }
 

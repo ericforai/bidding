@@ -13,6 +13,7 @@ import { useProjectDetailCore } from './useProjectDetailCore.js'
 import { useProjectDetailDocuments } from './useProjectDetailDocuments.js'
 import { useProjectDetailInit } from './useProjectDetailInit.js'
 import { useProjectDetailProjectOps } from './useProjectDetailProjectOps.js'
+import { useProjectDetailQuality } from './useProjectDetailQuality.js'
 import { useProjectDetailState } from './useProjectDetailState.js'
 import { useProjectDetailTasks } from './useProjectDetailTasks.js'
 import { useProjectDetailWorkflow } from './useProjectDetailWorkflow.js'
@@ -36,7 +37,16 @@ export function useProjectDetailPage() {
   Object.assign(context, useProjectDetailState(context))
   Object.assign(context, useProjectExpenseAggregation({ projectStore, project: context.project, isApiProject }))
   Object.assign(context, useProjectDetailCore(context))
-  Object.assign(context, useProjectDetailAI(context))
+  const ai = useProjectDetailAI(context)
+  const quality = useProjectDetailQuality(context)
+  Object.assign(context, ai)
+  Object.assign(context, quality)
+  Object.assign(context, {
+    runAICheck: async () => {
+      await ai.runAICheck()
+      await quality.runQualityCheck({ silent: true })
+    },
+  })
   Object.assign(context, useProjectDetailWorkflow(context))
   Object.assign(context, useProjectDetailProjectOps(context))
   Object.assign(context, useProjectDetailTasks(context))

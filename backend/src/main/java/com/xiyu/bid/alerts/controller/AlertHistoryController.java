@@ -9,6 +9,8 @@ import com.xiyu.bid.alerts.dto.AlertHistoryCreateRequest;
 import com.xiyu.bid.alerts.dto.AlertHistoryResponse;
 import com.xiyu.bid.alerts.dto.AlertStatisticsResponse;
 import com.xiyu.bid.alerts.entity.AlertHistory;
+import com.xiyu.bid.alerts.service.AlertHistoryCommandService;
+import com.xiyu.bid.alerts.service.AlertHistoryQueryService;
 import com.xiyu.bid.alerts.service.AlertHistoryService;
 import com.xiyu.bid.config.PaginationConstants;
 import com.xiyu.bid.dto.ApiResponse;
@@ -35,13 +37,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class AlertHistoryController {
 
     private final AlertHistoryService alertHistoryService;
+    private final AlertHistoryQueryService alertHistoryQueryService;
+    private final AlertHistoryCommandService alertHistoryCommandService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "CREATE", entityType = "AlertHistory", description = "Create alert history record")
-    public ResponseEntity<ApiResponse<AlertHistory>> createAlertHistory(@Valid @RequestBody AlertHistoryCreateRequest request) {
+    public ResponseEntity<ApiResponse<AlertHistoryResponse>> createAlertHistory(@Valid @RequestBody AlertHistoryCreateRequest request) {
         AlertHistory alertHistory = alertHistoryService.createAlertHistory(request);
-        return ResponseEntity.ok(ApiResponse.success("Alert history created successfully", alertHistory));
+        return ResponseEntity.ok(ApiResponse.success(
+                "Alert history created successfully",
+                alertHistoryQueryService.toResponse(alertHistory)
+        ));
     }
 
     @GetMapping
@@ -62,14 +69,14 @@ public class AlertHistoryController {
 
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        Page<AlertHistoryResponse> alertHistories = alertHistoryService.getAllAlertHistories(pageable, status, level, ruleId, relatedId);
+        Page<AlertHistoryResponse> alertHistories = alertHistoryQueryService.getAllAlertHistories(pageable, status, level, ruleId, relatedId);
         return ResponseEntity.ok(ApiResponse.success(alertHistories));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<AlertHistoryResponse>> getAlertHistoryById(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success(alertHistoryService.getAlertHistoryResponseById(id)));
+        return ResponseEntity.ok(ApiResponse.success(alertHistoryQueryService.getAlertHistoryResponseById(id)));
     }
 
     @GetMapping("/unresolved")
@@ -78,25 +85,25 @@ public class AlertHistoryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, PaginationConstants.MAX_PAGE_SIZE), Sort.by("createdAt").descending());
-        return ResponseEntity.ok(ApiResponse.success(alertHistoryService.getUnresolvedAlertHistories(pageable)));
+        return ResponseEntity.ok(ApiResponse.success(alertHistoryQueryService.getUnresolvedAlertHistories(pageable)));
     }
 
     @PatchMapping("/{id}/acknowledge")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<AlertHistoryResponse>> acknowledgeAlertHistory(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success("Alert history acknowledged successfully", alertHistoryService.acknowledgeAlertHistory(id)));
+        return ResponseEntity.ok(ApiResponse.success("Alert history acknowledged successfully", alertHistoryCommandService.acknowledgeAlertHistory(id)));
     }
 
     @PostMapping("/{id}/resolve")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "RESOLVE", entityType = "AlertHistory", description = "Resolve alert history")
     public ResponseEntity<ApiResponse<AlertHistoryResponse>> resolveAlertHistory(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success("Alert history resolved successfully", alertHistoryService.resolveAlertHistory(id)));
+        return ResponseEntity.ok(ApiResponse.success("Alert history resolved successfully", alertHistoryCommandService.resolveAlertHistory(id)));
     }
 
     @GetMapping("/statistics")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<AlertStatisticsResponse>> getAlertStatistics() {
-        return ResponseEntity.ok(ApiResponse.success(alertHistoryService.getAlertStatistics()));
+        return ResponseEntity.ok(ApiResponse.success(alertHistoryQueryService.getAlertStatistics()));
     }
 }

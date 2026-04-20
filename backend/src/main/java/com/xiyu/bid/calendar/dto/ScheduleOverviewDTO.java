@@ -15,6 +15,7 @@ import java.util.List;
 public class ScheduleOverviewDTO {
     private LocalDate start;
     private LocalDate end;
+    private Long assigneeId;
     private long total;
     private long urgent;
     private List<CalendarEventDTO> events;

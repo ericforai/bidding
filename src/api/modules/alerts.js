@@ -102,6 +102,10 @@ export const alertHistoryApi = {
 
   async acknowledge(id) {
     return httpClient.patch(`/api/alerts/history/${id}/acknowledge`)
+  },
+
+  async resolve(id) {
+    return httpClient.post(`/api/alerts/history/${id}/resolve`)
   } }
 
 export default {
