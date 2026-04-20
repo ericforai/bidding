@@ -106,7 +106,7 @@
         <el-descriptions-item label="费用类型">{{ currentExpenseDetail.type }}</el-descriptions-item>
         <el-descriptions-item label="金额">¥{{ Number(currentExpenseDetail.amount || 0).toFixed(2) }}</el-descriptions-item>
         <el-descriptions-item label="发生日期">{{ currentExpenseDetail.date || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="状态">{{ currentExpenseDetail.backendStatus || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">{{ currentExpenseDetail.statusLabel || currentExpenseDetail.backendStatus || '-' }}</el-descriptions-item>
         <el-descriptions-item label="审批意见">{{ currentExpenseDetail.approvalComment || '-' }}</el-descriptions-item>
         <el-descriptions-item label="备注">{{ currentExpenseDetail.description || '-' }}</el-descriptions-item>
       </el-descriptions>

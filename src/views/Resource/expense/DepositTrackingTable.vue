@@ -16,7 +16,7 @@
       <el-table-column label="部门" width="140">
         <template #default="{ row }">{{ row.department || row.departmentName || '-' }}</template>
       </el-table-column>
-      <el-table-column prop="amount" label="金额(万元)" width="130" align="right">
+      <el-table-column prop="amount" label="金额(元)" width="130" align="right">
         <template #default="{ row }">¥{{ Number(row.amount || 0).toFixed(2) }}</template>
       </el-table-column>
       <el-table-column prop="date" label="缴纳日期" width="120" />

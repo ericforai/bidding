@@ -3,7 +3,7 @@
     <el-col :xs="12" :sm="8" :lg="4">
       <div class="stat-item primary">
         <div class="stat-value">¥{{ summary.totalAmount.toFixed(2) }}</div>
-        <div class="stat-label">台账总额(万元)</div>
+        <div class="stat-label">台账总额(元)</div>
       </div>
     </el-col>
     <el-col :xs="12" :sm="8" :lg="4">

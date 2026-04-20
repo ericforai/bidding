@@ -48,36 +48,49 @@ function normalizeExpense(item = {}) {
   const backendStatus = String(item.status || '').toUpperCase()
   let status = item.status || 'paid'
   let approvalStatus = item.approvalStatus || 'approved'
+  let statusLabel = backendStatus || '-'
 
   if (backendStatus === 'PENDING_APPROVAL') {
     status = 'pending'
     approvalStatus = 'pending'
+    statusLabel = '待审批'
   } else if (backendStatus === 'APPROVED') {
     status = 'pending'
     approvalStatus = 'approved'
+    statusLabel = '待支付'
   } else if (backendStatus === 'REJECTED') {
     status = 'pending'
     approvalStatus = 'rejected'
+    statusLabel = '已驳回'
   } else if (backendStatus === 'PAID') {
     status = 'paid'
     approvalStatus = 'approved'
+    statusLabel = '已支付'
   } else if (backendStatus === 'RETURN_REQUESTED') {
     status = 'paid'
     approvalStatus = 'approved'
+    statusLabel = '退还中'
   } else if (backendStatus === 'RETURNED') {
     status = 'returned'
     approvalStatus = 'approved'
+    statusLabel = '已退还'
   }
+
+  const projectName = item.projectName || item.project || ''
+  const departmentName = item.departmentName || item.department || item.departmentCode || ''
 
   return {
     id: item.id,
-    project: item.project || item.projectName || (item.projectId ? `项目#${item.projectId}` : '未关联项目'),
+    project: projectName || (item.projectId ? `项目#${item.projectId}` : '未关联项目'),
+    projectName,
     projectId: item.projectId,
-    department: item.department || item.departmentName || item.departmentCode || '',
+    department: departmentName,
+    departmentName,
     departmentCode: item.departmentCode || '',
     type: item.type || item.expenseType || normalizeExpenseCategory(item.category),
     amount: Number(item.amount || 0),
     status,
+    statusLabel,
     approvalStatus,
     backendStatus,
     date: item.date || formatDate(item.createdAt),

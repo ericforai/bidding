@@ -162,7 +162,22 @@ export function useExpenseLedgerPage() {
     currentExpenseDetail.value = row
     showDetailDialog.value = true
     const response = await resourcesApi.expenses.getDetail(row.id)
-    if (response?.success) currentExpenseDetail.value = response.data || row
+    if (response?.success) {
+      const detail = response.data || {}
+      const hasReadableProject = Boolean(detail.projectName) || (detail.project && !/^项目#\d+$/.test(detail.project))
+      const hasReadableDepartment = Boolean(detail.departmentName) || Boolean(detail.department)
+
+      currentExpenseDetail.value = {
+        ...row,
+        ...detail,
+        project: hasReadableProject ? (detail.project || detail.projectName) : row.project,
+        projectName: hasReadableProject ? (detail.projectName || detail.project || row.projectName) : (row.projectName || row.project),
+        department: hasReadableDepartment ? (detail.department || detail.departmentName) : row.department,
+        departmentName: hasReadableDepartment
+          ? (detail.departmentName || detail.department || row.departmentName)
+          : (row.departmentName || row.department)
+      }
+    }
   }
 
   const handleReturn = async (row) => {
