@@ -1,5 +1,5 @@
-// Input: resources service and request DTOs
-// Output: Expense REST API endpoints
+// Input: resources service, expense ledger app service, and request DTOs
+// Output: Expense CRUD, approval/return flow, and ledger statistics REST API endpoints
 // Pos: Controller/控制器层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.resources.controller;
@@ -13,6 +13,9 @@ import com.xiyu.bid.resources.dto.ExpenseCreateRequest;
 import com.xiyu.bid.resources.dto.ExpenseDTO;
 import com.xiyu.bid.resources.dto.ExpenseReturnActionRequest;
 import com.xiyu.bid.resources.dto.ExpenseUpdateRequest;
+import com.xiyu.bid.resources.expenseledger.application.ExpenseLedgerApplicationService;
+import com.xiyu.bid.resources.expenseledger.dto.ExpenseLedgerQuery;
+import com.xiyu.bid.resources.expenseledger.dto.ExpenseLedgerResponse;
 import com.xiyu.bid.resources.service.ExpenseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +46,7 @@ import java.util.Map;
 public class ExpenseController {
 
     private final ExpenseService expenseService;
+    private final ExpenseLedgerApplicationService expenseLedgerApplicationService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
@@ -75,6 +79,31 @@ public class ExpenseController {
         Pageable pageable = PageRequest.of(page, size, sort);
         Page<ExpenseDTO> expenses = expenseService.getAllExpenses(pageable);
         return ResponseEntity.ok(ApiResponse.success(expenses));
+    }
+
+    @GetMapping("/ledger")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<ExpenseLedgerResponse>> getExpenseLedger(
+            @RequestParam(required = false) Long projectId,
+            @RequestParam(required = false) String projectKeyword,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) String expenseType,
+            @RequestParam(required = false) ExpenseDTO.ExpenseStatus status) {
+
+        ExpenseLedgerQuery query = ExpenseLedgerQuery.builder()
+                .projectId(projectId)
+                .projectKeyword(projectKeyword)
+                .startDate(startDate)
+                .endDate(endDate)
+                .department(department)
+                .expenseType(expenseType)
+                .status(status)
+                .build();
+
+        ExpenseLedgerResponse response = expenseLedgerApplicationService.queryLedger(query);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/project/{projectId}")

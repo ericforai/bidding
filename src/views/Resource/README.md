@@ -13,5 +13,6 @@
 |------|------|------|
 | `Account.vue` | View | 平台账户页 |
 | `BidResult.vue` | View | 投标结果页 |
-| `Expense.vue` | View | 费用管理页 |
+| `Expense.vue` | View | 费用管理页入口，转发到 `expense/ExpensePageContent.vue` |
 | `BAR/` | 目录 | BAR 资源子模块 |
+| `expense/` | 目录 | 费用台账与多维统计子模块 |

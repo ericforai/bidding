@@ -1,5 +1,5 @@
-// Input: httpClient, API mode config, resource normalizers and capability mappers
-// Output: resourcesApi - resource, BAR, account, and certificate accessors
+// Input: httpClient, resource normalizers, BAR/account accessors, and split expense accessors
+// Output: resourcesApi - resource, BAR, account, certificate, and expense accessors
 // Pos: src/api/modules/ - Frontend API module layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -8,6 +8,7 @@
  * 真实 API 资源管理访问层
  */
 import httpClient from '../client.js'
+import { expensesApi } from './expense.js'
 
 function isNumericId(id) {
   return /^\d+$/.test(String(id))
@@ -62,72 +63,6 @@ function normalizeAccount(item = {}) {
     borrower: item.borrower || (item.borrowedBy ? `用户#${item.borrowedBy}` : ''),
     dueAt: formatDateTime(item.dueAt),
     raw: item }
-}
-
-function normalizeExpenseCategory(category) {
-  const value = String(category || '').toUpperCase()
-  const map = {
-    MATERIAL: '其他',
-    LABOR: '其他',
-    EQUIPMENT: '其他',
-    TRANSPORTATION: '差旅费',
-    SUBCONTRACTING: '其他',
-    OVERHEAD: '其他',
-    OTHER: '其他' }
-  return map[value] || category || '其他'
-}
-
-function normalizeExpense(item = {}) {
-  const backendStatus = String(item.status || '').toUpperCase()
-  let status = item.status || 'paid'
-  let approvalStatus = item.approvalStatus || 'approved'
-
-  if (backendStatus === 'PENDING_APPROVAL') {
-    status = 'pending'
-    approvalStatus = 'pending'
-  } else if (backendStatus === 'APPROVED') {
-    status = 'pending'
-    approvalStatus = 'approved'
-  } else if (backendStatus === 'REJECTED') {
-    status = 'pending'
-    approvalStatus = 'rejected'
-  } else if (backendStatus === 'PAID') {
-    status = 'paid'
-    approvalStatus = 'approved'
-  } else if (backendStatus === 'RETURN_REQUESTED') {
-    status = 'paid'
-    approvalStatus = 'approved'
-  } else if (backendStatus === 'RETURNED') {
-    status = 'returned'
-    approvalStatus = 'approved'
-  }
-
-  return {
-    id: item.id,
-    project: item.project || item.projectName || (item.projectId ? `项目#${item.projectId}` : '未关联项目'),
-    projectId: item.projectId,
-    type: item.type || item.expenseType || normalizeExpenseCategory(item.category),
-    amount: Number(item.amount || 0),
-    status,
-    approvalStatus,
-    backendStatus,
-    date: item.date || formatDate(item.createdAt),
-    returnDate: item.returnDate || '',
-    returnRequestedAt: item.returnRequestedAt || '',
-    returnConfirmedAt: item.returnConfirmedAt || '',
-    description: item.description || '',
-    createdBy: item.createdBy || '',
-    approvedBy: item.approvedBy || '',
-    approvedAt: item.approvedAt || '',
-    approvalComment: item.approvalComment || '',
-    returnComment: item.returnComment || '',
-    raw: item }
-}
-
-function normalizeExpenseMutationResponse(response) {
-  return {
-    ...response,
-    data: response?.data ? normalizeExpense(response.data) : response?.data }
 }
 
 function parseBarMeta(remark) {
@@ -311,22 +246,6 @@ function normalizeCertificate(item = {}) {
     raw: item }
 }
 
-function normalizeApprovalRecord(item = {}) {
-  return {
-    id: item.id,
-    expenseId: item.expenseId,
-    projectId: item.projectId || item.raw?.projectId || null,
-    project: item.project || (item.projectId ? `项目#${item.projectId}` : `费用#${item.expenseId || '-'}`),
-    type: item.type || '',
-    amount: Number(item.amount || 0),
-    applicant: item.applicant || '',
-    applyTime: formatDateTime(item.applyTime || item.createdAt),
-    approver: item.approver || '',
-    approvalStatus: String(item.result || item.approvalStatus || '').toLowerCase() || 'pending',
-    remark: item.comment || item.remark || '',
-    raw: item }
-}
-
 function filterAccounts(accounts, params = {}) {
   return accounts.filter((account) => {
     if (params.status && account.status !== params.status) return false
@@ -334,18 +253,6 @@ function filterAccounts(accounts, params = {}) {
       const keyword = String(params.platform).trim().toLowerCase()
       if (!String(account.platform || '').toLowerCase().includes(keyword)) return false
     }
-    return true
-  })
-}
-
-function filterExpenses(expenses, params = {}) {
-  return expenses.filter((item) => {
-    if (params.project) {
-      const keyword = String(params.project).trim().toLowerCase()
-      if (!String(item.project || '').toLowerCase().includes(keyword)) return false
-    }
-    if (params.type && item.type !== params.type) return false
-    if (params.status && item.status !== params.status) return false
     return true
   })
 }
@@ -604,60 +511,6 @@ export const barCertificatesApi = {
     }
 
     return httpClient.get(`/api/resources/bar-assets/${siteId}/certificates/${certificateId}/borrow-records`)
-  } }
-
-export const expensesApi = {
-  async getList(params = {}) {
-
-    const response = await httpClient.get('/api/resources/expenses')
-    const page = response?.data
-    const content = Array.isArray(page?.content) ? page.content : Array.isArray(response?.data) ? response.data : []
-    const expenses = content.map(normalizeExpense)
-    const data = filterExpenses(expenses, params)
-    return { ...response, data, total: page?.totalElements ?? data.length }
-  },
-
-  async create(data) {
-    const response = await httpClient.post('/api/resources/expenses', data)
-    return normalizeExpenseMutationResponse(response)
-  },
-
-  async getDetail(id) {
-    if (!isNumericId(id)) {
-      return Promise.resolve(invalidIdMessage('expense'))
-    }
-
-    const response = await httpClient.get(`/api/resources/expenses/${id}`)
-    return response?.data ? { ...response, data: normalizeExpense(response?.data) } : { ...response, data: null }
-  },
-
-  async getApprovalRecords(projectId) {
-
-    const response = await httpClient.get('/api/resources/expenses/approval-records', {
-      params: projectId ? { projectId } : undefined })
-    const records = Array.isArray(response?.data) ? response.data.map(normalizeApprovalRecord) : []
-    return { ...response, data: records }
-  },
-
-  async approve(id, data) {
-    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('expense'))
-
-    const response = await httpClient.post(`/api/resources/expenses/${id}/approve`, data)
-    return normalizeExpenseMutationResponse(response)
-  },
-
-  async requestReturn(id, data) {
-    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('expense'))
-
-    const response = await httpClient.post(`/api/resources/expenses/${id}/return-request`, data)
-    return normalizeExpenseMutationResponse(response)
-  },
-
-  async confirmReturn(id, data) {
-    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('expense'))
-
-    const response = await httpClient.post(`/api/resources/expenses/${id}/confirm-return`, data)
-    return normalizeExpenseMutationResponse(response)
   } }
 
 export default {
