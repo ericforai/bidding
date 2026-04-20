@@ -1,0 +1,162 @@
+<template>
+  <el-card shadow="never" class="audit-panel">
+    <template #header>
+      <div class="panel-header">
+        <div>
+          <h3>审计日志</h3>
+          <p>查看真实 API 返回的系统操作记录，并支持按关键词快速筛选。</p>
+        </div>
+        <el-tag type="info" effect="plain">今日操作 {{ todayCount }}</el-tag>
+      </div>
+    </template>
+
+    <div class="toolbar">
+      <el-input
+        v-model="keyword"
+        placeholder="搜索操作内容/对象"
+        clearable
+        class="search-input"
+        @keyup.enter="loadLogs"
+      />
+      <el-button type="primary" :loading="loading" @click="loadLogs">搜索</el-button>
+      <el-button :disabled="loading" @click="resetSearch">重置</el-button>
+    </div>
+
+    <el-alert
+      v-if="errorMessage"
+      :title="errorMessage"
+      type="error"
+      show-icon
+      :closable="false"
+      class="panel-alert"
+    />
+
+    <div class="audit-summary">
+      <span>共 {{ total }} 条记录</span>
+      <span>最近更新时间 {{ lastLoadedAt }}</span>
+    </div>
+
+    <el-table v-loading="loading" :data="rows" stripe class="audit-table" style="width: 100%">
+      <el-table-column prop="time" label="时间" min-width="170" />
+      <el-table-column prop="operator" label="操作人" width="140" />
+      <el-table-column prop="action" label="操作内容" min-width="220" />
+      <el-table-column prop="target" label="对象" min-width="180" />
+    </el-table>
+  </el-card>
+</template>
+
+<script setup>
+import { computed, onMounted, ref } from 'vue'
+import { auditApi } from '@/api'
+
+const loading = ref(false)
+const keyword = ref('')
+const rows = ref([])
+const total = ref(0)
+const errorMessage = ref('')
+const lastLoadedAt = ref('-')
+
+const normalizeAuditRow = (item = {}) => ({
+  id: item.id ?? `${item.timestamp || item.time || ''}-${item.operator || item.userName || ''}-${item.action || item.actionType || ''}`,
+  time: item.timestamp || item.time || item.createdAt || '-',
+  operator: item.operator || item.userName || item.createdByName || '未知用户',
+  action: item.action || item.actionType || item.description || '未知操作',
+  target: item.target || item.entityName || item.objectName || item.entityType || '-'
+})
+
+const todayCount = computed(() => {
+  const today = new Date().toISOString().slice(0, 10)
+  return rows.value.filter((item) => String(item.time || '').slice(0, 10) === today).length
+})
+
+async function loadLogs() {
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    const response = await auditApi.getLogs(keyword.value ? { keyword: keyword.value } : {})
+    const payload = response?.data
+    const items = Array.isArray(payload?.items)
+      ? payload.items
+      : Array.isArray(payload)
+        ? payload
+        : []
+    rows.value = items.map(normalizeAuditRow)
+    total.value = Number(payload?.total || rows.value.length || 0)
+    lastLoadedAt.value = new Date().toLocaleString('zh-CN', { hour12: false })
+  } catch (error) {
+    rows.value = []
+    total.value = 0
+    errorMessage.value = error?.message || '审计日志加载失败'
+  } finally {
+    loading.value = false
+  }
+}
+
+function resetSearch() {
+  keyword.value = ''
+  loadLogs()
+}
+
+onMounted(loadLogs)
+</script>
+
+<style scoped>
+.audit-panel {
+  border-radius: 20px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.panel-header h3 {
+  margin: 0 0 6px;
+  color: #1f2937;
+}
+
+.panel-header p {
+  margin: 0;
+  color: #52627a;
+  line-height: 1.6;
+}
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.search-input {
+  max-width: 360px;
+}
+
+.panel-alert {
+  margin-bottom: 16px;
+}
+
+.audit-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: #52627a;
+  font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  .panel-header,
+  .toolbar,
+  .audit-summary {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input {
+    max-width: none;
+  }
+}
+</style>

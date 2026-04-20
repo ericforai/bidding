@@ -17,7 +17,7 @@ import {
 const navigateToLogin = async () => {
   const { default: router } = await import('@/router/index.js')
   if (router.currentRoute.value.path !== '/login') {
-    await router.replace('/login')
+    await router.push('/login')
   }
 }
 
@@ -88,14 +88,6 @@ export const useUserStore = defineStore('user', {
         return this.currentUser
       }
 
-      const hasProjectScopeSnapshot = Array.isArray(this.currentUser?.allowedProjectIds)
-      const hasDeptScopeSnapshot = Array.isArray(this.currentUser?.allowedDepts)
-
-      if (this.currentUser && this.token && hasProjectScopeSnapshot && hasDeptScopeSnapshot) {
-        this.hasRestoredSession = true
-        return this.currentUser
-      }
-
       this.isRestoringSession = true
 
       try {
@@ -111,6 +103,7 @@ export const useUserStore = defineStore('user', {
         return this.currentUser
       } catch (error) {
         this.resetSession()
+        await navigateToLogin()
         return null
       } finally {
         this.isRestoringSession = false

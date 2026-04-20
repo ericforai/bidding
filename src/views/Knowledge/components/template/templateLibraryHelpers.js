@@ -59,13 +59,16 @@ export function createTemplateForm(category = 'technical') {
 }
 
 export function patchTemplateForm(target, data = {}) {
+  const hasExplicitDocumentType = Object.prototype.hasOwnProperty.call(data, 'documentType')
   Object.assign(target, createTemplateForm(data.category || 'technical'), {
     id: data.id ?? null,
     name: data.name || '',
     category: data.category || 'technical',
     productType: data.productType || '',
     industry: data.industry || '',
-    documentType: data.documentType || getDefaultDocumentTypeForCategory(data.category || 'technical'),
+    documentType: hasExplicitDocumentType
+      ? data.documentType
+      : (data.documentType || getDefaultDocumentTypeForCategory(data.category || 'technical')),
     description: data.description || '',
     tagsText: Array.isArray(data.tags) ? data.tags.join('，') : '',
     fileUrl: data.fileUrl || '',

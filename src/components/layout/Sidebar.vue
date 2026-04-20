@@ -174,6 +174,7 @@ const router = useRouter()
 const userStore = useUserStore()
 const isApiDeliveryMode = computed(() => true)
 const hiddenApiMenuNames = new Set([
+  'CustomerOpportunityCenter'
 ])
 
 const hasRoleAccess = (roles) => !roles || roles.length === 0 || roles.includes(userStore.userRole)

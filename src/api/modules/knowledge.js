@@ -217,6 +217,9 @@ function normalizeTemplate(item) {
     version: item?.currentVersion || item?.version || '1.0',
     fileSize: item?.fileSize || '未知',
     fileUrl: item?.fileUrl || '',
+    productType: item?.productType || '',
+    industry: item?.industry || '',
+    documentType: item?.documentType || '',
     content: item?.content || '',
     structure: Array.isArray(item?.structure) ? item.structure : [],
     createdBy: item?.createdBy || null }
@@ -226,6 +229,9 @@ function buildTemplatePayload(data = {}) {
   return {
     name: data.name,
     category: templateCategoryMap[data.category] || 'OTHER',
+    productType: data.productType || '',
+    industry: data.industry || '',
+    documentType: data.documentType || '',
     fileUrl: data.fileUrl || '',
     description: data.description || '',
     fileSize: data.fileSize || '',
@@ -379,6 +385,15 @@ function filterTemplates(items, params = {}) {
         return false
       }
     }
+    if (params.productType && String(item.productType || '') !== String(params.productType)) {
+      return false
+    }
+    if (params.industry && String(item.industry || '') !== String(params.industry)) {
+      return false
+    }
+    if (params.documentType && String(item.documentType || '') !== String(params.documentType)) {
+      return false
+    }
     if (Array.isArray(params.tags) && params.tags.length > 0) {
       const matchesTags = params.tags.some((tag) => item.tags.includes(tag))
       if (!matchesTags) {
@@ -472,8 +487,24 @@ export const casesApi = {
 
 export const templatesApi = {
   async getList(params) {
-
-    return fetchAndFilter('/api/knowledge/templates', params, normalizeTemplate, filterTemplates)
+    const query = {
+      name: params?.name ? String(params.name).trim() : undefined,
+      category: params?.category && params.category !== 'all'
+        ? templateCategoryMap[params.category] || params.category
+        : undefined,
+      productType: params?.productType || undefined,
+      industry: params?.industry || undefined,
+      documentType: params?.documentType || undefined
+    }
+    const response = await httpClient.get('/api/knowledge/templates', {
+      params: query
+    })
+    const normalized = Array.isArray(response?.data) ? response.data.map(normalizeTemplate) : []
+    const filtered = filterTemplates(normalized, query)
+    return {
+      ...response,
+      data: filtered,
+      total: filtered.length }
   },
 
   async getDetail(id) {

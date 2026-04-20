@@ -61,7 +61,8 @@ export function useTemplateLibraryActions({ activeCategory, templates, userStore
 
   function openCreateDialog() {
     patchTemplateForm(templateForm, {
-      category: activeCategory.value === 'all' ? 'technical' : activeCategory.value
+      category: activeCategory.value === 'all' ? 'technical' : activeCategory.value,
+      documentType: ''
     })
     resetTemplateErrors()
     upsertMode.value = 'create'
@@ -79,7 +80,17 @@ export function useTemplateLibraryActions({ activeCategory, templates, userStore
     Object.assign(templateFormErrors, validateTemplateForm(templateForm))
     submitError.value = ''
     if (hasTemplateFormErrors(templateFormErrors)) {
-      submitError.value = '请先补齐必填的三维分类和模板名称。'
+      const missingThreeDimensional =
+        !templateFormErrors.productType &&
+        !templateFormErrors.industry &&
+        !templateFormErrors.documentType
+          ? 0
+          : [templateFormErrors.productType, templateFormErrors.industry, templateFormErrors.documentType]
+            .filter(Boolean)
+            .length
+      submitError.value = missingThreeDimensional === 3 && !templateFormErrors.name
+        ? '请选择产品类型、行业和文档类型'
+        : '请先补齐必填的三维分类和模板名称。'
       return
     }
 

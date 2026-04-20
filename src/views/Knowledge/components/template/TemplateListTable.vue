@@ -11,7 +11,7 @@
       </div>
     </div>
 
-    <div class="desktop-table">
+    <div v-if="!isMobile" class="desktop-table">
       <el-table v-loading="loading" :data="templates" stripe style="width: 100%">
       <el-table-column prop="name" label="模板名称" min-width="220">
         <template #default="{ row }">
@@ -97,7 +97,7 @@
       </el-table>
     </div>
 
-    <div class="mobile-list">
+    <div v-else class="mobile-list">
       <article v-for="row in templates" :key="row.id" class="mobile-card">
         <div class="mobile-card-head">
           <div>
@@ -159,6 +159,7 @@
 </template>
 
 <script setup>
+import { onMounted, onUnmounted, ref } from 'vue'
 import {
   Clock,
   CopyDocument,
@@ -201,6 +202,22 @@ defineProps({
 })
 
 defineEmits(['preview', 'use-template', 'more-action', 'update:page', 'update:page-size'])
+
+const isMobile = ref(false)
+
+const syncViewportMode = () => {
+  if (typeof window === 'undefined') return
+  isMobile.value = window.innerWidth < 768
+}
+
+onMounted(() => {
+  syncViewportMode()
+  window.addEventListener('resize', syncViewportMode)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', syncViewportMode)
+})
 
 function resolveCategoryIcon(category) {
   return iconMap[normalizeTemplateCategory(category)] || Document

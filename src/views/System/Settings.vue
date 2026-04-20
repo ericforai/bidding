@@ -21,7 +21,7 @@
     />
 
     <el-tabs v-model="activeTab" class="settings-tabs">
-      <el-tab-pane label="部门树维护" name="departments">
+      <el-tab-pane label="数据权限" name="departments">
         <DepartmentTreePanel
           v-loading="loading"
           :dept-tree="deptTree"
@@ -29,7 +29,7 @@
           :save-handler="saveDepartments"
         />
       </el-tab-pane>
-      <el-tab-pane label="角色维护" name="roles">
+      <el-tab-pane label="角色权限" name="roles">
         <RoleManagementPanel
           v-loading="loading"
           :roles="roles"
@@ -48,6 +48,9 @@
           :save-handler="saveUserOrganization"
         />
       </el-tab-pane>
+      <el-tab-pane label="审计日志" name="audit">
+        <AuditLogPanel />
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -57,6 +60,7 @@ import { onMounted, ref } from 'vue'
 import DepartmentTreePanel from './settings/DepartmentTreePanel.vue'
 import RoleManagementPanel from './settings/RoleManagementPanel.vue'
 import UserOrganizationPanel from './settings/UserOrganizationPanel.vue'
+import AuditLogPanel from './settings/AuditLogPanel.vue'
 import { useOrganizationSettings } from './settings/useOrganizationSettings'
 
 const activeTab = ref('departments')

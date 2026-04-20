@@ -112,7 +112,7 @@ describe('useTemplateLibraryPage', () => {
 
     await wrapper.vm.submitTemplate()
 
-    expect(wrapper.vm.submitError).toBe('请先补齐必填的三维分类和模板名称。')
+    expect(wrapper.vm.submitError).toBe('请选择产品类型、行业和文档类型')
     expect(wrapper.vm.templateFormErrors).toMatchObject({
       productType: '请选择产品类型',
       industry: '请选择行业'

@@ -29,6 +29,7 @@
           aria-label="产品类型"
           placeholder="选择产品类型"
           clearable
+          :clear-icon="LegacyClearIcon"
           class="field-control"
         >
           <el-option v-for="option in productTypeOptions" :key="option" :label="option" :value="option" />
@@ -40,6 +41,7 @@
           aria-label="行业"
           placeholder="选择行业"
           clearable
+          :clear-icon="LegacyClearIcon"
           class="field-control"
         >
           <el-option v-for="option in industryOptions" :key="option" :label="option" :value="option" />
@@ -51,6 +53,7 @@
           aria-label="文档类型"
           placeholder="选择文档类型"
           clearable
+          :clear-icon="LegacyClearIcon"
           class="field-control"
         >
           <el-option v-for="option in documentTypeOptions" :key="option" :label="option" :value="option" />
@@ -77,15 +80,36 @@
         </el-select>
       </el-form-item>
       <el-form-item class="action-group">
-        <el-button type="primary" :icon="Search" class="action-button" @click="$emit('search')">应用筛选</el-button>
-        <el-button class="action-button" @click="$emit('reset')">清空全部条件</el-button>
+        <el-button
+          type="primary"
+          :icon="Search"
+          class="action-button"
+          aria-label="搜索"
+          @click="$emit('search')"
+        >
+          搜索
+        </el-button>
+        <el-button class="action-button" aria-label="重置" @click="$emit('reset')">重置</el-button>
       </el-form-item>
     </el-form>
   </el-card>
 </template>
 
 <script setup>
-import { Search } from '@element-plus/icons-vue'
+import { CircleClose, Search } from '@element-plus/icons-vue'
+import { h } from 'vue'
+import { ElIcon } from 'element-plus'
+
+const LegacyClearIcon = {
+  name: 'LegacyClearIcon',
+  render() {
+    return h(
+      ElIcon,
+      { class: 'el-icon-circle-close' },
+      () => h(CircleClose)
+    )
+  }
+}
 
 defineProps({
   filters: { type: Object, required: true },

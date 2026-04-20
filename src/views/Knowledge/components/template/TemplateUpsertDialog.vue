@@ -3,6 +3,7 @@
     :model-value="visible"
     :title="mode === 'create' ? '新建模板' : '编辑模板'"
     width="720px"
+    destroy-on-close
     @update:model-value="$emit('update:visible', $event)"
   >
     <el-alert

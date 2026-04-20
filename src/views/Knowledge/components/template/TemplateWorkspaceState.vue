@@ -1,5 +1,5 @@
 <template>
-  <el-card class="workspace-state" shadow="never">
+  <el-card class="workspace-state el-empty" shadow="never">
     <div class="state-badge">
       {{ state.type === 'initial' ? '模板资产工作台' : '筛选结果' }}
     </div>
