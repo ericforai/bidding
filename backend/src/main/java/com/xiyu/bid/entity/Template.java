@@ -31,6 +31,15 @@ public class Template {
     @Column(nullable = false)
     private Category category;
 
+    @Column(name = "product_type")
+    private String productType;
+
+    @Column(name = "industry")
+    private String industry;
+
+    @Column(name = "document_type")
+    private String documentType;
+
     @Column(name = "file_url")
     private String fileUrl;
 

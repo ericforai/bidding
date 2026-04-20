@@ -8,11 +8,12 @@
       <div class="header-actions">
         <el-button
           @click="refreshInsights"
-          :loading="isScanning"
+          :loading="customerOpportunityDemoEnabled && isScanning"
+          :disabled="!customerOpportunityDemoEnabled"
           class="btn-refresh"
         >
           <el-icon><Refresh /></el-icon>
-          刷新洞察
+          {{ customerOpportunityDemoEnabled ? '刷新洞察' : '洞察未接入' }}
         </el-button>
         <el-button type="primary" class="btn-primary" @click="createProject" v-if="selectedCustomer">
           {{ selectedCustomer.prediction.convertedProjectId ? '查看项目' : '转为正式项目' }}
@@ -22,7 +23,7 @@
 
     <!-- AI Scanning Overlay -->
     <transition name="fade">
-      <div v-if="isScanning" class="scanning-overlay">
+      <div v-if="customerOpportunityDemoEnabled && isScanning" class="scanning-overlay">
         <div class="scan-grid"></div>
         <div class="scan-line"></div>
         <div class="scan-content">
@@ -89,26 +90,26 @@
                 placeholder="搜索名称..."
                 clearable
                 size="default"
-
+                :disabled="!customerOpportunityDemoEnabled"
                 class="search-input"
               >
                 <template #prefix>
                   <el-icon><Search /></el-icon>
                 </template>
               </el-input>
-              <el-select v-model="filters.sales" placeholder="销售负责人" size="default" clearable class="filter-item">
+              <el-select v-model="filters.sales" placeholder="销售负责人" size="default" clearable :disabled="!customerOpportunityDemoEnabled" class="filter-item">
                 <el-option label="全部销售" value="" />
                 <el-option v-for="user in salesUsers" :key="user.id" :label="user.name" :value="user.name" />
               </el-select>
             </div>
             <div class="filter-row">
-              <el-select v-model="filters.region" placeholder="全部地区" size="default" clearable class="filter-item">
+              <el-select v-model="filters.region" placeholder="全部地区" size="default" clearable :disabled="!customerOpportunityDemoEnabled" class="filter-item">
                 <el-option v-for="region in regions" :key="region" :label="region" :value="region" />
               </el-select>
-              <el-select v-model="filters.industry" placeholder="全部行业" size="default" clearable class="filter-item">
+              <el-select v-model="filters.industry" placeholder="全部行业" size="default" clearable :disabled="!customerOpportunityDemoEnabled" class="filter-item">
                 <el-option v-for="ind in industries" :key="ind" :label="ind" :value="ind" />
               </el-select>
-              <el-select v-model="filters.status" placeholder="全部分类" size="default" clearable class="filter-item">
+              <el-select v-model="filters.status" placeholder="全部分类" size="default" clearable :disabled="!customerOpportunityDemoEnabled" class="filter-item">
                 <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
               </el-select>
             </div>
@@ -125,7 +126,7 @@
             class="premium-table"
           >
             <template #empty>
-              <el-empty description="暂无符合条件的客户" />
+              <el-empty :description="customerOpportunityDemoEnabled ? '暂无符合条件的客户' : '客户商机数据源未接入'" />
             </template>
             <el-table-column prop="customerName" label="客户名称" min-width="220" show-overflow-tooltip>
               <template #default="{ row }">
@@ -261,20 +262,20 @@
                   </el-timeline-item>
                 </el-timeline>
               </div>
-              <p class="insight-summary" v-if="selectedCustomer.prediction.reasoningSummary">
+              <p class="insight-summary">
                 <el-icon><MagicStick /></el-icon>
-                {{ selectedCustomer.prediction.reasoningSummary }}
+                {{ selectedCustomer.predictionSummary }}
               </p>
             </div>
           </div>
-          <div v-else class="smart-onboarding">
+          <div v-else-if="customerOpportunityDemoEnabled" class="smart-onboarding">
             <div class="onboarding-content">
               <div class="ai-avatar-large shadow-glow">
                 <el-icon><MagicStick /></el-icon>
               </div>
               <h2>欢迎访问商机中心</h2>
-              <p>我是您的 AI 销售助理。请在左侧客户池中选择一个客户查看智能研判结果。</p>
-
+              <p>我是您的 AI 销售助理。我已经为您分析了最新的市场动向与采购规律。</p>
+              
               <div class="onboarding-suggestions">
                 <div class="suggest-title">您可以尝试：</div>
                 <div class="suggest-cards">
@@ -287,6 +288,17 @@
                     <span>筛选建议立项的机会</span>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+          <div v-else class="api-empty-state">
+            <div class="api-empty-card">
+              <el-tag size="small" type="info" effect="light" class="api-empty-tag">API 模式</el-tag>
+              <h2>客户商机中心暂未接入真实数据源</h2>
+              <p>当前页面仅保留 mock 演示链路。真实模式下不会读取 demo 数据，也不会模拟 AI 洞察或扫描成功态。</p>
+              <div class="api-empty-actions">
+                <el-button disabled>刷新洞察</el-button>
+                <el-button link type="primary" @click="router.push('/bidding')">返回标讯中心</el-button>
               </div>
             </div>
           </div>
@@ -364,16 +376,8 @@ import { useCustomerOpportunityCenterData } from '@/api/modules/customerOpportun
 
 const router = useRouter()
 const loading = ref(true)
-const {
-  customerInsights,
-  customerPurchases,
-  customerPredictions,
-  salesUsers,
-  loadInsights,
-  loadPurchases,
-  loadPredictions,
-  refreshInsights: refreshInsightsFromApi
-} = useCustomerOpportunityCenterData()
+const customerOpportunityDemoEnabled = false
+const { customerInsights, customerPurchases, customerPredictions, salesUsers } = useCustomerOpportunityCenterData()
 const filters = ref({ status: '', keyword: '', sales: '', region: '', industry: '' })
 
 const regions = computed(() => [...new Set(customerInsights.value.map(c => c.region))].filter(Boolean))
@@ -387,14 +391,11 @@ const activeCustomerId = ref('')
 const historyDrawer = ref(false)
 const isScanning = ref(false)
 
-onMounted(async () => {
-  try {
-    await loadInsights()
-  } catch (error) {
-    ElMessage.warning('客户洞察加载失败，请稍后重试')
-  } finally {
+onMounted(() => {
+  const delay = customerOpportunityDemoEnabled ? 800 : 220
+  setTimeout(() => {
     loading.value = false
-  }
+  }, delay)
 })
 
 const customerHistory = computed(() => {
@@ -439,17 +440,26 @@ const categoryStats = computed(() => {
 })
 
 const boardSummaries = computed(() => {
+  if (!customerOpportunityDemoEnabled) {
+    return [
+      { label: '客户池', value: '--', note: '真实客户数据源未接入', tag: '未接入', tagType: 'info', placeholder: true, trendLabel: 'API' },
+      { label: '采购记录', value: '--', note: '历史采购服务待真实数据源接入', tag: '未接入', tagType: 'info', placeholder: true, trendLabel: 'API' },
+      { label: '预测商机', value: '--', note: '预测结果不会在真实模式下伪造', tag: '未接入', tagType: 'info', placeholder: true, trendLabel: 'API' },
+      { label: '项目转化', value: '--', note: '转项目链路待真实数据源接入', tag: '未接入', tagType: 'info', placeholder: true, trendLabel: 'API' }
+    ]
+  }
   const customers = customerInsights.value
+  const predictions = customerPredictions.value
   const highValueCount = customers.filter(item => item.opportunityScore >= 85).length
-  const recommendCount = customers.filter(item => item.status === 'recommend').length
-  const watchCount = customers.filter(item => item.status === 'watch').length
-  const convertedCount = customers.filter(item => item.status === 'converted').length
+  const shortTermCount = predictions.filter(item => /^2025-0[3-4]/.test(item.predictedWindow)).length
+  const midTermCount = predictions.filter(item => /^2025-0[5-6]/.test(item.predictedWindow)).length
+  const convertedCount = predictions.filter(item => item.convertedProjectId).length
 
   return [
-    { label: '高价值客户', value: String(highValueCount), note: '核心经营资产', tag: '重点', tagType: 'success', placeholder: true, trendLabel: '评分≥85' },
-    { label: '建议立项', value: String(recommendCount), note: '可推进商机', tag: '推荐', tagType: 'danger', placeholder: true, trendLabel: 'Recommend' },
-    { label: '待研判', value: String(watchCount), note: '持续观察客户', tag: '观察', tagType: 'warning', placeholder: true, trendLabel: 'Watch' },
-    { label: '已转化', value: String(convertedCount), note: '已转正式项目池', tag: '完成', tagType: 'info', placeholder: true, trendLabel: 'Converted' }
+    { label: '高价值客户', value: String(highValueCount), note: '核心经营资产', tag: '重点', tagType: 'success', trend: 12, isUp: true },
+    { label: '30D 预测机会', value: String(shortTermCount), note: '需近期重点研判', tag: '紧迫', tagType: 'danger', trend: 8, isUp: true },
+    { label: '远期潜客', value: String(midTermCount), note: '适合关系铺垫', tag: '观察', tagType: 'warning', trend: 3, isUp: false },
+    { label: '已转化', value: String(convertedCount), note: '已转正式项目池', tag: '完成', tagType: 'info', trend: 20, isUp: true }
   ]
 })
 
@@ -499,13 +509,8 @@ const selectedCustomer = computed(() => {
   }
 })
 
-const selectCustomer = async (row) => {
+const selectCustomer = (row) => {
   activeCustomerId.value = row.customerId
-  try {
-    await Promise.all([loadPurchases(row.customerId), loadPredictions(row.customerId)])
-  } catch (error) {
-    ElMessage.warning('客户详情加载失败，请稍后重试')
-  }
 }
 
 const rowClass = ({ row }) => (row.customerId === activeCustomerId.value ? 'row-active' : '')
@@ -541,27 +546,26 @@ const buildDeadlineFromWindow = (windowValue) => {
   return ''
 }
 
-const refreshInsights = async () => {
-  isScanning.value = true
-  try {
-    await refreshInsightsFromApi()
-    ElMessage.success('AI 智能洞察已同步至最新')
-  } catch (error) {
-    ElMessage.warning('刷新洞察失败，请稍后重试')
-  } finally {
-    isScanning.value = false
+const refreshInsights = () => {
+  if (!customerOpportunityDemoEnabled) {
+    ElMessage.info('客户商机中心在真实模式下暂未接入数据源')
+    return
   }
+  isScanning.value = true
+  setTimeout(() => {
+    isScanning.value = false
+    ElMessage.success('AI 智能洞察已同步至最新')
+  }, 2500)
 }
 
 const selectFirstHighValue = () => {
+  if (!customerOpportunityDemoEnabled) return
   const first = customerInsights.value.find(c => c.opportunityScore >= 85)
-  if (first) {
-    selectCustomer(first)
-  }
+  if (first) activeCustomerId.value = first.customerId
 }
 
 const createProject = () => {
-  if (!selectedCustomer.value) return
+  if (!selectedCustomer.value || !customerOpportunityDemoEnabled) return
 
   if (selectedCustomer.value.prediction.convertedProjectId) {
     router.push(`/project/${selectedCustomer.value.prediction.convertedProjectId}`)
@@ -1373,6 +1377,50 @@ const createProject = () => {
   justify-content: center;
   padding-top: 40px;
   background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+}
+
+.api-empty-state {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.api-empty-card {
+  max-width: 420px;
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 40px -20px rgba(15, 23, 42, 0.2);
+  padding: 32px;
+  text-align: center;
+}
+
+.api-empty-tag {
+  margin-bottom: 16px;
+}
+
+.api-empty-card h2 {
+  margin: 0 0 12px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.api-empty-card p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.api-empty-actions {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
 }
 
 .onboarding-content {

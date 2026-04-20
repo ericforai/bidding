@@ -1,6 +1,5 @@
 package com.xiyu.bid.projectworkflow.dto;
 
-import com.xiyu.bid.projectworkflow.entity.ProjectScoreDraft;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +13,13 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProjectScoreDraftDTO {
+    public enum Status {
+        DRAFT,
+        READY,
+        SKIPPED,
+        GENERATED
+    }
+
     private Long id;
     private Long projectId;
     private String sourceFileName;
@@ -28,7 +34,7 @@ public class ProjectScoreDraftDTO {
     private Long assigneeId;
     private String assigneeName;
     private LocalDateTime dueDate;
-    private ProjectScoreDraft.Status status;
+    private Status status;
     private String skipReason;
     private Integer sourcePage;
     private Integer sourceTableIndex;

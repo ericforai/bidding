@@ -11,7 +11,6 @@ import com.xiyu.bid.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
@@ -45,7 +44,7 @@ class ProjectTaskWorkflowService {
                 .assigneeDeptName(assigneeUser != null ? assigneeUser.getDepartmentName() : defaultString(trimToNull(request.getAssigneeDeptName()), "未配置部门"))
                 .assigneeRoleCode(assigneeUser != null ? assigneeUser.getRoleCode() : trimToNull(request.getAssigneeRoleCode()))
                 .assigneeRoleName(assigneeUser != null ? assigneeUser.getRoleName() : trimToNull(request.getAssigneeRoleName()))
-                .priority(request.getPriority())
+                .priority(toEntityPriority(request.getPriority()))
                 .status(Task.Status.TODO)
                 .dueDate(request.getDueDate())
                 .build();
@@ -55,7 +54,7 @@ class ProjectTaskWorkflowService {
     ProjectTaskViewDTO updateProjectTaskStatus(Long projectId, Long taskId, ProjectTaskStatusUpdateRequest request) {
         guardService.requireProject(projectId);
         Task task = guardService.requireTask(projectId, taskId);
-        task.setStatus(request.getStatus());
+        task.setStatus(toEntityStatus(request.getStatus()));
         return toTaskView(taskRepository.save(task));
     }
 
@@ -163,5 +162,19 @@ class ProjectTaskWorkflowService {
     private String defaultString(String value, String fallback) {
         String normalized = trimToNull(value);
         return normalized != null ? normalized : fallback;
+    }
+
+    private Task.Priority toEntityPriority(ProjectTaskCreateRequest.Priority priority) {
+        if (priority == null) {
+            return null;
+        }
+        return Task.Priority.valueOf(priority.name());
+    }
+
+    private Task.Status toEntityStatus(ProjectTaskStatusUpdateRequest.Status status) {
+        if (status == null) {
+            return null;
+        }
+        return Task.Status.valueOf(status.name());
     }
 }

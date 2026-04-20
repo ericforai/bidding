@@ -1,6 +1,4 @@
 package com.xiyu.bid.casework.dto;
-
-import com.xiyu.bid.entity.Case;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,8 +20,8 @@ public class CaseDTO {
 
     private Long id;
     private String title;
-    private Case.Industry industry;
-    private Case.Outcome outcome;
+    private Industry industry;
+    private Outcome outcome;
     private BigDecimal amount;
     private LocalDate projectDate;
     private String description;
@@ -37,4 +35,20 @@ public class CaseDTO {
     private Long useCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public enum Industry {
+        REAL_ESTATE,
+        INFRASTRUCTURE,
+        MANUFACTURING,
+        ENERGY,
+        TRANSPORTATION,
+        ENVIRONMENTAL,
+        OTHER
+    }
+
+    public enum Outcome {
+        WON,
+        LOST,
+        IN_PROGRESS
+    }
 }

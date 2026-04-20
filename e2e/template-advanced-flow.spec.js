@@ -85,6 +85,9 @@ test('template advanced actions use real API contracts', async ({ page }) => {
     body: JSON.stringify({
       name: templateName,
       category: 'TECHNICAL',
+      productType: '智慧城市',
+      industry: '政府',
+      documentType: '商务应答',
       description: 'ERI-97 模板高级能力验证',
       fileSize: '1.8MB',
       tags: ['ERI-97', '模板'],

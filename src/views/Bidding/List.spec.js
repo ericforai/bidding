@@ -1,7 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { shallowMount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import ElementPlus from 'element-plus'
 import List from './List.vue'
+
+const tableStub = {
+  name: 'ElTable',
+  template: '<div class="el-table-stub"><slot /></div>'
+}
+
+const tableColumnStub = {
+  name: 'ElTableColumn',
+  template: '<div class="el-table-column-stub"><slot :row="{}" /></div>'
+}
+
+const progressStub = {
+  name: 'ElProgress',
+  template: '<div class="el-progress-stub"><slot :percentage="0" /></div>'
+}
 
 // Mock API 模块
 vi.mock('@/api', () => ({
@@ -35,23 +51,74 @@ vi.mock('vue-router', () => ({
   createWebHistory: vi.fn()
 }))
 
-// 不 mock @element-plus/icons-vue：List.vue 的图标集合会随业务变化，
-// 保留真实导出避免测试清单漂移。
+// Mock Element Plus Icons
+vi.mock('@element-plus/icons-vue', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    Search: () => 'Search',
+    Plus: () => 'Plus',
+    Setting: () => 'Setting',
+    Download: () => 'Download',
+    Refresh: () => 'Refresh',
+    MagicStick: () => 'MagicStick',
+    UserFilled: () => 'UserFilled',
+    Location: () => 'Location',
+    Wallet: () => 'Wallet',
+    Calendar: () => 'Calendar',
+    InfoFilled: () => 'InfoFilled',
+    ArrowRight: () => 'ArrowRight',
+    Link: () => 'Link',
+    View: () => 'View',
+    Document: () => 'Document',
+    MoreFilled: () => 'MoreFilled',
+    Share: () => 'Share',
+    CircleCheck: () => 'CircleCheck',
+    Star: () => 'Star',
+    TrendCharts: () => 'TrendCharts'
+  }
+})
 
 describe('List.vue (标讯中心)', () => {
-  // shallowMount 自动 stub 全部子组件，避开 el-table 等重组件的作用域插槽空参调用问题。
   beforeEach(() => {
     setActivePinia(createPinia())
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      writable: true,
+      value: 375
+    })
   })
 
   it('应该正确渲染页面标题', async () => {
-    const wrapper = shallowMount(List)
+    const wrapper = mount(List, {
+      global: {
+        plugins: [ElementPlus],
+        stubs: {
+          'el-icon': true,
+          'el-table': tableStub,
+          'el-table-column': tableColumnStub,
+          'el-progress': progressStub,
+          Link: true
+        }
+      }
+    })
 
     expect(wrapper.find('.page-title').text()).toBe('标讯中心')
   })
 
   it('当搜索关键词变化时，filteredTenders 应该能正确过滤', async () => {
-    const wrapper = shallowMount(List)
+    const wrapper = mount(List, {
+      global: {
+        plugins: [ElementPlus],
+        stubs: {
+          'el-icon': true,
+          'el-table': tableStub,
+          'el-table-column': tableColumnStub,
+          'el-progress': progressStub,
+          Link: true
+        }
+      }
+    })
 
     wrapper.vm.searchForm.keyword = '西域'
     await wrapper.vm.$nextTick()

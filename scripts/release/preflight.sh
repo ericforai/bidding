@@ -46,6 +46,9 @@ printf 'Node: %s\n' "$(node -v)"
 printf 'NPM: %s\n' "$(npm -v)"
 printf 'Java: %s\n' "$(java -version 2>&1 | head -n 1)"
 printf 'Maven: %s\n' "$(mvn -v | head -n 1)"
+printf 'Version: %s\n' "$(cat "$ROOT_DIR/VERSION")"
+
+node "$ROOT_DIR/scripts/check-version-sync.mjs"
 
 printf 'Database target: %s:%s/%s (user=%s)\n' "$DB_HOST" "$DB_PORT" "$DB_NAME" "$DB_USER"
 printf 'Redis target: %s:%s\n' "$REDIS_HOST" "${REDIS_PORT:-6379}"

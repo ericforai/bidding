@@ -11,6 +11,9 @@ import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 
+import java.util.Set;
+import java.util.TreeSet;
+
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.*;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
@@ -40,25 +43,179 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
 )
 public class ArchitectureTest {
 
+    private static final String[] STRICT_CONTROLLER_PACKAGES = {
+        "com.xiyu.bid.calendar.controller..",
+        "com.xiyu.bid.collaboration.controller..",
+        "com.xiyu.bid.competitionintel.controller..",
+        "com.xiyu.bid.scoreanalysis.controller..",
+        "com.xiyu.bid.roi.controller..",
+        "com.xiyu.bid.versionhistory.controller..",
+        "com.xiyu.bid.documenteditor.controller..",
+        "com.xiyu.bid.documents.controller..",
+        "com.xiyu.bid.settings.controller..",
+        "com.xiyu.bid.fees.controller..",
+        "com.xiyu.bid.projectworkflow.controller..",
+        "com.xiyu.bid.resources.controller..",
+        "com.xiyu.bid.casework.controller..",
+        "com.xiyu.bid.analytics.controller.."
+    };
+
+    private static final String[] DTO_READY_CONTROLLER_PACKAGES = {
+        "com.xiyu.bid.calendar.controller..",
+        "com.xiyu.bid.collaboration.controller..",
+        "com.xiyu.bid.competitionintel.controller..",
+        "com.xiyu.bid.scoreanalysis.controller..",
+        "com.xiyu.bid.roi.controller..",
+        "com.xiyu.bid.versionhistory.controller..",
+        "com.xiyu.bid.documenteditor.controller..",
+        "com.xiyu.bid.documents.controller..",
+        "com.xiyu.bid.settings.controller..",
+        "com.xiyu.bid.fees.controller..",
+        "com.xiyu.bid.projectworkflow.controller..",
+        "com.xiyu.bid.resources.controller..",
+        "com.xiyu.bid.casework.controller..",
+        "com.xiyu.bid.analytics.controller.."
+    };
+
+    private static final String[] STRICT_SERVICE_PACKAGES = {
+        "com.xiyu.bid.calendar.service..",
+        "com.xiyu.bid.collaboration.service..",
+        "com.xiyu.bid.competitionintel.service..",
+        "com.xiyu.bid.scoreanalysis.service..",
+        "com.xiyu.bid.roi.service..",
+        "com.xiyu.bid.versionhistory.service..",
+        "com.xiyu.bid.documenteditor.service..",
+        "com.xiyu.bid.documents.service..",
+        "com.xiyu.bid.settings.service..",
+        "com.xiyu.bid.fees.service..",
+        "com.xiyu.bid.projectworkflow.service..",
+        "com.xiyu.bid.resources.service..",
+        "com.xiyu.bid.casework.service..",
+        "com.xiyu.bid.analytics.service.."
+    };
+
+    private static final String[] STRICT_DTO_PACKAGES = {
+        "com.xiyu.bid.calendar.dto..",
+        "com.xiyu.bid.collaboration.dto..",
+        "com.xiyu.bid.competitionintel.dto..",
+        "com.xiyu.bid.scoreanalysis.dto..",
+        "com.xiyu.bid.roi.dto..",
+        "com.xiyu.bid.versionhistory.dto..",
+        "com.xiyu.bid.documenteditor.dto..",
+        "com.xiyu.bid.documents.dto..",
+        "com.xiyu.bid.settings.dto..",
+        "com.xiyu.bid.projectworkflow.dto..",
+        "com.xiyu.bid.analytics.dto.."
+    };
+
+    private static final String[] DTO_ENTITY_FREE_PACKAGES = {
+        "com.xiyu.bid.settings.dto..",
+        "com.xiyu.bid.projectworkflow.dto..",
+        "com.xiyu.bid.analytics.dto.."
+    };
+
+    private static final Set<String> ALLOWED_ROOT_CONTROLLERS = Set.of(
+        "AdminProjectGroupController",
+        "AdminRoleController",
+        "AdminSettingsController",
+        "AdminUserController",
+        "AuthController",
+        "CebCrawlerController",
+        "TestController"
+    );
+
+    private static final Set<String> ALLOWED_ROOT_SERVICES = Set.of(
+        "AdminUserService",
+        "AuthService",
+        "CebCrawlerService",
+        "DataScopeConfigService",
+        "EmailService",
+        "EmailVerificationService",
+        "PasswordResetService",
+        "ProjectAccessScopeService",
+        "ProjectGroupService",
+        "RateLimitService",
+        "RoleProfileService",
+        "SessionService"
+    );
+
+    private static final Set<String> ALLOWED_ROOT_REPOSITORIES = Set.of(
+        "AuditLogRepository",
+        "CaseRepository",
+        "EmailVerificationTokenRepository",
+        "PasswordResetTokenRepository",
+        "ProjectGroupRepository",
+        "ProjectRepository",
+        "QualificationRepository",
+        "RefreshSessionRepository",
+        "RoleProfileRepository",
+        "TaskRepository",
+        "TemplateDownloadRecordRepository",
+        "TemplateRepository",
+        "TemplateUseRecordRepository",
+        "TemplateVersionRepository",
+        "TenderRepository",
+        "UserRepository"
+    );
+
+    private static final Set<String> ALLOWED_ROOT_ENTITIES = Set.of(
+        "AuditLog",
+        "Case",
+        "EmailVerificationToken",
+        "PasswordResetToken",
+        "Project",
+        "ProjectGroup",
+        "Qualification",
+        "RefreshSession",
+        "RoleProfile",
+        "RoleProfileCatalog",
+        "Task",
+        "Template",
+        "TemplateDownloadRecord",
+        "TemplateUseRecord",
+        "TemplateVersion",
+        "Tender",
+        "User"
+    );
+
+    private static void assertOnlyWhitelistedRootPackageClasses(
+        JavaClasses classes,
+        String packageName,
+        Set<String> allowedClasses,
+        String layerLabel
+    ) {
+        Set<String> currentClasses = new TreeSet<>();
+        classes.stream()
+            .filter(javaClass -> javaClass.getPackageName().equals(packageName))
+            .filter(javaClass -> !javaClass.getSimpleName().isBlank())
+            .filter(javaClass -> !"package-info".equals(javaClass.getSimpleName()))
+            .filter(javaClass -> !javaClass.getName().contains("$"))
+            .forEach(javaClass -> currentClasses.add(javaClass.getSimpleName()));
+
+        Set<String> unexpectedClasses = new TreeSet<>(currentClasses);
+        unexpectedClasses.removeAll(allowedClasses);
+
+        if (!unexpectedClasses.isEmpty()) {
+            throw new AssertionError(
+                "Root " + layerLabel + " package " + packageName
+                    + " contains new business classes outside the allowlist: " + unexpectedClasses
+                    + ". New business capability must live in a first-level module package instead of the root shared layer."
+            );
+        }
+    }
+
     /**
      * RULE 1: Controller层不能直接依赖Repository层
      * 必须通过Service层进行数据访问
-     * 只检查新模块 (calendar, collaboration, competitionintel, scoreanalysis, roi, versionhistory, documenteditor, documents)
+     * 当前覆盖新模块 + 已模块化成型的老模块
      */
     @ArchTest
-    public static final ArchRule new_module_controller_should_not_depend_on_repository =
+    public static final ArchRule strict_module_controller_should_not_depend_on_repository =
         noClasses()
-            .that().resideInAPackage("com.xiyu.bid.calendar.controller..")
-            .or().resideInAPackage("com.xiyu.bid.collaboration.controller..")
-            .or().resideInAPackage("com.xiyu.bid.competitionintel.controller..")
-            .or().resideInAPackage("com.xiyu.bid.scoreanalysis.controller..")
-            .or().resideInAPackage("com.xiyu.bid.roi.controller..")
-            .or().resideInAPackage("com.xiyu.bid.versionhistory.controller..")
-            .or().resideInAPackage("com.xiyu.bid.documenteditor.controller..")
-            .or().resideInAPackage("com.xiyu.bid.documents.controller..")
+            .that().resideInAnyPackage(STRICT_CONTROLLER_PACKAGES)
             .should().dependOnClassesThat()
             .resideInAPackage("..repository..")
-            .because("新模块Controller必须通过Service层访问数据");
+            .because("纳入 ratchet 的模块 Controller 必须通过 Service 层访问数据");
 
     /**
      * RULE 1.1: Auth/Tender 控制器不得直接依赖 Repository
@@ -80,22 +237,15 @@ public class ArchitectureTest {
     /**
      * RULE 2: Service层不应依赖上层
      * Service层可以依赖Repository和其他Service的DTO
-     * 只检查新模块
+     * 当前覆盖新模块 + 已模块化成型的老模块
      */
     @ArchTest
-    public static final ArchRule new_module_service_should_not_depend_on_controller =
+    public static final ArchRule strict_module_service_should_not_depend_on_controller =
         noClasses()
-            .that().resideInAPackage("com.xiyu.bid.calendar.service..")
-            .or().resideInAPackage("com.xiyu.bid.collaboration.service..")
-            .or().resideInAPackage("com.xiyu.bid.competitionintel.service..")
-            .or().resideInAPackage("com.xiyu.bid.scoreanalysis.service..")
-            .or().resideInAPackage("com.xiyu.bid.roi.service..")
-            .or().resideInAPackage("com.xiyu.bid.versionhistory.service..")
-            .or().resideInAPackage("com.xiyu.bid.documenteditor.service..")
-            .or().resideInAPackage("com.xiyu.bid.documents.service..")
+            .that().resideInAnyPackage(STRICT_SERVICE_PACKAGES)
             .should().dependOnClassesThat()
             .resideInAPackage("..controller..")
-            .because("新模块Service不应依赖Controller");
+            .because("纳入 ratchet 的模块 Service 不应依赖 Controller");
 
     /**
      * RULE 3: Entity不能依赖Service/Controller
@@ -114,22 +264,15 @@ public class ArchitectureTest {
 
     /**
      * RULE 4: Controller不能依赖Entity
-     * 只检查新模块
+     * 仅覆盖已完成 DTO 收口的新模块 + 首批老模块
      */
     @ArchTest
-    public static final ArchRule new_module_controller_should_not_depend_on_entity =
+    public static final ArchRule strict_module_controller_should_not_depend_on_entity =
         noClasses()
-            .that().resideInAPackage("com.xiyu.bid.calendar.controller..")
-            .or().resideInAPackage("com.xiyu.bid.collaboration.controller..")
-            .or().resideInAPackage("com.xiyu.bid.competitionintel.controller..")
-            .or().resideInAPackage("com.xiyu.bid.scoreanalysis.controller..")
-            .or().resideInAPackage("com.xiyu.bid.roi.controller..")
-            .or().resideInAPackage("com.xiyu.bid.versionhistory.controller..")
-            .or().resideInAPackage("com.xiyu.bid.documenteditor.controller..")
-            .or().resideInAPackage("com.xiyu.bid.documents.controller..")
+            .that().resideInAnyPackage(DTO_READY_CONTROLLER_PACKAGES)
             .should().dependOnClassesThat()
             .resideInAPackage("..entity..")
-            .because("新模块Controller应通过DTO返回数据");
+            .because("已完成 DTO 收口的模块 Controller 应通过 DTO 返回数据");
 
     /**
      * RULE 5: DTO不能依赖Service
@@ -138,17 +281,22 @@ public class ArchitectureTest {
     @ArchTest
     public static final ArchRule new_module_dto_should_not_depend_on_service =
         noClasses()
-            .that().resideInAPackage("com.xiyu.bid.calendar.dto..")
-            .or().resideInAPackage("com.xiyu.bid.collaboration.dto..")
-            .or().resideInAPackage("com.xiyu.bid.competitionintel.dto..")
-            .or().resideInAPackage("com.xiyu.bid.scoreanalysis.dto..")
-            .or().resideInAPackage("com.xiyu.bid.roi.dto..")
-            .or().resideInAPackage("com.xiyu.bid.versionhistory.dto..")
-            .or().resideInAPackage("com.xiyu.bid.documenteditor.dto..")
-            .or().resideInAPackage("com.xiyu.bid.documents.dto..")
+            .that().resideInAnyPackage(STRICT_DTO_PACKAGES)
             .should().dependOnClassesThat()
             .resideInAPackage("..service..")
             .because("新模块DTO不应依赖Service");
+
+    /**
+     * RULE 5.1: 已纳入 DTO 收口的模块 DTO 不应依赖 Entity
+     * 防止 Controller 虽然只返回 DTO，但接口契约仍透传实体枚举或实体类型
+     */
+    @ArchTest
+    public static final ArchRule dto_ready_module_dto_should_not_depend_on_entity =
+        noClasses()
+            .that().resideInAnyPackage(DTO_ENTITY_FREE_PACKAGES)
+            .should().dependOnClassesThat()
+            .resideInAPackage("..entity..")
+            .because("已完成 DTO 收口的模块 DTO 不应继续依赖 Entity 类型");
 
     /**
      * RULE 6: 禁止循环依赖
@@ -219,4 +367,44 @@ public class ArchitectureTest {
             .orShould().dependOnClassesThat()
             .haveSimpleNameContaining("SessionFactory")
             .because("新模块Controller必须通过Repository访问数据库");
+
+    @ArchTest
+    public static final void root_controller_package_should_only_contain_whitelisted_classes(JavaClasses classes) {
+        assertOnlyWhitelistedRootPackageClasses(
+            classes,
+            "com.xiyu.bid.controller",
+            ALLOWED_ROOT_CONTROLLERS,
+            "controller"
+        );
+    }
+
+    @ArchTest
+    public static final void root_service_package_should_only_contain_whitelisted_classes(JavaClasses classes) {
+        assertOnlyWhitelistedRootPackageClasses(
+            classes,
+            "com.xiyu.bid.service",
+            ALLOWED_ROOT_SERVICES,
+            "service"
+        );
+    }
+
+    @ArchTest
+    public static final void root_repository_package_should_only_contain_whitelisted_classes(JavaClasses classes) {
+        assertOnlyWhitelistedRootPackageClasses(
+            classes,
+            "com.xiyu.bid.repository",
+            ALLOWED_ROOT_REPOSITORIES,
+            "repository"
+        );
+    }
+
+    @ArchTest
+    public static final void root_entity_package_should_only_contain_whitelisted_classes(JavaClasses classes) {
+        assertOnlyWhitelistedRootPackageClasses(
+            classes,
+            "com.xiyu.bid.entity",
+            ALLOWED_ROOT_ENTITIES,
+            "entity"
+        );
+    }
 }

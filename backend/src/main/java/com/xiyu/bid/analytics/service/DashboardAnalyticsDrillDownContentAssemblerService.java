@@ -29,14 +29,14 @@ import static java.util.Collections.emptyList;
 class DashboardAnalyticsDrillDownContentAssemblerService {
 
     private final DashboardAnalyticsTeamPerformanceService teamPerformanceService;
-    private final DashboardAnalyticsDrillDownContentHelpers helpers;
+    private final DashboardAnalyticsDrillDownContentSupport contentSupport;
 
     DashboardAnalyticsDrillDownContentAssemblerService(
             DashboardAnalyticsTeamPerformanceService teamPerformanceService,
-            DashboardAnalyticsDrillDownContentHelpers helpers
+            DashboardAnalyticsDrillDownContentSupport contentSupport
     ) {
         this.teamPerformanceService = teamPerformanceService;
-        this.helpers = helpers;
+        this.contentSupport = contentSupport;
     }
 
     List<AnalyticsDrillDownProjectDTO> buildProjectItems(
@@ -47,11 +47,11 @@ class DashboardAnalyticsDrillDownContentAssemblerService {
                 .map(project -> AnalyticsDrillDownProjectDTO.builder()
                         .id(project.projectId())
                         .name(project.projectName())
-                        .customer(helpers.defaultString(project.tenderSource(), "-"))
-                        .budget(helpers.defaultAmount(project.budget()))
+                        .customer(contentSupport.defaultString(project.tenderSource(), "-"))
+                        .budget(contentSupport.defaultAmount(project.budget()))
                         .status(project.projectStatus() == null ? "-" : project.projectStatus().name().toLowerCase(java.util.Locale.ROOT))
-                        .manager(helpers.resolveDisplayName(userById.get(project.managerId()), project.managerName(), project.managerId()))
-                        .result(helpers.resolveProjectResult(project.projectStatus()))
+                        .manager(contentSupport.resolveDisplayName(userById.get(project.managerId()), project.managerName(), project.managerId()))
+                        .result(contentSupport.resolveProjectResult(project.projectStatus()))
                         .build())
                 .toList();
     }
@@ -85,7 +85,7 @@ class DashboardAnalyticsDrillDownContentAssemblerService {
                             .count();
                     double winRate = participation > 0 ? (completedWins * 100.0) / participation : 0.0;
                     return AnalyticsDrillDownTeamDTO.builder()
-                            .name(helpers.resolveDisplayName(user, null, userId))
+                            .name(contentSupport.resolveDisplayName(user, null, userId))
                             .role(user != null ? user.getRoleCode().toLowerCase(java.util.Locale.ROOT) : "member")
                             .dept("-")
                             .participation(participation)
@@ -142,10 +142,10 @@ class DashboardAnalyticsDrillDownContentAssemblerService {
                         .id(row.tenderId())
                         .relatedId(row.projectId())
                         .title(row.title())
-                        .subtitle(helpers.defaultString(row.source(), "未知来源"))
+                        .subtitle(contentSupport.defaultString(row.source(), "未知来源"))
                         .status(row.tenderStatus() == null ? null : row.tenderStatus().name())
-                        .ownerName(helpers.defaultString(row.projectName(), "未关联项目"))
-                        .amount(helpers.defaultAmount(row.budget()))
+                        .ownerName(contentSupport.defaultString(row.projectName(), "未关联项目"))
+                        .amount(contentSupport.defaultAmount(row.budget()))
                         .score(row.score())
                         .createdAt(row.createdAt())
                         .deadline(row.deadline())
@@ -170,10 +170,10 @@ class DashboardAnalyticsDrillDownContentAssemblerService {
                         .id(row.projectId())
                         .relatedId(row.tenderId())
                         .title(row.projectName())
-                        .subtitle(helpers.defaultString(row.tenderTitle(), "未关联标讯"))
+                        .subtitle(contentSupport.defaultString(row.tenderTitle(), "未关联标讯"))
                         .status(row.projectStatus() == null ? null : row.projectStatus().name())
-                        .ownerName(helpers.defaultString(row.managerName(), helpers.fallbackUserName(row.managerId())))
-                        .amount(helpers.defaultAmount(row.budget()))
+                        .ownerName(contentSupport.defaultString(row.managerName(), contentSupport.fallbackUserName(row.managerId())))
+                        .amount(contentSupport.defaultAmount(row.budget()))
                         .teamSize(row.teamSize())
                         .createdAt(row.referenceDate())
                         .deadline(row.endDate())
@@ -201,7 +201,7 @@ class DashboardAnalyticsDrillDownContentAssemblerService {
                     User user = userById.get(userId);
                     return AnalyticsDrillDownRowDTO.builder()
                             .id(userId)
-                            .title(helpers.resolveDisplayName(user, null, userId))
+                            .title(contentSupport.resolveDisplayName(user, null, userId))
                             .subtitle(user != null ? user.getEmail() : "-")
                             .role(user != null ? user.getRoleCode().toUpperCase(java.util.Locale.ROOT) : "UNKNOWN")
                             .count(aggregate.projectCount())
@@ -233,14 +233,14 @@ class DashboardAnalyticsDrillDownContentAssemblerService {
             List<ProjectSnapshotAggregate> filteredProjects,
             Map<Long, DashboardAnalyticsRepository.TenderSummaryRow> tenderById
     ) {
-        return helpers.buildTeamSummary(filteredRows, filteredProjects, tenderById);
+        return contentSupport.buildTeamSummary(filteredRows, filteredProjects, tenderById);
     }
 
     String resolveDisplayName(User user, String fallbackName, Long userId) {
-        return helpers.resolveDisplayName(user, fallbackName, userId);
+        return contentSupport.resolveDisplayName(user, fallbackName, userId);
     }
 
     String resolveProjectResult(Project.Status status) {
-        return helpers.resolveProjectResult(status);
+        return contentSupport.resolveProjectResult(status);
     }
 }

@@ -242,102 +242,102 @@
         >
           <el-table-column type="selection" width="50" />
           <el-table-column prop="title" label="标讯标题" min-width="280" show-overflow-tooltip>
-            <template #default="{ row = {} } = {}">
+            <template #default="scope">
               <div class="title-cell">
-                <el-link v-if="row.originalUrl" :href="row.originalUrl" target="_blank" type="primary" :underline="false">
-                  <span class="title-text">{{ row.title }}</span>
+                <el-link v-if="getSlotRow(scope).originalUrl" :href="getSlotRow(scope).originalUrl" target="_blank" type="primary" :underline="false">
+                  <span class="title-text">{{ getSlotRow(scope).title }}</span>
                   <el-icon style="margin-left: 4px" size="14"><Link /></el-icon>
                 </el-link>
-                <span v-else class="title-text">{{ row.title }}</span>
-                <el-tag v-if="row.aiScore >= 90" size="small" type="success" style="margin-left: 8px">高匹配</el-tag>
+                <span v-else class="title-text">{{ getSlotRow(scope).title }}</span>
+                <el-tag v-if="getSlotRow(scope).aiScore >= 90" size="small" type="success" style="margin-left: 8px">高匹配</el-tag>
               </div>
             </template>
           </el-table-column>
           <el-table-column prop="budget" label="预算" width="100" align="center">
-            <template #default="{ row = {} } = {}">
-              <span>{{ row.budget }}万元</span>
+            <template #default="scope">
+              <span>{{ getSlotRow(scope).budget }}万元</span>
             </template>
           </el-table-column>
           <el-table-column prop="region" label="地区" width="100" align="center" />
           <el-table-column prop="industry" label="行业" width="100" align="center" />
           <el-table-column prop="source" label="来源" width="100" align="center">
-            <template #default="{ row = {} } = {}">
-              <el-tag v-if="row.source" :type="getSourceTagType(row.source)" size="small">
-                {{ getSourceText(row.source) }}
+            <template #default="scope">
+              <el-tag v-if="getSlotRow(scope).source" :type="getSourceTagType(getSlotRow(scope).source)" size="small">
+                {{ getSourceText(getSlotRow(scope).source) }}
               </el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="aiScore" label="AI评分" width="100" align="center">
-            <template #default="{ row = {} } = {}">
-              <span class="ai-score-highlight" :class="row.aiScore >= 85 ? 'ai-score-high' : row.aiScore >= 70 ? 'ai-score-medium' : 'ai-score-low'">
-                {{ row.aiScore }}
+            <template #default="scope">
+              <span class="ai-score-highlight" :class="getSlotRow(scope).aiScore >= 85 ? 'ai-score-high' : getSlotRow(scope).aiScore >= 70 ? 'ai-score-medium' : 'ai-score-low'">
+                {{ getSlotRow(scope).aiScore }}
               </span>
             </template>
           </el-table-column>
           <el-table-column prop="deadline" label="截止日期" width="120" align="center" />
           <el-table-column prop="status" label="状态" width="100" align="center">
-            <template #default="{ row = {} } = {}">
-              <span class="status-badge" :class="'status-' + row.status">
-                {{ getStatusText(row.status) }}
+            <template #default="scope">
+              <span class="status-badge" :class="'status-' + getSlotRow(scope).status">
+                {{ getStatusText(getSlotRow(scope).status) }}
               </span>
             </template>
           </el-table-column>
           <el-table-column label="操作" width="320" align="center" fixed="right">
-            <template #default="{ row = {} } = {}">
+            <template #default="scope">
               <div class="table-actions">
                 <el-tooltip content="查看详情" placement="top">
-                  <el-button class="action-btn btn-view" size="small" :icon="View" @click="handleViewDetail(row.id)" />
+                  <el-button class="action-btn btn-view" size="small" :icon="View" @click="handleViewDetail(getSlotRow(scope).id)" />
                 </el-tooltip>
                 <el-tooltip v-if="showTenderAiEntry" content="AI分析" placement="top">
-                  <el-button class="action-btn btn-analyze" size="small" :icon="MagicStick" @click="handleAIAnalysis(row.id)" />
+                  <el-button class="action-btn btn-analyze" size="small" :icon="MagicStick" @click="handleAIAnalysis(getSlotRow(scope).id)" />
                 </el-tooltip>
                 <el-tooltip content="参与投标" placement="top">
-                  <el-button class="action-btn btn-participate" size="small" :icon="Document" @click="handleParticipate(row.id)" />
+                  <el-button class="action-btn btn-participate" size="small" :icon="Document" @click="handleParticipate(getSlotRow(scope).id)" />
                 </el-tooltip>
                 <el-dropdown trigger="click" class="action-dropdown">
                   <el-button class="action-btn btn-more" size="small" :icon="MoreFilled" />
                   <template #dropdown>
                     <el-dropdown-menu class="bidding-action-menu">
                       <!-- 分组：操作 -->
-                      <el-dropdown-item @click="handleSingleDistribute(row)">
+                      <el-dropdown-item @click="handleSingleDistribute(getSlotRow(scope))">
                         <el-icon><Share /></el-icon>
                         <span>分发</span>
                       </el-dropdown-item>
-                      <el-dropdown-item @click="handleSingleClaim(row)">
+                      <el-dropdown-item @click="handleSingleClaim(getSlotRow(scope))">
                         <el-icon><CircleCheck /></el-icon>
                         <span>领取</span>
                       </el-dropdown-item>
-                      <el-dropdown-item @click="handleSingleAssign(row)">
+                      <el-dropdown-item @click="handleSingleAssign(getSlotRow(scope))">
                         <el-icon><User /></el-icon>
                         <span>指派</span>
                       </el-dropdown-item>
                       <!-- 分隔线 -->
                       <el-dropdown-item divided />
                       <!-- 分组：状态 -->
-                      <el-dropdown-item @click="handleUpdateStatus(row, 'contacted')">
+                      <el-dropdown-item @click="handleUpdateStatus(getSlotRow(scope), 'contacted')">
                         <el-icon class="status-icon"><Phone /></el-icon>
                         <span>已联系</span>
                       </el-dropdown-item>
-                      <el-dropdown-item @click="handleUpdateStatus(row, 'following')">
+                      <el-dropdown-item @click="handleUpdateStatus(getSlotRow(scope), 'following')">
                         <el-icon class="status-icon"><Star /></el-icon>
                         <span>跟进中</span>
                       </el-dropdown-item>
-                      <el-dropdown-item @click="handleUpdateStatus(row, 'quoting')">
+                      <el-dropdown-item @click="handleUpdateStatus(getSlotRow(scope), 'quoting')">
                         <el-icon class="status-icon"><EditPen /></el-icon>
                         <span>报价中</span>
                       </el-dropdown-item>
-                      <el-dropdown-item @click="handleUpdateStatus(row, 'bidding')">
+                      <el-dropdown-item @click="handleUpdateStatus(getSlotRow(scope), 'bidding')">
                         <el-icon class="status-icon"><Briefcase /></el-icon>
                         <span>参与投标</span>
                       </el-dropdown-item>
-                      <el-dropdown-item @click="handleUpdateStatus(row, 'abandoned')">
+                      <el-dropdown-item @click="handleUpdateStatus(getSlotRow(scope), 'abandoned')">
                         <el-icon class="status-icon status-abandon"><Close /></el-icon>
                         <span>放弃跟进</span>
                       </el-dropdown-item>
                       <!-- 分隔线 -->
                       <el-dropdown-item divided />
                       <!-- 分组：删除 -->
-                      <el-dropdown-item @click="handleDeleteTender(row)" class="danger-item">
+                      <el-dropdown-item @click="handleDeleteTender(getSlotRow(scope))" class="danger-item">
                         <el-icon class="delete-icon"><Delete /></el-icon>
                         <span>删除</span>
                       </el-dropdown-item>
@@ -657,12 +657,18 @@
         </el-form-item>
         <el-form-item label="指派给" required>
           <el-select v-model="assignForm.assignee" placeholder="选择销售人员" style="width: 100%">
-            <el-option
-              v-for="sales in salesStaff"
-              :key="sales.id"
-              :label="`${sales.name}｜${sales.roleName}｜${sales.deptName}`"
-              :value="sales.id"
-            />
+            <el-option-group label="华东区">
+              <el-option label="小王" value="U001" />
+              <el-option label="李经理" value="U002" />
+            </el-option-group>
+            <el-option-group label="华南区">
+              <el-option label="张销售" value="U003" />
+              <el-option label="陈专员" value="U004" />
+            </el-option-group>
+            <el-option-group label="华北区">
+              <el-option label="刘主管" value="U005" />
+              <el-option label="赵经理" value="U006" />
+            </el-option-group>
           </el-select>
         </el-form-item>
         <el-form-item label="优先级">
@@ -703,9 +709,9 @@
         <el-table-column prop="tenderTitle" label="标讯标题" min-width="200" show-overflow-tooltip />
         <el-table-column prop="assignee" label="被分配人" width="120" />
         <el-table-column prop="type" label="分发方式" width="100">
-          <template #default="{ row = {} } = {}">
-            <el-tag :type="row.type === 'auto' ? 'success' : 'primary'" size="small">
-              {{ row.type === 'auto' ? '智能分发' : '手动指定' }}
+          <template #default="scope">
+            <el-tag :type="getSlotRow(scope).type === 'auto' ? 'success' : 'primary'" size="small">
+              {{ getSlotRow(scope).type === 'auto' ? '智能分发' : '手动指定' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -992,21 +998,21 @@
         <el-table-column prop="title" label="标讯标题" min-width="200" show-overflow-tooltip />
         <el-table-column prop="sourcePlatform" label="来源" width="120" />
         <el-table-column prop="budget" label="预算" width="100">
-          <template #default="{ row = {} } = {}">
-            {{ row.budget }}万元
+          <template #default="scope">
+            {{ getSlotRow(scope).budget }}万元
           </template>
         </el-table-column>
         <el-table-column prop="region" label="地区" width="80" />
         <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row = {} } = {}">
-            <el-tag :type="row.imported ? 'success' : 'info'" size="small">
-              {{ row.imported ? '已入库' : '待入库' }}
+          <template #default="scope">
+            <el-tag :type="getSlotRow(scope).imported ? 'success' : 'info'" size="small">
+              {{ getSlotRow(scope).imported ? '已入库' : '待入库' }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
-          <template #default="{ row = {} } = {}">
-            <el-button v-if="!row.imported" link type="primary" size="small" @click="importSingleTender(row)">
+          <template #default="scope">
+            <el-button v-if="!getSlotRow(scope).imported" link type="primary" size="small" @click="importSingleTender(getSlotRow(scope))">
               入库
             </el-button>
             <el-text v-else type="success" size="small">
@@ -1053,41 +1059,48 @@
             </div>
             <el-table :data="industryTrends" size="small" stripe>
               <el-table-column prop="industry" label="行业" width="150">
-                <template #default="{ row = {} } = {}">
+                <template #default="scope">
                   <div class="industry-cell">
-                    <span :class="['industry-dot', row.color]"></span>
-                    {{ row.industry }}
+                    <span :class="['industry-dot', getSlotRow(scope).color]"></span>
+                    {{ getSlotRow(scope).industry }}
                   </div>
                 </template>
               </el-table-column>
               <el-table-column prop="count" label="标讯数量" width="120" align="center" />
               <el-table-column prop="amount" label="总预算(万元)" width="130" align="center">
-                <template #default="{ row = {} } = {}">
-                  {{ row.amount?.toLocaleString() ?? "" }}
+                <template #default="scope">
+                  {{ getSlotRow(scope).amount?.toLocaleString?.() }}
                 </template>
               </el-table-column>
               <el-table-column prop="growth" label="同比增长" width="120" align="center">
-                <template #default="{ row = {} } = {}">
-                  <span :class="row.growth > 0 ? 'growth-up' : 'growth-down'">
-                    {{ row.growth > 0 ? '+' : '' }}{{ row.growth }}%
-                    <el-icon v-if="row.growth > 0"><ArrowRight /></el-icon>
+                <template #default="scope">
+                  <span :class="getSlotRow(scope).growth > 0 ? 'growth-up' : 'growth-down'">
+                    {{ getSlotRow(scope).growth > 0 ? '+' : '' }}{{ getSlotRow(scope).growth }}%
+                    <el-icon v-if="getSlotRow(scope).growth > 0"><ArrowRight /></el-icon>
                     <el-icon v-else><ArrowDown /></el-icon>
                   </span>
                 </template>
               </el-table-column>
               <el-table-column prop="trend" label="趋势" width="100" align="center">
-                <template #default="{ row = {} } = {}">
-                  <el-tag :type="row.trend === 'up' ? 'success' : row.trend === 'down' ? 'danger' : 'info'" size="small">
-                    {{ row.trend === 'up' ? '上升' : row.trend === 'down' ? '下降' : '平稳' }}
+                <template #default="scope">
+                  <el-tag :type="getSlotRow(scope).trend === 'up' ? 'success' : getSlotRow(scope).trend === 'down' ? 'danger' : 'info'" size="small">
+                    {{ getSlotRow(scope).trend === 'up' ? '上升' : getSlotRow(scope).trend === 'down' ? '下降' : '平稳' }}
                   </el-tag>
                 </template>
               </el-table-column>
               <el-table-column prop="hotLevel" label="热度" width="140" align="center">
-                <template #default="{ row = {} } = {}">
-                  <el-rate v-model="row.hotLevel" disabled size="small" />
+                <template #default="scope">
+                  <el-rate v-model="getSlotRow(scope).hotLevel" disabled size="small" />
                 </template>
               </el-table-column>
             </el-table>
+            <div class="insight-summary">
+              <el-alert type="success" :closable="false" show-icon>
+                <template #title>
+                  <strong>AI洞察:</strong> {{ industryInsight }}
+                </template>
+              </el-alert>
+            </div>
           </div>
         </el-tab-pane>
 
@@ -1102,27 +1115,34 @@
               <el-table-column prop="name" label="采购方" min-width="180" show-overflow-tooltip />
               <el-table-column prop="industry" label="所属行业" width="120" />
               <el-table-column prop="frequency" label="年招标频次" width="110" align="center">
-                <template #default="{ row = {} } = {}">
-                  <el-tag :type="row.frequency >= 10 ? 'danger' : row.frequency >= 5 ? 'warning' : 'info'" size="small">
-                    {{ row.frequency }}次
+                <template #default="scope">
+                  <el-tag :type="getSlotRow(scope).frequency >= 10 ? 'danger' : getSlotRow(scope).frequency >= 5 ? 'warning' : 'info'" size="small">
+                    {{ getSlotRow(scope).frequency }}次
                   </el-tag>
                 </template>
               </el-table-column>
               <el-table-column prop="period" label="常用招标月份" width="150" align="center" />
               <el-table-column prop="avgBudget" label="平均预算(万元)" width="130" align="center">
-                <template #default="{ row = {} } = {}">
-                  {{ row.avgBudget?.toLocaleString() ?? "" }}
+                <template #default="scope">
+                  {{ getSlotRow(scope).avgBudget?.toLocaleString?.() }}
                 </template>
               </el-table-column>
               <el-table-column label="机会评估" width="150" align="center">
-                <template #default="{ row = {} } = {}">
+                <template #default="scope">
                   <div class="opportunity-rating">
-                    <el-rate v-model="row.opportunity" disabled size="small" />
-                    <el-text size="small" type="success">{{ getOpportunityText(row.opportunity) }}</el-text>
+                    <el-rate v-model="getSlotRow(scope).opportunity" disabled size="small" />
+                    <el-text size="small" type="success">{{ getOpportunityText(getSlotRow(scope).opportunity) }}</el-text>
                   </div>
                 </template>
               </el-table-column>
             </el-table>
+            <div class="insight-summary">
+              <el-alert type="warning" :closable="false" show-icon>
+                <template #title>
+                  <strong>策略建议:</strong> {{ purchaserInsight }}
+                </template>
+              </el-alert>
+            </div>
           </div>
         </el-tab-pane>
 
@@ -1131,13 +1151,47 @@
           <div class="insight-content">
             <div class="insight-header">
               <h4>AI推荐高潜力机会</h4>
-              <el-tag type="success" size="small">客户商机中心</el-tag>
+              <el-tag type="success" size="small">智能匹配</el-tag>
             </div>
-            <el-empty description="高潜力机会识别已迁移至「客户商机中心」，基于真实标讯历史与机会评分模型综合研判。">
-              <el-button type="primary" @click="goToCustomerOpportunityCenter">
-                前往客户商机中心
-              </el-button>
-            </el-empty>
+            <el-row :gutter="16">
+              <el-col :span="12" v-for="item in potentialOpportunities" :key="item.id">
+                <el-card class="opportunity-card" shadow="hover">
+                  <div class="opportunity-header">
+                    <h5>{{ item.title }}</h5>
+                    <el-tag :type="item.priority === 'high' ? 'danger' : item.priority === 'medium' ? 'warning' : 'info'" size="small">
+                      {{ item.priority === 'high' ? '高优先级' : item.priority === 'medium' ? '中优先级' : '普通' }}
+                    </el-tag>
+                  </div>
+                  <div class="opportunity-info">
+                    <div class="info-row">
+                      <span class="label">采购方:</span>
+                      <span class="value">{{ item.purchaser }}</span>
+                    </div>
+                    <div class="info-row">
+                      <span class="label">预算:</span>
+                      <span class="value">{{ item.budget }}万元</span>
+                    </div>
+                    <div class="info-row">
+                      <span class="label">地区:</span>
+                      <span class="value">{{ item.region }}</span>
+                    </div>
+                  </div>
+                  <p class="opportunity-reason">
+                    <el-icon><InfoFilled /></el-icon>
+                    {{ item.reason }}
+                  </p>
+                  <div class="opportunity-footer">
+                    <div class="match-bar">
+                      <span class="match-label">匹配度</span>
+                      <el-progress :percentage="item.match" :color="getMatchColor(item.match)" :stroke-width="8" />
+                    </div>
+                    <el-button type="primary" size="small" @click="handleOpportunityAction(item.id)">
+                      立即跟进
+                    </el-button>
+                  </div>
+                </el-card>
+              </el-col>
+            </el-row>
           </div>
         </el-tab-pane>
 
@@ -1148,8 +1202,57 @@
               <h4>未来市场趋势预测</h4>
               <el-tag type="info" size="small">AI预测</el-tag>
             </div>
-            <el-empty v-if="!forecastTips.length" description="暂无预测建议，当前标讯数据不足以生成趋势研判" />
-            <el-card v-else class="forecast-tips">
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-card class="forecast-card">
+                  <template #header>
+                    <div class="card-header-small">
+                      <el-icon><TrendCharts /></el-icon>
+                      <span>下月招标趋势</span>
+                    </div>
+                  </template>
+                  <div class="forecast-data">
+                    <div class="forecast-item">
+                      <span class="forecast-label">预计发布量</span>
+                      <span class="forecast-value">+18%</span>
+                    </div>
+                    <div class="forecast-item">
+                      <span class="forecast-label">热门行业</span>
+                      <span class="forecast-value">数据中心</span>
+                    </div>
+                    <div class="forecast-item">
+                      <span class="forecast-label">活跃地区</span>
+                      <span class="forecast-value">华东</span>
+                    </div>
+                  </div>
+                </el-card>
+              </el-col>
+              <el-col :span="12">
+                <el-card class="forecast-card">
+                  <template #header>
+                    <div class="card-header-small">
+                      <el-icon><Calendar /></el-icon>
+                      <span>季度预测</span>
+                    </div>
+                  </template>
+                  <div class="forecast-data">
+                    <div class="forecast-item">
+                      <span class="forecast-label">Q1 预计总量</span>
+                      <span class="forecast-value">1,280条</span>
+                    </div>
+                    <div class="forecast-item">
+                      <span class="forecast-label">同比变化</span>
+                      <span class="forecast-value forecast-up">+25%</span>
+                    </div>
+                    <div class="forecast-item">
+                      <span class="forecast-label">市场活跃度</span>
+                      <span class="forecast-value">高</span>
+                    </div>
+                  </div>
+                </el-card>
+              </el-col>
+            </el-row>
+            <el-card class="forecast-tips" style="margin-top: 16px">
               <template #header>
                 <div class="card-header-small">
                   <el-icon><MagicStick /></el-icon>
@@ -1187,8 +1290,8 @@
           :stroke-width="12"
           :color="progressColors"
         >
-          <template #default="{ percentage = 0 } = {}">
-            {{ Math.round(percentage) }}%
+          <template #default="progressScope">
+            {{ Math.round(progressScope?.percentage ?? 0) }}%
           </template>
         </el-progress>
         <p class="parsing-hint">AI正在分析标书文档，提取关键信息</p>
@@ -1202,14 +1305,8 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBiddingStore } from '@/stores/bidding'
 import { useUserStore } from '@/stores/user'
-import { tendersApi, batchApi } from '@/api'
-import { tasksApi } from '@/api/modules/dashboard'
+import { tendersApi } from '@/api'
 import { crawlerApi } from '@/api/modules/tenders'
-import {
-  normalizeTenderForCreate,
-  normalizeBatchResult,
-  toBackendStatus
-} from './bidding-utils.js'
 import {
   Search, Plus, Download, Star, TrendCharts, List, Share, CircleCheck,
   MoreFilled, Check, User, Calendar, Flag, Briefcase, ChatDotRound,
@@ -1218,7 +1315,14 @@ import {
   Phone, Close, EditPen, Loading
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { marketInsightApi } from '@/api/modules/marketInsight.js'
+import {
+  getBreakoutTopics,
+  getStatsSummary,
+  transformToIndustryTrends,
+  transformToOpportunities,
+  generateInsight,
+  generateForecastTips
+} from '@/api/trendradar'
 import { useExport } from '@/composables/useExport'
 import { ExportType } from '@/api'
 
@@ -1229,6 +1333,10 @@ const showTenderAiEntry = true
 
 // 表格引用
 const tableRef = ref(null)
+
+function getSlotRow(scope) {
+  return scope?.row ?? {}
+}
 
 // 搜索表单
 const searchForm = ref({
@@ -1302,12 +1410,14 @@ const distributeForm = ref({
 })
 
 // 销售人员数据
-const salesStaff = ref([])
-
-const assigneeLookup = computed(() => salesStaff.value.reduce((acc, user) => {
-  acc[String(user.id)] = user
-  return acc
-}, {}))
+const salesStaff = ref([
+  { id: 'U001', name: '小王', role: '销售经理', region: '华东', workload: 3, avatar: '' },
+  { id: 'U002', name: '李经理', role: '资深销售', region: '华东', workload: 2, avatar: '' },
+  { id: 'U003', name: '张销售', role: '销售专员', region: '华南', workload: 4, avatar: '' },
+  { id: 'U004', name: '陈专员', role: '销售专员', region: '华南', workload: 2, avatar: '' },
+  { id: 'U005', name: '刘主管', role: '销售主管', region: '华北', workload: 3, avatar: '' },
+  { id: 'U006', name: '赵经理', role: '区域经理', region: '华北', workload: 2, avatar: '' }
+])
 
 // 分配预览
 const distributionPreview = computed(() => {
@@ -1322,9 +1432,9 @@ const distributionPreview = computed(() => {
     switch (distributeForm.value.rule) {
       case 'region':
         // 按区域分组预览
-        const regionMap = buildAssigneeBuckets()
+        const regionMap = { '华东': ['U001', 'U002'], '华南': ['U003', 'U004'], '华北': ['U005', 'U006'] }
         Object.entries(regionMap).forEach(([region, salesIds]) => {
-          const regionTenders = selected.filter(t => t.region === region || region === 'default')
+          const regionTenders = selected.filter(t => t.region === region)
           if (regionTenders.length > 0) {
             salesIds.forEach(salesId => {
               const sales = salesStaff.value.find(s => s.id === salesId)
@@ -1339,10 +1449,39 @@ const distributionPreview = computed(() => {
         })
         break
       case 'product':
-        buildRoundRobinPreview(preview, selected, salesStaff.value)
+        // 按产品线预览
+        preview.push({
+          salesId: 'U001',
+          salesName: '小王',
+          count: Math.ceil(selected.length / 3),
+          tenders: selected.slice(0, Math.ceil(selected.length / 3))
+        })
+        preview.push({
+          salesId: 'U003',
+          salesName: '张销售',
+          count: Math.ceil(selected.length / 3),
+          tenders: selected.slice(Math.ceil(selected.length / 3), Math.ceil(selected.length * 2 / 3))
+        })
+        preview.push({
+          salesId: 'U005',
+          salesName: '刘主管',
+          count: selected.length - Math.ceil(selected.length * 2 / 3),
+          tenders: selected.slice(Math.ceil(selected.length * 2 / 3))
+        })
         break
       case 'ai':
-        buildRoundRobinPreview(preview, [...selected].sort((left, right) => Number(right.aiScore || 0) - Number(left.aiScore || 0)), salesStaff.value)
+        preview.push({
+          salesId: 'U002',
+          salesName: '李经理',
+          count: selected.filter(t => t.aiScore >= 90).length,
+          tenders: selected.filter(t => t.aiScore >= 90)
+        })
+        preview.push({
+          salesId: 'U001',
+          salesName: '小王',
+          count: selected.filter(t => t.aiScore < 90).length,
+          tenders: selected.filter(t => t.aiScore < 90)
+        })
         break
       case 'average':
         const perSales = Math.ceil(selected.length / salesStaff.value.length)
@@ -1383,35 +1522,6 @@ const toggleSalesAssign = (salesId) => {
   }
 }
 
-const buildAssigneeBuckets = () => {
-  const buckets = salesStaff.value.reduce((acc, user) => {
-    const key = user.region || 'default'
-    if (!acc[key]) acc[key] = []
-    acc[key].push(user.id)
-    return acc
-  }, {})
-  if (Object.keys(buckets).length === 0) {
-    buckets.default = []
-  }
-  return buckets
-}
-
-const buildRoundRobinPreview = (preview, tenders, assignees) => {
-  if (!Array.isArray(assignees) || assignees.length === 0) return
-  const bucket = assignees.map((sales) => ({
-    salesId: sales.id,
-    salesName: sales.name,
-    count: 0,
-    tenders: []
-  }))
-  tenders.forEach((tender, index) => {
-    const target = bucket[index % bucket.length]
-    target.count += 1
-    target.tenders.push(tender)
-  })
-  preview.push(...bucket)
-}
-
 // 指派对话框
 const showAssignDialog = ref(false)
 const assignLoading = ref(false)
@@ -1426,7 +1536,22 @@ const assignForm = ref({
 
 // 分发记录
 const showRecordDialog = ref(false)
-const distributeRecords = ref([])
+const distributeRecords = ref([
+  {
+    tenderTitle: '某市政府数字化采购项目',
+    assignee: '小王',
+    type: 'auto',
+    time: '2024-01-15 10:30',
+    operator: '当前用户'
+  },
+  {
+    tenderTitle: '某能源集团信息化建设',
+    assignee: '张销售',
+    type: 'manual',
+    time: '2024-01-14 14:20',
+    operator: '当前用户'
+  }
+])
 
 // 市场洞察
 const showMarketInsight = ref(false)
@@ -1434,9 +1559,225 @@ const activeInsightTab = ref('industry')
 const loadingTrendData = ref(false)
 const trendDataLoaded = ref(false)
 
-const industryTrends = ref([])
-const purchaserPatterns = ref([])
-const forecastTips = ref([])
+// 行业趋势数据（MRO工业品分类 - 严格按照指定分类）
+const industryTrends = ref([
+  // 1. 工具、工具耗材、焊接
+  { industry: '工具', count: 331, amount: 21100, growth: 32, trend: 'up', hotLevel: 5, color: 'blue' },
+  { industry: '工具耗材', count: 268, amount: 8600, growth: 18, trend: 'up', hotLevel: 4, color: 'blue' },
+  { industry: '焊接', count: 98, amount: 15800, growth: 22, trend: 'up', hotLevel: 4, color: 'blue' },
+  // 2. 刀具、量具、机床、磨具
+  { industry: '刀具', count: 112, amount: 18600, growth: 18, trend: 'up', hotLevel: 4, color: 'green' },
+  { industry: '量具', count: 87, amount: 12400, growth: 15, trend: 'stable', hotLevel: 3, color: 'green' },
+  { industry: '机床', count: 76, amount: 38500, growth: 42, trend: 'up', hotLevel: 5, color: 'green' },
+  { industry: '磨具', count: 94, amount: 9800, growth: 12, trend: 'stable', hotLevel: 3, color: 'green' },
+  // 3. 润滑胶粘、车间化学品
+  { industry: '润滑胶粘', count: 284, amount: 19800, growth: 15, trend: 'up', hotLevel: 4, color: 'orange' },
+  { industry: '车间化学品', count: 72, amount: 6400, growth: 5, trend: 'stable', hotLevel: 3, color: 'orange' },
+  // 4. 劳保安全、消防
+  { industry: '劳保安全', count: 413, amount: 37600, growth: 42, trend: 'up', hotLevel: 5, color: 'red' },
+  { industry: '消防', count: 134, amount: 18500, growth: 32, trend: 'up', hotLevel: 4, color: 'red' },
+  // 5. 搬运、存储、工位、包材
+  { industry: '搬运', count: 92, amount: 28600, growth: 25, trend: 'up', hotLevel: 4, color: 'purple' },
+  { industry: '存储', count: 178, amount: 16800, growth: 20, trend: 'up', hotLevel: 4, color: 'purple' },
+  { industry: '工位', count: 115, amount: 8900, growth: 12, trend: 'stable', hotLevel: 3, color: 'purple' },
+  { industry: '包材', count: 203, amount: 12400, growth: 15, trend: 'up', hotLevel: 4, color: 'purple' },
+  // 6. 清洁、办公、制冷暖通
+  { industry: '清洁', count: 167, amount: 7800, growth: 10, trend: 'stable', hotLevel: 3, color: 'cyan' },
+  { industry: '办公', count: 289, amount: 18600, growth: 8, trend: 'stable', hotLevel: 3, color: 'cyan' },
+  { industry: '制冷暖通', count: 223, amount: 53300, growth: 25, trend: 'up', hotLevel: 4, color: 'cyan' },
+  // 7. 工控低压电工照明
+  { industry: '工控低压', count: 333, amount: 57600, growth: 30, trend: 'up', hotLevel: 5, color: 'yellow' },
+  { industry: '电工照明', count: 410, amount: 36300, growth: 24, trend: 'up', hotLevel: 4, color: 'yellow' },
+  // 8. 轴承、皮带、机械、电子
+  { industry: '轴承', count: 142, amount: 24500, growth: 20, trend: 'up', hotLevel: 4, color: 'pink' },
+  { industry: '皮带', count: 98, amount: 11200, growth: 12, trend: 'stable', hotLevel: 3, color: 'pink' },
+  { industry: '机械电子', count: 268, amount: 32000, growth: 28, trend: 'up', hotLevel: 4, color: 'pink' },
+  // 9. 气动、液压管阀、泵
+  { industry: '气动', count: 126, amount: 18500, growth: 22, trend: 'up', hotLevel: 4, color: 'indigo' },
+  { industry: '液压管阀', count: 264, amount: 60500, growth: 26, trend: 'up', hotLevel: 4, color: 'indigo' },
+  { industry: '泵', count: 145, amount: 22000, growth: 18, trend: 'up', hotLevel: 4, color: 'indigo' },
+  // 10. 紧固、密封、建工材料
+  { industry: '紧固', count: 268, amount: 14500, growth: 12, trend: 'stable', hotLevel: 3, color: 'lime' },
+  { industry: '密封', count: 135, amount: 9800, growth: 10, trend: 'stable', hotLevel: 3, color: 'lime' },
+  { industry: '建工材料', count: 178, amount: 22000, growth: 18, trend: 'up', hotLevel: 4, color: 'lime' },
+  // 11. 工业检测、实验室产品
+  { industry: '工业检测', count: 86, amount: 28600, growth: 30, trend: 'up', hotLevel: 4, color: 'teal' },
+  { industry: '实验室产品', count: 72, amount: 24500, growth: 25, trend: 'up', hotLevel: 4, color: 'teal' },
+  // 12. 企业福礼、紧急救护
+  { industry: '企业福礼', count: 312, amount: 9600, growth: 5, trend: 'stable', hotLevel: 3, color: 'grey' },
+  { industry: '紧急救护', count: 145, amount: 12800, growth: 15, trend: 'up', hotLevel: 3, color: 'grey' }
+])
+
+// 行业洞察总结（MRO工业品相关）
+const industryInsight = ref(
+  '劳保安全类产品需求持续增长，近3个月标讯数量同比增长38%，主要集中在华东和华南地区。制造业升级带动电动工具、焊接设备需求旺盛，工控低压类产品在新能源行业应用广泛。建议重点关注工控产品、搬运设备等高增长品类。'
+)
+
+// 采购方规律数据（MRO工业品客户）
+const purchaserPatterns = ref([
+  {
+    name: '国家电网某分公司',
+    industry: '能源电力',
+    frequency: 18,
+    period: '3月、6月、9月',
+    avgBudget: 450,
+    opportunity: 5
+  },
+  {
+    name: '某大型制造集团',
+    industry: '制造业',
+    frequency: 24,
+    period: '1月、4月、7月、10月',
+    avgBudget: 680,
+    opportunity: 5
+  },
+  {
+    name: '某汽车制造企业',
+    industry: '汽车',
+    frequency: 12,
+    period: '2月、5月、8月、11月',
+    avgBudget: 520,
+    opportunity: 4
+  },
+  {
+    name: '某化工园区管委会',
+    industry: '化工',
+    frequency: 8,
+    period: '3月、9月',
+    avgBudget: 380,
+    opportunity: 4
+  },
+  {
+    name: '某电子科技公司',
+    industry: '电子',
+    frequency: 15,
+    period: '每季度',
+    avgBudget: 320,
+    opportunity: 4
+  },
+  {
+    name: '某物流集团',
+    industry: '物流仓储',
+    frequency: 10,
+    period: '4月、10月',
+    avgBudget: 580,
+    opportunity: 5
+  },
+  {
+    name: '某三甲医院',
+    industry: '医疗',
+    frequency: 6,
+    period: '6月、12月',
+    avgBudget: 280,
+    opportunity: 3
+  },
+  {
+    name: '某建筑工程公司',
+    industry: '建筑',
+    frequency: 20,
+    period: '3月、8月',
+    avgBudget: 890,
+    opportunity: 5
+  }
+])
+
+// 采购方洞察总结
+const purchaserInsight = ref(
+  '制造业和物流仓储类客户采购频次高、预算充足，建议建立长期合作关系。国家电网、大型建筑工程等项目机会大但竞争激烈，建议提前布局。'
+)
+
+// 高潜力机会数据（MRO工业品相关）
+const potentialOpportunities = ref([
+  {
+    id: 'op001',
+    title: '某制造业工厂劳保用品年度采购',
+    purchaser: '某大型制造企业',
+    budget: 680,
+    region: '华东',
+    priority: 'high',
+    match: 95,
+    reason: '历史数据显示该客户年均采购劳保用品1200万，近期有年度招标计划，与我方劳保用品产品线高度匹配。'
+  },
+  {
+    id: 'op002',
+    title: '国家电网变电站检修工具采购',
+    purchaser: '国家电网某分公司',
+    budget: 520,
+    region: '华北',
+    priority: 'high',
+    match: 92,
+    reason: '该客户近期发布变电站检修项目，需要电动工具、手动工具等，预算充足，我方有成功案例可参考。'
+  },
+  {
+    id: 'op003',
+    title: '某汽车厂生产线搬运设备升级',
+    purchaser: '某汽车制造集团',
+    budget: 1280,
+    region: '华南',
+    priority: 'high',
+    match: 90,
+    reason: '客户计划升级自动化生产线，需要叉车、AGV等搬运设备，符合我方优势产品区域。'
+  },
+  {
+    id: 'op004',
+    title: '某化工企业安全消防设备采购',
+    purchaser: '某化工园区管委会',
+    budget: 450,
+    region: '华东',
+    priority: 'high',
+    match: 88,
+    reason: '化工行业安全要求提升，客户急需更新消防器材和安全设备，项目资金已到位。'
+  },
+  {
+    id: 'op005',
+    title: '某电子厂工控系统改造项目',
+    purchaser: '某电子科技公司',
+    budget: 850,
+    region: '西南',
+    priority: 'medium',
+    match: 85,
+    reason: '客户生产线自动化改造需要PLC、传感器等工控产品，我方有完整解决方案。'
+  },
+  {
+    id: 'op006',
+    title: '某医院实验室检测设备采购',
+    purchaser: '某三甲医院',
+    budget: 620,
+    region: '华北',
+    priority: 'medium',
+    match: 82,
+    reason: '医院新建检验科需要显微镜、离心机等实验室产品，该地区竞争相对较少。'
+  },
+  {
+    id: 'op007',
+    title: '某食品厂包装材料年度采购',
+    purchaser: '某食品集团公司',
+    budget: 380,
+    region: '华东',
+    priority: 'medium',
+    match: 80,
+    reason: '客户需要包装箱、缠绕膜、封箱胶带等包材，年采购量大，合作稳定。'
+  },
+  {
+    id: 'op008',
+    title: '某物流仓储货架系统扩建',
+    purchaser: '某物流集团',
+    budget: 960,
+    region: '华南',
+    priority: 'high',
+    match: 88,
+    reason: '客户扩建仓储中心需要大量货架、托盘、周转箱等存储设备，预算充足。'
+  }
+])
+
+// 预测建议（MRO工业品相关）
+const forecastTips = ref([
+  { text: '劳保安全类产品预计Q2需求旺盛，建议提前备货安全帽、防护眼镜等', color: '#67c23a' },
+  { text: '制造业升级带动电动工具、焊接设备需求增长，华东地区机会明显', color: '#409eff' },
+  { text: '工控低压类产品在新能源行业需求强劲，建议重点跟进', color: '#e6a23c' },
+  { text: '企业福礼采购季节即将到来，建议提前对接企业客户', color: '#909399' },
+  { text: '清洁办公类产品需求稳定，建议维护现有客户关系', color: '#67c23a' }
+])
 
 // ========== 外部标讯源配置 ==========
 const showSourceConfig = ref(false)
@@ -1458,8 +1799,51 @@ const savingConfig = ref(false)
 const testingConnection = ref(false)
 const lastSyncTime = ref('暂未同步')
 
-// 外部标讯数据（由 API 获取填充）
-const externalTenders = ref([])
+// 模拟外部标讯数据
+const mockExternalTenders = [
+  {
+    id: 'ext_001',
+    title: '某省政务云平台扩容采购项目',
+    budget: 580,
+    region: '北京',
+    industry: '政府',
+    deadline: '2025-03-15',
+    source: 'external',
+    sourcePlatform: '中国政府采购网',
+    aiScore: 92,
+    aiReason: '与公司云计算产品高度匹配',
+    tags: ['云计算', '政务云', '扩容'],
+    status: 'new'
+  },
+  {
+    id: 'ext_002',
+    title: '某市智慧交通管理系统建设',
+    budget: 320,
+    region: '上海',
+    industry: '交通',
+    deadline: '2025-03-20',
+    source: 'external',
+    sourcePlatform: '各省招标网',
+    aiScore: 88,
+    aiReason: '交通行业智能化改造项目',
+    tags: ['智慧交通', '系统集成'],
+    status: 'new'
+  },
+  {
+    id: 'ext_003',
+    title: '某能源集团ERP系统升级',
+    budget: 450,
+    region: '深圳',
+    industry: '能源',
+    deadline: '2025-03-25',
+    source: 'external',
+    sourcePlatform: '第三方商机服务',
+    aiScore: 85,
+    aiReason: '能源行业信息化建设项目',
+    tags: ['ERP', '系统升级'],
+    status: 'new'
+  }
+]
 
 // 获取外部标讯相关
 const fetchingTenders = ref(false)
@@ -1499,48 +1883,37 @@ const manualFormRules = {
   deadline: [{ required: true, message: '请选择截止日期', trigger: 'change' }]
 }
 
-const resolveAssigneePayload = (assigneeId, remark = '') => {
-  const assignee = assigneeLookup.value[String(assigneeId)]
-  return {
-    assigneeId,
-    assigneeDeptCode: assignee?.deptCode || '',
-    assigneeDeptName: assignee?.deptName || '未配置部门',
-    assigneeRoleCode: assignee?.roleCode || '',
-    assigneeRoleName: assignee?.roleName || '',
-    remark
-  }
+// 销售人员映射
+const salesMap = {
+  U001: '小王',
+  U002: '李经理',
+  U003: '张销售',
+  U004: '陈专员',
+  U005: '刘主管',
+  U006: '赵经理'
 }
 
-const loadAssignmentCandidates = async () => {
-  try {
-    const result = await tasksApi.getAssignmentCandidates()
-    salesStaff.value = Array.isArray(result?.data)
-      ? result.data.map((item) => ({
-        id: item.userId,
-        name: item.name || '未命名成员',
-        role: item.roleName || item.roleCode || '未配置角色',
-        roleCode: item.roleCode || '',
-        roleName: item.roleName || item.roleCode || '',
-        deptCode: item.deptCode || '',
-        deptName: item.deptName || '未配置部门',
-        region: item.deptName || '默认分组',
-        workload: 0,
-        avatar: ''
-      }))
-      : []
-  } catch (error) {
-    console.error('加载任务分配候选人失败:', error)
-    salesStaff.value = []
-  }
+// 区域销售映射
+const regionSalesMap = {
+  '北京': ['U005', 'U006'],
+  '上海': ['U001', 'U002'],
+  '广州': ['U003', 'U004'],
+  '深圳': ['U003', 'U004'],
+  '成都': ['U001', 'U002']
+}
+
+// 行业销售映射
+const industrySalesMap = {
+  '政府': ['U005', 'U006'],
+  '能源': ['U003', 'U004'],
+  '交通': ['U001', 'U002'],
+  '数据中心': ['U001', 'U002']
 }
 
 onMounted(async () => {
   checkMobile()
   window.addEventListener('resize', handleResize)
-  await Promise.allSettled([
-    biddingStore.getTenders(),
-    loadAssignmentCandidates()
-  ])
+  await biddingStore.getTenders()
   loadSavedConfig()
 })
 
@@ -1631,18 +2004,23 @@ const getScoreTagType = (score) => {
 const getStatusType = (status) => {
   const map = {
     new: 'info',
-    PENDING: 'info', TRACKING: 'warning', BIDDED: 'success', ABANDONED: 'danger',
-    contacted: '', following: 'warning', quoting: 'primary',
-    bidding: 'success', abandoned: 'danger'
+    contacted: '',
+    following: 'warning',
+    quoting: 'primary',
+    bidding: 'success',
+    abandoned: 'danger'
   }
   return map[status] || 'info'
 }
 
 const getStatusText = (status) => {
   const map = {
-    PENDING: '待处理', TRACKING: '跟踪中', BIDDED: '已投标', ABANDONED: '已放弃',
-    new: '新建', contacted: '已联系', following: '跟进中',
-    quoting: '报价中', bidding: '投标中', abandoned: '已放弃'
+    new: '新建',
+    contacted: '已联系',
+    following: '跟进中',
+    quoting: '报价中',
+    bidding: '投标中',
+    abandoned: '已放弃'
   }
   return map[status] || status
 }
@@ -1752,21 +2130,14 @@ const handleAIAnalysis = (id) => {
   }, 800)
 }
 
-const handleToggleFollow = async (id) => {
-  try {
-    const isCurrentlyFollowed = followedTenders.value.includes(id)
-    const newStatus = isCurrentlyFollowed ? 'PENDING' : 'TRACKING'
-    const result = await tendersApi.update(id, { status: newStatus })
-    if (result?.success) {
-      if (isCurrentlyFollowed) {
-        followedTenders.value = followedTenders.value.filter(fid => fid !== id)
-      } else {
-        followedTenders.value = [...followedTenders.value, id]
-      }
-      ElMessage.success(isCurrentlyFollowed ? '已取消关注' : '已关注')
-    }
-  } catch (error) {
-    ElMessage.error('操作失败')
+const handleToggleFollow = (id) => {
+  const index = followedTenders.value.indexOf(id)
+  if (index > -1) {
+    followedTenders.value.splice(index, 1)
+    ElMessage.info('已取消收藏')
+  } else {
+    followedTenders.value.push(id)
+    ElMessage.success('已收藏')
   }
 }
 
@@ -1841,28 +2212,27 @@ const handleDistribute = async () => {
     const distribution = []
 
     if (distributeForm.value.type === 'auto') {
-      if (salesStaff.value.length === 0) {
-        ElMessage.warning('当前范围内没有可分配成员，请先维护组织关系')
-        return
-      }
       // 智能分发
       selectedTenders.value.forEach(tender => {
         let assignees = []
 
         switch (distributeForm.value.rule) {
           case 'region':
-            assignees = buildAssigneeBuckets()[tender.region] || salesStaff.value.map((user) => user.id)
+            assignees = regionSalesMap[tender.region] || ['U001']
             break
           case 'product':
-            assignees = salesStaff.value.map((user) => user.id)
+            assignees = industrySalesMap[tender.industry] || ['U001']
             break
           case 'ai':
-            assignees = [...salesStaff.value]
-              .sort((left, right) => String(left.roleName || '').localeCompare(String(right.roleName || '')))
-              .map((user) => user.id)
+            // 高评分优先给资深销售
+            if (tender.aiScore >= 90) {
+              assignees = ['U002', 'U005', 'U006']
+            } else {
+              assignees = ['U001', 'U003', 'U004']
+            }
             break
           case 'average':
-            assignees = salesStaff.value.map((user) => user.id)
+            assignees = ['U001', 'U002', 'U003', 'U004', 'U005', 'U006']
             break
         }
 
@@ -1872,7 +2242,7 @@ const handleDistribute = async () => {
           tenderId: tender.id,
           tenderTitle: tender.title,
           assignee,
-          assigneeName: assigneeLookup.value[String(assignee)]?.name || '未命名成员',
+          assigneeName: salesMap[assignee],
           type: 'auto'
         })
       })
@@ -1886,45 +2256,33 @@ const handleDistribute = async () => {
           tenderId: tender.id,
           tenderTitle: tender.title,
           assignee,
-          assigneeName: assigneeLookup.value[String(assignee)]?.name || '未命名成员',
+          assigneeName: salesMap[assignee],
           type: 'manual'
         })
       })
     }
 
-    // 按指派人分组，调用批量分配 API
-    const assigneeGroups = {}
-    for (const item of distribution) {
-      const key = item.assignee
-      if (!assigneeGroups[key]) assigneeGroups[key] = []
-      assigneeGroups[key].push(item.tenderId)
-    }
-
-    await Promise.all(
-      Object.entries(assigneeGroups).map(([assigneeId, taskIds]) =>
-        batchApi.assignTasks(taskIds, resolveAssigneePayload(Number(assigneeId), distributeForm.value.remark))
-      )
-    )
+    // 模拟API调用
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
     // 添加到分发记录
-    const now = new Date().toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+    distribution.forEach(item => {
+      distributeRecords.value.unshift({
+        tenderTitle: item.tenderTitle,
+        assignee: item.assigneeName,
+        type: item.type,
+        time: new Date().toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        operator: '当前用户'
+      })
     })
-    const newRecords = distribution.map(item => ({
-      tenderTitle: item.tenderTitle,
-      assignee: item.assigneeName,
-      type: item.type,
-      time: now,
-      operator: userStore.userName
-    }))
-    distributeRecords.value = [...newRecords, ...distributeRecords.value]
 
     ElMessage.success(`成功分发 ${distribution.length} 条标讯`)
-    await biddingStore.getTenders()
     showDistributeDialog.value = false
     handleClearSelection()
   } catch (error) {
@@ -1954,20 +2312,27 @@ const handleBatchClaim = async () => {
     )
 
     const tenderIds = selectedTenders.value.map(t => t.id)
-    const userId = userStore.currentUser?.id || userStore.user?.id
+    const userId = userStore.user?.id || 'U001'
 
-    const result = await batchApi.claimTenders(tenderIds, userId)
-    const summary = normalizeBatchResult(result)
-    if (summary.ok) {
-      ElMessage.success(summary.message)
+    const result = await tendersApi.batchClaim(tenderIds, userId)
+
+    if (result.success) {
+      // 更新本地数据状态
+      selectedTenders.value.forEach(tender => {
+        tender.status = 'following'
+        tender.assignee = userId
+      })
+
+      ElMessage.success(`成功领取 ${result.data?.claimed || tenderIds.length} 条标讯`)
       handleClearSelection()
+      // 刷新列表数据
       await biddingStore.getTenders()
     } else {
-      ElMessage.warning(summary.message)
+      ElMessage.error(result.message || '领取失败，请重试')
     }
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('批量认领失败')
+      ElMessage.error('领取失败，请重试')
     }
   }
 }
@@ -1987,18 +2352,23 @@ const handleBatchFollow = async () => {
     return
   }
 
-  try {
-    const tenderIds = selectedTenders.value.map(t => t.id)
-    const results = await Promise.all(
-      tenderIds.map(id => tendersApi.update(id, { status: 'TRACKING' }))
-    )
-    const successCount = results.filter(r => r?.success).length
-    followedTenders.value = [...followedTenders.value, ...newFollows]
-    ElMessage.success(`成功关注 ${successCount} 条标讯`)
+  // 使用批量更新状态API
+  const tenderIds = selectedTenders.value.map(t => t.id)
+  const result = await tendersApi.batchUpdateStatus(tenderIds, 'following')
+
+  if (result.success) {
+    followedTenders.value.push(...newFollows)
+    // 更新本地数据状态
+    selectedTenders.value.forEach(tender => {
+      tender.status = 'following'
+    })
+
+    ElMessage.success(`已关注 ${result.data?.updated || newFollows.length} 条标讯`)
     handleClearSelection()
+    // 刷新列表数据
     await biddingStore.getTenders()
-  } catch (error) {
-    ElMessage.error('批量关注失败')
+  } else {
+    ElMessage.error(result.message || '关注失败，请重试')
   }
 }
 
@@ -2038,19 +2408,9 @@ const handleSingleClaim = async (row) => {
       }
     )
 
-    const userId = userStore.currentUser?.id || userStore.user?.id
-    const result = await batchApi.claimTenders([row.id], userId)
-    const summary = normalizeBatchResult(result)
-    if (summary.ok) {
-      ElMessage.success('认领成功')
-      await biddingStore.getTenders()
-    } else {
-      ElMessage.warning(summary.message)
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('认领失败')
-    }
+    ElMessage.success('领取成功')
+  } catch {
+    // 用户取消
   }
 }
 
@@ -2086,18 +2446,24 @@ const handleAssign = async () => {
   assignLoading.value = true
 
   try {
-    const result = await batchApi.assignTasks(
+    // 使用批量分配API
+    const result = await tendersApi.batchAssign(
       [assignForm.value.tenderId],
-      resolveAssigneePayload(assignForm.value.assignee, assignForm.value.remark)
+      assignForm.value.assignee
     )
-    const summary = normalizeBatchResult(result)
 
-    if (summary.ok) {
-      const targetAssignee = assigneeLookup.value[String(assignForm.value.assignee)]
+    if (result.success) {
+      // 更新本地数据
+      const tender = biddingStore.tenders?.find(t => t.id === assignForm.value.tenderId)
+      if (tender) {
+        tender.assignee = assignForm.value.assignee
+        tender.status = 'contacted'
+      }
+
       // 添加到分发记录
-      distributeRecords.value = [{
+      distributeRecords.value.unshift({
         tenderTitle: assignForm.value.tenderTitle,
-        assignee: targetAssignee?.name || '未命名成员',
+        assignee: salesMap[assignForm.value.assignee],
         type: 'manual',
         time: new Date().toLocaleString('zh-CN', {
           year: 'numeric',
@@ -2106,14 +2472,15 @@ const handleAssign = async () => {
           hour: '2-digit',
           minute: '2-digit'
         }),
-        operator: userStore.userName
-      }, ...distributeRecords.value]
+        operator: '当前用户'
+      })
 
-      ElMessage.success(`已将"${assignForm.value.tenderTitle}"指派给${targetAssignee?.name || '未命名成员'}`)
+      ElMessage.success(`已将"${assignForm.value.tenderTitle}"指派给${salesMap[assignForm.value.assignee]}`)
       showAssignDialog.value = false
+      // 刷新列表数据
       await biddingStore.getTenders()
     } else {
-      ElMessage.warning(summary.message)
+      ElMessage.error(result.message || '指派失败，请重试')
     }
   } catch (error) {
     ElMessage.error('指派失败，请重试')
@@ -2134,17 +2501,14 @@ const handleDeleteTender = async (row) => {
       }
     )
 
-    const result = await tendersApi.delete(row.id)
-    if (result?.success) {
-      ElMessage.success('删除成功')
-      await biddingStore.getTenders()
-    } else {
-      ElMessage.error(result?.message || '删除失败')
+    const index = biddingStore.tenders?.findIndex(t => t.id === row.id)
+    if (index !== undefined && index > -1) {
+      biddingStore.tenders.splice(index, 1)
     }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
+
+    ElMessage.success('删除成功')
+  } catch {
+    // 用户取消
   }
 }
 
@@ -2162,18 +2526,15 @@ const handleStatusChange = async (row, newStatus) => {
       }
     )
 
-    const backendStatus = toBackendStatus(newStatus)
-    const result = await tendersApi.update(row.id, { status: backendStatus })
-    if (result?.success) {
-      ElMessage.success(`状态已更新为"${getStatusText(newStatus)}"`)
-      await biddingStore.getTenders()
-    } else {
-      ElMessage.error(result?.message || '状态更新失败')
+    // 更新状态
+    const index = biddingStore.tenders?.findIndex(t => t.id === row.id)
+    if (index !== undefined && index > -1) {
+      biddingStore.tenders[index].status = newStatus
     }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('状态更新失败')
-    }
+
+    ElMessage.success(`状态已更新为"${getStatusText(newStatus)}"`)
+  } catch {
+    // 用户取消
   }
 }
 
@@ -2214,10 +2575,10 @@ const handleUpdateStatus = async (row, newStatus) => {
       }
     )
 
-    const backendStatus = toBackendStatus(newStatus)
-    const result = await tendersApi.update(row.id, { status: backendStatus })
-    if (result?.success) {
-      await biddingStore.getTenders()
+    // 更新状态
+    const index = biddingStore.tenders?.findIndex(t => t.id === row.id)
+    if (index !== undefined && index > -1) {
+      biddingStore.tenders[index].status = newStatus
 
       // 如果是参与投标，可以引导用户创建项目
       if (newStatus === 'bidding') {
@@ -2227,6 +2588,7 @@ const handleUpdateStatus = async (row, newStatus) => {
           duration: 3000,
           showClose: true
         })
+        // 可以延迟跳转到项目创建页
         setTimeout(() => {
           router.push({
             path: '/project/create',
@@ -2236,13 +2598,9 @@ const handleUpdateStatus = async (row, newStatus) => {
       } else {
         ElMessage.success(`状态已更新为"${statusText}"`)
       }
-    } else {
-      ElMessage.error(result?.message || '状态更新失败')
     }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('状态更新失败')
-    }
+  } catch {
+    // 用户取消
   }
 }
 
@@ -2268,29 +2626,40 @@ const loadSavedConfig = () => {
   }
 }
 
-const saveSourceConfig = () => {
+const saveSourceConfig = async () => {
   if (sourceConfig.value.platforms.length === 0) {
     ElMessage.warning('请至少选择一个标讯源平台')
     return
   }
 
+  savingConfig.value = true
   try {
-    const { apiKey, ...safeConfig } = sourceConfig.value
-    localStorage.setItem('tenderSourceConfig', JSON.stringify(safeConfig))
+    await new Promise(resolve => setTimeout(resolve, 800))
+    localStorage.setItem('tenderSourceConfig', JSON.stringify(sourceConfig.value))
     ElMessage.success('标讯源配置已保存')
     showSourceConfig.value = false
   } catch (error) {
     ElMessage.error('保存失败，请重试')
+  } finally {
+    savingConfig.value = false
   }
 }
 
-const testConnection = () => {
+const testConnection = async () => {
   if (sourceConfig.value.platforms.length === 0) {
     ElMessage.warning('请先选择标讯源平台')
     return
   }
 
-  ElMessage.info('连接测试功能待后端支持，当前配置已本地保存')
+  testingConnection.value = true
+  try {
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    ElMessage.success('连接测试成功！')
+  } catch (error) {
+    ElMessage.error('连接测试失败')
+  } finally {
+    testingConnection.value = false
+  }
 }
 
 // ========== 获取外部标讯相关 ==========
@@ -2304,39 +2673,80 @@ const handleFetchExternalTenders = async () => {
 
   fetchingTenders.value = true
   try {
-    const keyword = sourceConfig.value.keywords?.[0] || ''
-    const result = await crawlerApi.trigger({ keyword, pageSize: 20 })
-    if (result?.success || result?.data) {
-      const d = result.data || {}
-      const now = new Date()
-      lastSyncTime.value = now.toLocaleString('zh-CN', {
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-      ElMessage.success(`标讯获取成功：新增 ${d.saved ?? 0} 条，跳过 ${d.skipped ?? 0} 条`)
-      await biddingStore.getTenders()
+    await new Promise(resolve => setTimeout(resolve, 2000))
+
+    let results = mockExternalTenders
+    if (sourceConfig.value.keywords.length > 0) {
+      results = results.filter(t =>
+        sourceConfig.value.keywords.some(kw =>
+          t.title.includes(kw) || t.tags.some(tag => tag.includes(kw))
+        )
+      )
+    }
+
+    if (sourceConfig.value.regions.length > 0) {
+      results = results.filter(t => sourceConfig.value.regions.includes(t.region))
+    }
+
+    if (sourceConfig.value.minBudget > 0) {
+      results = results.filter(t => t.budget >= sourceConfig.value.minBudget)
+    }
+    if (sourceConfig.value.maxBudget > 0) {
+      results = results.filter(t => t.budget <= sourceConfig.value.maxBudget)
+    }
+
+    fetchResults.value = {
+      total: results.length,
+      matched: results.length,
+      imported: 0,
+      allImported: false,
+      list: results.map(t => ({ ...t, imported: false }))
+    }
+
+    const now = new Date()
+    lastSyncTime.value = now.toLocaleString('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+
+    if (results.length > 0) {
+      showFetchResult.value = true
+      ElMessage.success(`成功获取 ${results.length} 条标讯`)
     } else {
-      ElMessage.error(result?.message || '获取失败')
+      ElMessage.info('未获取到匹配的标讯，请调整筛选条件')
     }
   } catch (error) {
-    ElMessage.error('获取外部标讯失败')
+    ElMessage.error('获取标讯失败')
   } finally {
     fetchingTenders.value = false
   }
 }
 
-const importSingleTender = async () => {
-  // Import is now handled by the crawler API directly
-  ElMessage.info('标讯已通过爬虫服务导入，请刷新列表查看')
-  await biddingStore.getTenders()
+const importSingleTender = (tender) => {
+  tender.imported = true
+  fetchResults.value.imported++
+  fetchResults.value.allImported = fetchResults.value.list.every(t => t.imported)
+
+  if (biddingStore.tenders) {
+    biddingStore.tenders.unshift({ ...tender })
+  }
+
+  ElMessage.success('标讯已入库')
 }
 
-const importAllTenders = async () => {
-  // Import is now handled by the crawler API directly
-  ElMessage.info('标讯已通过爬虫服务导入，请刷新列表查看')
-  await biddingStore.getTenders()
+const importAllTenders = () => {
+  const unimported = fetchResults.value.list.filter(t => !t.imported)
+  unimported.forEach(t => {
+    t.imported = true
+    if (biddingStore.tenders) {
+      biddingStore.tenders.unshift({ ...t })
+    }
+  })
+  fetchResults.value.imported = fetchResults.value.list.length
+  fetchResults.value.allImported = true
+  ElMessage.success(`成功入库 ${unimported.length} 条标讯`)
 }
 
 // ========== 人工录入相关 ==========
@@ -2366,21 +2776,37 @@ const saveManualTender = async () => {
     await manualFormRef.value.validate()
 
     savingManual.value = true
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
-    const payload = normalizeTenderForCreate(manualForm.value)
-    const result = await tendersApi.create(payload)
-    if (result?.success) {
-      ElMessage.success('标讯录入成功')
-      showManualAdd.value = false
-      resetManualForm()
-      await biddingStore.getTenders()
-    } else {
-      ElMessage.error(result?.message || '标讯录入失败')
+    const newTender = {
+      id: `manual_${Date.now()}`,
+      title: manualForm.value.title,
+      budget: manualForm.value.budget,
+      region: manualForm.value.region,
+      industry: manualForm.value.industry,
+      deadline: manualForm.value.deadline
+        ? new Date(manualForm.value.deadline).toLocaleDateString('zh-CN')
+        : '',
+      source: 'manual',
+      purchaser: manualForm.value.purchaser,
+      contact: manualForm.value.contact,
+      phone: manualForm.value.phone,
+      description: manualForm.value.description,
+      tags: manualForm.value.tags,
+      aiScore: Math.floor(Math.random() * 20) + 70,
+      aiReason: '人工录入标讯',
+      status: 'new'
     }
+
+    if (biddingStore.tenders) {
+      biddingStore.tenders.unshift(newTender)
+    }
+
+    ElMessage.success('标讯已成功入库')
+    showManualAdd.value = false
+    resetManualForm()
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('标讯录入失败')
-    }
+    // 验证失败
   } finally {
     savingManual.value = false
   }
@@ -2388,23 +2814,83 @@ const saveManualTender = async () => {
 
 // ========== 市场洞察相关 ==========
 
-// 从后端聚合接口加载市场洞察数据
-const loadMarketInsight = async () => {
-  if (trendDataLoaded.value) return
+// 加载 TrendRadar 数据
+const loadTrendRadarData = async () => {
+  if (trendDataLoaded.value) return // 避免重复加载
 
   loadingTrendData.value = true
   try {
-    const response = await marketInsightApi.getInsight()
-    const payload = response?.data || {}
-    industryTrends.value = Array.isArray(payload.industryTrends) ? payload.industryTrends : []
-    purchaserPatterns.value = Array.isArray(payload.purchaserPatterns) ? payload.purchaserPatterns : []
-    forecastTips.value = Array.isArray(payload.forecastTips) ? payload.forecastTips : []
-    trendDataLoaded.value = true
+    // 并行获取热点数据和统计信息
+    const [topics, stats] = await Promise.all([
+      getBreakoutTopics(50, 2),
+      getStatsSummary()
+    ])
+
+    // 如果没有真实数据，则使用默认 fallback 数据
+    const isMock = false
+
+    // 只有在有真实数据且经过过滤后仍有数据时才更新
+    if (topics && topics.length > 0) {
+      const filteredTopics = topics.filter(t => {
+        // 过滤政治敏感内容
+        const text = (t.normalized_title + ' ' + (t.sample_titles || []).join(' ')).toLowerCase()
+        const politicsKeywords = ['空袭', '袭击', '战争', '东部战区', '战区', '导弹', '俄乌', '巴以', '哈马斯', '以色列', '伊朗', '朝鲜']
+        return !politicsKeywords.some(kw => text.includes(kw.toLowerCase()))
+      })
+
+      if (filteredTopics.length > 0) {
+        // 更新行业趋势数据
+        const transformed = transformToIndustryTrends(filteredTopics)
+        if (transformed.length > 0) {
+          industryTrends.value = transformed
+        }
+
+        // 更新高潜力机会数据
+        const opportunities = transformToOpportunities(filteredTopics)
+        if (opportunities.length > 0) {
+          potentialOpportunities.value = opportunities
+        }
+
+        // 更新洞察文本
+        industryInsight.value = generateInsight(filteredTopics, stats)
+
+        // 更新预测建议
+        forecastTips.value = generateForecastTips(filteredTopics)
+
+        trendDataLoaded.value = true
+
+        // Mock 模式下提示信息更友好
+        if (isMock) {
+          ElMessage.success({
+            message: '已加载 AI 模型模拟的市场分析数据',
+            duration: 2000
+          })
+        } else {
+          ElMessage.success({
+            message: `已从 TrendRadar 加载 ${filteredTopics.length} 条热点趋势数据`,
+            duration: 2000
+          })
+        }
+      } else {
+        // 过滤后没有数据
+        if (isMock) {
+          trendDataLoaded.value = true
+        } else {
+          ElMessage.info('当前实时热点均为非工业相关内容，已展示推荐 MRO 趋势')
+        }
+      }
+    } else {
+      // 完全没有返回数据
+      if (isMock) {
+        trendDataLoaded.value = true
+      } else {
+        ElMessage.info('TrendRadar 暂时无法返回实时数据，已加载基准市场洞察')
+      }
+    }
   } catch (error) {
-    ElMessage.warning('市场洞察数据加载失败，请稍后重试')
-    industryTrends.value = []
-    purchaserPatterns.value = []
-    forecastTips.value = []
+    console.error('加载 TrendRadar 数据失败:', error)
+    // 连接失败时静默保留 mock 数据，不弹出警告干扰用户
+    trendDataLoaded.value = true
   } finally {
     loadingTrendData.value = false
   }
@@ -2413,13 +2899,13 @@ const loadMarketInsight = async () => {
 // 刷新趋势数据
 const refreshTrendData = async () => {
   trendDataLoaded.value = false
-  await loadMarketInsight()
+  await loadTrendRadarData()
 }
 
 // 监听对话框打开
 watch(showMarketInsight, (newVal) => {
   if (newVal) {
-    loadMarketInsight()
+    loadTrendRadarData()
   }
 })
 
@@ -2430,9 +2916,18 @@ const getOpportunityText = (score) => {
   return '较低'
 }
 
-const goToCustomerOpportunityCenter = () => {
-  showMarketInsight.value = false
-  router.push('/bidding/customer-opportunities')
+const getMatchColor = (percentage) => {
+  if (percentage >= 90) return '#67c23a'
+  if (percentage >= 80) return '#e6a23c'
+  return '#409eff'
+}
+
+const handleOpportunityAction = (id) => {
+  const opportunity = potentialOpportunities.value.find(item => item.id === id)
+  if (opportunity) {
+    showMarketInsight.value = false
+    ElMessage.success(`已创建跟进任务: ${opportunity.title}`)
+  }
 }
 </script>
 

@@ -1,85 +1,124 @@
-// Input: DTO、Repository、其他 Service 依赖
-// Output: 领域操作结果、事务内状态变更和查询结果
+// Input: compatibility DTOs, businessqualification application services, and DTO mapper
+// Output: legacy qualification API orchestration backed by the real businessqualification domain
 // Pos: Service/业务编排层
-// 维护声明: 仅维护本服务职责内的业务规则；跨域变化请同步相关模块.
-
+// 维护声明: 仅维护兼容入口编排；业务规则下沉到 businessqualification 子域。
 package com.xiyu.bid.qualification.service;
 
+import com.xiyu.bid.businessqualification.application.service.BorrowQualificationAppService;
+import com.xiyu.bid.businessqualification.application.service.CreateQualificationAppService;
+import com.xiyu.bid.businessqualification.application.service.DeleteQualificationAppService;
+import com.xiyu.bid.businessqualification.application.service.GetQualificationBorrowRecordsAppService;
+import com.xiyu.bid.businessqualification.application.service.ListQualificationsAppService;
+import com.xiyu.bid.businessqualification.application.service.ReturnQualificationAppService;
+import com.xiyu.bid.businessqualification.application.service.ScanExpiringQualificationsAppService;
+import com.xiyu.bid.businessqualification.application.service.UpdateQualificationAppService;
+import com.xiyu.bid.businessqualification.domain.model.BusinessQualification;
+import com.xiyu.bid.businessqualification.domain.model.QualificationLoan;
+import com.xiyu.bid.qualification.dto.QualificationBorrowRecordDTO;
+import com.xiyu.bid.qualification.dto.QualificationBorrowRequest;
 import com.xiyu.bid.qualification.dto.QualificationDTO;
-import com.xiyu.bid.entity.Qualification;
-import com.xiyu.bid.exception.ResourceNotFoundException;
-import com.xiyu.bid.repository.QualificationRepository;
+import com.xiyu.bid.qualification.dto.QualificationOverviewDTO;
+import com.xiyu.bid.qualification.dto.QualificationReturnRequest;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 @Transactional
 public class QualificationService {
 
-    private final QualificationRepository qualificationRepository;
+    private final CreateQualificationAppService createQualificationAppService;
+    private final UpdateQualificationAppService updateQualificationAppService;
+    private final BorrowQualificationAppService borrowQualificationAppService;
+    private final ReturnQualificationAppService returnQualificationAppService;
+    private final ListQualificationsAppService listQualificationsAppService;
+    private final GetQualificationBorrowRecordsAppService getQualificationBorrowRecordsAppService;
+    private final ScanExpiringQualificationsAppService scanExpiringQualificationsAppService;
+    private final DeleteQualificationAppService deleteQualificationAppService;
+    private final QualificationDtoMapper mapper;
 
-    @Transactional
     public QualificationDTO createQualification(QualificationDTO dto) {
-        log.info("Creating qualification: {}", dto.getName());
-        Qualification qualification = Qualification.builder()
-                .name(dto.getName()).type(dto.getType()).level(dto.getLevel())
-                .issueDate(dto.getIssueDate()).expiryDate(dto.getExpiryDate()).fileUrl(dto.getFileUrl()).build();
-        return toDTO(qualificationRepository.save(qualification));
+        return mapper.toDto(createQualificationAppService.create(mapper.toUpsertCommand(dto)));
     }
 
     @Transactional(readOnly = true)
-    public List<QualificationDTO> getAllQualifications() {
-        return qualificationRepository.findAll(org.springframework.data.domain.PageRequest.of(0, 1000)).stream().map(this::toDTO).collect(Collectors.toList());
+    public List<QualificationDTO> getAllQualifications(
+            String subjectType,
+            String subjectName,
+            String category,
+            String status,
+            String borrowStatus,
+            Integer expiringWithinDays,
+            String keyword
+    ) {
+        return listQualificationsAppService.list(
+                        mapper.toCriteria(subjectType, subjectName, category, status, borrowStatus, expiringWithinDays, keyword))
+                .stream()
+                .map(mapper::toDto)
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public QualificationDTO getQualificationById(Long id) {
-        return toDTO(qualificationRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Qualification", id.toString())));
+        return mapper.toDto(findQualification(id));
     }
 
-    @Transactional
     public QualificationDTO updateQualification(Long id, QualificationDTO dto) {
-        log.info("Updating qualification: {}", id);
-        Qualification existing = qualificationRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Qualification", id.toString()));
-        Qualification updated = Qualification.builder()
-                .id(existing.getId()).name(dto.getName() != null ? dto.getName() : existing.getName())
-                .type(dto.getType() != null ? dto.getType() : existing.getType())
-                .level(dto.getLevel() != null ? dto.getLevel() : existing.getLevel())
-                .issueDate(dto.getIssueDate() != null ? dto.getIssueDate() : existing.getIssueDate())
-                .expiryDate(dto.getExpiryDate() != null ? dto.getExpiryDate() : existing.getExpiryDate())
-                .fileUrl(dto.getFileUrl() != null ? dto.getFileUrl() : existing.getFileUrl())
-                .createdAt(existing.getCreatedAt()).updatedAt(existing.getUpdatedAt()).build();
-        return toDTO(qualificationRepository.save(updated));
+        return mapper.toDto(updateQualificationAppService.update(id, mapper.toUpsertCommand(dto)));
     }
 
-    @Transactional
     public void deleteQualification(Long id) {
-        log.info("Deleting qualification: {}", id);
-        if (!qualificationRepository.existsById(id)) throw new ResourceNotFoundException("Qualification", id.toString());
-        qualificationRepository.deleteById(id);
+        deleteQualificationAppService.delete(id);
     }
 
     @Transactional(readOnly = true)
-    public List<QualificationDTO> getQualificationsByType(Qualification.Type type) {
-        return qualificationRepository.findByType(type, org.springframework.data.domain.PageRequest.of(0, 1000)).stream().map(this::toDTO).collect(Collectors.toList());
+    public List<QualificationDTO> getQualificationsByType(com.xiyu.bid.entity.Qualification.Type type) {
+        return getAllQualifications(null, null, type == null ? null : mapper.toUpsertCommand(QualificationDTO.builder().type(type).build()).getCategory().name(), null, null, null, null);
     }
 
     @Transactional(readOnly = true)
     public List<QualificationDTO> getValidQualifications() {
-        return qualificationRepository.findByExpiryDateAfter(LocalDate.now(), org.springframework.data.domain.PageRequest.of(0, 1000)).stream().map(this::toDTO).collect(Collectors.toList());
+        return getAllQualifications(null, null, null, null, null, null, null).stream()
+                .filter(item -> !"expired".equals(item.getStatus()))
+                .toList();
     }
 
-    private QualificationDTO toDTO(Qualification q) {
-        return QualificationDTO.builder().id(q.getId()).name(q.getName()).type(q.getType()).level(q.getLevel())
-                .issueDate(q.getIssueDate()).expiryDate(q.getExpiryDate()).fileUrl(q.getFileUrl())
-                .createdAt(q.getCreatedAt()).updatedAt(q.getUpdatedAt()).build();
+    public QualificationBorrowRecordDTO borrowQualification(Long id, QualificationBorrowRequest request) {
+        QualificationLoan loan = borrowQualificationAppService.borrow(id, mapper.toBorrowCommand(request));
+        return mapper.toBorrowRecordDto(loan, findQualification(id));
+    }
+
+    public QualificationBorrowRecordDTO returnQualification(Long id, QualificationReturnRequest request) {
+        QualificationLoan loan = returnQualificationAppService.returnLoan(id, mapper.toReturnCommand(request));
+        return mapper.toBorrowRecordDto(loan, findQualification(id));
+    }
+
+    public QualificationBorrowRecordDTO returnQualificationByRecordId(Long recordId, QualificationReturnRequest request) {
+        QualificationLoan loan = returnQualificationAppService.returnLoanByRecordId(recordId, mapper.toReturnCommand(request));
+        return mapper.toBorrowRecordDto(loan, findQualification(loan.getQualificationId()));
+    }
+
+    @Transactional(readOnly = true)
+    public List<QualificationBorrowRecordDTO> getBorrowRecords(Long id) {
+        BusinessQualification qualification = findQualification(id);
+        return getQualificationBorrowRecordsAppService.getBorrowRecords(id).stream()
+                .map(item -> mapper.toBorrowRecordDto(item, qualification))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public QualificationOverviewDTO getOverview() {
+        return mapper.toOverview(getAllQualifications(null, null, null, null, null, null, null));
+    }
+
+    public int scanExpiringQualifications(int thresholdDays) {
+        return scanExpiringQualificationsAppService.scan(thresholdDays).size();
+    }
+
+    private BusinessQualification findQualification(Long id) {
+        return listQualificationsAppService.get(id);
     }
 }

@@ -22,6 +22,8 @@ export { default as httpClient } from './client.js'
 export { authApi } from './modules/auth.js'
 export { tendersApi } from './modules/tenders.js'
 export { projectsApi } from './modules/projects.js'
+export { default as qualificationsApi } from './modules/qualification.js'
+export { templatesApi } from './modules/templates.js'
 export { default as knowledgeApi } from './modules/knowledge.js'
 export { feesApi } from './modules/fees.js'
 export { default as aiApi } from './modules/ai.js'
@@ -34,14 +36,12 @@ export { auditApi } from './modules/audit.js'
 export { settingsApi } from './modules/settings.js'
 export { projectGroupsApi } from './modules/projectGroups.js'
 export { bidResultsApi } from './modules/bidResults.js'
-export { batchApi } from './modules/batch.js'
-export { marketInsightApi } from './modules/marketInsight.js'
-export { customerOpportunityApi } from './modules/customerOpportunity.js'
 
 export default {
   auth: () => import('./modules/auth.js').then(m => m.authApi),
   tenders: () => import('./modules/tenders.js').then(m => m.tendersApi),
   projects: () => import('./modules/projects.js').then(m => m.projectsApi),
+  qualifications: () => import('./modules/qualification.js').then(m => m.default),
   knowledge: () => import('./modules/knowledge.js').then(m => m.default),
   fees: () => import('./modules/fees.js').then(m => m.feesApi),
   ai: () => import('./modules/ai.js').then(m => m.default),
@@ -52,8 +52,5 @@ export default {
   export: () => import('./modules/export.js').then(m => m.exportApi),
   audit: () => import('./modules/audit.js').then(m => m.default),
   settings: () => import('./modules/settings.js').then(m => m.settingsApi),
-  projectGroups: () => import('./modules/projectGroups.js').then(m => m.projectGroupsApi),
-  batch: () => import('./modules/batch.js').then(m => m.batchApi),
-  marketInsight: () => import('./modules/marketInsight.js').then(m => m.marketInsightApi),
-  customerOpportunity: () => import('./modules/customerOpportunity.js').then(m => m.customerOpportunityApi)
+  projectGroups: () => import('./modules/projectGroups.js').then(m => m.projectGroupsApi)
 }

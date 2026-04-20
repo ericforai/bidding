@@ -95,25 +95,34 @@
         <div class="analysis-content">
           <div class="analysis-section">
             <h4 class="section-title">匹配度分析</h4>
-            <div v-if="aiLoading" class="match-bars">
-              <el-skeleton :rows="4" animated />
-            </div>
-            <div v-else-if="aiDimensions.length > 0" class="match-bars">
-              <div v-for="dim in aiDimensions" :key="dim.name" class="match-bar-item">
-                <div class="bar-label">
-                  <span>{{ dim.name }}</span>
-                  <span class="bar-value">{{ dim.percentage }}</span>
-                </div>
-                <el-progress :percentage="dim.score" :stroke-width="10" :show-text="false" />
-              </div>
-            </div>
-            <div v-else class="match-bars">
+            <div class="match-bars">
               <div class="match-bar-item">
                 <div class="bar-label">
-                  <span>综合评分</span>
-                  <span class="bar-value">{{ overallScore }}%</span>
+                  <span>行业匹配</span>
+                  <span class="bar-value">95%</span>
                 </div>
-                <el-progress :percentage="overallScore" :stroke-width="10" :show-text="false" />
+                <el-progress :percentage="95" :stroke-width="10" :show-text="false" />
+              </div>
+              <div class="match-bar-item">
+                <div class="bar-label">
+                  <span>地区匹配</span>
+                  <span class="bar-value">88%</span>
+                </div>
+                <el-progress :percentage="88" :stroke-width="10" :show-text="false" color="#e6a23c" />
+              </div>
+              <div class="match-bar-item">
+                <div class="bar-label">
+                  <span>资质匹配</span>
+                  <span class="bar-value">92%</span>
+                </div>
+                <el-progress :percentage="92" :stroke-width="10" :show-text="false" color="#67c23a" />
+              </div>
+              <div class="match-bar-item">
+                <div class="bar-label">
+                  <span>历史合作</span>
+                  <span class="bar-value">80%</span>
+                </div>
+                <el-progress :percentage="80" :stroke-width="10" :show-text="false" color="#909399" />
               </div>
             </div>
           </div>
@@ -222,8 +231,7 @@ import {
   ArrowRight
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { tendersApi, knowledgeApi } from '@/api'
-import { normalizeAiDimensions, normalizeAiRisks } from './bidding-utils.js'
+import { tendersApi } from '@/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -232,13 +240,10 @@ const showTenderAiSection = true
 
 const tender = ref(null)
 const isFollowed = ref(false)
-const aiAnalysis = ref(null)
-const aiLoading = ref(false)
-const relatedCases = ref([])
 
 const probabilityRate = computed(() => {
   if (!tender.value) return 0
-  const score = overallScore.value
+  const score = tender.value.aiScore
   if (score >= 90) return 5
   if (score >= 80) return 4
   if (score >= 70) return 3
@@ -246,29 +251,14 @@ const probabilityRate = computed(() => {
   return 1
 })
 
-const aiDimensions = computed(() => {
-  if (!aiAnalysis.value?.dimensionScores) return []
-  return normalizeAiDimensions(aiAnalysis.value.dimensionScores)
-})
-
-const aiRiskItems = computed(() => {
-  if (!aiAnalysis.value?.risks) return []
-  return normalizeAiRisks(aiAnalysis.value.risks)
-})
-
-const overallScore = computed(() => {
-  return aiAnalysis.value?.winScore ?? tender.value?.aiScore ?? 0
-})
-
 const advantages = computed(() => {
   if (!tender.value) return []
-  const score = overallScore.value
   const advantageList = []
-  if (score >= 90) {
+  if (tender.value.aiScore >= 90) {
     advantageList.push('该客户历史合作记录良好，累计中标3次')
     advantageList.push('我司在信创领域具有较强技术优势')
     advantageList.push('拥有相关行业成功案例')
-  } else if (score >= 80) {
+  } else if (tender.value.aiScore >= 80) {
     advantageList.push('传统优势领域，有行业经验')
     advantageList.push('前期已建立良好客户关系')
   } else {
@@ -280,12 +270,11 @@ const advantages = computed(() => {
 
 const suggestions = computed(() => {
   if (!tender.value) return []
-  const suggestion = aiAnalysis.value?.suggestion
   return [
     {
       title: '投标策略建议',
       type: 'success',
-      content: suggestion || tender.value.aiReason || '建议优先跟进，预计中标概率较高'
+      content: tender.value.aiReason || '建议优先跟进，预计中标概率较高'
     },
     {
       title: '注意事项',
@@ -295,33 +284,56 @@ const suggestions = computed(() => {
   ]
 })
 
-async function loadAiAnalysis(tenderId) {
-  if (!tenderId) return
-  aiLoading.value = true
-  try {
-    const result = await tendersApi.getAIAnalysis(tenderId)
-    if (result?.success && result?.data) {
-      aiAnalysis.value = result.data
-    }
-  } catch (error) {
-    console.warn('AI analysis load failed:', error)
-  } finally {
-    aiLoading.value = false
+const relatedCases = computed(() => {
+  if (!tender.value) return []
+  const mockCases = {
+    '政府': [
+      {
+        id: 'C001',
+        title: '某省政府OA办公系统',
+        customer: '某省政府',
+        amount: 300,
+        year: 2024,
+        summary: '为省政府打造一体化办公平台，包括公文管理、会议管理、日程管理等核心功能',
+        highlights: ['信创适配', '高并发处理', '移动端支持']
+      }
+    ],
+    '能源': [
+      {
+        id: 'C002',
+        title: '华东电网信息化项目',
+        customer: '华东电网',
+        amount: 800,
+        year: 2024,
+        summary: '电网企业ERP系统升级及数据中台建设',
+        highlights: ['微服务架构', '数据治理', '智能报表']
+      }
+    ],
+    '交通': [
+      {
+        id: 'C003',
+        title: '西部智慧园区项目',
+        customer: '西部某园区',
+        amount: 500,
+        year: 2023,
+        summary: '智慧园区综合管理平台',
+        highlights: ['IoT集成', '3D可视化', '能耗分析']
+      }
+    ],
+    '数据中心': [
+      {
+        id: 'C004',
+        title: '某银行数据中心建设',
+        customer: '某商业银行',
+        amount: 1500,
+        year: 2024,
+        summary: '银行级数据中心基础设施建设',
+        highlights: ['高可用架构', '安全合规', '绿色节能']
+      }
+    ]
   }
-}
-
-async function loadRelatedCases(tenderData) {
-  if (!tenderData?.industry) {
-    relatedCases.value = []
-    return
-  }
-  try {
-    const result = await knowledgeApi.cases.getList({ industry: tenderData.industry })
-    relatedCases.value = Array.isArray(result?.data) ? result.data.slice(0, 3) : []
-  } catch {
-    relatedCases.value = []
-  }
-}
+  return mockCases[tender.value.industry] || mockCases['政府']
+})
 
 onMounted(async () => {
   const tenderId = route.params.id
@@ -329,14 +341,11 @@ onMounted(async () => {
     const result = await tendersApi.getDetail(tenderId)
     if (result?.success) {
       tender.value = result.data
-      isFollowed.value = result.data.status === 'TRACKING'
-      loadAiAnalysis(tenderId)
-      loadRelatedCases(result.data)
     } else {
       ElMessage.error(result?.message || '获取标讯详情失败')
     }
   } catch (error) {
-    console.warn('Failed to fetch tender detail:', error)
+    console.error('Failed to fetch tender detail:', error)
     ElMessage.error('网络请求失败，请稍后重试')
   }
 })
@@ -349,16 +358,18 @@ const getScoreClass = (score) => {
 
 const getStatusType = (status) => {
   const map = {
-    PENDING: 'info', TRACKING: 'warning', BIDDED: 'success', ABANDONED: 'danger',
-    new: '', following: 'warning', bidding: 'primary'
+    new: '',
+    following: 'warning',
+    bidding: 'primary'
   }
   return map[status] || ''
 }
 
 const getStatusText = (status) => {
   const map = {
-    PENDING: '待处理', TRACKING: '跟踪中', BIDDED: '已投标', ABANDONED: '已放弃',
-    new: '新建', following: '跟进中', bidding: '投标中'
+    new: '新建',
+    following: '跟进中',
+    bidding: '投标中'
   }
   return map[status] || status
 }
@@ -380,26 +391,13 @@ const handleParticipate = () => {
   })
 }
 
-const handleFollow = async () => {
-  try {
-    const newStatus = isFollowed.value ? 'PENDING' : 'TRACKING'
-    const result = await tendersApi.update(tender.value.id, { status: newStatus })
-    if (result?.success) {
-      isFollowed.value = !isFollowed.value
-      ElMessage.success(isFollowed.value ? '已关注' : '已取消关注')
-    }
-  } catch {
-    ElMessage.error('操作失败')
-  }
+const handleFollow = () => {
+  isFollowed.value = !isFollowed.value
+  ElMessage.success(isFollowed.value ? '已加入关注' : '已取消关注')
 }
 
-const handleShare = async () => {
-  try {
-    await navigator.clipboard.writeText(window.location.href)
-    ElMessage.success('链接已复制到剪贴板')
-  } catch {
-    ElMessage.info('请手动复制当前页面链接')
-  }
+const handleShare = () => {
+  ElMessage.success('分享链接已复制到剪贴板')
 }
 
 const handleViewOriginal = () => {

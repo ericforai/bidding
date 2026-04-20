@@ -1,6 +1,6 @@
-// Input: projectworkflow repositories, DTOs, and support services
-// Output: Project Workflow orchestration and score draft rule decisions
-// Pos: Service/业务层
+// Input: project workflow application services and request DTOs
+// Output: project workflow orchestration facade for controllers
+// Pos: Service/业务编排层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.projectworkflow.service;
 
@@ -44,7 +44,11 @@ public class ProjectWorkflowService {
         return projectTaskWorkflowService.createProjectTask(projectId, request);
     }
 
-    public ProjectTaskViewDTO updateProjectTaskStatus(Long projectId, Long taskId, ProjectTaskStatusUpdateRequest request) {
+    public ProjectTaskViewDTO updateProjectTaskStatus(
+            Long projectId,
+            Long taskId,
+            ProjectTaskStatusUpdateRequest request
+    ) {
         return projectTaskWorkflowService.updateProjectTaskStatus(projectId, taskId, request);
     }
 
@@ -68,7 +72,10 @@ public class ProjectWorkflowService {
         );
     }
 
-    public ProjectDocumentDTO createProjectDocument(Long projectId, ProjectDocumentCreateRequest request) {
+    public ProjectDocumentDTO createProjectDocument(
+            Long projectId,
+            ProjectDocumentCreateRequest request
+    ) {
         return projectDocumentWorkflowService.createProjectDocument(projectId, request);
     }
 
@@ -81,7 +88,10 @@ public class ProjectWorkflowService {
         return projectReminderWorkflowService.getProjectReminders(projectId);
     }
 
-    public ProjectReminderDTO createProjectReminder(Long projectId, ProjectReminderCreateRequest request) {
+    public ProjectReminderDTO createProjectReminder(
+            Long projectId,
+            ProjectReminderCreateRequest request
+    ) {
         return projectReminderWorkflowService.createProjectReminder(projectId, request);
     }
 
@@ -90,7 +100,10 @@ public class ProjectWorkflowService {
         return projectShareLinkWorkflowService.getProjectShareLinks(projectId);
     }
 
-    public ProjectShareLinkDTO createProjectShareLink(Long projectId, ProjectShareLinkCreateRequest request) {
+    public ProjectShareLinkDTO createProjectShareLink(
+            Long projectId,
+            ProjectShareLinkCreateRequest request
+    ) {
         return projectShareLinkWorkflowService.createProjectShareLink(projectId, request);
     }
 
@@ -99,15 +112,25 @@ public class ProjectWorkflowService {
         return projectScoreDraftWorkflowService.getProjectScoreDrafts(projectId);
     }
 
-    public ProjectScoreDraftParseResponse parseProjectScoreDrafts(Long projectId, MultipartFile file) {
+    public ProjectScoreDraftParseResponse parseProjectScoreDrafts(
+            Long projectId,
+            MultipartFile file
+    ) {
         return projectScoreDraftWorkflowService.parseProjectScoreDrafts(projectId, file);
     }
 
-    public ProjectScoreDraftDTO updateProjectScoreDraft(Long projectId, Long draftId, ProjectScoreDraftUpdateRequest request) {
+    public ProjectScoreDraftDTO updateProjectScoreDraft(
+            Long projectId,
+            Long draftId,
+            ProjectScoreDraftUpdateRequest request
+    ) {
         return projectScoreDraftWorkflowService.updateProjectScoreDraft(projectId, draftId, request);
     }
 
-    public List<ProjectTaskViewDTO> generateTasksFromScoreDrafts(Long projectId, ProjectScoreDraftGenerateRequest request) {
+    public List<ProjectTaskViewDTO> generateTasksFromScoreDrafts(
+            Long projectId,
+            ProjectScoreDraftGenerateRequest request
+    ) {
         return projectScoreDraftWorkflowService.generateTasksFromScoreDrafts(projectId, request);
     }
 
