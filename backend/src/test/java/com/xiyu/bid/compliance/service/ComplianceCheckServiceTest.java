@@ -2,6 +2,7 @@ package com.xiyu.bid.compliance.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.compliance.dto.ComplianceCheckResultDTO;
+import com.xiyu.bid.compliance.dto.ComplianceIssue;
 import com.xiyu.bid.compliance.dto.RiskAssessmentDTO;
 import com.xiyu.bid.compliance.entity.ComplianceCheckResult;
 import com.xiyu.bid.compliance.entity.ComplianceRule;
@@ -21,6 +22,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,6 +33,7 @@ class ComplianceCheckServiceTest {
     private ComplianceCheckResultRepository complianceCheckResultRepository;
     private ProjectRepository projectRepository;
     private TenderRepository tenderRepository;
+    private ExperienceComplianceEvaluator experienceComplianceEvaluator;
     private ComplianceCheckService service;
 
     @BeforeEach
@@ -39,12 +42,13 @@ class ComplianceCheckServiceTest {
         complianceCheckResultRepository = mock(ComplianceCheckResultRepository.class);
         projectRepository = mock(ProjectRepository.class);
         tenderRepository = mock(TenderRepository.class);
+        experienceComplianceEvaluator = mock(ExperienceComplianceEvaluator.class);
         service = new ComplianceCheckService(
                 complianceRuleRepository,
                 complianceCheckResultRepository,
                 projectRepository,
                 tenderRepository,
-                new ObjectMapper()
+                experienceComplianceEvaluator
         );
     }
 
@@ -77,6 +81,44 @@ class ComplianceCheckServiceTest {
         assertThat(result.getRiskScore()).isEqualTo(75);
         assertThat(result.getIssues()).hasSize(1);
         verify(complianceCheckResultRepository).save(any(ComplianceCheckResult.class));
+    }
+
+    @Test
+    void checkProjectCompliance_ShouldDelegateExperienceRulesToCaseLibraryEvaluator() {
+        Project project = Project.builder()
+                .id(11L)
+                .status(Project.Status.PREPARING)
+                .sourceModule("智慧园区")
+                .build();
+        ComplianceRule experienceRule = ComplianceRule.builder()
+                .id(3L)
+                .name("experience")
+                .ruleType(ComplianceRule.RuleType.EXPERIENCE)
+                .ruleDefinition("{\"minYears\":1,\"minProjects\":2}")
+                .build();
+
+        when(projectRepository.findById(11L)).thenReturn(Optional.of(project));
+        when(complianceRuleRepository.findByEnabledTrue()).thenReturn(List.of(experienceRule));
+        when(experienceComplianceEvaluator.evaluate(eq(experienceRule), eq(project), any(ObjectMapper.class)))
+                .thenReturn(ComplianceIssueFactory.build(
+                        experienceRule,
+                        ComplianceIssue.Severity.MEDIUM,
+                        "historical case library does not contain enough recent winning projects within 1 year(s): found 1, required 2",
+                        "Add more matching winning cases or relax the experience threshold",
+                        false
+                ));
+        when(complianceCheckResultRepository.save(any(ComplianceCheckResult.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ComplianceCheckResultDTO result = service.checkProjectCompliance(11L);
+
+        assertThat(result.getOverallStatus()).isEqualTo(ComplianceCheckResult.Status.NON_COMPLIANT);
+        assertThat(result.getRiskScore()).isEqualTo(50);
+        assertThat(result.getIssues()).singleElement().satisfies(issue -> {
+            assertThat(issue.getPassed()).isFalse();
+            assertThat(issue.getSeverity()).isEqualTo(ComplianceIssue.Severity.MEDIUM);
+            assertThat(issue.getDescription()).contains("historical case library does not contain enough recent winning projects");
+        });
     }
 
     @Test

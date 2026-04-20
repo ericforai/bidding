@@ -34,11 +34,13 @@ import java.util.List;
 @Slf4j
 public class ComplianceCheckService {
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     private final ComplianceRuleRepository complianceRuleRepository;
     private final ComplianceCheckResultRepository complianceCheckResultRepository;
     private final ProjectRepository projectRepository;
     private final TenderRepository tenderRepository;
-    private final ObjectMapper objectMapper;
+    private final ExperienceComplianceEvaluator experienceComplianceEvaluator;
 
     @Transactional
     public ComplianceCheckResultDTO checkProjectCompliance(Long projectId) {
@@ -48,7 +50,7 @@ public class ComplianceCheckService {
 
         ComplianceRun run = evaluateRules(
                 complianceRuleRepository.findByEnabledTrue(),
-                rule -> ComplianceRuleEvaluator.evaluateProjectRule(rule, project, objectMapper),
+                rule -> evaluateProjectRule(rule, project),
                 "project " + projectId
         );
         ComplianceCheckResult result = persistResult(
@@ -75,7 +77,7 @@ public class ComplianceCheckService {
 
         ComplianceRun run = evaluateRules(
                 complianceRuleRepository.findByEnabledTrue(),
-                rule -> ComplianceRuleEvaluator.evaluateTenderRule(rule, tender, objectMapper),
+                rule -> ComplianceRuleEvaluator.evaluateTenderRule(rule, tender, OBJECT_MAPPER),
                 "tender " + tenderId
         );
         ComplianceCheckResult result = persistResult(
@@ -147,9 +149,16 @@ public class ComplianceCheckService {
         }
     }
 
+    private ComplianceIssue evaluateProjectRule(ComplianceRule rule, Project project) {
+        if (rule.getRuleType() == ComplianceRule.RuleType.EXPERIENCE) {
+            return experienceComplianceEvaluator.evaluate(rule, project, OBJECT_MAPPER);
+        }
+        return ComplianceRuleEvaluator.evaluateProjectRule(rule, project, OBJECT_MAPPER);
+    }
+
     private ComplianceCheckResult persistResult(ComplianceCheckResult result, List<ComplianceIssue> issues) {
         try {
-            result.setCheckDetails(objectMapper.writeValueAsString(issues));
+            result.setCheckDetails(OBJECT_MAPPER.writeValueAsString(issues));
         } catch (JsonProcessingException exception) {
             log.error("Error serializing check details", exception);
         }
