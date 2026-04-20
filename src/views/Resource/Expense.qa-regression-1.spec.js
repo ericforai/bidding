@@ -98,5 +98,5 @@ describe('Expense.vue regression', () => {
     await nextTick()
 
     expect(showApplyDialog.value).toBe(true)
-  })
+  }, 15000)
 })

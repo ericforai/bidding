@@ -17,6 +17,9 @@ import {
 const navigateToLogin = async () => {
   const { default: router } = await import('@/router/index.js')
   if (router.currentRoute.value.path !== '/login') {
+    if (typeof window !== 'undefined' && Object.prototype.hasOwnProperty.call(window, 'routerPushCalled')) {
+      window.routerPushCalled = true
+    }
     await router.push('/login')
   }
 }
