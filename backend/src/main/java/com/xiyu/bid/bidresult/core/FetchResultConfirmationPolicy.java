@@ -33,13 +33,16 @@ public final class FetchResultConfirmationPolicy {
     }
 
     public record Decision(boolean valid, List<String> errors) {
+        public Decision {
+            errors = List.copyOf(errors);
+        }
+
         public static Decision success() {
             return new Decision(true, List.of());
         }
 
         public static Decision failure(List<String> errors) {
-            return new Decision(false, List.copyOf(errors));
+            return new Decision(false, errors);
         }
     }
 }
-
