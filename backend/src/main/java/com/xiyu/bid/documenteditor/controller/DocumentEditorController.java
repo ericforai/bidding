@@ -4,7 +4,16 @@
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.documenteditor.controller;
 
-import com.xiyu.bid.documenteditor.dto.*;
+import com.xiyu.bid.documenteditor.dto.DocumentReminderDTO;
+import com.xiyu.bid.documenteditor.dto.DocumentSectionDTO;
+import com.xiyu.bid.documenteditor.dto.DocumentStructureDTO;
+import com.xiyu.bid.documenteditor.dto.SectionAssignmentRequest;
+import com.xiyu.bid.documenteditor.dto.SectionCreateRequest;
+import com.xiyu.bid.documenteditor.dto.SectionLockRequest;
+import com.xiyu.bid.documenteditor.dto.SectionReminderRequest;
+import com.xiyu.bid.documenteditor.dto.SectionReorderRequest;
+import com.xiyu.bid.documenteditor.dto.SectionUpdateRequest;
+import com.xiyu.bid.documenteditor.dto.StructureCreateRequest;
 import com.xiyu.bid.documenteditor.service.DocumentEditorService;
 import com.xiyu.bid.dto.ApiResponse;
 import jakarta.validation.Valid;
@@ -13,7 +22,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -87,7 +103,7 @@ public class DocumentEditorController {
     public ResponseEntity<ApiResponse<DocumentSectionDTO>> addSection(
             @PathVariable Long projectId,
             @Valid @RequestBody SectionCreateRequest request) {
-        DocumentSectionDTO section = documentEditorService.addSection(request);
+        DocumentSectionDTO section = documentEditorService.addSection(projectId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(section));
     }
 
@@ -105,7 +121,7 @@ public class DocumentEditorController {
             @PathVariable Long projectId,
             @PathVariable Long id,
             @RequestBody SectionUpdateRequest request) {
-        DocumentSectionDTO section = documentEditorService.updateSection(id, request);
+        DocumentSectionDTO section = documentEditorService.updateSection(projectId, id, request);
         return ResponseEntity.ok(ApiResponse.success(section));
     }
 
@@ -149,7 +165,7 @@ public class DocumentEditorController {
     public ResponseEntity<ApiResponse<Void>> deleteSection(
             @PathVariable Long projectId,
             @PathVariable Long id) {
-        documentEditorService.deleteSection(id);
+        documentEditorService.deleteSection(projectId, id);
         return ResponseEntity.ok(ApiResponse.success("Section deleted successfully", null));
     }
 
@@ -165,7 +181,7 @@ public class DocumentEditorController {
     public ResponseEntity<ApiResponse<Void>> reorderSections(
             @PathVariable Long projectId,
             @Valid @RequestBody SectionReorderRequest request) {
-        documentEditorService.reorderSections(request);
+        documentEditorService.reorderSections(projectId, request);
         return ResponseEntity.ok(ApiResponse.success("Sections reordered successfully", null));
     }
 }
