@@ -55,7 +55,7 @@ public class TemplateService {
                 .toList();
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public TemplateDTO getTemplateById(Long id) {
         return toDto(templateCatalogQueryAppService.getById(id));
     }

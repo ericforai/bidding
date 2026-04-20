@@ -3,7 +3,7 @@
     <div class="page-header">
       <div>
         <h2 class="page-title">模板库</h2>
-        <p class="page-subtitle">历史大类页签保留为视图入口，产品类型、行业、文档类型是正式分类维度。</p>
+        <p class="page-subtitle">产品类型、行业、文档类型是正式分类主入口，历史大类只作为辅助浏览视图保留。</p>
       </div>
       <div class="header-actions">
         <el-button type="primary" :icon="Plus" @click="openCreateDialog">
@@ -12,7 +12,21 @@
       </div>
     </div>
 
-    <div class="category-tabs">
+    <TemplateFilterPanel
+      :filters="filters"
+      :all-tags="allTags"
+      :product-type-options="PRODUCT_TYPE_OPTIONS"
+      :industry-options="INDUSTRY_OPTIONS"
+      :document-type-options="DOCUMENT_TYPE_OPTIONS"
+      @search="handleSearch"
+      @reset="handleReset"
+    />
+
+    <section class="category-tabs" aria-label="历史大类辅助视图">
+      <div class="tabs-head">
+        <span class="tabs-eyebrow">历史大类辅助视图</span>
+        <p class="tabs-hint">只在需要回看旧分类口径时切换；正式筛选以上方工作区为准。</p>
+      </div>
       <el-tabs v-model="activeCategory" @tab-change="handleCategoryChange">
         <el-tab-pane
           v-for="tab in categoryTabs"
@@ -27,16 +41,11 @@
           </template>
         </el-tab-pane>
       </el-tabs>
-    </div>
+    </section>
 
-    <TemplateFilterPanel
-      :filters="filters"
-      :all-tags="allTags"
-      :product-type-options="PRODUCT_TYPE_OPTIONS"
-      :industry-options="INDUSTRY_OPTIONS"
-      :document-type-options="DOCUMENT_TYPE_OPTIONS"
-      @search="handleSearch"
-      @reset="handleReset"
+    <TemplateFilterSummaryBar
+      :items="filterSummaryItems"
+      @clear="handleReset"
     />
 
     <FeaturePlaceholder
@@ -46,8 +55,21 @@
       :message="featurePlaceholder.message"
       :hint="featurePlaceholder.hint"
     />
+    <TemplateWorkspaceState
+      v-else-if="workspaceEmptyState"
+      :state="workspaceEmptyState"
+      @create="openCreateDialog"
+      @clear="handleReset"
+    />
+    <section v-else class="results-section" aria-label="模板资产结果区">
+      <div class="results-header">
+        <div>
+          <p class="results-eyebrow">模板资产结果</p>
+          <h3 class="results-title">按正式三维分类沉淀的标准模板资产</h3>
+        </div>
+        <p class="results-meta">共 {{ filteredTemplates.length }} 份模板，支持预览、复制、版本查看与直接使用。</p>
+      </div>
     <TemplateListTable
-      v-else
       :templates="pagedTemplates"
       :loading="loading"
       :page="pagination.page"
@@ -59,6 +81,7 @@
       @update:page="pagination.page = $event"
       @update:page-size="pagination.pageSize = $event"
     />
+    </section>
 
     <TemplatePreviewDialog
       v-model:visible="previewDialogVisible"
@@ -80,6 +103,8 @@
       v-model:visible="upsertDialogVisible"
       :mode="upsertMode"
       :form="templateForm"
+      :errors="templateFormErrors"
+      :submit-error="submitError"
       :category-options="categoryOptions"
       :product-type-options="PRODUCT_TYPE_OPTIONS"
       :industry-options="INDUSTRY_OPTIONS"
@@ -115,11 +140,13 @@ import {
   TEMPLATE_CATEGORY_OPTIONS
 } from '@/config/templateLibrary.js'
 import TemplateFilterPanel from './components/template/TemplateFilterPanel.vue'
+import TemplateFilterSummaryBar from './components/template/TemplateFilterSummaryBar.vue'
 import TemplateListTable from './components/template/TemplateListTable.vue'
 import TemplatePreviewDialog from './components/template/TemplatePreviewDialog.vue'
 import TemplateUpsertDialog from './components/template/TemplateUpsertDialog.vue'
 import TemplateUseDialog from './components/template/TemplateUseDialog.vue'
 import TemplateVersionDialog from './components/template/TemplateVersionDialog.vue'
+import TemplateWorkspaceState from './components/template/TemplateWorkspaceState.vue'
 import { useTemplateLibraryPage } from './components/template/useTemplateLibraryPage.js'
 
 const categoryTabs = [
@@ -152,9 +179,13 @@ const {
   upsertDialogVisible,
   upsertMode,
   templateForm,
+  templateFormErrors,
+  submitError,
   upsertSubmitting,
   inProgressProjects,
   allTags,
+  filterSummaryItems,
+  workspaceEmptyState,
   filteredTemplates,
   pagedTemplates,
   handleSearch,
@@ -173,6 +204,9 @@ const {
 <style scoped lang="scss">
 .template-container {
   padding: 20px;
+  background:
+    radial-gradient(circle at top right, rgba(64, 158, 255, 0.08), transparent 20%),
+    linear-gradient(180deg, #f5f9ff 0%, #ffffff 28%);
 }
 
 .page-header {
@@ -197,15 +231,37 @@ const {
 }
 
 .category-tabs {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  border: 1px solid #dbeafe;
-  border-radius: 16px;
-  padding: 0 20px;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid #dde7f2;
+  border-radius: 18px;
+  padding: 14px 20px 0;
   margin-bottom: 20px;
+  margin-top: 16px;
 
   :deep(.el-tabs__header) {
     margin: 0;
   }
+}
+
+.tabs-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.tabs-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+}
+
+.tabs-hint {
+  margin: 0;
+  color: #7b8797;
+  font-size: 13px;
 }
 
 .tab-label {
@@ -218,10 +274,59 @@ const {
   margin-top: 20px;
 }
 
+.results-section {
+  margin-top: 18px;
+}
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+
+.results-eyebrow {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #335d92;
+}
+
+.results-title {
+  margin: 0;
+  font-size: 20px;
+  color: #1f2937;
+}
+
+.results-meta {
+  margin: 0;
+  max-width: 360px;
+  color: #6b7280;
+  line-height: 1.6;
+  text-align: right;
+}
+
 @media (max-width: 768px) {
   .page-header {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .results-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tabs-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .results-meta {
+    max-width: none;
+    text-align: left;
   }
 }
 </style>

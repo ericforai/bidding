@@ -30,6 +30,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,6 +38,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -126,7 +128,7 @@ class TemplateAdvancedIntegrationTest {
                 .createdBy(1L)
                 .build();
 
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/knowledge/templates/{id}", template.getId())
+        mockMvc.perform(put("/api/knowledge/templates/{id}", template.getId())
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updatePayload)))
                 .andExpect(status().isOk())
@@ -239,6 +241,127 @@ class TemplateAdvancedIntegrationTest {
                         .content(objectMapper.writeValueAsString(createPayload)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("产品类型、行业、文档类型不能为空"));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void createWithUnknownProductType_ShouldRejectExplicitly() throws Exception {
+        String payload = """
+                {
+                  "name": "未知产品类型模板",
+                  "category": "TECHNICAL",
+                  "productType": "火星产品",
+                  "industry": "政府",
+                  "documentType": "技术方案",
+                  "createdBy": 8
+                }
+                """;
+
+        MvcResult result = mockMvc.perform(post("/api/knowledge/templates")
+                        .contentType(APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        assertThat(result.getResponse().getContentAsString(StandardCharsets.UTF_8)).contains("不支持的产品类型: 火星产品");
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void createWithUnknownIndustry_ShouldRejectExplicitly() throws Exception {
+        String payload = """
+                {
+                  "name": "未知行业模板",
+                  "category": "TECHNICAL",
+                  "productType": "智慧园区",
+                  "industry": "火星行业",
+                  "documentType": "技术方案",
+                  "createdBy": 8
+                }
+                """;
+
+        MvcResult result = mockMvc.perform(post("/api/knowledge/templates")
+                        .contentType(APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        assertThat(result.getResponse().getContentAsString(StandardCharsets.UTF_8)).contains("不支持的行业: 火星行业");
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void createWithUnknownDocumentType_ShouldRejectExplicitly() throws Exception {
+        String payload = """
+                {
+                  "name": "未知文档类型模板",
+                  "category": "TECHNICAL",
+                  "productType": "智慧园区",
+                  "industry": "政府",
+                  "documentType": "火星文档",
+                  "createdBy": 8
+                }
+                """;
+
+        MvcResult result = mockMvc.perform(post("/api/knowledge/templates")
+                        .contentType(APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        assertThat(result.getResponse().getContentAsString(StandardCharsets.UTF_8)).contains("不支持的文档类型: 火星文档");
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void getTemplateById_OnHistoricalTemplate_ShouldNotInitializeVersionsOnRead() throws Exception {
+        Template historicalTemplate = templateRepository.save(Template.builder()
+                .name("历史模板详情")
+                .category(Template.Category.COMMERCIAL)
+                .description("历史模板详情读取")
+                .currentVersion("0.9")
+                .fileSize("1.2MB")
+                .createdBy(5L)
+                .build());
+
+        mockMvc.perform(get("/api/knowledge/templates/{id}", historicalTemplate.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.name").value("历史模板详情"))
+                .andExpect(jsonPath("$.data.currentVersion").value("0.9"));
+
+        assertThat(templateVersionRepository.findByTemplateIdOrderByCreatedAtDesc(historicalTemplate.getId())).isEmpty();
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void getTemplateVersions_OnHistoricalTemplate_ShouldReturnFallbackVersionWithoutPersisting() throws Exception {
+        Template historicalTemplate = templateRepository.save(Template.builder()
+                .name("历史版本兼容模板")
+                .category(Template.Category.COMMERCIAL)
+                .description("没有版本行的历史模板")
+                .currentVersion("0.9")
+                .fileSize("1.2MB")
+                .createdBy(5L)
+                .build());
+
+        mockMvc.perform(get("/api/knowledge/templates/{id}/versions", historicalTemplate.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].version").value("0.9"));
+
+        assertThat(templateVersionRepository.findByTemplateIdOrderByCreatedAtDesc(historicalTemplate.getId())).isEmpty();
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void listWithNonMatchingFilters_ShouldReturnEmptyCollection() throws Exception {
+        mockMvc.perform(get("/api/knowledge/templates")
+                        .param("productType", "MES")
+                        .param("industry", "教育")
+                        .param("documentType", "资格文件")
+                        .param("name", "不存在"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(0)));
     }
 
     @Test

@@ -5,8 +5,16 @@
     width="720px"
     @update:model-value="$emit('update:visible', $event)"
   >
+    <el-alert
+      v-if="submitError"
+      :title="submitError"
+      type="error"
+      show-icon
+      class="submit-error"
+      :closable="false"
+    />
     <el-form :model="form" label-width="110px">
-      <el-form-item label="模板名称" required>
+      <el-form-item label="模板名称" required :error="errors.name">
         <el-input v-model="form.name" aria-label="模板名称表单" placeholder="请输入模板名称" />
       </el-form-item>
       <el-form-item label="历史大类">
@@ -14,17 +22,17 @@
           <el-option v-for="option in categoryOptions" :key="option.value" :label="option.label" :value="option.value" />
         </el-select>
       </el-form-item>
-      <el-form-item label="产品类型" required>
+      <el-form-item label="产品类型" required :error="errors.productType">
         <el-select v-model="form.productType" aria-label="产品类型" placeholder="选择产品类型" style="width: 100%">
           <el-option v-for="option in productTypeOptions" :key="option" :label="option" :value="option" />
         </el-select>
       </el-form-item>
-      <el-form-item label="行业" required>
+      <el-form-item label="行业" required :error="errors.industry">
         <el-select v-model="form.industry" aria-label="行业" placeholder="选择行业" style="width: 100%">
           <el-option v-for="option in industryOptions" :key="option" :label="option" :value="option" />
         </el-select>
       </el-form-item>
-      <el-form-item label="文档类型" required>
+      <el-form-item label="文档类型" required :error="errors.documentType">
         <el-select v-model="form.documentType" aria-label="文档类型" placeholder="选择文档类型" style="width: 100%">
           <el-option v-for="option in documentTypeOptions" :key="option" :label="option" :value="option" />
         </el-select>
@@ -67,6 +75,16 @@ defineProps({
   visible: { type: Boolean, default: false },
   mode: { type: String, default: 'create' },
   form: { type: Object, required: true },
+  errors: {
+    type: Object,
+    default: () => ({
+      name: '',
+      productType: '',
+      industry: '',
+      documentType: ''
+    })
+  },
+  submitError: { type: String, default: '' },
   categoryOptions: { type: Array, default: () => [] },
   productTypeOptions: { type: Array, default: () => [] },
   industryOptions: { type: Array, default: () => [] },
@@ -76,3 +94,9 @@ defineProps({
 
 defineEmits(['update:visible', 'submit'])
 </script>
+
+<style scoped>
+.submit-error {
+  margin-bottom: 16px;
+}
+</style>

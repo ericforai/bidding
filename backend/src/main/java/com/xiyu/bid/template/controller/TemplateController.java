@@ -45,11 +45,13 @@ public class TemplateController {
     @Auditable(action = "READ", entityType = "Template", description = "获取所有模板")
     public ResponseEntity<ApiResponse<List<TemplateDTO>>> getAllTemplates(
             @RequestParam(required = false) String name,
+            @RequestParam(required = false) com.xiyu.bid.entity.Template.Category category,
             @RequestParam(required = false) String productType,
             @RequestParam(required = false) String industry,
             @RequestParam(required = false) String documentType) {
         TemplateQueryCriteria criteria = TemplateQueryCriteria.builder()
                 .name(name == null ? null : InputSanitizer.sanitizeString(name, 200))
+                .category(category)
                 .productType(ProductType.fromValue(productType))
                 .industry(IndustryType.fromValue(industry))
                 .documentType(DocumentType.fromValue(documentType))
