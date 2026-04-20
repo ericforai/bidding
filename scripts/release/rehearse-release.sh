@@ -57,7 +57,7 @@ JWT_SECRET="$JWT_SECRET" \
 REDIS_HOST="$REDIS_HOST" \
 REDIS_PORT="$REDIS_PORT" \
 CORS_ALLOWED_ORIGINS="$CORS_ALLOWED_ORIGINS" \
-PLATFORM_ACCOUNT_ENCRYPTION_KEY="$PLATFORM_ACCOUNT_ENCRYPTION_KEY" \
+PLATFORM_ENCRYPTION_KEY="$PLATFORM_ENCRYPTION_KEY" \
 mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT} --spring.datasource.url=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME} --spring.datasource.username=${DB_USER} --spring.datasource.password=${DB_PASSWORD} --spring.data.redis.host=${REDIS_HOST} --spring.data.redis.port=${REDIS_PORT}" \
   > "$STATE_DIR/backend.log" 2>&1 < /dev/null &
 echo $! > "$STATE_DIR/backend.pid"
