@@ -8,7 +8,6 @@ import com.xiyu.bid.alerts.dto.AlertHistoryCreateRequest;
 import com.xiyu.bid.alerts.entity.AlertHistory;
 import com.xiyu.bid.alerts.entity.AlertRule;
 import com.xiyu.bid.alerts.repository.AlertRuleRepository;
-import com.xiyu.bid.businessqualification.application.service.ScanExpiringQualificationsAppService;
 import com.xiyu.bid.compliance.dto.RiskAssessmentDTO;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
@@ -37,7 +36,7 @@ public class AlertSchedulerService {
     private final ProjectRepository projectRepository;
     private final TenderRepository tenderRepository;
     private final ExpenseRepository expenseRepository;
-    private final ScanExpiringQualificationsAppService scanExpiringQualificationsAppService;
+    private final QualificationExpiryAlertService qualificationExpiryAlertService;
 
     /**
      * Scheduled task to check alert rules every 2 hours
@@ -301,7 +300,7 @@ public class AlertSchedulerService {
      */
     private void checkQualificationExpiryAlert(AlertRule rule) {
         log.debug("Checking qualification expiry alert rule: {}", rule.getName());
-        scanExpiringQualificationsAppService.scan(rule.getThreshold().intValue());
+        qualificationExpiryAlertService.createAlerts(rule.getThreshold().intValue());
     }
 
     /**

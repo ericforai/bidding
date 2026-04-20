@@ -115,7 +115,7 @@ public class QualificationService {
     }
 
     public int scanExpiringQualifications(int thresholdDays) {
-        return scanExpiringQualificationsAppService.scan(thresholdDays);
+        return scanExpiringQualificationsAppService.scan(thresholdDays).size();
     }
 
     private BusinessQualification findQualification(Long id) {
