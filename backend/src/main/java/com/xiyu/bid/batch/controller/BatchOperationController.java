@@ -10,7 +10,10 @@ import com.xiyu.bid.batch.dto.BatchClaimRequest;
 import com.xiyu.bid.batch.dto.BatchDeleteRequest;
 import com.xiyu.bid.batch.dto.BatchOperationResponse;
 import com.xiyu.bid.batch.dto.BatchProjectUpdateRequest;
+import com.xiyu.bid.batch.dto.BatchTenderAssignRequest;
+import com.xiyu.bid.batch.dto.BatchTenderStatusUpdateRequest;
 import com.xiyu.bid.batch.service.BatchOperationService;
+import com.xiyu.bid.batch.service.BatchTenderAssignmentService;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.service.AuthService;
@@ -47,6 +50,7 @@ public class BatchOperationController {
     private static final int SINGLE_COUNT = 1;
 
     private final BatchOperationService batchOperationService;
+    private final BatchTenderAssignmentService batchTenderAssignmentService;
     private final AuthService authService;
     private static final int MAX_REMARK_LENGTH = 500;
 
@@ -260,6 +264,26 @@ public class BatchOperationController {
 
         String message = buildSuccessMessage("approved", "fee", response.getSuccessCount());
         return ResponseEntity.ok(ApiResponse.success(message, response));
+    }
+
+    @PatchMapping("/tenders/status")
+    @PreAuthorize(ADMIN_MANAGER_EXPR)
+    public ResponseEntity<ApiResponse<BatchOperationResponse>> batchUpdateTenderStatus(
+            @Valid @RequestBody BatchTenderStatusUpdateRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = getCurrentUser(userDetails);
+        BatchOperationResponse response = batchTenderAssignmentService.batchUpdateStatus(request, currentUser);
+        return ResponseEntity.ok(ApiResponse.success(buildSuccessMessage("updated", "tender", response.getSuccessCount()), response));
+    }
+
+    @PostMapping("/tenders/assign")
+    @PreAuthorize(ADMIN_MANAGER_EXPR)
+    public ResponseEntity<ApiResponse<BatchOperationResponse>> batchAssignTenders(
+            @Valid @RequestBody BatchTenderAssignRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = getCurrentUser(userDetails);
+        BatchOperationResponse response = batchTenderAssignmentService.batchAssign(request, currentUser);
+        return ResponseEntity.ok(ApiResponse.success(buildSuccessMessage("assigned", "tender", response.getSuccessCount()), response));
     }
 
     private String buildSuccessMessage(String action, String itemType, int count) {

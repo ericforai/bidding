@@ -5,6 +5,7 @@
 package com.xiyu.bid.alerts.service;
 
 import com.xiyu.bid.alerts.dto.AlertHistoryCreateRequest;
+import com.xiyu.bid.alerts.dto.AlertHistoryResponse;
 import com.xiyu.bid.alerts.dto.AlertStatisticsResponse;
 import com.xiyu.bid.alerts.entity.AlertHistory;
 import com.xiyu.bid.alerts.entity.AlertRule;
@@ -13,11 +14,16 @@ import com.xiyu.bid.alerts.repository.AlertRuleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +35,6 @@ public class AlertHistoryService {
 
     @Transactional
     public AlertHistory createAlertHistory(AlertHistoryCreateRequest request) {
-        // Validation
         if (request.getRuleId() == null) {
             throw new IllegalArgumentException("Rule ID is required");
         }
@@ -40,7 +45,6 @@ public class AlertHistoryService {
             throw new IllegalArgumentException("Message is required");
         }
 
-        // Verify rule exists
         AlertRule rule = alertRuleRepository.findById(request.getRuleId())
                 .orElseThrow(() -> new RuntimeException("AlertRule not found with id: " + request.getRuleId()));
 
@@ -50,8 +54,7 @@ public class AlertHistoryService {
                     request.getRuleId(), request.getRelatedId()).orElse(null);
         }
         if (existingAlert != null) {
-            log.debug("Returning existing unresolved alert for rule {} and relatedId {}",
-                    rule.getId(), request.getRelatedId());
+            log.debug("Returning existing unresolved alert for rule {} and relatedId {}", rule.getId(), request.getRelatedId());
             return existingAlert;
         }
 
@@ -71,36 +74,72 @@ public class AlertHistoryService {
                 .orElseThrow(() -> new RuntimeException("AlertHistory not found with id: " + id));
     }
 
-    public Page<AlertHistory> getAllAlertHistories(Pageable pageable) {
-        return alertHistoryRepository.findAll(pageable);
+    public AlertHistoryResponse getAlertHistoryResponseById(Long id) {
+        AlertHistory entity = getAlertHistoryById(id);
+        AlertRule rule = alertRuleRepository.findById(entity.getRuleId()).orElse(null);
+        return AlertHistoryViewAssembler.toResponse(entity, rule);
     }
 
-    public Page<AlertHistory> getAlertHistoriesByRuleId(Long ruleId, Pageable pageable) {
-        return alertHistoryRepository.findByRuleId(ruleId, pageable);
+    public Page<AlertHistoryResponse> getAllAlertHistories(Pageable pageable, String status, AlertHistory.AlertLevel level, Long ruleId, String relatedId) {
+        List<AlertHistory> all = alertHistoryRepository.findAll(pageable.getSort());
+        Map<Long, AlertRule> rules = alertRuleRepository.findAllById(
+                all.stream().map(AlertHistory::getRuleId).distinct().toList()
+        ).stream().collect(Collectors.toMap(AlertRule::getId, item -> item));
+
+        Predicate<AlertHistory> filter = item -> true;
+        if (status != null && !status.isBlank()) {
+            filter = filter.and(item -> AlertHistoryViewAssembler.resolveStatus(item).equalsIgnoreCase(status));
+        }
+        if (level != null) {
+            filter = filter.and(item -> item.getLevel() == level);
+        }
+        if (ruleId != null) {
+            filter = filter.and(item -> ruleId.equals(item.getRuleId()));
+        }
+        if (relatedId != null && !relatedId.isBlank()) {
+            filter = filter.and(item -> relatedId.equals(item.getRelatedId()));
+        }
+
+        List<AlertHistoryResponse> filtered = all.stream()
+                .filter(filter)
+                .map(item -> AlertHistoryViewAssembler.toResponse(item, rules.get(item.getRuleId())))
+                .toList();
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), filtered.size());
+        List<AlertHistoryResponse> content = start >= filtered.size() ? List.of() : filtered.subList(start, end);
+        return new PageImpl<>(content, pageable, filtered.size());
     }
 
-    public Page<AlertHistory> getAlertHistoriesByLevel(AlertHistory.AlertLevel level, Pageable pageable) {
-        return alertHistoryRepository.findByLevel(level, pageable);
-    }
-
-    public Page<AlertHistory> getUnresolvedAlertHistories(Pageable pageable) {
-        return alertHistoryRepository.findByResolvedFalse(pageable);
-    }
-
-    public Page<AlertHistory> getAlertHistoriesByDateRange(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
-        return alertHistoryRepository.findByCreatedAtBetween(startDate, endDate, pageable);
-    }
-
-    public Page<AlertHistory> getAlertHistoriesByRelatedId(String relatedId, Pageable pageable) {
-        return alertHistoryRepository.findByRelatedId(relatedId, pageable);
+    public Page<AlertHistoryResponse> getUnresolvedAlertHistories(Pageable pageable) {
+        return getAllAlertHistories(pageable, "ACTIVE", null, null, null);
     }
 
     @Transactional
-    public AlertHistory resolveAlertHistory(Long id) {
+    public AlertHistoryResponse acknowledgeAlertHistory(Long id) {
         AlertHistory alertHistory = getAlertHistoryById(id);
+        if (Boolean.TRUE.equals(alertHistory.getResolved())) {
+            throw new IllegalStateException("Resolved alert cannot be acknowledged again");
+        }
+        if (alertHistory.getAcknowledgedAt() == null) {
+            alertHistory.setAcknowledgedAt(LocalDateTime.now());
+        }
+        AlertHistory saved = alertHistoryRepository.save(alertHistory);
+        AlertRule rule = alertRuleRepository.findById(saved.getRuleId()).orElse(null);
+        return AlertHistoryViewAssembler.toResponse(saved, rule);
+    }
+
+    @Transactional
+    public AlertHistoryResponse resolveAlertHistory(Long id) {
+        AlertHistory alertHistory = getAlertHistoryById(id);
+        if (alertHistory.getAcknowledgedAt() == null) {
+            alertHistory.setAcknowledgedAt(LocalDateTime.now());
+        }
         alertHistory.setResolved(true);
         alertHistory.setResolvedAt(LocalDateTime.now());
-        return alertHistoryRepository.save(alertHistory);
+        AlertHistory saved = alertHistoryRepository.save(alertHistory);
+        AlertRule rule = alertRuleRepository.findById(saved.getRuleId()).orElse(null);
+        return AlertHistoryViewAssembler.toResponse(saved, rule);
     }
 
     @Transactional

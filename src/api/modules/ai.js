@@ -9,6 +9,7 @@
  */
 import httpClient from '../client.js'
 import { buildFeatureUnavailableResponse } from '../featureAvailability.js'
+import { projectQualityApi } from './ai/quality.js'
 
 function isNumericId(id) {
   return /^\d+$/.test(String(id))
@@ -357,4 +358,7 @@ export default {
   project: projectAiApi,
   competition: competitionApi,
   roi: roiApi,
-  compliance: complianceApi }
+  compliance: complianceApi,
+  quality: projectQualityApi }
+
+export { projectQualityApi }

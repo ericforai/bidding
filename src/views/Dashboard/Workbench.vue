@@ -1775,7 +1775,18 @@ const selectCalendarEventDate = (event) => {
 }
 
 const handleCalendarAction = (event) => {
-  ElMessage.info(`${event.actionLabel}：${event.project}`)
+  if (event?.projectId) {
+    router.push(`/project/${event.projectId}`)
+    return
+  }
+
+  router.push({
+    path: '/project',
+    query: {
+      calendarDate: event?.date || '',
+      calendarType: event?.eventType || event?.type || '',
+    },
+  })
 }
 
 // 数据加载

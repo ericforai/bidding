@@ -21,6 +21,7 @@ export { default as httpClient } from './client.js'
 
 export { authApi } from './modules/auth.js'
 export { tendersApi } from './modules/tenders.js'
+export { batchTendersApi } from './modules/tenders/batch.js'
 export { projectsApi } from './modules/projects.js'
 export { default as qualificationsApi } from './modules/qualification.js'
 export { templatesApi } from './modules/templates.js'
@@ -40,6 +41,7 @@ export { bidResultsApi } from './modules/bidResults.js'
 export default {
   auth: () => import('./modules/auth.js').then(m => m.authApi),
   tenders: () => import('./modules/tenders.js').then(m => m.tendersApi),
+  tenderBatch: () => import('./modules/tenders/batch.js').then(m => m.batchTendersApi),
   projects: () => import('./modules/projects.js').then(m => m.projectsApi),
   qualifications: () => import('./modules/qualification.js').then(m => m.default),
   knowledge: () => import('./modules/knowledge.js').then(m => m.default),

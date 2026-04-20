@@ -376,8 +376,16 @@ import { useCustomerOpportunityCenterData } from '@/api/modules/customerOpportun
 
 const router = useRouter()
 const loading = ref(true)
-const customerOpportunityDemoEnabled = false
-const { customerInsights, customerPurchases, customerPredictions, salesUsers } = useCustomerOpportunityCenterData()
+const customerOpportunityDemoEnabled = true
+const {
+  customerInsights,
+  customerPurchases,
+  customerPredictions,
+  salesUsers,
+  loadInsights,
+  loadCustomerDetail,
+  refreshInsights: refreshInsightsApi,
+} = useCustomerOpportunityCenterData()
 const filters = ref({ status: '', keyword: '', sales: '', region: '', industry: '' })
 
 const regions = computed(() => [...new Set(customerInsights.value.map(c => c.region))].filter(Boolean))
@@ -392,11 +400,19 @@ const historyDrawer = ref(false)
 const isScanning = ref(false)
 
 onMounted(() => {
-  const delay = customerOpportunityDemoEnabled ? 800 : 220
-  setTimeout(() => {
-    loading.value = false
-  }, delay)
+  boot()
 })
+
+const boot = async () => {
+  loading.value = true
+  try {
+    await loadInsights()
+  } catch (error) {
+    ElMessage.error(error?.message || '加载客户商机失败')
+  } finally {
+    loading.value = false
+  }
+}
 
 const customerHistory = computed(() => {
   if (!selectedCustomer.value) return []
@@ -509,8 +525,13 @@ const selectedCustomer = computed(() => {
   }
 })
 
-const selectCustomer = (row) => {
+const selectCustomer = async (row) => {
   activeCustomerId.value = row.customerId
+  try {
+    await loadCustomerDetail(row.customerId)
+  } catch (error) {
+    ElMessage.error(error?.message || '加载客户详情失败')
+  }
 }
 
 const rowClass = ({ row }) => (row.customerId === activeCustomerId.value ? 'row-active' : '')
@@ -546,26 +567,31 @@ const buildDeadlineFromWindow = (windowValue) => {
   return ''
 }
 
-const refreshInsights = () => {
-  if (!customerOpportunityDemoEnabled) {
-    ElMessage.info('客户商机中心在真实模式下暂未接入数据源')
-    return
-  }
+const refreshInsights = async () => {
   isScanning.value = true
-  setTimeout(() => {
-    isScanning.value = false
+  try {
+    await refreshInsightsApi()
+    await loadInsights()
+    if (activeCustomerId.value) {
+      await loadCustomerDetail(activeCustomerId.value)
+    }
     ElMessage.success('AI 智能洞察已同步至最新')
-  }, 2500)
+  } catch (error) {
+    ElMessage.error(error?.message || '刷新洞察失败')
+  } finally {
+    isScanning.value = false
+  }
 }
 
 const selectFirstHighValue = () => {
-  if (!customerOpportunityDemoEnabled) return
   const first = customerInsights.value.find(c => c.opportunityScore >= 85)
-  if (first) activeCustomerId.value = first.customerId
+  if (first) {
+    selectCustomer(first)
+  }
 }
 
 const createProject = () => {
-  if (!selectedCustomer.value || !customerOpportunityDemoEnabled) return
+  if (!selectedCustomer.value) return
 
   if (selectedCustomer.value.prediction.convertedProjectId) {
     router.push(`/project/${selectedCustomer.value.prediction.convertedProjectId}`)

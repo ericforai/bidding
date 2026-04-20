@@ -18,7 +18,11 @@
       </el-table-column>
     </el-table>
 
-    <el-empty v-if="!detail.aiResult.value.quality || !detail.aiResult.value.quality.errors?.length" description="点击开始检查进行文书质量分析" :image-size="80" />
+    <el-empty
+      v-if="!detail.aiResult.value.quality || !detail.aiResult.value.quality.errors?.length"
+      :description="detail.aiResult.value.quality?.empty ? '当前项目暂无可检查文档，请先上传或关联项目文档' : '点击开始检查进行文书质量分析'"
+      :image-size="80"
+    />
   </div>
 </template>
 

@@ -1307,6 +1307,7 @@ import { useBiddingStore } from '@/stores/bidding'
 import { useUserStore } from '@/stores/user'
 import { tendersApi } from '@/api'
 import { crawlerApi } from '@/api/modules/tenders'
+import { batchTendersApi } from '@/api/modules/tenders/batch.js'
 import {
   Search, Plus, Download, Star, TrendCharts, List, Share, CircleCheck,
   MoreFilled, Check, User, Calendar, Flag, Briefcase, ChatDotRound,
@@ -2147,7 +2148,7 @@ const handleViewAllRecommend = () => {
   viewMode.value = 'all'
 }
 
-const customerOpportunityCenterEnabled = computed(() => false)
+const customerOpportunityCenterEnabled = computed(() => true)
 
 const handleOpenCustomerOpportunityCenter = () => {
   router.push('/bidding/customer-opportunities')
@@ -2204,7 +2205,6 @@ const handleDistribute = async () => {
   distributeLoading.value = true
 
   try {
-    // 模拟分发逻辑
     const distribution = []
 
     if (distributeForm.value.type === 'auto') {
@@ -2258,8 +2258,11 @@ const handleDistribute = async () => {
       })
     }
 
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await Promise.all(
+      distribution.map((item) =>
+        batchTendersApi.batchAssign([item.tenderId], item.assignee, distributeForm.value.remark),
+      ),
+    )
 
     // 添加到分发记录
     distribution.forEach(item => {
@@ -2281,6 +2284,7 @@ const handleDistribute = async () => {
     ElMessage.success(`成功分发 ${distribution.length} 条标讯`)
     showDistributeDialog.value = false
     handleClearSelection()
+    await biddingStore.getTenders()
   } catch (error) {
     ElMessage.error('分发失败，请重试')
   } finally {
@@ -2310,18 +2314,11 @@ const handleBatchClaim = async () => {
     const tenderIds = selectedTenders.value.map(t => t.id)
     const userId = userStore.user?.id || 'U001'
 
-    const result = await tendersApi.batchClaim(tenderIds, userId)
+    const result = await batchTendersApi.batchClaim(tenderIds, userId)
 
     if (result.success) {
-      // 更新本地数据状态
-      selectedTenders.value.forEach(tender => {
-        tender.status = 'following'
-        tender.assignee = userId
-      })
-
-      ElMessage.success(`成功领取 ${result.data?.claimed || tenderIds.length} 条标讯`)
+      ElMessage.success(`成功领取 ${result.data?.successCount || tenderIds.length} 条标讯`)
       handleClearSelection()
-      // 刷新列表数据
       await biddingStore.getTenders()
     } else {
       ElMessage.error(result.message || '领取失败，请重试')
@@ -2350,18 +2347,12 @@ const handleBatchFollow = async () => {
 
   // 使用批量更新状态API
   const tenderIds = selectedTenders.value.map(t => t.id)
-  const result = await tendersApi.batchUpdateStatus(tenderIds, 'following')
+  const result = await batchTendersApi.batchUpdateStatus(tenderIds, 'TRACKING')
 
   if (result.success) {
     followedTenders.value.push(...newFollows)
-    // 更新本地数据状态
-    selectedTenders.value.forEach(tender => {
-      tender.status = 'following'
-    })
-
-    ElMessage.success(`已关注 ${result.data?.updated || newFollows.length} 条标讯`)
+    ElMessage.success(`已关注 ${result.data?.successCount || newFollows.length} 条标讯`)
     handleClearSelection()
-    // 刷新列表数据
     await biddingStore.getTenders()
   } else {
     ElMessage.error(result.message || '关注失败，请重试')
@@ -2404,7 +2395,13 @@ const handleSingleClaim = async (row) => {
       }
     )
 
+    const userId = userStore.user?.id || userStore.currentUser?.id
+    const result = await batchTendersApi.batchClaim([row.id], userId)
+    if (!result.success) {
+      throw new Error(result.message || '领取失败')
+    }
     ElMessage.success('领取成功')
+    await biddingStore.getTenders()
   } catch {
     // 用户取消
   }
@@ -2443,20 +2440,13 @@ const handleAssign = async () => {
 
   try {
     // 使用批量分配API
-    const result = await tendersApi.batchAssign(
+    const result = await batchTendersApi.batchAssign(
       [assignForm.value.tenderId],
-      assignForm.value.assignee
+      assignForm.value.assignee,
+      assignForm.value.remark,
     )
 
     if (result.success) {
-      // 更新本地数据
-      const tender = biddingStore.tenders?.find(t => t.id === assignForm.value.tenderId)
-      if (tender) {
-        tender.assignee = assignForm.value.assignee
-        tender.status = 'contacted'
-      }
-
-      // 添加到分发记录
       distributeRecords.value.unshift({
         tenderTitle: assignForm.value.tenderTitle,
         assignee: salesMap[assignForm.value.assignee],
@@ -2473,7 +2463,6 @@ const handleAssign = async () => {
 
       ElMessage.success(`已将"${assignForm.value.tenderTitle}"指派给${salesMap[assignForm.value.assignee]}`)
       showAssignDialog.value = false
-      // 刷新列表数据
       await biddingStore.getTenders()
     } else {
       ElMessage.error(result.message || '指派失败，请重试')

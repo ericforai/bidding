@@ -173,9 +173,7 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const isApiDeliveryMode = computed(() => true)
-const hiddenApiMenuNames = new Set([
-  'CustomerOpportunityCenter'
-])
+const hiddenApiMenuNames = new Set([])
 
 const hasRoleAccess = (roles) => !roles || roles.length === 0 || roles.includes(userStore.userRole)
 const hasPermissionAccess = (permissionKeys) => {
@@ -306,7 +304,24 @@ const menuConfig = [
   {
     path: '/settings',
     name: 'Settings',
-    meta: { title: '系统设置', icon: 'settings', roles: ['admin'], permissionKeys: ['settings'] }
+    meta: { title: '系统设置', icon: 'settings', roles: ['admin'], permissionKeys: ['settings'] },
+    children: [
+      {
+        path: '/settings',
+        name: 'SettingsRoot',
+        meta: { title: '组织设置', roles: ['admin'], permissionKeys: ['settings'] }
+      },
+      {
+        path: '/settings/alert-rules',
+        name: 'AlertRules',
+        meta: { title: '告警规则', roles: ['admin', 'manager'], permissionKeys: ['settings'] }
+      },
+      {
+        path: '/settings/alert-history',
+        name: 'AlertHistory',
+        meta: { title: '告警历史', roles: ['admin', 'manager', 'staff'], permissionKeys: ['settings'] }
+      }
+    ]
   }
 ]
 
