@@ -9,6 +9,7 @@ import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.template.dto.TemplateCopyRequest;
 import com.xiyu.bid.template.dto.TemplateDTO;
 import com.xiyu.bid.template.dto.TemplateDownloadRecordRequest;
+import com.xiyu.bid.template.dto.TemplateMutationRequest;
 import com.xiyu.bid.template.dto.TemplateUseRecordDTO;
 import com.xiyu.bid.template.dto.TemplateUseRecordRequest;
 import com.xiyu.bid.template.dto.TemplateVersionDTO;
@@ -48,9 +49,9 @@ public class TemplateController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "CREATE", entityType = "Template", description = "创建模板")
-    public ResponseEntity<ApiResponse<TemplateDTO>> createTemplate(@Valid @RequestBody TemplateDTO dto) {
-        sanitizeTemplateDTO(dto);
-        TemplateDTO created = templateService.createTemplate(dto);
+    public ResponseEntity<ApiResponse<TemplateDTO>> createTemplate(@Valid @RequestBody TemplateMutationRequest request) {
+        sanitizeTemplateMutationRequest(request);
+        TemplateDTO created = templateService.createTemplate(toTemplateDTO(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Template created successfully", created));
     }
 
@@ -91,9 +92,9 @@ public class TemplateController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "UPDATE", entityType = "Template", description = "更新模板")
-    public ResponseEntity<ApiResponse<TemplateDTO>> updateTemplate(@PathVariable Long id, @Valid @RequestBody TemplateDTO dto) {
-        sanitizeTemplateDTO(dto);
-        TemplateDTO updated = templateService.updateTemplate(id, dto);
+    public ResponseEntity<ApiResponse<TemplateDTO>> updateTemplate(@PathVariable Long id, @Valid @RequestBody TemplateMutationRequest request) {
+        sanitizeTemplateMutationRequest(request);
+        TemplateDTO updated = templateService.updateTemplate(id, toTemplateDTO(request));
         return ResponseEntity.ok(ApiResponse.success("Template updated successfully", updated));
     }
 
@@ -156,12 +157,36 @@ public class TemplateController {
         return ResponseEntity.ok(ApiResponse.success("Template download recorded successfully", updated));
     }
 
-    private void sanitizeTemplateDTO(TemplateDTO dto) {
-        if (dto.getName() != null) dto.setName(InputSanitizer.sanitizeString(dto.getName(), 200));
-        if (dto.getFileUrl() != null) dto.setFileUrl(InputSanitizer.sanitizeString(dto.getFileUrl(), 500));
-        if (dto.getDescription() != null) dto.setDescription(InputSanitizer.sanitizeString(dto.getDescription(), 2000));
-        if (dto.getFileSize() != null) dto.setFileSize(InputSanitizer.sanitizeString(dto.getFileSize(), 100));
-        if (dto.getTags() != null) dto.setTags(dto.getTags().stream().map(tag -> InputSanitizer.sanitizeString(tag, 50)).toList());
+    private void sanitizeTemplateMutationRequest(TemplateMutationRequest request) {
+        if (request.getName() != null) request.setName(InputSanitizer.sanitizeString(request.getName(), 200));
+        if (request.getProductType() != null) request.setProductType(InputSanitizer.sanitizeString(request.getProductType(), 100));
+        if (request.getIndustry() != null) request.setIndustry(InputSanitizer.sanitizeString(request.getIndustry(), 100));
+        if (request.getDocumentType() != null) request.setDocumentType(InputSanitizer.sanitizeString(request.getDocumentType(), 100));
+        if (request.getFileUrl() != null) request.setFileUrl(InputSanitizer.sanitizeString(request.getFileUrl(), 500));
+        if (request.getDescription() != null) request.setDescription(InputSanitizer.sanitizeString(request.getDescription(), 2000));
+        if (request.getFileSize() != null) request.setFileSize(InputSanitizer.sanitizeString(request.getFileSize(), 100));
+        if (request.getTags() != null) request.setTags(request.getTags().stream().map(tag -> InputSanitizer.sanitizeString(tag, 50)).toList());
+    }
+
+    private TemplateDTO toTemplateDTO(TemplateMutationRequest request) {
+        EnumParseResult<ProductType> productTypeResult = ProductType.parse(request.getProductType());
+        EnumParseResult<IndustryType> industryResult = IndustryType.parse(request.getIndustry());
+        EnumParseResult<DocumentType> documentTypeResult = DocumentType.parse(request.getDocumentType());
+        requireValidEnum(productTypeResult);
+        requireValidEnum(industryResult);
+        requireValidEnum(documentTypeResult);
+        return TemplateDTO.builder()
+                .name(request.getName())
+                .category(request.getCategory())
+                .productType(productTypeResult.value())
+                .industry(industryResult.value())
+                .documentType(documentTypeResult.value())
+                .fileUrl(request.getFileUrl())
+                .description(request.getDescription())
+                .fileSize(request.getFileSize())
+                .tags(request.getTags())
+                .createdBy(request.getCreatedBy())
+                .build();
     }
 
     private void requireValidEnum(EnumParseResult<?> parseResult) {
