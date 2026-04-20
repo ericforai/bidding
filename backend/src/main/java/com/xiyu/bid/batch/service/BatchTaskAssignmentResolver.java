@@ -12,7 +12,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-class BatchAssignmentPolicy {
+class BatchTaskAssignmentResolver {
 
     private final UserRepository userRepository;
     private final ProjectAccessScopeService projectAccessScopeService;
