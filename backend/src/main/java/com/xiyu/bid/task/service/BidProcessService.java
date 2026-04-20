@@ -1,7 +1,6 @@
 package com.xiyu.bid.task.service;
 
 import com.xiyu.bid.task.core.BidSubmissionPolicy;
-import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TaskRepository;

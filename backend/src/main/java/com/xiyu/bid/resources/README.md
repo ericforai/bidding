@@ -9,7 +9,7 @@
 | 文件 | 地位 | 功能 |
 |------|------|------|
 | `controller/AccountController.java` | Controller | 平台账户接口 |
-| `controller/ExpenseController.java` | Controller | 费用审批与退还接口 |
+| `controller/ExpenseController.java` | Controller | 费用 CRUD、审批退还与台账统计接口 |
 | `controller/BarAssetController.java` | Controller | BAR 证书资产接口 |
 | `controller/BarCertificateController.java` | Controller | BAR 证书借还接口 |
 | `controller/BarSiteSubresourceController.java` | Controller | BAR 站点子资源接口 |
@@ -21,3 +21,4 @@
 | `entity/` | Entity | Account、BarAsset、Expense、BarCertificate、BarSite* 实体 |
 | `repository/` | Repository | 资源数据访问 |
 | `dto/` | DTO | 资源请求/响应模型 |
+| `expenseledger/` | Application + Domain + DTO | 费用台账查询、多维筛选与聚合统计 |

@@ -1,6 +1,5 @@
 package com.xiyu.bid.task.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
