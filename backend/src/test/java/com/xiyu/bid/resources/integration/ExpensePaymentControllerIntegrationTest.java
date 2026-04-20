@@ -139,6 +139,46 @@ class ExpensePaymentControllerIntegrationTest {
 
     @Test
     @WithMockUser(roles = {"ADMIN"})
+    void registerPayment_ShouldAllowAdditionalPaymentRecordsForPaidExpense() throws Exception {
+        mockMvc.perform(post("/api/resources/expenses/{id}/payments", approvedExpense.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "amount", new BigDecimal("300.00"),
+                                "paidAt", LocalDateTime.now().minusHours(3),
+                                "paidBy", "cashier-a",
+                                "paymentReference", "PAY-20260419-010",
+                                "paymentMethod", "BANK_TRANSFER",
+                                "remark", "首笔支付"
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PAID"));
+
+        mockMvc.perform(post("/api/resources/expenses/{id}/payments", approvedExpense.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "amount", new BigDecimal("500.00"),
+                                "paidAt", LocalDateTime.now().minusHours(1),
+                                "paidBy", "cashier-b",
+                                "paymentReference", "PAY-20260419-011",
+                                "paymentMethod", "CASH",
+                                "remark", "尾款支付"
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("PAID"))
+                .andExpect(jsonPath("$.data.paidBy").value("cashier-b"))
+                .andExpect(jsonPath("$.data.paymentReference").value("PAY-20260419-011"))
+                .andExpect(jsonPath("$.data.paymentMethod").value("CASH"));
+
+        mockMvc.perform(get("/api/resources/expenses/{id}/payments", approvedExpense.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].paymentReference").value("PAY-20260419-011"))
+                .andExpect(jsonPath("$.data[1].paymentReference").value("PAY-20260419-010"));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
     void registerPayment_ForPendingExpense_ShouldFailWithConflict() throws Exception {
         mockMvc.perform(post("/api/resources/expenses/{id}/payments", pendingExpense.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -153,7 +193,7 @@ class ExpensePaymentControllerIntegrationTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(409))
-                .andExpect(jsonPath("$.message").value("Only approved expenses can be registered as paid"));
+                .andExpect(jsonPath("$.message").value("Only approved or already-paid expenses can register payment records"));
     }
 
     @Test

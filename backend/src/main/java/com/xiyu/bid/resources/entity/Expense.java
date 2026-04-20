@@ -178,8 +178,8 @@ public class Expense {
     }
 
     public void markPaid() {
-        if (status != ExpenseStatus.APPROVED) {
-            throw new IllegalStateException("Only approved expenses can be registered as paid");
+        if (status != ExpenseStatus.APPROVED && status != ExpenseStatus.PAID) {
+            throw new IllegalStateException("Only approved or already-paid expenses can register payment records");
         }
         this.status = ExpenseStatus.PAID;
     }
