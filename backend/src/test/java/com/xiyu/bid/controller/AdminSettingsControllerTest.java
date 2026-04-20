@@ -1,8 +1,9 @@
 package com.xiyu.bid.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiyu.bid.admin.controller.AdminSettingsController;
 import com.xiyu.bid.dto.DataScopeConfigResponse;
-import com.xiyu.bid.service.DataScopeConfigService;
+import com.xiyu.bid.admin.service.DataScopeConfigService;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.util.List;
@@ -67,5 +68,26 @@ class AdminSettingsControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.deptDataScope[0].deptCode").value("SALES"));
+    }
+
+    @Test
+    void saveDepartmentTree_ShouldReturnNormalizedPayload() throws Exception {
+        DataScopeConfigResponse response = DataScopeConfigResponse.builder()
+                .deptTree(List.of(DataScopeConfigResponse.DepartmentTreeItem.builder()
+                        .deptCode("SALES")
+                        .deptName("销售部")
+                        .sortOrder(1)
+                        .build()))
+                .build();
+        when(dataScopeConfigService.saveDepartments(any())).thenReturn(response);
+
+        mockMvc.perform(put("/api/admin/settings/departments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"deptTree":[{"deptCode":"SALES","deptName":"销售部","sortOrder":1}]}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.deptTree[0].deptCode").value("SALES"));
     }
 }

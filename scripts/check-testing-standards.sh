@@ -10,6 +10,12 @@ cd "$ROOT_DIR"
 
 # 1. 后端测试门禁 (Java)
 STAGED_JAVA_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^backend/src/main/java/.*\.java$' || true)
+STAGED_BACKEND_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^backend/(src/main/java|src/test/java)/.*\.java$' || true)
+
+if [ -n "$STAGED_BACKEND_FILES" ]; then
+  echo "testing-gate: detected staged backend files, running architecture tests..."
+  (cd backend && mvn -DforkCount=0 -Dtest=FPJavaArchitectureTest,MaintainabilityArchitectureTest test -DfailIfNoTests=false)
+fi
 
 if [ -n "$STAGED_JAVA_FILES" ]; then
   echo "testing-gate: detected staged Java files, running related tests..."

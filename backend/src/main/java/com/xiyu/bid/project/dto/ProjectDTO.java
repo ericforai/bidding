@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -31,6 +33,18 @@ public class ProjectDTO {
     private String sourceCustomer;
     private String sourceOpportunityId;
     private String sourceReasoningSummary;
+    private String competitorAnalysisJson;
+    private String tasksJson;
+    private String aiAnalysisJson;
+    private String customer;
+    private BigDecimal budget;
+    private String industry;
+    private String region;
+    private String platform;
+    private LocalDate deadline;
+    private String description;
+    private String remark;
+    private String tagsJson;
     private String customerManager;
     private String customerManagerId;
     private LocalDateTime createdAt;

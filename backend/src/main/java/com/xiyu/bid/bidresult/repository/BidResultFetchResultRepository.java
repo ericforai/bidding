@@ -11,5 +11,7 @@ public interface BidResultFetchResultRepository extends JpaRepository<BidResultF
     List<BidResultFetchResult> findByStatusOrderByFetchTimeDesc(BidResultFetchResult.Status status);
     long countByStatus(BidResultFetchResult.Status status);
     Optional<BidResultFetchResult> findFirstByTenderIdAndStatusOrderByFetchTimeDesc(Long tenderId, BidResultFetchResult.Status status);
+    Optional<BidResultFetchResult> findFirstByProjectIdAndStatusOrderByFetchTimeDesc(Long projectId, BidResultFetchResult.Status status);
     List<BidResultFetchResult> findByIdIn(Collection<Long> ids);
+    List<BidResultFetchResult> findAllByOrderByFetchTimeDesc();
 }

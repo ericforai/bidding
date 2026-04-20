@@ -167,7 +167,7 @@ mvn test
 - `config -> service` 依赖：`E2eDemoDataInitializer` 不再直接依赖 `RoleProfileService`
 - `config <-> service` 循环依赖：`RateLimitService` 不再依赖 `ExportConfig`
 
-这意味着 `ArchitectureTest` 已可作为常规后端架构门禁执行；凡涉及模块边界、包迁移、职责收敛或架构治理的后端改动，默认运行并据实报告结果。
+这意味着 `ArchitectureTest` 已可作为常规后端架构门禁执行；后续任务仍需据实报告验证结果。
 
 ## E2E 基线
 
@@ -209,7 +209,7 @@ xiyu-bid-poc/
 ## 文档入口
 
 - `AGENTS.md`：协作口径与智能体约定
-- `RULES.md`：四阶段流程、红线与当前基线
+- `RULES.md`：四阶段流程、核心业务逻辑架构约束、红线与当前基线
 - `CLAUDE.md`：执行入口、命令、验证清单与环境坑点
 - `docs/FRONTEND_REAL_DATA_GOVERNANCE.md`：前端真实数据治理
 - `docs/DOCUMENTATION_GOVERNANCE.md`：文档治理规范

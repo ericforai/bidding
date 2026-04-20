@@ -59,8 +59,93 @@ jobs:
         env:
           PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
 
+      - name: Run backend architecture tests
+        run: mvn -DforkCount=0 -Dtest=FPJavaArchitectureTest,MaintainabilityArchitectureTest test
+        env:
+          PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
+
       - name: Run baseline and resource integration tests
         run: mvn -Dtest=FlywayBaselineContextTest,ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest test
+        env:
+          PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
+
+  quality-scope:
+    runs-on: ubuntu-latest
+    # dorny/paths-filter 在 PR 场景会调 GitHub API listFiles，需要 pull-requests: read。
+    # push 场景走 git 本地 diff，不需要此权限，所以历史直推 main 时从未暴露。
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend_changed: ${{ steps.filter.outputs.backend }}
+      protected_quality_changed: ${{ steps.filter.outputs.protected_quality }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            protected_quality:
+              - 'backend/pom.xml'
+              - 'backend/README.md'
+              - 'backend/QUALITY_GATE_PLAN.md'
+              - 'backend/QUALITY_GATE_GUIDE.md'
+              - 'backend/src/main/java/com/xiyu/bid/marketinsight/core/**'
+              - 'backend/src/main/java/com/xiyu/bid/admin/settings/core/**'
+              - 'backend/src/main/java/com/xiyu/bid/task/core/**'
+              - 'backend/src/main/java/com/xiyu/bid/bidresult/core/**'
+              - 'backend/src/main/java/com/xiyu/bid/projectworkflow/**'
+              - 'backend/src/test/java/com/xiyu/bid/admin/settings/core/**'
+              - 'backend/src/test/java/com/xiyu/bid/task/core/**'
+              - 'backend/src/test/java/com/xiyu/bid/bidresult/core/**'
+              - 'backend/src/test/java/com/xiyu/bid/projectworkflow/**'
+
+  backend-quality-audit:
+    runs-on: ubuntu-latest
+    needs: [quality-scope]
+    if: needs.quality-scope.outputs.backend_changed == 'true'
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Run backend quality audit
+        run: mvn -Pjava-quality,java-quality-spotbugs,quality-audit checkstyle:check pmd:check spotbugs:check
+
+  backend-quality-strict:
+    runs-on: ubuntu-latest
+    needs: [quality-scope]
+    if: needs.quality-scope.outputs.protected_quality_changed == 'true'
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Run backend quality strict gate
+        run: mvn -Pjava-quality,java-quality-spotbugs,quality-strict -DforkCount=0 test checkstyle:check pmd:check spotbugs:check
         env:
           PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
 

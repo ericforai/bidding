@@ -3,7 +3,6 @@ import { useUserStore } from '@/stores/user'
 
 const DEFAULT_AUTHENTICATED_HOME = '/dashboard'
 const HIDDEN_API_ROUTES = new Set([
-  'CustomerOpportunityCenter'
 ])
 
 const getNormalizedRole = (userStore) => {

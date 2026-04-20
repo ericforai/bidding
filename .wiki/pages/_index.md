@@ -28,6 +28,7 @@ updated: 2026-04-15
 ### 业务知识
 - [[business-process]] — 业务流程：6 阶段投标生命周期
 - [[requirements]] — 需求追溯：甲方 RFP 需求→系统实现追溯矩阵
+- [[dashboard-gap-analysis]] — 工作台缺口分析：卡片 vs 标书要求逐项对照
 - [[modules]] — 模块目录：所有功能模块边界与职责
 - [[ai-capabilities]] — AI 能力：3 大类 9 项智能功能
 - [[roles-and-permissions]] — 角色权限：用户体系与访问控制
@@ -50,5 +51,5 @@ updated: 2026-04-15
 | 操作指南 (guide) | 3 | overview, deployment, team-and-timeline |
 | 参考资料 (reference) | 3 | glossary, data-model, roles-and-permissions |
 | 功能模块 (module) | 2 | modules, ai-capabilities |
-| 业务知识 (business) | 2 | business-process, requirements |
+| 业务知识 (business) | 3 | business-process, requirements, dashboard-gap-analysis |
 | 技术架构 (architecture) | 1 | architecture |

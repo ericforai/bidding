@@ -186,6 +186,18 @@ public class ProjectService {
                 .sourceCustomer(project.getSourceCustomer())
                 .sourceOpportunityId(project.getSourceOpportunityId())
                 .sourceReasoningSummary(project.getSourceReasoningSummary())
+                .competitorAnalysisJson(project.getCompetitorAnalysisJson())
+                .tasksJson(project.getTasksJson())
+                .aiAnalysisJson(project.getAiAnalysisJson())
+                .customer(project.getCustomer())
+                .budget(project.getBudget())
+                .industry(project.getIndustry())
+                .region(project.getRegion())
+                .platform(project.getPlatform())
+                .deadline(project.getDeadline())
+                .description(project.getDescription())
+                .remark(project.getRemark())
+                .tagsJson(project.getTagsJson())
                 .customerManager(project.getCustomerManager())
                 .customerManagerId(project.getCustomerManagerId())
                 .createdAt(project.getCreatedAt())
@@ -208,6 +220,18 @@ public class ProjectService {
                 .sourceCustomer(dto.getSourceCustomer())
                 .sourceOpportunityId(dto.getSourceOpportunityId())
                 .sourceReasoningSummary(dto.getSourceReasoningSummary())
+                .competitorAnalysisJson(dto.getCompetitorAnalysisJson())
+                .tasksJson(dto.getTasksJson())
+                .aiAnalysisJson(dto.getAiAnalysisJson())
+                .customer(dto.getCustomer())
+                .budget(dto.getBudget())
+                .industry(dto.getIndustry())
+                .region(dto.getRegion())
+                .platform(dto.getPlatform())
+                .deadline(dto.getDeadline())
+                .description(dto.getDescription())
+                .remark(dto.getRemark())
+                .tagsJson(dto.getTagsJson())
                 .customerManager(dto.getCustomerManager())
                 .customerManagerId(dto.getCustomerManagerId())
                 .build();
@@ -226,6 +250,18 @@ public class ProjectService {
         if (updates.getSourceCustomer() != null) project.setSourceCustomer(updates.getSourceCustomer());
         if (updates.getSourceOpportunityId() != null) project.setSourceOpportunityId(updates.getSourceOpportunityId());
         if (updates.getSourceReasoningSummary() != null) project.setSourceReasoningSummary(updates.getSourceReasoningSummary());
+        if (updates.getCompetitorAnalysisJson() != null) project.setCompetitorAnalysisJson(updates.getCompetitorAnalysisJson());
+        if (updates.getTasksJson() != null) project.setTasksJson(updates.getTasksJson());
+        if (updates.getAiAnalysisJson() != null) project.setAiAnalysisJson(updates.getAiAnalysisJson());
+        project.setCustomer(updates.getCustomer());
+        project.setBudget(updates.getBudget());
+        project.setIndustry(updates.getIndustry());
+        project.setRegion(updates.getRegion());
+        project.setPlatform(updates.getPlatform());
+        project.setDeadline(updates.getDeadline());
+        project.setDescription(updates.getDescription());
+        project.setRemark(updates.getRemark());
+        project.setTagsJson(updates.getTagsJson());
         if (updates.getCustomerManager() != null) project.setCustomerManager(updates.getCustomerManager());
         if (updates.getCustomerManagerId() != null) project.setCustomerManagerId(updates.getCustomerManagerId());
     }
@@ -236,13 +272,24 @@ public class ProjectService {
         if (projectDTO.getTenderId() == null) throw new IllegalArgumentException("Tender ID is required");
         if (projectDTO.getManagerId() == null) throw new IllegalArgumentException("Manager ID is required");
         if (creating && projectDTO.getStatus() == Project.Status.ARCHIVED) throw new IllegalArgumentException("New projects cannot be created directly in ARCHIVED status");
+
+        Project.Status normalizedStatus = projectDTO.getStatus();
+        if (creating && normalizedStatus == null) {
+            normalizedStatus = Project.Status.INITIATED;
+        }
+
+        List<Long> normalizedTeamMembers = null;
+        if (creating || projectDTO.getTeamMembers() != null) {
+            normalizedTeamMembers = normalizeTeamMembers(projectDTO.getTeamMembers());
+        }
+
         return ProjectDTO.builder()
                 .id(projectDTO.getId())
                 .name(projectDTO.getName().trim())
                 .tenderId(projectDTO.getTenderId())
-                .status(creating ? (projectDTO.getStatus() != null ? projectDTO.getStatus() : Project.Status.INITIATED) : projectDTO.getStatus())
+                .status(normalizedStatus)
                 .managerId(projectDTO.getManagerId())
-                .teamMembers(creating ? normalizeTeamMembers(projectDTO.getTeamMembers()) : (projectDTO.getTeamMembers() != null ? normalizeTeamMembers(projectDTO.getTeamMembers()) : null))
+                .teamMembers(normalizedTeamMembers)
                 .startDate(projectDTO.getStartDate())
                 .endDate(projectDTO.getEndDate())
                 .sourceModule(trimToNull(projectDTO.getSourceModule()))
@@ -250,6 +297,18 @@ public class ProjectService {
                 .sourceCustomer(trimToNull(projectDTO.getSourceCustomer()))
                 .sourceOpportunityId(trimToNull(projectDTO.getSourceOpportunityId()))
                 .sourceReasoningSummary(trimToNull(projectDTO.getSourceReasoningSummary()))
+                .competitorAnalysisJson(projectDTO.getCompetitorAnalysisJson())
+                .tasksJson(projectDTO.getTasksJson())
+                .aiAnalysisJson(projectDTO.getAiAnalysisJson())
+                .customer(trimToNull(projectDTO.getCustomer()))
+                .budget(projectDTO.getBudget())
+                .industry(trimToNull(projectDTO.getIndustry()))
+                .region(trimToNull(projectDTO.getRegion()))
+                .platform(trimToNull(projectDTO.getPlatform()))
+                .deadline(projectDTO.getDeadline())
+                .description(trimToNull(projectDTO.getDescription()))
+                .remark(trimToNull(projectDTO.getRemark()))
+                .tagsJson(trimToNull(projectDTO.getTagsJson()))
                 .customerManager(trimToNull(projectDTO.getCustomerManager()))
                 .customerManagerId(trimToNull(projectDTO.getCustomerManagerId()))
                 .build();

@@ -119,6 +119,7 @@
               :prefix-icon="Lock"
               show-password
               class="form-input"
+              @keyup.enter="handleLogin"
             />
           </el-form-item>
 
@@ -135,9 +136,9 @@
             <el-button
               type="primary"
               size="large"
-              native-type="submit"
               :loading="loading"
               class="login-button"
+              @click="handleLogin"
             >
               {{ loading ? '登录中...' : '登录' }}
             </el-button>
@@ -199,12 +200,13 @@ const loginRules = {
 }
 
 const displayAccounts = computed(() => [
+  'admin（系统管理员）',
   'lizong（李总）',
   'zhangjingli（张经理）',
   'xiaowang（小王）'
 ])
 
-const accountHint = computed(() => '请使用已分配的正式账号凭证登录')
+const accountHint = computed(() => '默认管理员: admin/XiyuAdmin2026!（首次部署后请修改密码）')
 
 const handleLogin = async () => {
   if (!loginFormRef.value) return
