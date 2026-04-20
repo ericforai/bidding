@@ -26,6 +26,10 @@ public enum IndustryType {
 
     @JsonCreator
     public static IndustryType fromValue(String value) {
+        return EnumValueParser.parseOrNull(IndustryType.class, value);
+    }
+
+    public static EnumParseResult<IndustryType> parse(String value) {
         return EnumValueParser.parse(IndustryType.class, value, "行业");
     }
 }

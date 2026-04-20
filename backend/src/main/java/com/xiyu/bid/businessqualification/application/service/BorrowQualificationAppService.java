@@ -6,6 +6,7 @@ import com.xiyu.bid.businessqualification.domain.model.QualificationLoan;
 import com.xiyu.bid.businessqualification.domain.port.BusinessQualificationRepository;
 import com.xiyu.bid.businessqualification.domain.port.QualificationLoanRecordRepository;
 import com.xiyu.bid.businessqualification.domain.service.QualificationLoanPolicy;
+import com.xiyu.bid.businessqualification.domain.service.QualificationValidationResult;
 import com.xiyu.bid.businessqualification.domain.valueobject.LoanStatus;
 import com.xiyu.bid.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -26,9 +27,9 @@ public class BorrowQualificationAppService {
     public QualificationLoan borrow(Long qualificationId, QualificationBorrowCommand command) {
         BusinessQualification qualification = qualificationRepository.findById(qualificationId)
                 .orElseThrow(() -> new ResourceNotFoundException("BusinessQualification", String.valueOf(qualificationId)));
+        requireValid(loanPolicy.validateBorrow(qualification));
 
         BusinessQualification borrowedQualification = qualification.borrow(
-                loanPolicy,
                 command.getBorrower(),
                 command.getDepartment(),
                 command.getProjectId(),
@@ -37,17 +38,26 @@ public class BorrowQualificationAppService {
 
         qualificationRepository.save(borrowedQualification);
 
-        QualificationLoan loan = QualificationLoan.builder()
-                .qualificationId(qualificationId)
-                .borrower(command.getBorrower())
-                .department(command.getDepartment())
-                .projectId(command.getProjectId())
-                .purpose(command.getPurpose())
-                .remark(command.getRemark())
-                .borrowedAt(LocalDateTime.now())
-                .expectedReturnDate(command.getExpectedReturnDate())
-                .status(LoanStatus.BORROWED)
-                .build();
+        QualificationLoan loan = new QualificationLoan(
+                null,
+                qualificationId,
+                command.getBorrower(),
+                command.getDepartment(),
+                command.getProjectId(),
+                command.getPurpose(),
+                command.getRemark(),
+                LocalDateTime.now(),
+                command.getExpectedReturnDate(),
+                null,
+                null,
+                LoanStatus.BORROWED
+        );
         return loanRecordRepository.save(loan);
+    }
+
+    private void requireValid(QualificationValidationResult validationResult) {
+        if (!validationResult.valid()) {
+            throw new IllegalArgumentException(validationResult.message());
+        }
     }
 }

@@ -4,7 +4,6 @@ import com.xiyu.bid.businessqualification.application.command.QualificationListC
 import com.xiyu.bid.businessqualification.domain.model.BusinessQualification;
 import com.xiyu.bid.businessqualification.domain.model.QualificationAttachment;
 import com.xiyu.bid.businessqualification.domain.port.BusinessQualificationRepository;
-import com.xiyu.bid.businessqualification.domain.valueobject.QualificationStatus;
 import com.xiyu.bid.businessqualification.domain.valueobject.QualificationSubject;
 import com.xiyu.bid.businessqualification.domain.valueobject.ReminderPolicy;
 import com.xiyu.bid.businessqualification.domain.valueobject.ValidityPeriod;
@@ -140,45 +139,39 @@ public class BusinessQualificationRepositoryAdapter implements BusinessQualifica
     }
 
     private BusinessQualification toDomain(BusinessQualificationEntity entity) {
-        return BusinessQualification.builder()
-                .id(entity.getId())
-                .name(entity.getName())
-                .subject(QualificationSubject.builder()
-                        .type(entity.getSubjectType())
-                        .name(entity.getSubjectName())
-                        .build())
-                .category(entity.getCategory())
-                .certificateNo(entity.getCertificateNo())
-                .issuer(entity.getIssuer())
-                .holderName(entity.getHolderName())
-                .validityPeriod(ValidityPeriod.builder()
-                        .issueDate(entity.getIssueDate())
-                        .expiryDate(entity.getExpiryDate())
-                        .build())
-                .reminderPolicy(ReminderPolicy.builder()
-                        .enabled(entity.isReminderEnabled())
-                        .reminderDays(entity.getReminderDays())
-                        .lastRemindedAt(entity.getLastRemindedAt())
-                        .build())
-                .currentBorrowStatus(entity.getCurrentBorrowStatus())
-                .currentBorrower(entity.getCurrentBorrower())
-                .currentDepartment(entity.getCurrentDepartment())
-                .currentProjectId(entity.getCurrentProjectId())
-                .borrowPurpose(entity.getBorrowPurpose())
-                .expectedReturnDate(entity.getExpectedReturnDate())
-                .fileUrl(entity.getFileUrl())
-                .attachments(attachmentJpaRepository.findByQualificationIdOrderByUploadedAtDesc(entity.getId()).stream()
+        return BusinessQualification.create(
+                entity.getId(),
+                entity.getName(),
+                QualificationSubject.of(entity.getSubjectType(), entity.getSubjectName()),
+                entity.getCategory(),
+                entity.getCertificateNo(),
+                entity.getIssuer(),
+                entity.getHolderName(),
+                new ValidityPeriod(entity.getIssueDate(), entity.getExpiryDate()),
+                new ReminderPolicy(
+                        entity.isReminderEnabled(),
+                        entity.getReminderDays(),
+                        entity.getLastRemindedAt()
+                ),
+                entity.getCurrentBorrowStatus(),
+                entity.getCurrentBorrower(),
+                entity.getCurrentDepartment(),
+                entity.getCurrentProjectId(),
+                entity.getBorrowPurpose(),
+                entity.getExpectedReturnDate(),
+                entity.getFileUrl(),
+                attachmentJpaRepository.findByQualificationIdOrderByUploadedAtDesc(entity.getId()).stream()
                         .map(this::toDomainAttachment)
-                        .toList())
-                .build();
+                        .toList()
+        );
     }
 
     private QualificationAttachment toDomainAttachment(QualificationAttachmentEntity entity) {
-        return QualificationAttachment.builder()
-                .id(entity.getId())
-                .fileName(entity.getFileName())
-                .fileUrl(entity.getFileUrl())
-                .uploadedAt(entity.getUploadedAt())
-                .build();
+        return new QualificationAttachment(
+                entity.getId(),
+                entity.getFileName(),
+                entity.getFileUrl(),
+                entity.getUploadedAt()
+        );
     }
 }

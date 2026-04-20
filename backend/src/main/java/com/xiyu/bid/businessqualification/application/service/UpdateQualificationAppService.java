@@ -3,6 +3,7 @@ package com.xiyu.bid.businessqualification.application.service;
 import com.xiyu.bid.businessqualification.application.command.QualificationUpsertCommand;
 import com.xiyu.bid.businessqualification.domain.model.BusinessQualification;
 import com.xiyu.bid.businessqualification.domain.port.BusinessQualificationRepository;
+import com.xiyu.bid.businessqualification.domain.service.QualificationValidationResult;
 import com.xiyu.bid.businessqualification.domain.valueobject.QualificationSubject;
 import com.xiyu.bid.businessqualification.domain.valueobject.ReminderPolicy;
 import com.xiyu.bid.businessqualification.domain.valueobject.ValidityPeriod;
@@ -22,36 +23,45 @@ public class UpdateQualificationAppService {
         BusinessQualification existing = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("BusinessQualification", String.valueOf(id)));
 
-        BusinessQualification updated = BusinessQualification.builder()
-                .id(existing.id())
-                .name(command.getName() == null ? existing.name() : command.getName())
-                .subject(QualificationSubject.builder()
-                        .type(command.getSubjectType() == null ? existing.subject().getType() : command.getSubjectType())
-                        .name(command.getSubjectName() == null ? existing.subject().getName() : command.getSubjectName())
-                        .build())
-                .category(command.getCategory() == null ? existing.category() : command.getCategory())
-                .certificateNo(command.getCertificateNo() == null ? existing.certificateNo() : command.getCertificateNo())
-                .issuer(command.getIssuer() == null ? existing.issuer() : command.getIssuer())
-                .holderName(command.getHolderName() == null ? existing.holderName() : command.getHolderName())
-                .validityPeriod(ValidityPeriod.builder()
-                        .issueDate(command.getIssueDate() == null ? existing.validityPeriod().getIssueDate() : command.getIssueDate())
-                        .expiryDate(command.getExpiryDate() == null ? existing.validityPeriod().getExpiryDate() : command.getExpiryDate())
-                        .build())
-                .reminderPolicy(ReminderPolicy.builder()
-                        .enabled(command.getReminderEnabled() == null ? existing.reminderPolicy().isEnabled() : command.getReminderEnabled())
-                        .reminderDays(command.getReminderDays() == null ? existing.reminderPolicy().getReminderDays() : command.getReminderDays())
-                        .lastRemindedAt(existing.reminderPolicy().getLastRemindedAt())
-                        .build())
-                .currentBorrowStatus(existing.currentBorrowStatus())
-                .currentBorrower(existing.currentBorrower())
-                .currentDepartment(existing.currentDepartment())
-                .currentProjectId(existing.currentProjectId())
-                .borrowPurpose(existing.borrowPurpose())
-                .expectedReturnDate(existing.expectedReturnDate())
-                .fileUrl(command.getFileUrl() == null ? existing.fileUrl() : command.getFileUrl())
-                .attachments(command.getAttachments() == null || command.getAttachments().isEmpty() ? existing.attachments() : command.getAttachments())
-                .build();
+        QualificationSubject subject = QualificationSubject.of(
+                command.getSubjectType() == null ? existing.subject().getType() : command.getSubjectType(),
+                command.getSubjectName() == null ? existing.subject().getName() : command.getSubjectName()
+        );
+        requireValid(subject.validate());
+
+        BusinessQualification updated = BusinessQualification.create(
+                existing.id(),
+                command.getName() == null ? existing.name() : command.getName(),
+                subject,
+                command.getCategory() == null ? existing.category() : command.getCategory(),
+                command.getCertificateNo() == null ? existing.certificateNo() : command.getCertificateNo(),
+                command.getIssuer() == null ? existing.issuer() : command.getIssuer(),
+                command.getHolderName() == null ? existing.holderName() : command.getHolderName(),
+                new ValidityPeriod(
+                        command.getIssueDate() == null ? existing.validityPeriod().getIssueDate() : command.getIssueDate(),
+                        command.getExpiryDate() == null ? existing.validityPeriod().getExpiryDate() : command.getExpiryDate()
+                ),
+                new ReminderPolicy(
+                        command.getReminderEnabled() == null ? existing.reminderPolicy().isEnabled() : command.getReminderEnabled(),
+                        command.getReminderDays() == null ? existing.reminderPolicy().getReminderDays() : command.getReminderDays(),
+                        existing.reminderPolicy().getLastRemindedAt()
+                ),
+                existing.currentBorrowStatus(),
+                existing.currentBorrower(),
+                existing.currentDepartment(),
+                existing.currentProjectId(),
+                existing.borrowPurpose(),
+                existing.expectedReturnDate(),
+                command.getFileUrl() == null ? existing.fileUrl() : command.getFileUrl(),
+                command.getAttachments() == null || command.getAttachments().isEmpty() ? existing.attachments() : command.getAttachments()
+        );
 
         return repository.save(updated);
+    }
+
+    private void requireValid(QualificationValidationResult validationResult) {
+        if (!validationResult.valid()) {
+            throw new IllegalArgumentException(validationResult.message());
+        }
     }
 }

@@ -57,19 +57,19 @@ public class QualificationLoanRecordRepositoryAdapter implements QualificationLo
     }
 
     private QualificationLoan toDomain(QualificationLoanRecordEntity entity) {
-        return QualificationLoan.builder()
-                .id(entity.getId())
-                .qualificationId(entity.getQualificationId())
-                .borrower(entity.getBorrower())
-                .department(entity.getDepartment())
-                .projectId(entity.getProjectId())
-                .purpose(entity.getPurpose())
-                .remark(entity.getRemark())
-                .borrowedAt(entity.getBorrowedAt())
-                .expectedReturnDate(entity.getExpectedReturnDate())
-                .returnedAt(entity.getReturnedAt())
-                .returnRemark(entity.getReturnRemark())
-                .status(entity.getStatus())
-                .build();
+        return new QualificationLoan(
+                entity.getId(),
+                entity.getQualificationId(),
+                entity.getBorrower(),
+                entity.getDepartment(),
+                entity.getProjectId(),
+                entity.getPurpose(),
+                entity.getRemark(),
+                entity.getBorrowedAt(),
+                entity.getExpectedReturnDate(),
+                entity.getReturnedAt(),
+                entity.getReturnRemark(),
+                entity.getStatus()
+        );
     }
 }

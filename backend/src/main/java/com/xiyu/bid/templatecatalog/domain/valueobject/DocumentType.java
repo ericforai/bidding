@@ -24,6 +24,10 @@ public enum DocumentType {
 
     @JsonCreator
     public static DocumentType fromValue(String value) {
+        return EnumValueParser.parseOrNull(DocumentType.class, value);
+    }
+
+    public static EnumParseResult<DocumentType> parse(String value) {
         return EnumValueParser.parse(DocumentType.class, value, "文档类型");
     }
 }

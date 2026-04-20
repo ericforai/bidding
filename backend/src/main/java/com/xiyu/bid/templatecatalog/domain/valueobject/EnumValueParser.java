@@ -5,26 +5,30 @@ final class EnumValueParser {
     private EnumValueParser() {
     }
 
-    static <E extends Enum<E>> E parse(Class<E> enumClass, String value, String label) {
+    static <E extends Enum<E>> E parseOrNull(Class<E> enumClass, String value) {
+        return parse(enumClass, value, null).value();
+    }
+
+    static <E extends Enum<E>> EnumParseResult<E> parse(Class<E> enumClass, String value, String label) {
         if (value == null || value.isBlank()) {
-            return null;
+            return EnumParseResult.success(null);
         }
 
         for (E constant : enumClass.getEnumConstants()) {
             if (constant.name().equalsIgnoreCase(value)) {
-                return constant;
+                return EnumParseResult.success(constant);
             }
             if (constant instanceof ProductType productType && productType.getLabel().equalsIgnoreCase(value)) {
-                return enumClass.cast(productType);
+                return EnumParseResult.success(enumClass.cast(productType));
             }
             if (constant instanceof IndustryType industryType && industryType.getLabel().equalsIgnoreCase(value)) {
-                return enumClass.cast(industryType);
+                return EnumParseResult.success(enumClass.cast(industryType));
             }
             if (constant instanceof DocumentType documentType && documentType.getLabel().equalsIgnoreCase(value)) {
-                return enumClass.cast(documentType);
+                return EnumParseResult.success(enumClass.cast(documentType));
             }
         }
 
-        throw new IllegalArgumentException("不支持的" + label + ": " + value);
+        return EnumParseResult.failure("不支持的" + label + ": " + value);
     }
 }

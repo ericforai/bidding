@@ -8,9 +8,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class TemplateClassificationPolicy {
 
-    public void assertComplete(ProductType productType, IndustryType industry, DocumentType documentType) {
+    public TemplateCatalogValidationResult validateComplete(
+            ProductType productType,
+            IndustryType industry,
+            DocumentType documentType
+    ) {
         if (productType == null || industry == null || documentType == null) {
-            throw new IllegalArgumentException("产品类型、行业、文档类型不能为空");
+            return TemplateCatalogValidationResult.invalid("产品类型、行业、文档类型不能为空");
         }
+        return TemplateCatalogValidationResult.success();
     }
 }

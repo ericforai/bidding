@@ -26,6 +26,10 @@ public enum ProductType {
 
     @JsonCreator
     public static ProductType fromValue(String value) {
+        return EnumValueParser.parseOrNull(ProductType.class, value);
+    }
+
+    public static EnumParseResult<ProductType> parse(String value) {
         return EnumValueParser.parse(ProductType.class, value, "产品类型");
     }
 }

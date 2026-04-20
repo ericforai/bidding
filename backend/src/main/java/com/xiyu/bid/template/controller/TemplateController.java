@@ -15,6 +15,7 @@ import com.xiyu.bid.template.dto.TemplateVersionDTO;
 import com.xiyu.bid.template.service.TemplateService;
 import com.xiyu.bid.templatecatalog.application.command.TemplateQueryCriteria;
 import com.xiyu.bid.templatecatalog.domain.valueobject.DocumentType;
+import com.xiyu.bid.templatecatalog.domain.valueobject.EnumParseResult;
 import com.xiyu.bid.templatecatalog.domain.valueobject.IndustryType;
 import com.xiyu.bid.templatecatalog.domain.valueobject.ProductType;
 import com.xiyu.bid.util.InputSanitizer;
@@ -62,12 +63,18 @@ public class TemplateController {
             @RequestParam(required = false) String productType,
             @RequestParam(required = false) String industry,
             @RequestParam(required = false) String documentType) {
+        EnumParseResult<ProductType> productTypeResult = ProductType.parse(productType);
+        EnumParseResult<IndustryType> industryResult = IndustryType.parse(industry);
+        EnumParseResult<DocumentType> documentTypeResult = DocumentType.parse(documentType);
+        requireValidEnum(productTypeResult);
+        requireValidEnum(industryResult);
+        requireValidEnum(documentTypeResult);
         TemplateQueryCriteria criteria = TemplateQueryCriteria.builder()
                 .name(name == null ? null : InputSanitizer.sanitizeString(name, 200))
                 .category(category)
-                .productType(ProductType.fromValue(productType))
-                .industry(IndustryType.fromValue(industry))
-                .documentType(DocumentType.fromValue(documentType))
+                .productType(productTypeResult.value())
+                .industry(industryResult.value())
+                .documentType(documentTypeResult.value())
                 .build();
         List<TemplateDTO> templates = templateService.getAllTemplates(criteria);
         return ResponseEntity.ok(ApiResponse.success("Templates retrieved successfully", templates));
@@ -155,5 +162,11 @@ public class TemplateController {
         if (dto.getDescription() != null) dto.setDescription(InputSanitizer.sanitizeString(dto.getDescription(), 2000));
         if (dto.getFileSize() != null) dto.setFileSize(InputSanitizer.sanitizeString(dto.getFileSize(), 100));
         if (dto.getTags() != null) dto.setTags(dto.getTags().stream().map(tag -> InputSanitizer.sanitizeString(tag, 50)).toList());
+    }
+
+    private void requireValidEnum(EnumParseResult<?> parseResult) {
+        if (!parseResult.valid()) {
+            throw new IllegalArgumentException(parseResult.message());
+        }
     }
 }

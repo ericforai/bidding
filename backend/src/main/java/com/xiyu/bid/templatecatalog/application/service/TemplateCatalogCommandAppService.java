@@ -12,6 +12,7 @@ import com.xiyu.bid.templatecatalog.domain.port.TemplateCatalogRepository;
 import com.xiyu.bid.templatecatalog.domain.port.TemplateCatalogUseRecordRepository;
 import com.xiyu.bid.templatecatalog.domain.port.TemplateCatalogVersionRepository;
 import com.xiyu.bid.templatecatalog.domain.service.TemplateClassificationPolicy;
+import com.xiyu.bid.templatecatalog.domain.service.TemplateCatalogValidationResult;
 import com.xiyu.bid.templatecatalog.domain.service.TemplateVersionPolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,13 @@ public class TemplateCatalogCommandAppService {
 
     @Transactional
     public TemplateCatalogView create(TemplateCatalogMutationCommand command) {
-        templateClassificationPolicy.assertComplete(command.getProductType(), command.getIndustry(), command.getDocumentType());
+        requireValidClassification(
+                templateClassificationPolicy.validateComplete(
+                        command.getProductType(),
+                        command.getIndustry(),
+                        command.getDocumentType()
+                )
+        );
         Template template = templateCatalogRepository.save(Template.builder()
                 .name(command.getName())
                 .category(command.getCategory())
@@ -83,10 +90,12 @@ public class TemplateCatalogCommandAppService {
                 .createdAt(existing.getCreatedAt())
                 .updatedAt(existing.getUpdatedAt())
                 .build();
-        templateClassificationPolicy.assertComplete(
-                command.getProductType() != null ? command.getProductType() : com.xiyu.bid.templatecatalog.domain.valueobject.ProductType.fromValue(updated.getProductType()),
-                command.getIndustry() != null ? command.getIndustry() : com.xiyu.bid.templatecatalog.domain.valueobject.IndustryType.fromValue(updated.getIndustry()),
-                command.getDocumentType() != null ? command.getDocumentType() : com.xiyu.bid.templatecatalog.domain.valueobject.DocumentType.fromValue(updated.getDocumentType())
+        requireValidClassification(
+                templateClassificationPolicy.validateComplete(
+                        command.getProductType() != null ? command.getProductType() : com.xiyu.bid.templatecatalog.domain.valueobject.ProductType.fromValue(updated.getProductType()),
+                        command.getIndustry() != null ? command.getIndustry() : com.xiyu.bid.templatecatalog.domain.valueobject.IndustryType.fromValue(updated.getIndustry()),
+                        command.getDocumentType() != null ? command.getDocumentType() : com.xiyu.bid.templatecatalog.domain.valueobject.DocumentType.fromValue(updated.getDocumentType())
+                )
         );
         updated = templateCatalogRepository.save(updated);
         templateCatalogVersionRepository.save(TemplateVersion.builder()
@@ -166,5 +175,11 @@ public class TemplateCatalogCommandAppService {
 
     private String defaultFileSize(String fileSize) {
         return fileSize == null || fileSize.isBlank() ? "未知" : fileSize;
+    }
+
+    private void requireValidClassification(TemplateCatalogValidationResult validationResult) {
+        if (!validationResult.valid()) {
+            throw new IllegalArgumentException(validationResult.message());
+        }
     }
 }
