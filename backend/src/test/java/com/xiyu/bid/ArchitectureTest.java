@@ -51,6 +51,7 @@ public class ArchitectureTest {
         "com.xiyu.bid.roi.controller..",
         "com.xiyu.bid.versionhistory.controller..",
         "com.xiyu.bid.documenteditor.controller..",
+        "com.xiyu.bid.documentexport.controller..",
         "com.xiyu.bid.documents.controller..",
         "com.xiyu.bid.settings.controller..",
         "com.xiyu.bid.fees.controller..",
@@ -68,6 +69,7 @@ public class ArchitectureTest {
         "com.xiyu.bid.roi.controller..",
         "com.xiyu.bid.versionhistory.controller..",
         "com.xiyu.bid.documenteditor.controller..",
+        "com.xiyu.bid.documentexport.controller..",
         "com.xiyu.bid.documents.controller..",
         "com.xiyu.bid.settings.controller..",
         "com.xiyu.bid.fees.controller..",
@@ -85,12 +87,15 @@ public class ArchitectureTest {
         "com.xiyu.bid.roi.service..",
         "com.xiyu.bid.versionhistory.service..",
         "com.xiyu.bid.documenteditor.service..",
+        "com.xiyu.bid.documentexport.service..",
+        "com.xiyu.bid.historyproject.application..",
         "com.xiyu.bid.documents.service..",
         "com.xiyu.bid.settings.service..",
         "com.xiyu.bid.fees.service..",
         "com.xiyu.bid.projectworkflow.service..",
         "com.xiyu.bid.resources.service..",
         "com.xiyu.bid.casework.service..",
+        "com.xiyu.bid.casework.application.service..",
         "com.xiyu.bid.analytics.service.."
     };
 
@@ -102,6 +107,8 @@ public class ArchitectureTest {
         "com.xiyu.bid.roi.dto..",
         "com.xiyu.bid.versionhistory.dto..",
         "com.xiyu.bid.documenteditor.dto..",
+        "com.xiyu.bid.documentexport.dto..",
+        "com.xiyu.bid.historyproject.dto..",
         "com.xiyu.bid.documents.dto..",
         "com.xiyu.bid.settings.dto..",
         "com.xiyu.bid.projectworkflow.dto..",
@@ -109,6 +116,7 @@ public class ArchitectureTest {
     };
 
     private static final String[] DTO_ENTITY_FREE_PACKAGES = {
+        "com.xiyu.bid.historyproject.dto..",
         "com.xiyu.bid.settings.dto..",
         "com.xiyu.bid.projectworkflow.dto..",
         "com.xiyu.bid.analytics.dto.."
@@ -320,6 +328,67 @@ public class ArchitectureTest {
     }
 
     /**
+     * RULE 7.1: documentexport 只能通过 historyproject.application / dto 访问历史项目快照能力
+     * 禁止跳过应用边界直连其 repository/entity
+     */
+    @ArchTest
+    public static final ArchRule documentexport_should_only_depend_on_historyproject_api =
+        noClasses()
+            .that().resideInAnyPackage(
+                "com.xiyu.bid.documentexport.service..",
+                "com.xiyu.bid.documentexport.controller.."
+            )
+            .should().dependOnClassesThat()
+            .resideInAnyPackage(
+                "com.xiyu.bid.historyproject.repository..",
+                "com.xiyu.bid.historyproject.entity.."
+            )
+            .because("documentexport 应通过 historyproject 的应用边界交互，避免跨模块直连持久化实现");
+
+    /**
+     * RULE 7.2: historyproject 不应反向耦合到 casework/documenteditor/documentexport 内部实现
+     * 保持历史项目快照模块可被多个上游消费
+     */
+    @ArchTest
+    public static final ArchRule historyproject_should_not_depend_on_casework_or_document_internals =
+        noClasses()
+            .that().resideInAnyPackage(
+                "com.xiyu.bid.historyproject.application..",
+                "com.xiyu.bid.historyproject.dto..",
+                "com.xiyu.bid.historyproject.entity..",
+                "com.xiyu.bid.historyproject.repository.."
+            )
+            .should().dependOnClassesThat()
+            .resideInAnyPackage(
+                "com.xiyu.bid.casework..",
+                "com.xiyu.bid.documenteditor..",
+                "com.xiyu.bid.documentexport.."
+            )
+            .because("historyproject 是沉淀边界，不应回看案例或文档模块内部实现");
+
+    /**
+     * RULE 7.3: documenteditor 不得依赖历史项目/案例/导出模块
+     * 编辑边界保持聚焦在文档结构与编辑流程本身
+     */
+    @ArchTest
+    public static final ArchRule documenteditor_should_not_depend_on_archive_or_case_modules =
+        noClasses()
+            .that().resideInAnyPackage(
+                "com.xiyu.bid.documenteditor.service..",
+                "com.xiyu.bid.documenteditor.controller..",
+                "com.xiyu.bid.documenteditor.dto..",
+                "com.xiyu.bid.documenteditor.entity..",
+                "com.xiyu.bid.documenteditor.repository.."
+            )
+            .should().dependOnClassesThat()
+            .resideInAnyPackage(
+                "com.xiyu.bid.historyproject..",
+                "com.xiyu.bid.casework..",
+                "com.xiyu.bid.documentexport.."
+            )
+            .because("documenteditor 是上游编辑模块，不应直接承接归档沉淀或案例资产职责");
+
+    /**
      * RULE 8: Util工具类不能依赖业务逻辑
      * 所有模块都遵守
      */
@@ -360,6 +429,7 @@ public class ArchitectureTest {
             .or().resideInAPackage("com.xiyu.bid.roi.controller..")
             .or().resideInAPackage("com.xiyu.bid.versionhistory.controller..")
             .or().resideInAPackage("com.xiyu.bid.documenteditor.controller..")
+            .or().resideInAPackage("com.xiyu.bid.documentexport.controller..")
             .or().resideInAPackage("com.xiyu.bid.documents.controller..")
             .should().dependOnClassesThat()
             .haveSimpleNameContaining("EntityManager")

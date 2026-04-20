@@ -18,5 +18,6 @@ public class DocumentArchiveRecordDTO {
     private Long exportId;
     private String exportFileName;
     private String projectName;
+    private DocumentCaseSnapshotDTO caseSnapshot;
     private LocalDateTime archivedAt;
 }

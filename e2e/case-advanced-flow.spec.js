@@ -62,6 +62,7 @@ async function authedJson(path, session, options = {}) {
 test('case detail advanced actions use real backend contracts', async ({ page }) => {
   const session = await ensureSession()
   const suffix = Date.now()
+  const excerptOnlyKeyword = `星河联动中台-${suffix}`
   const casePayload = await authedJson('/api/knowledge/cases', session, {
     method: 'POST',
     body: JSON.stringify({
@@ -74,6 +75,7 @@ test('case detail advanced actions use real backend contracts', async ({ page })
       customerName: '测试客户',
       locationName: '杭州',
       projectPeriod: '2025-01-01 - 2025-12-31',
+      documentSnapshotText: excerptOnlyKeyword,
       tags: ['智慧园区', '政务'],
       highlights: ['统一门户', '一网统管'],
       technologies: ['Vue', 'Spring Boot'],
@@ -94,10 +96,23 @@ test('case detail advanced actions use real backend contracts', async ({ page })
   await expect(page.getByText(`ERI-99 案例 ${suffix}`)).toBeVisible()
 
   await page.getByRole('button', { name: '编辑案例' }).click()
+  await page.getByLabel('案例标题').locator('..').getByRole('textbox').fill(`ERI-99 案例 ${suffix} 已更新`)
+  await page.getByLabel('项目概述').locator('..').getByRole('textbox').fill('案例内容已更新')
+  await page.getByRole('button', { name: '保存修改' }).click()
+  await expect(page.getByText('案例更新成功')).toBeVisible()
+  await expect(page.getByText(`ERI-99 案例 ${suffix} 已更新`)).toBeVisible()
   await expect(page.getByText('案例内容已更新')).toBeVisible()
-  await expect(page.getByText('（已编辑）')).toBeVisible()
 
   await page.getByRole('button', { name: '引用此案例' }).click()
   await expect(page.getByText('案例已添加到引用列表')).toBeVisible()
   await expect(page.getByText('已被引用 3 次')).toBeVisible()
+
+  const referencePayload = await authedJson(`/api/knowledge/cases/${caseId}/references`, session)
+  expect(Array.isArray(referencePayload?.data)).toBeTruthy()
+  expect(referencePayload.data.length).toBeGreaterThan(0)
+
+  await page.goto('/knowledge/case')
+  await page.getByLabel('关键词').locator('..').getByRole('textbox').fill(excerptOnlyKeyword)
+  await page.getByRole('button', { name: '搜索' }).click()
+  await expect(page.getByText(`ERI-99 案例 ${suffix} 已更新`)).toBeVisible()
 })

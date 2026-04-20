@@ -441,16 +441,64 @@ export const documentExportApi = {
   } }
 
 export const documentAssemblyApi = {
+  async getTemplates(category) {
+    if (category) {
+      return httpClient.get('/api/documents/assembly/templates', {
+        params: { category } })
+    }
+
+    const categories = ['TECHNICAL', 'COMMERCIAL', 'QUALIFICATION', 'CONTRACT', 'OTHER']
+    const responses = await Promise.all(
+      categories.map((item) => httpClient.get('/api/documents/assembly/templates', {
+        params: { category: item } })),
+    )
+
+    return {
+      ...responses[0],
+      data: responses.flatMap((response) => Array.isArray(response?.data) ? response.data : []) }
+  },
+
   async getConfig(projectId) {
     if (!isNumericId(projectId)) return Promise.resolve(invalidIdMessage('project'))
 
     return httpClient.get(`/api/documents/assembly/${projectId}`)
   },
 
+  async getAssemblies(projectId) {
+    return documentAssemblyApi.getConfig(projectId)
+  },
+
   async assemble(data) {
     if (!isNumericId(data?.projectId)) return Promise.resolve(invalidIdMessage('project'))
 
     return httpClient.post(`/api/documents/assembly/${data.projectId}/assemble`, data)
+  },
+
+  async assembleDocument(projectId, data = {}) {
+    if (!isNumericId(projectId)) return Promise.resolve(invalidIdMessage('project'))
+
+    return httpClient.post(`/api/documents/assembly/${projectId}/assemble`, {
+      templateId: data.templateId,
+      variables: data.variables || '',
+      assembledBy: data.assembledBy ?? null })
+  },
+
+  async createTemplate(data = {}) {
+    return httpClient.post('/api/documents/assembly/templates', data)
+  },
+
+  async updateTemplate() {
+    return Promise.resolve({
+      success: false,
+      message: 'Template update is not available in the current API'
+    })
+  },
+
+  async deleteTemplate() {
+    return Promise.resolve({
+      success: false,
+      message: 'Template delete is not available in the current API'
+    })
   } }
 
 export default {

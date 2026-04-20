@@ -11,6 +11,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 案例实体
@@ -56,6 +60,53 @@ public class Case {
     @Column(name = "project_period")
     private String projectPeriod;
 
+    @Column(name = "product_line")
+    private String productLine;
+
+    @Column(name = "source_project_id")
+    private Long sourceProjectId;
+
+    @Column(name = "archive_summary", columnDefinition = "TEXT")
+    private String archiveSummary;
+
+    @Column(name = "price_strategy", columnDefinition = "TEXT")
+    private String priceStrategy;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "case_success_factors", joinColumns = @JoinColumn(name = "case_id"))
+    @Column(name = "success_factor", length = 1000)
+    @Builder.Default
+    private List<String> successFactors = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "case_lessons_learned", joinColumns = @JoinColumn(name = "case_id"))
+    @Column(name = "lesson_learned", length = 1000)
+    @Builder.Default
+    private List<String> lessonsLearned = new ArrayList<>();
+
+    @Column(name = "document_snapshot_text", columnDefinition = "TEXT")
+    private String documentSnapshotText;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "case_attachment_names", joinColumns = @JoinColumn(name = "case_id"))
+    @Column(name = "attachment_name")
+    @Builder.Default
+    private List<String> attachmentNames = new ArrayList<>();
+
+    @Column(name = "status", length = 30)
+    @Builder.Default
+    private String status = "DRAFT";
+
+    @Column(name = "published_at")
+    private LocalDateTime publishedAt;
+
+    @Column(name = "visibility", length = 30)
+    @Builder.Default
+    private String visibility = "INTERNAL";
+
+    @Column(name = "search_document", columnDefinition = "TEXT")
+    private String searchDocument;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "case_tags", joinColumns = @JoinColumn(name = "case_id"))
     @Column(name = "tag")
@@ -90,13 +141,85 @@ public class Case {
 
     @PrePersist
     protected void onCreate() {
+        applyLifecycleDefaults();
+        refreshSearchDocument();
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
+        applyLifecycleDefaults();
+        refreshSearchDocument();
         updatedAt = LocalDateTime.now();
+    }
+
+    public void refreshSearchDocument() {
+        searchDocument = Stream.of(
+                        title,
+                        description,
+                        customerName,
+                        locationName,
+                        projectPeriod,
+                        productLine,
+                        archiveSummary,
+                        priceStrategy,
+                        documentSnapshotText,
+                        status,
+                        visibility,
+                        tags,
+                        highlights,
+                        technologies,
+                        successFactors,
+                        lessonsLearned,
+                        attachmentNames)
+                .flatMap(value -> value instanceof List<?> list
+                        ? list.stream().filter(Objects::nonNull).map(Object::toString)
+                        : Stream.ofNullable(value).map(Object::toString))
+                .map(this::normalizeToken)
+                .filter(token -> !token.isBlank())
+                .distinct()
+                .collect(Collectors.joining(" "));
+    }
+
+    private void applyLifecycleDefaults() {
+        if (status == null || status.isBlank()) {
+            status = "DRAFT";
+        }
+        if (visibility == null || visibility.isBlank()) {
+            visibility = "INTERNAL";
+        }
+        if (tags == null) {
+            tags = new ArrayList<>();
+        }
+        if (highlights == null) {
+            highlights = new ArrayList<>();
+        }
+        if (technologies == null) {
+            technologies = new ArrayList<>();
+        }
+        if (successFactors == null) {
+            successFactors = new ArrayList<>();
+        }
+        if (lessonsLearned == null) {
+            lessonsLearned = new ArrayList<>();
+        }
+        if (attachmentNames == null) {
+            attachmentNames = new ArrayList<>();
+        }
+        if (viewCount == null) {
+            viewCount = 0L;
+        }
+        if (useCount == null) {
+            useCount = 0L;
+        }
+    }
+
+    private String normalizeToken(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replaceAll("\\s+", " ").trim().toLowerCase(Locale.ROOT);
     }
 
     /**
