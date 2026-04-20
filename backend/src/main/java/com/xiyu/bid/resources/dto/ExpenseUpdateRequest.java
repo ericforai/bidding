@@ -16,6 +16,8 @@ public class ExpenseUpdateRequest {
 
     private LocalDate date;
 
+    private LocalDate expectedReturnDate;
+
     private String expenseType;
 
     private String description;

@@ -4,6 +4,25 @@
 
 ## [未发布]
 
+### 2026-04-20
+
+#### 新增 (Added)
+- 资源费用模块新增“保证金退还自动跟踪提醒”闭环：
+  - 费用申请支持维护 `expectedReturnDate`
+  - 根据已确认开标结果 + 预计退还日期自动扫描未退还保证金
+  - 生成真实告警历史并记录 `lastReturnReminderAt`
+  - 费用页展示真实应退日期、跟踪状态、最近提醒时间
+  - 支持手工发送保证金退还提醒与确认退还
+
+#### 重构 (Refactor)
+- 按 Split-First Rule 拆分 `Expense.vue`，提取 `useExpensePage.js`、保证金跟踪逻辑和多个页面子组件
+- 拆分告警调度执行边界，引入 `AlertRuleExecutionService` 承接保证金退还扫描
+
+#### 修复 (Fixes)
+- 修复资源费用页“费用申请”按钮无法打开申请弹窗的问题，并补充回归测试
+- 修复手工保证金提醒在系统配置缺失时可能出现的空指针，并补充默认阈值兜底测试
+- 修复告警规则前端对真实后端字段的映射，补齐 `QUALIFICATION_EXPIRY` / `DEPOSIT_RETURN` 类型展示与编辑能力
+
 ### 2026-03-19
 
 #### 安全修复 (Security Fixes)

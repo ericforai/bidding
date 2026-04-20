@@ -24,6 +24,8 @@ public class ExpenseDTO {
     LocalDateTime approvedAt;
     LocalDateTime returnRequestedAt;
     LocalDateTime returnConfirmedAt;
+    LocalDate expectedReturnDate;
+    LocalDateTime lastReturnReminderAt;
     String returnComment;
     LocalDateTime paidAt;
     String paidBy;

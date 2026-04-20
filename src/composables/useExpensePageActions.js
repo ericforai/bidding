@@ -94,6 +94,7 @@ export function useExpensePageActions({
         amount: applyForm.value.amount,
         date: today(),
         expenseType: applyForm.value.type,
+        expectedReturnDate: applyForm.value.expectedReturnDate || null,
         description: applyForm.value.remark,
         createdBy: userStore.userName
       })
@@ -239,11 +240,28 @@ export function useExpensePageActions({
     showRemindDialog.value = true
   }
 
-  const confirmRemind = () => {
+  const confirmRemind = async () => {
     if (!currentRemindItem.value) return
-    ElMessage.success(`已向${currentRemindItem.value.payee}发送保证金归还提醒`)
-    showRemindDialog.value = false
-    currentRemindItem.value = null
+
+    returnSubmitting.value = true
+    try {
+      const response = await resourcesApi.expenses.remindReturn(currentRemindItem.value.id, {
+        actor: userStore.userName,
+        comment: `${userStore.userName} 发起保证金归还提醒`
+      })
+
+      if (!response?.success) {
+        ElMessage.error(response?.message || '保证金归还提醒发送失败')
+        return
+      }
+
+      await refreshPage()
+      ElMessage.success(`已向${currentRemindItem.value.project || '相关项目'}发送保证金归还提醒`)
+      showRemindDialog.value = false
+      currentRemindItem.value = null
+    } finally {
+      returnSubmitting.value = false
+    }
   }
 
   const confirmReturn = async (row) => {

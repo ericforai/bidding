@@ -63,7 +63,8 @@ public class AlertRule {
         BUDGET,
         RISK,
         DOCUMENT,
-        QUALIFICATION_EXPIRY
+        QUALIFICATION_EXPIRY,
+        DEPOSIT_RETURN
     }
 
     public enum ConditionType {

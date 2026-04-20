@@ -54,9 +54,14 @@ function normalizeExpense(item = {}) {
     approvalStatus,
     backendStatus,
     date: item.date || formatDate(item.createdAt),
-    returnDate: item.returnDate || '',
-    returnRequestedAt: item.returnRequestedAt || '',
-    returnConfirmedAt: item.returnConfirmedAt || '',
+    returnDate: formatDate(item.returnDate || item.returnConfirmedAt),
+    expectedReturnDate: formatDate(item.expectedReturnDate || item.returnDate),
+    lastRemindedAt: formatDateTime(item.lastReturnReminderAt || item.lastRemindedAt),
+    overdue: typeof item.overdue === 'boolean'
+      ? item.overdue
+      : Boolean(item.expectedReturnDate) && backendStatus !== 'RETURNED' && new Date(item.expectedReturnDate) < new Date(),
+    returnRequestedAt: formatDateTime(item.returnRequestedAt),
+    returnConfirmedAt: formatDateTime(item.returnConfirmedAt),
     paidAt: formatDateTime(item.paidAt),
     paidBy: item.paidBy || '',
     paymentReference: item.paymentReference || '',
@@ -183,5 +188,15 @@ export const expensesApi = {
     if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('expense'))
     const response = await httpClient.post(`/api/resources/expenses/${id}/confirm-return`, data)
     return normalizeExpenseMutationResponse(response)
+  },
+
+  async remindReturn(id, data) {
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('expense'))
+    const response = await httpClient.post(`/api/resources/expenses/${id}/return-reminder`, data)
+    return normalizeExpenseMutationResponse(response)
+  },
+
+  async sendReturnReminder(id, data) {
+    return this.remindReturn(id, data)
   }
 }

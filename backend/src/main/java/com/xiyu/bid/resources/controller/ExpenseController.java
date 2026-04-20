@@ -7,6 +7,7 @@ package com.xiyu.bid.resources.controller;
 import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.config.PaginationConstants;
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.resources.application.service.SendExpenseReturnReminderAppService;
 import com.xiyu.bid.resources.dto.ExpenseApproveRequest;
 import com.xiyu.bid.resources.dto.ExpenseApprovalRecordDTO;
 import com.xiyu.bid.resources.dto.ExpenseCreateRequest;
@@ -45,6 +46,7 @@ import java.util.Map;
 public class ExpenseController {
 
     private final ExpenseService expenseService;
+    private final SendExpenseReturnReminderAppService sendExpenseReturnReminderAppService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
@@ -214,5 +216,15 @@ public class ExpenseController {
     public ResponseEntity<ApiResponse<List<ExpensePaymentRecordDTO>>> getPaymentRecords(@PathVariable Long id) {
         List<ExpensePaymentRecordDTO> records = expenseService.getPaymentRecords(id);
         return ResponseEntity.ok(ApiResponse.success(records));
+    }
+
+    @PostMapping("/{id}/return-reminder")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "SEND_RETURN_REMINDER", entityType = "Expense", description = "Send expense return reminder")
+    public ResponseEntity<ApiResponse<ExpenseDTO>> sendReturnReminder(
+            @PathVariable Long id,
+            @Valid @RequestBody ExpenseReturnActionRequest request) {
+        ExpenseDTO expense = sendExpenseReturnReminderAppService.send(id, request.getActor(), request.getComment());
+        return ResponseEntity.ok(ApiResponse.success("Expense return reminder sent", expense));
     }
 }

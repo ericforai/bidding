@@ -24,6 +24,8 @@ public class ExpenseCreateRequest {
     @NotNull(message = "Date is required")
     private LocalDate date;
 
+    private LocalDate expectedReturnDate;
+
     private String expenseType;
 
     private String description;

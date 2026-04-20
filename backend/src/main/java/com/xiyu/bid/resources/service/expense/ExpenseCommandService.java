@@ -36,6 +36,7 @@ public class ExpenseCommandService {
                 .expenseType(request.getExpenseType())
                 .amount(request.getAmount())
                 .date(request.getDate())
+                .expectedReturnDate(request.getExpectedReturnDate())
                 .description(request.getDescription())
                 .createdBy(request.getCreatedBy())
                 .status(Expense.ExpenseStatus.PENDING_APPROVAL)
@@ -49,6 +50,9 @@ public class ExpenseCommandService {
         Expense expense = getExpenseEntityById(id);
         expense.updateDetails(request.getCategory(), request.getAmount(), request.getDate(),
                 request.getExpenseType(), request.getDescription());
+        if (request.getExpectedReturnDate() != null) {
+            expense.updateExpectedReturnDate(request.getExpectedReturnDate());
+        }
         return ResourceResponseMapper.toDto(expenseRepository.save(expense));
     }
 
