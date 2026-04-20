@@ -4,7 +4,7 @@ import com.xiyu.bid.alerts.entity.AlertRule;
 import com.xiyu.bid.alerts.repository.AlertRuleRepository;
 import com.xiyu.bid.alerts.service.AlertHistoryService;
 import com.xiyu.bid.alerts.service.AlertSchedulerService;
-import com.xiyu.bid.businessqualification.application.service.ScanExpiringQualificationsAppService;
+import com.xiyu.bid.alerts.service.QualificationExpiryAlertService;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TenderRepository;
 import com.xiyu.bid.resources.repository.ExpenseRepository;
@@ -30,7 +30,7 @@ class AlertSchedulerServiceTest {
     @Mock private ProjectRepository projectRepository;
     @Mock private TenderRepository tenderRepository;
     @Mock private ExpenseRepository expenseRepository;
-    @Mock private ScanExpiringQualificationsAppService scanExpiringQualificationsAppService;
+    @Mock private QualificationExpiryAlertService qualificationExpiryAlertService;
 
     @InjectMocks
     private AlertSchedulerService alertSchedulerService;
@@ -52,6 +52,6 @@ class AlertSchedulerServiceTest {
 
         alertSchedulerService.checkAlertRules();
 
-        verify(scanExpiringQualificationsAppService).scan(30);
+        verify(qualificationExpiryAlertService).createAlerts(30);
     }
 }
