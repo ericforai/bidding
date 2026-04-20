@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { hasStoredUserHint } from '@/api/session.js'
 
 const DEFAULT_AUTHENTICATED_HOME = '/dashboard'
 const HIDDEN_API_ROUTES = new Set([
@@ -199,7 +200,7 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
   let hasAuthState = Boolean(userStore.currentUser && userStore.token)
-  const shouldAttemptRestore = to.meta.requiresAuth || hasAuthState
+  const shouldAttemptRestore = to.meta.requiresAuth || hasAuthState || (to.path === '/login' && hasStoredUserHint())
 
   if (!userStore.hasRestoredSession && shouldAttemptRestore) {
     await userStore.restoreSession()

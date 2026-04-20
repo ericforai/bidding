@@ -42,6 +42,7 @@
 
 ### 5. 资源管理
 - 费用管理
+- 保证金退还跟踪与自动提醒
 - 招标平台账户管理
 - BAR（投标资产台账）相关能力
 
@@ -151,9 +152,21 @@ npm run test:e2e
 ```bash
 cd backend
 mvn test -Dtest=<相关测试类>
+mvn test -Dtest=FlywayBaselineContextTest,FlywayPostgresContainerTest
 mvn test -Dtest=ArchitectureTest
 mvn test
 ```
+
+### 后端质量门禁
+
+```bash
+cd backend
+mvn -Pjava-quality,java-quality-spotbugs,quality-strict -DskipTests -Djacoco.skip=true checkstyle:check pmd:check spotbugs:check
+```
+
+说明：
+- `quality-strict` 现在作为全局开关恢复可用，用来启用 Checkstyle、PMD、SpotBugs 的真实门禁配置。
+- 涉及后端模块边界、迁移脚本或真实 API 链路的改动，默认同时运行 Flyway 与 ArchitectureTest。
 
 ## 当前验证基线
 
@@ -177,6 +190,10 @@ mvn test
 - 若本地 `127.0.0.1:18080` 和 `127.0.0.1:1314` 都可用，测试会直接使用现有环境
 - 若环境未启动，Playwright 会调用 `scripts/test/start-api-e2e-stack.sh` 准备 API 联调环境
 - 测试结束后，仅会关闭由本次 Playwright 启动的进程
+- CI 当前至少执行三条真实 API 冒烟链路：
+  - `e2e/commercial-main-flow.spec.js`
+  - `e2e/project-detail-workflow.spec.js`
+  - `e2e/document-editor-case-knowledge.spec.js`
 
 ### 手动控制 E2E 基线
 

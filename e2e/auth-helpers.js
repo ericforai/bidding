@@ -63,6 +63,13 @@ export async function ensureApiSession({ username, role = 'ADMIN', fullName, pas
 }
 
 export async function injectSession(page, session) {
+  await page.addInitScript(({ apiBaseUrl: browserApiBaseUrl }) => {
+    const existingProcess = globalThis.process || { env: {} }
+    existingProcess.env = existingProcess.env || {}
+    existingProcess.env.VITE_API_BASE_URL = existingProcess.env.VITE_API_BASE_URL || browserApiBaseUrl
+    globalThis.process = existingProcess
+  }, { apiBaseUrl })
+
   await page.addInitScript(({ currentSession }) => {
     sessionStorage.setItem('token', currentSession.token)
     if (currentSession.refreshToken) {

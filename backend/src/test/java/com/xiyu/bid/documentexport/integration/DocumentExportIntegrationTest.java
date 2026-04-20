@@ -154,12 +154,22 @@ class DocumentExportIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.projectId").value(project.getId()))
                 .andExpect(jsonPath("$.data.exportId").isNumber())
-                .andExpect(jsonPath("$.data.archiveReason").value("投标结果已闭环"));
+                .andExpect(jsonPath("$.data.archiveReason").value("投标结果已闭环"))
+                .andExpect(jsonPath("$.data.caseSnapshot.projectId").value(project.getId()))
+                .andExpect(jsonPath("$.data.caseSnapshot.archiveSummary").isNotEmpty());
 
         mockMvc.perform(get("/api/documents/{projectId}/archive-records", project.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].projectId").value(project.getId()))
-                .andExpect(jsonPath("$.data[0].projectName").value("文档导出归档回归"));
+                .andExpect(jsonPath("$.data[0].projectName").value("文档导出归档回归"))
+                .andExpect(jsonPath("$.data[0].caseSnapshot.documentSnapshotText").value(org.hamcrest.Matchers.containsString("技术方案")));
+
+        mockMvc.perform(get("/api/documents/{projectId}/case-snapshot", project.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.projectId").value(project.getId()))
+                .andExpect(jsonPath("$.data.projectName").value("文档导出归档回归"))
+                .andExpect(jsonPath("$.data.archiveSummary").value(org.hamcrest.Matchers.containsString("项目资料已完成归档")))
+                .andExpect(jsonPath("$.data.documentSnapshotText").value(org.hamcrest.Matchers.containsString("技术方案")));
 
         assertThat(projectRepository.findById(project.getId())).isPresent();
         assertThat(projectRepository.findById(project.getId()).orElseThrow().getStatus()).isEqualTo(Project.Status.ARCHIVED);

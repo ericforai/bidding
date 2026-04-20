@@ -1,4 +1,4 @@
-// Input: httpClient, qualification module, and split template adapter
+// Input: httpClient, API mode config, knowledge normalizers and case query helpers
 // Output: knowledgeApi - qualification, case, and template accessors
 // Pos: src/api/modules/ - Frontend API module layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
@@ -9,7 +9,6 @@
  */
 import httpClient from '../client.js'
 import { qualificationsApi } from './qualification.js'
-import { templatesApi } from './templates.js'
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000
 
@@ -57,6 +56,26 @@ const caseIndustryMap = {
   REAL_ESTATE: 'government',
   OTHER: 'government' }
 
+const templateCategoryMap = {
+  technical: 'TECHNICAL',
+  commercial: 'COMMERCIAL',
+  implementation: 'OTHER',
+  quotation: 'LEGAL',
+  qualification: 'QUALIFICATION',
+  contract: 'CONTRACT',
+  技术方案: 'technical',
+  商务文件: 'commercial',
+  行业方案: 'implementation',
+  实施方案: 'implementation',
+  资质文件: 'qualification',
+  合同范本: 'contract',
+  TECHNICAL: 'technical',
+  COMMERCIAL: 'commercial',
+  LEGAL: 'quotation',
+  QUALIFICATION: 'qualification',
+  CONTRACT: 'contract',
+  OTHER: 'implementation' }
+
 function isNumericId(id) {
   return /^\d+$/.test(String(id))
 }
@@ -90,7 +109,7 @@ function formatDate(date) {
 
 function formatCasePeriod(projectDate) {
   const date = formatDate(projectDate)
-  return date ? `${date} - ${date}` : '-'
+  return date ? `${date} - ${date}` : ''
 }
 
 function normalizeQualification(item) {
@@ -123,10 +142,10 @@ function buildQualificationPayload(data = {}) {
 
 function normalizeCase(item) {
   const projectDate = formatDate(item?.projectDate)
-  const normalizedIndustry = caseIndustryMap[item?.industry] || 'government'
-  const description = item?.description || item?.summary || '暂无描述'
-  const customer = item?.customer || item?.customerName || '待补充'
-  const location = item?.location || item?.locationName || '-'
+  const normalizedIndustry = caseIndustryMap[item?.industry] || ''
+  const description = item?.description || item?.summary || ''
+  const customer = item?.customer || item?.customerName || ''
+  const location = item?.location || item?.locationName || ''
   const period = item?.period || item?.projectPeriod || formatCasePeriod(projectDate)
   const technologies = Array.isArray(item?.technologies) ? item.technologies : []
   const archivedInfo = item?.archivedInfo || {
@@ -142,12 +161,14 @@ function normalizeCase(item) {
     customer,
     customerName: customer,
     industry: normalizedIndustry,
+    outcome: item?.outcome || '',
     amount: Number(item?.amount || 0),
-    year: item?.year || (projectDate ? new Date(projectDate).getFullYear() : new Date().getFullYear()),
+    year: item?.year || (projectDate ? new Date(projectDate).getFullYear() : ''),
     location,
     locationName: location,
     period,
     projectPeriod: period,
+    productLine: item?.productLine || '',
     tags: Array.isArray(item?.tags) ? item.tags : [],
     highlights: Array.isArray(item?.highlights) ? item.highlights : [],
     description,
@@ -180,6 +201,38 @@ function buildCasePayload(data = {}) {
     useCount: Number(data.useCount || 0) }
 }
 
+function normalizeTemplate(item) {
+  const category = templateCategoryMap[item?.category] || 'implementation'
+  const updateTime = formatDate(item?.updatedAt || item?.createdAt || item?.updateTime)
+
+  return {
+    id: item?.id,
+    name: item?.name || '未命名模板',
+    category,
+    tags: Array.isArray(item?.tags) ? item.tags : [],
+    description: item?.description || '暂无真实模板描述',
+    downloads: Number(item?.downloads || 0),
+    useCount: Number(item?.useCount || 0),
+    updateTime: updateTime || '-',
+    version: item?.currentVersion || item?.version || '1.0',
+    fileSize: item?.fileSize || '未知',
+    fileUrl: item?.fileUrl || '',
+    content: item?.content || '',
+    structure: Array.isArray(item?.structure) ? item.structure : [],
+    createdBy: item?.createdBy || null }
+}
+
+function buildTemplatePayload(data = {}) {
+  return {
+    name: data.name,
+    category: templateCategoryMap[data.category] || 'OTHER',
+    fileUrl: data.fileUrl || '',
+    description: data.description || '',
+    fileSize: data.fileSize || '',
+    tags: Array.isArray(data.tags) ? data.tags : [],
+    createdBy: data.createdBy ?? null }
+}
+
 function filterQualifications(items, params = {}) {
   return items.filter((item) => {
     if (params.name && !String(item.name || '').toLowerCase().includes(String(params.name).toLowerCase())) {
@@ -195,18 +248,140 @@ function filterQualifications(items, params = {}) {
   })
 }
 
-function filterCases(items, params = {}) {
-  return items.filter((item) => {
-    if (params.industry && item.industry !== params.industry) {
+function normalizeCaseNumber(value) {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : undefined
+}
+
+function normalizeCaseQuery(params = {}) {
+  return {
+    keyword: params.keyword ? String(params.keyword).trim() : undefined,
+    industry: params.industry || undefined,
+    productLine: params.productLine || undefined,
+    outcome: params.outcome || undefined,
+    year: params.year ? Number(params.year) : undefined,
+    amountMin: normalizeCaseNumber(params.amountMin),
+    amountMax: normalizeCaseNumber(params.amountMax),
+    tags: Array.isArray(params.tags) && params.tags.length > 0 ? params.tags : undefined,
+    page: params.page ? Number(params.page) : undefined,
+    pageSize: params.pageSize ? Number(params.pageSize) : undefined,
+    sort: params.sort || undefined
+  }
+}
+
+function filterCaseByQuery(item, params = {}) {
+  if (params.industry && item.industry !== params.industry) {
+    return false
+  }
+
+  if (params.productLine && String(item.productLine || '') !== String(params.productLine)) {
+    return false
+  }
+
+  if (params.outcome && String(item.outcome || '') !== String(params.outcome)) {
+    return false
+  }
+
+  if (params.year && Number(item.year) !== Number(params.year)) {
+    return false
+  }
+
+  if (params.amountMin != null && Number(item.amount) < Number(params.amountMin)) {
+    return false
+  }
+
+  if (params.amountMax != null && Number(item.amount) >= Number(params.amountMax)) {
+    return false
+  }
+
+  if (params.keyword) {
+    const keyword = String(params.keyword).toLowerCase()
+    const matchesKeyword =
+      String(item.title || '').toLowerCase().includes(keyword) ||
+      String(item.customer || '').toLowerCase().includes(keyword) ||
+      String(item.location || '').toLowerCase().includes(keyword) ||
+      String(item.summary || '').toLowerCase().includes(keyword) ||
+      item.highlights.some((highlight) => String(highlight).toLowerCase().includes(keyword))
+
+    if (!matchesKeyword) {
       return false
     }
-    if (params.keyword) {
-      const keyword = String(params.keyword).toLowerCase()
+  }
+
+  if (Array.isArray(params.tags) && params.tags.length > 0) {
+    const hasAnyTag = params.tags.some((tag) => item.tags.includes(tag))
+    if (!hasAnyTag) {
+      return false
+    }
+  }
+
+  return true
+}
+
+function applyCasePagination(items, params = {}) {
+  const pageSize = Number(params.pageSize || 0)
+  const page = Number(params.page || 1)
+  if (!pageSize || pageSize <= 0) {
+    return items
+  }
+
+  const start = Math.max(page - 1, 0) * pageSize
+  return items.slice(start, start + pageSize)
+}
+
+function buildCaseListResponse(response, params = {}) {
+  if (response?.data && !Array.isArray(response.data) && Array.isArray(response.data.items)) {
+    return {
+      ...response,
+      data: response.data.items.map(normalizeCase),
+      total: Number(response.data.total ?? response.data.items.length ?? 0),
+      page: Number(response.data.page ?? params.page ?? 1),
+      pageSize: Number(response.data.pageSize ?? params.pageSize ?? response.data.items.length ?? 0),
+      totalPages: Number(response.data.totalPages ?? 1),
+      sort: response.data.sort || params.sort
+    }
+  }
+
+  const rawItems = Array.isArray(response?.data)
+    ? response.data
+    : Array.isArray(response?.data?.records)
+      ? response.data.records
+      : Array.isArray(response?.data?.items)
+        ? response.data.items
+        : []
+
+  const normalized = rawItems.map(normalizeCase)
+  const filtered = normalized.filter((item) => filterCaseByQuery(item, params))
+  const paged = applyCasePagination(filtered, params)
+  const total = Number.isFinite(Number(response?.total))
+    ? Number(response.total)
+    : Number.isFinite(Number(response?.data?.total))
+      ? Number(response.data.total)
+      : filtered.length
+
+  return {
+    ...response,
+    data: paged,
+    total
+  }
+}
+function filterTemplates(items, params = {}) {
+  return items.filter((item) => {
+    if (params.category && params.category !== 'all' && item.category !== params.category) {
+      return false
+    }
+    if (params.name) {
+      const keyword = String(params.name).toLowerCase()
       const matchesKeyword =
-        String(item.title || '').toLowerCase().includes(keyword) ||
-        String(item.customer || '').toLowerCase().includes(keyword) ||
-        item.highlights.some((highlight) => String(highlight).toLowerCase().includes(keyword))
+        String(item.name || '').toLowerCase().includes(keyword) ||
+        String(item.description || '').toLowerCase().includes(keyword)
       if (!matchesKeyword) {
+        return false
+      }
+    }
+    if (Array.isArray(params.tags) && params.tags.length > 0) {
+      const matchesTags = params.tags.some((tag) => item.tags.includes(tag))
+      if (!matchesTags) {
         return false
       }
     }
@@ -234,8 +409,12 @@ function invalidIdMessage(entityName) {
 
 export const casesApi = {
   async getList(params) {
+    const query = normalizeCaseQuery(params)
+    const response = await httpClient.get('/api/knowledge/cases', {
+      params: query
+    })
 
-    return fetchAndFilter('/api/knowledge/cases', params, normalizeCase, filterCases)
+    return buildCaseListResponse(response, query)
   },
 
   async getDetail(id) {
@@ -291,7 +470,70 @@ export const casesApi = {
       referenceContext: data.referenceContext || '' })
   } }
 
-export { templatesApi }
+export const templatesApi = {
+  async getList(params) {
+
+    return fetchAndFilter('/api/knowledge/templates', params, normalizeTemplate, filterTemplates)
+  },
+
+  async getDetail(id) {
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
+
+    const response = await httpClient.get(`/api/knowledge/templates/${id}`)
+    return { ...response, data: normalizeTemplate(response?.data) }
+  },
+
+  async create(data) {
+
+    const response = await httpClient.post('/api/knowledge/templates', buildTemplatePayload(data))
+    return { ...response, data: normalizeTemplate({ ...response?.data, ...data }) }
+  },
+
+  async update(id, data) {
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
+
+    const response = await httpClient.put(`/api/knowledge/templates/${id}`, buildTemplatePayload(data))
+    return { ...response, data: normalizeTemplate({ ...response?.data, ...data, id }) }
+  },
+
+  async delete(id) {
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
+    return httpClient.delete(`/api/knowledge/templates/${id}`)
+  },
+
+  async copy(id, data = {}) {
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
+
+    const response = await httpClient.post(`/api/knowledge/templates/${id}/copy`, {
+      name: data.name,
+      createdBy: data.createdBy ?? null })
+    return { ...response, data: normalizeTemplate(response?.data) }
+  },
+
+  async getVersions(id) {
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
+
+    return httpClient.get(`/api/knowledge/templates/${id}/versions`)
+  },
+
+  async recordUse(id, data = {}) {
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
+
+    return httpClient.post(`/api/knowledge/templates/${id}/use-records`, {
+      documentName: data.documentName,
+      docType: data.docType,
+      projectId: data.projectId ?? null,
+      applyOptions: Array.isArray(data.applyOptions) ? data.applyOptions : [],
+      usedBy: data.usedBy ?? null })
+  },
+
+  async recordDownload(id, data = {}) {
+    if (!isNumericId(id)) return Promise.resolve(invalidIdMessage('template'))
+
+    const response = await httpClient.post(`/api/knowledge/templates/${id}/downloads`, {
+      downloadedBy: data.downloadedBy ?? null })
+    return { ...response, data: normalizeTemplate(response?.data) }
+  } }
 
 export default {
   qualifications: qualificationsApi,

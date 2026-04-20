@@ -9,6 +9,7 @@ import com.xiyu.bid.resources.entity.BarSiteAttachment;
 import com.xiyu.bid.resources.entity.BarSiteVerification;
 import com.xiyu.bid.resources.entity.Expense;
 import com.xiyu.bid.resources.entity.ExpenseApprovalRecord;
+import com.xiyu.bid.resources.entity.ExpensePaymentRecord;
 
 public final class ResourceResponseMapper {
 
@@ -119,6 +120,10 @@ public final class ResourceResponseMapper {
     }
 
     public static ExpenseDTO toDto(Expense expense) {
+        return toDto(expense, null);
+    }
+
+    public static ExpenseDTO toDto(Expense expense, ExpensePaymentRecord paymentRecord) {
         return ExpenseDTO.builder()
             .id(expense.getId())
             .projectId(expense.getProjectId())
@@ -134,7 +139,13 @@ public final class ResourceResponseMapper {
             .approvedAt(expense.getApprovedAt())
             .returnRequestedAt(expense.getReturnRequestedAt())
             .returnConfirmedAt(expense.getReturnConfirmedAt())
+            .expectedReturnDate(expense.getExpectedReturnDate())
+            .lastReturnReminderAt(expense.getLastReturnReminderAt())
             .returnComment(expense.getReturnComment())
+            .paidAt(paymentRecord != null ? paymentRecord.getPaidAt() : null)
+            .paidBy(paymentRecord != null ? paymentRecord.getPaidBy() : null)
+            .paymentReference(paymentRecord != null ? paymentRecord.getPaymentReference() : null)
+            .paymentMethod(paymentRecord != null ? paymentRecord.getPaymentMethod() : null)
             .createdAt(expense.getCreatedAt())
             .updatedAt(expense.getUpdatedAt())
             .build();
@@ -148,6 +159,20 @@ public final class ResourceResponseMapper {
             .comment(record.getComment())
             .approver(record.getApprover())
             .actedAt(record.getActedAt())
+            .build();
+    }
+
+    public static ExpensePaymentRecordDTO toDto(ExpensePaymentRecord record) {
+        return ExpensePaymentRecordDTO.builder()
+            .id(record.getId())
+            .expenseId(record.getExpenseId())
+            .amount(record.getAmount())
+            .paidAt(record.getPaidAt())
+            .paidBy(record.getPaidBy())
+            .paymentReference(record.getPaymentReference())
+            .paymentMethod(record.getPaymentMethod())
+            .remark(record.getRemark())
+            .createdAt(record.getCreatedAt())
             .build();
     }
 }

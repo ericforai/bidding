@@ -15,4 +15,5 @@
 | `install-java-standards-hook.sh` | 安装脚本 | 将仓库 `.githooks/pre-commit` 安装到本地 `.git/hooks/pre-commit` |
 | `clean-local-artifacts.sh` | 清理脚本 | 删除本地产生的测试、报告和演练产物 |
 | `sync-version.mjs` | 维护脚本 | 以根目录 `VERSION` 为单一版本源，同步前端 `package.json` 和后端 `backend/pom.xml` |
+| `release/` | 发布脚本目录 | 管理发布演练、产物打包、远端激活、备份恢复和生产 smoke 验活 |
 | `test/` | 测试基线目录 | Playwright 与 API 联调测试的启动、停止和说明脚本 |

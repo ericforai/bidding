@@ -289,6 +289,16 @@
 
     <profiles>
         <profile>
+            <id>quality-strict</id>
+            <properties>
+                <quality.skip>false</quality.skip>
+                <quality.failOnViolation>true</quality.failOnViolation>
+                <quality.includes>**/documentexport/**/*.java,**/historyproject/**/*.java</quality.includes>
+                <quality.onlyAnalyze>com.xiyu.bid</quality.onlyAnalyze>
+                <jacoco.check.skip>false</jacoco.check.skip>
+            </properties>
+        </profile>
+        <profile>
             <id>java-quality</id>
             <build>
                 <plugins>
@@ -387,14 +397,6 @@
                 <quality.skip>false</quality.skip>
                 <quality.failOnViolation>false</quality.failOnViolation>
                 <jacoco.check.skip>true</jacoco.check.skip>
-            </properties>
-        </profile>
-        <profile>
-            <id>quality-strict</id>
-            <properties>
-                <quality.skip>false</quality.skip>
-                <quality.failOnViolation>true</quality.failOnViolation>
-                <jacoco.check.skip>false</jacoco.check.skip>
             </properties>
         </profile>
     </profiles>

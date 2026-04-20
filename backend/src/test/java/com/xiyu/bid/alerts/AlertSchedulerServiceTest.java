@@ -1,13 +1,9 @@
 package com.xiyu.bid.alerts;
 
+import com.xiyu.bid.alertdispatch.service.AlertRuleDispatchService;
+import com.xiyu.bid.alertdispatch.service.AlertSchedulerService;
 import com.xiyu.bid.alerts.entity.AlertRule;
 import com.xiyu.bid.alerts.repository.AlertRuleRepository;
-import com.xiyu.bid.alerts.service.AlertHistoryService;
-import com.xiyu.bid.alerts.service.AlertSchedulerService;
-import com.xiyu.bid.alerts.service.QualificationExpiryAlertService;
-import com.xiyu.bid.repository.ProjectRepository;
-import com.xiyu.bid.repository.TenderRepository;
-import com.xiyu.bid.resources.repository.ExpenseRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,24 +22,20 @@ import static org.mockito.Mockito.when;
 class AlertSchedulerServiceTest {
 
     @Mock private AlertRuleRepository alertRuleRepository;
-    @Mock private AlertHistoryService alertHistoryService;
-    @Mock private ProjectRepository projectRepository;
-    @Mock private TenderRepository tenderRepository;
-    @Mock private ExpenseRepository expenseRepository;
-    @Mock private QualificationExpiryAlertService qualificationExpiryAlertService;
+    @Mock private AlertRuleDispatchService alertRuleDispatchService;
 
     @InjectMocks
     private AlertSchedulerService alertSchedulerService;
 
     @Test
-    @DisplayName("资质到期规则应委托给资质域扫描器")
-    void shouldDelegateQualificationExpiryRuleToDomainScanner() {
+    @DisplayName("中央调度器应把启用规则委托给规则分发器")
+    void shouldDelegateEnabledRuleToDispatchService() {
         AlertRule rule = AlertRule.builder()
                 .id(31L)
-                .name("资质到期前 30 天提醒")
-                .type(AlertRule.AlertType.QUALIFICATION_EXPIRY)
+                .name("保证金退还提醒")
+                .type(AlertRule.AlertType.DEPOSIT_RETURN)
                 .condition(AlertRule.ConditionType.LESS_THAN)
-                .threshold(new BigDecimal("30"))
+                .threshold(new BigDecimal("7"))
                 .enabled(true)
                 .createdBy("tester")
                 .build();
@@ -52,6 +44,6 @@ class AlertSchedulerServiceTest {
 
         alertSchedulerService.checkAlertRules();
 
-        verify(qualificationExpiryAlertService).createAlerts(30);
+        verify(alertRuleDispatchService).dispatch(rule);
     }
 }

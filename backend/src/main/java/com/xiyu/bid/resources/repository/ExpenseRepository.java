@@ -4,8 +4,6 @@ import com.xiyu.bid.resources.entity.Expense;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -21,16 +19,22 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     Page<Expense> findByDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable);
 
-    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.projectId = :projectId")
-    BigDecimal sumAmountByProjectId(@Param("projectId") Long projectId);
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.projectId = :projectId")
+    BigDecimal sumAmountByProjectId(@org.springframework.data.repository.query.Param("projectId") Long projectId);
 
-    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.projectId = :projectId AND e.category = :category")
-    BigDecimal sumAmountByProjectIdAndCategory(@Param("projectId") Long projectId,
-                                                 @Param("category") Expense.ExpenseCategory category);
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.projectId = :projectId AND e.category = :category")
+    BigDecimal sumAmountByProjectIdAndCategory(
+            @org.springframework.data.repository.query.Param("projectId") Long projectId,
+            @org.springframework.data.repository.query.Param("category") Expense.ExpenseCategory category
+    );
 
     Page<Expense> findByProjectIdAndCategory(Long projectId, Expense.ExpenseCategory category, Pageable pageable);
 
     Page<Expense> findByProjectIdAndDateBetween(Long projectId, LocalDate startDate, LocalDate endDate, Pageable pageable);
 
     List<Expense> findByProjectIdOrderByCreatedAtDesc(Long projectId);
+
+    List<Expense> findByExpenseTypeAndExpectedReturnDateIsNotNullAndStatusNotOrderByExpectedReturnDateAsc(
+            String expenseType,
+            Expense.ExpenseStatus status);
 }

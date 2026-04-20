@@ -1,5 +1,5 @@
-// Input: resources service, expense ledger app service, and request DTOs
-// Output: Expense CRUD, approval/return flow, and ledger statistics REST API endpoints
+// Input: resources facade service, ledger app service, reminder app service, and request DTOs
+// Output: Expense CRUD, approval/return flow, payment tracking, and ledger statistics REST API endpoints
 // Pos: Controller/控制器层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.resources.controller;
@@ -7,10 +7,13 @@ package com.xiyu.bid.resources.controller;
 import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.config.PaginationConstants;
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.resources.application.service.SendExpenseReturnReminderAppService;
 import com.xiyu.bid.resources.dto.ExpenseApproveRequest;
 import com.xiyu.bid.resources.dto.ExpenseApprovalRecordDTO;
 import com.xiyu.bid.resources.dto.ExpenseCreateRequest;
 import com.xiyu.bid.resources.dto.ExpenseDTO;
+import com.xiyu.bid.resources.dto.ExpensePaymentCreateRequest;
+import com.xiyu.bid.resources.dto.ExpensePaymentRecordDTO;
 import com.xiyu.bid.resources.dto.ExpenseReturnActionRequest;
 import com.xiyu.bid.resources.dto.ExpenseUpdateRequest;
 import com.xiyu.bid.resources.expenseledger.application.ExpenseLedgerApplicationService;
@@ -47,6 +50,7 @@ public class ExpenseController {
 
     private final ExpenseService expenseService;
     private final ExpenseLedgerApplicationService expenseLedgerApplicationService;
+    private final SendExpenseReturnReminderAppService sendExpenseReturnReminderAppService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
@@ -224,5 +228,32 @@ public class ExpenseController {
             @Valid @RequestBody ExpenseReturnActionRequest request) {
         ExpenseDTO expense = expenseService.confirmReturn(id, request);
         return ResponseEntity.ok(ApiResponse.success("Expense return confirmed", expense));
+    }
+
+    @PostMapping("/{id}/payments")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @Auditable(action = "PAY", entityType = "Expense", description = "Register expense payment")
+    public ResponseEntity<ApiResponse<ExpenseDTO>> registerPayment(
+            @PathVariable Long id,
+            @Valid @RequestBody ExpensePaymentCreateRequest request) {
+        ExpenseDTO expense = expenseService.registerPayment(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Expense payment registered", expense));
+    }
+
+    @GetMapping("/{id}/payments")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<List<ExpensePaymentRecordDTO>>> getPaymentRecords(@PathVariable Long id) {
+        List<ExpensePaymentRecordDTO> records = expenseService.getPaymentRecords(id);
+        return ResponseEntity.ok(ApiResponse.success(records));
+    }
+
+    @PostMapping("/{id}/return-reminder")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "SEND_RETURN_REMINDER", entityType = "Expense", description = "Send expense return reminder")
+    public ResponseEntity<ApiResponse<ExpenseDTO>> sendReturnReminder(
+            @PathVariable Long id,
+            @Valid @RequestBody ExpenseReturnActionRequest request) {
+        ExpenseDTO expense = sendExpenseReturnReminderAppService.send(id, request.getActor(), request.getComment());
+        return ResponseEntity.ok(ApiResponse.success("Expense return reminder sent", expense));
     }
 }

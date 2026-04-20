@@ -28,6 +28,18 @@ public class CaseDTO {
     private String customerName;
     private String locationName;
     private String projectPeriod;
+    private String productLine;
+    private Long sourceProjectId;
+    private String archiveSummary;
+    private String priceStrategy;
+    private List<String> successFactors;
+    private List<String> lessonsLearned;
+    private String documentSnapshotText;
+    private List<String> attachmentNames;
+    private String status;
+    private LocalDateTime publishedAt;
+    private String visibility;
+    private String searchDocument;
     private List<String> tags;
     private List<String> highlights;
     private List<String> technologies;

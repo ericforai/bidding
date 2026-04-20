@@ -69,6 +69,16 @@ jobs:
         env:
           PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
 
+      - name: Run migration and architecture gates
+        run: mvn -Dtest=FlywayPostgresContainerTest,ArchitectureTest test
+        env:
+          PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
+
+      - name: Run backend quality gates
+        run: mvn -Pjava-quality,java-quality-spotbugs,quality-strict -DskipTests -Djacoco.skip=true checkstyle:check pmd:check spotbugs:check
+        env:
+          PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
+
   quality-scope:
     runs-on: ubuntu-latest
     # dorny/paths-filter 在 PR 场景会调 GitHub API listFiles，需要 pull-requests: read。

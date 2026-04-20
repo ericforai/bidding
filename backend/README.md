@@ -64,6 +64,18 @@ mvn clean package
 - SpotBugs 豁免统一收口到 `config/spotbugs/exclude.xml`，只允许少量、带理由的例外。
 - 治理规则、扩圈标准和 CI 约定见 `backend/QUALITY_GATE_GUIDE.md`。
 
+## 与 CI 对齐的门禁命令
+```bash
+# 静态质量门禁
+mvn -Pjava-quality,java-quality-spotbugs,quality-strict -DskipTests -Djacoco.skip=true checkstyle:check pmd:check spotbugs:check
+
+# 架构门禁
+mvn test -Dtest=FPJavaArchitectureTest,MaintainabilityArchitectureTest,ArchitectureTest
+
+# Flyway / 资源链路门禁
+mvn test -Dtest=FlywayBaselineContextTest,FlywayPostgresContainerTest,ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest
+```
+
 ## 环境变量
 - `DB_PASSWORD` - 数据库密码（必填）
 - `JWT_SECRET` - JWT密钥，最少32字符（必填）

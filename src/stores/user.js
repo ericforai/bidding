@@ -14,6 +14,13 @@ import {
   persistUserHint
 } from '@/api/session.js'
 
+const navigateToLogin = async () => {
+  const { default: router } = await import('@/router/index.js')
+  if (router.currentRoute.value.path !== '/login') {
+    await router.replace('/login')
+  }
+}
+
 export const useUserStore = defineStore('user', {
   state: () => {
     const savedUser = getStoredUser()
@@ -118,6 +125,7 @@ export const useUserStore = defineStore('user', {
         console.warn('Logout request failed, clearing local session anyway:', error)
       } finally {
         this.resetSession()
+        await navigateToLogin()
       }
     },
 
