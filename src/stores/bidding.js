@@ -1,5 +1,5 @@
 // Input: tendersApi
-// Output: useBiddingStore - Pinia store for tender state and real API interactions
+// Output: useBiddingStore - Pinia store for tenders, todos, and calendar state
 // Pos: src/stores/ - State management layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -8,14 +8,21 @@ import { tendersApi } from '@/api'
 
 export const useBiddingStore = defineStore('bidding', {
   state: () => ({
-    tenders: []
+    tenders: [],
+    todos: [],
+    calendar: []
   }),
 
   getters: {
-    newTenders: (state) => state.tenders.filter(t => t.status === 'PENDING'),
-    followingTenders: (state) => state.tenders.filter(t => t.status === 'TRACKING'),
-    biddingTenders: (state) => state.tenders.filter(t => t.status === 'BIDDED'),
-    highPriorityTenders: (state) => state.tenders.filter(t => t.aiScore >= 85)
+    newTenders: (state) => state.tenders.filter(t => t.status === 'new'),
+    followingTenders: (state) => state.tenders.filter(t => t.status === 'following'),
+    biddingTenders: (state) => state.tenders.filter(t => t.status === 'bidding'),
+    highPriorityTenders: (state) => state.tenders.filter(t => t.aiScore >= 85),
+    urgentTodos: (state) => state.todos.filter(t => t.priority === 'high'),
+    todayEvents: (state) => {
+      const today = new Date().toISOString().split('T')[0]
+      return state.calendar.filter(c => c.date === today)
+    }
   },
 
   actions: {
@@ -31,11 +38,25 @@ export const useBiddingStore = defineStore('bidding', {
     },
 
     async updateTenderStatus(id, status) {
-      const result = await tendersApi.update(id, { status })
-      if (result?.success) {
-        await this.getTenders()
+      const tender = this.tenders.find(t => String(t.id) === String(id))
+      if (tender) {
+        tender.status = status
       }
-      return result
+    },
+
+    async getTodos() {
+      return this.todos
+    },
+
+    async updateTodoStatus(id, status) {
+      const todo = this.todos.find(t => t.id === id)
+      if (todo) {
+        todo.status = status
+      }
+    },
+
+    async getCalendar() {
+      return this.calendar
     }
   }
 })

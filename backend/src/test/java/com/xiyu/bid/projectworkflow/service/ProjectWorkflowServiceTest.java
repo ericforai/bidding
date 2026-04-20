@@ -6,9 +6,9 @@ import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftGenerateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftUpdateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectTaskViewDTO;
-import com.xiyu.bid.projectworkflow.entity.ProjectScoreDraft;
 import com.xiyu.bid.projectworkflow.repository.ProjectDocumentRepository;
 import com.xiyu.bid.projectworkflow.repository.ProjectReminderRepository;
+import com.xiyu.bid.projectworkflow.entity.ProjectScoreDraft;
 import com.xiyu.bid.projectworkflow.repository.ProjectScoreDraftRepository;
 import com.xiyu.bid.projectworkflow.repository.ProjectShareLinkRepository;
 import com.xiyu.bid.repository.ProjectRepository;
@@ -34,6 +34,10 @@ class ProjectWorkflowServiceTest {
     private ProjectRepository projectRepository;
     private TaskRepository taskRepository;
     private ProjectScoreDraftRepository projectScoreDraftRepository;
+    private ProjectDocumentRepository projectDocumentRepository;
+    private ProjectReminderRepository projectReminderRepository;
+    private ProjectShareLinkRepository projectShareLinkRepository;
+    private UserRepository userRepository;
     private ProjectWorkflowService service;
 
     @BeforeEach
@@ -41,31 +45,59 @@ class ProjectWorkflowServiceTest {
         projectRepository = mock(ProjectRepository.class);
         taskRepository = mock(TaskRepository.class);
         projectScoreDraftRepository = mock(ProjectScoreDraftRepository.class);
+        projectDocumentRepository = mock(ProjectDocumentRepository.class);
+        projectReminderRepository = mock(ProjectReminderRepository.class);
+        projectShareLinkRepository = mock(ProjectShareLinkRepository.class);
+        userRepository = mock(UserRepository.class);
         ProjectAccessScopeService projectAccessScopeService = mock(ProjectAccessScopeService.class);
-        UserRepository userRepository = mock(UserRepository.class);
+        ScoreDraftParserService scoreDraftParserService = mock(ScoreDraftParserService.class);
         ObjectMapper objectMapper = new ObjectMapper();
-        ProjectWorkflowGuard projectWorkflowGuard = new ProjectWorkflowGuard(projectRepository, projectAccessScopeService);
 
-        ProjectTaskWorkflowService taskWorkflowService = new ProjectTaskWorkflowService(
-                projectWorkflowGuard,
+        ProjectWorkflowGuardService guardService = new ProjectWorkflowGuardService(
+                projectRepository,
+                projectAccessScopeService,
+                taskRepository,
+                projectDocumentRepository,
+                projectScoreDraftRepository
+        );
+        ProjectTaskWorkflowService projectTaskWorkflowService = new ProjectTaskWorkflowService(
+                guardService,
                 taskRepository,
                 userRepository
         );
-        ProjectDocumentWorkflowService documentWorkflowService = new ProjectDocumentWorkflowService(
-                projectWorkflowGuard,
+        ProjectDocumentWorkflowService projectDocumentWorkflowService = new ProjectDocumentWorkflowService(
+                guardService,
+                projectDocumentRepository,
                 userRepository,
-                mock(ProjectDocumentRepository.class),
-                mock(ProjectReminderRepository.class),
-                mock(ProjectShareLinkRepository.class)
+                new ProjectDocumentViewAssembler(),
+                mock(ProjectDocumentBindingGateway.class)
         );
-        ProjectScoreDraftWorkflowService scoreDraftWorkflowService = new ProjectScoreDraftWorkflowService(
-                projectWorkflowGuard,
+        ProjectReminderWorkflowService projectReminderWorkflowService = new ProjectReminderWorkflowService(
+                guardService,
+                projectReminderRepository,
+                userRepository,
+                new ProjectReminderViewAssembler()
+        );
+        ProjectShareLinkWorkflowService projectShareLinkWorkflowService = new ProjectShareLinkWorkflowService(
+                guardService,
+                projectShareLinkRepository,
+                userRepository,
+                new ProjectShareLinkViewAssembler()
+        );
+        ProjectScoreDraftWorkflowService projectScoreDraftWorkflowService = new ProjectScoreDraftWorkflowService(
+                guardService,
                 projectScoreDraftRepository,
-                mock(ScoreDraftParserService.class),
-                taskWorkflowService,
+                scoreDraftParserService,
+                projectTaskWorkflowService,
                 objectMapper
         );
-        service = new ProjectWorkflowService(taskWorkflowService, documentWorkflowService, scoreDraftWorkflowService);
+        service = new ProjectWorkflowService(
+                projectTaskWorkflowService,
+                projectDocumentWorkflowService,
+                projectReminderWorkflowService,
+                projectShareLinkWorkflowService,
+                projectScoreDraftWorkflowService
+        );
 
         when(projectRepository.findById(1001L)).thenReturn(Optional.of(Project.builder().id(1001L).build()));
     }
@@ -95,7 +127,7 @@ class ProjectWorkflowServiceTest {
         when(projectScoreDraftRepository.findById(2001L)).thenReturn(Optional.of(draft));
 
         assertThatThrownBy(() -> service.updateProjectScoreDraft(1001L, 2001L, ProjectScoreDraftUpdateRequest.builder()
-                .status(ProjectScoreDraft.Status.READY)
+                .status(ProjectScoreDraftUpdateRequest.Status.READY)
                 .build()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("生成正式任务前必须指定责任人");

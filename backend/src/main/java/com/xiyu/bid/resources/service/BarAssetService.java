@@ -6,7 +6,9 @@ package com.xiyu.bid.resources.service;
 
 import com.xiyu.bid.exception.ResourceNotFoundException;
 import com.xiyu.bid.resources.dto.BarAssetCreateRequest;
+import com.xiyu.bid.resources.dto.BarAssetResponseDTO;
 import com.xiyu.bid.resources.dto.BarAssetUpdateRequest;
+import com.xiyu.bid.resources.dto.ResourceResponseMapper;
 import com.xiyu.bid.resources.entity.BarAsset;
 import com.xiyu.bid.resources.repository.BarAssetRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +31,7 @@ public class BarAssetService {
     private final BarAssetRepository barAssetRepository;
 
     @Transactional
-    public BarAsset createBarAsset(BarAssetCreateRequest request) {
+    public BarAssetResponseDTO createBarAsset(BarAssetCreateRequest request) {
         // Validation
         if (request.getName() == null || request.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("Name is required");
@@ -59,41 +61,47 @@ public class BarAssetService {
                 .remark(request.getRemark())
                 .build();
 
-        return barAssetRepository.save(asset);
+        return ResourceResponseMapper.toDto(barAssetRepository.save(asset));
     }
 
-    public BarAsset getBarAssetById(Long id) {
+    public BarAssetResponseDTO getBarAssetById(Long id) {
         return barAssetRepository.findById(id)
+                .map(ResourceResponseMapper::toDto)
                 .orElseThrow(() -> new ResourceNotFoundException("BarAsset", id.toString()));
     }
 
-    public Page<BarAsset> getAllBarAssets(Pageable pageable) {
-        return barAssetRepository.findAll(pageable);
+    public Page<BarAssetResponseDTO> getAllBarAssets(Pageable pageable) {
+        return barAssetRepository.findAll(pageable).map(ResourceResponseMapper::toDto);
     }
 
-    public Page<BarAsset> getBarAssetsByType(BarAsset.AssetType type, Pageable pageable) {
-        return barAssetRepository.findByType(type, pageable);
+    public Page<BarAssetResponseDTO> getBarAssetsByType(String type, Pageable pageable) {
+        return barAssetRepository.findByType(BarAsset.AssetType.valueOf(type), pageable)
+                .map(ResourceResponseMapper::toDto);
     }
 
-    public Page<BarAsset> getBarAssetsByStatus(BarAsset.AssetStatus status, Pageable pageable) {
-        return barAssetRepository.findByStatus(status, pageable);
+    public Page<BarAssetResponseDTO> getBarAssetsByStatus(String status, Pageable pageable) {
+        return barAssetRepository.findByStatus(BarAsset.AssetStatus.valueOf(status), pageable)
+                .map(ResourceResponseMapper::toDto);
     }
 
-    public Page<BarAsset> getBarAssetsByValueRange(BigDecimal minValue, BigDecimal maxValue, Pageable pageable) {
-        return barAssetRepository.findByValueBetween(minValue, maxValue, pageable);
+    public Page<BarAssetResponseDTO> getBarAssetsByValueRange(BigDecimal minValue, BigDecimal maxValue, Pageable pageable) {
+        return barAssetRepository.findByValueBetween(minValue, maxValue, pageable)
+                .map(ResourceResponseMapper::toDto);
     }
 
-    public Page<BarAsset> getBarAssetsByAcquireDateRange(LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        return barAssetRepository.findByAcquireDateBetween(startDate, endDate, pageable);
+    public Page<BarAssetResponseDTO> getBarAssetsByAcquireDateRange(LocalDate startDate, LocalDate endDate, Pageable pageable) {
+        return barAssetRepository.findByAcquireDateBetween(startDate, endDate, pageable)
+                .map(ResourceResponseMapper::toDto);
     }
 
-    public Page<BarAsset> searchBarAssets(String keyword, Pageable pageable) {
-        return barAssetRepository.searchByNameContainingIgnoreCase(keyword, pageable);
+    public Page<BarAssetResponseDTO> searchBarAssets(String keyword, Pageable pageable) {
+        return barAssetRepository.searchByNameContainingIgnoreCase(keyword, pageable)
+                .map(ResourceResponseMapper::toDto);
     }
 
     @Transactional
-    public BarAsset updateBarAsset(Long id, BarAssetUpdateRequest request) {
-        BarAsset asset = getBarAssetById(id);
+    public BarAssetResponseDTO updateBarAsset(Long id, BarAssetUpdateRequest request) {
+        BarAsset asset = getBarAssetEntityById(id);
 
         if (request.getName() != null && !request.getName().trim().isEmpty()) {
             asset.setName(request.getName());
@@ -120,7 +128,7 @@ public class BarAssetService {
             asset.setRemark(request.getRemark());
         }
 
-        return barAssetRepository.save(asset);
+        return ResourceResponseMapper.toDto(barAssetRepository.save(asset));
     }
 
     @Transactional
@@ -146,5 +154,10 @@ public class BarAssetService {
         }
 
         return statistics;
+    }
+
+    private BarAsset getBarAssetEntityById(Long id) {
+        return barAssetRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("BarAsset", id.toString()));
     }
 }

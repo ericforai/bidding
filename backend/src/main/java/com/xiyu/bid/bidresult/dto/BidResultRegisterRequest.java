@@ -15,5 +15,5 @@ public class BidResultRegisterRequest {
     private Integer contractDurationMonths;
     private String remark;
     private Integer skuCount;
-    private String winAnnounceDocUrl;
+    private Long attachmentDocumentId;
 }

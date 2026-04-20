@@ -33,26 +33,18 @@ class ApprovalWorkflowServiceSecurityTest {
     @Mock
     private ApprovalActionRepository actionRepository;
 
+    @Mock
+    private ApprovalActionRecorder actionRecorder;
+
     private ApprovalWorkflowService approvalWorkflowService;
 
     private ApprovalRequest pendingRequest;
 
     @BeforeEach
     void setUp() {
-        ApprovalQueryService queryService = new ApprovalQueryService(
-                requestRepository,
-                new com.xiyu.bid.approval.core.ApprovalPermissionPolicy(),
-                new ApprovalDetailAssembler(actionRepository)
-        );
-        ApprovalCommandService commandService = new ApprovalCommandService(
-                requestRepository,
-                new com.xiyu.bid.approval.core.ApprovalDecisionPolicy(),
-                new com.xiyu.bid.approval.core.ApprovalPermissionPolicy(),
-                new ApprovalActionRecorder(actionRepository),
-                new ApprovalDetailAssembler(actionRepository)
-        );
+        ApprovalQueryService queryService = new ApprovalQueryService(requestRepository, actionRepository);
+        ApprovalCommandService commandService = new ApprovalCommandService(requestRepository, actionRecorder, queryService);
         approvalWorkflowService = new ApprovalWorkflowService(commandService, queryService);
-
         pendingRequest = ApprovalRequest.builder()
                 .id(UUID.randomUUID())
                 .projectId(100L)

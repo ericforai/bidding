@@ -29,9 +29,6 @@
           <el-button type="primary" :icon="DocumentChecked" @click="handleSubmitApproval" v-if="canSubmit">
             提交审批
           </el-button>
-          <el-button type="success" :icon="Coin" @click="handleRecordResult" v-if="canRecordResult">
-            录入结果
-          </el-button>
           <el-button type="warning" :icon="DataAnalysis" @click="goToResultPage">
             结果闭环
           </el-button>
@@ -83,6 +80,29 @@
               :status="getProgressStatus(project?.progress)"
               :stroke-width="20"
             />
+          </div>
+        </el-card>
+
+        <el-card class="result-summary-card">
+          <template #header>
+            <div class="card-title">
+              <el-icon><DataAnalysis /></el-icon>
+              <span>结果摘要</span>
+            </div>
+          </template>
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="结果状态">
+              <el-tag :type="resultSummary.tagType">{{ resultSummary.statusText }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="中标金额">{{ resultSummary.amountText }}</el-descriptions-item>
+            <el-descriptions-item label="合同期限">{{ resultSummary.contractText }}</el-descriptions-item>
+            <el-descriptions-item label="SKU数量">{{ resultSummary.skuText }}</el-descriptions-item>
+            <el-descriptions-item label="附件状态">{{ resultSummary.attachmentText }}</el-descriptions-item>
+            <el-descriptions-item label="竞争对手">{{ resultSummary.competitorText }}</el-descriptions-item>
+            <el-descriptions-item label="备注信息" :span="2">{{ resultSummary.remarkText }}</el-descriptions-item>
+          </el-descriptions>
+          <div class="result-summary-actions">
+            <el-button type="warning" @click="goToResultPage">前往结果闭环页处理</el-button>
           </div>
         </el-card>
 
@@ -233,11 +253,11 @@
                 {{ bidProcess.steps.review.completed ? '评审已完成' : '发起评审' }}
               </el-button>
               <el-button
-                :type="bidProcess.steps.seal.completed ? 'success' : 'primary'"
+                :type="bidProcess.steps.seal.completed ? 'success' : 'info'"
                 :disabled="!canOperateStep('seal')"
                 @click="handleSealApply"
               >
-                {{ bidProcess.steps.seal.completed ? '用印已完成' : '用印申请' }}
+                {{ bidProcess.steps.seal.completed ? '用印已完成' : '用印申请（规划中）' }}
               </el-button>
               <el-button
                 :type="bidProcess.steps.submit.completed ? 'success' : 'primary'"
@@ -723,165 +743,6 @@
       </el-descriptions>
     </el-dialog>
 
-    <!-- 结果录入对话框 -->
-    <el-dialog v-model="resultDialogVisible" title="投标结果录入" width="750px">
-      <el-form :model="resultForm" label-width="120px">
-        <!-- 投标结果选择 -->
-        <el-form-item label="投标结果">
-          <el-radio-group v-model="resultForm.result">
-            <el-radio value="won">中标</el-radio>
-            <el-radio value="lost">未中标</el-radio>
-          </el-radio-group>
-        </el-form-item>
-
-        <!-- 中标专属信息 -->
-        <template v-if="resultForm.result === 'won'">
-          <el-form-item label="中标金额">
-            <el-input-number v-model="resultForm.amount" :min="0" :precision="2" :max="99999" />
-            <span style="margin-left: 8px; color: #909399;">万元</span>
-          </el-form-item>
-          <el-form-item label="合同期限">
-            <el-date-picker
-              v-model="resultForm.contractPeriod"
-              type="daterange"
-              range-separator="至"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
-              format="YYYY-MM-DD"
-              value-format="YYYY-MM-DD"
-              style="width: 100%;"
-            />
-          </el-form-item>
-          <el-form-item label="中标SKU数量">
-            <el-input v-model="resultForm.skuCount" placeholder="如: 1500个SKU" style="width: 200px;" />
-          </el-form-item>
-          <el-form-item label="中标通知书">
-            <el-upload
-              :action="uploadAction"
-              :headers="uploadHeaders"
-              :before-upload="ensureDemoUpload"
-              :on-success="handleUploadSuccess"
-              :on-remove="handleUploadRemove"
-              :file-list="noticeFileList"
-              :limit="1"
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-            >
-              <el-button type="primary" :icon="Upload">上传中标通知书</el-button>
-              <template #tip>
-                <div style="font-size: 12px; color: #909399; margin-top: 4px;">
-                  支持 PDF、Word、图片格式，最大 10MB
-                </div>
-              </template>
-            </el-upload>
-          </el-form-item>
-        </template>
-
-        <!-- 竞争对手信息 -->
-        <el-form-item label="竞争对手信息">
-          <el-table
-            :data="resultForm.competitors"
-            size="small"
-            border
-            style="width: 100%;"
-            max-height="200"
-          >
-            <el-table-column prop="name" label="公司名称" width="140" />
-            <el-table-column prop="skuCount" label="SKU数量" width="100" />
-            <el-table-column prop="category" label="品类" width="120" />
-            <el-table-column prop="discount" label="折扣" width="90" />
-            <el-table-column prop="payment" label="账期" width="90" />
-            <el-table-column label="操作" width="70" fixed="right">
-              <template #default="{ $index }">
-                <el-button
-                  link
-                  type="danger"
-                  size="small"
-                  :icon="Delete"
-                  @click="removeCompetitor($index)"
-                >
-                  删除
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-          <el-button
-            type="primary"
-            :icon="Plus"
-            size="small"
-            plain
-            style="margin-top: 8px;"
-            @click="addCompetitor"
-          >
-            添加竞争对手
-          </el-button>
-        </el-form-item>
-
-        <!-- 复盘报告 -->
-        <el-divider content-position="left">复盘报告</el-divider>
-        <el-form-item label="技术亮点">
-          <el-input
-            v-model="resultForm.techHighlights"
-            type="textarea"
-            :rows="3"
-            placeholder="记录本次投标中的技术亮点和创新点"
-          />
-        </el-form-item>
-        <el-form-item label="报价策略">
-          <el-input
-            v-model="resultForm.priceStrategy"
-            type="textarea"
-            :rows="3"
-            placeholder="记录报价策略及效果分析"
-          />
-        </el-form-item>
-        <el-form-item label="客户反馈">
-          <el-input
-            v-model="resultForm.customerFeedback"
-            type="textarea"
-            :rows="3"
-            placeholder="记录客户对本次投标的评价和反馈"
-          />
-        </el-form-item>
-        <el-form-item label="改进建议">
-          <el-input
-            v-model="resultForm.improvements"
-            type="textarea"
-            :rows="2"
-            placeholder="总结经验教训，提出改进建议"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="resultDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSaveResult">提交结果</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 竞争对手编辑对话框 -->
-    <el-dialog v-model="competitorDialogVisible" title="添加竞争对手" width="500px">
-      <el-form :model="competitorForm" label-width="100px">
-        <el-form-item label="公司名称" required>
-          <el-input v-model="competitorForm.name" placeholder="请输入竞争对手公司名称" />
-        </el-form-item>
-        <el-form-item label="SKU数量">
-          <el-input v-model="competitorForm.skuCount" placeholder="如: 1200个" />
-        </el-form-item>
-        <el-form-item label="品类">
-          <el-input v-model="competitorForm.category" placeholder="如: 办公用品" />
-        </el-form-item>
-        <el-form-item label="折扣">
-          <el-input v-model="competitorForm.discount" placeholder="如: 85折" />
-        </el-form-item>
-        <el-form-item label="账期">
-          <el-input v-model="competitorForm.payment" placeholder="如: 月结30天" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="competitorDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="confirmAddCompetitor">确定</el-button>
-      </template>
-    </el-dialog>
-
     <!-- AI功能弹窗组件 -->
     <CompetitionIntel
       v-model="showCompetitionIntel"
@@ -1053,17 +914,28 @@
           </div>
           <div class="dialog-footer">
             <el-button @click="processDialogVisible = false">关闭</el-button>
-            <el-button type="primary" @click="handleCompleteReview" :disabled="!canCompleteReview()">
-              完成评审
+            <el-button type="primary" @click="handleSubmitBidReview" :disabled="!canSubmitBidReview">
+              发起标书评审
             </el-button>
+            <el-tag v-if="isBidReviewApproved" type="success" effect="light" style="margin-left: 8px;">
+              标书评审已通过
+            </el-tag>
           </div>
         </el-tab-pane>
 
-        <!-- 用印申请 -->
-        <el-tab-pane label="用印申请" name="seal">
-          <el-form :model="sealForm" label-width="120px">
-            <el-form-item label="用印类型" required>
-              <el-checkbox-group v-model="sealForm.sealTypes">
+        <!-- 用印申请（V2 规划中，当前仅展示） -->
+        <el-tab-pane label="用印申请（规划中）" name="seal">
+          <el-alert
+            type="info"
+            :closable="false"
+            title="用印申请功能将在 V2 版本上线"
+            description="当前版本不提供真实用印审批流程，此页面仅用于展示规划中的字段结构。请使用公司线下或既有用印系统流转。"
+            show-icon
+            style="margin-bottom: 16px;"
+          />
+          <el-form label-width="120px" :disabled="true">
+            <el-form-item label="用印类型">
+              <el-checkbox-group :model-value="[]">
                 <el-checkbox label="official">公章</el-checkbox>
                 <el-checkbox label="contract">合同章</el-checkbox>
                 <el-checkbox label="legal">法人章</el-checkbox>
@@ -1071,118 +943,32 @@
               </el-checkbox-group>
             </el-form-item>
             <el-form-item label="用印事由">
-              <el-input
-                v-model="sealForm.reason"
-                type="textarea"
-                :rows="2"
-                placeholder="请说明用印事由"
-              />
-            </el-form-item>
-            <el-form-item label="用印文件">
-              <el-upload
-                :action="uploadAction"
-                :headers="uploadHeaders"
-                :before-upload="ensureDemoUpload"
-                :on-success="handleSealFileSuccess"
-                :file-list="sealFileList"
-                :limit="5"
-                accept=".pdf,.doc,.docx"
-              >
-                <el-button type="primary" :icon="Upload">上传待盖章文件</el-button>
-                <template #tip>
-                  <div class="el-upload__tip">
-                    请上传需要盖章的文件，最多5个
-                  </div>
-                </template>
-              </el-upload>
+              <el-input type="textarea" :rows="2" placeholder="V2 上线后可填写" />
             </el-form-item>
             <el-form-item label="用印数量">
-              <el-input-number v-model="sealForm.count" :min="1" :max="100" />
+              <el-input-number :model-value="1" :min="1" :max="100" />
               <span style="margin-left: 8px;">份</span>
-            </el-form-item>
-            <el-form-item label="期望完成时间">
-              <el-date-picker
-                v-model="sealForm.expectedTime"
-                type="datetime"
-                placeholder="选择期望完成时间"
-                format="YYYY-MM-DD HH:mm"
-                value-format="YYYY-MM-DD HH:mm"
-              />
             </el-form-item>
           </el-form>
           <div class="dialog-footer">
-            <el-button @click="processDialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="handleSubmitSeal">提交用印申请</el-button>
+            <el-button @click="processDialogVisible = false">关闭</el-button>
+            <el-button type="primary" :disabled="true">提交用印申请（暂未开放）</el-button>
           </div>
         </el-tab-pane>
 
         <!-- 封装提交 -->
         <el-tab-pane label="封装提交" name="submit">
-          <el-form :model="submitForm" label-width="120px">
-            <el-form-item label="标书封装检查">
-              <el-checkbox-group v-model="submitForm.checkList">
-                <el-checkbox label="tech">技术方案已完成</el-checkbox>
-                <el-checkbox label="business">商务文件已完成</el-checkbox>
-                <el-checkbox label="qualification">资质文件已准备</el-checkbox>
-                <el-checkbox label="price">报价文件已确认</el-checkbox>
-                <el-checkbox label="seal">用印已完成</el-checkbox>
-                <el-checkbox label="package">标书已装订</el-checkbox>
-              </el-checkbox-group>
-            </el-form-item>
-            <el-form-item label="封装方式">
-              <el-radio-group v-model="submitForm.packageType">
-                <el-radio value="paper">纸质封装</el-radio>
-                <el-radio value="electronic">电子标书</el-radio>
-                <el-radio value="both">纸质+电子</el-radio>
-              </el-radio-group>
-            </el-form-item>
-            <el-form-item label="密封要求">
-              <el-input
-                v-model="submitForm.sealRequirement"
-                type="textarea"
-                :rows="2"
-                placeholder="请输入密封要求，如：密封条加盖公章"
-              />
-            </el-form-item>
-            <el-form-item label="递交方式">
-              <el-radio-group v-model="submitForm.deliveryMethod">
-                <el-radio value="online">线上递交</el-radio>
-                <el-radio value="offline">现场递交</el-radio>
-                <el-radio value="courier">快递递交</el-radio>
-              </el-radio-group>
-            </el-form-item>
-            <el-form-item label="递交时间" v-if="submitForm.deliveryMethod !== 'online'">
-              <el-date-picker
-                v-model="submitForm.deliveryTime"
-                type="datetime"
-                placeholder="选择递交时间"
-                format="YYYY-MM-DD HH:mm"
-                value-format="YYYY-MM-DD HH:mm"
-              />
-            </el-form-item>
-            <el-form-item label="递交地址" v-if="submitForm.deliveryMethod === 'offline' || submitForm.deliveryMethod === 'courier'">
-              <el-input
-                v-model="submitForm.deliveryAddress"
-                placeholder="请输入递交地址"
-              />
-            </el-form-item>
-            <el-form-item label="备注">
-              <el-input
-                v-model="submitForm.remark"
-                type="textarea"
-                :rows="2"
-                placeholder="其他需要说明的事项"
-              />
-            </el-form-item>
-          </el-form>
+          <el-alert
+            type="info"
+            :closable="false"
+            title="提交后系统将校验：所有任务 COMPLETED，且每个任务至少关联一份交付物。校验不通过会返回缺口列表。"
+            show-icon
+            style="margin-bottom: 16px;"
+          />
           <div class="dialog-footer">
             <el-button @click="processDialogVisible = false">取消</el-button>
-            <el-button
-              type="primary"
-              @click="handleSubmitPackage"
-              :disabled="submitForm.checkList.length < 6"
-            >
-              确认封装提交
+            <el-button type="primary" @click="submitCurrentProjectToBidDocument">
+              提交到标书文档
             </el-button>
           </div>
         </el-tab-pane>
@@ -1240,7 +1026,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
@@ -1271,6 +1057,7 @@ import MobileCard from '@/components/ai/MobileCard.vue'
 import ApprovalDialog from '@/components/common/ApprovalDialog.vue'
 import ScoreDraftDialog from '@/components/project/ScoreDraftDialog.vue'
 import { getAccessToken } from '@/api/session.js'
+import { useBidReviewStatus, BID_REVIEW_TYPE_CODE, BID_REVIEW_TYPE_NAME } from '@/composables/useBidReviewStatus.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -1302,12 +1089,12 @@ const assetCheckResult = ref(null)
 
 // 对话框状态
 const taskDialogVisible = ref(false)
-const resultDialogVisible = ref(false)
-const competitorDialogVisible = ref(false)
 const processDialogVisible = ref(false)
 const reviewerDialogVisible = ref(false)
 const scoreDraftDialogVisible = ref(false)
 const approvalDialogVisible = ref(false)
+// 发起标书评审的 in-flight 锁：点击 → 审批弹窗关闭前一直禁用按钮，防止双击发起重复审批
+const submittingBidReview = ref(false)
 const currentTask = ref(null)
 const currentApprovalItem = ref({})
 const approvalMode = ref('submit')
@@ -1322,33 +1109,10 @@ const showROIAnalysis = ref(false)
 const showAutoTasks = ref(false)
 const showMobileCard = ref(false)
 
-// 结果录入表单
-const noticeFileList = ref([])
 const uploadAction = ref(isDemoMode ? '/api/upload' : '')
 const uploadHeaders = computed(() => {
   const token = getAccessToken()
   return token ? { Authorization: `Bearer ${token}` } : {}
-})
-
-const resultForm = ref({
-  result: '',
-  amount: null,
-  contractPeriod: null,
-  skuCount: '',
-  noticeFile: '',
-  competitors: [],
-  techHighlights: '',
-  priceStrategy: '',
-  customerFeedback: '',
-  improvements: ''
-})
-
-const competitorForm = ref({
-  name: '',
-  skuCount: '',
-  category: '',
-  discount: '',
-  payment: ''
 })
 
 // 标书编制流程相关
@@ -1365,6 +1129,24 @@ const bidProcess = ref({
     submit: { completed: false, time: '' }
   },
   deliverables: []
+})
+
+// 标书评审派生状态：根据 approvalHistory 中已通过的 bid_review 记录自动推进 review step
+const { isBidReviewApproved, hasPendingBidReview } = useBidReviewStatus(approvalHistory, bidProcess, {
+  onAdvance: () => {
+    if (bidProcess.value.currentStep < 2) {
+      bidProcess.value.currentStep = 2
+    }
+    const hasReport = bidProcess.value.deliverables.some(d => d.type === '评审')
+    if (!hasReport) {
+      bidProcess.value.deliverables.push({
+        name: '评审报告',
+        type: '评审',
+        uploader: userStore.userName,
+        time: new Date().toLocaleString('zh-CN'),
+      })
+    }
+  },
 })
 
 // 初稿表单
@@ -1396,26 +1178,7 @@ const canApproveCurrent = computed(() => {
 })
 const currentUserRole = computed(() => userStore.currentUser?.role || '')
 
-// 用印表单
-const sealFileList = ref([])
-const sealForm = ref({
-  sealTypes: [],
-  reason: '',
-  files: [],
-  count: 1,
-  expectedTime: ''
-})
-
-// 封装提交表单
-const submitForm = ref({
-  checkList: [],
-  packageType: 'paper',
-  sealRequirement: '',
-  deliveryMethod: 'online',
-  deliveryTime: '',
-  deliveryAddress: '',
-  remark: ''
-})
+// 用印申请 V2 规划中，当前仅保留 tab 占位，不维护本地表单状态。
 
 // 模板数据
 const templates = ref([])
@@ -1558,8 +1321,28 @@ const canSubmit = computed(() => {
   return project.value?.status === 'drafting' || project.value?.status === 'reviewing'
 })
 
-const canRecordResult = computed(() => {
-  return project.value?.status === 'bidding'
+const resultSummary = computed(() => {
+  const source = project.value?.resultSummary || project.value?.resultData || {}
+  const status = String(source.result || project.value?.resultStatus || project.value?.status || '').toLowerCase()
+  const isWon = status === 'won'
+  const isLost = status === 'lost'
+  const contractStart = source.contractStartDate || source.contractPeriod?.[0] || ''
+  const contractEnd = source.contractEndDate || source.contractPeriod?.[1] || ''
+  const competitorCount = Array.isArray(source.competitors) ? source.competitors.length : (source.competitorCount || 0)
+  const notice = source.noticeFile || source.noticeFileUrl || source.noticeDocumentName || source.noticeDocumentId
+  const report = source.analysisReport || source.analysisFile || source.analysisDocumentName || source.analysisDocumentId
+  const amount = source.amount ?? project.value?.resultAmount ?? null
+
+  return {
+    statusText: isWon ? '已中标' : isLost ? '未中标' : '待登记',
+    tagType: isWon ? 'success' : isLost ? 'danger' : 'info',
+    amountText: amount ? `¥${amount}${String(amount).includes('万') ? '' : ' 万'}` : '-',
+    contractText: contractStart || contractEnd ? `${contractStart || '-'} 至 ${contractEnd || '-'}` : '-',
+    skuText: source.skuCount ? `${source.skuCount}` : '-',
+    attachmentText: notice || report ? '已归档' : '待上传',
+    competitorText: competitorCount ? `${competitorCount} 条记录` : '暂无',
+    remarkText: source.remark || source.customerFeedback || source.improvements || '暂无'
+  }
 })
 
 // 状态映射函数
@@ -1812,7 +1595,8 @@ const getStepStatusText = (step) => {
 }
 
 const getStepOrder = (step) => {
-  const order = { draft: 0, review: 1, seal: 2, submit: 3 }
+  // seal 为 V2 规划占位，submit 与 seal 并列在 review 之后，不阻塞提交链路。
+  const order = { draft: 0, review: 1, seal: 2, submit: 2 }
   return order[step] ?? 0
 }
 
@@ -1872,11 +1656,12 @@ const getReviewedCount = () => {
   return reviewers.value.filter(r => r.status !== 'pending').length
 }
 
-const canCompleteReview = () => {
+const canSubmitBidReview = computed(() => {
   return reviewers.value.length > 0 &&
-         reviewers.value.every(r => r.status === 'approved') &&
-         !bidProcess.value.steps.review.completed
-}
+         !bidProcess.value.steps.review.completed &&
+         !hasPendingBidReview.value &&
+         !submittingBidReview.value
+})
 
 // 导航函数
 const goBack = () => {
@@ -1947,96 +1732,11 @@ const handleQuickReject = () => {
   approvalDialogVisible.value = true
 }
 
-const handleRecordResult = () => {
-  resultForm.value = {
-    result: '',
-    amount: null,
-    contractPeriod: null,
-    skuCount: '',
-    noticeFile: '',
-    competitors: [],
-    techHighlights: '',
-    priceStrategy: '',
-    customerFeedback: '',
-    improvements: ''
-  }
-  noticeFileList.value = []
-  resultDialogVisible.value = true
-}
-
 const goToResultPage = () => {
-  router.push('/resource/bid-result')
-}
-
-const handleUploadSuccess = (response, file) => {
-  if (response.code === 200) {
-    resultForm.value.noticeFile = response.data.url
-    ElMessage.success('上传成功')
-  } else {
-    ElMessage.error(response.message || '上传失败')
-  }
-}
-
-const handleUploadRemove = () => {
-  resultForm.value.noticeFile = ''
-}
-
-const addCompetitor = () => {
-  competitorForm.value = {
-    name: '',
-    skuCount: '',
-    category: '',
-    discount: '',
-    payment: ''
-  }
-  competitorDialogVisible.value = true
-}
-
-const confirmAddCompetitor = () => {
-  if (!competitorForm.value.name) {
-    ElMessage.warning('请输入竞争对手公司名称')
-    return
-  }
-  resultForm.value.competitors.push({ ...competitorForm.value })
-  competitorDialogVisible.value = false
-  ElMessage.success('添加成功')
-}
-
-const removeCompetitor = (index) => {
-  resultForm.value.competitors.splice(index, 1)
-}
-
-const handleSaveResult = async () => {
-  if (!resultForm.value.result) {
-    ElMessage.warning('请选择投标结果')
-    return
-  }
-
-  if (resultForm.value.result === 'won' && !resultForm.value.amount) {
-    ElMessage.warning('请填写中标金额')
-    return
-  }
-
-  try {
-    await projectStore.updateProject(route.params.id, {
-      status: resultForm.value.result,
-      resultAmount: resultForm.value.amount,
-      resultData: {
-        contractPeriod: resultForm.value.contractPeriod,
-        skuCount: resultForm.value.skuCount,
-        noticeFile: resultForm.value.noticeFile,
-        competitors: resultForm.value.competitors,
-        techHighlights: resultForm.value.techHighlights,
-        priceStrategy: resultForm.value.priceStrategy,
-        customerFeedback: resultForm.value.customerFeedback,
-        improvements: resultForm.value.improvements
-      }
-    })
-    ElMessage.success('结果录入成功')
-    resultDialogVisible.value = false
-  } catch {
-    ElMessage.error('结果录入失败')
-  }
+  router.push({
+    path: '/resource/bid-result',
+    query: project.value?.id ? { projectId: String(project.value.id) } : undefined
+  })
 }
 
 // 根据项目类型获取任务模板
@@ -2259,6 +1959,9 @@ const handleRemoveDeliverable = async (taskId, deliverableId) => {
     ElMessage.success('交付物已删除')
   }
 }
+
+// 封装弹窗里的命名包装：避免模板里写内联箭头函数
+const submitCurrentProjectToBidDocument = () => handleSubmitToDocument(route.params.id)
 
 // 提交至标书编写流程（调用后端校验 API）
 const handleSubmitToDocument = async (projectId) => {
@@ -2707,90 +2410,40 @@ const handleRemoveReviewer = (index) => {
   reviewers.value.splice(index, 1)
 }
 
-const handleCompleteReview = () => {
-  bidProcess.value.steps.review.completed = true
-  bidProcess.value.steps.review.time = new Date().toLocaleString('zh-CN')
-  bidProcess.value.currentStep = 2
-
-  bidProcess.value.deliverables.push({
-    name: '评审报告',
-    type: '评审',
-    uploader: userStore.userName,
-    time: new Date().toLocaleString('zh-CN')
-  })
-
-  ElMessage.success('评审已完成')
+const handleSubmitBidReview = () => {
+  if (!canSubmitBidReview.value) {
+    ElMessage.warning('请先添加评审人，或等待当前标书评审审批完成')
+    return
+  }
+  submittingBidReview.value = true
+  approvalType.value = { type: BID_REVIEW_TYPE_CODE, typeName: BID_REVIEW_TYPE_NAME }
   processDialogVisible.value = false
+  handleSubmitApproval()
 }
+
+// 审批弹窗关闭（无论成功/取消）即释放 in-flight 锁；成功时 hasPendingBidReview 会在 loadApprovalHistory 后接管
+watch(approvalDialogVisible, (visible) => {
+  if (!visible) {
+    submittingBidReview.value = false
+  }
+})
 
 const handleSealApply = () => {
   if (!bidProcess.value.steps.review.completed) {
-    ElMessage.warning('请先完成内部评审')
+    ElMessage.warning('请先完成标书评审')
     return
   }
   activeProcessTab.value = 'seal'
   processDialogVisible.value = true
 }
 
-const handleSealFileSuccess = (response, file) => {
-  sealForm.value.files.push({
-    name: file.name,
-    url: response.data?.url || file.url
-  })
-}
-
-const handleSubmitSeal = () => {
-  if (sealForm.value.sealTypes.length === 0) {
-    ElMessage.warning('请选择用印类型')
-    return
-  }
-
-  bidProcess.value.steps.seal.completed = true
-  bidProcess.value.steps.seal.time = new Date().toLocaleString('zh-CN')
-  bidProcess.value.currentStep = 3
-
-  bidProcess.value.deliverables.push({
-    name: '用印文件',
-    type: '用印',
-    uploader: userStore.userName,
-    time: new Date().toLocaleString('zh-CN')
-  })
-
-  ElMessage.success('用印申请已提交')
-  processDialogVisible.value = false
-}
-
 const handleSubmit = () => {
-  if (!bidProcess.value.steps.seal.completed) {
-    ElMessage.warning('请先完成用印申请')
+  if (!bidProcess.value.steps.review.completed) {
+    ElMessage.warning('请先完成标书评审')
     return
   }
   activeProcessTab.value = 'submit'
   processDialogVisible.value = true
-}
-
-const handleSubmitPackage = () => {
-  if (submitForm.value.checkList.length < 6) {
-    ElMessage.warning('请完成所有封装检查项')
-    return
-  }
-
-  bidProcess.value.steps.submit.completed = true
-  bidProcess.value.steps.submit.time = new Date().toLocaleString('zh-CN')
-  bidProcess.value.currentStep = 4
-
-  bidProcess.value.deliverables.push({
-    name: '封装标书',
-    type: '封装',
-    uploader: userStore.userName,
-    time: new Date().toLocaleString('zh-CN')
-  })
-
-  ElMessage.success('标书已封装提交')
-  processDialogVisible.value = false
-
-  // 更新项目状态
-  projectStore.updateProject(route.params.id, { status: 'bidding' })
 }
 
 const handleDownloadDeliverable = (item) => {
@@ -3629,5 +3282,11 @@ function getApprovalStatusText(status) {
 .asset-check-content .check-actions .el-button {
   flex: 1;
   min-width: 100px;
+}
+
+.result-summary-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
 }
 </style>

@@ -59,6 +59,11 @@ jobs:
         env:
           PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
 
+      - name: Run backend architecture tests
+        run: mvn -DforkCount=0 -Dtest=FPJavaArchitectureTest,MaintainabilityArchitectureTest test
+        env:
+          PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
+
       - name: Run baseline and resource integration tests
         run: mvn -Dtest=FlywayBaselineContextTest,ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest test
         env:
@@ -66,6 +71,11 @@ jobs:
 
   quality-scope:
     runs-on: ubuntu-latest
+    # dorny/paths-filter 在 PR 场景会调 GitHub API listFiles，需要 pull-requests: read。
+    # push 场景走 git 本地 diff，不需要此权限，所以历史直推 main 时从未暴露。
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       backend_changed: ${{ steps.filter.outputs.backend }}
       protected_quality_changed: ${{ steps.filter.outputs.protected_quality }}

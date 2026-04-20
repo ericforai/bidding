@@ -14,9 +14,11 @@
 | `project.js` | Pinia Store | 投标项目状态管理（列表、详情、CRUD、任务状态）|
 | `bidding.js` | Pinia Store | 标讯状态管理（标讯列表、待办、日历） |
 | `bar.js` | Pinia Store | BAR 投标资产台账状态管理（站点、账号、UK） |
+| `qualification.js` | Pinia Store | 资质列表、借阅记录和未接入态管理 |
 
 ## 更新记录
 
 - 2026-03-11: `project.js` 添加 API 失败时 mock 数据回退逻辑
 - 2026-03-18: `user.js` 开始保存 `allowedProjectIds`，用于认证恢复后的项目级权限快照
 - 2026-03-19: `user.js` 会话快照新增 `allowedDepts` 校验，避免恢复旧快照时遗漏部门级权限范围
+- 2026-04-19: 新增 `qualification.js`，把资质页真实列表与借阅记录状态从页面内拆出，移除本地借阅 mock 数据

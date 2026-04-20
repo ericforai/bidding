@@ -10,7 +10,9 @@
 | `check-doc-consistency.sh` | 兼容入口脚本 | 保留旧命令入口，转调新的文档治理检查器 |
 | `check-doc-governance.mjs` | 门禁脚本 | 检查强制目录 README 和强制文件头注释是否符合规范 |
 | `check-front-data-boundaries.mjs` | 门禁脚本 | 检查业务层是否发生遗留 Demo 回退代码污染 |
-| `check-java-coding-standards.sh` | 门禁脚本 | 检查暂存区 Java 代码规范（如 `catch(Exception)`、`Optional.get()`、原始泛型），并执行 `java-quality` 质量门禁（Checkstyle/PMD；网络可用时自动启用 SpotBugs，可通过 `JAVA_STANDARDS_SPOTBUGS=auto|on|off` 控制） |
+| `check-version-sync.mjs` | 门禁脚本 | 校验根目录 `VERSION`、`package.json` 与 `backend/pom.xml` 是否保持一致 |
+| `check-java-coding-standards.sh` | 门禁脚本 | 检查暂存区 Java 代码规范（如 `catch(Exception)`、`Optional.get()`、原始泛型），并执行 changed-code 质量门禁：Checkstyle 默认全启；PMD 支持 `off|report|on` 分阶段只检查目标服务包；SpotBugs 支持 `auto|off|report|on`，并通过 `quality.includes` / `quality.onlyAnalyze` 缩圈到目标改动类 |
 | `install-java-standards-hook.sh` | 安装脚本 | 将仓库 `.githooks/pre-commit` 安装到本地 `.git/hooks/pre-commit` |
 | `clean-local-artifacts.sh` | 清理脚本 | 删除本地产生的测试、报告和演练产物 |
+| `sync-version.mjs` | 维护脚本 | 以根目录 `VERSION` 为单一版本源，同步前端 `package.json` 和后端 `backend/pom.xml` |
 | `test/` | 测试基线目录 | Playwright 与 API 联调测试的启动、停止和说明脚本 |

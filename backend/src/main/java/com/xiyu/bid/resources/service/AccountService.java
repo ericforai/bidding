@@ -5,7 +5,9 @@
 package com.xiyu.bid.resources.service;
 
 import com.xiyu.bid.resources.dto.AccountCreateRequest;
+import com.xiyu.bid.resources.dto.AccountResponseDTO;
 import com.xiyu.bid.resources.dto.AccountUpdateRequest;
+import com.xiyu.bid.resources.dto.ResourceResponseMapper;
 import com.xiyu.bid.resources.entity.Account;
 import com.xiyu.bid.resources.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +28,7 @@ public class AccountService {
     private final AccountRepository accountRepository;
 
     @Transactional
-    public Account createAccount(AccountCreateRequest request) {
+    public AccountResponseDTO createAccount(AccountCreateRequest request) {
         // Validation
         if (request.getName() == null || request.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("Name is required");
@@ -53,41 +55,45 @@ public class AccountService {
                 .creditLevel(request.getCreditLevel())
                 .build();
 
-        return accountRepository.save(account);
+        return ResourceResponseMapper.toDto(accountRepository.save(account));
     }
 
-    public Account getAccountById(Long id) {
+    public AccountResponseDTO getAccountById(Long id) {
         return accountRepository.findById(id)
+                .map(ResourceResponseMapper::toDto)
                 .orElseThrow(() -> new RuntimeException("Account not found with id: " + id));
     }
 
-    public Page<Account> getAllAccounts(Pageable pageable) {
-        return accountRepository.findAll(pageable);
+    public Page<AccountResponseDTO> getAllAccounts(Pageable pageable) {
+        return accountRepository.findAll(pageable).map(ResourceResponseMapper::toDto);
     }
 
-    public Page<Account> getAccountsByType(Account.AccountType type, Pageable pageable) {
-        return accountRepository.findByType(type, pageable);
+    public Page<AccountResponseDTO> getAccountsByType(String type, Pageable pageable) {
+        return accountRepository.findByType(Account.AccountType.valueOf(type), pageable)
+                .map(ResourceResponseMapper::toDto);
     }
 
-    public Page<Account> getAccountsByIndustry(String industry, Pageable pageable) {
-        return accountRepository.findByIndustry(industry, pageable);
+    public Page<AccountResponseDTO> getAccountsByIndustry(String industry, Pageable pageable) {
+        return accountRepository.findByIndustry(industry, pageable).map(ResourceResponseMapper::toDto);
     }
 
-    public Page<Account> getAccountsByRegion(String region, Pageable pageable) {
-        return accountRepository.findByRegion(region, pageable);
+    public Page<AccountResponseDTO> getAccountsByRegion(String region, Pageable pageable) {
+        return accountRepository.findByRegion(region, pageable).map(ResourceResponseMapper::toDto);
     }
 
-    public Page<Account> getAccountsByCreditLevel(Account.CreditLevel creditLevel, Pageable pageable) {
-        return accountRepository.findByCreditLevel(creditLevel, pageable);
+    public Page<AccountResponseDTO> getAccountsByCreditLevel(String creditLevel, Pageable pageable) {
+        return accountRepository.findByCreditLevel(Account.CreditLevel.valueOf(creditLevel), pageable)
+                .map(ResourceResponseMapper::toDto);
     }
 
-    public Page<Account> searchAccounts(String keyword, Pageable pageable) {
-        return accountRepository.searchByNameContainingIgnoreCase(keyword, pageable);
+    public Page<AccountResponseDTO> searchAccounts(String keyword, Pageable pageable) {
+        return accountRepository.searchByNameContainingIgnoreCase(keyword, pageable)
+                .map(ResourceResponseMapper::toDto);
     }
 
     @Transactional
-    public Account updateAccount(Long id, AccountUpdateRequest request) {
-        Account account = getAccountById(id);
+    public AccountResponseDTO updateAccount(Long id, AccountUpdateRequest request) {
+        Account account = getAccountEntityById(id);
 
         if (request.getName() != null && !request.getName().trim().isEmpty()) {
             // Check if name is being changed and if new name already exists
@@ -115,7 +121,7 @@ public class AccountService {
             account.setCreditLevel(request.getCreditLevel());
         }
 
-        return accountRepository.save(account);
+        return ResourceResponseMapper.toDto(accountRepository.save(account));
     }
 
     @Transactional
@@ -135,5 +141,10 @@ public class AccountService {
         }
 
         return statistics;
+    }
+
+    private Account getAccountEntityById(Long id) {
+        return accountRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Account not found with id: " + id));
     }
 }

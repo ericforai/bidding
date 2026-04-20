@@ -33,6 +33,7 @@ const shouldSkipRefresh = (config = {}) => {
   const url = String(config.url || '')
   return Boolean(
     config.skipAuthRefresh ||
+    url.includes('/api/auth/register') ||
     url.includes('/api/auth/login') ||
     url.includes('/api/auth/refresh') ||
     url.includes('/api/auth/logout')
@@ -95,7 +96,7 @@ httpClient.interceptors.request.use(
   (config) => {
     // 添加 Token
     const token = getAccessToken() || bootstrapLegacyAccessToken()
-    if (token) {
+    if (token && !shouldSkipRefresh(config)) {
       config.headers.Authorization = `Bearer ${token}`
     }
     return config
@@ -114,6 +115,7 @@ httpClient.interceptors.response.use(
   },
   async (error) => {
     const { response, config } = error
+    const shouldStaySilent = Boolean(config?.silentAuthError)
 
     if (response?.status === 401 && config && !config._retry && !shouldSkipRefresh(config)) {
       config._retry = true
@@ -143,12 +145,14 @@ httpClient.interceptors.response.use(
       }
     }
 
+    if (response?.status === 401 && shouldStaySilent) {
+      return Promise.reject(error)
+    }
+
     if (response) {
       // 服务器返回错误状态码
       switch (response.status) {
         case 401:
-          // We handle failure either if it's a normal request failing refresh,
-          // OR if it's a direct 401 from a request where we skip refresh (like /refresh itself)
           await handleAuthFailure()
           break
         case 403:

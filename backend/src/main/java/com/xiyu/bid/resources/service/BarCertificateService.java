@@ -5,11 +5,13 @@
 package com.xiyu.bid.resources.service;
 
 import com.xiyu.bid.exception.ResourceNotFoundException;
+import com.xiyu.bid.resources.dto.BarCertificateBorrowRecordDTO;
 import com.xiyu.bid.resources.dto.BarCertificateBorrowRequest;
 import com.xiyu.bid.resources.dto.BarCertificateCreateRequest;
+import com.xiyu.bid.resources.dto.BarCertificateResponseDTO;
 import com.xiyu.bid.resources.dto.BarCertificateReturnRequest;
 import com.xiyu.bid.resources.dto.BarCertificateUpdateRequest;
-import com.xiyu.bid.resources.entity.BarAsset;
+import com.xiyu.bid.resources.dto.ResourceResponseMapper;
 import com.xiyu.bid.resources.entity.BarCertificate;
 import com.xiyu.bid.resources.entity.BarCertificateBorrowRecord;
 import com.xiyu.bid.resources.repository.BarAssetRepository;
@@ -30,18 +32,22 @@ public class BarCertificateService {
     private final BarCertificateRepository barCertificateRepository;
     private final BarCertificateBorrowRecordRepository borrowRecordRepository;
 
-    public List<BarCertificate> getCertificates(Long assetId) {
+    public List<BarCertificateResponseDTO> getCertificates(Long assetId) {
         ensureAssetExists(assetId);
-        return barCertificateRepository.findByBarAssetIdOrderByExpiryDateAsc(assetId);
+        return barCertificateRepository.findByBarAssetIdOrderByExpiryDateAsc(assetId).stream()
+                .map(ResourceResponseMapper::toDto)
+                .toList();
     }
 
-    public List<BarCertificateBorrowRecord> getBorrowRecords(Long assetId, Long certificateId) {
+    public List<BarCertificateBorrowRecordDTO> getBorrowRecords(Long assetId, Long certificateId) {
         BarCertificate certificate = getCertificate(assetId, certificateId);
-        return borrowRecordRepository.findByCertificateIdOrderByBorrowedAtDesc(certificate.getId());
+        return borrowRecordRepository.findByCertificateIdOrderByBorrowedAtDesc(certificate.getId()).stream()
+                .map(ResourceResponseMapper::toDto)
+                .toList();
     }
 
     @Transactional
-    public BarCertificate createCertificate(Long assetId, BarCertificateCreateRequest request) {
+    public BarCertificateResponseDTO createCertificate(Long assetId, BarCertificateCreateRequest request) {
         ensureAssetExists(assetId);
         BarCertificate certificate = BarCertificate.builder()
                 .barAssetId(assetId)
@@ -54,11 +60,11 @@ public class BarCertificateService {
                 .status(BarCertificate.CertificateStatus.AVAILABLE)
                 .remark(request.getRemark())
                 .build();
-        return barCertificateRepository.save(certificate);
+        return ResourceResponseMapper.toDto(barCertificateRepository.save(certificate));
     }
 
     @Transactional
-    public BarCertificate updateCertificate(Long assetId, Long certificateId, BarCertificateUpdateRequest request) {
+    public BarCertificateResponseDTO updateCertificate(Long assetId, Long certificateId, BarCertificateUpdateRequest request) {
         BarCertificate certificate = getCertificate(assetId, certificateId);
         if (request.getType() != null) certificate.setType(request.getType());
         if (request.getProvider() != null) certificate.setProvider(request.getProvider());
@@ -67,7 +73,7 @@ public class BarCertificateService {
         if (request.getLocation() != null) certificate.setLocation(request.getLocation());
         if (request.getExpiryDate() != null) certificate.setExpiryDate(request.getExpiryDate());
         if (request.getRemark() != null) certificate.setRemark(request.getRemark());
-        return barCertificateRepository.save(certificate);
+        return ResourceResponseMapper.toDto(barCertificateRepository.save(certificate));
     }
 
     @Transactional
@@ -80,7 +86,7 @@ public class BarCertificateService {
     }
 
     @Transactional
-    public BarCertificate borrowCertificate(Long assetId, Long certificateId, BarCertificateBorrowRequest request) {
+    public BarCertificateResponseDTO borrowCertificate(Long assetId, Long certificateId, BarCertificateBorrowRequest request) {
         BarCertificate certificate = getCertificate(assetId, certificateId);
         certificate.borrow(
                 request.getBorrower(),
@@ -101,11 +107,11 @@ public class BarCertificateService {
                 .status(BarCertificateBorrowRecord.BorrowStatus.BORROWED)
                 .build());
 
-        return saved;
+        return ResourceResponseMapper.toDto(saved);
     }
 
     @Transactional
-    public BarCertificate returnCertificate(Long assetId, Long certificateId, BarCertificateReturnRequest request) {
+    public BarCertificateResponseDTO returnCertificate(Long assetId, Long certificateId, BarCertificateReturnRequest request) {
         BarCertificate certificate = getCertificate(assetId, certificateId);
         if (certificate.getStatus() != BarCertificate.CertificateStatus.BORROWED) {
             throw new IllegalStateException("Only borrowed certificates can be returned");
@@ -123,7 +129,7 @@ public class BarCertificateService {
         }
         borrowRecordRepository.save(latestBorrow);
         certificate.returnToPool(request.getRemark());
-        return barCertificateRepository.save(certificate);
+        return ResourceResponseMapper.toDto(barCertificateRepository.save(certificate));
     }
 
     private void ensureAssetExists(Long assetId) {

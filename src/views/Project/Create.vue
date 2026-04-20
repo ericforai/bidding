@@ -553,7 +553,7 @@ import {
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ScoreCoverage from '@/components/ai/ScoreCoverage.vue'
 import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
-import { aiApi, tendersApi, projectsApi } from '@/api'
+import { aiApi, tendersApi } from '@/api'
 import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 
 const router = useRouter()
@@ -604,7 +604,18 @@ const basicForm = reactive({
 })
 
 // 常见竞争对手选项
-const competitorOptions = ref([])
+const competitorOptions = ref([
+  '华为技术有限公司',
+  '腾讯云计算有限公司',
+  '阿里巴巴云计算有限公司',
+  '百度智能云',
+  '京东科技',
+  '科大讯飞股份有限公司',
+  '浪潮集团有限公司',
+  '中软国际',
+  '东软集团',
+  '用友网络'
+])
 
 // 竞争对手分析数据
 const competitorAnalysis = ref([])
@@ -740,14 +751,6 @@ const buildApiProjectPayload = () => {
     throw new Error('请填写投标截止日期或预计完工日期')
   }
 
-  const userTasks = taskForm.tasks.filter(t => t.name)
-  const aiTasks = hasAiStep
-    ? aiGeneratedTasks.value
-        .filter(t => t.selected)
-        .map(t => ({ name: t.name, priority: t.priority, status: 'todo', owner: basicForm.manager }))
-    : []
-  const allTasks = [...userTasks, ...aiTasks]
-
   return {
     name: basicForm.name,
     tenderId,
@@ -755,30 +758,12 @@ const buildApiProjectPayload = () => {
     teamMembers: [managerId],
     startDate,
     endDate,
-    ...(!isEditMode.value && { status: 'INITIATED' }),
+    status: 'INITIATED',
     sourceModule: sourceInfo.module || '',
     sourceCustomerId: sourceInfo.customerId || '',
     sourceCustomer: sourceInfo.customerName || '',
     sourceOpportunityId: sourceInfo.opportunityId || '',
-    sourceReasoningSummary: sourceInfo.reasoningSummary || '',
-    customer: basicForm.customer || null,
-    budget: basicForm.budget || null,
-    industry: basicForm.industry || null,
-    region: basicForm.region || null,
-    platform: basicForm.platform || null,
-    deadline: basicForm.deadline || null,
-    description: detailForm.description || null,
-    remark: detailForm.remark || null,
-    tagsJson: detailForm.tags?.length > 0 ? JSON.stringify(detailForm.tags) : null,
-    competitorAnalysisJson: competitorAnalysis.value.length > 0
-      ? JSON.stringify(competitorAnalysis.value)
-      : null,
-    tasksJson: allTasks.length > 0
-      ? JSON.stringify(allTasks)
-      : null,
-    aiAnalysisJson: hasAiStep && aiSummary.value.winScore > 0
-      ? JSON.stringify({ ...aiSummary.value, scoreCoverage: scoreAnalysis.value })
-      : null
+    sourceReasoningSummary: sourceInfo.reasoningSummary || ''
   }
 }
 
@@ -787,7 +772,21 @@ const disabledDate = (time) => {
 }
 
 const syncFromCRM = async () => {
-  ElMessage.info('CRM同步功能暂未开放，请手动填写项目信息')
+  syncing.value = true
+  try {
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    basicForm.name = '某央企智慧办公平台采购项目'
+    basicForm.customer = '某央企集团'
+    basicForm.budget = 500
+    basicForm.industry = '政府'
+    basicForm.region = '北京'
+    syncedFromCRM.value = true
+    ElMessage.success('CRM数据同步成功')
+  } catch (error) {
+    ElMessage.error('CRM数据同步失败')
+  } finally {
+    syncing.value = false
+  }
 }
 
 const addTask = () => {
@@ -915,23 +914,49 @@ const getPriorityText = (priority) => {
 const handleSubmit = async () => {
   submitting.value = true
   try {
-    const projectData = buildApiProjectPayload()
+    // 合并用户任务和AI生成的任务
+    const userTasks = taskForm.tasks.filter(t => t.name)
+    const aiTasks = hasAiStep
+      ? aiGeneratedTasks.value
+          .filter(t => t.selected)
+          .map(t => ({
+            name: t.name,
+            priority: t.priority,
+            status: 'todo',
+            owner: basicForm.manager
+          }))
+      : []
 
-    let result
-    if (isEditMode.value) {
-      result = await projectStore.updateProject(editProjectId.value, projectData)
-      ElMessage.success('项目更新成功')
-    } else {
-      result = await projectStore.createProject(projectData)
-      ElMessage.success('项目创建成功')
-    }
-    if (result?.id) {
-      router.push(`/project/${result.id}`)
+    const projectData = false
+      ? {
+          ...basicForm,
+          ...detailForm,
+          sourceModule: sourceInfo.module || '',
+          sourceCustomerId: sourceInfo.customerId || '',
+          sourceCustomer: sourceInfo.customerName || '',
+          sourceOpportunityId: sourceInfo.opportunityId || '',
+          sourceReasoningSummary: sourceInfo.reasoningSummary || '',
+          tasks: [...userTasks, ...aiTasks],
+          competitorAnalysis: competitorAnalysis.value,
+          aiAnalysis: hasAiStep
+            ? {
+                ...aiSummary.value,
+                scoreCoverage: scoreAnalysis.value
+              }
+            : null
+        }
+      : buildApiProjectPayload()
+
+    const createdProject = await projectStore.createProject(projectData)
+
+    ElMessage.success('项目创建成功')
+    if (createdProject?.id) {
+      router.push(`/project/${createdProject.id}`)
       return
     }
     router.push('/project')
   } catch (error) {
-    ElMessage.error(isEditMode.value ? '项目更新失败' : '项目创建失败')
+    ElMessage.error('项目创建失败')
   } finally {
     submitting.value = false
   }
@@ -991,15 +1016,17 @@ onMounted(async () => {
     basicForm.manager = userStore.currentUser.name
   }
 
-  const tenderResult = await tendersApi.getList()
-  if (tenderResult?.success) {
-    availableTenders.value = Array.isArray(tenderResult.data) ? tenderResult.data : []
-  }
+  if (true) {
+    const tenderResult = await tendersApi.getList()
+    if (tenderResult?.success) {
+      availableTenders.value = Array.isArray(tenderResult.data) ? tenderResult.data : []
+    }
 
-  if (/^\d+$/.test(String(route.query.tenderId || ''))) {
-    selectedTenderId.value = Number(route.query.tenderId)
-  } else if (availableTenders.value.length > 0) {
-    selectedTenderId.value = Number(availableTenders.value[0].id)
+    if (/^\d+$/.test(String(route.query.tenderId || ''))) {
+      selectedTenderId.value = Number(route.query.tenderId)
+    } else if (availableTenders.value.length > 0) {
+      selectedTenderId.value = Number(availableTenders.value[0].id)
+    }
   }
 
   const editId = route.query.editId
@@ -1012,12 +1039,15 @@ onMounted(async () => {
   }
 })
 
+// 加载项目数据用于编辑
 const loadProjectData = async (id) => {
   try {
-    const result = await projectsApi.getDetail(id)
-    const project = result?.data
+    // 从 store 中获取项目数据
+    await projectStore.getProjects()
+    const project = projectStore.projects.find(p => p.id === id)
 
     if (project) {
+      // 填充基本信息
       basicForm.name = project.name || ''
       basicForm.customer = project.customer || ''
       basicForm.budget = project.budget || null
@@ -1025,38 +1055,29 @@ const loadProjectData = async (id) => {
       basicForm.region = project.region || ''
       basicForm.platform = project.platform || ''
       basicForm.deadline = project.deadline || ''
-      basicForm.manager = userStore.currentUser?.fullName || ''
+      basicForm.manager = project.manager || ''
+      basicForm.competitors = project.competitors || []
 
+      // 填充详细信息
       detailForm.description = project.description || ''
-      detailForm.tags = project.tagsJson ? JSON.parse(project.tagsJson) : []
+      detailForm.tags = project.tags || []
       detailForm.startDate = project.startDate || ''
       detailForm.endDate = project.endDate || ''
       detailForm.remark = project.remark || ''
 
-      competitorAnalysis.value = project.competitorAnalysisJson
-        ? JSON.parse(project.competitorAnalysisJson)
-        : []
-      basicForm.competitors = competitorAnalysis.value.map(c => c.name)
-
-      const tasks = project.tasksJson ? JSON.parse(project.tasksJson) : []
-      if (tasks.length > 0) {
-        taskForm.tasks = tasks
+      // 填充任务信息
+      if (project.tasks && project.tasks.length > 0) {
+        taskForm.tasks = project.tasks
       }
-
-      if (project.aiAnalysisJson) {
-        const ai = JSON.parse(project.aiAnalysisJson)
-        aiSummary.value = { winScore: ai.winScore || 0, winLevel: ai.winLevel || 'low', risks: ai.risks || [], suggestions: ai.suggestions || [] }
-        scoreAnalysis.value = ai.scoreCoverage || { scoreCategories: [], gapItems: [] }
-      }
-
-      selectedTenderId.value = project.tenderId
 
       ElMessage.success('项目数据加载成功')
     } else {
       ElMessage.error('未找到该项目')
+      // 返回列表页
       router.push('/project')
     }
   } catch (error) {
+    console.error('加载项目数据失败:', error)
     ElMessage.error('加载项目数据失败')
   }
 }

@@ -1,5 +1,5 @@
-// Input: approval command/query services and request DTOs
-// Output: Approval workflow facade methods for controllers
+// Input: approval repositories, DTOs, and support services
+// Output: Approval Workflow business service operations
 // Pos: Service/业务层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.approval.service;
@@ -10,38 +10,46 @@ import com.xiyu.bid.approval.dto.ApprovalSubmitRequest;
 import com.xiyu.bid.approval.enums.ApprovalStatus;
 import com.xiyu.bid.entity.User;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 /**
- * 审批流程 facade，保留兼容 API，对内委托命令与查询服务
+ * 审批流程服务
+ * 实现审批的状态机逻辑和操作记录
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ApprovalWorkflowService {
 
-    private final ApprovalCommandService commandService;
-    private final ApprovalQueryService queryService;
+    private final ApprovalCommandService approvalCommandService;
+    private final ApprovalQueryService approvalQueryService;
 
+    @Transactional
     public ApprovalDetailDTO submitForApproval(ApprovalSubmitRequest request, Long userId, String userName) {
-        return commandService.submitForApproval(request, userId, userName);
+        return approvalCommandService.submitForApproval(request, userId, userName);
     }
 
+    @Transactional
     public ApprovalDetailDTO approve(UUID requestId, Long approverId, String approverName, String comment) {
-        return commandService.approve(requestId, approverId, approverName, comment);
+        return approvalCommandService.approve(requestId, approverId, approverName, comment);
     }
 
+    @Transactional
     public ApprovalDetailDTO reject(UUID requestId, Long approverId, String approverName, String reason) {
-        return commandService.reject(requestId, approverId, approverName, reason);
+        return approvalCommandService.reject(requestId, approverId, approverName, reason);
     }
 
+    @Transactional
     public void cancel(UUID requestId, Long userId, String userName) {
-        commandService.cancel(requestId, userId, userName);
+        approvalCommandService.cancel(requestId, userId, userName);
     }
 
     public Page<ApprovalDetailDTO> getPendingApprovals(
@@ -50,34 +58,38 @@ public class ApprovalWorkflowService {
             Long approverId,
             Pageable pageable
     ) {
-        return queryService.getPendingApprovals(currentUserId, currentUserRole, approverId, pageable);
+        return approvalQueryService.getPendingApprovals(currentUserId, currentUserRole, approverId, pageable);
     }
 
     public ApprovalStatisticsDTO getStatistics() {
-        return queryService.getStatistics();
+        return approvalQueryService.getStatistics();
     }
 
     public ApprovalDetailDTO getApprovalDetail(UUID requestId, Long currentUserId, User.Role currentUserRole) {
-        return queryService.getApprovalDetail(requestId, currentUserId, currentUserRole);
+        return approvalQueryService.getApprovalDetail(requestId, currentUserId, currentUserRole);
     }
 
+    @Transactional
     public void markAsRead(UUID requestId, Long userId) {
-        commandService.markAsRead(requestId, userId);
+        approvalCommandService.markAsRead(requestId, userId);
     }
 
+    @Transactional
     public Map<UUID, String> batchApprove(List<UUID> requestIds, Long approverId, String approverName, String comment) {
-        return commandService.batchApprove(requestIds, approverId, approverName, comment);
+        return approvalCommandService.batchApprove(requestIds, approverId, approverName, comment);
     }
 
+    @Transactional
     public Map<UUID, String> batchReject(List<UUID> requestIds, Long approverId, String approverName, String reason) {
-        return commandService.batchReject(requestIds, approverId, approverName, reason);
+        return approvalCommandService.batchReject(requestIds, approverId, approverName, reason);
     }
 
     public Page<ApprovalDetailDTO> getMyApprovals(Long userId, ApprovalStatus status, Pageable pageable) {
-        return queryService.getMyApprovals(userId, status, pageable);
+        return approvalQueryService.getMyApprovals(userId, status, pageable);
     }
 
+    @Transactional
     public ApprovalDetailDTO resubmit(UUID requestId, Long userId, String userName, String newDescription) {
-        return commandService.resubmit(requestId, userId, userName, newDescription);
+        return approvalCommandService.resubmit(requestId, userId, userName, newDescription);
     }
 }

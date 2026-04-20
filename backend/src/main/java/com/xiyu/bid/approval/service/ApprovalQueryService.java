@@ -1,15 +1,12 @@
-// Input: approval repositories, policies, and DTO assemblers
-// Output: approval query results and read models
-// Pos: Service/业务层
-// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.approval.service;
 
-import com.xiyu.bid.approval.core.ApprovalPermissionPolicy;
-import com.xiyu.bid.approval.core.ApprovalRuleResult;
+import com.xiyu.bid.approval.dto.ApprovalActionDTO;
 import com.xiyu.bid.approval.dto.ApprovalDetailDTO;
 import com.xiyu.bid.approval.dto.ApprovalStatisticsDTO;
+import com.xiyu.bid.approval.entity.ApprovalAction;
 import com.xiyu.bid.approval.entity.ApprovalRequest;
 import com.xiyu.bid.approval.enums.ApprovalStatus;
+import com.xiyu.bid.approval.repository.ApprovalActionRepository;
 import com.xiyu.bid.approval.repository.ApprovalRequestRepository;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.exception.BusinessException;
@@ -26,138 +23,181 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * 审批查询服务
- */
 @Service
 @RequiredArgsConstructor
-public class ApprovalQueryService {
+class ApprovalQueryService {
 
     private final ApprovalRequestRepository requestRepository;
-    private final ApprovalPermissionPolicy permissionPolicy;
-    private final ApprovalDetailAssembler detailAssembler;
+    private final ApprovalActionRepository actionRepository;
 
-    public Page<ApprovalDetailDTO> getPendingApprovals(
-            Long currentUserId,
-            User.Role currentUserRole,
-            Long approverId,
-            Pageable pageable
-    ) {
-        assertAllowed(permissionPolicy.canViewPendingQueue(currentUserId, currentUserRole, approverId));
+    Page<ApprovalDetailDTO> getPendingApprovals(Long currentUserId, User.Role currentUserRole, Long approverId, Pageable pageable) {
+        enforce(ApprovalPermissionPolicy.canReadPendingQueue(currentUserId, currentUserRole, approverId));
 
-        List<ApprovalRequest> requests = loadPendingApprovals(currentUserId, currentUserRole, approverId);
-        return buildPage(requests.stream().map(detailAssembler::toDetailDTO).toList(), pageable);
+        List<ApprovalRequest> requests;
+        if (approverId != null) {
+            requests = requestRepository.findByStatusAndCurrentApproverIdOrderByPriorityDescCreatedAtDesc(
+                    ApprovalStatus.PENDING, approverId);
+        } else if (ApprovalPermissionPolicy.isPrivileged(currentUserRole)) {
+            requests = requestRepository.findByStatusOrderByPriorityDescCreatedAtDesc(ApprovalStatus.PENDING);
+        } else {
+            requests = requestRepository.findByStatusAndCurrentApproverIdOrderByPriorityDescCreatedAtDesc(
+                    ApprovalStatus.PENDING, currentUserId);
+        }
+
+        return paginate(requests.stream().map(this::toDetailDTO).toList(), pageable);
     }
 
-    public ApprovalStatisticsDTO getStatistics() {
+    ApprovalStatisticsDTO getStatistics() {
         Long totalCount = requestRepository.count();
-        Map<String, Long> statusCounts = mapRowsToStringLong(requestRepository.countByStatus());
+        Map<String, Long> statusCounts = new HashMap<>();
+        for (Object[] row : requestRepository.countByStatus()) {
+            statusCounts.put(String.valueOf(row[0]), (Long) row[1]);
+        }
 
+        Long pendingCount = statusCounts.getOrDefault(ApprovalStatus.PENDING.name(), 0L);
         Long approvedCount = statusCounts.getOrDefault(ApprovalStatus.APPROVED.name(), 0L);
         Long rejectedCount = statusCounts.getOrDefault(ApprovalStatus.REJECTED.name(), 0L);
+        Long cancelledCount = statusCounts.getOrDefault(ApprovalStatus.CANCELLED.name(), 0L);
+
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime todayStart = now.toLocalDate().atStartOfDay();
+        LocalDateTime tomorrowStart = todayStart.plusDays(1);
         LocalDateTime monthStart = now.withDayOfMonth(1).toLocalDate().atStartOfDay();
+        LocalDateTime nextMonthStart = monthStart.plusMonths(1);
 
-        Long totalDecisions = approvedCount + rejectedCount;
-        Double approvalRate = totalDecisions > 0
-                ? (approvedCount.doubleValue() / totalDecisions) * 100
-                : null;
-
-        return ApprovalStatisticsDTO.builder()
-                .totalCount(totalCount)
-                .pendingCount(statusCounts.getOrDefault(ApprovalStatus.PENDING.name(), 0L))
-                .approvedCount(approvedCount)
-                .rejectedCount(rejectedCount)
-                .cancelledCount(statusCounts.getOrDefault(ApprovalStatus.CANCELLED.name(), 0L))
-                .todaySubmitted(requestRepository.countBySubmittedAtBetween(todayStart, todayStart.plusDays(1)))
-                .monthSubmitted(requestRepository.countBySubmittedAtBetweenAndStatusIn(
-                        monthStart,
-                        monthStart.plusMonths(1),
-                        List.of(ApprovalStatus.PENDING, ApprovalStatus.APPROVED, ApprovalStatus.REJECTED, ApprovalStatus.CANCELLED)
-                ))
-                .overdueCount(requestRepository.countByStatusAndDueDateBefore(ApprovalStatus.PENDING, now))
-                .nearDueCount(requestRepository.countByStatusAndDueDateBetween(ApprovalStatus.PENDING, now, now.plusHours(24)))
-                .avgProcessingHours(calculateAverageProcessingHours())
-                .approvalRate(approvalRate)
-                .byType(mapRowsToStringLong(requestRepository.countByType()))
-                .byPriority(mapRowsToIntegerLong(requestRepository.countByPriority()))
-                .build();
-    }
-
-    public ApprovalDetailDTO getApprovalDetail(UUID requestId, Long currentUserId, User.Role currentUserRole) {
-        ApprovalRequest request = getApprovalRequestEntity(requestId);
-        assertAllowed(permissionPolicy.canViewApprovalRequest(request, currentUserId, currentUserRole));
-        return detailAssembler.toDetailDTO(request);
-    }
-
-    public Page<ApprovalDetailDTO> getMyApprovals(Long userId, ApprovalStatus status, Pageable pageable) {
-        List<ApprovalDetailDTO> dtos = requestRepository.findByRequesterIdOrderByCreatedAtDesc(userId).stream()
-                .filter(request -> status == null || request.getStatus() == status)
-                .map(detailAssembler::toDetailDTO)
-                .toList();
-        return buildPage(dtos, pageable);
-    }
-
-    private List<ApprovalRequest> loadPendingApprovals(Long currentUserId, User.Role currentUserRole, Long approverId) {
-        if (approverId != null) {
-            return requestRepository.findByStatusAndCurrentApproverIdOrderByPriorityDescCreatedAtDesc(
-                    ApprovalStatus.PENDING, approverId
-            );
-        }
-        if (permissionPolicy.isPrivileged(currentUserRole)) {
-            return requestRepository.findByStatusOrderByPriorityDescCreatedAtDesc(ApprovalStatus.PENDING);
-        }
-        return requestRepository.findByStatusAndCurrentApproverIdOrderByPriorityDescCreatedAtDesc(
-                ApprovalStatus.PENDING, currentUserId
+        Long todaySubmitted = requestRepository.countBySubmittedAtBetween(todayStart, tomorrowStart);
+        Long monthSubmitted = requestRepository.countBySubmittedAtBetweenAndStatusIn(
+                monthStart,
+                nextMonthStart,
+                List.of(ApprovalStatus.PENDING, ApprovalStatus.APPROVED, ApprovalStatus.REJECTED, ApprovalStatus.CANCELLED)
         );
-    }
+        Long overdueCount = requestRepository.countByStatusAndDueDateBefore(ApprovalStatus.PENDING, now);
+        Long nearDueCount = requestRepository.countByStatusAndDueDateBetween(ApprovalStatus.PENDING, now, now.plusHours(24));
 
-    private ApprovalRequest getApprovalRequestEntity(UUID requestId) {
-        return requestRepository.findById(requestId)
-                .orElseThrow(() -> new BusinessException("审批请求不存在: " + requestId));
-    }
-
-    private Double calculateAverageProcessingHours() {
-        return requestRepository.findByStatusInAndCompletedAtIsNotNull(
+        Double avgProcessingHours = requestRepository.findByStatusInAndCompletedAtIsNotNull(
                         List.of(ApprovalStatus.APPROVED, ApprovalStatus.REJECTED)
                 ).stream()
                 .filter(item -> item.getSubmittedAt() != null && item.getCompletedAt() != null)
                 .mapToLong(item -> ChronoUnit.MINUTES.between(item.getSubmittedAt(), item.getCompletedAt()))
                 .average()
                 .stream()
-                .map(avgMinutes -> avgMinutes / 60.0)
+                .map(avgMinutes -> avgMinutes / 60.0d)
                 .boxed()
                 .findFirst()
                 .orElse(null);
-    }
 
-    private Map<String, Long> mapRowsToStringLong(List<Object[]> rows) {
-        Map<String, Long> mapped = new HashMap<>();
-        for (Object[] row : rows) {
-            mapped.put(String.valueOf(row[0]), (Long) row[1]);
+        Double approvalRate = null;
+        long totalDecisions = approvedCount + rejectedCount;
+        if (totalDecisions > 0) {
+            approvalRate = (approvedCount.doubleValue() / totalDecisions) * 100;
         }
-        return mapped;
-    }
 
-    private Map<Integer, Long> mapRowsToIntegerLong(List<Object[]> rows) {
-        Map<Integer, Long> mapped = new HashMap<>();
-        for (Object[] row : rows) {
-            mapped.put((Integer) row[0], (Long) row[1]);
+        Map<String, Long> byType = new HashMap<>();
+        for (Object[] row : requestRepository.countByType()) {
+            byType.put((String) row[0], (Long) row[1]);
         }
-        return mapped;
+
+        Map<Integer, Long> byPriority = new HashMap<>();
+        for (Object[] row : requestRepository.countByPriority()) {
+            byPriority.put((Integer) row[0], (Long) row[1]);
+        }
+
+        return ApprovalStatisticsDTO.builder()
+                .totalCount(totalCount)
+                .pendingCount(pendingCount)
+                .approvedCount(approvedCount)
+                .rejectedCount(rejectedCount)
+                .cancelledCount(cancelledCount)
+                .todaySubmitted(todaySubmitted)
+                .monthSubmitted(monthSubmitted)
+                .overdueCount(overdueCount)
+                .nearDueCount(nearDueCount)
+                .avgProcessingHours(avgProcessingHours)
+                .approvalRate(approvalRate)
+                .byType(byType)
+                .byPriority(byPriority)
+                .build();
     }
 
-    private Page<ApprovalDetailDTO> buildPage(List<ApprovalDetailDTO> dtos, Pageable pageable) {
+    ApprovalDetailDTO getApprovalDetail(UUID requestId, Long currentUserId, User.Role currentUserRole) {
+        ApprovalRequest request = getApprovalRequestEntity(requestId);
+        enforce(ApprovalPermissionPolicy.canView(request, currentUserId, currentUserRole));
+        return toDetailDTO(request);
+    }
+
+    Page<ApprovalDetailDTO> getMyApprovals(Long userId, ApprovalStatus status, Pageable pageable) {
+        List<ApprovalDetailDTO> dtos = requestRepository.findByRequesterIdOrderByCreatedAtDesc(userId).stream()
+                .filter(request -> status == null || request.getStatus() == status)
+                .map(this::toDetailDTO)
+                .toList();
+        return paginate(dtos, pageable);
+    }
+
+    ApprovalRequest getApprovalRequestEntity(UUID requestId) {
+        return requestRepository.findById(requestId)
+                .orElseThrow(() -> new BusinessException("审批请求不存在: " + requestId));
+    }
+
+    ApprovalDetailDTO toDetailDTO(ApprovalRequest request) {
+        List<ApprovalActionDTO> actionDTOs = actionRepository.findByApprovalRequestIdOrderByActionTimeAsc(request.getId()).stream()
+                .map(this::toActionDTO)
+                .toList();
+
+        Long processingHours = null;
+        if (request.getCompletedAt() != null && request.getSubmittedAt() != null) {
+            processingHours = ChronoUnit.HOURS.between(request.getSubmittedAt(), request.getCompletedAt());
+        }
+
+        return ApprovalDetailDTO.builder()
+                .id(request.getId())
+                .projectId(request.getProjectId())
+                .projectName(request.getProjectName())
+                .approvalType(request.getApprovalType())
+                .status(request.getStatus())
+                .statusDescription(request.getStatus().getDescription())
+                .requesterId(request.getRequesterId())
+                .requesterName(request.getRequesterName())
+                .currentApproverId(request.getCurrentApproverId())
+                .currentApproverName(request.getCurrentApproverName())
+                .priority(request.getPriority())
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .submittedAt(request.getSubmittedAt())
+                .completedAt(request.getCompletedAt())
+                .dueDate(request.getDueDate())
+                .isRead(request.getIsRead())
+                .isOverdue(request.isOverdue())
+                .isNearDueDate(request.isNearDueDate())
+                .createdAt(request.getCreatedAt())
+                .updatedAt(request.getUpdatedAt())
+                .actions(actionDTOs)
+                .processingHours(processingHours)
+                .build();
+    }
+
+    private ApprovalActionDTO toActionDTO(ApprovalAction action) {
+        return ApprovalActionDTO.builder()
+                .id(action.getId())
+                .actionType(action.getActionType())
+                .actorId(action.getActorId())
+                .actorName(action.getActorName())
+                .comment(action.getComment())
+                .actionTime(action.getActionTime())
+                .previousStatus(action.getPreviousStatus() != null ? action.getPreviousStatus().name() : null)
+                .newStatus(action.getNewStatus() != null ? action.getNewStatus().name() : null)
+                .build();
+    }
+
+    private Page<ApprovalDetailDTO> paginate(List<ApprovalDetailDTO> dtos, Pageable pageable) {
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), dtos.size());
         List<ApprovalDetailDTO> pageContent = start < dtos.size() ? dtos.subList(start, end) : List.of();
         return new PageImpl<>(pageContent, pageable, dtos.size());
     }
 
-    private void assertAllowed(ApprovalRuleResult result) {
-        if (!result.allowed()) {
-            throw new BusinessException(result.reason());
+    private void enforce(ApprovalDecisionPolicy.Decision decision) {
+        if (!decision.permitted()) {
+            throw new BusinessException(decision.message());
         }
     }
 }

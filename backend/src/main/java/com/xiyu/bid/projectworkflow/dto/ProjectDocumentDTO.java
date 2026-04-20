@@ -18,6 +18,10 @@ public class ProjectDocumentDTO {
     private String name;
     private String size;
     private String fileType;
+    private String documentCategory;
+    private String linkedEntityType;
+    private Long linkedEntityId;
+    private String fileUrl;
     private Long uploaderId;
     private String uploader;
     private String time;

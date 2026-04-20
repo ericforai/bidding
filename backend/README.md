@@ -55,10 +55,13 @@ mvn clean package
 
 ## 质量门禁策略
 - `quality-audit`: 审计模式，打开质量插件但不阻断构建，适合先盘点问题。
-- `quality-strict`: 严格模式，问题即失败，适合已清理过的目标范围。
+- `quality-strict`: 严格模式，默认由 Checkstyle + SpotBugs 对受保护范围做真实阻断。
+- PMD 当前定位为“复杂度和坏味道提醒层”，会持续输出问题，但默认不作为阻断条件。
+- SpotBugs 当前定位为“真实风险门禁”，先只阻断受保护范围内的高价值问题。
 - 默认扫描范围收敛到 `core` 包和 `projectworkflow`，避免一开始全仓爆炸。
 - 需要扩大或缩小范围时，可覆盖 `-Dquality.includes=...` 和 `-Dquality.onlyAnalyze=...`。
 - 覆盖率门槛由 `jacoco.minimum.coveredratio` 控制；审计模式默认跳过覆盖率阻断。
+- SpotBugs 豁免统一收口到 `config/spotbugs/exclude.xml`，只允许少量、带理由的例外。
 - 治理规则、扩圈标准和 CI 约定见 `backend/QUALITY_GATE_GUIDE.md`。
 
 ## 环境变量

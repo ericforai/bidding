@@ -19,4 +19,7 @@ public class BidResultReminderDTO {
     private LocalDateTime remindTime;
     private String lastReminderComment;
     private Long lastResultId;
+    private Long attachmentDocumentId;
+    private Long uploadedBy;
+    private LocalDateTime uploadedAt;
 }

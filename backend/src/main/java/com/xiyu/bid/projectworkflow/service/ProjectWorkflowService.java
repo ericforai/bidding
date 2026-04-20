@@ -1,6 +1,6 @@
-// Input: task/document/score-draft workflow services
-// Output: Project workflow facade methods for controllers
-// Pos: Service/业务层
+// Input: project workflow application services and request DTOs
+// Output: project workflow orchestration facade for controllers
+// Pos: Service/业务编排层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.projectworkflow.service;
 
@@ -29,72 +29,112 @@ import java.util.List;
 @Transactional
 public class ProjectWorkflowService {
 
-    private final ProjectTaskWorkflowService taskWorkflowService;
-    private final ProjectDocumentWorkflowService documentWorkflowService;
-    private final ProjectScoreDraftWorkflowService scoreDraftWorkflowService;
+    private final ProjectTaskWorkflowService projectTaskWorkflowService;
+    private final ProjectDocumentWorkflowService projectDocumentWorkflowService;
+    private final ProjectReminderWorkflowService projectReminderWorkflowService;
+    private final ProjectShareLinkWorkflowService projectShareLinkWorkflowService;
+    private final ProjectScoreDraftWorkflowService projectScoreDraftWorkflowService;
 
     @Transactional(readOnly = true)
     public List<ProjectTaskViewDTO> getProjectTasks(Long projectId) {
-        return taskWorkflowService.getProjectTasks(projectId);
+        return projectTaskWorkflowService.getProjectTasks(projectId);
     }
 
     public ProjectTaskViewDTO createProjectTask(Long projectId, ProjectTaskCreateRequest request) {
-        return taskWorkflowService.createProjectTask(projectId, request);
+        return projectTaskWorkflowService.createProjectTask(projectId, request);
     }
 
-    public ProjectTaskViewDTO updateProjectTaskStatus(Long projectId, Long taskId, ProjectTaskStatusUpdateRequest request) {
-        return taskWorkflowService.updateProjectTaskStatus(projectId, taskId, request);
+    public ProjectTaskViewDTO updateProjectTaskStatus(
+            Long projectId,
+            Long taskId,
+            ProjectTaskStatusUpdateRequest request
+    ) {
+        return projectTaskWorkflowService.updateProjectTaskStatus(projectId, taskId, request);
     }
 
     @Transactional(readOnly = true)
     public List<ProjectDocumentDTO> getProjectDocuments(Long projectId) {
-        return documentWorkflowService.getProjectDocuments(projectId);
+        return projectDocumentWorkflowService.getProjectDocuments(projectId);
     }
 
-    public ProjectDocumentDTO createProjectDocument(Long projectId, ProjectDocumentCreateRequest request) {
-        return documentWorkflowService.createProjectDocument(projectId, request);
+    @Transactional(readOnly = true)
+    public List<ProjectDocumentDTO> getProjectDocuments(
+            Long projectId,
+            String documentCategory,
+            String linkedEntityType,
+            Long linkedEntityId
+    ) {
+        return projectDocumentWorkflowService.getProjectDocuments(
+                projectId,
+                documentCategory,
+                linkedEntityType,
+                linkedEntityId
+        );
+    }
+
+    public ProjectDocumentDTO createProjectDocument(
+            Long projectId,
+            ProjectDocumentCreateRequest request
+    ) {
+        return projectDocumentWorkflowService.createProjectDocument(projectId, request);
     }
 
     public void deleteProjectDocument(Long projectId, Long documentId) {
-        documentWorkflowService.deleteProjectDocument(projectId, documentId);
+        projectDocumentWorkflowService.deleteProjectDocument(projectId, documentId);
     }
 
     @Transactional(readOnly = true)
     public List<ProjectReminderDTO> getProjectReminders(Long projectId) {
-        return documentWorkflowService.getProjectReminders(projectId);
+        return projectReminderWorkflowService.getProjectReminders(projectId);
     }
 
-    public ProjectReminderDTO createProjectReminder(Long projectId, ProjectReminderCreateRequest request) {
-        return documentWorkflowService.createProjectReminder(projectId, request);
+    public ProjectReminderDTO createProjectReminder(
+            Long projectId,
+            ProjectReminderCreateRequest request
+    ) {
+        return projectReminderWorkflowService.createProjectReminder(projectId, request);
     }
 
     @Transactional(readOnly = true)
     public List<ProjectShareLinkDTO> getProjectShareLinks(Long projectId) {
-        return documentWorkflowService.getProjectShareLinks(projectId);
+        return projectShareLinkWorkflowService.getProjectShareLinks(projectId);
     }
 
-    public ProjectShareLinkDTO createProjectShareLink(Long projectId, ProjectShareLinkCreateRequest request) {
-        return documentWorkflowService.createProjectShareLink(projectId, request);
+    public ProjectShareLinkDTO createProjectShareLink(
+            Long projectId,
+            ProjectShareLinkCreateRequest request
+    ) {
+        return projectShareLinkWorkflowService.createProjectShareLink(projectId, request);
     }
 
     @Transactional(readOnly = true)
     public List<ProjectScoreDraftDTO> getProjectScoreDrafts(Long projectId) {
-        return scoreDraftWorkflowService.getProjectScoreDrafts(projectId);
+        return projectScoreDraftWorkflowService.getProjectScoreDrafts(projectId);
     }
 
-    public ProjectScoreDraftParseResponse parseProjectScoreDrafts(Long projectId, MultipartFile file) {
-        return scoreDraftWorkflowService.parseProjectScoreDrafts(projectId, file);
+    public ProjectScoreDraftParseResponse parseProjectScoreDrafts(
+            Long projectId,
+            MultipartFile file
+    ) {
+        return projectScoreDraftWorkflowService.parseProjectScoreDrafts(projectId, file);
     }
 
-    public ProjectScoreDraftDTO updateProjectScoreDraft(Long projectId, Long draftId, ProjectScoreDraftUpdateRequest request) {
-        return scoreDraftWorkflowService.updateProjectScoreDraft(projectId, draftId, request);
+    public ProjectScoreDraftDTO updateProjectScoreDraft(
+            Long projectId,
+            Long draftId,
+            ProjectScoreDraftUpdateRequest request
+    ) {
+        return projectScoreDraftWorkflowService.updateProjectScoreDraft(projectId, draftId, request);
     }
 
-    public List<ProjectTaskViewDTO> generateTasksFromScoreDrafts(Long projectId, ProjectScoreDraftGenerateRequest request) {
-        return scoreDraftWorkflowService.generateTasksFromScoreDrafts(projectId, request);
+    public List<ProjectTaskViewDTO> generateTasksFromScoreDrafts(
+            Long projectId,
+            ProjectScoreDraftGenerateRequest request
+    ) {
+        return projectScoreDraftWorkflowService.generateTasksFromScoreDrafts(projectId, request);
     }
 
     public void clearNonGeneratedDrafts(Long projectId) {
-        scoreDraftWorkflowService.clearNonGeneratedDrafts(projectId);
+        projectScoreDraftWorkflowService.clearNonGeneratedDrafts(projectId);
     }
 }

@@ -8,9 +8,26 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.exception.ResourceNotFoundException;
-import com.xiyu.bid.resources.dto.*;
-import com.xiyu.bid.resources.entity.*;
-import com.xiyu.bid.resources.repository.*;
+import com.xiyu.bid.resources.dto.BarAssetResponseDTO;
+import com.xiyu.bid.resources.dto.BarSiteAccountDTO;
+import com.xiyu.bid.resources.dto.BarSiteAccountRequest;
+import com.xiyu.bid.resources.dto.BarSiteAttachmentCreateRequest;
+import com.xiyu.bid.resources.dto.BarSiteAttachmentDTO;
+import com.xiyu.bid.resources.dto.BarSiteSopRequest;
+import com.xiyu.bid.resources.dto.BarSiteStatusUpdateRequest;
+import com.xiyu.bid.resources.dto.BarSiteVerificationDTO;
+import com.xiyu.bid.resources.dto.BarSiteVerificationRequest;
+import com.xiyu.bid.resources.dto.ResourceResponseMapper;
+import com.xiyu.bid.resources.entity.BarAsset;
+import com.xiyu.bid.resources.entity.BarSiteAccount;
+import com.xiyu.bid.resources.entity.BarSiteAttachment;
+import com.xiyu.bid.resources.entity.BarSiteSop;
+import com.xiyu.bid.resources.entity.BarSiteVerification;
+import com.xiyu.bid.resources.repository.BarAssetRepository;
+import com.xiyu.bid.resources.repository.BarSiteAccountRepository;
+import com.xiyu.bid.resources.repository.BarSiteAttachmentRepository;
+import com.xiyu.bid.resources.repository.BarSiteSopRepository;
+import com.xiyu.bid.resources.repository.BarSiteVerificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,15 +47,17 @@ public class BarSiteSubresourceService {
     private final BarSiteVerificationRepository barSiteVerificationRepository;
     private final ObjectMapper objectMapper;
 
-    public List<BarSiteAccount> getAccounts(Long assetId) {
+    public List<BarSiteAccountDTO> getAccounts(Long assetId) {
         ensureAssetExists(assetId);
-        return barSiteAccountRepository.findByBarAssetIdOrderByCreatedAtAsc(assetId);
+        return barSiteAccountRepository.findByBarAssetIdOrderByCreatedAtAsc(assetId).stream()
+                .map(ResourceResponseMapper::toDto)
+                .toList();
     }
 
     @Transactional
-    public BarSiteAccount createAccount(Long assetId, BarSiteAccountRequest request) {
+    public BarSiteAccountDTO createAccount(Long assetId, BarSiteAccountRequest request) {
         ensureAssetExists(assetId);
-        return barSiteAccountRepository.save(BarSiteAccount.builder()
+        return ResourceResponseMapper.toDto(barSiteAccountRepository.save(BarSiteAccount.builder()
                 .barAssetId(assetId)
                 .username(request.getUsername())
                 .role(request.getRole())
@@ -46,11 +65,11 @@ public class BarSiteSubresourceService {
                 .phone(request.getPhone())
                 .email(request.getEmail())
                 .status(normalizeAccountStatus(request.getStatus()))
-                .build());
+                .build()));
     }
 
     @Transactional
-    public BarSiteAccount updateAccount(Long assetId, Long accountId, BarSiteAccountRequest request) {
+    public BarSiteAccountDTO updateAccount(Long assetId, Long accountId, BarSiteAccountRequest request) {
         BarSiteAccount account = getAccount(assetId, accountId);
         account.setUsername(request.getUsername());
         account.setRole(request.getRole());
@@ -58,7 +77,7 @@ public class BarSiteSubresourceService {
         account.setPhone(request.getPhone());
         account.setEmail(request.getEmail());
         account.setStatus(normalizeAccountStatus(request.getStatus()));
-        return barSiteAccountRepository.save(account);
+        return ResourceResponseMapper.toDto(barSiteAccountRepository.save(account));
     }
 
     @Transactional
@@ -67,30 +86,32 @@ public class BarSiteSubresourceService {
     }
 
     @Transactional
-    public BarAsset updateStatus(Long assetId, BarSiteStatusUpdateRequest request) {
+    public BarAssetResponseDTO updateStatus(Long assetId, BarSiteStatusUpdateRequest request) {
         BarAsset asset = getAsset(assetId);
         asset.setStatus(parseAssetStatus(request.getStatus()));
-        return barAssetRepository.save(asset);
+        return ResourceResponseMapper.toDto(barAssetRepository.save(asset));
     }
 
     @Transactional
-    public BarSiteVerification verify(Long assetId, BarSiteVerificationRequest request) {
+    public BarSiteVerificationDTO verify(Long assetId, BarSiteVerificationRequest request) {
         ensureAssetExists(assetId);
         String verifiedBy = isBlank(request.getVerifiedBy()) ? "system" : request.getVerifiedBy().trim();
         String status = isBlank(request.getStatus()) ? "SUCCESS" : request.getStatus().trim().toUpperCase();
         String message = isBlank(request.getMessage()) ? "站点连通性校验通过" : request.getMessage().trim();
-        return barSiteVerificationRepository.save(BarSiteVerification.builder()
+        return ResourceResponseMapper.toDto(barSiteVerificationRepository.save(BarSiteVerification.builder()
                 .barAssetId(assetId)
                 .verifiedBy(verifiedBy)
                 .status(status)
                 .message(message)
                 .verifiedAt(LocalDateTime.now())
-                .build());
+                .build()));
     }
 
-    public List<BarSiteVerification> getVerificationRecords(Long assetId) {
+    public List<BarSiteVerificationDTO> getVerificationRecords(Long assetId) {
         ensureAssetExists(assetId);
-        return barSiteVerificationRepository.findByBarAssetIdOrderByVerifiedAtDesc(assetId);
+        return barSiteVerificationRepository.findByBarAssetIdOrderByVerifiedAtDesc(assetId).stream()
+                .map(ResourceResponseMapper::toDto)
+                .toList();
     }
 
     public BarSiteSopRequest getSop(Long assetId) {
@@ -116,15 +137,17 @@ public class BarSiteSubresourceService {
         return toSopRequest(saved);
     }
 
-    public List<BarSiteAttachment> getAttachments(Long assetId) {
+    public List<BarSiteAttachmentDTO> getAttachments(Long assetId) {
         ensureAssetExists(assetId);
-        return barSiteAttachmentRepository.findByBarAssetIdOrderByUploadedAtDesc(assetId);
+        return barSiteAttachmentRepository.findByBarAssetIdOrderByUploadedAtDesc(assetId).stream()
+                .map(ResourceResponseMapper::toDto)
+                .toList();
     }
 
     @Transactional
-    public BarSiteAttachment createAttachment(Long assetId, BarSiteAttachmentCreateRequest request) {
+    public BarSiteAttachmentDTO createAttachment(Long assetId, BarSiteAttachmentCreateRequest request) {
         ensureAssetExists(assetId);
-        return barSiteAttachmentRepository.save(BarSiteAttachment.builder()
+        return ResourceResponseMapper.toDto(barSiteAttachmentRepository.save(BarSiteAttachment.builder()
                 .barAssetId(assetId)
                 .name(request.getName())
                 .size(request.getSize())
@@ -132,7 +155,7 @@ public class BarSiteSubresourceService {
                 .url(request.getUrl())
                 .uploadedBy(isBlank(request.getUploadedBy()) ? "system" : request.getUploadedBy().trim())
                 .uploadedAt(LocalDateTime.now())
-                .build());
+                .build()));
     }
 
     @Transactional

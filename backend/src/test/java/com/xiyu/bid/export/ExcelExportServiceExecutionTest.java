@@ -1,0 +1,188 @@
+package com.xiyu.bid.export;
+
+import com.xiyu.bid.audit.service.AuditLogService;
+import com.xiyu.bid.entity.Case;
+import com.xiyu.bid.entity.Project;
+import com.xiyu.bid.entity.Qualification;
+import com.xiyu.bid.entity.Template;
+import com.xiyu.bid.entity.Tender;
+import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+
+import java.math.BigDecimal;
+import java.nio.file.Path;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class ExcelExportServiceExecutionTest extends AbstractExcelExportServiceTest {
+
+    @Test
+    void exportToExcel_WithTendersType_ShouldExportTenders() throws Exception {
+        Page<Tender> page = new PageImpl<>(List.of(testTender), PageRequest.of(0, 1000), 1);
+        when(tenderRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(page)
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(1, 1000), 1));
+        Path outputPath = Path.of("/tmp/test_tenders.xlsx");
+
+        long fileSize = excelExportService.exportToExcel("tenders", outputPath, null, 1L);
+
+        assertThat(fileSize).isGreaterThan(0);
+        verify(tenderRepository, atLeastOnce()).findAll(any(org.springframework.data.domain.Pageable.class));
+        deleteIfExists(outputPath);
+    }
+
+    @Test
+    void exportToExcel_WithProjectsType_ShouldExportProjects() throws Exception {
+        Page<Project> page = new PageImpl<>(List.of(testProject), PageRequest.of(0, 1000), 1);
+        when(projectRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(page)
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(1, 1000), 1));
+        Path outputPath = Path.of("/tmp/test_projects.xlsx");
+
+        long fileSize = excelExportService.exportToExcel("projects", outputPath, null, 1L);
+
+        assertThat(fileSize).isGreaterThan(0);
+        verify(projectRepository, atLeastOnce()).findAll(any(org.springframework.data.domain.Pageable.class));
+        deleteIfExists(outputPath);
+    }
+
+    @Test
+    void exportToExcel_WithQualificationsType_ShouldExportQualifications() throws Exception {
+        Page<Qualification> page = new PageImpl<>(List.of(testQualification), PageRequest.of(0, 1000), 1);
+        when(qualificationRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(page)
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(1, 1000), 1));
+        Path outputPath = Path.of("/tmp/test_qualifications.xlsx");
+
+        long fileSize = excelExportService.exportToExcel("qualifications", outputPath, null, 1L);
+
+        assertThat(fileSize).isGreaterThan(0);
+        verify(qualificationRepository, atLeastOnce()).findAll(any(org.springframework.data.domain.Pageable.class));
+        deleteIfExists(outputPath);
+    }
+
+    @Test
+    void exportToExcel_WithCasesType_ShouldExportCases() throws Exception {
+        Page<Case> page = new PageImpl<>(List.of(testCase), PageRequest.of(0, 1000), 1);
+        when(caseRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(page)
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(1, 1000), 1));
+        Path outputPath = Path.of("/tmp/test_cases.xlsx");
+
+        long fileSize = excelExportService.exportToExcel("cases", outputPath, null, 1L);
+
+        assertThat(fileSize).isGreaterThan(0);
+        verify(caseRepository, atLeastOnce()).findAll(any(org.springframework.data.domain.Pageable.class));
+        deleteIfExists(outputPath);
+    }
+
+    @Test
+    void exportToExcel_WithTemplatesType_ShouldExportTemplates() throws Exception {
+        Page<Template> page = new PageImpl<>(List.of(testTemplate), PageRequest.of(0, 1000), 1);
+        when(templateRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(page)
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(1, 1000), 1));
+        Path outputPath = Path.of("/tmp/test_templates.xlsx");
+
+        long fileSize = excelExportService.exportToExcel("templates", outputPath, null, 1L);
+
+        assertThat(fileSize).isGreaterThan(0);
+        verify(templateRepository, atLeastOnce()).findAll(any(org.springframework.data.domain.Pageable.class));
+        deleteIfExists(outputPath);
+    }
+
+    @Test
+    void exportToExcel_WithEmptyList_ShouldCreateEmptyExcelWithHeaders() throws Exception {
+        Page<Tender> emptyPage = new PageImpl<>(List.of(), PageRequest.of(0, 1000), 0);
+        when(tenderRepository.findAll(any(org.springframework.data.domain.Pageable.class))).thenReturn(emptyPage);
+        Path outputPath = Path.of("/tmp/test_empty_tenders.xlsx");
+
+        long fileSize = excelExportService.exportToExcel("tenders", outputPath, null, 1L);
+
+        assertThat(fileSize).isGreaterThan(0);
+        verify(tenderRepository).findAll(any(org.springframework.data.domain.Pageable.class));
+        deleteIfExists(outputPath);
+    }
+
+    @Test
+    void exportToExcel_WithInvalidType_ShouldThrowException() {
+        assertThatThrownBy(() -> excelExportService.exportToExcel("invalid_type", Path.of("/tmp/test_invalid.xlsx"), null, 1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unsupported export type");
+    }
+
+    @Test
+    void exportToExcel_WithNullType_ShouldThrowException() {
+        assertThatThrownBy(() -> excelExportService.exportToExcel(null, Path.of("/tmp/test_null.xlsx"), null, 1L))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void exportToExcel_WithPathTraversal_ShouldThrowException() {
+        assertThatThrownBy(() -> excelExportService.exportToExcel("tenders", Path.of("/tmp/test/../etc/passwd"), null, 1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("path traversal");
+    }
+
+    @Test
+    void exportToExcel_WithRecordLimit_ShouldEnforceLimit() throws Exception {
+        List<Tender> largeList = java.util.stream.IntStream.range(0, 20001)
+                .mapToObj(i -> Tender.builder()
+                        .id((long) i)
+                        .title("标讯 " + i)
+                        .source("测试来源")
+                        .budget(new BigDecimal("1000000.00"))
+                        .status(Tender.Status.PENDING)
+                        .build())
+                .toList();
+        when(tenderRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                .thenAnswer(invocation -> {
+                    org.springframework.data.domain.Pageable pageable = invocation.getArgument(0);
+                    int start = (int) pageable.getOffset();
+                    int end = Math.min(start + pageable.getPageSize(), largeList.size());
+                    return new PageImpl<>(largeList.subList(start, end), pageable, largeList.size());
+                });
+        Path outputPath = Path.of("/tmp/test_large_tenders.xlsx");
+
+        long fileSize = excelExportService.exportToExcel("tenders", outputPath, null, 1L);
+
+        assertThat(fileSize).isGreaterThan(0);
+        deleteIfExists(outputPath);
+    }
+
+    @Test
+    void exportToExcel_ShouldLogAuditEntry() throws Exception {
+        Page<Tender> page = new PageImpl<>(List.of(testTender), PageRequest.of(0, 1000), 1);
+        when(tenderRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(page)
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(1, 1000), 1));
+        Path outputPath = Path.of("/tmp/test_audit_tenders.xlsx");
+
+        excelExportService.exportToExcel("tenders", outputPath, null, 1L);
+
+        verify(auditLogService).log(any(AuditLogService.AuditLogEntry.class));
+        deleteIfExists(outputPath);
+    }
+
+    @Test
+    void exportToExcel_LegacyMethod_ShouldStillWork() throws Exception {
+        Page<Tender> page = new PageImpl<>(List.of(testTender), PageRequest.of(0, 1000), 1);
+        when(tenderRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(page)
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(1, 1000), 1));
+        Path outputPath = Path.of("/tmp/test_legacy_tenders.xlsx");
+
+        long fileSize = excelExportService.exportToExcel("tenders", outputPath, null);
+
+        assertThat(fileSize).isGreaterThan(0);
+        deleteIfExists(outputPath);
+    }
+}

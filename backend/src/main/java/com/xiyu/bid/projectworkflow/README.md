@@ -9,12 +9,12 @@
 | 文件 | 地位 | 功能 |
 |------|------|------|
 | `controller/ProjectWorkflowController.java` | Controller | 项目流程接口 |
+| `controller/ProjectDocumentController.java` | Controller | 项目文档接口，承接结果附件查询/创建/删除 |
 | `core/ScoreDraftPolicy.java` | Core | 评分草稿更新与任务生成的纯规则，返回显式决策和值对象，不直接做 I/O |
-| `service/ProjectWorkflowService.java` | Service | 兼容现有接口的 facade |
-| `service/ProjectTaskWorkflowService.java` | Service | 项目任务工作流 |
-| `service/ProjectDocumentWorkflowService.java` | Service | 项目文档、提醒与分享链接工作流 |
-| `service/ProjectScoreDraftWorkflowService.java` | Service | 评分草稿解析、更新与生成任务工作流 |
-| `service/ProjectWorkflowGuard.java` | Service | 项目访问与归属校验收口 |
+| `service/ProjectWorkflowService.java` | Service | 项目流程编排；调用 `ScoreDraftPolicy` 形成无 I/O 决策，再由事务外壳保存 |
+| `service/ProjectDocumentWorkflowService.java` | Service | 项目文档查询/创建/删除编排，调用文档绑定边界 |
+| `service/ProjectDocumentViewAssembler.java` | Assembler | 项目文档实体到 DTO 的装配 |
+| `service/ProjectDocumentBindingGateway.java` | Port | 项目文档与外部附件业务的可替换集成边界 |
 | `service/ScoreDraftParserService.java` | Service | 评分草稿解析 |
 | `entity/ProjectDocument.java` | Entity | 项目文档实体 |
 | `entity/ProjectReminder.java` | Entity | 项目提醒实体 |

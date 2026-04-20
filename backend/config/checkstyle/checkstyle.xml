@@ -18,6 +18,8 @@
     <module name="TreeWalker">
         <module name="AvoidStarImport"/>
         <module name="OneTopLevelClass"/>
+        <module name="UnusedImports"/>
+        <module name="RedundantImport"/>
         <module name="IllegalCatch">
             <property name="illegalClassNames" value="Exception,Throwable"/>
         </module>

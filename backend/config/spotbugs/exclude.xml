@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!--
+      Keep this file intentionally small.
+      SpotBugs is our real-risk blocker for the protected scope, so suppressions
+      should be rare, justified, and removed once the underlying code is fixed.
+    -->
+</FindBugsFilter>

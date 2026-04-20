@@ -1,44 +1,39 @@
-// Input: project/task/user repositories and access scope service
-// Output: project task workflow orchestration
-// Pos: Service/业务层
-// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.projectworkflow.service;
 
 import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.entity.User;
-import com.xiyu.bid.exception.ResourceNotFoundException;
 import com.xiyu.bid.projectworkflow.dto.ProjectTaskCreateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectTaskStatusUpdateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectTaskViewDTO;
+import com.xiyu.bid.projectworkflow.entity.ProjectScoreDraft;
 import com.xiyu.bid.repository.TaskRepository;
 import com.xiyu.bid.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
-public class ProjectTaskWorkflowService {
+class ProjectTaskWorkflowService {
 
     private static final DateTimeFormatter DISPLAY_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.CHINA);
 
-    private final ProjectWorkflowGuard projectWorkflowGuard;
+    private final ProjectWorkflowGuardService guardService;
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
 
-    public List<ProjectTaskViewDTO> getProjectTasks(Long projectId) {
-        requireProject(projectId);
+    List<ProjectTaskViewDTO> getProjectTasks(Long projectId) {
+        guardService.requireProject(projectId);
         return taskRepository.findByProjectId(projectId).stream()
                 .map(this::toTaskView)
                 .toList();
     }
 
-    public ProjectTaskViewDTO createProjectTask(Long projectId, ProjectTaskCreateRequest request) {
-        requireProject(projectId);
+    ProjectTaskViewDTO createProjectTask(Long projectId, ProjectTaskCreateRequest request) {
+        guardService.requireProject(projectId);
         User assigneeUser = resolveAssignee(request.getAssigneeId());
         Task task = Task.builder()
                 .projectId(projectId)
@@ -49,50 +44,35 @@ public class ProjectTaskWorkflowService {
                 .assigneeDeptName(assigneeUser != null ? assigneeUser.getDepartmentName() : defaultString(trimToNull(request.getAssigneeDeptName()), "未配置部门"))
                 .assigneeRoleCode(assigneeUser != null ? assigneeUser.getRoleCode() : trimToNull(request.getAssigneeRoleCode()))
                 .assigneeRoleName(assigneeUser != null ? assigneeUser.getRoleName() : trimToNull(request.getAssigneeRoleName()))
-                .priority(request.getPriority())
+                .priority(toEntityPriority(request.getPriority()))
                 .status(Task.Status.TODO)
                 .dueDate(request.getDueDate())
                 .build();
         return toTaskView(taskRepository.save(task), request.getAssigneeName());
     }
 
-    public ProjectTaskViewDTO updateProjectTaskStatus(Long projectId, Long taskId, ProjectTaskStatusUpdateRequest request) {
-        requireProject(projectId);
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new ResourceNotFoundException("Task", String.valueOf(taskId)));
-        if (!projectId.equals(task.getProjectId())) {
-            throw new IllegalArgumentException("Task does not belong to the specified project");
-        }
-        task.setStatus(request.getStatus());
+    ProjectTaskViewDTO updateProjectTaskStatus(Long projectId, Long taskId, ProjectTaskStatusUpdateRequest request) {
+        guardService.requireProject(projectId);
+        Task task = guardService.requireTask(projectId, taskId);
+        task.setStatus(toEntityStatus(request.getStatus()));
         return toTaskView(taskRepository.save(task));
     }
 
-    public ProjectTaskViewDTO createTaskFromDraft(
-            Long projectId,
-            String generatedTaskTitle,
-            String generatedTaskDescription,
-            Long assigneeId,
-            String assigneeName,
-            String scoreValueText,
-            LocalDateTime dueDate
-    ) {
+    ProjectTaskViewDTO createTaskFromDraft(ProjectScoreDraft draft) {
         Task task = Task.builder()
-                .projectId(projectId)
-                .title(generatedTaskTitle)
-                .description(generatedTaskDescription)
-                .assigneeId(assigneeId)
-                .priority(resolvePriority(scoreValueText))
+                .projectId(draft.getProjectId())
+                .title(draft.getGeneratedTaskTitle())
+                .description(draft.getGeneratedTaskDescription())
+                .assigneeId(draft.getAssigneeId())
+                .priority(resolvePriority(draft.getScoreValueText()))
                 .status(Task.Status.TODO)
-                .dueDate(dueDate)
+                .dueDate(draft.getDueDate())
                 .build();
-        return toTaskView(taskRepository.save(task), assigneeName);
+        Task saved = taskRepository.save(task);
+        return toTaskView(saved, draft.getAssigneeName());
     }
 
-    private void requireProject(Long projectId) {
-        projectWorkflowGuard.requireProject(projectId);
-    }
-
-    private ProjectTaskViewDTO toTaskView(Task task) {
+    ProjectTaskViewDTO toTaskView(Task task) {
         return toTaskView(task, null);
     }
 
@@ -182,5 +162,19 @@ public class ProjectTaskWorkflowService {
     private String defaultString(String value, String fallback) {
         String normalized = trimToNull(value);
         return normalized != null ? normalized : fallback;
+    }
+
+    private Task.Priority toEntityPriority(ProjectTaskCreateRequest.Priority priority) {
+        if (priority == null) {
+            return null;
+        }
+        return Task.Priority.valueOf(priority.name());
+    }
+
+    private Task.Status toEntityStatus(ProjectTaskStatusUpdateRequest.Status status) {
+        if (status == null) {
+            return null;
+        }
+        return Task.Status.valueOf(status.name());
     }
 }

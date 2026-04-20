@@ -1,17 +1,14 @@
 package com.xiyu.bid.testing;
 
 import com.xiyu.bid.audit.service.IAuditLogService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.sql.Timestamp;
-import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-import java.util.Set;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -34,82 +31,22 @@ import java.util.function.Function;
  * </pre>
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class ShadowInspector {
 
-    private static final Map<String, String> AUDIT_ENTITY_TYPE_MAP = new HashMap<>();
+    private final JdbcTemplate jdbcTemplate;
 
-    static {
-        AUDIT_ENTITY_TYPE_MAP.put("collaboration_threads", "CollaborationThread");
-        AUDIT_ENTITY_TYPE_MAP.put("comments", "Comment");
-        AUDIT_ENTITY_TYPE_MAP.put("projects", "Project");
-        AUDIT_ENTITY_TYPE_MAP.put("tasks", "Task");
-        AUDIT_ENTITY_TYPE_MAP.put("tenders", "Tender");
-        AUDIT_ENTITY_TYPE_MAP.put("qualifications", "Qualification");
-        AUDIT_ENTITY_TYPE_MAP.put("cases", "Case");
-        AUDIT_ENTITY_TYPE_MAP.put("templates", "Template");
-        AUDIT_ENTITY_TYPE_MAP.put("fees", "Fee");
-        AUDIT_ENTITY_TYPE_MAP.put("platform_accounts", "PlatformAccount");
-        AUDIT_ENTITY_TYPE_MAP.put("bar_assets", "BarAsset");
-        AUDIT_ENTITY_TYPE_MAP.put("calendar_events", "CalendarEvent");
-        AUDIT_ENTITY_TYPE_MAP.put("competitors", "Competitor");
-        AUDIT_ENTITY_TYPE_MAP.put("competition_analyses", "CompetitionAnalysis");
-        AUDIT_ENTITY_TYPE_MAP.put("score_analyses", "ScoreAnalysis");
-        AUDIT_ENTITY_TYPE_MAP.put("roi_analyses", "ROIAnalysis");
-        AUDIT_ENTITY_TYPE_MAP.put("document_versions", "DocumentVersion");
-        AUDIT_ENTITY_TYPE_MAP.put("document_sections", "DocumentSection");
-        AUDIT_ENTITY_TYPE_MAP.put("document_structures", "DocumentStructure");
-        AUDIT_ENTITY_TYPE_MAP.put("document_assemblies", "DocumentAssembly");
+    @Autowired
+    public ShadowInspector(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
 
-    private final JdbcTemplate jdbcTemplate;
-    private final IAuditLogService auditLogService;
-
     /**
-     * 允许的表名白名单 - 防止SQL注入
+     * 保留旧测试代码的双参构造入口，避免拆分类带来调用面回归。
      */
-    private static final Set<String> ALLOWED_TABLES = Set.of(
-        "collaboration_threads",
-        "comments",
-        "projects",
-        "tasks",
-        "tenders",
-        "qualifications",
-        "cases",
-        "templates",
-        "fees",
-        "platform_accounts",
-        "bar_assets",
-        "compliance_check_results",
-        "alert_rules",
-        "alert_history",
-        "calendar_events",
-        "competitors",
-        "competition_analyses",
-        "score_analyses",
-        "dimension_scores",
-        "roi_analyses",
-        "document_versions",
-        "document_sections",
-        "document_structures",
-        "assembly_templates",
-        "document_assemblies",
-        "audit_logs"
-    );
-
-    /**
-     * 验证表名是否在白名单中
-     *
-     * @param tableName 表名
-     * @throws IllegalArgumentException 如果表名不在白名单中
-     */
-    private void validateTable(String tableName) {
-        if (!ALLOWED_TABLES.contains(tableName)) {
-            throw new IllegalArgumentException(
-                "Table not allowed: " + tableName + ". This table is not in the allowed list."
-            );
-        }
+    @Deprecated(forRemoval = false)
+    public ShadowInspector(JdbcTemplate jdbcTemplate, IAuditLogService ignoredAuditLogService) {
+        this(jdbcTemplate);
     }
 
     /**
@@ -131,8 +68,8 @@ public class ShadowInspector {
         log.debug("Shadow Inspector: verifying invariant for {}::{}", tableName, entityId);
 
         // Layer 1: 数据库验证
-        T dbValue = queryDatabase(tableName, entityId, dbExtractor);
-        if (!equals(dbValue, expectedValue)) {
+        T dbValue = ShadowInspectorJdbcSupport.queryDatabase(jdbcTemplate, tableName, entityId, dbExtractor);
+        if (!Objects.equals(dbValue, expectedValue)) {
             throw new AssertionError(
                 String.format("DB Layer mismatch: %s::%s.%s = %s, expected %s",
                     tableName, entityId, columnName, dbValue, expectedValue));
@@ -146,7 +83,7 @@ public class ShadowInspector {
      * 验证实体存在性
      */
     public void verifyExists(String tableName, Long entityId) {
-        validateTable(tableName);
+        ShadowInspectorSchemaRegistry.validateTable(tableName);
         String sql = String.format("SELECT COUNT(*) FROM %s WHERE id = ?", tableName);
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, entityId);
 
@@ -160,7 +97,7 @@ public class ShadowInspector {
      * 验证实体不存在（删除后）
      */
     public void verifyNotExists(String tableName, Long entityId) {
-        validateTable(tableName);
+        ShadowInspectorSchemaRegistry.validateTable(tableName);
         String sql = String.format("SELECT COUNT(*) FROM %s WHERE id = ?", tableName);
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, entityId);
 
@@ -174,9 +111,9 @@ public class ShadowInspector {
      * 验证审计日志存在
      */
     public void verifyAuditLog(String entityType, Long entityId) {
-        String auditEntityType = resolveAuditEntityType(entityType);
+        String auditEntityType = ShadowInspectorSchemaRegistry.resolveAuditEntityType(entityType);
         String sql = "SELECT COUNT(*) FROM audit_logs WHERE entity_type = ? AND entity_id = ?";
-        Integer count = waitForAuditCount(sql, auditEntityType, String.valueOf(entityId));
+        Integer count = ShadowInspectorJdbcSupport.waitForAuditCount(jdbcTemplate, sql, auditEntityType, String.valueOf(entityId));
 
         if (count == null || count == 0) {
             throw new AssertionError(
@@ -188,9 +125,9 @@ public class ShadowInspector {
      * 验证审计日志操作类型
      */
     public void verifyAuditAction(String entityType, Long entityId, String action) {
-        String auditEntityType = resolveAuditEntityType(entityType);
+        String auditEntityType = ShadowInspectorSchemaRegistry.resolveAuditEntityType(entityType);
         String sql = "SELECT COUNT(*) FROM audit_logs WHERE entity_type = ? AND entity_id = ? AND action = ?";
-        Integer count = waitForAuditCount(sql, auditEntityType, String.valueOf(entityId), action);
+        Integer count = ShadowInspectorJdbcSupport.waitForAuditCount(jdbcTemplate, sql, auditEntityType, String.valueOf(entityId), action);
 
         if (count == null || count == 0) {
             throw new AssertionError(
@@ -203,12 +140,12 @@ public class ShadowInspector {
      * created_at 和 updated_at 应该符合预期
      */
     public void verifyTimestamps(String tableName, Long entityId, boolean shouldBeUpdated) {
-        validateTable(tableName);
+        ShadowInspectorSchemaRegistry.validateTable(tableName);
         String sql = String.format("SELECT created_at, updated_at FROM %s WHERE id = ?", tableName);
         Map<String, Object> result = jdbcTemplate.queryForMap(sql, entityId);
 
-        LocalDateTime createdAt = toLocalDateTime(result.get("created_at"));
-        LocalDateTime updatedAt = toLocalDateTime(result.get("updated_at"));
+        LocalDateTime createdAt = ShadowInspectorJdbcSupport.toLocalDateTime(result.get("created_at"));
+        LocalDateTime updatedAt = ShadowInspectorJdbcSupport.toLocalDateTime(result.get("updated_at"));
 
         if (createdAt == null) {
             throw new AssertionError(
@@ -227,7 +164,7 @@ public class ShadowInspector {
      * 验证软删除状态
      */
     public void verifySoftDeleted(String tableName, Long entityId, String deletedColumn) {
-        validateTable(tableName);
+        ShadowInspectorSchemaRegistry.validateTable(tableName);
         String sql = String.format("SELECT %s FROM %s WHERE id = ?", deletedColumn, tableName);
         Boolean isDeleted = jdbcTemplate.queryForObject(sql, Boolean.class, entityId);
 
@@ -248,7 +185,7 @@ public class ShadowInspector {
             String fromStatus,
             String toStatus) {
 
-        validateTable(tableName);
+        ShadowInspectorSchemaRegistry.validateTable(tableName);
         String sql = String.format("SELECT %s FROM %s WHERE id = ?", statusColumn, tableName);
         String currentStatus = jdbcTemplate.queryForObject(sql, String.class, entityId);
 
@@ -259,63 +196,6 @@ public class ShadowInspector {
         }
 
         log.debug("State transition verified: {} -> {} for {}::{}", fromStatus, toStatus, tableName, entityId);
-    }
-
-    /**
-     * 查询数据库
-     */
-    private <T> T queryDatabase(
-            String tableName,
-            Long entityId,
-            Function<Map<String, Object>, T> extractor) {
-
-        String sql = String.format("SELECT * FROM %s WHERE id = ?", tableName);
-        Map<String, Object> result = jdbcTemplate.queryForMap(sql, entityId);
-
-        return extractor.apply(result);
-    }
-
-    /**
-     * 安全比较
-     */
-    private boolean equals(Object a, Object b) {
-        if (a == null && b == null) return true;
-        if (a == null || b == null) return false;
-        return a.equals(b);
-    }
-
-    private String resolveAuditEntityType(String entityTypeOrTableName) {
-        return AUDIT_ENTITY_TYPE_MAP.getOrDefault(entityTypeOrTableName, entityTypeOrTableName);
-    }
-
-    private Integer waitForAuditCount(String sql, Object... args) {
-        Integer count = 0;
-        for (int i = 0; i < 20; i++) {
-            count = jdbcTemplate.queryForObject(sql, Integer.class, args);
-            if (count != null && count > 0) {
-                return count;
-            }
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-        }
-        return count;
-    }
-
-    private LocalDateTime toLocalDateTime(Object value) {
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof LocalDateTime localDateTime) {
-            return localDateTime;
-        }
-        if (value instanceof Timestamp timestamp) {
-            return timestamp.toLocalDateTime();
-        }
-        throw new IllegalStateException("Unsupported timestamp type: " + value.getClass().getName());
     }
 
     /**
