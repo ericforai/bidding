@@ -1,45 +1,45 @@
-package com.xiyu.bid.batch.service;
+package com.xiyu.bid.batch.core;
 
 import com.xiyu.bid.entity.User;
-import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.service.ProjectAccessScopeService;
 import com.xiyu.bid.task.dto.TaskAssignmentRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Service
-@RequiredArgsConstructor
-class BatchAssignmentPolicy {
+/**
+ * 任务批量分配规则
+ */
+@Component
+public class BatchAssignmentPolicy {
 
-    private final UserRepository userRepository;
     private final ProjectAccessScopeService projectAccessScopeService;
 
-    AssignmentSnapshot resolveAssignment(TaskAssignmentRequest request, User currentUser) {
+    public BatchAssignmentPolicy(ProjectAccessScopeService projectAccessScopeService) {
+        this.projectAccessScopeService = projectAccessScopeService;
+    }
+
+    public BatchAssignmentSnapshot resolveDepartmentAssignment(TaskAssignmentRequest request, User currentUser) {
         if (request == null || !request.hasAssignmentTarget()) {
             throw new IllegalArgumentException("Assignment target cannot be empty");
         }
-
-        if (request.getAssigneeId() != null) {
-            User assignee = userRepository.findById(request.getAssigneeId())
-                    .orElseThrow(() -> new IllegalArgumentException("Assignee not found"));
-            if (!Boolean.TRUE.equals(assignee.getEnabled())) {
-                throw new IllegalArgumentException("目标责任人已停用，无法分配");
-            }
-            assertDeptAccess(currentUser, assignee.getDepartmentCode(), Boolean.TRUE.equals(request.getAllowCrossDeptCollaboration()));
-            return AssignmentSnapshot.fromUser(assignee);
-        }
-
         assertDeptAccess(currentUser, request.getAssigneeDeptCode(), Boolean.TRUE.equals(request.getAllowCrossDeptCollaboration()));
-        return new AssignmentSnapshot(
+        return new BatchAssignmentSnapshot(
                 null,
                 normalizeText(request.getAssigneeDeptCode()),
                 normalizeText(request.getAssigneeDeptName(), "未配置部门"),
                 normalizeText(request.getAssigneeRoleCode()),
                 normalizeText(request.getAssigneeRoleName())
         );
+    }
+
+    public BatchAssignmentSnapshot resolveUserAssignment(User assignee, User currentUser, boolean allowCrossDeptCollaboration) {
+        if (!Boolean.TRUE.equals(assignee.getEnabled())) {
+            throw new IllegalArgumentException("目标责任人已停用，无法分配");
+        }
+        assertDeptAccess(currentUser, assignee.getDepartmentCode(), allowCrossDeptCollaboration);
+        return BatchAssignmentSnapshot.fromUser(assignee);
     }
 
     private void assertDeptAccess(User currentUser, String targetDeptCode, boolean allowCrossDeptCollaboration) {
@@ -74,23 +74,5 @@ class BatchAssignmentPolicy {
             return fallback;
         }
         return value.trim();
-    }
-
-    record AssignmentSnapshot(
-            Long assigneeId,
-            String assigneeDeptCode,
-            String assigneeDeptName,
-            String assigneeRoleCode,
-            String assigneeRoleName
-    ) {
-        static AssignmentSnapshot fromUser(User user) {
-            return new AssignmentSnapshot(
-                    user.getId(),
-                    user.getDepartmentCode(),
-                    user.getDepartmentName(),
-                    user.getRoleCode(),
-                    user.getRoleName()
-            );
-        }
     }
 }

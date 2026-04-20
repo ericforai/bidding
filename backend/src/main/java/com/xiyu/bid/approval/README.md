@@ -10,8 +10,15 @@
 |------|------|------|
 | `controller/` | 子目录 | 审批 API 边界 |
 | `controller/ApprovalController.java` | Controller | 审批详情、提交、决策和统计接口 |
-| `service/` | 子目录 | 审批流编排边界 |
-| `service/ApprovalWorkflowService.java` | Service | 审批流编排和状态流转 |
+| `service/` | 子目录 | 审批应用服务边界 |
+| `service/ApprovalWorkflowService.java` | Service | 兼容现有接口的 facade |
+| `service/ApprovalCommandService.java` | Service | 审批命令编排与状态写入 |
+| `service/ApprovalQueryService.java` | Service | 审批查询与读模型组装 |
+| `service/ApprovalActionRecorder.java` | Service | 审批动作持久化收口 |
+| `service/ApprovalDetailAssembler.java` | Service | 审批详情 DTO 组装 |
+| `core/` | 子目录 | 审批纯规则内核 |
+| `core/ApprovalDecisionPolicy.java` | Core | 审批状态流转判定 |
+| `core/ApprovalPermissionPolicy.java` | Core | 审批权限边界判定 |
 | `entity/` | 子目录 | 审批领域实体边界 |
 | `entity/ApprovalRequest.java` | Entity | 审批请求聚合实体 |
 | `entity/ApprovalAction.java` | Entity | 审批动作记录实体 |

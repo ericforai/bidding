@@ -20,7 +20,7 @@ class BatchTaskAssignExecutor {
     private static final int MAX_BATCH_SIZE = 100;
 
     private final TaskRepository taskRepository;
-    private final BatchAssignmentPolicy batchAssignmentPolicy;
+    private final BatchTaskAssignmentResolver batchTaskAssignmentResolver;
     private final BatchOperationLogService batchOperationLogService;
 
     BatchOperationResponse assign(List<Long> taskIds, Long assigneeId) {
@@ -73,7 +73,8 @@ class BatchTaskAssignExecutor {
                 .allowCrossDeptCollaboration(Boolean.TRUE.equals(request.getAllowCrossDeptCollaboration()))
                 .remark(request.getRemark())
                 .build();
-        BatchAssignmentPolicy.AssignmentSnapshot assignment = batchAssignmentPolicy.resolveAssignment(assignmentRequest, currentUser);
+        BatchTaskAssignmentResolver.AssignmentSnapshot assignment =
+                batchTaskAssignmentResolver.resolveAssignment(assignmentRequest, currentUser);
 
         BatchOperationResponse response = BatchOperationResponse.builder()
                 .operationType("ASSIGN")

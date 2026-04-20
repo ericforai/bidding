@@ -1,6 +1,8 @@
 package com.xiyu.bid.batch.service;
 
 import com.xiyu.bid.audit.service.IAuditLogService;
+import com.xiyu.bid.batch.core.BatchAssignmentPolicy;
+import com.xiyu.bid.batch.core.BatchValidationPolicy;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.entity.Tender;
@@ -13,7 +15,6 @@ import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.service.ProjectAccessScopeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -35,7 +36,6 @@ abstract class AbstractBatchOperationServiceTest {
     @Mock
     protected IAuditLogService auditLogService;
 
-    @InjectMocks
     protected BatchOperationService batchOperationService;
 
     @Mock
@@ -55,6 +55,30 @@ abstract class AbstractBatchOperationServiceTest {
 
     @BeforeEach
     void setUpBatchOperationFixtures() {
+        BatchValidationPolicy validationPolicy = new BatchValidationPolicy();
+        BatchOperationLogService batchOperationLogService = new BatchOperationLogService(auditLogService);
+        BatchAssignmentPolicy batchAssignmentPolicy = new BatchAssignmentPolicy(projectAccessScopeService);
+        BatchTenderCommandService tenderCommandService =
+                new BatchTenderCommandService(tenderRepository, validationPolicy, batchOperationLogService);
+        BatchTaskCommandService taskCommandService = new BatchTaskCommandService(
+                taskRepository,
+                userRepository,
+                validationPolicy,
+                batchAssignmentPolicy,
+                batchOperationLogService
+        );
+        BatchProjectCommandService projectCommandService =
+                new BatchProjectCommandService(projectRepository, validationPolicy, batchOperationLogService);
+        BatchFeeCommandService feeCommandService =
+                new BatchFeeCommandService(feeRepository, validationPolicy, batchOperationLogService);
+        batchOperationService = new BatchOperationService(
+                tenderCommandService,
+                taskCommandService,
+                projectCommandService,
+                feeCommandService,
+                validationPolicy
+        );
+
         testTender1 = Tender.builder()
                 .id(1L)
                 .title("Test Tender 1")

@@ -12,7 +12,6 @@ import com.xiyu.bid.resources.dto.BarCertificateResponseDTO;
 import com.xiyu.bid.resources.dto.BarCertificateReturnRequest;
 import com.xiyu.bid.resources.dto.BarCertificateUpdateRequest;
 import com.xiyu.bid.resources.dto.ResourceResponseMapper;
-import com.xiyu.bid.resources.entity.BarAsset;
 import com.xiyu.bid.resources.entity.BarCertificate;
 import com.xiyu.bid.resources.entity.BarCertificateBorrowRecord;
 import com.xiyu.bid.resources.repository.BarAssetRepository;

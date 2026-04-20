@@ -15,17 +15,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class BatchAssignmentPolicyTest {
+class BatchTaskAssignmentResolverTest {
 
     private UserRepository userRepository;
     private ProjectAccessScopeService projectAccessScopeService;
-    private BatchAssignmentPolicy batchAssignmentPolicy;
+    private BatchTaskAssignmentResolver batchTaskAssignmentResolver;
 
     @BeforeEach
     void setUp() {
         userRepository = mock(UserRepository.class);
         projectAccessScopeService = mock(ProjectAccessScopeService.class);
-        batchAssignmentPolicy = new BatchAssignmentPolicy(userRepository, projectAccessScopeService);
+        batchTaskAssignmentResolver = new BatchTaskAssignmentResolver(userRepository, projectAccessScopeService);
     }
 
     @Test
@@ -39,7 +39,7 @@ class BatchAssignmentPolicyTest {
                 .build();
         when(userRepository.findById(20L)).thenReturn(Optional.of(assignee));
 
-        BatchAssignmentPolicy.AssignmentSnapshot snapshot = batchAssignmentPolicy.resolveAssignment(
+        BatchTaskAssignmentResolver.AssignmentSnapshot snapshot = batchTaskAssignmentResolver.resolveAssignment(
                 TaskAssignmentRequest.builder().assigneeId(20L).build(),
                 null
         );
@@ -53,7 +53,7 @@ class BatchAssignmentPolicyTest {
         User assignee = User.builder().id(20L).enabled(false).build();
         when(userRepository.findById(20L)).thenReturn(Optional.of(assignee));
 
-        assertThatThrownBy(() -> batchAssignmentPolicy.resolveAssignment(
+        assertThatThrownBy(() -> batchTaskAssignmentResolver.resolveAssignment(
                 TaskAssignmentRequest.builder().assigneeId(20L).build(),
                 null
         )).isInstanceOf(IllegalArgumentException.class)
@@ -69,7 +69,7 @@ class BatchAssignmentPolicyTest {
                 .build();
         when(projectAccessScopeService.getAllowedDepartmentCodes(currentUser)).thenReturn(List.of("D1"));
 
-        assertThatThrownBy(() -> batchAssignmentPolicy.resolveAssignment(
+        assertThatThrownBy(() -> batchTaskAssignmentResolver.resolveAssignment(
                 TaskAssignmentRequest.builder().assigneeDeptCode("D2").build(),
                 currentUser
         )).isInstanceOf(IllegalArgumentException.class)
