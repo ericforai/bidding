@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RELEASE_ID: ${{ github.sha }}
-      PRODUCTION_API_BASE_URL: ${{ vars.PROD_VITE_API_BASE_URL }}
+      PRODUCTION_API_BASE_URL: ${{ vars.PRODUCTION_API_BASE_URL }}
       PLATFORM_ENCRYPTION_KEY: ci-release-key-2026
     steps:
       - name: Checkout
