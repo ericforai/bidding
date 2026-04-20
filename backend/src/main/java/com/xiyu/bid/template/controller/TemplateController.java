@@ -6,7 +6,12 @@ package com.xiyu.bid.template.controller;
 
 import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.dto.ApiResponse;
-import com.xiyu.bid.template.dto.*;
+import com.xiyu.bid.template.dto.TemplateCopyRequest;
+import com.xiyu.bid.template.dto.TemplateDTO;
+import com.xiyu.bid.template.dto.TemplateDownloadRecordRequest;
+import com.xiyu.bid.template.dto.TemplateUseRecordDTO;
+import com.xiyu.bid.template.dto.TemplateUseRecordRequest;
+import com.xiyu.bid.template.dto.TemplateVersionDTO;
 import com.xiyu.bid.template.service.TemplateService;
 import com.xiyu.bid.templatecatalog.application.command.TemplateQueryCriteria;
 import com.xiyu.bid.templatecatalog.domain.valueobject.DocumentType;
@@ -19,7 +24,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -45,11 +58,13 @@ public class TemplateController {
     @Auditable(action = "READ", entityType = "Template", description = "获取所有模板")
     public ResponseEntity<ApiResponse<List<TemplateDTO>>> getAllTemplates(
             @RequestParam(required = false) String name,
+            @RequestParam(required = false) com.xiyu.bid.entity.Template.Category category,
             @RequestParam(required = false) String productType,
             @RequestParam(required = false) String industry,
             @RequestParam(required = false) String documentType) {
         TemplateQueryCriteria criteria = TemplateQueryCriteria.builder()
                 .name(name == null ? null : InputSanitizer.sanitizeString(name, 200))
+                .category(category)
                 .productType(ProductType.fromValue(productType))
                 .industry(IndustryType.fromValue(industry))
                 .documentType(DocumentType.fromValue(documentType))

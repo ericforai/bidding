@@ -128,7 +128,7 @@ class ProjectScoreDraftWorkflowService {
                 .assigneeId(draft.getAssigneeId())
                 .assigneeName(draft.getAssigneeName())
                 .dueDate(draft.getDueDate())
-                .status(draft.getStatus())
+                .status(toDtoStatus(draft.getStatus()))
                 .skipReason(draft.getSkipReason())
                 .sourcePage(draft.getSourcePage())
                 .sourceTableIndex(draft.getSourceTableIndex())
@@ -143,13 +143,16 @@ class ProjectScoreDraftWorkflowService {
         return ProjectScoreDraftParseResponse.builder()
                 .drafts(draftDTOs)
                 .totalCount(draftDTOs.size())
-                .draftCount(countByStatus(draftDTOs, ProjectScoreDraft.Status.DRAFT))
-                .readyCount(countByStatus(draftDTOs, ProjectScoreDraft.Status.READY))
-                .skippedCount(countByStatus(draftDTOs, ProjectScoreDraft.Status.SKIPPED))
+                .draftCount(countByStatus(draftDTOs, ProjectScoreDraftDTO.Status.DRAFT))
+                .readyCount(countByStatus(draftDTOs, ProjectScoreDraftDTO.Status.READY))
+                .skippedCount(countByStatus(draftDTOs, ProjectScoreDraftDTO.Status.SKIPPED))
                 .build();
     }
 
-    private long countByStatus(Collection<ProjectScoreDraftDTO> drafts, ProjectScoreDraft.Status status) {
+    private long countByStatus(
+            Collection<ProjectScoreDraftDTO> drafts,
+            ProjectScoreDraftDTO.Status status
+    ) {
         return drafts.stream().filter(draft -> draft.getStatus() == status).count();
     }
 
@@ -179,10 +182,24 @@ class ProjectScoreDraftWorkflowService {
         return ScoreDraftPolicy.DraftStatus.valueOf(status.name());
     }
 
+    private ScoreDraftPolicy.DraftStatus toCoreStatus(ProjectScoreDraftUpdateRequest.Status status) {
+        if (status == null) {
+            return null;
+        }
+        return ScoreDraftPolicy.DraftStatus.valueOf(status.name());
+    }
+
     private ProjectScoreDraft.Status toEntityStatus(ScoreDraftPolicy.DraftStatus status) {
         if (status == null) {
             return null;
         }
         return ProjectScoreDraft.Status.valueOf(status.name());
+    }
+
+    private ProjectScoreDraftDTO.Status toDtoStatus(ProjectScoreDraft.Status status) {
+        if (status == null) {
+            return null;
+        }
+        return ProjectScoreDraftDTO.Status.valueOf(status.name());
     }
 }

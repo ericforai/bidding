@@ -1,5 +1,5 @@
 // Input: httpClient and template-library shared classification config
-// Output: templates API module with three-dimensional classification normalization
+// Output: templates API module with backend-owned official filtering and strict classification pass-through
 // Pos: src/api/modules/ - Frontend API module layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -9,6 +9,9 @@ import {
   normalizeIndustry,
   normalizeProductType,
   normalizeTemplateCategory,
+  toDocumentTypeValue,
+  toIndustryValue,
+  toProductTypeValue,
   toTemplateCategoryApiValue
 } from '@/config/templateLibrary.js'
 
@@ -54,9 +57,9 @@ export function buildTemplatePayload(data = {}) {
   return {
     name: data.name,
     category: toTemplateCategoryApiValue(data.category || 'technical'),
-    productType: normalizeProductType(data.productType),
-    industry: normalizeIndustry(data.industry),
-    documentType: normalizeDocumentType(data.documentType),
+    productType: toProductTypeValue(data.productType),
+    industry: toIndustryValue(data.industry),
+    documentType: toDocumentTypeValue(data.documentType),
     fileUrl: data.fileUrl || '',
     description: data.description || '',
     fileSize: data.fileSize || '',
@@ -71,13 +74,13 @@ function buildTemplateQuery(params = {}) {
     query.category = toTemplateCategoryApiValue(params.category)
   }
   if (params.productType) {
-    query.productType = normalizeProductType(params.productType)
+    query.productType = toProductTypeValue(params.productType)
   }
   if (params.industry) {
-    query.industry = normalizeIndustry(params.industry)
+    query.industry = toIndustryValue(params.industry)
   }
   if (params.documentType) {
-    query.documentType = normalizeDocumentType(params.documentType)
+    query.documentType = toDocumentTypeValue(params.documentType)
   }
   if (params.name) {
     query.name = params.name
@@ -85,42 +88,12 @@ function buildTemplateQuery(params = {}) {
   return query
 }
 
-export function filterTemplates(items, params = {}) {
-  const activeCategory = params.category && params.category !== 'all'
-    ? normalizeTemplateCategory(params.category)
-    : ''
-  const activeProductType = params.productType ? normalizeProductType(params.productType) : ''
-  const activeIndustry = params.industry ? normalizeIndustry(params.industry) : ''
-  const activeDocumentType = params.documentType ? normalizeDocumentType(params.documentType) : ''
-  const activeTags = Array.isArray(params.tags) ? params.tags : []
-
-  return items.filter((item) => {
-    if (activeCategory && item.category !== activeCategory) return false
-    if (activeProductType && item.productType !== activeProductType) return false
-    if (activeIndustry && item.industry !== activeIndustry) return false
-    if (activeDocumentType && item.documentType !== activeDocumentType) return false
-    if (params.name) {
-      const keyword = String(params.name).toLowerCase()
-      const matchesKeyword =
-        String(item.name || '').toLowerCase().includes(keyword) ||
-        String(item.description || '').toLowerCase().includes(keyword)
-      if (!matchesKeyword) return false
-    }
-    if (activeTags.length > 0) {
-      const matchesTags = activeTags.some((tag) => item.tags.includes(tag))
-      if (!matchesTags) return false
-    }
-    return true
-  })
-}
-
 export const templatesApi = {
   async getList(params = {}) {
     const response = await httpClient.get('/api/knowledge/templates', {
       params: buildTemplateQuery(params)
     })
-    const normalized = Array.isArray(response?.data) ? response.data.map(normalizeTemplate) : []
-    const data = filterTemplates(normalized, params)
+    const data = Array.isArray(response?.data) ? response.data.map(normalizeTemplate) : []
     return {
       ...response,
       data,

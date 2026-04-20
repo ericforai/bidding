@@ -127,7 +127,7 @@ class ProjectWorkflowServiceTest {
         when(projectScoreDraftRepository.findById(2001L)).thenReturn(Optional.of(draft));
 
         assertThatThrownBy(() -> service.updateProjectScoreDraft(1001L, 2001L, ProjectScoreDraftUpdateRequest.builder()
-                .status(ProjectScoreDraft.Status.READY)
+                .status(ProjectScoreDraftUpdateRequest.Status.READY)
                 .build()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("生成正式任务前必须指定责任人");

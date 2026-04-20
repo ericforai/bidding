@@ -22,7 +22,7 @@ describe('templatesApi', () => {
     vi.clearAllMocks()
   })
 
-  it('getList(): passes three-dimensional filters to the real templates endpoint and normalizes records', async () => {
+  it('getList(): passes official filters to the real templates endpoint without re-filtering backend results', async () => {
     httpClient.get.mockResolvedValue({
       success: true,
       data: [
@@ -42,7 +42,7 @@ describe('templatesApi', () => {
           id: 102,
           name: '政府商务应答模板',
           category: 'COMMERCIAL',
-          productType: '智慧城市',
+          productType: '智慧园区',
           industry: '政府',
           documentType: '商务应答',
           description: '政府商务模板',
@@ -71,7 +71,7 @@ describe('templatesApi', () => {
       }
     })
     expect(result.success).toBe(true)
-    expect(result.data).toHaveLength(1)
+    expect(result.data).toHaveLength(2)
     expect(result.data[0]).toMatchObject({
       id: 101,
       name: '智慧交通技术方案模板',
@@ -114,6 +114,35 @@ describe('templatesApi', () => {
       description: '园区实施模板',
       fileSize: '1.5 MB',
       tags: ['园区'],
+      createdBy: null
+    })
+  })
+
+  it('create(): keeps unknown three-dimensional values intact so the backend can reject them explicitly', async () => {
+    httpClient.post.mockResolvedValue({
+      success: false,
+      message: '不支持的产品类型: 火星产品'
+    })
+
+    await templatesApi.create({
+      name: '未知分类模板',
+      category: 'technical',
+      productType: '火星产品',
+      industry: '火星行业',
+      documentType: '火星文档',
+      description: '等待后端显式拒绝'
+    })
+
+    expect(httpClient.post).toHaveBeenCalledWith('/api/knowledge/templates', {
+      name: '未知分类模板',
+      category: 'TECHNICAL',
+      productType: '火星产品',
+      industry: '火星行业',
+      documentType: '火星文档',
+      fileUrl: '',
+      description: '等待后端显式拒绝',
+      fileSize: '',
+      tags: [],
       createdBy: null
     })
   })

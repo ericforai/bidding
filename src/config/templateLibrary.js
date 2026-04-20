@@ -1,5 +1,5 @@
-// Input: template library category and three-dimensional classification vocabulary
-// Output: shared template-library labels, options, and normalization helpers
+// Input: template library category and backend-owned three-dimensional vocabulary
+// Output: shared template-library labels, options, and non-fallback normalization helpers
 // Pos: src/config/ - shared frontend configuration
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -123,22 +123,42 @@ export function toTemplateCategoryApiValue(value) {
   return templateCategoryApiMap[normalized] || 'TECHNICAL'
 }
 
-function normalizeControlledValue(value, aliases, allowedSet) {
-  const normalized = aliases[value] || value || ''
-  if (!normalized) return ''
-  return allowedSet.has(normalized) ? normalized : '其他'
+function coerceControlledValue(value, aliases, allowedSet) {
+  const rawValue = typeof value === 'string' ? value.trim() : value || ''
+  if (!rawValue) return ''
+  const normalized = aliases[rawValue] || rawValue
+  return allowedSet.has(normalized) ? normalized : rawValue
+}
+
+function toControlledPayloadValue(value, aliases, allowedSet) {
+  const rawValue = typeof value === 'string' ? value.trim() : value || ''
+  if (!rawValue) return ''
+  const normalized = aliases[rawValue] || rawValue
+  return allowedSet.has(normalized) ? normalized : rawValue
 }
 
 export function normalizeProductType(value) {
-  return normalizeControlledValue(value, productTypeAliases, productTypeSet)
+  return coerceControlledValue(value, productTypeAliases, productTypeSet)
 }
 
 export function normalizeIndustry(value) {
-  return normalizeControlledValue(value, industryAliases, industrySet)
+  return coerceControlledValue(value, industryAliases, industrySet)
 }
 
 export function normalizeDocumentType(value) {
-  return normalizeControlledValue(value, documentTypeAliases, documentTypeSet)
+  return coerceControlledValue(value, documentTypeAliases, documentTypeSet)
+}
+
+export function toProductTypeValue(value) {
+  return toControlledPayloadValue(value, productTypeAliases, productTypeSet)
+}
+
+export function toIndustryValue(value) {
+  return toControlledPayloadValue(value, industryAliases, industrySet)
+}
+
+export function toDocumentTypeValue(value) {
+  return toControlledPayloadValue(value, documentTypeAliases, documentTypeSet)
 }
 
 export function getCategoryLabel(category) {

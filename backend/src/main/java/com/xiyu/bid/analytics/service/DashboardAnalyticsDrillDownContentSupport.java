@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 
 @Component
-class DashboardAnalyticsDrillDownContentHelpers {
+class DashboardAnalyticsDrillDownContentSupport {
 
     BigDecimal defaultAmount(BigDecimal amount) {
         return amount != null ? amount : BigDecimal.ZERO;

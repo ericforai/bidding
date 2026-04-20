@@ -103,6 +103,16 @@ test('template page supports three-dimensional filters and edit flow through rea
 
   await page.goto('/knowledge/template')
   const filterPanel = page.locator('.search-card')
+  const nameFilter = page.getByLabel('模板名称')
+
+  await page.getByRole('button', { name: '新建模板' }).click()
+  const createDialog = page.getByRole('dialog', { name: '新建模板' })
+  await expect(createDialog).toBeVisible()
+  await createDialog.getByLabel('模板名称表单').fill(`缺少三维 ${Date.now()}`)
+  await createDialog.getByRole('button', { name: '创建模板' }).click()
+  await expect(page.getByText('请选择产品类型、行业和文档类型')).toBeVisible()
+  await expect(createDialog).toBeVisible()
+  await createDialog.getByRole('button', { name: '取消' }).click()
 
   await formSelect(filterPanel, '产品类型').click()
   await page.getByRole('option', { name: '智慧交通', exact: true }).click()
@@ -114,6 +124,20 @@ test('template page supports three-dimensional filters and edit flow through rea
 
   const row = page.locator('.el-table__row').filter({ hasText: templateName }).first()
   await expect(row).toBeVisible()
+
+  await nameFilter.fill(`不存在-${Date.now()}`)
+  await page.getByRole('button', { name: '搜索' }).click()
+  await expect(page.locator('.el-table__empty-block, .el-empty').first()).toBeVisible()
+
+  await nameFilter.fill('')
+  await page.getByRole('button', { name: '搜索' }).click()
+  await expect(page.locator('.el-table__row').filter({ hasText: templateName }).first()).toBeVisible()
+
+  const industrySelect = formSelect(filterPanel, '行业')
+  await industrySelect.hover()
+  await industrySelect.locator('.el-icon-circle-close').click()
+  await page.getByRole('button', { name: '搜索' }).click()
+  await expect(page.locator('.el-table__row').filter({ hasText: templateName }).first()).toBeVisible()
 
   await row.getByRole('button', { name: '更多' }).click()
   await page.locator('li[role="menuitem"]:visible').filter({ hasText: '编辑模板' }).last().click()
