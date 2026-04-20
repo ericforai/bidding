@@ -29,6 +29,16 @@ const syncRefreshedSession = async (refreshResult) => {
   }
 }
 
+const shouldSkipAuthHeader = (config = {}) => {
+  const url = String(config.url || '')
+  return Boolean(
+    config.skipAuthHeader ||
+    url.includes('/api/auth/register') ||
+    url.includes('/api/auth/login') ||
+    url.includes('/api/auth/refresh')
+  )
+}
+
 const shouldSkipRefresh = (config = {}) => {
   const url = String(config.url || '')
   return Boolean(
@@ -94,9 +104,9 @@ const httpClient = axios.create({
 // 请求拦截器
 httpClient.interceptors.request.use(
   (config) => {
-    // 添加 Token
+    // Logout still needs the bearer token, but should never enter refresh replay.
     const token = getAccessToken() || bootstrapLegacyAccessToken()
-    if (token && !shouldSkipRefresh(config)) {
+    if (token && !shouldSkipAuthHeader(config)) {
       config.headers.Authorization = `Bearer ${token}`
     }
     return config

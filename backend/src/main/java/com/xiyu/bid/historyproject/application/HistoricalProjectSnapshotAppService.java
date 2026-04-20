@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 @Transactional
 public class HistoricalProjectSnapshotAppService {
 
-    private static final int SUMMARY_LIMIT = 220;
     private static final int SNAPSHOT_LIMIT = 2000;
 
     private final HistoricalProjectSnapshotRecordRepository snapshotRepository;
@@ -85,7 +84,7 @@ public class HistoricalProjectSnapshotAppService {
 
     private String buildArchiveSummary(String projectName, String customerName, String sourceReasoningSummary, String snapshotText) {
         StringBuilder summary = new StringBuilder();
-        summary.append("项目“").append(projectName).append("”已完成归档。");
+        summary.append("项目资料已完成归档。");
         if (customerName != null && !customerName.isBlank()) {
             summary.append("客户：").append(customerName).append("。");
         }
@@ -93,7 +92,7 @@ public class HistoricalProjectSnapshotAppService {
             summary.append(sourceReasoningSummary.trim()).append("。");
         }
         if (!snapshotText.isBlank()) {
-            summary.append("正文摘录：").append(truncate(snapshotText, SUMMARY_LIMIT));
+            summary.append("已提取正文快照，可用于后续检索与案例整理。");
         }
         return summary.toString();
     }

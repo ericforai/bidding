@@ -13,8 +13,28 @@ function downloadTextFile(filename, content, mimeType = 'text/plain;charset=utf-
 }
 
 export function useProjectDetailDocumentActions(context) {
-  const { route, project, projectExpenses, userStore, projectsApi, collaborationApi, isApiProject, message, state } = context
+  const {
+    route,
+    project,
+    projectExpenses,
+    userStore,
+    projectsApi,
+    collaborationApi: collaborationApiOverride,
+    isApiProject,
+    message,
+    state,
+  } = context
+  const collaboration = collaborationApiOverride || collaborationApi
   const pushActivity = (action) => state.activities.value.unshift({ id: Date.now(), user: userStore.userName, action, time: new Date().toLocaleString('zh-CN', { hour12: false }) })
+  const ensureDocumentList = () => {
+    if (!project.value) {
+      return []
+    }
+    if (!Array.isArray(project.value.documents)) {
+      project.value.documents = []
+    }
+    return project.value.documents
+  }
 
   const handleUpload = async (file) => {
     if (!project.value) return false
@@ -37,7 +57,7 @@ export function useProjectDetailDocumentActions(context) {
       formData.set('uploaderName', userStore.userName)
       const result = await projectsApi.uploadDocument(route.params.id, formData)
       if (!result?.success || !result?.data) throw new Error(result?.message || '上传文档失败')
-      project.value.documents.unshift(result.data)
+      ensureDocumentList().unshift(result.data)
       pushActivity(`上传了文档「${result.data.name}」`)
       message.success(`已上传文档：${result.data.name}`)
     } catch (error) {
@@ -83,7 +103,7 @@ export function useProjectDetailDocumentActions(context) {
       formData.set('uploaderName', userStore.userName)
       const result = await projectsApi.uploadDocument(route.params.id, formData)
       if (!result?.success || !result?.data) throw new Error(result?.message || '新增项目文档失败')
-      project.value.documents.unshift(result.data)
+      ensureDocumentList().unshift(result.data)
       pushActivity(`新增了项目文档「${result.data.name}」`)
       message.success('项目文档已新增')
     } catch (error) {
@@ -113,7 +133,7 @@ export function useProjectDetailDocumentActions(context) {
       message.success(`已生成演示导出包：${project.value?.name || '项目资料'}_导出.json`)
       return
     }
-    collaborationApi.exports.createExport(route.params.id, { format: 'json', exportedBy: userStore.currentUser?.id || null, exportedByName: userStore.userName }).then((result) => {
+    collaboration.exports.createExport(route.params.id, { format: 'json', exportedBy: userStore.currentUser?.id || null, exportedByName: userStore.userName }).then((result) => {
       if (!result?.success || !result?.data) return message.error(result?.message || '导出资料失败')
       downloadTextFile(result.data.fileName, result.data.content || '', result.data.contentType || 'application/json;charset=utf-8')
       pushActivity(`导出了项目资料「${result.data.fileName}」`)
@@ -131,7 +151,7 @@ export function useProjectDetailDocumentActions(context) {
     }
 
     try {
-      const result = await collaborationApi.exports.archive(route.params.id, {
+      const result = await collaboration.exports.archive(route.params.id, {
         archivedBy: userStore.currentUser?.id || null,
         archivedByName: userStore.userName,
         archiveReason: '项目资料整理完成，归档留存',

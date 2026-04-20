@@ -1,9 +1,9 @@
 package com.xiyu.bid.alerts;
 
+import com.xiyu.bid.alertdispatch.service.AlertRuleDispatchService;
+import com.xiyu.bid.alertdispatch.service.AlertSchedulerService;
 import com.xiyu.bid.alerts.entity.AlertRule;
 import com.xiyu.bid.alerts.repository.AlertRuleRepository;
-import com.xiyu.bid.alerts.service.AlertRuleExecutionService;
-import com.xiyu.bid.alerts.service.AlertSchedulerService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,14 +22,14 @@ import static org.mockito.Mockito.when;
 class AlertSchedulerServiceTest {
 
     @Mock private AlertRuleRepository alertRuleRepository;
-    @Mock private AlertRuleExecutionService alertRuleExecutionService;
+    @Mock private AlertRuleDispatchService alertRuleDispatchService;
 
     @InjectMocks
     private AlertSchedulerService alertSchedulerService;
 
     @Test
-    @DisplayName("中央调度器应把启用规则委托给规则执行器")
-    void shouldDelegateEnabledRuleToExecutionService() {
+    @DisplayName("中央调度器应把启用规则委托给规则分发器")
+    void shouldDelegateEnabledRuleToDispatchService() {
         AlertRule rule = AlertRule.builder()
                 .id(31L)
                 .name("保证金退还提醒")
@@ -44,6 +44,6 @@ class AlertSchedulerServiceTest {
 
         alertSchedulerService.checkAlertRules();
 
-        verify(alertRuleExecutionService).execute(rule);
+        verify(alertRuleDispatchService).dispatch(rule);
     }
 }

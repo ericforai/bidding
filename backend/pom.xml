@@ -324,6 +324,14 @@
 
     <profiles>
         <profile>
+            <id>quality-strict</id>
+            <properties>
+                <quality.skip>false</quality.skip>
+                <quality.includes>**/documentexport/**/*.java,**/historyproject/**/*.java</quality.includes>
+                <quality.onlyAnalyze>com.xiyu.bid</quality.onlyAnalyze>
+            </properties>
+        </profile>
+        <profile>
             <id>java-quality</id>
             <build>
                 <plugins>

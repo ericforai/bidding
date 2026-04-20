@@ -1,25 +1,20 @@
-// Input: alert rule repositories plus delegated domain/application scanners
-// Output: Rule-specific alert execution orchestration
+// Input: alert rule repositories and alert history service
+// Output: Rule-specific alert execution orchestration for alerts-owned rules
 // Pos: Service/业务层
 package com.xiyu.bid.alerts.service;
 
 import com.xiyu.bid.alerts.dto.AlertHistoryCreateRequest;
 import com.xiyu.bid.alerts.entity.AlertHistory;
 import com.xiyu.bid.alerts.entity.AlertRule;
-import com.xiyu.bid.businessqualification.application.service.ScanExpiringQualificationsAppService;
 import com.xiyu.bid.compliance.dto.RiskAssessmentDTO;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TenderRepository;
-import com.xiyu.bid.resources.repository.ExpenseRepository;
-import com.xiyu.bid.resources.application.service.ScanDepositReturnTrackingAppService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
@@ -31,48 +26,17 @@ public class AlertRuleExecutionService {
     private final AlertHistoryService alertHistoryService;
     private final ProjectRepository projectRepository;
     private final TenderRepository tenderRepository;
-    private final ExpenseRepository expenseRepository;
-    private final ScanExpiringQualificationsAppService scanExpiringQualificationsAppService;
-    private final ScanDepositReturnTrackingAppService scanDepositReturnTrackingAppService;
 
     public void execute(AlertRule rule) {
         log.debug("Checking alert rule: {} (Type: {}, Condition: {}, Threshold: {})",
                 rule.getName(), rule.getType(), rule.getCondition(), rule.getThreshold());
 
         switch (rule.getType()) {
-            case BUDGET -> checkBudgetAlert(rule);
             case DEADLINE -> checkDeadlineAlert(rule);
             case RISK -> checkRiskAlert(rule);
             case DOCUMENT -> checkDocumentAlert(rule);
-            case QUALIFICATION_EXPIRY -> checkQualificationExpiryAlert(rule);
-            case DEPOSIT_RETURN -> scanDepositReturnTrackingAppService.scan();
-        }
-    }
-
-    private void checkBudgetAlert(AlertRule rule) {
-        for (Project project : projectRepository.findActiveProjects()) {
-            Tender tender = tenderRepository.findById(project.getTenderId()).orElse(null);
-            if (tender == null || tender.getBudget() == null || tender.getBudget().compareTo(BigDecimal.ZERO) <= 0) {
-                continue;
-            }
-
-            BigDecimal totalExpense = expenseRepository.sumAmountByProjectId(project.getId());
-            BigDecimal expenseRatio = totalExpense
-                    .divide(tender.getBudget(), 4, RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(100));
-
-            boolean shouldAlert = switch (rule.getCondition()) {
-                case GREATER_THAN -> expenseRatio.compareTo(rule.getThreshold()) > 0;
-                case LESS_THAN -> expenseRatio.compareTo(rule.getThreshold()) < 0;
-                case EQUALS -> expenseRatio.compareTo(rule.getThreshold()) == 0;
-                default -> false;
-            };
-
-            if (shouldAlert) {
-                createAlert(rule, project.getId(), "Project",
-                        String.format("项目 %s 费用已达到预算的 %.2f%% (已用: %s, 预算: %s)",
-                                project.getName(), expenseRatio, totalExpense, tender.getBudget()));
-            }
+            case BUDGET, QUALIFICATION_EXPIRY, DEPOSIT_RETURN ->
+                    throw new IllegalArgumentException("Cross-module alert rule must be orchestrated outside alerts core: " + rule.getType());
         }
     }
 
@@ -188,10 +152,6 @@ public class AlertRuleExecutionService {
                                 project.getName(), project.getStatus(), missingDocCount, missingDocs));
             }
         }
-    }
-
-    private void checkQualificationExpiryAlert(AlertRule rule) {
-        scanExpiringQualificationsAppService.scan(rule.getThreshold().intValue());
     }
 
     private boolean checkRequiredDocument(Long projectId, String docType) {
