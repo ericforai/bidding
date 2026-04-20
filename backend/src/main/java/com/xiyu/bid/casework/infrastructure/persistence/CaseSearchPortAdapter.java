@@ -4,45 +4,35 @@ import com.xiyu.bid.casework.domain.model.CaseSearchCriteria;
 import com.xiyu.bid.casework.domain.port.CaseSearchPort;
 import com.xiyu.bid.entity.Case;
 import com.xiyu.bid.repository.CaseRepository;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class CaseSearchPortAdapter implements CaseSearchPort {
 
-    private static final int SEARCH_POOL_SIZE = 2000;
-
     private final CaseRepository caseRepository;
 
     @Override
     public Page<Case> search(CaseSearchCriteria criteria, Pageable pageable) {
-        Pageable fetchPageable = org.springframework.data.domain.PageRequest.of(0, Math.max(pageable.getPageSize(), SEARCH_POOL_SIZE), pageable.getSort());
-        List<Case> candidates = caseRepository.findAll(fetchPageable).stream().toList();
-        List<Case> filtered = candidates.stream()
-                .filter(item -> matchesCriteria(item, criteria))
-                .toList();
-
-        int fromIndex = Math.min(pageable.getPageNumber() * pageable.getPageSize(), filtered.size());
-        int toIndex = Math.min(fromIndex + pageable.getPageSize(), filtered.size());
-        List<Case> pageContent = fromIndex >= toIndex ? List.of() : filtered.subList(fromIndex, toIndex);
-        return new PageImpl<>(pageContent, pageable, filtered.size());
+        return caseRepository.findAll(buildSearchSpecification(criteria), pageable);
     }
 
     @Override
     public List<Case> findRelatedCandidates(Long excludedCaseId, Pageable pageable) {
-        return caseRepository.findAll(pageable).stream()
-                .filter(candidate -> !candidate.getId().equals(excludedCaseId))
-                .toList();
+        return caseRepository.findAll(relatedCandidatesSpec(excludedCaseId), pageable).stream().toList();
     }
 
     @Override
@@ -62,13 +52,7 @@ public class CaseSearchPortAdapter implements CaseSearchPort {
 
     @Override
     public List<String> findDistinctTags() {
-        return caseRepository.findAll().stream()
-                .flatMap(item -> item.getTags() == null ? java.util.stream.Stream.<String>empty() : item.getTags().stream())
-                .filter(this::hasText)
-                .map(String::trim)
-                .distinct()
-                .sorted(String.CASE_INSENSITIVE_ORDER)
-                .toList();
+        return caseRepository.findDistinctTags();
     }
 
     @Override
@@ -86,95 +70,119 @@ public class CaseSearchPortAdapter implements CaseSearchPort {
         };
     }
 
-    private boolean matchesCriteria(Case item, CaseSearchCriteria criteria) {
-        if (criteria == null) {
-            return true;
-        }
-        if (hasText(criteria.keyword()) && !matchesKeyword(item, criteria.keyword())) {
-            return false;
-        }
-        if (hasText(criteria.industry()) && (item.getIndustry() == null || !item.getIndustry().name().equalsIgnoreCase(criteria.industry()))) {
-            return false;
-        }
-        if (hasText(criteria.productLine()) && !equalsIgnoreCase(item.getProductLine(), criteria.productLine())) {
-            return false;
-        }
-        if (hasText(criteria.outcome()) && (item.getOutcome() == null || !item.getOutcome().name().equalsIgnoreCase(criteria.outcome()))) {
-            return false;
-        }
-        if (criteria.year() != null && (item.getProjectDate() == null || item.getProjectDate().getYear() != criteria.year())) {
-            return false;
-        }
-        if (criteria.amountMin() != null && (item.getAmount() == null || item.getAmount().compareTo(criteria.amountMin()) < 0)) {
-            return false;
-        }
-        if (criteria.amountMax() != null && (item.getAmount() == null || item.getAmount().compareTo(criteria.amountMax()) > 0)) {
-            return false;
-        }
-        if (criteria.tags() != null && !criteria.tags().isEmpty() && !hasAnyTagMatch(item.getTags(), criteria.tags())) {
-            return false;
-        }
-        if (hasText(criteria.status()) && !equalsIgnoreCase(item.getStatus(), criteria.status())) {
-            return false;
-        }
-        if (hasText(criteria.visibility()) && !equalsIgnoreCase(item.getVisibility(), criteria.visibility())) {
-            return false;
-        }
-        return true;
+    private Specification<Case> buildSearchSpecification(CaseSearchCriteria criteria) {
+        return (root, query, cb) -> {
+            query.distinct(true);
+
+            if (criteria == null) {
+                return cb.conjunction();
+            }
+
+            List<Predicate> predicates = new java.util.ArrayList<>();
+
+            if (hasText(criteria.keyword())) {
+                String keywordPattern = likePattern(criteria.keyword());
+                predicates.add(cb.or(
+                        cb.like(lowerOrEmpty(root.get("searchDocument"), cb), keywordPattern, '\\'),
+                        cb.like(lowerOrEmpty(root.get("title"), cb), keywordPattern, '\\'),
+                        cb.like(lowerOrEmpty(root.get("customerName"), cb), keywordPattern, '\\'),
+                        cb.like(lowerOrEmpty(root.get("productLine"), cb), keywordPattern, '\\'),
+                        cb.like(lowerOrEmpty(root.get("archiveSummary"), cb), keywordPattern, '\\')
+                ));
+            }
+
+            Case.Industry industry = parseEnum(Case.Industry.class, criteria.industry());
+            if (hasText(criteria.industry())) {
+                predicates.add(industry == null ? cb.disjunction() : cb.equal(root.get("industry"), industry));
+            }
+
+            if (hasText(criteria.productLine())) {
+                predicates.add(cb.equal(lowerOrEmpty(root.get("productLine"), cb), normalize(criteria.productLine())));
+            }
+
+            Case.Outcome outcome = parseEnum(Case.Outcome.class, criteria.outcome());
+            if (hasText(criteria.outcome())) {
+                predicates.add(outcome == null ? cb.disjunction() : cb.equal(root.get("outcome"), outcome));
+            }
+
+            if (criteria.year() != null) {
+                LocalDate start = LocalDate.of(criteria.year(), 1, 1);
+                LocalDate end = start.withMonth(12).withDayOfMonth(31);
+                predicates.add(cb.between(root.get("projectDate"), start, end));
+            }
+
+            if (criteria.amountMin() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("amount"), criteria.amountMin()));
+            }
+
+            if (criteria.amountMax() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("amount"), criteria.amountMax()));
+            }
+
+            if (criteria.tags() != null && !criteria.tags().isEmpty()) {
+                Join<Case, String> tagsJoin = root.join("tags", JoinType.LEFT);
+                predicates.add(lowerOrEmpty(tagsJoin, cb).in(
+                        criteria.tags().stream()
+                                .filter(this::hasText)
+                                .map(this::normalize)
+                                .toList()));
+            }
+
+            if (hasText(criteria.status())) {
+                predicates.add(cb.equal(lowerOrEmpty(root.get("status"), cb), normalize(criteria.status())));
+            }
+
+            if (hasText(criteria.visibility())) {
+                predicates.add(cb.equal(lowerOrEmpty(root.get("visibility"), cb), normalize(criteria.visibility())));
+            }
+
+            return predicates.isEmpty()
+                    ? cb.conjunction()
+                    : cb.and(predicates.toArray(Predicate[]::new));
+        };
     }
 
-    private boolean matchesKeyword(Case item, String keyword) {
-        String haystack = String.join(" ",
-                safe(item.getTitle()),
-                safe(item.getDescription()),
-                safe(item.getCustomerName()),
-                safe(item.getLocationName()),
-                safe(item.getProjectPeriod()),
-                safe(item.getProductLine()),
-                safe(item.getArchiveSummary()),
-                safe(item.getPriceStrategy()),
-                safe(item.getDocumentSnapshotText()),
-                safe(item.getSearchDocument()),
-                join(item.getTags()),
-                join(item.getHighlights()),
-                join(item.getTechnologies()),
-                join(item.getSuccessFactors()),
-                join(item.getLessonsLearned()),
-                join(item.getAttachmentNames())
-        ).toLowerCase(Locale.ROOT);
-        return haystack.contains(keyword.toLowerCase(Locale.ROOT));
+    private Specification<Case> relatedCandidatesSpec(Long excludedCaseId) {
+        return (root, query, cb) -> {
+            query.distinct(true);
+            if (excludedCaseId == null) {
+                return cb.conjunction();
+            }
+            return cb.notEqual(root.get("id"), excludedCaseId);
+        };
     }
 
-    private boolean hasAnyTagMatch(List<String> left, List<String> right) {
-        if (left == null || right == null || left.isEmpty() || right.isEmpty()) {
-            return false;
+    private <E extends Enum<E>> E parseEnum(Class<E> enumType, String value) {
+        if (!hasText(value)) {
+            return null;
         }
-        Set<String> leftSet = left.stream().filter(this::hasText).map(this::normalize).collect(Collectors.toSet());
-        Set<String> rightSet = right.stream().filter(this::hasText).map(this::normalize).collect(Collectors.toSet());
-        leftSet.retainAll(rightSet);
-        return !leftSet.isEmpty();
+        try {
+            return Enum.valueOf(enumType, value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private Expression<String> lowerOrEmpty(Expression<String> expression, jakarta.persistence.criteria.CriteriaBuilder cb) {
+        return cb.lower(cb.coalesce(expression, ""));
+    }
+
+    private String likePattern(String value) {
+        return "%" + escapeLike(normalize(value)) + "%";
+    }
+
+    private String escapeLike(String value) {
+        return value
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
     }
 
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
     }
 
-    private boolean equalsIgnoreCase(String left, String right) {
-        return left != null && right != null && left.trim().equalsIgnoreCase(right.trim());
-    }
-
     private String normalize(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
-    }
-
-    private String safe(String value) {
-        return value == null ? "" : value;
-    }
-
-    private String join(List<String> values) {
-        if (values == null || values.isEmpty()) {
-            return "";
-        }
-        return String.join(" ", values.stream().filter(this::hasText).map(String::trim).toList());
     }
 }

@@ -11,6 +11,10 @@
           </div>
         </div>
         <div class="header-right">
+          <el-button plain @click="$emit('edit')">
+            <el-icon><Edit /></el-icon>
+            编辑案例
+          </el-button>
           <el-button type="primary" @click="$emit('use-case')">
             <el-icon><DocumentCopy /></el-icon>
             引用此案例
@@ -25,27 +29,27 @@
 
     <el-descriptions :column="3" border>
       <el-descriptions-item label="客户名称">
-        {{ caseData.customer }}
+        {{ caseData.customer || '-' }}
       </el-descriptions-item>
       <el-descriptions-item label="项目金额">
         <span class="amount-text">{{ formatAmount(caseData.amount) }}</span>
       </el-descriptions-item>
       <el-descriptions-item label="项目年份">
-        {{ caseData.year }}年
+        {{ caseData.year || '-' }}年
       </el-descriptions-item>
       <el-descriptions-item label="所属地区">
-        {{ caseData.location }}
+        {{ caseData.location || '-' }}
       </el-descriptions-item>
       <el-descriptions-item label="所属行业">
         {{ getIndustryLabel(caseData.industry) }}
       </el-descriptions-item>
       <el-descriptions-item label="实施周期">
-        {{ caseData.period }}
+        {{ caseData.projectPeriod || caseData.period || '-' }}
       </el-descriptions-item>
       <el-descriptions-item label="引用次数" :span="3">
         <span class="use-count-text">
           <el-icon><View /></el-icon>
-          已被引用 {{ caseData.useCount }} 次
+          已被引用 {{ caseData.useCount || 0 }} 次
         </span>
       </el-descriptions-item>
     </el-descriptions>
@@ -53,7 +57,7 @@
 </template>
 
 <script setup>
-import { DocumentCopy, Share, View } from '@element-plus/icons-vue'
+import { DocumentCopy, Edit, Share, View } from '@element-plus/icons-vue'
 import { formatAmount, getIndustryLabel } from './caseMeta.js'
 
 defineProps({
@@ -63,7 +67,7 @@ defineProps({
   }
 })
 
-defineEmits(['share', 'use-case'])
+defineEmits(['edit', 'share', 'use-case'])
 </script>
 
 <style scoped lang="scss">

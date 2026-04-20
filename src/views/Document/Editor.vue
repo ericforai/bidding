@@ -588,6 +588,7 @@ function handleArchive() {
 
 async function loadDocumentData() {
   await loadEditorData()
+  await loadKnowledgeMatches(currentSection.value)
   await loadAssemblyTemplates()
   await loadAssemblyHistory()
   await loadExportArtifacts(route.params.id)

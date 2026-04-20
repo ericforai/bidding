@@ -109,7 +109,7 @@ function formatDate(date) {
 
 function formatCasePeriod(projectDate) {
   const date = formatDate(projectDate)
-  return date ? `${date} - ${date}` : '-'
+  return date ? `${date} - ${date}` : ''
 }
 
 function normalizeQualification(item) {
@@ -142,10 +142,10 @@ function buildQualificationPayload(data = {}) {
 
 function normalizeCase(item) {
   const projectDate = formatDate(item?.projectDate)
-  const normalizedIndustry = caseIndustryMap[item?.industry] || 'government'
-  const description = item?.description || item?.summary || '暂无描述'
-  const customer = item?.customer || item?.customerName || '待补充'
-  const location = item?.location || item?.locationName || '-'
+  const normalizedIndustry = caseIndustryMap[item?.industry] || ''
+  const description = item?.description || item?.summary || ''
+  const customer = item?.customer || item?.customerName || ''
+  const location = item?.location || item?.locationName || ''
   const period = item?.period || item?.projectPeriod || formatCasePeriod(projectDate)
   const technologies = Array.isArray(item?.technologies) ? item.technologies : []
   const archivedInfo = item?.archivedInfo || {
@@ -161,9 +161,9 @@ function normalizeCase(item) {
     customer,
     customerName: customer,
     industry: normalizedIndustry,
-    outcome: item?.outcome || 'WON',
+    outcome: item?.outcome || '',
     amount: Number(item?.amount || 0),
-    year: item?.year || (projectDate ? new Date(projectDate).getFullYear() : new Date().getFullYear()),
+    year: item?.year || (projectDate ? new Date(projectDate).getFullYear() : ''),
     location,
     locationName: location,
     period,

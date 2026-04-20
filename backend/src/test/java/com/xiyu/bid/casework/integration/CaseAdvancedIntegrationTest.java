@@ -8,8 +8,8 @@ import com.xiyu.bid.casework.dto.CaseReferenceRecordCreateRequest;
 import com.xiyu.bid.casework.dto.CaseShareRecordCreateRequest;
 import com.xiyu.bid.casework.repository.CaseReferenceRecordRepository;
 import com.xiyu.bid.casework.repository.CaseShareRecordRepository;
-import com.xiyu.bid.documentexport.dto.DocumentCaseSnapshotDTO;
 import com.xiyu.bid.entity.Case;
+import com.xiyu.bid.historyproject.dto.HistoricalProjectSnapshotDTO;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.platform.util.PasswordEncryptionUtil;
 import com.xiyu.bid.repository.CaseRepository;
@@ -94,7 +94,7 @@ class CaseAdvancedIntegrationTest {
         @Bean
         @Primary
         CaseSnapshotPort caseSnapshotPort() {
-            return projectId -> DocumentCaseSnapshotDTO.builder()
+            return projectId -> HistoricalProjectSnapshotDTO.builder()
                     .projectId(projectId)
                     .archiveRecordId(10001L)
                     .exportId(20002L)
@@ -302,12 +302,14 @@ class CaseAdvancedIntegrationTest {
     @Test
     @WithMockUser(roles = {"ADMIN"})
     void promoteFromProject_ShouldConsumeSnapshotAndCreatePublishableCase() throws Exception {
+        String excerptOnlyKeyword = "星河联动中台-" + System.currentTimeMillis();
         CasePromoteFromProjectRequest request = CasePromoteFromProjectRequest.builder()
                 .projectId(9023L)
                 .title("项目归档案例")
                 .status("PUBLISHED")
                 .visibility("PUBLIC")
                 .priceStrategy("价值优先")
+                .documentSnapshotText(excerptOnlyKeyword)
                 .build();
 
         mockMvc.perform(post("/api/knowledge/cases/promote-from-project")
@@ -317,10 +319,19 @@ class CaseAdvancedIntegrationTest {
                 .andExpect(jsonPath("$.data.sourceProjectId").value(9023))
                 .andExpect(jsonPath("$.data.productLine").value("智慧园区"))
                 .andExpect(jsonPath("$.data.archiveSummary").value(containsString("项目已完成归档")))
-                .andExpect(jsonPath("$.data.documentSnapshotText").value(containsString("投标正文摘录")))
+                .andExpect(jsonPath("$.data.documentSnapshotText").value(containsString(excerptOnlyKeyword)))
                 .andExpect(jsonPath("$.data.successFactors", hasSize(2)))
                 .andExpect(jsonPath("$.data.status").value("PUBLISHED"))
                 .andExpect(jsonPath("$.data.visibility").value("PUBLIC"))
                 .andExpect(jsonPath("$.data.publishedAt").isNotEmpty());
+
+        mockMvc.perform(get("/api/knowledge/cases")
+                        .param("keyword", excerptOnlyKeyword)
+                        .param("page", "1")
+                        .param("pageSize", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items", hasSize(1)))
+                .andExpect(jsonPath("$.data.items[0].title").value("项目归档案例"))
+                .andExpect(jsonPath("$.data.items[0].productLine").value("智慧园区"));
     }
 }

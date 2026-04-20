@@ -120,12 +120,12 @@
 
           <el-form-item label="成功关键因素">
             <el-checkbox-group v-model="caseForm.successFactors">
-              <el-checkbox label="技术优势">技术优势</el-checkbox>
-              <el-checkbox label="价格合理">价格合理</el-checkbox>
-              <el-checkbox label="客户关系">客户关系</el-checkbox>
-              <el-checkbox label="交付能力">交付能力</el-checkbox>
-              <el-checkbox label="品牌影响力">品牌影响力</el-checkbox>
-              <el-checkbox label="响应速度">响应速度</el-checkbox>
+              <el-checkbox value="技术优势">技术优势</el-checkbox>
+              <el-checkbox value="价格合理">价格合理</el-checkbox>
+              <el-checkbox value="客户关系">客户关系</el-checkbox>
+              <el-checkbox value="交付能力">交付能力</el-checkbox>
+              <el-checkbox value="品牌影响力">品牌影响力</el-checkbox>
+              <el-checkbox value="响应速度">响应速度</el-checkbox>
             </el-checkbox-group>
           </el-form-item>
 
@@ -245,12 +245,12 @@
 
           <el-form-item label="成功关键因素">
             <el-checkbox-group v-model="manualCaseForm.successFactors">
-              <el-checkbox label="技术优势">技术优势</el-checkbox>
-              <el-checkbox label="价格合理">价格合理</el-checkbox>
-              <el-checkbox label="客户关系">客户关系</el-checkbox>
-              <el-checkbox label="交付能力">交付能力</el-checkbox>
-              <el-checkbox label="品牌影响力">品牌影响力</el-checkbox>
-              <el-checkbox label="响应速度">响应速度</el-checkbox>
+              <el-checkbox value="技术优势">技术优势</el-checkbox>
+              <el-checkbox value="价格合理">价格合理</el-checkbox>
+              <el-checkbox value="客户关系">客户关系</el-checkbox>
+              <el-checkbox value="交付能力">交付能力</el-checkbox>
+              <el-checkbox value="品牌影响力">品牌影响力</el-checkbox>
+              <el-checkbox value="响应速度">响应速度</el-checkbox>
             </el-checkbox-group>
           </el-form-item>
 

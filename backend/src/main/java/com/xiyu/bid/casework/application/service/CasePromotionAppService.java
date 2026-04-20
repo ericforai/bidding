@@ -3,7 +3,7 @@ package com.xiyu.bid.casework.application.service;
 import com.xiyu.bid.casework.domain.port.CaseSnapshotPort;
 import com.xiyu.bid.casework.dto.CaseDTO;
 import com.xiyu.bid.casework.dto.CasePromoteFromProjectRequest;
-import com.xiyu.bid.documentexport.dto.DocumentCaseSnapshotDTO;
+import com.xiyu.bid.historyproject.dto.HistoricalProjectSnapshotDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +23,7 @@ public class CasePromotionAppService {
     private final CaseCrudAppService caseCrudAppService;
 
     public CaseDTO promoteFromProject(CasePromoteFromProjectRequest request) {
-        DocumentCaseSnapshotDTO snapshot = caseSnapshotPort.getCaseSnapshot(request.getProjectId());
+        HistoricalProjectSnapshotDTO snapshot = caseSnapshotPort.getCaseSnapshot(request.getProjectId());
         CaseDTO caseDTO = CaseDTO.builder()
                 .title(firstNonBlank(request.getTitle(), snapshot.getProjectName() + "案例"))
                 .industry(request.getIndustry() == null ? CaseDTO.Industry.OTHER : request.getIndustry())

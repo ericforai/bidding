@@ -95,6 +95,7 @@ public class ArchitectureTest {
         "com.xiyu.bid.projectworkflow.service..",
         "com.xiyu.bid.resources.service..",
         "com.xiyu.bid.casework.service..",
+        "com.xiyu.bid.casework.application.service..",
         "com.xiyu.bid.analytics.service.."
     };
 

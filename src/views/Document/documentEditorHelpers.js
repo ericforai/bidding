@@ -33,7 +33,7 @@ function findSectionById(sections, id) {
 
 function classifySection(section = {}) {
   const id = asText(section.id)
-  const name = asText(section.name)
+  const name = asText(section.name || section.title)
   const lowerName = name.toLowerCase()
 
   if (id.startsWith('3') || /案例/.test(name) || /case/.test(lowerName)) {
@@ -52,7 +52,11 @@ function classifySection(section = {}) {
 }
 
 export function buildKnowledgeQuery(section = {}, documentInfo = {}) {
-  const keywordParts = [documentInfo.name || documentInfo.templateName, section.name, section.id]
+  const keywordParts = [
+    documentInfo.name || documentInfo.templateName || documentInfo.title,
+    section.name || section.title,
+    section.id
+  ]
     .map(asText)
     .filter(Boolean)
 

@@ -85,6 +85,7 @@ const {
   manualCaseForm,
   pagination,
   projectOptionsLoading,
+  saving,
   searchForm,
   selectedTags,
   sourceProjectOptions,

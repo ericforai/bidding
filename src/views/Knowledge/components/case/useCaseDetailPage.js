@@ -1,7 +1,8 @@
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { knowledgeApi } from '@/api'
+import { createEmptyCaseForm } from './caseMeta.js'
 
 const getCurrentUser = () => {
   try {
@@ -18,6 +19,9 @@ export function useCaseDetailPage() {
 
   const caseData = ref(null)
   const loading = ref(false)
+  const saving = ref(false)
+  const editDialogVisible = ref(false)
+  const editForm = reactive(createEmptyCaseForm())
   const relatedCasePool = ref([])
   const shareRecords = ref([])
   const referenceRecords = ref([])
@@ -64,12 +68,26 @@ export function useCaseDetailPage() {
       const found = detailResult.data
       caseData.value = {
         ...found,
-        location: found.location || '北京',
-        period: found.period || '6个月',
-        useCount: found.useCount || 0,
-        viewCount: found.viewCount || 0,
-        technologies: found.technologies || ['Vue.js', 'Spring Boot', 'PostgreSQL', 'Redis']
+        description: found.description || '',
+        customer: found.customer || found.customerName || '',
+        location: found.location || found.locationName || '',
+        period: found.period || found.projectPeriod || '',
+        projectPeriod: found.projectPeriod || found.period || '',
+        useCount: Number(found.useCount || 0),
+        viewCount: Number(found.viewCount || 0),
+        technologies: Array.isArray(found.technologies) ? found.technologies : []
       }
+      Object.assign(editForm, {
+        ...createEmptyCaseForm(),
+        title: caseData.value.title,
+        customer: caseData.value.customer,
+        industry: caseData.value.industry,
+        amount: caseData.value.amount,
+        location: caseData.value.location,
+        tags: [...(caseData.value.tags || [])],
+        description: caseData.value.description || '',
+        highlights: [...(caseData.value.highlights || [])]
+      })
 
       relatedCasePool.value = listResult?.success && Array.isArray(listResult.data) ? listResult.data : []
 
@@ -155,6 +173,51 @@ export function useCaseDetailPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const handleEdit = () => {
+    if (!caseData.value) {
+      return
+    }
+    editDialogVisible.value = true
+  }
+
+  const handleSaveEdit = async () => {
+    if (!caseData.value?.id) {
+      return
+    }
+
+    saving.value = true
+    try {
+      const result = await knowledgeApi.cases.update(caseData.value.id, {
+        ...caseData.value,
+        ...editForm,
+        customerName: editForm.customer,
+        locationName: editForm.location,
+        projectPeriod: editForm.period || caseData.value.projectPeriod,
+        description: editForm.description,
+        highlights: [...(editForm.highlights || [])]
+      })
+
+      if (!result?.success || !result?.data) {
+        throw new Error(result?.message || '更新失败')
+      }
+
+      caseData.value = {
+        ...caseData.value,
+        ...result.data,
+        description: result.data.description || editForm.description,
+        customer: result.data.customer || editForm.customer,
+        location: result.data.location || editForm.location,
+        highlights: [...(result.data.highlights || editForm.highlights || [])]
+      }
+      editDialogVisible.value = false
+      ElMessage.success('案例更新成功')
+    } catch (error) {
+      ElMessage.error(error?.message || '案例更新失败')
+    } finally {
+      saving.value = false
+    }
+  }
+
   const syncRouteCase = () => {
     const caseId = route.query.id || route.params.id
     if (!caseId) {
@@ -174,6 +237,10 @@ export function useCaseDetailPage() {
 
   return {
     caseData,
+    editDialogVisible,
+    editForm,
+    handleEdit,
+    handleSaveEdit,
     handleShare,
     handleUseCase,
     handleViewRelated,
@@ -181,6 +248,7 @@ export function useCaseDetailPage() {
     referenceRecords,
     relatedCases,
     router,
+    saving,
     shareRecords
   }
 }

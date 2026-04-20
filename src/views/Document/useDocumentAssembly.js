@@ -187,7 +187,11 @@ export function useDocumentAssembly({
         assembledBy: userStore.currentUser?.id ?? null
       })
 
-      const assembledContent = response?.data?.assembledContent || ''
+      if (!response?.success || !response?.data) {
+        throw new Error(response?.message || '装配失败')
+      }
+
+      const assembledContent = response.data.assembledContent || ''
       const filledIds = applyAssemblyContentToSections(
         sectionData.value.sections,
         selectedSections.map((section) => section.id),
@@ -204,10 +208,10 @@ export function useDocumentAssembly({
       }
 
       assemblyHistory.value.unshift({
-        id: response?.data?.id ?? Date.now(),
+        id: response.data.id ?? Date.now(),
         templateId: template?.id,
         templateName: template?.name || '文档装配模板',
-        time: formatDateTime(response?.data?.assembledAt || new Date().toISOString()),
+        time: formatDateTime(response.data.assembledAt || new Date().toISOString()),
         assembledContent,
         variables
       })

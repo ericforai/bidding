@@ -116,4 +116,19 @@ public interface CaseRepository extends JpaRepository<Case, Long>, JpaSpecificat
 
     @Query("select distinct tag from Case c join c.tags tag where trim(tag) <> ''")
     List<String> findDistinctTags();
+
+    @Query("""
+            select count(distinct c.id)
+            from Case c
+            where c.outcome = com.xiyu.bid.entity.Case$Outcome.WON
+              and (:industry is null or c.industry = :industry)
+              and (:productLine is null or lower(coalesce(c.productLine, '')) = lower(:productLine))
+              and (:projectDateFrom is null or c.projectDate >= :projectDateFrom)
+              and (:projectDateTo is null or c.projectDate <= :projectDateTo)
+            """)
+    long countWonCasesByFilters(
+            @Param("industry") Case.Industry industry,
+            @Param("productLine") String productLine,
+            @Param("projectDateFrom") LocalDate projectDateFrom,
+            @Param("projectDateTo") LocalDate projectDateTo);
 }

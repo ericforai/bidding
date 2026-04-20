@@ -17,7 +17,7 @@
       <div class="case-card-header">
         <h3 class="case-title">{{ item.title }}</h3>
         <el-tag :type="getYearTagType(item.year)" size="small">
-          {{ item.year }}年
+          {{ item.year || '-' }}年
         </el-tag>
       </div>
 
@@ -27,7 +27,7 @@
             <el-icon><OfficeBuilding /></el-icon>
             客户
           </span>
-          <span class="info-value">{{ item.customer }}</span>
+          <span class="info-value">{{ item.customer || '-' }}</span>
         </div>
 
         <div class="case-info-row">
@@ -43,7 +43,7 @@
             <el-icon><Location /></el-icon>
             地区
           </span>
-          <span class="info-value">{{ item.location }}</span>
+          <span class="info-value">{{ item.location || '-' }}</span>
         </div>
 
         <div class="case-info-row">
@@ -51,7 +51,7 @@
             <el-icon><Calendar /></el-icon>
             时间
           </span>
-          <span class="info-value">{{ item.period }}</span>
+          <span class="info-value">{{ item.period || '-' }}</span>
         </div>
       </div>
 

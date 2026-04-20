@@ -10,6 +10,7 @@
     <div v-if="caseData" class="detail-content">
       <CaseDetailHeaderCard
         :case-data="caseData"
+        @edit="handleEdit"
         @share="handleShare"
         @use-case="handleUseCase"
       />
@@ -22,7 +23,7 @@
           </div>
         </template>
         <div class="content-text">
-          {{ caseData.summary }}
+          {{ caseData.description || '-' }}
         </div>
       </el-card>
 
@@ -41,7 +42,7 @@
         </div>
       </el-card>
 
-      <el-card v-if="caseData.technologies" class="section-card" shadow="never">
+      <el-card v-if="caseData.technologies && caseData.technologies.length" class="section-card" shadow="never">
         <template #header>
           <div class="card-title-with-icon">
             <el-icon><Cpu /></el-icon>
@@ -93,7 +94,14 @@
       </el-card>
     </div>
 
-    <div v-else class="loading-container">
+    <CaseDetailEditDialog
+      v-model="editDialogVisible"
+      :form="editForm"
+      :saving="saving"
+      @save="handleSaveEdit"
+    />
+
+    <div v-if="loading && !caseData" class="loading-container">
       <el-skeleton :rows="6" animated />
     </div>
 
@@ -109,17 +117,23 @@
 
 <script setup>
 import { ArrowRight, Briefcase, CircleCheckFilled, Cpu, Document, Star } from '@element-plus/icons-vue'
+import CaseDetailEditDialog from './components/case/CaseDetailEditDialog.vue'
 import CaseDetailHeaderCard from './components/case/CaseDetailHeaderCard.vue'
 import { useCaseDetailPage } from './components/case/useCaseDetailPage.js'
 
 const {
   caseData,
+  editDialogVisible,
+  editForm,
+  handleEdit,
+  handleSaveEdit,
   handleShare,
   handleUseCase,
   handleViewRelated,
   loading,
   relatedCases,
-  router
+  router,
+  saving
 } = useCaseDetailPage()
 </script>
 

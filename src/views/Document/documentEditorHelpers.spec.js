@@ -13,6 +13,13 @@ describe('documentEditorHelpers', () => {
     })
   })
 
+  it('buildKnowledgeQuery falls back to title fields from backend editor payloads', () => {
+    expect(buildKnowledgeQuery({ id: 29, title: '技术说明' }, { templateName: 'DBG 文档结构 985548' })).toEqual({
+      keyword: 'DBG 文档结构 985548 技术说明 29',
+      category: 'technical'
+    })
+  })
+
   it('mergeSectionSourceMetadata preserves existing metadata and appends sources', () => {
     const section = {
       metadata: JSON.stringify({

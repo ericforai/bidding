@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { knowledgeApi } from '@/api'
 import { useUserStore } from '@/stores/user'
@@ -52,6 +52,20 @@ function normalizeTemplateMatch(item = {}, keyword = '') {
   })
 }
 
+function buildKnowledgeKeywords(query = {}) {
+  const rawKeyword = String(query.keyword || '').trim()
+  const keywordParts = rawKeyword.split(/\s+/).filter(Boolean)
+  const primary = rawKeyword
+  const broad = keywordParts.slice(0, 2).join(' ')
+  const focused = keywordParts.slice(-2).join(' ')
+
+  return [primary, broad, focused].filter((value, index, list) => value && list.indexOf(value) === index)
+}
+
+function extractKnowledgeItems(result) {
+  return Array.isArray(result?.data) ? result.data : []
+}
+
 export function useDocumentKnowledge({
   currentSection,
   projectInfo,
@@ -76,24 +90,37 @@ export function useDocumentKnowledge({
 
     const query = buildKnowledgeQuery(targetSection, documentInfo.value)
 
+    const keywords = buildKnowledgeKeywords(query)
+    if (keywords.length === 0) {
+      knowledgeMatches.value = []
+      return []
+    }
+
     try {
-      const [caseResult, templateResult] = await Promise.all([
-        knowledgeApi.cases.getList({ keyword: query.keyword }),
-        knowledgeApi.templates.getList({ name: query.keyword })
-      ])
+      for (const keyword of keywords) {
+        const [caseResult, templateResult] = await Promise.allSettled([
+          knowledgeApi.cases.getList({ keyword, page: 1, pageSize: 4 }),
+          knowledgeApi.templates.getList({ name: keyword })
+        ])
 
-      const caseMatches = Array.isArray(caseResult?.data)
-        ? caseResult.data.slice(0, 4).map((item) => normalizeCaseMatch(item, query.keyword))
-        : []
-      const templateMatches = Array.isArray(templateResult?.data)
-        ? templateResult.data.slice(0, 4).map((item) => normalizeTemplateMatch(item, query.keyword))
-        : []
+        const caseMatches = (caseResult.status === 'fulfilled' ? extractKnowledgeItems(caseResult.value) : [])
+          .slice(0, 4)
+          .map((item) => normalizeCaseMatch(item, keyword))
+        const templateMatches = (templateResult.status === 'fulfilled' ? extractKnowledgeItems(templateResult.value) : [])
+          .slice(0, 4)
+          .map((item) => normalizeTemplateMatch(item, keyword))
 
-      knowledgeMatches.value = [...caseMatches, ...templateMatches]
-        .sort((a, b) => b.relevance - a.relevance)
-        .slice(0, 5)
+        knowledgeMatches.value = [...caseMatches, ...templateMatches]
+          .sort((a, b) => b.relevance - a.relevance)
+          .slice(0, 5)
 
-      return knowledgeMatches.value
+        if (knowledgeMatches.value.length > 0) {
+          return knowledgeMatches.value
+        }
+      }
+
+      knowledgeMatches.value = []
+      return []
     } catch (error) {
       knowledgeMatches.value = []
       return []
@@ -111,7 +138,11 @@ export function useDocumentKnowledge({
       try {
         const payload = buildReferencePayload(match, userStore.currentUser || {}, section, projectInfo.value || {})
         const response = await knowledgeApi.cases.createReferenceRecord(match.id, payload)
-        const referenceData = response?.data || {}
+        if (!response?.success || !response?.data) {
+          throw new Error(response?.message || '引用记录创建失败')
+        }
+
+        const referenceData = response.data
         const citation = {
           kind: 'case',
           title: match.title,
@@ -127,20 +158,7 @@ export function useDocumentKnowledge({
         section.content = `${section.content || ''}\n\n> 来源：${sourceLabel} · ${match.title}\n> 引用记录：${citation.referenceId || '创建成功'}\n\n${match.content || ''}\n`
         ElMessage.success('案例已插入并记录引用')
       } catch (error) {
-        const citation = {
-          kind: 'case',
-          title: match.title,
-          sourceLabel,
-          sourceDetail: match.sourceDetail || '',
-          referenceId: null,
-          referenceTarget: section.name || match.title,
-          referenceContext: `文档编辑器插入案例：${section.name || '未命名章节'}`,
-          referencedAt: insertedAt
-        }
-
-        mergeSectionSourceMetadata(section, citation)
-        section.content = `${section.content || ''}\n\n> 来源：${sourceLabel} · ${match.title}\n\n${match.content || ''}\n`
-        ElMessage.warning('案例已插入，但引用记录创建失败')
+        ElMessage.error(error?.message || '案例引用失败，未插入正文')
       }
 
       return
@@ -158,6 +176,14 @@ export function useDocumentKnowledge({
     section.content = `${section.content || ''}\n\n> 来源：${sourceLabel} · ${match.title}\n\n${match.content || ''}\n`
     ElMessage.success('知识内容已插入')
   }
+
+  watch(
+    () => currentSection.value?.id,
+    () => {
+      void loadKnowledgeMatches()
+    },
+    { immediate: true }
+  )
 
   return {
     knowledgeMatches,

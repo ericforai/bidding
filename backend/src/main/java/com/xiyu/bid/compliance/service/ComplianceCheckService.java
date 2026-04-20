@@ -24,9 +24,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -394,13 +396,20 @@ public class ComplianceCheckService {
     private ComplianceIssue checkExperience(ComplianceRule rule, Project project) {
         try {
             Map<String, Object> ruleDef = objectMapper.readValue(rule.getRuleDefinition(), Map.class);
-            Number minYears = (Number) ruleDef.getOrDefault("minYears", 0);
-            Number minProjects = (Number) ruleDef.get("minProjects");
-            long recentWonProjects = caseRepository.findByOutcome(Case.Outcome.WON).stream()
-                    .filter(caseStudy -> caseStudy.getProjectDate() != null)
-                    .filter(caseStudy -> caseStudy.getProjectDate().isAfter(java.time.LocalDate.now().minusYears(minYears.longValue())))
-                    .count();
-            boolean passed = recentWonProjects >= minProjects.longValue();
+            long minYears = getLongRuleValue(ruleDef, "minYears", 0L);
+            long minProjects = getLongRuleValue(ruleDef, "minProjects", 0L);
+            Case.Industry industry = resolveIndustryFilter(ruleDef, project);
+            String productLine = resolveProductLineFilter(ruleDef, project);
+            LocalDate projectDateFrom = minYears > 0
+                    ? LocalDate.now().minusYears(minYears).plusDays(1)
+                    : null;
+
+            long recentWonProjects = caseRepository.countWonCasesByFilters(
+                    industry,
+                    productLine,
+                    projectDateFrom,
+                    null);
+            boolean passed = recentWonProjects >= minProjects;
             String description = passed
                     ? "Experience requirements met via historical case library"
                     : "Historical case library does not contain enough recent winning projects";
@@ -417,6 +426,98 @@ public class ComplianceCheckService {
         } catch (JsonProcessingException e) {
             return createErrorIssue(rule, "Invalid rule definition");
         }
+    }
+
+    private long getLongRuleValue(Map<String, Object> ruleDef, String key, long defaultValue) {
+        Object rawValue = ruleDef.get(key);
+        if (rawValue instanceof Number number) {
+            return number.longValue();
+        }
+        if (rawValue instanceof String text) {
+            try {
+                return Long.parseLong(text.trim());
+            } catch (NumberFormatException ignored) {
+                return defaultValue;
+            }
+        }
+        return defaultValue;
+    }
+
+    private String getStringRuleValue(Map<String, Object> ruleDef, String... keys) {
+        for (String key : keys) {
+            Object rawValue = ruleDef.get(key);
+            if (rawValue instanceof String text && !text.isBlank()) {
+                return text.trim();
+            }
+        }
+        return null;
+    }
+
+    private String resolveProductLineFilter(Map<String, Object> ruleDef, Project project) {
+        String explicit = getStringRuleValue(ruleDef, "productLine", "businessLine", "caseProductLine");
+        if (explicit != null) {
+            return explicit;
+        }
+        if (project != null && project.getSourceModule() != null && !project.getSourceModule().isBlank()) {
+            return project.getSourceModule().trim();
+        }
+        return null;
+    }
+
+    private Case.Industry resolveIndustryFilter(Map<String, Object> ruleDef, Project project) {
+        String rawIndustry = getStringRuleValue(ruleDef, "industry", "caseIndustry");
+        if (rawIndustry != null) {
+            Case.Industry parsed = parseIndustry(rawIndustry);
+            if (parsed != null) {
+                return parsed;
+            }
+        }
+
+        if (project == null) {
+            return null;
+        }
+        return inferIndustryFromProject(project);
+    }
+
+    private Case.Industry inferIndustryFromProject(Project project) {
+        String sourceText = String.join(" ",
+                safe(project.getName()),
+                safe(project.getSourceModule()),
+                safe(project.getSourceReasoningSummary()),
+                safe(project.getSourceCustomer()))
+                .toLowerCase(Locale.ROOT);
+
+        if (sourceText.contains("能源") || sourceText.contains("电力")) {
+            return Case.Industry.ENERGY;
+        }
+        if (sourceText.contains("制造")) {
+            return Case.Industry.MANUFACTURING;
+        }
+        if (sourceText.contains("交通") || sourceText.contains("轨道") || sourceText.contains("运输")) {
+            return Case.Industry.TRANSPORTATION;
+        }
+        if (sourceText.contains("环保") || sourceText.contains("环境")) {
+            return Case.Industry.ENVIRONMENTAL;
+        }
+        if (sourceText.contains("地产") || sourceText.contains("楼宇")) {
+            return Case.Industry.REAL_ESTATE;
+        }
+        if (sourceText.contains("园区") || sourceText.contains("政务") || sourceText.contains("城市") || sourceText.contains("基建")) {
+            return Case.Industry.INFRASTRUCTURE;
+        }
+        return null;
+    }
+
+    private Case.Industry parseIndustry(String rawIndustry) {
+        try {
+            return Case.Industry.valueOf(rawIndustry.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value;
     }
 
     /**

@@ -4,6 +4,7 @@ import com.xiyu.bid.casework.domain.model.CaseSearchCriteria;
 import com.xiyu.bid.casework.domain.model.CaseSearchOptions;
 import com.xiyu.bid.casework.domain.port.CaseSearchPort;
 import com.xiyu.bid.casework.dto.CaseRecommendationDTO;
+import com.xiyu.bid.casework.dto.CaseSearchOptionsDTO;
 import com.xiyu.bid.casework.dto.CaseSearchResultDTO;
 import com.xiyu.bid.casework.infrastructure.persistence.CaseMapper;
 import com.xiyu.bid.entity.Case;
@@ -63,6 +64,19 @@ public class CaseSearchAppService {
                 sortedDistinct(caseSearchPort.findDistinctProductLines()),
                 sortedDistinct(caseSearchPort.findDistinctTags()),
                 List.of("latest", "popular", "amountDesc", "amountAsc", "oldest"));
+    }
+
+    public CaseSearchOptionsDTO getSearchOptionsDTO() {
+        CaseSearchOptions options = getSearchOptions();
+        return CaseSearchOptionsDTO.builder()
+                .industries(options.industries())
+                .outcomes(options.outcomes())
+                .statuses(options.statuses())
+                .visibilities(options.visibilities())
+                .productLines(options.productLines())
+                .tags(options.tags())
+                .sortOptions(options.sortOptions())
+                .build();
     }
 
     public List<CaseRecommendationDTO> getRelatedCases(Long caseId, int limit) {

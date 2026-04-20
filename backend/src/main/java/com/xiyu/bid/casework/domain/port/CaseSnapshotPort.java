@@ -1,8 +1,8 @@
 package com.xiyu.bid.casework.domain.port;
 
-import com.xiyu.bid.documentexport.dto.DocumentCaseSnapshotDTO;
+import com.xiyu.bid.historyproject.dto.HistoricalProjectSnapshotDTO;
 
 public interface CaseSnapshotPort {
 
-    DocumentCaseSnapshotDTO getCaseSnapshot(Long projectId);
+    HistoricalProjectSnapshotDTO getCaseSnapshot(Long projectId);
 }

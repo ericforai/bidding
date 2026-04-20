@@ -93,6 +93,18 @@ export function createCaseFormRules() {
   }
 }
 
+export function createCaseEditRules() {
+  return {
+    title: [{ required: true, message: '请输入案例标题', trigger: 'blur' }],
+    customer: [{ required: true, message: '请输入客户名称', trigger: 'blur' }],
+    industry: [{ required: true, message: '请选择行业', trigger: 'change' }],
+    amount: [{ required: true, message: '请输入项目金额', trigger: 'blur' }],
+    location: [{ required: true, message: '请输入所在地区', trigger: 'blur' }],
+    description: [{ required: true, message: '请输入项目概述', trigger: 'blur' }],
+    highlights: [{ required: true, message: '请输入项目亮点', trigger: 'blur' }]
+  }
+}
+
 export function getYearTagType(year) {
   const currentYear = new Date().getFullYear()
   if (year === currentYear) return 'success'

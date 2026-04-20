@@ -5,6 +5,12 @@
 package com.xiyu.bid.casework.controller;
 
 import com.xiyu.bid.annotation.Auditable;
+import com.xiyu.bid.casework.application.service.CaseCrudAppService;
+import com.xiyu.bid.casework.application.service.CasePromotionAppService;
+import com.xiyu.bid.casework.application.service.CaseReferenceAppService;
+import com.xiyu.bid.casework.application.service.CaseSearchAppService;
+import com.xiyu.bid.casework.application.service.CaseShareAppService;
+import com.xiyu.bid.casework.domain.model.CaseSearchCriteria;
 import com.xiyu.bid.casework.dto.CaseDTO;
 import com.xiyu.bid.casework.dto.CasePromoteFromProjectRequest;
 import com.xiyu.bid.casework.dto.CaseRecommendationDTO;
@@ -14,9 +20,7 @@ import com.xiyu.bid.casework.dto.CaseSearchOptionsDTO;
 import com.xiyu.bid.casework.dto.CaseSearchResultDTO;
 import com.xiyu.bid.casework.dto.CaseShareRecordCreateRequest;
 import com.xiyu.bid.casework.dto.CaseShareRecordDTO;
-import com.xiyu.bid.casework.service.CaseService;
 import com.xiyu.bid.dto.ApiResponse;
-import com.xiyu.bid.util.InputSanitizer;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,15 +46,19 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CaseController {
 
-    private final CaseService caseService;
+    private final CaseCrudAppService caseCrudAppService;
+    private final CaseSearchAppService caseSearchAppService;
+    private final CasePromotionAppService casePromotionAppService;
+    private final CaseShareAppService caseShareAppService;
+    private final CaseReferenceAppService caseReferenceAppService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "CREATE", entityType = "Case", description = "创建案例")
     public ResponseEntity<ApiResponse<CaseDTO>> createCase(@Valid @RequestBody CaseDTO dto) {
-        sanitizeCaseDTO(dto);
+        CaseRequestSanitizer.sanitizeCase(dto);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Case created successfully", caseService.createCase(dto)));
+                .body(ApiResponse.success("Case created successfully", caseCrudAppService.create(dto)));
     }
 
     @GetMapping
@@ -70,42 +78,31 @@ public class CaseController {
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "20") Integer pageSize,
             @RequestParam(defaultValue = "latest") String sort) {
-        return ResponseEntity.ok(ApiResponse.success("Cases retrieved successfully", caseService.searchCases(
-                sanitizeQueryText(keyword, 200),
-                industry == null ? null : industry.name(),
-                sanitizeQueryText(productLine, 100),
-                outcome == null ? null : outcome.name(),
-                year,
-                amountMin,
-                amountMax,
-                sanitizeTags(tags),
-                sanitizeQueryText(status, 30),
-                sanitizeQueryText(visibility, 30),
-                Math.max(page == null ? 1 : page, 1),
-                Math.max(pageSize == null ? 20 : pageSize, 1),
-                sanitizeQueryText(sort, 30))));
+        CaseSearchCriteria criteria = CaseRequestSanitizer.sanitizeSearchCriteria(
+                keyword, industry, productLine, outcome, year, amountMin, amountMax, tags, status, visibility, page, pageSize, sort);
+        return ResponseEntity.ok(ApiResponse.success("Cases retrieved successfully", caseSearchAppService.search(criteria)));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "READ", entityType = "Case", description = "根据ID获取案例")
     public ResponseEntity<ApiResponse<CaseDTO>> getCaseById(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success("Case retrieved successfully", caseService.getCaseById(id)));
+        return ResponseEntity.ok(ApiResponse.success("Case retrieved successfully", caseCrudAppService.findById(id)));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "UPDATE", entityType = "Case", description = "更新案例")
     public ResponseEntity<ApiResponse<CaseDTO>> updateCase(@PathVariable Long id, @Valid @RequestBody CaseDTO dto) {
-        sanitizeCaseDTO(dto);
-        return ResponseEntity.ok(ApiResponse.success("Case updated successfully", caseService.updateCase(id, dto)));
+        CaseRequestSanitizer.sanitizeCase(dto);
+        return ResponseEntity.ok(ApiResponse.success("Case updated successfully", caseCrudAppService.update(id, dto)));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "DELETE", entityType = "Case", description = "删除案例")
     public ResponseEntity<Void> deleteCase(@PathVariable Long id) {
-        caseService.deleteCase(id);
+        caseCrudAppService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
@@ -113,21 +110,21 @@ public class CaseController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "READ", entityType = "Case", description = "根据行业获取案例")
     public ResponseEntity<ApiResponse<List<CaseDTO>>> getCasesByIndustry(@PathVariable CaseDTO.Industry industry) {
-        return ResponseEntity.ok(ApiResponse.success("Cases retrieved successfully", caseService.getCasesByIndustry(industry)));
+        return ResponseEntity.ok(ApiResponse.success("Cases retrieved successfully", caseCrudAppService.findByIndustry(industry)));
     }
 
     @GetMapping("/outcome/{outcome}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "READ", entityType = "Case", description = "根据结果获取案例")
     public ResponseEntity<ApiResponse<List<CaseDTO>>> getCasesByOutcome(@PathVariable CaseDTO.Outcome outcome) {
-        return ResponseEntity.ok(ApiResponse.success("Cases retrieved successfully", caseService.getCasesByOutcome(outcome)));
+        return ResponseEntity.ok(ApiResponse.success("Cases retrieved successfully", caseCrudAppService.findByOutcome(outcome)));
     }
 
     @GetMapping("/search/options")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "READ", entityType = "Case", description = "获取案例搜索选项")
     public ResponseEntity<ApiResponse<CaseSearchOptionsDTO>> getSearchOptions() {
-        return ResponseEntity.ok(ApiResponse.success("Case search options retrieved successfully", caseService.getSearchOptions()));
+        return ResponseEntity.ok(ApiResponse.success("Case search options retrieved successfully", caseSearchAppService.getSearchOptionsDTO()));
     }
 
     @GetMapping("/{id}/related")
@@ -138,108 +135,47 @@ public class CaseController {
             @RequestParam(defaultValue = "5") Integer limit) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Related cases retrieved successfully",
-                caseService.getRelatedCases(id, Math.max(limit == null ? 5 : limit, 1))));
+                caseSearchAppService.getRelatedCases(id, Math.max(limit == null ? 5 : limit, 1))));
     }
 
     @PostMapping("/promote-from-project")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     @Auditable(action = "CREATE", entityType = "Case", description = "从项目快照晋升案例")
     public ResponseEntity<ApiResponse<CaseDTO>> promoteFromProject(@Valid @RequestBody CasePromoteFromProjectRequest request) {
-        sanitizePromoteRequest(request);
+        CaseRequestSanitizer.sanitizePromotion(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Case promoted successfully", caseService.promoteFromProject(request)));
+                .body(ApiResponse.success("Case promoted successfully", casePromotionAppService.promoteFromProject(request)));
     }
 
     @GetMapping("/{id}/share-records")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "READ", entityType = "Case", description = "获取案例分享记录")
     public ResponseEntity<ApiResponse<List<CaseShareRecordDTO>>> getCaseShareRecords(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success("Case share records retrieved successfully", caseService.getCaseShareRecords(id)));
+        return ResponseEntity.ok(ApiResponse.success("Case share records retrieved successfully", caseShareAppService.getShareRecords(id)));
     }
 
     @PostMapping("/{id}/share-records")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "CREATE", entityType = "Case", description = "创建案例分享记录")
     public ResponseEntity<ApiResponse<CaseShareRecordDTO>> createCaseShareRecord(@PathVariable Long id, @Valid @RequestBody CaseShareRecordCreateRequest request) {
-        request.setCreatedByName(InputSanitizer.sanitizeString(request.getCreatedByName(), 100));
-        request.setBaseUrl(InputSanitizer.sanitizeString(request.getBaseUrl(), 500));
+        CaseRequestSanitizer.sanitizeShareRecord(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Case share record created successfully", caseService.createCaseShareRecord(id, request)));
+                .body(ApiResponse.success("Case share record created successfully", caseShareAppService.createShareRecord(id, request)));
     }
 
     @GetMapping("/{id}/references")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "READ", entityType = "Case", description = "获取案例引用记录")
     public ResponseEntity<ApiResponse<List<CaseReferenceRecordDTO>>> getCaseReferenceRecords(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success("Case reference records retrieved successfully", caseService.getCaseReferenceRecords(id)));
+        return ResponseEntity.ok(ApiResponse.success("Case reference records retrieved successfully", caseReferenceAppService.getReferenceRecords(id)));
     }
 
     @PostMapping("/{id}/references")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "CREATE", entityType = "Case", description = "创建案例引用记录")
     public ResponseEntity<ApiResponse<CaseReferenceRecordDTO>> createCaseReferenceRecord(@PathVariable Long id, @Valid @RequestBody CaseReferenceRecordCreateRequest request) {
-        request.setReferencedByName(InputSanitizer.sanitizeString(request.getReferencedByName(), 100));
-        request.setReferenceTarget(InputSanitizer.sanitizeString(request.getReferenceTarget(), 255));
-        request.setReferenceContext(InputSanitizer.sanitizeString(request.getReferenceContext(), 1000));
+        CaseRequestSanitizer.sanitizeReferenceRecord(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Case reference record created successfully", caseService.createCaseReferenceRecord(id, request)));
-    }
-
-    private void sanitizeCaseDTO(CaseDTO dto) {
-        if (dto.getTitle() != null) dto.setTitle(InputSanitizer.sanitizeString(dto.getTitle(), 200));
-        if (dto.getDescription() != null) dto.setDescription(InputSanitizer.sanitizeString(dto.getDescription(), 2000));
-        if (dto.getCustomerName() != null) dto.setCustomerName(InputSanitizer.sanitizeString(dto.getCustomerName(), 255));
-        if (dto.getLocationName() != null) dto.setLocationName(InputSanitizer.sanitizeString(dto.getLocationName(), 255));
-        if (dto.getProjectPeriod() != null) dto.setProjectPeriod(InputSanitizer.sanitizeString(dto.getProjectPeriod(), 255));
-        if (dto.getProductLine() != null) dto.setProductLine(InputSanitizer.sanitizeString(dto.getProductLine(), 255));
-        if (dto.getArchiveSummary() != null) dto.setArchiveSummary(InputSanitizer.sanitizeString(dto.getArchiveSummary(), 5000));
-        if (dto.getPriceStrategy() != null) dto.setPriceStrategy(InputSanitizer.sanitizeString(dto.getPriceStrategy(), 5000));
-        if (dto.getDocumentSnapshotText() != null) dto.setDocumentSnapshotText(InputSanitizer.sanitizeString(dto.getDocumentSnapshotText(), 10000));
-        if (dto.getStatus() != null) dto.setStatus(InputSanitizer.sanitizeString(dto.getStatus(), 30));
-        if (dto.getVisibility() != null) dto.setVisibility(InputSanitizer.sanitizeString(dto.getVisibility(), 30));
-        if (dto.getTags() != null) dto.setTags(dto.getTags().stream().map(tag -> InputSanitizer.sanitizeString(tag, 50)).toList());
-        if (dto.getHighlights() != null) dto.setHighlights(dto.getHighlights().stream().map(item -> InputSanitizer.sanitizeString(item, 1000)).toList());
-        if (dto.getTechnologies() != null) dto.setTechnologies(dto.getTechnologies().stream().map(item -> InputSanitizer.sanitizeString(item, 255)).toList());
-        if (dto.getSuccessFactors() != null) dto.setSuccessFactors(dto.getSuccessFactors().stream().map(item -> InputSanitizer.sanitizeString(item, 1000)).toList());
-        if (dto.getLessonsLearned() != null) dto.setLessonsLearned(dto.getLessonsLearned().stream().map(item -> InputSanitizer.sanitizeString(item, 1000)).toList());
-        if (dto.getAttachmentNames() != null) dto.setAttachmentNames(dto.getAttachmentNames().stream().map(item -> InputSanitizer.sanitizeString(item, 255)).toList());
-    }
-
-    private void sanitizePromoteRequest(CasePromoteFromProjectRequest request) {
-        if (request.getTitle() != null) request.setTitle(InputSanitizer.sanitizeString(request.getTitle(), 200));
-        if (request.getDescription() != null) request.setDescription(InputSanitizer.sanitizeString(request.getDescription(), 2000));
-        if (request.getCustomerName() != null) request.setCustomerName(InputSanitizer.sanitizeString(request.getCustomerName(), 255));
-        if (request.getLocationName() != null) request.setLocationName(InputSanitizer.sanitizeString(request.getLocationName(), 255));
-        if (request.getProjectPeriod() != null) request.setProjectPeriod(InputSanitizer.sanitizeString(request.getProjectPeriod(), 255));
-        if (request.getProductLine() != null) request.setProductLine(InputSanitizer.sanitizeString(request.getProductLine(), 255));
-        if (request.getArchiveSummary() != null) request.setArchiveSummary(InputSanitizer.sanitizeString(request.getArchiveSummary(), 5000));
-        if (request.getPriceStrategy() != null) request.setPriceStrategy(InputSanitizer.sanitizeString(request.getPriceStrategy(), 5000));
-        if (request.getDocumentSnapshotText() != null) request.setDocumentSnapshotText(InputSanitizer.sanitizeString(request.getDocumentSnapshotText(), 10000));
-        if (request.getStatus() != null) request.setStatus(InputSanitizer.sanitizeString(request.getStatus(), 30));
-        if (request.getVisibility() != null) request.setVisibility(InputSanitizer.sanitizeString(request.getVisibility(), 30));
-        if (request.getTags() != null) request.setTags(request.getTags().stream().map(tag -> InputSanitizer.sanitizeString(tag, 50)).toList());
-        if (request.getHighlights() != null) request.setHighlights(request.getHighlights().stream().map(item -> InputSanitizer.sanitizeString(item, 1000)).toList());
-        if (request.getTechnologies() != null) request.setTechnologies(request.getTechnologies().stream().map(item -> InputSanitizer.sanitizeString(item, 255)).toList());
-        if (request.getSuccessFactors() != null) request.setSuccessFactors(request.getSuccessFactors().stream().map(item -> InputSanitizer.sanitizeString(item, 1000)).toList());
-        if (request.getLessonsLearned() != null) request.setLessonsLearned(request.getLessonsLearned().stream().map(item -> InputSanitizer.sanitizeString(item, 1000)).toList());
-        if (request.getAttachmentNames() != null) request.setAttachmentNames(request.getAttachmentNames().stream().map(item -> InputSanitizer.sanitizeString(item, 255)).toList());
-    }
-
-    private String sanitizeQueryText(String value, int maxLength) {
-        if (value == null) {
-            return null;
-        }
-        String sanitized = InputSanitizer.sanitizeString(value, maxLength);
-        return sanitized.isBlank() ? null : sanitized;
-    }
-
-    private List<String> sanitizeTags(List<String> tags) {
-        if (tags == null) {
-            return List.of();
-        }
-        return tags.stream()
-                .map(tag -> sanitizeQueryText(tag, 50))
-                .filter(tag -> tag != null && !tag.isBlank())
-                .toList();
+                .body(ApiResponse.success("Case reference record created successfully", caseReferenceAppService.createReferenceRecord(id, request)));
     }
 }
