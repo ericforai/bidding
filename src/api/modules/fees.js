@@ -14,6 +14,10 @@ export const feesApi = {
     return httpClient.get('/api/fees', { params })
   },
 
+  async getByProject(projectId) {
+    return httpClient.get(`/api/fees/project/${projectId}`)
+  },
+
   async getDetail(id) {
     return httpClient.get(`/api/fees/${id}`)
   },

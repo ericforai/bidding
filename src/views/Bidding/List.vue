@@ -242,102 +242,102 @@
         >
           <el-table-column type="selection" width="50" />
           <el-table-column prop="title" label="标讯标题" min-width="280" show-overflow-tooltip>
-            <template #default="{ row }">
+            <template #default="scope">
               <div class="title-cell">
-                <el-link v-if="row.originalUrl" :href="row.originalUrl" target="_blank" type="primary" :underline="false">
-                  <span class="title-text">{{ row.title }}</span>
+                <el-link v-if="getSlotRow(scope).originalUrl" :href="getSlotRow(scope).originalUrl" target="_blank" type="primary" :underline="false">
+                  <span class="title-text">{{ getSlotRow(scope).title }}</span>
                   <el-icon style="margin-left: 4px" size="14"><Link /></el-icon>
                 </el-link>
-                <span v-else class="title-text">{{ row.title }}</span>
-                <el-tag v-if="row.aiScore >= 90" size="small" type="success" style="margin-left: 8px">高匹配</el-tag>
+                <span v-else class="title-text">{{ getSlotRow(scope).title }}</span>
+                <el-tag v-if="getSlotRow(scope).aiScore >= 90" size="small" type="success" style="margin-left: 8px">高匹配</el-tag>
               </div>
             </template>
           </el-table-column>
           <el-table-column prop="budget" label="预算" width="100" align="center">
-            <template #default="{ row }">
-              <span>{{ row.budget }}万元</span>
+            <template #default="scope">
+              <span>{{ getSlotRow(scope).budget }}万元</span>
             </template>
           </el-table-column>
           <el-table-column prop="region" label="地区" width="100" align="center" />
           <el-table-column prop="industry" label="行业" width="100" align="center" />
           <el-table-column prop="source" label="来源" width="100" align="center">
-            <template #default="{ row }">
-              <el-tag v-if="row.source" :type="getSourceTagType(row.source)" size="small">
-                {{ getSourceText(row.source) }}
+            <template #default="scope">
+              <el-tag v-if="getSlotRow(scope).source" :type="getSourceTagType(getSlotRow(scope).source)" size="small">
+                {{ getSourceText(getSlotRow(scope).source) }}
               </el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="aiScore" label="AI评分" width="100" align="center">
-            <template #default="{ row }">
-              <span class="ai-score-highlight" :class="row.aiScore >= 85 ? 'ai-score-high' : row.aiScore >= 70 ? 'ai-score-medium' : 'ai-score-low'">
-                {{ row.aiScore }}
+            <template #default="scope">
+              <span class="ai-score-highlight" :class="getSlotRow(scope).aiScore >= 85 ? 'ai-score-high' : getSlotRow(scope).aiScore >= 70 ? 'ai-score-medium' : 'ai-score-low'">
+                {{ getSlotRow(scope).aiScore }}
               </span>
             </template>
           </el-table-column>
           <el-table-column prop="deadline" label="截止日期" width="120" align="center" />
           <el-table-column prop="status" label="状态" width="100" align="center">
-            <template #default="{ row }">
-              <span class="status-badge" :class="'status-' + row.status">
-                {{ getStatusText(row.status) }}
+            <template #default="scope">
+              <span class="status-badge" :class="'status-' + getSlotRow(scope).status">
+                {{ getStatusText(getSlotRow(scope).status) }}
               </span>
             </template>
           </el-table-column>
           <el-table-column label="操作" width="320" align="center" fixed="right">
-            <template #default="{ row }">
+            <template #default="scope">
               <div class="table-actions">
                 <el-tooltip content="查看详情" placement="top">
-                  <el-button class="action-btn btn-view" size="small" :icon="View" @click="handleViewDetail(row.id)" />
+                  <el-button class="action-btn btn-view" size="small" :icon="View" @click="handleViewDetail(getSlotRow(scope).id)" />
                 </el-tooltip>
                 <el-tooltip v-if="showTenderAiEntry" content="AI分析" placement="top">
-                  <el-button class="action-btn btn-analyze" size="small" :icon="MagicStick" @click="handleAIAnalysis(row.id)" />
+                  <el-button class="action-btn btn-analyze" size="small" :icon="MagicStick" @click="handleAIAnalysis(getSlotRow(scope).id)" />
                 </el-tooltip>
                 <el-tooltip content="参与投标" placement="top">
-                  <el-button class="action-btn btn-participate" size="small" :icon="Document" @click="handleParticipate(row.id)" />
+                  <el-button class="action-btn btn-participate" size="small" :icon="Document" @click="handleParticipate(getSlotRow(scope).id)" />
                 </el-tooltip>
                 <el-dropdown trigger="click" class="action-dropdown">
                   <el-button class="action-btn btn-more" size="small" :icon="MoreFilled" />
                   <template #dropdown>
                     <el-dropdown-menu class="bidding-action-menu">
                       <!-- 分组：操作 -->
-                      <el-dropdown-item @click="handleSingleDistribute(row)">
+                      <el-dropdown-item @click="handleSingleDistribute(getSlotRow(scope))">
                         <el-icon><Share /></el-icon>
                         <span>分发</span>
                       </el-dropdown-item>
-                      <el-dropdown-item @click="handleSingleClaim(row)">
+                      <el-dropdown-item @click="handleSingleClaim(getSlotRow(scope))">
                         <el-icon><CircleCheck /></el-icon>
                         <span>领取</span>
                       </el-dropdown-item>
-                      <el-dropdown-item @click="handleSingleAssign(row)">
+                      <el-dropdown-item @click="handleSingleAssign(getSlotRow(scope))">
                         <el-icon><User /></el-icon>
                         <span>指派</span>
                       </el-dropdown-item>
                       <!-- 分隔线 -->
                       <el-dropdown-item divided />
                       <!-- 分组：状态 -->
-                      <el-dropdown-item @click="handleUpdateStatus(row, 'contacted')">
+                      <el-dropdown-item @click="handleUpdateStatus(getSlotRow(scope), 'contacted')">
                         <el-icon class="status-icon"><Phone /></el-icon>
                         <span>已联系</span>
                       </el-dropdown-item>
-                      <el-dropdown-item @click="handleUpdateStatus(row, 'following')">
+                      <el-dropdown-item @click="handleUpdateStatus(getSlotRow(scope), 'following')">
                         <el-icon class="status-icon"><Star /></el-icon>
                         <span>跟进中</span>
                       </el-dropdown-item>
-                      <el-dropdown-item @click="handleUpdateStatus(row, 'quoting')">
+                      <el-dropdown-item @click="handleUpdateStatus(getSlotRow(scope), 'quoting')">
                         <el-icon class="status-icon"><EditPen /></el-icon>
                         <span>报价中</span>
                       </el-dropdown-item>
-                      <el-dropdown-item @click="handleUpdateStatus(row, 'bidding')">
+                      <el-dropdown-item @click="handleUpdateStatus(getSlotRow(scope), 'bidding')">
                         <el-icon class="status-icon"><Briefcase /></el-icon>
                         <span>参与投标</span>
                       </el-dropdown-item>
-                      <el-dropdown-item @click="handleUpdateStatus(row, 'abandoned')">
+                      <el-dropdown-item @click="handleUpdateStatus(getSlotRow(scope), 'abandoned')">
                         <el-icon class="status-icon status-abandon"><Close /></el-icon>
                         <span>放弃跟进</span>
                       </el-dropdown-item>
                       <!-- 分隔线 -->
                       <el-dropdown-item divided />
                       <!-- 分组：删除 -->
-                      <el-dropdown-item @click="handleDeleteTender(row)" class="danger-item">
+                      <el-dropdown-item @click="handleDeleteTender(getSlotRow(scope))" class="danger-item">
                         <el-icon class="delete-icon"><Delete /></el-icon>
                         <span>删除</span>
                       </el-dropdown-item>
@@ -709,9 +709,9 @@
         <el-table-column prop="tenderTitle" label="标讯标题" min-width="200" show-overflow-tooltip />
         <el-table-column prop="assignee" label="被分配人" width="120" />
         <el-table-column prop="type" label="分发方式" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.type === 'auto' ? 'success' : 'primary'" size="small">
-              {{ row.type === 'auto' ? '智能分发' : '手动指定' }}
+          <template #default="scope">
+            <el-tag :type="getSlotRow(scope).type === 'auto' ? 'success' : 'primary'" size="small">
+              {{ getSlotRow(scope).type === 'auto' ? '智能分发' : '手动指定' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -998,21 +998,21 @@
         <el-table-column prop="title" label="标讯标题" min-width="200" show-overflow-tooltip />
         <el-table-column prop="sourcePlatform" label="来源" width="120" />
         <el-table-column prop="budget" label="预算" width="100">
-          <template #default="{ row }">
-            {{ row.budget }}万元
+          <template #default="scope">
+            {{ getSlotRow(scope).budget }}万元
           </template>
         </el-table-column>
         <el-table-column prop="region" label="地区" width="80" />
         <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.imported ? 'success' : 'info'" size="small">
-              {{ row.imported ? '已入库' : '待入库' }}
+          <template #default="scope">
+            <el-tag :type="getSlotRow(scope).imported ? 'success' : 'info'" size="small">
+              {{ getSlotRow(scope).imported ? '已入库' : '待入库' }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
-          <template #default="{ row }">
-            <el-button v-if="!row.imported" link type="primary" size="small" @click="importSingleTender(row)">
+          <template #default="scope">
+            <el-button v-if="!getSlotRow(scope).imported" link type="primary" size="small" @click="importSingleTender(getSlotRow(scope))">
               入库
             </el-button>
             <el-text v-else type="success" size="small">
@@ -1059,38 +1059,38 @@
             </div>
             <el-table :data="industryTrends" size="small" stripe>
               <el-table-column prop="industry" label="行业" width="150">
-                <template #default="{ row }">
+                <template #default="scope">
                   <div class="industry-cell">
-                    <span :class="['industry-dot', row.color]"></span>
-                    {{ row.industry }}
+                    <span :class="['industry-dot', getSlotRow(scope).color]"></span>
+                    {{ getSlotRow(scope).industry }}
                   </div>
                 </template>
               </el-table-column>
               <el-table-column prop="count" label="标讯数量" width="120" align="center" />
               <el-table-column prop="amount" label="总预算(万元)" width="130" align="center">
-                <template #default="{ row }">
-                  {{ row.amount.toLocaleString() }}
+                <template #default="scope">
+                  {{ getSlotRow(scope).amount?.toLocaleString?.() }}
                 </template>
               </el-table-column>
               <el-table-column prop="growth" label="同比增长" width="120" align="center">
-                <template #default="{ row }">
-                  <span :class="row.growth > 0 ? 'growth-up' : 'growth-down'">
-                    {{ row.growth > 0 ? '+' : '' }}{{ row.growth }}%
-                    <el-icon v-if="row.growth > 0"><ArrowRight /></el-icon>
+                <template #default="scope">
+                  <span :class="getSlotRow(scope).growth > 0 ? 'growth-up' : 'growth-down'">
+                    {{ getSlotRow(scope).growth > 0 ? '+' : '' }}{{ getSlotRow(scope).growth }}%
+                    <el-icon v-if="getSlotRow(scope).growth > 0"><ArrowRight /></el-icon>
                     <el-icon v-else><ArrowDown /></el-icon>
                   </span>
                 </template>
               </el-table-column>
               <el-table-column prop="trend" label="趋势" width="100" align="center">
-                <template #default="{ row }">
-                  <el-tag :type="row.trend === 'up' ? 'success' : row.trend === 'down' ? 'danger' : 'info'" size="small">
-                    {{ row.trend === 'up' ? '上升' : row.trend === 'down' ? '下降' : '平稳' }}
+                <template #default="scope">
+                  <el-tag :type="getSlotRow(scope).trend === 'up' ? 'success' : getSlotRow(scope).trend === 'down' ? 'danger' : 'info'" size="small">
+                    {{ getSlotRow(scope).trend === 'up' ? '上升' : getSlotRow(scope).trend === 'down' ? '下降' : '平稳' }}
                   </el-tag>
                 </template>
               </el-table-column>
               <el-table-column prop="hotLevel" label="热度" width="140" align="center">
-                <template #default="{ row }">
-                  <el-rate v-model="row.hotLevel" disabled size="small" />
+                <template #default="scope">
+                  <el-rate v-model="getSlotRow(scope).hotLevel" disabled size="small" />
                 </template>
               </el-table-column>
             </el-table>
@@ -1115,23 +1115,23 @@
               <el-table-column prop="name" label="采购方" min-width="180" show-overflow-tooltip />
               <el-table-column prop="industry" label="所属行业" width="120" />
               <el-table-column prop="frequency" label="年招标频次" width="110" align="center">
-                <template #default="{ row }">
-                  <el-tag :type="row.frequency >= 10 ? 'danger' : row.frequency >= 5 ? 'warning' : 'info'" size="small">
-                    {{ row.frequency }}次
+                <template #default="scope">
+                  <el-tag :type="getSlotRow(scope).frequency >= 10 ? 'danger' : getSlotRow(scope).frequency >= 5 ? 'warning' : 'info'" size="small">
+                    {{ getSlotRow(scope).frequency }}次
                   </el-tag>
                 </template>
               </el-table-column>
               <el-table-column prop="period" label="常用招标月份" width="150" align="center" />
               <el-table-column prop="avgBudget" label="平均预算(万元)" width="130" align="center">
-                <template #default="{ row }">
-                  {{ row.avgBudget.toLocaleString() }}
+                <template #default="scope">
+                  {{ getSlotRow(scope).avgBudget?.toLocaleString?.() }}
                 </template>
               </el-table-column>
               <el-table-column label="机会评估" width="150" align="center">
-                <template #default="{ row }">
+                <template #default="scope">
                   <div class="opportunity-rating">
-                    <el-rate v-model="row.opportunity" disabled size="small" />
-                    <el-text size="small" type="success">{{ getOpportunityText(row.opportunity) }}</el-text>
+                    <el-rate v-model="getSlotRow(scope).opportunity" disabled size="small" />
+                    <el-text size="small" type="success">{{ getOpportunityText(getSlotRow(scope).opportunity) }}</el-text>
                   </div>
                 </template>
               </el-table-column>
@@ -1290,8 +1290,8 @@
           :stroke-width="12"
           :color="progressColors"
         >
-          <template #default="{ percentage }">
-            {{ Math.round(percentage) }}%
+          <template #default="progressScope">
+            {{ Math.round(progressScope?.percentage ?? 0) }}%
           </template>
         </el-progress>
         <p class="parsing-hint">AI正在分析标书文档，提取关键信息</p>
@@ -1333,6 +1333,10 @@ const showTenderAiEntry = true
 
 // 表格引用
 const tableRef = ref(null)
+
+function getSlotRow(scope) {
+  return scope?.row ?? {}
+}
 
 // 搜索表单
 const searchForm = ref({
