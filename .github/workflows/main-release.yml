@@ -98,6 +98,43 @@ jobs:
           printf '%s' "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/id_ed25519
           ssh-keyscan -p "${PROD_SSH_PORT:-22}" "$PROD_SSH_HOST" >> ~/.ssh/known_hosts
 
+      - name: Validate remote deployment path contract
+        run: |
+          set -euo pipefail
+
+          require_absolute_path() {
+            local name="$1"
+            local value="$2"
+            if [[ -z "$value" || "$value" != /* ]]; then
+              echo "$name must be an absolute path, got: ${value:-<empty>}" >&2
+              exit 1
+            fi
+          }
+
+          assert_not_nested_under() {
+            local name="$1"
+            local candidate="$2"
+            local forbidden_root="$3"
+            if [[ "$candidate" == "$forbidden_root" || "$candidate" == "$forbidden_root"/* ]]; then
+              echo "$name must not live under $forbidden_root: $candidate" >&2
+              exit 1
+            fi
+          }
+
+          RELEASES_DIR_VALUE="${PROD_RELEASES_DIR:-${PROD_APP_ROOT}/releases}"
+          BACKEND_RUNTIME_DIR_VALUE="${PROD_BACKEND_RUNTIME_DIR:-${PROD_APP_ROOT}/shared/backend}"
+          BACKEND_JAR_PATH_VALUE="${PROD_BACKEND_JAR_PATH:-${BACKEND_RUNTIME_DIR_VALUE}/app.jar}"
+
+          require_absolute_path "PROD_APP_ROOT" "$PROD_APP_ROOT"
+          require_absolute_path "PROD_FRONTEND_PUBLIC_DIR" "$PROD_FRONTEND_PUBLIC_DIR"
+          require_absolute_path "PROD_RELEASES_DIR" "$RELEASES_DIR_VALUE"
+          require_absolute_path "PROD_BACKEND_RUNTIME_DIR" "$BACKEND_RUNTIME_DIR_VALUE"
+          require_absolute_path "PROD_BACKEND_JAR_PATH" "$BACKEND_JAR_PATH_VALUE"
+
+          assert_not_nested_under "PROD_FRONTEND_PUBLIC_DIR" "$PROD_FRONTEND_PUBLIC_DIR" "$RELEASES_DIR_VALUE"
+          assert_not_nested_under "PROD_BACKEND_RUNTIME_DIR" "$BACKEND_RUNTIME_DIR_VALUE" "$RELEASES_DIR_VALUE"
+          assert_not_nested_under "PROD_BACKEND_JAR_PATH" "$BACKEND_JAR_PATH_VALUE" "$RELEASES_DIR_VALUE"
+
       - name: Upload archive and deployment env
         run: |
           set -euo pipefail
