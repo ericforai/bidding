@@ -18,6 +18,10 @@ parse_prefixes() {
   local raw_value="$1"
 
   if [ -z "$raw_value" ]; then
+    if [ "${#DEFAULT_SERVICE_TARGET_PREFIXES[@]}" -eq 0 ]; then
+      return
+    fi
+
     printf "%s\n" "${DEFAULT_SERVICE_TARGET_PREFIXES[@]}"
     return
   fi
@@ -90,14 +94,20 @@ filter_target_files() {
   shift
 
   local prefixes=()
+  local prefixes_count=0
   local prefix
   while IFS= read -r prefix; do
     if [ -n "$prefix" ]; then
       prefixes+=("$prefix")
+      prefixes_count=$((prefixes_count + 1))
     fi
   done <<EOF
 $prefixes_csv
 EOF
+
+  if [ "$prefixes_count" -eq 0 ]; then
+    return
+  fi
 
   local file
   for file in "$@"; do
@@ -185,9 +195,12 @@ SPOTBUGS_TARGET_PREFIXES="$(parse_prefixes "${JAVA_STANDARDS_SPOTBUGS_TARGET_PRE
 
 PMD_TARGET_FILES=()
 SPOTBUGS_TARGET_FILES=()
+PMD_TARGET_COUNT=0
+SPOTBUGS_TARGET_COUNT=0
 while IFS= read -r file; do
   if [ -n "$file" ]; then
     PMD_TARGET_FILES+=("$file")
+    PMD_TARGET_COUNT=$((PMD_TARGET_COUNT + 1))
   fi
 done <<EOF
 $(filter_target_files "$PMD_TARGET_PREFIXES" "${STAGED_JAVA_FILES[@]}")
@@ -195,12 +208,13 @@ EOF
 while IFS= read -r file; do
   if [ -n "$file" ]; then
     SPOTBUGS_TARGET_FILES+=("$file")
+    SPOTBUGS_TARGET_COUNT=$((SPOTBUGS_TARGET_COUNT + 1))
   fi
 done <<EOF
 $(filter_target_files "$SPOTBUGS_TARGET_PREFIXES" "${STAGED_JAVA_FILES[@]}")
 EOF
 
-if [ "${#PMD_TARGET_FILES[@]}" -gt 0 ]; then
+if [ "$PMD_TARGET_COUNT" -gt 0 ]; then
   PMD_TARGET_INCLUDES="$(build_quality_includes "${PMD_TARGET_FILES[@]}")"
   PMD_TARGET_ONLY_ANALYZE="$(build_quality_only_analyze "${PMD_TARGET_FILES[@]}")"
 else
@@ -208,7 +222,7 @@ else
   PMD_TARGET_ONLY_ANALYZE=""
 fi
 
-if [ "${#SPOTBUGS_TARGET_FILES[@]}" -gt 0 ]; then
+if [ "$SPOTBUGS_TARGET_COUNT" -gt 0 ]; then
   SPOTBUGS_TARGET_INCLUDES="$(build_quality_includes "${SPOTBUGS_TARGET_FILES[@]}")"
   SPOTBUGS_TARGET_ONLY_ANALYZE="$(build_quality_only_analyze "${SPOTBUGS_TARGET_FILES[@]}")"
 else
@@ -307,18 +321,18 @@ run_spotbugs_report() {
 echo "java-standards: running checkstyle gate..."
 run_checkstyle_gate
 
-if [ "$ENABLE_PMD" -eq 1 ] && [ "${#PMD_TARGET_FILES[@]}" -gt 0 ]; then
+if [ "$ENABLE_PMD" -eq 1 ] && [ "$PMD_TARGET_COUNT" -gt 0 ]; then
   echo "java-standards: PMD target scope: $PMD_TARGET_INCLUDES"
 fi
 
 if [ "$ENABLE_PMD" -eq 1 ]; then
-  if [ "${#PMD_TARGET_FILES[@]}" -eq 0 ]; then
+  if [ "$PMD_TARGET_COUNT" -eq 0 ]; then
     echo "java-standards: PMD enabled (mode=$PMD_MODE) but no staged files in target service packages, skip PMD."
   elif [ "$PMD_MODE" = "report" ]; then
-    echo "java-standards: PMD report mode on ${#PMD_TARGET_FILES[@]} target file(s)."
+    echo "java-standards: PMD report mode on $PMD_TARGET_COUNT target file(s)."
     run_pmd_report
   else
-    echo "java-standards: PMD gate on ${#PMD_TARGET_FILES[@]} target file(s)."
+    echo "java-standards: PMD gate on $PMD_TARGET_COUNT target file(s)."
     run_pmd_gate
   fi
 else
@@ -329,18 +343,18 @@ if [ "$ENABLE_SPOTBUGS" -eq 1 ] && [ "$SPOTBUGS_MODE" = "auto" ]; then
   echo "java-standards: spotbugs auto mode scoped to target service packages."
 fi
 
-if [ "$ENABLE_SPOTBUGS" -eq 1 ] && [ "${#SPOTBUGS_TARGET_FILES[@]}" -gt 0 ]; then
+if [ "$ENABLE_SPOTBUGS" -eq 1 ] && [ "$SPOTBUGS_TARGET_COUNT" -gt 0 ]; then
   echo "java-standards: spotbugs target scope: $SPOTBUGS_TARGET_INCLUDES"
 fi
 
 if [ "$ENABLE_SPOTBUGS" -eq 1 ]; then
-  if [ "${#SPOTBUGS_TARGET_FILES[@]}" -eq 0 ]; then
+  if [ "$SPOTBUGS_TARGET_COUNT" -eq 0 ]; then
     echo "java-standards: spotbugs enabled (mode=$SPOTBUGS_MODE) but no staged files in target service packages, skip spotbugs."
   elif [ "$SPOTBUGS_MODE" = "report" ]; then
-    echo "java-standards: spotbugs report mode on ${#SPOTBUGS_TARGET_FILES[@]} target file(s)."
+    echo "java-standards: spotbugs report mode on $SPOTBUGS_TARGET_COUNT target file(s)."
     run_spotbugs_report
   else
-    echo "java-standards: running spotbugs gate on ${#SPOTBUGS_TARGET_FILES[@]} target file(s)..."
+    echo "java-standards: running spotbugs gate on $SPOTBUGS_TARGET_COUNT target file(s)..."
     if ! run_spotbugs_gate; then
       if [ "$SPOTBUGS_MODE" = "auto" ]; then
         echo "java-standards: spotbugs failed in auto mode, skip spotbugs."
