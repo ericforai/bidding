@@ -1,0 +1,59 @@
+.ai-tabs {
+  background: transparent;
+}
+
+.tab-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.score-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+}
+
+.score-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.score-level {
+  margin: 12px 0 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #409eff;
+}
+
+.ai-score .score-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  color: white;
+}
+
+.action-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.activity-content {
+  font-size: 14px;
+}
+
+.activity-user {
+  font-weight: 500;
+  color: #409eff;
+}
+
+.activity-action {
+  color: #606266;
+}
