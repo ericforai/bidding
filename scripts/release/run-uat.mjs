@@ -116,12 +116,16 @@ async function main() {
     recordPass('健康检查可访问', 'actuator health returned UP')
   })
 
-  await expectOk('Prometheus 可访问', async () => {
+  await expectOk('Prometheus 暴露策略符合预期', async () => {
     const response = await fetch(`${apiBaseUrl}/actuator/prometheus`)
-    requireStatus(response, [200], 'Prometheus endpoint is unavailable')
-    const text = await response.text()
-    requireTruthy(text.includes('jvm_') || text.includes('process_'), 'Prometheus output is empty')
-    recordPass('Prometheus 可访问', 'metrics exposed')
+    requireStatus(response, [200, 401, 403], 'Prometheus endpoint exposure is unexpected')
+    if (response.status === 200) {
+      const text = await response.text()
+      requireTruthy(text.includes('jvm_') || text.includes('process_'), 'Prometheus output is empty')
+      recordPass('Prometheus 暴露策略符合预期', 'metrics exposed')
+      return
+    }
+    recordPass('Prometheus 暴露策略符合预期', `protected with status=${response.status}`)
   })
 
   await expectOk('未授权访问被拒绝', async () => {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Input: release environment variables, repository filesystem, and deployment arguments
-# Output: release preflight, backup, deployment, and signoff side effects
+# Input: release environment variables, repository filesystem, and packaging arguments
+# Output: verified release package plus operator-facing deployment next steps
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -32,8 +32,12 @@ else
   printf '\nSkipping PostgreSQL Testcontainers verification because Docker is unavailable.\n'
 fi
 
-printf '\n==> Release rehearsal completed\n'
+printf '\n==> Packaging release archive\n'
+bash "$ROOT_DIR/scripts/release/package-release.sh"
+
+printf '\n==> Release pre-deploy bundle completed\n'
 printf 'Next steps:\n'
-printf '1. Take a production backup with scripts/release/backup-db.sh\n'
-printf '2. Apply migration and deploy application artifacts in the target environment\n'
-printf '3. Execute docs/GO_LIVE_CHECKLIST.md and docs/UAT_PLAN.md\n'
+printf '1. Trigger .github/workflows/main-release.yml or upload the archive to the target host\n'
+printf '2. Run the remote activation step with scripts/release/remote-deploy.sh\n'
+printf '3. Execute node scripts/release/run-prod-smoke.mjs against production\n'
+printf '4. Complete docs/GO_LIVE_CHECKLIST.md and docs/PRODUCTION_RELEASE_PIPELINE.md\n'

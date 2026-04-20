@@ -15,7 +15,7 @@
 - 前端：`VITE_API_MODE=api`
 - 后端：Spring Boot + PostgreSQL + Redis
 - 数据库：已应用 Flyway baseline 与增量迁移
-- 监控：`/actuator/health`、`/actuator/prometheus` 可访问
+- 监控：`/actuator/health` 可访问，`/actuator/prometheus` 按安全策略可访问或返回 401/403
 - 本地全流程演练入口：`bash scripts/release/rehearse-release.sh`
 - API 模式 Playwright 基线入口：`bash scripts/test/start-api-e2e-stack.sh` 或直接运行 `npm run test:e2e`
 
@@ -56,7 +56,7 @@
 - Dashboard 可加载真实聚合数据
 - Drill-down 在 API 模式下不展示伪造明细
 - `health` 返回 UP
-- `prometheus` 可抓取
+- `prometheus` 按安全策略暴露正常（公开抓取或受保护返回 401/403）
 
 ## Exit Criteria
 - 所有 P0 场景通过

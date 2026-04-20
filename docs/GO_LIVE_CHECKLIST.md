@@ -14,6 +14,8 @@
 - [ ] 已知 P0 缺陷为 0
 - [ ] `bash scripts/release/rehearse-release.sh` 已执行并产出报告
 - [ ] `Staging Gate` 工作流已通过并上传签字包
+- [ ] `Main Release Pipeline` 工作流的 `Post-Merge Gate` 已通过
+- [ ] 生产部署所需 GitHub `production` 环境变量与 secrets 已配置
 
 ## 发布中
 - [ ] 执行 `scripts/release/preflight.sh`
@@ -22,8 +24,10 @@
 - [ ] 执行数据库迁移
 - [ ] 部署后端应用
 - [ ] 部署前端静态资源
+- [ ] 产物版本与 `main` 提交号一致
 - [ ] 检查 `/actuator/health`
 - [ ] 检查关键接口返回
+- [ ] 执行 `node scripts/release/run-prod-smoke.mjs`
 - [ ] 检查前端首页与主链路
 
 ## 发布后 30 分钟
@@ -33,7 +37,7 @@
 - [ ] 资源审批与 BAR 证书借用可访问
 - [ ] 无高优先级错误告警
 - [ ] 数据库连接池稳定
-- [ ] Prometheus 指标可抓取
+- [ ] Prometheus 按既定策略可访问或被正确保护
 
 ## 触发回滚条件
 - [ ] 数据库迁移失败
