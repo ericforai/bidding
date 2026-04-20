@@ -1,14 +1,14 @@
 <template>
   <div class="project-detail-feature-modals">
-    <CompetitionIntel v-model="detail.showCompetitionIntel.value" :project-id="detail.route.params.id" />
-    <ComplianceCheck v-model="detail.showComplianceCheck.value" :project-id="detail.route.params.id" />
-    <VersionControl v-model="detail.showVersionControl.value" :project-id="detail.dialogProjectId.value" />
-    <CollaborationCenter v-model="detail.showCollaboration.value" :project-id="detail.dialogProjectId.value" />
-    <ROIAnalysis v-model="detail.showROIAnalysis.value" :project-id="detail.route.params.id" />
-    <AutoTasks v-if="detail.isDemoMode" v-model="detail.showAutoTasks.value" :project-id="detail.route.params.id" :data="detail.demoAutoTasks.value" />
-    <MobileCard v-if="detail.isDemoMode" v-model="detail.showMobileCard.value" :project-id="detail.route.params.id" :data="detail.demoMobileCard.value" />
-    <ScoreDraftDialog v-model:visible="detail.scoreDraftDialogVisible.value" :project-id="detail.route.params.id" @generated="detail.handleScoreDraftGenerated" />
-    <ApprovalDialog v-model:visible="detail.approvalDialogVisible.value" :mode="detail.approvalMode.value" :project-id="detail.project.value?.id" :project-name="detail.project.value?.name" :approval-type="detail.approvalType.value" :approval-info="detail.currentApprovalItem.value" @success="detail.handleApprovalSuccess" />
+    <CompetitionIntel v-model="detail.showCompetitionIntel" :project-id="detail.route.params.id" />
+    <ComplianceCheck v-model="detail.showComplianceCheck" :project-id="detail.route.params.id" />
+    <VersionControl v-model="detail.showVersionControl" :project-id="detail.dialogProjectId" />
+    <CollaborationCenter v-model="detail.showCollaboration" :project-id="detail.dialogProjectId" />
+    <ROIAnalysis v-model="detail.showROIAnalysis" :project-id="detail.route.params.id" />
+    <AutoTasks v-if="detail.isDemoMode" v-model="detail.showAutoTasks" :project-id="detail.route.params.id" :data="detail.demoAutoTasks" />
+    <MobileCard v-if="detail.isDemoMode" v-model="detail.showMobileCard" :project-id="detail.route.params.id" :data="detail.demoMobileCard" />
+    <ScoreDraftDialog v-model:visible="detail.scoreDraftDialogVisible" :project-id="detail.route.params.id" @generated="detail.handleScoreDraftGenerated" />
+    <ApprovalDialog v-model:visible="detail.approvalDialogVisible" :mode="detail.approvalMode" :project-id="detail.project?.id" :project-name="detail.project?.name" :approval-type="detail.approvalType" :approval-info="detail.currentApprovalItem" @success="detail.handleApprovalSuccess" />
   </div>
 </template>
 

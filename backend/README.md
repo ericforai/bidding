@@ -47,6 +47,22 @@ mvn spring-boot:run
 mvn clean package
 ```
 
+## 质量门禁
+```bash
+# 静态质量门禁（与 CI 对齐）
+mvn -Pjava-quality,java-quality-spotbugs,quality-strict -DskipTests -Djacoco.skip=true checkstyle:check pmd:check spotbugs:check
+
+# 架构门禁
+mvn test -Dtest=ArchitectureTest
+
+# 迁移门禁
+mvn test -Dtest=FlywayBaselineContextTest,FlywayPostgresContainerTest
+```
+
+说明：
+- `quality-strict` 现在作为统一门禁开关，用来启用 Checkstyle、PMD、SpotBugs 的真实校验。
+- 真实 API 与归档链路的改动默认同时跑 Flyway 与 ArchitectureTest，保证迁移顺序和模块边界可回归。
+
 ## 环境变量
 - `DB_PASSWORD` - 数据库密码（必填）
 - `JWT_SECRET` - JWT密钥，最少32字符（必填）

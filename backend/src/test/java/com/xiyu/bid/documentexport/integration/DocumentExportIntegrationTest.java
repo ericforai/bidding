@@ -196,7 +196,8 @@ class DocumentExportIntegrationTest {
         mockMvc.perform(get("/api/documents/{projectId}/case-snapshot", project.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.projectId").value(project.getId()))
-                .andExpect(jsonPath("$.data.archiveSummary").value(org.hamcrest.Matchers.containsString("文档导出归档回归")))
+                .andExpect(jsonPath("$.data.projectName").value("文档导出归档回归"))
+                .andExpect(jsonPath("$.data.archiveSummary").value(org.hamcrest.Matchers.containsString("项目资料已完成归档")))
                 .andExpect(jsonPath("$.data.documentSnapshotText").value(org.hamcrest.Matchers.containsString("技术方案")));
 
         assertThat(projectRepository.findById(project.getId())).isPresent();

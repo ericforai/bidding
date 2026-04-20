@@ -4,6 +4,15 @@ import { taskTemplates } from './constants.js'
 export function useProjectDetailTaskActions(context) {
   const { route, userStore, projectStore, projectsApi, isApiProject, message, state, workflow } = context
   const pushActivity = (action) => state.activities.value.unshift({ id: Date.now(), user: userStore.userName, action, time: new Date().toLocaleString('zh-CN', { hour12: false }) })
+  const ensureTaskList = () => {
+    if (!state.project.value) {
+      return []
+    }
+    if (!Array.isArray(state.project.value.tasks)) {
+      state.project.value.tasks = []
+    }
+    return state.project.value.tasks
+  }
 
   const getTaskTemplateByProject = (project) => {
     const industry = project?.industry?.toLowerCase() || ''
@@ -51,7 +60,7 @@ export function useProjectDetailTaskActions(context) {
 
     projectsApi.createTask(route.params.id, { title: newTask.name, description: '', assigneeId: userStore.currentUser?.id || null, assigneeName: userStore.userName, priority: 'MEDIUM', dueDate: dueDate.toISOString() }).then((result) => {
       if (!result?.success || !result?.data) throw new Error(result?.message || '新增任务失败')
-      state.project.value.tasks.unshift({ ...result.data, deliverables: [], hasDeliverable: false })
+      ensureTaskList().unshift({ ...result.data, deliverables: [], hasDeliverable: false })
       pushActivity(`新增了任务「${result.data.name}」`)
       message.success('任务已新增')
     }).catch((error) => message.error(error.message || '新增任务失败'))

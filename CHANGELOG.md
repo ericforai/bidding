@@ -4,6 +4,18 @@
 
 ## [未发布]
 
+## [0.0.2.0] - 2026-04-20
+
+#### 重构 (Refactor)
+- 拆分告警规则执行与跨模块调度边界，新增 `alertdispatch` 协调层以消除 `alerts -> businessqualification/resources -> alerts` 架构循环
+- 收敛项目详情页启动链路，改为先加载真实项目详情，再分阶段加载任务、文档与对话框依赖，降低页面对渲染时序的偶然依赖
+- 恢复 Java 质量门禁 profile，并统一 `pom.xml`、CI workflow 与 README 的执行口径
+
+#### 修复 (Fixes)
+- 修复 Flyway 重复迁移版本冲突，顺延保证金跟踪、历史项目快照与案例资产扩展脚本版本号
+- 修复真实 API 认证链路：`/login` 遇到 stale user hint 时自动尝试恢复会话，`/api/auth/logout` 保留 `Authorization` 注入但禁止 refresh 重试
+- 修复项目详情、商务详情弹窗与文档编辑归档摘要链路，确保真实 API 模式下页面与摘要字段行为稳定
+
 ### 2026-04-20
 
 #### 新增 (Added)

@@ -78,11 +78,13 @@ class HistoricalProjectSnapshotAppServiceTest {
         assertThat(savedRecord.getArchiveRecordId()).isEqualTo(34L);
         assertThat(savedRecord.getExportId()).isEqualTo(56L);
         assertThat(savedRecord.getDocumentSnapshotText()).contains("技术方案", "实施成果");
-        assertThat(savedRecord.getArchiveSummary()).contains("智慧园区综合治理项目", "西域数智");
+        assertThat(savedRecord.getArchiveSummary())
+                .contains("项目资料已完成归档", "西域数智", "已提取正文快照")
+                .doesNotContain("智慧园区综合治理项目");
         assertThat(savedRecord.getRecommendedTags()).contains("智慧化", "智慧园区", "交通", "能源");
 
         assertThat(snapshot.getProjectId()).isEqualTo(12L);
-        assertThat(snapshot.getArchiveSummary()).contains("正文摘录");
+        assertThat(snapshot.getArchiveSummary()).contains("已提取正文快照");
         assertThat(snapshot.getRecommendedTags()).contains("智慧化", "智慧园区", "交通", "能源");
         assertThat(snapshot.getCapturedAt()).isEqualTo(LocalDateTime.of(2026, 4, 19, 10, 30));
     }

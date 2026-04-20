@@ -1,11 +1,11 @@
 <template>
   <div class="project-detail-page">
-    <div v-if="state.loading" class="loading-container">
+    <div v-if="loading" class="loading-container">
       <el-skeleton :rows="5" animated />
     </div>
-    <div v-else-if="!state.project" class="empty-container">
+    <div v-else-if="!project" class="empty-container">
       <el-empty description="未找到项目信息">
-        <el-button type="primary" @click="navigation.goBack">返回项目列表</el-button>
+        <el-button type="primary" @click="goBack">返回项目列表</el-button>
       </el-empty>
     </div>
     <el-container v-else class="project-detail-container">
@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import { computed, provide, ref } from 'vue'
+import { computed, provide, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { projectsApi } from '@/api'
@@ -71,5 +71,26 @@ const boot = useProjectDetailBoot({ ...baseContext, state, workflow, expenseAggr
 const resultActions = useProjectDetailResultActions({ route, projectStore, message, state, approvalType: state.approvalType, loadApprovalHistory: boot.loadApprovalHistory, navigation })
 const taskActions = useProjectDetailTaskActions({ route, userStore, projectStore, projectsApi, isApiProject, message, state, workflow })
 
-provide(projectDetailKey, { route, userStore, isDemoMode, demoAutoTasks, demoMobileCard, ...state, ...workflow, ...expenseAggregation, ...formatting, ...ai, ...navigation, ...documentActions, ...resultActions, ...taskActions })
+const loading = state.loading
+const project = state.project
+const goBack = navigation.goBack
+
+const projectDetailContext = reactive({
+  route,
+  userStore,
+  isDemoMode,
+  demoAutoTasks,
+  demoMobileCard,
+  ...state,
+  ...workflow,
+  ...expenseAggregation,
+  ...formatting,
+  ...ai,
+  ...navigation,
+  ...documentActions,
+  ...resultActions,
+  ...taskActions
+})
+
+provide(projectDetailKey, projectDetailContext)
 </script>
