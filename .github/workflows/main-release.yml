@@ -57,11 +57,14 @@ jobs:
         with:
           name: release-package-${{ github.sha }}
           path: .release/*.tar.gz
+          if-no-files-found: error
+          include-hidden-files: true
           retention-days: 7
 
   deploy-production:
     name: Deploy Production
     needs: package-release
+    if: ${{ vars.PROD_DEPLOY_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -180,6 +183,7 @@ jobs:
   production-smoke:
     name: Production Smoke Verification
     needs: deploy-production
+    if: ${{ vars.PROD_DEPLOY_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     environment: production
     env:
