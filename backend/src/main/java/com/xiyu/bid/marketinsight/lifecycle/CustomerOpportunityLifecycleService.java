@@ -1,8 +1,8 @@
 package com.xiyu.bid.marketinsight.lifecycle;
 
 import com.xiyu.bid.exception.ResourceNotFoundException;
+import com.xiyu.bid.marketinsight.core.CustomerOpportunityRefreshPolicy;
 import com.xiyu.bid.marketinsight.core.CustomerOpportunityTenderSnapshot;
-import com.xiyu.bid.marketinsight.core.OpportunityScoringPolicy;
 import com.xiyu.bid.marketinsight.core.PredictionTransitionPolicy;
 import com.xiyu.bid.marketinsight.dto.CustomerOpportunityAssembler;
 import com.xiyu.bid.marketinsight.dto.CustomerPredictionDTO;
@@ -14,15 +14,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * 客户商机生命周期服务。
@@ -46,7 +43,9 @@ public class CustomerOpportunityLifecycleService {
         LocalDateTime now = LocalDateTime.now();
         List<CustomerPrediction> predictions = new ArrayList<>(byPurchaser.size());
         for (var entry : byPurchaser.entrySet()) {
-            predictions.add(buildPrediction(entry.getKey(), entry.getValue(), now));
+            CustomerOpportunityRefreshPolicy.evaluate(entry.getKey(), entry.getValue(), now)
+                    .map(evaluation -> buildPrediction(entry.getKey(), evaluation, now))
+                    .ifPresent(predictions::add);
         }
         customerPredictionRepository.saveAll(predictions);
 
@@ -113,60 +112,30 @@ public class CustomerOpportunityLifecycleService {
 
     private CustomerPrediction buildPrediction(
             String hash,
-            List<CustomerOpportunityTenderSnapshot> group,
+            CustomerOpportunityRefreshPolicy.RefreshEvaluation evaluation,
             LocalDateTime now) {
-        String name = group.get(0).purchaserName();
-        String industry = group.get(0).industry();
-        int frequency = group.size();
-        BigDecimal avgBudgetYuan = computeAvgBudgetYuan(group);
-        long avgBudgetWan = avgBudgetYuan.divide(BigDecimal.valueOf(10_000L), 0, java.math.RoundingMode.HALF_UP).longValue();
-        int monthsSinceLast = computeMonthsSinceLast(group, now);
-
-        Map<Integer, Integer> monthCounts = new LinkedHashMap<>();
-        for (CustomerOpportunityTenderSnapshot snapshot : group) {
-            LocalDateTime created = snapshot.createdAt();
-            if (created != null) {
-                monthCounts.merge(created.getMonthValue(), 1, Integer::sum);
-            }
-        }
-
-        String cycleType = OpportunityScoringPolicy.classifyCycleType(monthCounts);
-        boolean hasCycle = "年度集中采购".equals(cycleType) || "季度规律采购".equals(cycleType);
-        var score = OpportunityScoringPolicy.computeScore(frequency, monthsSinceLast, avgBudgetWan, hasCycle);
-        var window = OpportunityScoringPolicy.predictNextWindow(monthCounts, now.getMonthValue(), now.getYear());
-        String evidenceIds = group.stream()
-                .map(CustomerOpportunityTenderSnapshot::tenderId)
-                .filter(Objects::nonNull)
-                .map(String::valueOf)
-                .collect(Collectors.joining(","));
-        String mainCategories = group.stream()
-                .map(CustomerOpportunityTenderSnapshot::industry)
-                .distinct()
-                .collect(Collectors.joining(","));
-        String periodMonths = monthCounts.keySet().stream().sorted().map(String::valueOf).collect(Collectors.joining(","));
-        BigDecimal predictedMin = avgBudgetYuan.multiply(BigDecimal.valueOf(0.8));
-        BigDecimal predictedMax = avgBudgetYuan.multiply(BigDecimal.valueOf(1.2));
-        String reasoning = OpportunityScoringPolicy.generateReasoningSummary(name, industry, frequency, industry, window.confidence());
-
         CustomerPrediction prediction = customerPredictionRepository.findByPurchaserHash(hash)
                 .stream().findFirst()
-                .orElseGet(() -> CustomerPrediction.builder().purchaserHash(hash).purchaserName(name).build());
+                .orElseGet(() -> CustomerPrediction.builder()
+                        .purchaserHash(hash)
+                        .purchaserName(evaluation.purchaserName())
+                        .build());
 
-        prediction.setPurchaserName(name);
-        prediction.setIndustry(industry);
-        prediction.setOpportunityScore(score.total());
-        prediction.setPredictedCategory(industry);
-        prediction.setPredictedBudgetMin(predictedMin);
-        prediction.setPredictedBudgetMax(predictedMax);
-        prediction.setPredictedWindow(window.windowLabel());
-        prediction.setConfidence(BigDecimal.valueOf(window.confidence()));
-        prediction.setReasoningSummary(reasoning);
-        prediction.setEvidenceRecordIds(evidenceIds);
-        prediction.setMainCategories(mainCategories);
-        prediction.setAvgBudget(avgBudgetYuan);
-        prediction.setCycleType(cycleType);
-        prediction.setFrequency(frequency);
-        prediction.setPeriodMonths(periodMonths);
+        prediction.setPurchaserName(evaluation.purchaserName());
+        prediction.setIndustry(evaluation.industry());
+        prediction.setOpportunityScore(evaluation.opportunityScore());
+        prediction.setPredictedCategory(evaluation.predictedCategory());
+        prediction.setPredictedBudgetMin(evaluation.predictedBudgetMin());
+        prediction.setPredictedBudgetMax(evaluation.predictedBudgetMax());
+        prediction.setPredictedWindow(evaluation.predictedWindow());
+        prediction.setConfidence(evaluation.confidence());
+        prediction.setReasoningSummary(evaluation.reasoningSummary());
+        prediction.setEvidenceRecordIds(evaluation.evidenceRecordIds());
+        prediction.setMainCategories(evaluation.mainCategories());
+        prediction.setAvgBudget(evaluation.avgBudget());
+        prediction.setCycleType(evaluation.cycleType());
+        prediction.setFrequency(evaluation.frequency());
+        prediction.setPeriodMonths(evaluation.periodMonths());
         prediction.setLastComputedAt(now);
         return prediction;
     }
@@ -184,34 +153,4 @@ public class CustomerOpportunityLifecycleService {
         }
     }
 
-    private BigDecimal computeAvgBudgetYuan(List<CustomerOpportunityTenderSnapshot> group) {
-        if (group.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-        BigDecimal total = BigDecimal.ZERO;
-        for (CustomerOpportunityTenderSnapshot snapshot : group) {
-            BigDecimal budget = snapshot.budget();
-            if (budget != null) {
-                total = total.add(budget);
-            }
-        }
-        return total.divide(BigDecimal.valueOf(group.size()), 2, java.math.RoundingMode.HALF_UP);
-    }
-
-    private int computeMonthsSinceLast(
-            List<CustomerOpportunityTenderSnapshot> group,
-            LocalDateTime now) {
-        LocalDateTime latest = null;
-        for (CustomerOpportunityTenderSnapshot snapshot : group) {
-            LocalDateTime created = snapshot.createdAt();
-            if (created != null && (latest == null || created.isAfter(latest))) {
-                latest = created;
-            }
-        }
-        if (latest == null) {
-            return 999;
-        }
-        long days = java.time.Duration.between(latest, now).toDays();
-        return (int) Math.max(0L, days) / 30;
-    }
 }
