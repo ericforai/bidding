@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -30,7 +31,11 @@ import java.time.LocalDateTime;
     @Index(name = "idx_tender_source", columnList = "source"),
     @Index(name = "idx_tender_deadline", columnList = "deadline"),
     @Index(name = "idx_tender_ai_score", columnList = "ai_score"),
-    @Index(name = "idx_tender_external_id", columnList = "external_id", unique = true)
+    @Index(name = "idx_tender_external_id", columnList = "external_id", unique = true),
+    @Index(name = "idx_tender_region", columnList = "region"),
+    @Index(name = "idx_tender_industry", columnList = "industry"),
+    @Index(name = "idx_tender_purchaser_hash", columnList = "purchaser_hash"),
+    @Index(name = "idx_tender_status_region_industry", columnList = "status, region, industry")
 })
 @Getter
 @Setter
@@ -74,10 +79,64 @@ public class Tender {
     private BigDecimal budget;
 
     /**
+     * 所属地区
+     */
+    @Column(length = 100)
+    private String region;
+
+    /**
+     * 所属行业
+     */
+    @Column(length = 100)
+    private String industry;
+
+    /**
+     * 采购单位名称
+     */
+    @Column(name = "purchaser_name", length = 255)
+    private String purchaserName;
+
+    /**
+     * 采购单位稳定哈希
+     */
+    @Column(name = "purchaser_hash", length = 64)
+    private String purchaserHash;
+
+    /**
+     * 发布日期
+     */
+    @Column(name = "publish_date")
+    private LocalDate publishDate;
+
+    /**
      * 截止日期
      */
     @Column(name = "deadline")
     private LocalDateTime deadline;
+
+    /**
+     * 联系人姓名
+     */
+    @Column(name = "contact_name", length = 100)
+    private String contactName;
+
+    /**
+     * 联系电话
+     */
+    @Column(name = "contact_phone", length = 50)
+    private String contactPhone;
+
+    /**
+     * 标讯描述
+     */
+    @Column(columnDefinition = "text")
+    private String description;
+
+    /**
+     * 标签，使用逗号分隔存储
+     */
+    @Column(columnDefinition = "text")
+    private String tags;
 
     /**
      * 状态

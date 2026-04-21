@@ -1362,7 +1362,7 @@ const handleFetchFromCeb = async () => {
       const d = res.data || {}
       ElMessage.success(`标讯同步完成：新增 ${d.saved ?? 0} 条，跳过 ${d.skipped ?? 0} 条`)
       // 刷新列表
-      await biddingStore.getTenders()
+      await refreshTenderList()
     } else {
       ElMessage.warning(res?.message || '同步完成，但未得到结果')
     }
@@ -1925,30 +1925,6 @@ const tenders = computed(() => biddingStore.tenders || [])
 const filteredTenders = computed(() => {
   let result = [...tenders.value]
 
-  if (searchForm.value.keyword) {
-    const keyword = searchForm.value.keyword.toLowerCase()
-    result = result.filter(t =>
-      t.title.toLowerCase().includes(keyword) ||
-      t.region.toLowerCase().includes(keyword)
-    )
-  }
-
-  if (searchForm.value.region) {
-    result = result.filter(t => t.region === searchForm.value.region)
-  }
-
-  if (searchForm.value.industry) {
-    result = result.filter(t => t.industry === searchForm.value.industry)
-  }
-
-  if (searchForm.value.status) {
-    result = result.filter(t => matchesTenderStatus(t.status, searchForm.value.status))
-  }
-
-  if (searchForm.value.source) {
-    result = result.filter(t => t.source === searchForm.value.source)
-  }
-
   if (viewMode.value !== 'all') {
     result = result.filter(t => matchesTenderStatus(t.status, viewMode.value))
   }
@@ -2032,8 +2008,9 @@ const isFollowed = (id) => {
   return followedTenders.value.includes(id)
 }
 
-const handleSearch = () => {
+const handleSearch = async () => {
   pagination.value.currentPage = 1
+  await refreshTenderList()
 }
 
 // 导出标讯列表
@@ -2051,7 +2028,7 @@ const handleExport = () => {
   exportExcel(ExportType.TENDERS, params, '标讯列表导出成功')
 }
 
-const handleReset = () => {
+const handleReset = async () => {
   searchForm.value = {
     keyword: '',
     region: '',
@@ -2060,6 +2037,7 @@ const handleReset = () => {
     source: ''
   }
   pagination.value.currentPage = 1
+  await refreshTenderList()
 }
 
 const handleViewDetail = (id) => {
@@ -2760,42 +2738,55 @@ const resetManualForm = () => {
   }
 }
 
+const formatLocalDateTime = (value) => {
+  if (!value) return null
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  const pad = (number) => String(number).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
+
+const formatLocalDate = (value = new Date()) => {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  const pad = (number) => String(number).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
 const saveManualTender = async () => {
   try {
     await manualFormRef.value.validate()
 
     savingManual.value = true
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    const newTender = {
-      id: `manual_${Date.now()}`,
+    const payload = {
       title: manualForm.value.title,
       budget: manualForm.value.budget,
       region: manualForm.value.region,
       industry: manualForm.value.industry,
-      deadline: manualForm.value.deadline
-        ? new Date(manualForm.value.deadline).toLocaleDateString('zh-CN')
-        : '',
+      deadline: formatLocalDateTime(manualForm.value.deadline),
+      publishDate: formatLocalDate(),
       source: 'manual',
-      purchaser: manualForm.value.purchaser,
-      contact: manualForm.value.contact,
-      phone: manualForm.value.phone,
+      purchaserName: manualForm.value.purchaser,
+      contactName: manualForm.value.contact,
+      contactPhone: manualForm.value.phone,
       description: manualForm.value.description,
       tags: manualForm.value.tags,
-      aiScore: Math.floor(Math.random() * 20) + 70,
-      aiReason: '人工录入标讯',
       status: 'PENDING'
     }
 
-    if (biddingStore.tenders) {
-      biddingStore.tenders.unshift(newTender)
+    const response = await tendersApi.create(payload)
+    if (!response?.success) {
+      throw new Error(response?.message || '标讯入库失败')
     }
 
     ElMessage.success('标讯已成功入库')
     showManualAdd.value = false
     resetManualForm()
+    await refreshTenderList()
   } catch (error) {
-    // 验证失败
+    if (error) {
+      ElMessage.error(error.message || '标讯入库失败')
+    }
   } finally {
     savingManual.value = false
   }

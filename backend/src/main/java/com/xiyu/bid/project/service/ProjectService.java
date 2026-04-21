@@ -192,6 +192,7 @@ public class ProjectService {
                 .customer(project.getCustomer())
                 .budget(project.getBudget())
                 .industry(project.getIndustry())
+                .customerType(project.getCustomerType())
                 .region(project.getRegion())
                 .platform(project.getPlatform())
                 .deadline(project.getDeadline())
@@ -226,6 +227,7 @@ public class ProjectService {
                 .customer(dto.getCustomer())
                 .budget(dto.getBudget())
                 .industry(dto.getIndustry())
+                .customerType(dto.getCustomerType())
                 .region(dto.getRegion())
                 .platform(dto.getPlatform())
                 .deadline(dto.getDeadline())
@@ -256,6 +258,7 @@ public class ProjectService {
         project.setCustomer(updates.getCustomer());
         project.setBudget(updates.getBudget());
         project.setIndustry(updates.getIndustry());
+        project.setCustomerType(updates.getCustomerType());
         project.setRegion(updates.getRegion());
         project.setPlatform(updates.getPlatform());
         project.setDeadline(updates.getDeadline());
@@ -303,6 +306,7 @@ public class ProjectService {
                 .customer(trimToNull(projectDTO.getCustomer()))
                 .budget(projectDTO.getBudget())
                 .industry(trimToNull(projectDTO.getIndustry()))
+                .customerType(trimToNull(projectDTO.getCustomerType()))
                 .region(trimToNull(projectDTO.getRegion()))
                 .platform(trimToNull(projectDTO.getPlatform()))
                 .deadline(projectDTO.getDeadline())

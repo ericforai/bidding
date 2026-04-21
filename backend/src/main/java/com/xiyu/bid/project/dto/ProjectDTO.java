@@ -39,6 +39,7 @@ public class ProjectDTO {
     private String customer;
     private BigDecimal budget;
     private String industry;
+    private String customerType;
     private String region;
     private String platform;
     private LocalDate deadline;

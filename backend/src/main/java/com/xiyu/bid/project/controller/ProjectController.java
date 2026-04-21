@@ -165,6 +165,7 @@ public class ProjectController {
                 .customer(request.getCustomer())
                 .budget(request.getBudget())
                 .industry(request.getIndustry())
+                .customerType(request.getCustomerType())
                 .region(request.getRegion())
                 .platform(request.getPlatform())
                 .deadline(request.getDeadline())
@@ -180,6 +181,7 @@ public class ProjectController {
         if (request.getName() != null) request.setName(InputSanitizer.sanitizeString(request.getName(), 200));
         if (request.getCustomer() != null) request.setCustomer(InputSanitizer.sanitizeString(request.getCustomer(), 255));
         if (request.getIndustry() != null) request.setIndustry(InputSanitizer.sanitizeString(request.getIndustry(), 50));
+        if (request.getCustomerType() != null) request.setCustomerType(InputSanitizer.sanitizeString(request.getCustomerType(), 100));
         if (request.getRegion() != null) request.setRegion(InputSanitizer.sanitizeString(request.getRegion(), 100));
         if (request.getPlatform() != null) request.setPlatform(InputSanitizer.sanitizeString(request.getPlatform(), 255));
         if (request.getDescription() != null) request.setDescription(InputSanitizer.sanitizeString(request.getDescription(), 5000));

@@ -134,6 +134,12 @@ const routes = [
         meta: { title: '账户管理' }
       },
       {
+        path: 'resource/contract-borrow',
+        name: 'ContractBorrow',
+        component: () => import('@/views/Resource/ContractBorrow.vue'),
+        meta: { title: '合同借阅' }
+      },
+      {
         path: 'resource/bid-result',
         name: 'BidResult',
         component: () => import('@/views/Resource/BidResult.vue'),

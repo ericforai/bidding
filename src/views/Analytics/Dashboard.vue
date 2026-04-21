@@ -85,6 +85,12 @@
       </div>
     </div>
 
+    <CustomerTypePanel
+      :date-range="dateRange"
+      :refresh-key="customerTypeRefreshKey"
+      class="dashboard-section"
+    />
+
     <!-- Charts Row 3 -->
     <div class="charts-row">
       <!-- Region Distribution -->
@@ -449,6 +455,7 @@ import LineChart from '@/components/charts/LineChart.vue'
 import PieChart from '@/components/charts/PieChart.vue'
 import BarChart from '@/components/charts/BarChart.vue'
 import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
+import CustomerTypePanel from './components/CustomerTypePanel.vue'
 import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 import { useExport } from '@/composables/useExport'
 import { ExportType } from '@/api'
@@ -463,6 +470,7 @@ const dashboardData = ref(null)
 const trendPeriod = ref('month')
 const productMetric = ref('revenue')
 const regionView = ref('amount')
+const customerTypeRefreshKey = ref(0)
 
 // Detail Dialog (原有的简单详情对话框)
 const detailDialogVisible = ref(false)
@@ -1244,6 +1252,7 @@ const handleDateChange = () => {
 
 const refreshData = async () => {
   await loadData()
+  customerTypeRefreshKey.value += 1
   ElMessage.success('数据已刷新')
 }
 
@@ -1921,6 +1930,10 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
+  margin-bottom: 20px;
+}
+
+.dashboard-section {
   margin-bottom: 20px;
 }
 
