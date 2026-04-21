@@ -1,0 +1,426 @@
+{"kind":"deck","id":"xiyu-bid-kickoff-2026","slideCount":14,"slideSize":{"width":1280,"height":720}}
+{"kind":"slide","slide":1,"id":"wjuhy7"}
+{"kind":"slide","slide":2,"id":"gken6u"}
+{"kind":"slide","slide":3,"id":"0a8qgk"}
+{"kind":"slide","slide":4,"id":"gwds5b"}
+{"kind":"slide","slide":5,"id":"4q48xs"}
+{"kind":"slide","slide":6,"id":"gwnug1"}
+{"kind":"slide","slide":7,"id":"t0fuxp"}
+{"kind":"slide","slide":8,"id":"6gudak"}
+{"kind":"slide","slide":9,"id":"jpbu2w"}
+{"kind":"slide","slide":10,"id":"ymh24w"}
+{"kind":"slide","slide":11,"id":"0cm9rw"}
+{"kind":"slide","slide":12,"id":"447ifq"}
+{"kind":"slide","slide":13,"id":"j07xqg"}
+{"kind":"slide","slide":14,"id":"vfohl8"}
+{"kind":"image","slide":1,"id":"2","role":"art plate","path":"/Users/user/xiyu/xiyu-bid-poc/tmp/slides/xiyu-bid-kickoff-2026/pro-reference-images/slide-01.png","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":1,"id":"3","role":"cover contrast overlay","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":1,"id":"4","role":"cover accent rule","shapeType":"rect","bbox":[64,86,7,455]}
+{"kind":"textbox","slide":1,"id":"5","role":"kicker","text":"PROJECT KICK-OFF","textPreview":"PROJECT KICK-OFF","textChars":16,"textLines":1,"bbox":[86,88,520,26]}
+{"kind":"textbox","slide":1,"id":"6","role":"cover title","text":"西域数智化投标管理平台\n建设项目启动会","textPreview":"西域数智化投标管理平台 | 建设项目启动会","textChars":19,"textLines":2,"bbox":[82,130,785,184]}
+{"kind":"textbox","slide":1,"id":"7","role":"cover subtitle","text":"流程在线 · 协同高效 · 风险可控 · 知识复用 · 决策有据","textPreview":"流程在线 · 协同高效 · 风险可控 · 知识复用 · 决策有据","textChars":32,"textLines":1,"bbox":[86,326,610,86]}
+{"kind":"shape","slide":1,"id":"8","role":"cover moment panel","shapeType":"roundRect","bbox":[86,456,390,92]}
+{"kind":"textbox","slide":1,"id":"9","role":"cover moment","text":"正式启动 / 2026年4月27日","textPreview":"正式启动 / 2026年4月27日","textChars":17,"textLines":1,"bbox":[112,478,336,40]}
+{"kind":"textbox","slide":1,"id":"10","role":"footer","text":"项目启动会 · 2026.04.27","textPreview":"项目启动会 · 2026.04.27","textChars":18,"textLines":1,"bbox":[64,674,260,22]}
+{"kind":"image","slide":2,"id":"2","role":"art plate","path":"/Users/user/xiyu/xiyu-bid-poc/tmp/slides/xiyu-bid-kickoff-2026/pro-reference-images/slide-02.png","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":2,"id":"3","role":"content contrast overlay","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"textbox","slide":2,"id":"4","role":"header","text":"AGENDA","textPreview":"AGENDA","textChars":6,"textLines":1,"bbox":[64,34,430,24]}
+{"kind":"textbox","slide":2,"id":"5","role":"header","text":"02 / 14","textPreview":"02 / 14","textChars":7,"textLines":1,"bbox":[1114,34,104,24]}
+{"kind":"shape","slide":2,"id":"6","role":"header rule","shapeType":"rect","bbox":[64,64,1152,2]}
+{"kind":"shape","slide":2,"id":"7","role":"header marker","shapeType":"ellipse","bbox":[57,57,16,16]}
+{"kind":"textbox","slide":2,"id":"8","role":"title","text":"今天需要统一的四件事","textPreview":"今天需要统一的四件事","textChars":10,"textLines":1,"bbox":[64,86,760,142]}
+{"kind":"textbox","slide":2,"id":"9","role":"subtitle","text":"启动会的核心不是展开所有细节，而是把目标、计划、组织和推进机制一次对齐。","textPreview":"启动会的核心不是展开所有细节，而是把目标、计划、组织和推进机制一次对齐。","textChars":36,"textLines":1,"bbox":[66,234,720,70]}
+{"kind":"shape","slide":2,"id":"10","role":"card panel: 01 项目目标","shapeType":"roundRect","bbox":[84,426,355.3333333333333,176]}
+{"kind":"shape","slide":2,"id":"11","role":"card accent: 01 项目目标","shapeType":"rect","bbox":[84,426,8,176]}
+{"kind":"shape","slide":2,"id":"12","role":"icon badge","shapeType":"ellipse","bbox":[106,450,54,54]}
+{"kind":"shape","slide":2,"id":"13","role":"icon glyph","shapeType":"rect","bbox":[122,479,6,12]}
+{"kind":"shape","slide":2,"id":"14","role":"icon glyph","shapeType":"rect","bbox":[131,471,6,20]}
+{"kind":"shape","slide":2,"id":"15","role":"icon glyph","shapeType":"rect","bbox":[140,464,6,27]}
+{"kind":"textbox","slide":2,"id":"16","role":"card label","text":"01 项目目标","textPreview":"01 项目目标","textChars":7,"textLines":1,"bbox":[172,448,247.33333333333331,28]}
+{"kind":"textbox","slide":2,"id":"17","role":"card body: 01 项目目标","text":"明确投标业务全生命周期\n数智化建设方向","textPreview":"明确投标业务全生命周期 | 数智化建设方向","textChars":19,"textLines":2,"bbox":[108,512,307.3333333333333,68]}
+{"kind":"shape","slide":2,"id":"18","role":"card panel: 02 项目规划","shapeType":"roundRect","bbox":[463.3333333333333,426,355.3333333333333,176]}
+{"kind":"shape","slide":2,"id":"19","role":"card accent: 02 项目规划","shapeType":"rect","bbox":[463.3333333333333,426,8,176]}
+{"kind":"shape","slide":2,"id":"20","role":"icon badge","shapeType":"ellipse","bbox":[485.3333333333333,450,54,54]}
+{"kind":"shape","slide":2,"id":"21","role":"icon glyph","shapeType":"ellipse","bbox":[498.3333333333333,468,10,10]}
+{"kind":"shape","slide":2,"id":"22","role":"icon glyph","shapeType":"ellipse","bbox":[516.3333333333333,477,10,10]}
+{"kind":"shape","slide":2,"id":"23","role":"icon glyph","shapeType":"rect","bbox":[507.3333333333333,475,19,3]}
+{"kind":"textbox","slide":2,"id":"24","role":"card label","text":"02 项目规划","textPreview":"02 项目规划","textChars":7,"textLines":1,"bbox":[551.3333333333333,448,247.33333333333331,28]}
+{"kind":"textbox","slide":2,"id":"25","role":"card body: 02 项目规划","text":"按60个有效工作日\n推进六阶段里程碑","textPreview":"按60个有效工作日 | 推进六阶段里程碑","textChars":18,"textLines":2,"bbox":[487.3333333333333,512,307.3333333333333,68]}
+{"kind":"shape","slide":2,"id":"26","role":"card panel: 03 项目组织","shapeType":"roundRect","bbox":[842.6666666666666,426,355.3333333333333,176]}
+{"kind":"shape","slide":2,"id":"27","role":"card accent: 03 项目组织","shapeType":"rect","bbox":[842.6666666666666,426,8,176]}
+{"kind":"shape","slide":2,"id":"28","role":"icon badge","shapeType":"ellipse","bbox":[864.6666666666666,450,54,54]}
+{"kind":"shape","slide":2,"id":"29","role":"icon glyph","shapeType":"roundRect","bbox":[877.6666666666666,465,26,13]}
+{"kind":"shape","slide":2,"id":"30","role":"icon glyph","shapeType":"roundRect","bbox":[882.6666666666666,474,26,13]}
+{"kind":"shape","slide":2,"id":"31","role":"icon glyph","shapeType":"roundRect","bbox":[887.6666666666666,483,20,10]}
+{"kind":"textbox","slide":2,"id":"32","role":"card label","text":"03 项目组织","textPreview":"03 项目组织","textChars":7,"textLines":1,"bbox":[930.6666666666666,448,247.33333333333331,28]}
+{"kind":"textbox","slide":2,"id":"33","role":"card body: 03 项目组织","text":"确认双方角色、职责\n和关键协同人","textPreview":"确认双方角色、职责 | 和关键协同人","textChars":16,"textLines":2,"bbox":[866.6666666666666,512,307.3333333333333,68]}
+{"kind":"textbox","slide":2,"id":"34","role":"footer","text":"项目启动会 · 2026.04.27","textPreview":"项目启动会 · 2026.04.27","textChars":18,"textLines":1,"bbox":[64,674,260,22]}
+{"kind":"image","slide":3,"id":"2","role":"art plate","path":"/Users/user/xiyu/xiyu-bid-poc/tmp/slides/xiyu-bid-kickoff-2026/pro-reference-images/slide-03.png","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":3,"id":"3","role":"metrics contrast overlay","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"textbox","slide":3,"id":"4","role":"header","text":"01 PROJECT GOALS","textPreview":"01 PROJECT GOALS","textChars":16,"textLines":1,"bbox":[64,34,430,24]}
+{"kind":"textbox","slide":3,"id":"5","role":"header","text":"03 / 14","textPreview":"03 / 14","textChars":7,"textLines":1,"bbox":[1114,34,104,24]}
+{"kind":"shape","slide":3,"id":"6","role":"header rule","shapeType":"rect","bbox":[64,64,1152,2]}
+{"kind":"shape","slide":3,"id":"7","role":"header marker","shapeType":"ellipse","bbox":[57,57,16,16]}
+{"kind":"textbox","slide":3,"id":"8","role":"title","text":"项目目标：建设统一的数智化投标管理平台","textPreview":"项目目标：建设统一的数智化投标管理平台","textChars":19,"textLines":1,"bbox":[64,86,700,142]}
+{"kind":"textbox","slide":3,"id":"9","role":"subtitle","text":"围绕商机、项目、任务、文档、资源、结果和知识沉淀，形成端到端闭环。","textPreview":"围绕商机、项目、任务、文档、资源、结果和知识沉淀，形成端到端闭环。","textChars":33,"textLines":1,"bbox":[66,234,700,70]}
+{"kind":"shape","slide":3,"id":"10","role":"metric panel: 商机/标讯到\n结果归档闭环","shapeType":"roundRect","bbox":[92,404,330,174]}
+{"kind":"shape","slide":3,"id":"11","role":"metric accent: 商机/标讯到\n结果归档闭环","shapeType":"rect","bbox":[92,404,330,7]}
+{"kind":"textbox","slide":3,"id":"12","role":"metric value","text":"全流程","textPreview":"全流程","textChars":3,"textLines":1,"bbox":[114,428,286,54]}
+{"kind":"textbox","slide":3,"id":"13","role":"metric label","text":"商机/标讯到\n结果归档闭环","textPreview":"商机/标讯到 | 结果归档闭环","textChars":13,"textLines":2,"bbox":[116,486,282,38]}
+{"kind":"textbox","slide":3,"id":"14","role":"metric note","text":"覆盖投标主链路","textPreview":"覆盖投标主链路","textChars":7,"textLines":1,"bbox":[116,536,282,22]}
+{"kind":"shape","slide":3,"id":"15","role":"metric panel: 任务、资料、费用\n资源全程留痕","shapeType":"roundRect","bbox":[462,404,330,174]}
+{"kind":"shape","slide":3,"id":"16","role":"metric accent: 任务、资料、费用\n资源全程留痕","shapeType":"rect","bbox":[462,404,330,7]}
+{"kind":"textbox","slide":3,"id":"17","role":"metric value","text":"可追溯","textPreview":"可追溯","textChars":3,"textLines":1,"bbox":[484,428,286,54]}
+{"kind":"textbox","slide":3,"id":"18","role":"metric label","text":"任务、资料、费用\n资源全程留痕","textPreview":"任务、资料、费用 | 资源全程留痕","textChars":15,"textLines":2,"bbox":[486,486,282,38]}
+{"kind":"textbox","slide":3,"id":"19","role":"metric note","text":"支撑管理复盘","textPreview":"支撑管理复盘","textChars":6,"textLines":1,"bbox":[486,536,282,22]}
+{"kind":"shape","slide":3,"id":"20","role":"metric panel: AI分析、合规检查\n知识推荐","shapeType":"roundRect","bbox":[832,404,330,174]}
+{"kind":"shape","slide":3,"id":"21","role":"metric accent: AI分析、合规检查\n知识推荐","shapeType":"rect","bbox":[832,404,330,7]}
+{"kind":"textbox","slide":3,"id":"22","role":"metric value","text":"智能化","textPreview":"智能化","textChars":3,"textLines":1,"bbox":[854,428,286,54]}
+{"kind":"textbox","slide":3,"id":"23","role":"metric label","text":"AI分析、合规检查\n知识推荐","textPreview":"AI分析、合规检查 | 知识推荐","textChars":14,"textLines":2,"bbox":[856,486,282,38]}
+{"kind":"textbox","slide":3,"id":"24","role":"metric note","text":"提升效率与质量","textPreview":"提升效率与质量","textChars":7,"textLines":1,"bbox":[856,536,282,22]}
+{"kind":"textbox","slide":3,"id":"25","role":"footer","text":"项目启动会 · 2026.04.27","textPreview":"项目启动会 · 2026.04.27","textChars":18,"textLines":1,"bbox":[64,674,260,22]}
+{"kind":"image","slide":4,"id":"2","role":"art plate","path":"/Users/user/xiyu/xiyu-bid-poc/tmp/slides/xiyu-bid-kickoff-2026/pro-reference-images/slide-04.png","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":4,"id":"3","role":"content contrast overlay","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"textbox","slide":4,"id":"4","role":"header","text":"VALUE CHANGE","textPreview":"VALUE CHANGE","textChars":12,"textLines":1,"bbox":[64,34,430,24]}
+{"kind":"textbox","slide":4,"id":"5","role":"header","text":"04 / 14","textPreview":"04 / 14","textChars":7,"textLines":1,"bbox":[1114,34,104,24]}
+{"kind":"shape","slide":4,"id":"6","role":"header rule","shapeType":"rect","bbox":[64,64,1152,2]}
+{"kind":"shape","slide":4,"id":"7","role":"header marker","shapeType":"ellipse","bbox":[57,57,16,16]}
+{"kind":"textbox","slide":4,"id":"8","role":"title","text":"建设后的核心变化","textPreview":"建设后的核心变化","textChars":8,"textLines":1,"bbox":[64,86,760,142]}
+{"kind":"textbox","slide":4,"id":"9","role":"subtitle","text":"从分散、线下、经验驱动，转向统一入口、过程可视和数据驱动。","textPreview":"从分散、线下、经验驱动，转向统一入口、过程可视和数据驱动。","textChars":29,"textLines":1,"bbox":[66,234,720,70]}
+{"kind":"shape","slide":4,"id":"10","role":"card panel: 统一入口","shapeType":"roundRect","bbox":[84,426,355.3333333333333,176]}
+{"kind":"shape","slide":4,"id":"11","role":"card accent: 统一入口","shapeType":"rect","bbox":[84,426,8,176]}
+{"kind":"shape","slide":4,"id":"12","role":"icon badge","shapeType":"ellipse","bbox":[106,450,54,54]}
+{"kind":"shape","slide":4,"id":"13","role":"icon glyph","shapeType":"rect","bbox":[122,479,6,12]}
+{"kind":"shape","slide":4,"id":"14","role":"icon glyph","shapeType":"rect","bbox":[131,471,6,20]}
+{"kind":"shape","slide":4,"id":"15","role":"icon glyph","shapeType":"rect","bbox":[140,464,6,27]}
+{"kind":"textbox","slide":4,"id":"16","role":"card label","text":"统一入口","textPreview":"统一入口","textChars":4,"textLines":1,"bbox":[172,448,247.33333333333331,28]}
+{"kind":"textbox","slide":4,"id":"17","role":"card body: 统一入口","text":"标讯、项目、费用、资料\n集中管理，减少信息断点","textPreview":"标讯、项目、费用、资料 | 集中管理，减少信息断点","textChars":23,"textLines":2,"bbox":[108,512,307.3333333333333,68]}
+{"kind":"shape","slide":4,"id":"18","role":"card panel: 过程可控","shapeType":"roundRect","bbox":[463.3333333333333,426,355.3333333333333,176]}
+{"kind":"shape","slide":4,"id":"19","role":"card accent: 过程可控","shapeType":"rect","bbox":[463.3333333333333,426,8,176]}
+{"kind":"shape","slide":4,"id":"20","role":"icon badge","shapeType":"ellipse","bbox":[485.3333333333333,450,54,54]}
+{"kind":"shape","slide":4,"id":"21","role":"icon glyph","shapeType":"ellipse","bbox":[498.3333333333333,468,10,10]}
+{"kind":"shape","slide":4,"id":"22","role":"icon glyph","shapeType":"ellipse","bbox":[516.3333333333333,477,10,10]}
+{"kind":"shape","slide":4,"id":"23","role":"icon glyph","shapeType":"rect","bbox":[507.3333333333333,475,19,3]}
+{"kind":"textbox","slide":4,"id":"24","role":"card label","text":"过程可控","textPreview":"过程可控","textChars":4,"textLines":1,"bbox":[551.3333333333333,448,247.33333333333331,28]}
+{"kind":"textbox","slide":4,"id":"25","role":"card body: 过程可控","text":"任务看板、节点提醒、资源台账\n让过程可跟踪可复盘","textPreview":"任务看板、节点提醒、资源台账 | 让过程可跟踪可复盘","textChars":24,"textLines":2,"bbox":[487.3333333333333,512,307.3333333333333,68]}
+{"kind":"shape","slide":4,"id":"26","role":"card panel: 决策有据","shapeType":"roundRect","bbox":[842.6666666666666,426,355.3333333333333,176]}
+{"kind":"shape","slide":4,"id":"27","role":"card accent: 决策有据","shapeType":"rect","bbox":[842.6666666666666,426,8,176]}
+{"kind":"shape","slide":4,"id":"28","role":"icon badge","shapeType":"ellipse","bbox":[864.6666666666666,450,54,54]}
+{"kind":"shape","slide":4,"id":"29","role":"icon glyph","shapeType":"roundRect","bbox":[877.6666666666666,465,26,13]}
+{"kind":"shape","slide":4,"id":"30","role":"icon glyph","shapeType":"roundRect","bbox":[882.6666666666666,474,26,13]}
+{"kind":"shape","slide":4,"id":"31","role":"icon glyph","shapeType":"roundRect","bbox":[887.6666666666666,483,20,10]}
+{"kind":"textbox","slide":4,"id":"32","role":"card label","text":"决策有据","textPreview":"决策有据","textChars":4,"textLines":1,"bbox":[930.6666666666666,448,247.33333333333331,28]}
+{"kind":"textbox","slide":4,"id":"33","role":"card body: 决策有据","text":"中标率、ROI、竞对、区域和客户\n多维分析辅助投入判断","textPreview":"中标率、ROI、竞对、区域和客户 | 多维分析辅助投入判断","textChars":27,"textLines":2,"bbox":[866.6666666666666,512,307.3333333333333,68]}
+{"kind":"textbox","slide":4,"id":"34","role":"footer","text":"项目启动会 · 2026.04.27","textPreview":"项目启动会 · 2026.04.27","textChars":18,"textLines":1,"bbox":[64,674,260,22]}
+{"kind":"image","slide":5,"id":"2","role":"art plate","path":"/Users/user/xiyu/xiyu-bid-poc/tmp/slides/xiyu-bid-kickoff-2026/pro-reference-images/slide-05.png","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":5,"id":"3","role":"content contrast overlay","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"textbox","slide":5,"id":"4","role":"header","text":"TECH ENABLEMENT","textPreview":"TECH ENABLEMENT","textChars":15,"textLines":1,"bbox":[64,34,430,24]}
+{"kind":"textbox","slide":5,"id":"5","role":"header","text":"05 / 14","textPreview":"05 / 14","textChars":7,"textLines":1,"bbox":[1114,34,104,24]}
+{"kind":"shape","slide":5,"id":"6","role":"header rule","shapeType":"rect","bbox":[64,64,1152,2]}
+{"kind":"shape","slide":5,"id":"7","role":"header marker","shapeType":"ellipse","bbox":[57,57,16,16]}
+{"kind":"textbox","slide":5,"id":"8","role":"title","text":"技术手段对投标管理的现在与未来","textPreview":"技术手段对投标管理的现在与未来","textChars":15,"textLines":1,"bbox":[64,86,760,142]}
+{"kind":"textbox","slide":5,"id":"9","role":"subtitle","text":"本期先把全过程搬到线上，后续持续形成智能投标能力中枢。","textPreview":"本期先把全过程搬到线上，后续持续形成智能投标能力中枢。","textChars":27,"textLines":1,"bbox":[66,234,720,70]}
+{"kind":"shape","slide":5,"id":"10","role":"card panel: 现阶段","shapeType":"roundRect","bbox":[84,426,355.3333333333333,176]}
+{"kind":"shape","slide":5,"id":"11","role":"card accent: 现阶段","shapeType":"rect","bbox":[84,426,8,176]}
+{"kind":"shape","slide":5,"id":"12","role":"icon badge","shapeType":"ellipse","bbox":[106,450,54,54]}
+{"kind":"shape","slide":5,"id":"13","role":"icon glyph","shapeType":"rect","bbox":[122,479,6,12]}
+{"kind":"shape","slide":5,"id":"14","role":"icon glyph","shapeType":"rect","bbox":[131,471,6,20]}
+{"kind":"shape","slide":5,"id":"15","role":"icon glyph","shapeType":"rect","bbox":[140,464,6,27]}
+{"kind":"textbox","slide":5,"id":"16","role":"card label","text":"现阶段","textPreview":"现阶段","textChars":3,"textLines":1,"bbox":[172,448,247.33333333333331,28]}
+{"kind":"textbox","slide":5,"id":"17","role":"card body: 现阶段","text":"标讯、项目、任务、文档、费用、结果\n统一到同一套业务主链路","textPreview":"标讯、项目、任务、文档、费用、结果 | 统一到同一套业务主链路","textChars":29,"textLines":2,"bbox":[108,512,307.3333333333333,68]}
+{"kind":"shape","slide":5,"id":"18","role":"card panel: 能力沉淀","shapeType":"roundRect","bbox":[463.3333333333333,426,355.3333333333333,176]}
+{"kind":"shape","slide":5,"id":"19","role":"card accent: 能力沉淀","shapeType":"rect","bbox":[463.3333333333333,426,8,176]}
+{"kind":"shape","slide":5,"id":"20","role":"icon badge","shapeType":"ellipse","bbox":[485.3333333333333,450,54,54]}
+{"kind":"shape","slide":5,"id":"21","role":"icon glyph","shapeType":"ellipse","bbox":[498.3333333333333,468,10,10]}
+{"kind":"shape","slide":5,"id":"22","role":"icon glyph","shapeType":"ellipse","bbox":[516.3333333333333,477,10,10]}
+{"kind":"shape","slide":5,"id":"23","role":"icon glyph","shapeType":"rect","bbox":[507.3333333333333,475,19,3]}
+{"kind":"textbox","slide":5,"id":"24","role":"card label","text":"能力沉淀","textPreview":"能力沉淀","textChars":4,"textLines":1,"bbox":[551.3333333333333,448,247.33333333333331,28]}
+{"kind":"textbox","slide":5,"id":"25","role":"card body: 能力沉淀","text":"资质库、案例库、模板库、BAR资源\n支撑资料复用和责任追溯","textPreview":"资质库、案例库、模板库、BAR资源 | 支撑资料复用和责任追溯","textChars":29,"textLines":2,"bbox":[487.3333333333333,512,307.3333333333333,68]}
+{"kind":"shape","slide":5,"id":"26","role":"card panel: 未来演进","shapeType":"roundRect","bbox":[842.6666666666666,426,355.3333333333333,176]}
+{"kind":"shape","slide":5,"id":"27","role":"card accent: 未来演进","shapeType":"rect","bbox":[842.6666666666666,426,8,176]}
+{"kind":"shape","slide":5,"id":"28","role":"icon badge","shapeType":"ellipse","bbox":[864.6666666666666,450,54,54]}
+{"kind":"shape","slide":5,"id":"29","role":"icon glyph","shapeType":"roundRect","bbox":[877.6666666666666,465,26,13]}
+{"kind":"shape","slide":5,"id":"30","role":"icon glyph","shapeType":"roundRect","bbox":[882.6666666666666,474,26,13]}
+{"kind":"shape","slide":5,"id":"31","role":"icon glyph","shapeType":"roundRect","bbox":[887.6666666666666,483,20,10]}
+{"kind":"textbox","slide":5,"id":"32","role":"card label","text":"未来演进","textPreview":"未来演进","textChars":4,"textLines":1,"bbox":[930.6666666666666,448,247.33333333333331,28]}
+{"kind":"textbox","slide":5,"id":"33","role":"card body: 未来演进","text":"CRM/OA/消息/电子签章分步打通\n叠加AI解析与策略建议","textPreview":"CRM/OA/消息/电子签章分步打通 | 叠加AI解析与策略建议","textChars":30,"textLines":2,"bbox":[866.6666666666666,512,307.3333333333333,68]}
+{"kind":"textbox","slide":5,"id":"34","role":"footer","text":"项目启动会 · 2026.04.27","textPreview":"项目启动会 · 2026.04.27","textChars":18,"textLines":1,"bbox":[64,674,260,22]}
+{"kind":"image","slide":6,"id":"2","role":"art plate","path":"/Users/user/xiyu/xiyu-bid-poc/tmp/slides/xiyu-bid-kickoff-2026/pro-reference-images/slide-06.png","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":6,"id":"3","role":"content contrast overlay","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"textbox","slide":6,"id":"4","role":"header","text":"MONITORING & DECISION","textPreview":"MONITORING & DECISION","textChars":21,"textLines":1,"bbox":[64,34,430,24]}
+{"kind":"textbox","slide":6,"id":"5","role":"header","text":"06 / 14","textPreview":"06 / 14","textChars":7,"textLines":1,"bbox":[1114,34,104,24]}
+{"kind":"shape","slide":6,"id":"6","role":"header rule","shapeType":"rect","bbox":[64,64,1152,2]}
+{"kind":"shape","slide":6,"id":"7","role":"header marker","shapeType":"ellipse","bbox":[57,57,16,16]}
+{"kind":"textbox","slide":6,"id":"8","role":"title","text":"业务监控与决策支持","textPreview":"业务监控与决策支持","textChars":9,"textLines":1,"bbox":[64,86,760,142]}
+{"kind":"textbox","slide":6,"id":"9","role":"subtitle","text":"平台以过程监控、结果分析、经营洞察三层构建管理驾驶舱。","textPreview":"平台以过程监控、结果分析、经营洞察三层构建管理驾驶舱。","textChars":27,"textLines":1,"bbox":[66,234,720,70]}
+{"kind":"shape","slide":6,"id":"10","role":"card panel: 过程监控","shapeType":"roundRect","bbox":[84,426,355.3333333333333,176]}
+{"kind":"shape","slide":6,"id":"11","role":"card accent: 过程监控","shapeType":"rect","bbox":[84,426,8,176]}
+{"kind":"shape","slide":6,"id":"12","role":"icon badge","shapeType":"ellipse","bbox":[106,450,54,54]}
+{"kind":"shape","slide":6,"id":"13","role":"icon glyph","shapeType":"rect","bbox":[122,479,6,12]}
+{"kind":"shape","slide":6,"id":"14","role":"icon glyph","shapeType":"rect","bbox":[131,471,6,20]}
+{"kind":"shape","slide":6,"id":"15","role":"icon glyph","shapeType":"rect","bbox":[140,464,6,27]}
+{"kind":"textbox","slide":6,"id":"16","role":"card label","text":"过程监控","textPreview":"过程监控","textChars":4,"textLines":1,"bbox":[172,448,247.33333333333331,28]}
+{"kind":"textbox","slide":6,"id":"17","role":"card body: 过程监控","text":"标讯跟进、项目阶段、任务逾期\n截标、用印、保证金提醒","textPreview":"标讯跟进、项目阶段、任务逾期 | 截标、用印、保证金提醒","textChars":26,"textLines":2,"bbox":[108,512,307.3333333333333,68]}
+{"kind":"shape","slide":6,"id":"18","role":"card panel: 结果分析","shapeType":"roundRect","bbox":[463.3333333333333,426,355.3333333333333,176]}
+{"kind":"shape","slide":6,"id":"19","role":"card accent: 结果分析","shapeType":"rect","bbox":[463.3333333333333,426,8,176]}
+{"kind":"shape","slide":6,"id":"20","role":"icon badge","shapeType":"ellipse","bbox":[485.3333333333333,450,54,54]}
+{"kind":"shape","slide":6,"id":"21","role":"icon glyph","shapeType":"ellipse","bbox":[498.3333333333333,468,10,10]}
+{"kind":"shape","slide":6,"id":"22","role":"icon glyph","shapeType":"ellipse","bbox":[516.3333333333333,477,10,10]}
+{"kind":"shape","slide":6,"id":"23","role":"icon glyph","shapeType":"rect","bbox":[507.3333333333333,475,19,3]}
+{"kind":"textbox","slide":6,"id":"24","role":"card label","text":"结果分析","textPreview":"结果分析","textChars":4,"textLines":1,"bbox":[551.3333333333333,448,247.33333333333331,28]}
+{"kind":"textbox","slide":6,"id":"25","role":"card body: 结果分析","text":"投标数量、中标率、中标金额\n项目周期和费用投入","textPreview":"投标数量、中标率、中标金额 | 项目周期和费用投入","textChars":23,"textLines":2,"bbox":[487.3333333333333,512,307.3333333333333,68]}
+{"kind":"shape","slide":6,"id":"26","role":"card panel: 经营洞察","shapeType":"roundRect","bbox":[842.6666666666666,426,355.3333333333333,176]}
+{"kind":"shape","slide":6,"id":"27","role":"card accent: 经营洞察","shapeType":"rect","bbox":[842.6666666666666,426,8,176]}
+{"kind":"shape","slide":6,"id":"28","role":"icon badge","shapeType":"ellipse","bbox":[864.6666666666666,450,54,54]}
+{"kind":"shape","slide":6,"id":"29","role":"icon glyph","shapeType":"roundRect","bbox":[877.6666666666666,465,26,13]}
+{"kind":"shape","slide":6,"id":"30","role":"icon glyph","shapeType":"roundRect","bbox":[882.6666666666666,474,26,13]}
+{"kind":"shape","slide":6,"id":"31","role":"icon glyph","shapeType":"roundRect","bbox":[887.6666666666666,483,20,10]}
+{"kind":"textbox","slide":6,"id":"32","role":"card label","text":"经营洞察","textPreview":"经营洞察","textChars":4,"textLines":1,"bbox":[930.6666666666666,448,247.33333333333331,28]}
+{"kind":"textbox","slide":6,"id":"33","role":"card body: 经营洞察","text":"ROI、客户价值、历史中标概率\n竞对参与和策略建议","textPreview":"ROI、客户价值、历史中标概率 | 竞对参与和策略建议","textChars":25,"textLines":2,"bbox":[866.6666666666666,512,307.3333333333333,68]}
+{"kind":"textbox","slide":6,"id":"34","role":"footer","text":"项目启动会 · 2026.04.27","textPreview":"项目启动会 · 2026.04.27","textChars":18,"textLines":1,"bbox":[64,674,260,22]}
+{"kind":"image","slide":7,"id":"2","role":"art plate","path":"/Users/user/xiyu/xiyu-bid-poc/tmp/slides/xiyu-bid-kickoff-2026/pro-reference-images/slide-07.png","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":7,"id":"3","role":"content contrast overlay","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"textbox","slide":7,"id":"4","role":"header","text":"DATA PLATFORM","textPreview":"DATA PLATFORM","textChars":13,"textLines":1,"bbox":[64,34,430,24]}
+{"kind":"textbox","slide":7,"id":"5","role":"header","text":"07 / 14","textPreview":"07 / 14","textChars":7,"textLines":1,"bbox":[1114,34,104,24]}
+{"kind":"shape","slide":7,"id":"6","role":"header rule","shapeType":"rect","bbox":[64,64,1152,2]}
+{"kind":"shape","slide":7,"id":"7","role":"header marker","shapeType":"ellipse","bbox":[57,57,16,16]}
+{"kind":"textbox","slide":7,"id":"8","role":"title","text":"数据中台：先服务投标主链路和经营分析","textPreview":"数据中台：先服务投标主链路和经营分析","textChars":18,"textLines":1,"bbox":[64,86,760,142]}
+{"kind":"textbox","slide":7,"id":"9","role":"subtitle","text":"以统一数据口径、统一数据服务、统一指标体系为建设原则。","textPreview":"以统一数据口径、统一数据服务、统一指标体系为建设原则。","textChars":27,"textLines":1,"bbox":[66,234,720,70]}
+{"kind":"shape","slide":7,"id":"10","role":"card panel: 数据来源","shapeType":"roundRect","bbox":[84,426,355.3333333333333,176]}
+{"kind":"shape","slide":7,"id":"11","role":"card accent: 数据来源","shapeType":"rect","bbox":[84,426,8,176]}
+{"kind":"shape","slide":7,"id":"12","role":"icon badge","shapeType":"ellipse","bbox":[106,450,54,54]}
+{"kind":"shape","slide":7,"id":"13","role":"icon glyph","shapeType":"rect","bbox":[122,479,6,12]}
+{"kind":"shape","slide":7,"id":"14","role":"icon glyph","shapeType":"rect","bbox":[131,471,6,20]}
+{"kind":"shape","slide":7,"id":"15","role":"icon glyph","shapeType":"rect","bbox":[140,464,6,27]}
+{"kind":"textbox","slide":7,"id":"16","role":"card label","text":"数据来源","textPreview":"数据来源","textChars":4,"textLines":1,"bbox":[172,448,247.33333333333331,28]}
+{"kind":"textbox","slide":7,"id":"17","role":"card body: 数据来源","text":"标讯/商机、项目过程、任务文档\n费用保证金、账户证书、结果竞对","textPreview":"标讯/商机、项目过程、任务文档 | 费用保证金、账户证书、结果竞对","textChars":31,"textLines":2,"bbox":[108,512,307.3333333333333,68]}
+{"kind":"shape","slide":7,"id":"18","role":"card panel: 数据治理","shapeType":"roundRect","bbox":[463.3333333333333,426,355.3333333333333,176]}
+{"kind":"shape","slide":7,"id":"19","role":"card accent: 数据治理","shapeType":"rect","bbox":[463.3333333333333,426,8,176]}
+{"kind":"shape","slide":7,"id":"20","role":"icon badge","shapeType":"ellipse","bbox":[485.3333333333333,450,54,54]}
+{"kind":"shape","slide":7,"id":"21","role":"icon glyph","shapeType":"ellipse","bbox":[498.3333333333333,468,10,10]}
+{"kind":"shape","slide":7,"id":"22","role":"icon glyph","shapeType":"ellipse","bbox":[516.3333333333333,477,10,10]}
+{"kind":"shape","slide":7,"id":"23","role":"icon glyph","shapeType":"rect","bbox":[507.3333333333333,475,19,3]}
+{"kind":"textbox","slide":7,"id":"24","role":"card label","text":"数据治理","textPreview":"数据治理","textChars":4,"textLines":1,"bbox":[551.3333333333333,448,247.33333333333331,28]}
+{"kind":"textbox","slide":7,"id":"25","role":"card body: 数据治理","text":"组织、用户、客户、项目、资源\n模板、资质、案例统一口径","textPreview":"组织、用户、客户、项目、资源 | 模板、资质、案例统一口径","textChars":27,"textLines":2,"bbox":[487.3333333333333,512,307.3333333333333,68]}
+{"kind":"shape","slide":7,"id":"26","role":"card panel: 数据服务","shapeType":"roundRect","bbox":[842.6666666666666,426,355.3333333333333,176]}
+{"kind":"shape","slide":7,"id":"27","role":"card accent: 数据服务","shapeType":"rect","bbox":[842.6666666666666,426,8,176]}
+{"kind":"shape","slide":7,"id":"28","role":"icon badge","shapeType":"ellipse","bbox":[864.6666666666666,450,54,54]}
+{"kind":"shape","slide":7,"id":"29","role":"icon glyph","shapeType":"roundRect","bbox":[877.6666666666666,465,26,13]}
+{"kind":"shape","slide":7,"id":"30","role":"icon glyph","shapeType":"roundRect","bbox":[882.6666666666666,474,26,13]}
+{"kind":"shape","slide":7,"id":"31","role":"icon glyph","shapeType":"roundRect","bbox":[887.6666666666666,483,20,10]}
+{"kind":"textbox","slide":7,"id":"32","role":"card label","text":"数据服务","textPreview":"数据服务","textChars":4,"textLines":1,"bbox":[930.6666666666666,448,247.33333333333331,28]}
+{"kind":"textbox","slide":7,"id":"33","role":"card body: 数据服务","text":"标准API、驾驶舱指标、数据下钻\nAI分析与风险识别服务","textPreview":"标准API、驾驶舱指标、数据下钻 | AI分析与风险识别服务","textChars":28,"textLines":2,"bbox":[866.6666666666666,512,307.3333333333333,68]}
+{"kind":"textbox","slide":7,"id":"34","role":"footer","text":"项目启动会 · 2026.04.27","textPreview":"项目启动会 · 2026.04.27","textChars":18,"textLines":1,"bbox":[64,674,260,22]}
+{"kind":"image","slide":8,"id":"2","role":"art plate","path":"/Users/user/xiyu/xiyu-bid-poc/tmp/slides/xiyu-bid-kickoff-2026/pro-reference-images/slide-08.png","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":8,"id":"3","role":"metrics contrast overlay","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"textbox","slide":8,"id":"4","role":"header","text":"02 PROJECT PLAN","textPreview":"02 PROJECT PLAN","textChars":15,"textLines":1,"bbox":[64,34,430,24]}
+{"kind":"textbox","slide":8,"id":"5","role":"header","text":"08 / 14","textPreview":"08 / 14","textChars":7,"textLines":1,"bbox":[1114,34,104,24]}
+{"kind":"shape","slide":8,"id":"6","role":"header rule","shapeType":"rect","bbox":[64,64,1152,2]}
+{"kind":"shape","slide":8,"id":"7","role":"header marker","shapeType":"ellipse","bbox":[57,57,16,16]}
+{"kind":"textbox","slide":8,"id":"8","role":"title","text":"项目规划：60个有效工作日完成上线启动","textPreview":"项目规划：60个有效工作日完成上线启动","textChars":19,"textLines":1,"bbox":[64,86,700,142]}
+{"kind":"textbox","slide":8,"id":"9","role":"subtitle","text":"计划按有效工作日编排，周末和法定节假日不计入阶段工期。","textPreview":"计划按有效工作日编排，周末和法定节假日不计入阶段工期。","textChars":27,"textLines":1,"bbox":[66,234,700,70]}
+{"kind":"shape","slide":8,"id":"10","role":"metric panel: 有效工作日","shapeType":"roundRect","bbox":[92,404,330,174]}
+{"kind":"shape","slide":8,"id":"11","role":"metric accent: 有效工作日","shapeType":"rect","bbox":[92,404,330,7]}
+{"kind":"textbox","slide":8,"id":"12","role":"metric value","text":"60","textPreview":"60","textChars":2,"textLines":1,"bbox":[114,428,286,54]}
+{"kind":"textbox","slide":8,"id":"13","role":"metric label","text":"有效工作日","textPreview":"有效工作日","textChars":5,"textLines":1,"bbox":[116,486,282,38]}
+{"kind":"textbox","slide":8,"id":"14","role":"metric note","text":"2026-04-27 至 2026-07-23","textPreview":"2026-04-27 至 2026-07-23","textChars":23,"textLines":1,"bbox":[116,536,282,22]}
+{"kind":"shape","slide":8,"id":"15","role":"metric panel: 阶段里程碑","shapeType":"roundRect","bbox":[462,404,330,174]}
+{"kind":"shape","slide":8,"id":"16","role":"metric accent: 阶段里程碑","shapeType":"rect","bbox":[462,404,330,7]}
+{"kind":"textbox","slide":8,"id":"17","role":"metric value","text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[484,428,286,54]}
+{"kind":"textbox","slide":8,"id":"18","role":"metric label","text":"阶段里程碑","textPreview":"阶段里程碑","textChars":5,"textLines":1,"bbox":[486,486,282,38]}
+{"kind":"textbox","slide":8,"id":"19","role":"metric note","text":"启动调研 / 蓝图 / 实现 / 联调 / UAT / 上线","textPreview":"启动调研 / 蓝图 / 实现 / 联调 / UAT / 上线","textChars":30,"textLines":1,"bbox":[486,536,282,22]}
+{"kind":"shape","slide":8,"id":"20","role":"metric panel: 上线前P0问题","shapeType":"roundRect","bbox":[832,404,330,174]}
+{"kind":"shape","slide":8,"id":"21","role":"metric accent: 上线前P0问题","shapeType":"rect","bbox":[832,404,330,7]}
+{"kind":"textbox","slide":8,"id":"22","role":"metric value","text":"0","textPreview":"0","textChars":1,"textLines":1,"bbox":[854,428,286,54]}
+{"kind":"textbox","slide":8,"id":"23","role":"metric label","text":"上线前P0问题","textPreview":"上线前P0问题","textChars":7,"textLines":1,"bbox":[856,486,282,38]}
+{"kind":"textbox","slide":8,"id":"24","role":"metric note","text":"作为进入生产切换的门禁","textPreview":"作为进入生产切换的门禁","textChars":11,"textLines":1,"bbox":[856,536,282,22]}
+{"kind":"textbox","slide":8,"id":"25","role":"footer","text":"项目启动会 · 2026.04.27","textPreview":"项目启动会 · 2026.04.27","textChars":18,"textLines":1,"bbox":[64,674,260,22]}
+{"kind":"image","slide":9,"id":"2","role":"art plate","path":"/Users/user/xiyu/xiyu-bid-poc/tmp/slides/xiyu-bid-kickoff-2026/pro-reference-images/slide-09.png","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":9,"id":"3","role":"content contrast overlay","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"textbox","slide":9,"id":"4","role":"header","text":"MILESTONE CONTROL","textPreview":"MILESTONE CONTROL","textChars":17,"textLines":1,"bbox":[64,34,430,24]}
+{"kind":"textbox","slide":9,"id":"5","role":"header","text":"09 / 14","textPreview":"09 / 14","textChars":7,"textLines":1,"bbox":[1114,34,104,24]}
+{"kind":"shape","slide":9,"id":"6","role":"header rule","shapeType":"rect","bbox":[64,64,1152,2]}
+{"kind":"shape","slide":9,"id":"7","role":"header marker","shapeType":"ellipse","bbox":[57,57,16,16]}
+{"kind":"textbox","slide":9,"id":"8","role":"title","text":"六阶段实施路线图","textPreview":"六阶段实施路线图","textChars":8,"textLines":1,"bbox":[64,86,760,142]}
+{"kind":"textbox","slide":9,"id":"9","role":"subtitle","text":"每一阶段都有明确目标、交付物和门禁，确保项目受控推进。","textPreview":"每一阶段都有明确目标、交付物和门禁，确保项目受控推进。","textChars":27,"textLines":1,"bbox":[66,234,720,70]}
+{"kind":"shape","slide":9,"id":"10","role":"card panel: 启动与蓝图","shapeType":"roundRect","bbox":[84,426,355.3333333333333,176]}
+{"kind":"shape","slide":9,"id":"11","role":"card accent: 启动与蓝图","shapeType":"rect","bbox":[84,426,8,176]}
+{"kind":"shape","slide":9,"id":"12","role":"icon badge","shapeType":"ellipse","bbox":[106,450,54,54]}
+{"kind":"shape","slide":9,"id":"13","role":"icon glyph","shapeType":"rect","bbox":[122,479,6,12]}
+{"kind":"shape","slide":9,"id":"14","role":"icon glyph","shapeType":"rect","bbox":[131,471,6,20]}
+{"kind":"shape","slide":9,"id":"15","role":"icon glyph","shapeType":"rect","bbox":[140,464,6,27]}
+{"kind":"textbox","slide":9,"id":"16","role":"card label","text":"启动与蓝图","textPreview":"启动与蓝图","textChars":5,"textLines":1,"bbox":[172,448,247.33333333333331,28]}
+{"kind":"textbox","slide":9,"id":"17","role":"card body: 启动与蓝图","text":"04/27-05/25\n启动调研、范围基线、蓝图确认","textPreview":"04/27-05/25 | 启动调研、范围基线、蓝图确认","textChars":26,"textLines":2,"bbox":[108,512,307.3333333333333,68]}
+{"kind":"shape","slide":9,"id":"18","role":"card panel: 实现与联调","shapeType":"roundRect","bbox":[463.3333333333333,426,355.3333333333333,176]}
+{"kind":"shape","slide":9,"id":"19","role":"card accent: 实现与联调","shapeType":"rect","bbox":[463.3333333333333,426,8,176]}
+{"kind":"shape","slide":9,"id":"20","role":"icon badge","shapeType":"ellipse","bbox":[485.3333333333333,450,54,54]}
+{"kind":"shape","slide":9,"id":"21","role":"icon glyph","shapeType":"ellipse","bbox":[498.3333333333333,468,10,10]}
+{"kind":"shape","slide":9,"id":"22","role":"icon glyph","shapeType":"ellipse","bbox":[516.3333333333333,477,10,10]}
+{"kind":"shape","slide":9,"id":"23","role":"icon glyph","shapeType":"rect","bbox":[507.3333333333333,475,19,3]}
+{"kind":"textbox","slide":9,"id":"24","role":"card label","text":"实现与联调","textPreview":"实现与联调","textChars":5,"textLines":1,"bbox":[551.3333333333333,448,247.33333333333331,28]}
+{"kind":"textbox","slide":9,"id":"25","role":"card body: 实现与联调","text":"05/26-07/02\n核心功能提测、接口联调、SIT通过","textPreview":"05/26-07/02 | 核心功能提测、接口联调、SIT通过","textChars":29,"textLines":2,"bbox":[487.3333333333333,512,307.3333333333333,68]}
+{"kind":"shape","slide":9,"id":"26","role":"card panel: 验收与上线","shapeType":"roundRect","bbox":[842.6666666666666,426,355.3333333333333,176]}
+{"kind":"shape","slide":9,"id":"27","role":"card accent: 验收与上线","shapeType":"rect","bbox":[842.6666666666666,426,8,176]}
+{"kind":"shape","slide":9,"id":"28","role":"icon badge","shapeType":"ellipse","bbox":[864.6666666666666,450,54,54]}
+{"kind":"shape","slide":9,"id":"29","role":"icon glyph","shapeType":"roundRect","bbox":[877.6666666666666,465,26,13]}
+{"kind":"shape","slide":9,"id":"30","role":"icon glyph","shapeType":"roundRect","bbox":[882.6666666666666,474,26,13]}
+{"kind":"shape","slide":9,"id":"31","role":"icon glyph","shapeType":"roundRect","bbox":[887.6666666666666,483,20,10]}
+{"kind":"textbox","slide":9,"id":"32","role":"card label","text":"验收与上线","textPreview":"验收与上线","textChars":5,"textLines":1,"bbox":[930.6666666666666,448,247.33333333333331,28]}
+{"kind":"textbox","slide":9,"id":"33","role":"card body: 验收与上线","text":"07/03-07/23\nUAT培训、Go/No-Go、正式上线","textPreview":"07/03-07/23 | UAT培训、Go/No-Go、正式上线","textChars":31,"textLines":2,"bbox":[866.6666666666666,512,307.3333333333333,68]}
+{"kind":"textbox","slide":9,"id":"34","role":"footer","text":"项目启动会 · 2026.04.27","textPreview":"项目启动会 · 2026.04.27","textChars":18,"textLines":1,"bbox":[64,674,260,22]}
+{"kind":"image","slide":10,"id":"2","role":"art plate","path":"/Users/user/xiyu/xiyu-bid-poc/tmp/slides/xiyu-bid-kickoff-2026/pro-reference-images/slide-10.png","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":10,"id":"3","role":"content contrast overlay","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"textbox","slide":10,"id":"4","role":"header","text":"03 ORGANIZATION","textPreview":"03 ORGANIZATION","textChars":15,"textLines":1,"bbox":[64,34,430,24]}
+{"kind":"textbox","slide":10,"id":"5","role":"header","text":"10 / 14","textPreview":"10 / 14","textChars":7,"textLines":1,"bbox":[1114,34,104,24]}
+{"kind":"shape","slide":10,"id":"6","role":"header rule","shapeType":"rect","bbox":[64,64,1152,2]}
+{"kind":"shape","slide":10,"id":"7","role":"header marker","shapeType":"ellipse","bbox":[57,57,16,16]}
+{"kind":"textbox","slide":10,"id":"8","role":"title","text":"项目组织：领导牵引、PMO统筹、专题小组落地","textPreview":"项目组织：领导牵引、PMO统筹、专题小组落地","textChars":22,"textLines":1,"bbox":[64,86,760,142]}
+{"kind":"textbox","slide":10,"id":"9","role":"subtitle","text":"组织架构覆盖业务蓝图、技术集成、测试验收、上线运维四类关键工作。","textPreview":"组织架构覆盖业务蓝图、技术集成、测试验收、上线运维四类关键工作。","textChars":32,"textLines":1,"bbox":[66,234,720,70]}
+{"kind":"shape","slide":10,"id":"10","role":"card panel: 领导小组","shapeType":"roundRect","bbox":[84,426,355.3333333333333,176]}
+{"kind":"shape","slide":10,"id":"11","role":"card accent: 领导小组","shapeType":"rect","bbox":[84,426,8,176]}
+{"kind":"shape","slide":10,"id":"12","role":"icon badge","shapeType":"ellipse","bbox":[106,450,54,54]}
+{"kind":"shape","slide":10,"id":"13","role":"icon glyph","shapeType":"rect","bbox":[122,479,6,12]}
+{"kind":"shape","slide":10,"id":"14","role":"icon glyph","shapeType":"rect","bbox":[131,471,6,20]}
+{"kind":"shape","slide":10,"id":"15","role":"icon glyph","shapeType":"rect","bbox":[140,464,6,27]}
+{"kind":"textbox","slide":10,"id":"16","role":"card label","text":"领导小组","textPreview":"领导小组","textChars":4,"textLines":1,"bbox":[172,448,247.33333333333331,28]}
+{"kind":"textbox","slide":10,"id":"17","role":"card body: 领导小组","text":"甲方项目负责人 / 乙方项目总监\n负责重大决策和资源协调","textPreview":"甲方项目负责人 / 乙方项目总监 | 负责重大决策和资源协调","textChars":28,"textLines":2,"bbox":[108,512,307.3333333333333,68]}
+{"kind":"shape","slide":10,"id":"18","role":"card panel: PMO统筹","shapeType":"roundRect","bbox":[463.3333333333333,426,355.3333333333333,176]}
+{"kind":"shape","slide":10,"id":"19","role":"card accent: PMO统筹","shapeType":"rect","bbox":[463.3333333333333,426,8,176]}
+{"kind":"shape","slide":10,"id":"20","role":"icon badge","shapeType":"ellipse","bbox":[485.3333333333333,450,54,54]}
+{"kind":"shape","slide":10,"id":"21","role":"icon glyph","shapeType":"ellipse","bbox":[498.3333333333333,468,10,10]}
+{"kind":"shape","slide":10,"id":"22","role":"icon glyph","shapeType":"ellipse","bbox":[516.3333333333333,477,10,10]}
+{"kind":"shape","slide":10,"id":"23","role":"icon glyph","shapeType":"rect","bbox":[507.3333333333333,475,19,3]}
+{"kind":"textbox","slide":10,"id":"24","role":"card label","text":"PMO统筹","textPreview":"PMO统筹","textChars":5,"textLines":1,"bbox":[551.3333333333333,448,247.33333333333331,28]}
+{"kind":"textbox","slide":10,"id":"25","role":"card body: PMO统筹","text":"甲方业务牵头人 / 乙方项目经理\n负责计划、风险、沟通和里程碑","textPreview":"甲方业务牵头人 / 乙方项目经理 | 负责计划、风险、沟通和里程碑","textChars":31,"textLines":2,"bbox":[487.3333333333333,512,307.3333333333333,68]}
+{"kind":"shape","slide":10,"id":"26","role":"card panel: 执行小组","shapeType":"roundRect","bbox":[842.6666666666666,426,355.3333333333333,176]}
+{"kind":"shape","slide":10,"id":"27","role":"card accent: 执行小组","shapeType":"rect","bbox":[842.6666666666666,426,8,176]}
+{"kind":"shape","slide":10,"id":"28","role":"icon badge","shapeType":"ellipse","bbox":[864.6666666666666,450,54,54]}
+{"kind":"shape","slide":10,"id":"29","role":"icon glyph","shapeType":"roundRect","bbox":[877.6666666666666,465,26,13]}
+{"kind":"shape","slide":10,"id":"30","role":"icon glyph","shapeType":"roundRect","bbox":[882.6666666666666,474,26,13]}
+{"kind":"shape","slide":10,"id":"31","role":"icon glyph","shapeType":"roundRect","bbox":[887.6666666666666,483,20,10]}
+{"kind":"textbox","slide":10,"id":"32","role":"card label","text":"执行小组","textPreview":"执行小组","textChars":4,"textLines":1,"bbox":[930.6666666666666,448,247.33333333333331,28]}
+{"kind":"textbox","slide":10,"id":"33","role":"card body: 执行小组","text":"业务与蓝图、技术与集成\n测试培训、上线运维协同推进","textPreview":"业务与蓝图、技术与集成 | 测试培训、上线运维协同推进","textChars":25,"textLines":2,"bbox":[866.6666666666666,512,307.3333333333333,68]}
+{"kind":"textbox","slide":10,"id":"34","role":"footer","text":"项目启动会 · 2026.04.27","textPreview":"项目启动会 · 2026.04.27","textChars":18,"textLines":1,"bbox":[64,674,260,22]}
+{"kind":"image","slide":11,"id":"2","role":"art plate","path":"/Users/user/xiyu/xiyu-bid-poc/tmp/slides/xiyu-bid-kickoff-2026/pro-reference-images/slide-11.png","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":11,"id":"3","role":"content contrast overlay","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"textbox","slide":11,"id":"4","role":"header","text":"RESPONSIBILITY","textPreview":"RESPONSIBILITY","textChars":14,"textLines":1,"bbox":[64,34,430,24]}
+{"kind":"textbox","slide":11,"id":"5","role":"header","text":"11 / 14","textPreview":"11 / 14","textChars":7,"textLines":1,"bbox":[1114,34,104,24]}
+{"kind":"shape","slide":11,"id":"6","role":"header rule","shapeType":"rect","bbox":[64,64,1152,2]}
+{"kind":"shape","slide":11,"id":"7","role":"header marker","shapeType":"ellipse","bbox":[57,57,16,16]}
+{"kind":"textbox","slide":11,"id":"8","role":"title","text":"职责分工：责任到角色，事项到小组","textPreview":"职责分工：责任到角色，事项到小组","textChars":16,"textLines":1,"bbox":[64,86,760,142]}
+{"kind":"textbox","slide":11,"id":"9","role":"subtitle","text":"双方角色需要在启动后一周内确认到人，保证调研、接口、UAT和上线窗口不悬空。","textPreview":"双方角色需要在启动后一周内确认到人，保证调研、接口、UAT和上线窗口不悬空。","textChars":38,"textLines":1,"bbox":[66,234,720,70]}
+{"kind":"shape","slide":11,"id":"10","role":"card panel: 乙方项目组","shapeType":"roundRect","bbox":[84,426,355.3333333333333,176]}
+{"kind":"shape","slide":11,"id":"11","role":"card accent: 乙方项目组","shapeType":"rect","bbox":[84,426,8,176]}
+{"kind":"shape","slide":11,"id":"12","role":"icon badge","shapeType":"ellipse","bbox":[106,450,54,54]}
+{"kind":"shape","slide":11,"id":"13","role":"icon glyph","shapeType":"rect","bbox":[122,479,6,12]}
+{"kind":"shape","slide":11,"id":"14","role":"icon glyph","shapeType":"rect","bbox":[131,471,6,20]}
+{"kind":"shape","slide":11,"id":"15","role":"icon glyph","shapeType":"rect","bbox":[140,464,6,27]}
+{"kind":"textbox","slide":11,"id":"16","role":"card label","text":"乙方项目组","textPreview":"乙方项目组","textChars":5,"textLines":1,"bbox":[172,448,247.33333333333331,28]}
+{"kind":"textbox","slide":11,"id":"17","role":"card body: 乙方项目组","text":"项目总监、项目经理、实施顾问\n开发团队、售后与运维保障","textPreview":"项目总监、项目经理、实施顾问 | 开发团队、售后与运维保障","textChars":27,"textLines":2,"bbox":[108,512,307.3333333333333,68]}
+{"kind":"shape","slide":11,"id":"18","role":"card panel: 甲方项目组","shapeType":"roundRect","bbox":[463.3333333333333,426,355.3333333333333,176]}
+{"kind":"shape","slide":11,"id":"19","role":"card accent: 甲方项目组","shapeType":"rect","bbox":[463.3333333333333,426,8,176]}
+{"kind":"shape","slide":11,"id":"20","role":"icon badge","shapeType":"ellipse","bbox":[485.3333333333333,450,54,54]}
+{"kind":"shape","slide":11,"id":"21","role":"icon glyph","shapeType":"ellipse","bbox":[498.3333333333333,468,10,10]}
+{"kind":"shape","slide":11,"id":"22","role":"icon glyph","shapeType":"ellipse","bbox":[516.3333333333333,477,10,10]}
+{"kind":"shape","slide":11,"id":"23","role":"icon glyph","shapeType":"rect","bbox":[507.3333333333333,475,19,3]}
+{"kind":"textbox","slide":11,"id":"24","role":"card label","text":"甲方项目组","textPreview":"甲方项目组","textChars":5,"textLines":1,"bbox":[551.3333333333333,448,247.33333333333331,28]}
+{"kind":"textbox","slide":11,"id":"25","role":"card body: 甲方项目组","text":"项目负责人、业务牵头人\nIT负责人、关键用户代表","textPreview":"项目负责人、业务牵头人 | IT负责人、关键用户代表","textChars":24,"textLines":2,"bbox":[487.3333333333333,512,307.3333333333333,68]}
+{"kind":"shape","slide":11,"id":"26","role":"card panel: 专题接口人","shapeType":"roundRect","bbox":[842.6666666666666,426,355.3333333333333,176]}
+{"kind":"shape","slide":11,"id":"27","role":"card accent: 专题接口人","shapeType":"rect","bbox":[842.6666666666666,426,8,176]}
+{"kind":"shape","slide":11,"id":"28","role":"icon badge","shapeType":"ellipse","bbox":[864.6666666666666,450,54,54]}
+{"kind":"shape","slide":11,"id":"29","role":"icon glyph","shapeType":"roundRect","bbox":[877.6666666666666,465,26,13]}
+{"kind":"shape","slide":11,"id":"30","role":"icon glyph","shapeType":"roundRect","bbox":[882.6666666666666,474,26,13]}
+{"kind":"shape","slide":11,"id":"31","role":"icon glyph","shapeType":"roundRect","bbox":[887.6666666666666,483,20,10]}
+{"kind":"textbox","slide":11,"id":"32","role":"card label","text":"专题接口人","textPreview":"专题接口人","textChars":5,"textLines":1,"bbox":[930.6666666666666,448,247.33333333333331,28]}
+{"kind":"textbox","slide":11,"id":"33","role":"card body: 专题接口人","text":"CRM、OA、组织架构、消息平台\n提供资料、测试环境和联调窗口","textPreview":"CRM、OA、组织架构、消息平台 | 提供资料、测试环境和联调窗口","textChars":31,"textLines":2,"bbox":[866.6666666666666,512,307.3333333333333,68]}
+{"kind":"textbox","slide":11,"id":"34","role":"footer","text":"项目启动会 · 2026.04.27","textPreview":"项目启动会 · 2026.04.27","textChars":18,"textLines":1,"bbox":[64,674,260,22]}
+{"kind":"image","slide":12,"id":"2","role":"art plate","path":"/Users/user/xiyu/xiyu-bid-poc/tmp/slides/xiyu-bid-kickoff-2026/pro-reference-images/slide-12.png","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":12,"id":"3","role":"metrics contrast overlay","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"textbox","slide":12,"id":"4","role":"header","text":"04 MANAGEMENT","textPreview":"04 MANAGEMENT","textChars":13,"textLines":1,"bbox":[64,34,430,24]}
+{"kind":"textbox","slide":12,"id":"5","role":"header","text":"12 / 14","textPreview":"12 / 14","textChars":7,"textLines":1,"bbox":[1114,34,104,24]}
+{"kind":"shape","slide":12,"id":"6","role":"header rule","shapeType":"rect","bbox":[64,64,1152,2]}
+{"kind":"shape","slide":12,"id":"7","role":"header marker","shapeType":"ellipse","bbox":[57,57,16,16]}
+{"kind":"textbox","slide":12,"id":"8","role":"title","text":"项目管理机制：用门禁确保质量和节奏","textPreview":"项目管理机制：用门禁确保质量和节奏","textChars":17,"textLines":1,"bbox":[64,86,700,142]}
+{"kind":"textbox","slide":12,"id":"9","role":"subtitle","text":"实施策略、沟通机制、质量控制、方法论和里程碑控制共同构成项目治理框架。","textPreview":"实施策略、沟通机制、质量控制、方法论和里程碑控制共同构成项目治理框架。","textChars":35,"textLines":1,"bbox":[66,234,700,70]}
+{"kind":"shape","slide":12,"id":"10","role":"metric panel: 管理机制","shapeType":"roundRect","bbox":[92,404,330,174]}
+{"kind":"shape","slide":12,"id":"11","role":"metric accent: 管理机制","shapeType":"rect","bbox":[92,404,330,7]}
+{"kind":"textbox","slide":12,"id":"12","role":"metric value","text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[114,428,286,54]}
+{"kind":"textbox","slide":12,"id":"13","role":"metric label","text":"管理机制","textPreview":"管理机制","textChars":4,"textLines":1,"bbox":[116,486,282,38]}
+{"kind":"textbox","slide":12,"id":"14","role":"metric note","text":"实施 / 沟通 / 质量 / 方法论 / 里程碑","textPreview":"实施 / 沟通 / 质量 / 方法论 / 里程碑","textChars":24,"textLines":1,"bbox":[116,536,282,22]}
+{"kind":"shape","slide":12,"id":"15","role":"metric panel: P0处理方案","shapeType":"roundRect","bbox":[462,404,330,174]}
+{"kind":"shape","slide":12,"id":"16","role":"metric accent: P0处理方案","shapeType":"rect","bbox":[462,404,330,7]}
+{"kind":"textbox","slide":12,"id":"17","role":"metric value","text":"24h","textPreview":"24h","textChars":3,"textLines":1,"bbox":[484,428,286,54]}
+{"kind":"textbox","slide":12,"id":"18","role":"metric label","text":"P0处理方案","textPreview":"P0处理方案","textChars":6,"textLines":1,"bbox":[486,486,282,38]}
+{"kind":"textbox","slide":12,"id":"19","role":"metric note","text":"阻塞上线或核心链路不可用时快速升级","textPreview":"阻塞上线或核心链路不可用时快速升级","textChars":17,"textLines":1,"bbox":[486,536,282,22]}
+{"kind":"shape","slide":12,"id":"20","role":"metric panel: 关键门禁","shapeType":"roundRect","bbox":[832,404,330,174]}
+{"kind":"shape","slide":12,"id":"21","role":"metric accent: 关键门禁","shapeType":"rect","bbox":[832,404,330,7]}
+{"kind":"textbox","slide":12,"id":"22","role":"metric value","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[854,428,286,54]}
+{"kind":"textbox","slide":12,"id":"23","role":"metric label","text":"关键门禁","textPreview":"关键门禁","textChars":4,"textLines":1,"bbox":[856,486,282,38]}
+{"kind":"textbox","slide":12,"id":"24","role":"metric note","text":"蓝图、SIT、UAT、上线完成","textPreview":"蓝图、SIT、UAT、上线完成","textChars":15,"textLines":1,"bbox":[856,536,282,22]}
+{"kind":"textbox","slide":12,"id":"25","role":"footer","text":"项目启动会 · 2026.04.27","textPreview":"项目启动会 · 2026.04.27","textChars":18,"textLines":1,"bbox":[64,674,260,22]}
+{"kind":"image","slide":13,"id":"2","role":"art plate","path":"/Users/user/xiyu/xiyu-bid-poc/tmp/slides/xiyu-bid-kickoff-2026/pro-reference-images/slide-13.png","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":13,"id":"3","role":"content contrast overlay","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"textbox","slide":13,"id":"4","role":"header","text":"COOPERATION","textPreview":"COOPERATION","textChars":11,"textLines":1,"bbox":[64,34,430,24]}
+{"kind":"textbox","slide":13,"id":"5","role":"header","text":"13 / 14","textPreview":"13 / 14","textChars":7,"textLines":1,"bbox":[1114,34,104,24]}
+{"kind":"shape","slide":13,"id":"6","role":"header rule","shapeType":"rect","bbox":[64,64,1152,2]}
+{"kind":"shape","slide":13,"id":"7","role":"header marker","shapeType":"ellipse","bbox":[57,57,16,16]}
+{"kind":"textbox","slide":13,"id":"8","role":"title","text":"项目推动：需要甲方同步配合的事项","textPreview":"项目推动：需要甲方同步配合的事项","textChars":16,"textLines":1,"bbox":[64,86,760,142]}
+{"kind":"textbox","slide":13,"id":"9","role":"subtitle","text":"项目成败高度依赖关键用户、接口资料、环境准备和验收窗口的及时到位。","textPreview":"项目成败高度依赖关键用户、接口资料、环境准备和验收窗口的及时到位。","textChars":33,"textLines":1,"bbox":[66,234,720,70]}
+{"kind":"shape","slide":13,"id":"10","role":"card panel: 启动后3个工作日","shapeType":"roundRect","bbox":[84,426,355.3333333333333,176]}
+{"kind":"shape","slide":13,"id":"11","role":"card accent: 启动后3个工作日","shapeType":"rect","bbox":[84,426,8,176]}
+{"kind":"shape","slide":13,"id":"12","role":"icon badge","shapeType":"ellipse","bbox":[106,450,54,54]}
+{"kind":"shape","slide":13,"id":"13","role":"icon glyph","shapeType":"rect","bbox":[122,479,6,12]}
+{"kind":"shape","slide":13,"id":"14","role":"icon glyph","shapeType":"rect","bbox":[131,471,6,20]}
+{"kind":"shape","slide":13,"id":"15","role":"icon glyph","shapeType":"rect","bbox":[140,464,6,27]}
+{"kind":"textbox","slide":13,"id":"16","role":"card label","text":"启动后3个工作日","textPreview":"启动后3个工作日","textChars":8,"textLines":1,"bbox":[172,448,247.33333333333331,28]}
+{"kind":"textbox","slide":13,"id":"17","role":"card body: 启动后3个工作日","text":"确认项目负责人、业务牵头人\nIT负责人、关键用户和接口人","textPreview":"确认项目负责人、业务牵头人 | IT负责人、关键用户和接口人","textChars":28,"textLines":2,"bbox":[108,512,307.3333333333333,68]}
+{"kind":"shape","slide":13,"id":"18","role":"card panel: 蓝图与实现阶段","shapeType":"roundRect","bbox":[463.3333333333333,426,355.3333333333333,176]}
+{"kind":"shape","slide":13,"id":"19","role":"card accent: 蓝图与实现阶段","shapeType":"rect","bbox":[463.3333333333333,426,8,176]}
+{"kind":"shape","slide":13,"id":"20","role":"icon badge","shapeType":"ellipse","bbox":[485.3333333333333,450,54,54]}
+{"kind":"shape","slide":13,"id":"21","role":"icon glyph","shapeType":"ellipse","bbox":[498.3333333333333,468,10,10]}
+{"kind":"shape","slide":13,"id":"22","role":"icon glyph","shapeType":"ellipse","bbox":[516.3333333333333,477,10,10]}
+{"kind":"shape","slide":13,"id":"23","role":"icon glyph","shapeType":"rect","bbox":[507.3333333333333,475,19,3]}
+{"kind":"textbox","slide":13,"id":"24","role":"card label","text":"蓝图与实现阶段","textPreview":"蓝图与实现阶段","textChars":7,"textLines":1,"bbox":[551.3333333333333,448,247.33333333333331,28]}
+{"kind":"textbox","slide":13,"id":"25","role":"card body: 蓝图与实现阶段","text":"提供现状流程、样例标书、资质案例\n费用账户样本和测试数据","textPreview":"提供现状流程、样例标书、资质案例 | 费用账户样本和测试数据","textChars":28,"textLines":2,"bbox":[487.3333333333333,512,307.3333333333333,68]}
+{"kind":"shape","slide":13,"id":"26","role":"card panel: 联调与UAT阶段","shapeType":"roundRect","bbox":[842.6666666666666,426,355.3333333333333,176]}
+{"kind":"shape","slide":13,"id":"27","role":"card accent: 联调与UAT阶段","shapeType":"rect","bbox":[842.6666666666666,426,8,176]}
+{"kind":"shape","slide":13,"id":"28","role":"icon badge","shapeType":"ellipse","bbox":[864.6666666666666,450,54,54]}
+{"kind":"shape","slide":13,"id":"29","role":"icon glyph","shapeType":"roundRect","bbox":[877.6666666666666,465,26,13]}
+{"kind":"shape","slide":13,"id":"30","role":"icon glyph","shapeType":"roundRect","bbox":[882.6666666666666,474,26,13]}
+{"kind":"shape","slide":13,"id":"31","role":"icon glyph","shapeType":"roundRect","bbox":[887.6666666666666,483,20,10]}
+{"kind":"textbox","slide":13,"id":"32","role":"card label","text":"联调与UAT阶段","textPreview":"联调与UAT阶段","textChars":8,"textLines":1,"bbox":[930.6666666666666,448,247.33333333333331,28]}
+{"kind":"textbox","slide":13,"id":"33","role":"card body: 联调与UAT阶段","text":"保障接口环境、联调窗口\n关键用户集中测试与签字","textPreview":"保障接口环境、联调窗口 | 关键用户集中测试与签字","textChars":23,"textLines":2,"bbox":[866.6666666666666,512,307.3333333333333,68]}
+{"kind":"textbox","slide":13,"id":"34","role":"footer","text":"项目启动会 · 2026.04.27","textPreview":"项目启动会 · 2026.04.27","textChars":18,"textLines":1,"bbox":[64,674,260,22]}
+{"kind":"image","slide":14,"id":"2","role":"art plate","path":"/Users/user/xiyu/xiyu-bid-poc/tmp/slides/xiyu-bid-kickoff-2026/pro-reference-images/slide-14.png","bbox":[0,0,1280,720]}
+{"kind":"shape","slide":14,"id":"3","role":"content contrast overlay","shapeType":"rect","bbox":[0,0,1280,720]}
+{"kind":"textbox","slide":14,"id":"4","role":"header","text":"NEXT 10 WORKDAYS","textPreview":"NEXT 10 WORKDAYS","textChars":16,"textLines":1,"bbox":[64,34,430,24]}
+{"kind":"textbox","slide":14,"id":"5","role":"header","text":"14 / 14","textPreview":"14 / 14","textChars":7,"textLines":1,"bbox":[1114,34,104,24]}
+{"kind":"shape","slide":14,"id":"6","role":"header rule","shapeType":"rect","bbox":[64,64,1152,2]}
+{"kind":"shape","slide":14,"id":"7","role":"header marker","shapeType":"ellipse","bbox":[57,57,16,16]}
+{"kind":"textbox","slide":14,"id":"8","role":"title","text":"近期工作计划：先把项目基线扎稳","textPreview":"近期工作计划：先把项目基线扎稳","textChars":15,"textLines":1,"bbox":[64,86,760,142]}
+{"kind":"textbox","slide":14,"id":"9","role":"subtitle","text":"第一阶段从启动会到主计划确认，共10个有效工作日。","textPreview":"第一阶段从启动会到主计划确认，共10个有效工作日。","textChars":25,"textLines":1,"bbox":[66,234,720,70]}
+{"kind":"shape","slide":14,"id":"10","role":"card panel: 04/27-04/30","shapeType":"roundRect","bbox":[84,426,355.3333333333333,176]}
+{"kind":"shape","slide":14,"id":"11","role":"card accent: 04/27-04/30","shapeType":"rect","bbox":[84,426,8,176]}
+{"kind":"shape","slide":14,"id":"12","role":"icon badge","shapeType":"ellipse","bbox":[106,450,54,54]}
+{"kind":"shape","slide":14,"id":"13","role":"icon glyph","shapeType":"rect","bbox":[122,479,6,12]}
+{"kind":"shape","slide":14,"id":"14","role":"icon glyph","shapeType":"rect","bbox":[131,471,6,20]}
+{"kind":"shape","slide":14,"id":"15","role":"icon glyph","shapeType":"rect","bbox":[140,464,6,27]}
+{"kind":"textbox","slide":14,"id":"16","role":"card label","text":"04/27-04/30","textPreview":"04/27-04/30","textChars":11,"textLines":1,"bbox":[172,448,247.33333333333331,28]}
+{"kind":"textbox","slide":14,"id":"17","role":"card body: 04/27-04/30","text":"启动会、项目组织确认\n资料清单和环境/接口清单下发","textPreview":"启动会、项目组织确认 | 资料清单和环境/接口清单下发","textChars":25,"textLines":2,"bbox":[108,512,307.3333333333333,68]}
+{"kind":"shape","slide":14,"id":"18","role":"card panel: 05/06-05/12","shapeType":"roundRect","bbox":[463.3333333333333,426,355.3333333333333,176]}
+{"kind":"shape","slide":14,"id":"19","role":"card accent: 05/06-05/12","shapeType":"rect","bbox":[463.3333333333333,426,8,176]}
+{"kind":"shape","slide":14,"id":"20","role":"icon badge","shapeType":"ellipse","bbox":[485.3333333333333,450,54,54]}
+{"kind":"shape","slide":14,"id":"21","role":"icon glyph","shapeType":"ellipse","bbox":[498.3333333333333,468,10,10]}
+{"kind":"shape","slide":14,"id":"22","role":"icon glyph","shapeType":"ellipse","bbox":[516.3333333333333,477,10,10]}
+{"kind":"shape","slide":14,"id":"23","role":"icon glyph","shapeType":"rect","bbox":[507.3333333333333,475,19,3]}
+{"kind":"textbox","slide":14,"id":"24","role":"card label","text":"05/06-05/12","textPreview":"05/06-05/12","textChars":11,"textLines":1,"bbox":[551.3333333333333,448,247.33333333333331,28]}
+{"kind":"textbox","slide":14,"id":"25","role":"card body: 05/06-05/12","text":"业务现状调研\n范围基线、风险清单和问题清单梳理","textPreview":"业务现状调研 | 范围基线、风险清单和问题清单梳理","textChars":23,"textLines":2,"bbox":[487.3333333333333,512,307.3333333333333,68]}
+{"kind":"shape","slide":14,"id":"26","role":"card panel: 05/13","shapeType":"roundRect","bbox":[842.6666666666666,426,355.3333333333333,176]}
+{"kind":"shape","slide":14,"id":"27","role":"card accent: 05/13","shapeType":"rect","bbox":[842.6666666666666,426,8,176]}
+{"kind":"shape","slide":14,"id":"28","role":"icon badge","shapeType":"ellipse","bbox":[864.6666666666666,450,54,54]}
+{"kind":"shape","slide":14,"id":"29","role":"icon glyph","shapeType":"roundRect","bbox":[877.6666666666666,465,26,13]}
+{"kind":"shape","slide":14,"id":"30","role":"icon glyph","shapeType":"roundRect","bbox":[882.6666666666666,474,26,13]}
+{"kind":"shape","slide":14,"id":"31","role":"icon glyph","shapeType":"roundRect","bbox":[887.6666666666666,483,20,10]}
+{"kind":"textbox","slide":14,"id":"32","role":"card label","text":"05/13","textPreview":"05/13","textChars":5,"textLines":1,"bbox":[930.6666666666666,448,247.33333333333331,28]}
+{"kind":"textbox","slide":14,"id":"33","role":"card body: 05/13","text":"第一阶段复盘\n确认实施主计划和蓝图阶段安排","textPreview":"第一阶段复盘 | 确认实施主计划和蓝图阶段安排","textChars":21,"textLines":2,"bbox":[866.6666666666666,512,307.3333333333333,68]}
+{"kind":"textbox","slide":14,"id":"34","role":"footer","text":"项目启动会 · 2026.04.27","textPreview":"项目启动会 · 2026.04.27","textChars":18,"textLines":1,"bbox":[64,674,260,22]}
