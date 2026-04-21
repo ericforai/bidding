@@ -141,6 +141,14 @@ export const dashboardApi = {
       data: apiData }
   },
 
+  async getCustomerTypes(params = {}) {
+    return httpClient.get('/api/analytics/customer-types', { params: params || {} })
+  },
+
+  async getCustomerTypeDrillDown(params = {}) {
+    return httpClient.get('/api/analytics/drilldown/customer-type', { params: params || {} })
+  },
+
   async getDrillDown(type, paramsOrKey) {
 
     const metricTypes = new Set(['revenue', 'win-rate', 'team', 'projects'])

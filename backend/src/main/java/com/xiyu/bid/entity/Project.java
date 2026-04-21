@@ -34,6 +34,7 @@ import java.util.List;
     @Index(name = "idx_project_status", columnList = "status"),
     @Index(name = "idx_project_manager", columnList = "manager_id"),
     @Index(name = "idx_project_tender", columnList = "tender_id"),
+    @Index(name = "idx_project_customer_type", columnList = "customer_type"),
     @Index(name = "idx_project_dates", columnList = "start_date, end_date")
 })
 @Data
@@ -124,6 +125,9 @@ public class Project {
 
     @Column(name = "industry", length = 50)
     private String industry;
+
+    @Column(name = "customer_type", length = 100)
+    private String customerType;
 
     @Column(name = "region", length = 100)
     private String region;

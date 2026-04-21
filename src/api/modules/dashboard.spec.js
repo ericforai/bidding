@@ -1,5 +1,5 @@
 // Input: dashboardApi from dashboard.js, mocked httpClient
-// Output: getSummary() method coverage — success and failure paths
+// Output: dashboard API method coverage for summary and customer type analytics
 // Pos: src/api/modules/ - API module unit tests
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -66,6 +66,48 @@ describe('dashboardApi', () => {
         totalBudget: 0,
         successRate: 0
       })
+    })
+  })
+
+  describe('customer type analytics', () => {
+    it('getCustomerTypes(): calls the customer type analytics endpoint', async () => {
+      httpClient.get.mockResolvedValue({
+        success: true,
+        data: {
+          totalProjectCount: 2,
+          dimensions: [
+            { customerType: '政府客户', projectCount: 1 },
+            { customerType: '未分类', projectCount: 1 }
+          ]
+        }
+      })
+
+      const result = await dashboardApi.getCustomerTypes()
+
+      expect(httpClient.get).toHaveBeenCalledOnce()
+      expect(httpClient.get).toHaveBeenCalledWith('/api/analytics/customer-types', { params: {} })
+      expect(result.success).toBe(true)
+      expect(result.data.dimensions).toHaveLength(2)
+    })
+
+    it('getCustomerTypeDrillDown(): passes customer type drill-down params', async () => {
+      httpClient.get.mockResolvedValue({
+        success: true,
+        data: [
+          {
+            projectId: 1,
+            projectName: '历史客户类型空值项目',
+            customerType: '未分类'
+          }
+        ]
+      })
+
+      const params = { customerType: '未分类', startDate: '2026-04-01', endDate: '2026-04-30' }
+      const result = await dashboardApi.getCustomerTypeDrillDown(params)
+
+      expect(httpClient.get).toHaveBeenCalledOnce()
+      expect(httpClient.get).toHaveBeenCalledWith('/api/analytics/drilldown/customer-type', { params })
+      expect(result.data[0].customerType).toBe('未分类')
     })
   })
 })

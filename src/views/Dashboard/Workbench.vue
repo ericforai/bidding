@@ -1522,7 +1522,7 @@ const handleQuickAction = (type) => {
       }
       break
     case 'borrow':
-      router.push('/knowledge/qualification')
+      router.push('/resource/contract-borrow')
       break
     case 'expense':
       router.push('/resource/expense')

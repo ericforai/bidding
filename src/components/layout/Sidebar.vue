@@ -285,6 +285,11 @@ const menuConfig = [
         meta: { title: '账户管理', permissionKeys: ['resource', 'resource-account'] }
       },
       {
+        path: '/resource/contract-borrow',
+        name: 'ContractBorrow',
+        meta: { title: '合同借阅', permissionKeys: ['resource'] }
+      },
+      {
         path: '/resource/bid-result',
         name: 'BidResult',
         meta: { title: '结果闭环', permissionKeys: ['resource'] }

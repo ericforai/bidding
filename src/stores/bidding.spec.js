@@ -58,6 +58,24 @@ describe('Bidding Store', () => {
     expect(tendersApi.getList).toHaveBeenCalledOnce()
   })
 
+  it('actions: getTenders 应该把筛选条件交给后端查询', async () => {
+    const store = useBiddingStore()
+    const filters = {
+      keyword: 'GPU',
+      region: '上海',
+      industry: '数据中心',
+      purchaserName: '西域采购',
+      publishDateFrom: '2026-04-01',
+      publishDateTo: '2026-04-30',
+      aiScoreMin: 90
+    }
+    tendersApi.getList.mockResolvedValue({ success: true, data: [] })
+
+    await store.getTenders(filters)
+
+    expect(tendersApi.getList).toHaveBeenCalledWith(filters)
+  })
+
   it('actions: updateTenderStatus 应该更新本地状态', () => {
     const store = useBiddingStore()
     store.tenders = [{ id: '100', status: 'PENDING' }]

@@ -18,7 +18,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 /**
  * 标讯实体
@@ -30,7 +32,17 @@ import java.time.LocalDateTime;
     @Index(name = "idx_tender_source", columnList = "source"),
     @Index(name = "idx_tender_deadline", columnList = "deadline"),
     @Index(name = "idx_tender_ai_score", columnList = "ai_score"),
-    @Index(name = "idx_tender_external_id", columnList = "external_id", unique = true)
+    @Index(name = "idx_tender_external_id", columnList = "external_id", unique = true),
+    @Index(name = "idx_tender_region", columnList = "region"),
+    @Index(name = "idx_tender_industry", columnList = "industry"),
+    @Index(name = "idx_tender_purchaser_hash", columnList = "purchaser_hash"),
+    @Index(name = "idx_tender_status_region_industry", columnList = "status, region, industry"),
+    @Index(name = "idx_tender_source_normalized", columnList = "source_normalized"),
+    @Index(name = "idx_tender_region_normalized", columnList = "region_normalized"),
+    @Index(name = "idx_tender_industry_normalized", columnList = "industry_normalized"),
+    @Index(name = "idx_tender_purchaser_hash_normalized", columnList = "purchaser_hash_normalized"),
+    @Index(name = "idx_tender_status_region_industry_normalized",
+            columnList = "status, region_normalized, industry_normalized")
 })
 @Getter
 @Setter
@@ -74,10 +86,82 @@ public class Tender {
     private BigDecimal budget;
 
     /**
+     * 所属地区
+     */
+    @Column(length = 100)
+    private String region;
+
+    /**
+     * 所属行业
+     */
+    @Column(length = 100)
+    private String industry;
+
+    /**
+     * 采购单位名称
+     */
+    @Column(name = "purchaser_name", length = 255)
+    private String purchaserName;
+
+    /**
+     * 采购单位稳定哈希
+     */
+    @Column(name = "purchaser_hash", length = 64)
+    private String purchaserHash;
+
+    @Column(name = "source_normalized", length = 200)
+    private String sourceNormalized;
+
+    @Column(name = "region_normalized", length = 100)
+    private String regionNormalized;
+
+    @Column(name = "industry_normalized", length = 100)
+    private String industryNormalized;
+
+    @Column(name = "purchaser_hash_normalized", length = 64)
+    private String purchaserHashNormalized;
+
+    @Column(name = "purchaser_name_normalized", length = 255)
+    private String purchaserNameNormalized;
+
+    @Column(name = "search_text_normalized", columnDefinition = "text")
+    private String searchTextNormalized;
+
+    /**
+     * 发布日期
+     */
+    @Column(name = "publish_date")
+    private LocalDate publishDate;
+
+    /**
      * 截止日期
      */
     @Column(name = "deadline")
     private LocalDateTime deadline;
+
+    /**
+     * 联系人姓名
+     */
+    @Column(name = "contact_name", length = 100)
+    private String contactName;
+
+    /**
+     * 联系电话
+     */
+    @Column(name = "contact_phone", length = 50)
+    private String contactPhone;
+
+    /**
+     * 标讯描述
+     */
+    @Column(columnDefinition = "text")
+    private String description;
+
+    /**
+     * 标签，使用逗号分隔存储
+     */
+    @Column(columnDefinition = "text")
+    private String tags;
 
     /**
      * 状态
@@ -114,13 +198,44 @@ public class Tender {
 
     @PrePersist
     protected void onCreate() {
+        refreshSearchColumns();
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
+        refreshSearchColumns();
         updatedAt = LocalDateTime.now();
+    }
+
+    private void refreshSearchColumns() {
+        sourceNormalized = normalize(source);
+        regionNormalized = normalize(region);
+        industryNormalized = normalize(industry);
+        purchaserHashNormalized = normalize(purchaserHash);
+        purchaserNameNormalized = normalize(purchaserName);
+        searchTextNormalized = normalizeSearchText();
+    }
+
+    private String normalizeSearchText() {
+        return normalize(String.join(" ",
+                nullToBlank(title),
+                nullToBlank(description),
+                nullToBlank(purchaserName),
+                nullToBlank(tags),
+                nullToBlank(region),
+                nullToBlank(industry),
+                nullToBlank(source)
+        ));
+    }
+
+    private static String normalize(String value) {
+        return nullToBlank(value).trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static String nullToBlank(String value) {
+        return value == null ? "" : value;
     }
 
     /**

@@ -2,6 +2,7 @@ package com.xiyu.bid.repository;
 
 import com.xiyu.bid.entity.Tender;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.List;
  * 标讯数据访问接口
  */
 @Repository
-public interface TenderRepository extends JpaRepository<Tender, Long> {
+public interface TenderRepository extends JpaRepository<Tender, Long>, JpaSpecificationExecutor<Tender> {
 
     /**
      * 根据外部 ID 查询标讯

@@ -9,33 +9,21 @@
  */
 import httpClient from '../client.js'
 
-function matchesTenderField(actualValue, expectedValue) {
-  return String(actualValue || '').toLowerCase() === String(expectedValue || '').toLowerCase()
+function normalizeTags(tags) {
+  if (Array.isArray(tags)) {
+    return tags
+  }
+  if (typeof tags === 'string' && tags.trim()) {
+    return tags.split(',').map(tag => tag.trim()).filter(Boolean)
+  }
+  return []
 }
 
-function applyTenderFilters(tenders, params = {}) {
-  return tenders.filter((tender) => {
-    if (params.status && !matchesTenderField(tender.status, params.status)) {
-      return false
-    }
-
-    if (params.industry && !matchesTenderField(tender.industry, params.industry)) {
-      return false
-    }
-
-    if (params.source && !matchesTenderField(tender.source, params.source)) {
-      return false
-    }
-
-    if (params.keyword) {
-      const keyword = String(params.keyword).trim().toLowerCase()
-      if (!String(tender.title || '').toLowerCase().includes(keyword)) {
-        return false
-      }
-    }
-
-    return true
-  })
+function normalizeTenderRecord(tender = {}) {
+  return {
+    ...tender,
+    tags: normalizeTags(tender.tags)
+  }
 }
 
 function isNumericId(id) {
@@ -43,15 +31,14 @@ function isNumericId(id) {
 }
 
 export const tendersApi = {
-  async getList(params) {
-    const response = await httpClient.get('/api/tenders')
-    const tenders = Array.isArray(response?.data) ? response.data : []
-    const data = applyTenderFilters(tenders, params)
+  async getList(params = {}) {
+    const response = await httpClient.get('/api/tenders', { params })
+    const data = Array.isArray(response?.data) ? response.data.map(normalizeTenderRecord) : []
 
     return {
       ...response,
       data,
-      total: data.length
+      total: response?.total ?? data.length
     }
   },
 
