@@ -15,3 +15,9 @@
 | `Detail.vue` | View | 标讯详情页 |
 | `AIAnalysis.vue` | View | 标讯 AI 分析页 |
 | `CustomerOpportunityCenter.vue` | View | 客户机会中心页 |
+
+## Customer Opportunity 拆分
+
+- `CustomerOpportunityCenter.vue` 仅保留页面壳、路由跳转和页面级动作。
+- `customerOpportunityView.js` 承载纯 view util，包括筛选、选中客户拼装、drawer 聚合和 create project query 组装。
+- `customer-opportunity/` 目录承载客户机会中心的展示组件：顶部概览、客户池、详情区、历史 drawer。

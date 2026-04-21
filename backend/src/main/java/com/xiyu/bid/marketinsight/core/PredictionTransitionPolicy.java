@@ -43,20 +43,15 @@ public final class PredictionTransitionPolicy {
     public static TransitionResult validateTransition(
             final PredictionStatus current,
             final PredictionStatus target) {
-        if (current == null || target == null) {
-            return TransitionResult.denied("状态不能为空");
-        }
-        if (current == target) {
-            return TransitionResult.ok();
-        }
-        Set<PredictionStatus> allowed =
-                ALLOWED_TRANSITIONS.getOrDefault(current, Set.of());
-        if (!allowed.contains(target)) {
-            return TransitionResult.denied(
-                    "不允许从 " + current + " 切换到 " + target
-                            + ", 合法目标: " + allowed);
-        }
-        return TransitionResult.ok();
+        CustomerOpportunityLifecyclePolicy.LifecycleDecision decision =
+                CustomerOpportunityLifecyclePolicy.transition(
+                        current != null
+                                ? CustomerOpportunityLifecyclePolicy.PredictionLifecycleStatus.valueOf(current.name())
+                                : null,
+                        target != null
+                                ? CustomerOpportunityLifecyclePolicy.PredictionLifecycleStatus.valueOf(target.name())
+                                : null);
+        return decision.allowed() ? TransitionResult.ok() : TransitionResult.denied(decision.reason());
     }
 
     /**

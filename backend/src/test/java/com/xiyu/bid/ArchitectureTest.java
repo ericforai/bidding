@@ -28,7 +28,7 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
  * ============= 分阶段实施策略 (Phase C) =============
  * 新模块 (2026-03-04起): 严格遵守所有架构规则
  *   - calendar, collaboration, competitionintel, scoreanalysis
- *   - roi, versionhistory, documenteditor, documents
+ *   - roi, versionhistory, documenteditor, documents, marketinsight
  *
  * 老模块 (POC阶段): 暂时豁免，后续逐步重构
  *   - auth, tender, project, task, qualification, case, template
@@ -58,7 +58,8 @@ public class ArchitectureTest {
         "com.xiyu.bid.projectworkflow.controller..",
         "com.xiyu.bid.resources.controller..",
         "com.xiyu.bid.casework.controller..",
-        "com.xiyu.bid.analytics.controller.."
+        "com.xiyu.bid.analytics.controller..",
+        "com.xiyu.bid.marketinsight.controller.."
     };
 
     private static final String[] DTO_READY_CONTROLLER_PACKAGES = {
@@ -76,7 +77,8 @@ public class ArchitectureTest {
         "com.xiyu.bid.projectworkflow.controller..",
         "com.xiyu.bid.resources.controller..",
         "com.xiyu.bid.casework.controller..",
-        "com.xiyu.bid.analytics.controller.."
+        "com.xiyu.bid.analytics.controller..",
+        "com.xiyu.bid.marketinsight.controller.."
     };
 
     private static final String[] STRICT_SERVICE_PACKAGES = {
@@ -96,7 +98,8 @@ public class ArchitectureTest {
         "com.xiyu.bid.resources.service..",
         "com.xiyu.bid.casework.service..",
         "com.xiyu.bid.casework.application.service..",
-        "com.xiyu.bid.analytics.service.."
+        "com.xiyu.bid.analytics.service..",
+        "com.xiyu.bid.marketinsight.service.."
     };
 
     private static final String[] STRICT_DTO_PACKAGES = {
@@ -112,7 +115,8 @@ public class ArchitectureTest {
         "com.xiyu.bid.documents.dto..",
         "com.xiyu.bid.settings.dto..",
         "com.xiyu.bid.projectworkflow.dto..",
-        "com.xiyu.bid.analytics.dto.."
+        "com.xiyu.bid.analytics.dto..",
+        "com.xiyu.bid.marketinsight.dto.."
     };
 
     private static final String[] DTO_ENTITY_FREE_PACKAGES = {
@@ -323,7 +327,7 @@ public class ArchitectureTest {
      */
     @ArchTest
     public static final void new_modules_should_be_independent(JavaClasses classes) {
-        slices().matching("com.xiyu.bid.(calendar|collaboration|competitionintel|scoreanalysis|roi|versionhistory|documenteditor|documents)..")
+        slices().matching("com.xiyu.bid.(calendar|collaboration|competitionintel|scoreanalysis|roi|versionhistory|documenteditor|documents|marketinsight)..")
                 .should().notDependOnEachOther()
                 .check(classes);
     }
@@ -432,6 +436,7 @@ public class ArchitectureTest {
             .or().resideInAPackage("com.xiyu.bid.documenteditor.controller..")
             .or().resideInAPackage("com.xiyu.bid.documentexport.controller..")
             .or().resideInAPackage("com.xiyu.bid.documents.controller..")
+            .or().resideInAPackage("com.xiyu.bid.marketinsight.controller..")
             .should().dependOnClassesThat()
             .haveSimpleNameContaining("EntityManager")
             .orShould().dependOnClassesThat()

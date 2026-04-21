@@ -60,10 +60,11 @@ public final class OpportunityScoringPolicy {
      */
     public static PredictedWindow predictNextWindow(
             final Map<Integer, Integer> monthCounts,
+            final int referenceYear,
             final int currentMonth) {
         if (monthCounts == null || monthCounts.isEmpty()) {
             return new PredictedWindow(
-                    java.time.Year.now().getValue() + "-01",
+                    referenceYear + "-01",
                     1, 0.0);
         }
 
@@ -78,11 +79,10 @@ public final class OpportunityScoringPolicy {
 
         if (!futureMonths.isEmpty()) {
             var best = futureMonths.get(0);
-            int year = java.time.Year.now().getValue();
             double confidence = (double) best.getValue() / totalCount;
             confidence = Math.max(0.0, Math.min(1.0, confidence));
             return new PredictedWindow(
-                    year + "-" + String.format("%02d", best.getKey()),
+                    referenceYear + "-" + String.format("%02d", best.getKey()),
                     best.getKey(), confidence);
         }
 
@@ -92,7 +92,7 @@ public final class OpportunityScoringPolicy {
                 .toList();
 
         var best = allSorted.get(0);
-        int year = java.time.Year.now().getValue() + 1;
+        int year = referenceYear + 1;
         double confidence = (double) best.getValue() / totalCount;
         confidence = Math.max(0.0, Math.min(1.0, confidence));
         return new PredictedWindow(

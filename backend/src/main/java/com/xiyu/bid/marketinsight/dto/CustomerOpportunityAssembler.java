@@ -4,6 +4,7 @@ import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.marketinsight.entity.CustomerPrediction;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
@@ -63,13 +64,28 @@ public final class CustomerOpportunityAssembler {
     public static CustomerPurchaseDTO toPurchaseDTO(final Tender tender,
                                                     final String purchaserHash,
                                                     final String industry) {
-        long budgetWan = toWan(tender.getBudget());
+        return toPurchaseDTO(
+                tender.getId(),
+                purchaserHash,
+                tender.getCreatedAt(),
+                tender.getTitle(),
+                industry,
+                tender.getBudget());
+    }
+
+    public static CustomerPurchaseDTO toPurchaseDTO(final Long recordId,
+                                                    final String purchaserHash,
+                                                    final LocalDateTime publishDate,
+                                                    final String title,
+                                                    final String industry,
+                                                    final BigDecimal budget) {
+        long budgetWan = toWan(budget);
         return CustomerPurchaseDTO.builder()
-                .recordId(tender.getId())
+                .recordId(recordId)
                 .customerId(purchaserHash)
-                .publishDate(tender.getCreatedAt() != null
-                        ? tender.getCreatedAt().format(DATE_FORMATTER) : null)
-                .title(tender.getTitle())
+                .publishDate(publishDate != null
+                        ? publishDate.format(DATE_FORMATTER) : null)
+                .title(title)
                 .category(industry)
                 .budget(budgetWan)
                 .isKey(budgetWan > KEY_PURCHASE_THRESHOLD_WAN)

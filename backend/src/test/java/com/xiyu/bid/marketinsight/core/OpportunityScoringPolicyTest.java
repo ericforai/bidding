@@ -71,7 +71,7 @@ class OpportunityScoringPolicyTest {
     @Test
     void predictNextWindow_ShouldFindNextMonthAfterCurrent() {
         var monthCounts = Map.of(3, 5, 6, 8, 9, 10, 12, 3);
-        var result = OpportunityScoringPolicy.predictNextWindow(monthCounts, 4);
+        var result = OpportunityScoringPolicy.predictNextWindow(monthCounts, 2026, 4);
         // Earliest month after 4 is month 6
         assertThat(result.predictedMonth()).isEqualTo(6);
     }
@@ -79,24 +79,25 @@ class OpportunityScoringPolicyTest {
     @Test
     void predictNextWindow_ShouldWrapToNextYear() {
         var monthCounts = Map.of(3, 5, 6, 8);
-        var result = OpportunityScoringPolicy.predictNextWindow(monthCounts, 10);
+        var result = OpportunityScoringPolicy.predictNextWindow(monthCounts, 2026, 10);
         // No months after 10, so wrap to next year's earliest month = 3
         assertThat(result.predictedMonth()).isEqualTo(3);
-        assertThat(result.windowLabel()).contains("-03");
+        assertThat(result.windowLabel()).isEqualTo("2027-03");
     }
 
     @Test
     void predictNextWindow_ConfidenceShouldBeClamped() {
         var monthCounts = Map.of(3, 5, 6, 8);
-        var result = OpportunityScoringPolicy.predictNextWindow(monthCounts, 4);
+        var result = OpportunityScoringPolicy.predictNextWindow(monthCounts, 2026, 4);
         assertThat(result.confidence()).isBetween(0.0, 1.0);
     }
 
     @Test
     void predictNextWindow_EmptyMap_ShouldReturnDefault() {
         var result = OpportunityScoringPolicy.predictNextWindow(
-                Map.of(), 6);
+                Map.of(), 2026, 6);
         assertThat(result.predictedMonth()).isGreaterThan(0);
+        assertThat(result.windowLabel()).isEqualTo("2026-01");
     }
 
     // --- classifyCycleType ---
