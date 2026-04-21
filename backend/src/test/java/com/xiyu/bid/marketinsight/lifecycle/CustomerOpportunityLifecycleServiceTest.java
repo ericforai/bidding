@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -63,5 +64,30 @@ class CustomerOpportunityLifecycleServiceTest {
         verify(customerPredictionRepository).save(prediction);
         assertThat(result.getConvertedProjectId()).isEqualTo(500L);
         assertThat(result.getSuggestedProjectName()).contains("华东集团");
+    }
+
+    @Test
+    void transitionPrediction_shouldAcceptLowercaseStatusPayload() {
+        CustomerPrediction prediction = CustomerPrediction.builder()
+                .id(79L)
+                .purchaserHash("HASH-79")
+                .purchaserName("华南集团")
+                .status(CustomerPrediction.Status.WATCH)
+                .build();
+        when(customerPredictionRepository.findById(79L)).thenReturn(Optional.of(prediction));
+        when(customerPredictionRepository.save(prediction)).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CustomerPredictionDTO result = lifecycleService.transitionPrediction(79L, "recommend");
+
+        verify(customerPredictionRepository).save(prediction);
+        assertThat(result.getOpportunityId()).isEqualTo(79L);
+        assertThat(prediction.getStatus()).isEqualTo(CustomerPrediction.Status.RECOMMEND);
+    }
+
+    @Test
+    void transitionPrediction_shouldRejectBlankStatusPayload() {
+        assertThatThrownBy(() -> lifecycleService.transitionPrediction(79L, "  "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("status 不能为空");
     }
 }

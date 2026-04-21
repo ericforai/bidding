@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -65,18 +66,18 @@ public class CustomerOpportunityLifecycleService {
 
     @Transactional
     public CustomerPredictionDTO transitionPrediction(Long id, String targetStatus) {
+        PredictionTransitionPolicy.PredictionStatus coreTarget = resolveTargetStatus(targetStatus);
         CustomerPrediction prediction = customerPredictionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CustomerPrediction", String.valueOf(id)));
 
         PredictionTransitionPolicy.PredictionStatus coreCurrent = mapToCoreStatus(prediction.getStatus());
-        PredictionTransitionPolicy.PredictionStatus coreTarget = PredictionTransitionPolicy.PredictionStatus.valueOf(targetStatus);
 
         var result = PredictionTransitionPolicy.validateTransition(coreCurrent, coreTarget);
         if (!result.allowed()) {
             throw new IllegalStateException(result.reason());
         }
 
-        prediction.setStatus(CustomerPrediction.Status.valueOf(targetStatus));
+        prediction.setStatus(CustomerPrediction.Status.valueOf(coreTarget.name()));
         CustomerPrediction saved = customerPredictionRepository.save(prediction);
         return CustomerOpportunityAssembler.toDTO(saved);
     }
@@ -149,7 +150,7 @@ public class CustomerOpportunityLifecycleService {
         String cycleType = OpportunityScoringPolicy.classifyCycleType(monthCounts);
         boolean hasCycle = "年度集中采购".equals(cycleType) || "季度规律采购".equals(cycleType);
         var score = OpportunityScoringPolicy.computeScore(frequency, monthsSinceLast, avgBudgetWan, hasCycle);
-        var window = OpportunityScoringPolicy.predictNextWindow(monthCounts, now.getMonthValue());
+        var window = OpportunityScoringPolicy.predictNextWindow(monthCounts, now.getMonthValue(), now.getYear());
         String evidenceIds = group.stream().map(et -> String.valueOf(et.tender().getId())).collect(Collectors.joining(","));
         String mainCategories = group.stream().map(EnrichedTender::industry).distinct().collect(Collectors.joining(","));
         String periodMonths = monthCounts.keySet().stream().sorted().map(String::valueOf).collect(Collectors.joining(","));
@@ -178,6 +179,19 @@ public class CustomerOpportunityLifecycleService {
         prediction.setPeriodMonths(periodMonths);
         prediction.setLastComputedAt(now);
         return prediction;
+    }
+
+    private PredictionTransitionPolicy.PredictionStatus resolveTargetStatus(String targetStatus) {
+        if (targetStatus == null || targetStatus.isBlank()) {
+            throw new IllegalArgumentException("status 不能为空");
+        }
+
+        try {
+            return PredictionTransitionPolicy.PredictionStatus.valueOf(
+                    targetStatus.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("不支持的状态: " + targetStatus, exception);
+        }
     }
 
     private BigDecimal computeAvgBudgetYuan(List<EnrichedTender> group) {
