@@ -1,62 +1,48 @@
 // Input: httpClient and bid result delivery APIs
-// Output: bidResultsApi
+// Output: bidResultsApi - bid result query, registration, confirmation, attachment, and competitor accessors
 // Pos: src/api/modules/ - Frontend API module layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 import httpClient from '../client.js'
+import {
+  normalizeCompetitorRecord,
+  normalizeCompetitorReport,
+  normalizeDetail,
+  normalizeFetchResult,
+  normalizeOverview,
+  normalizeReminder,
+} from './bidResults.normalizers.js'
 
-const normalizeOverview = (data = {}) => ({
-  lastSyncTime: data?.lastSyncTime || '',
-  pendingCount: Number(data?.pendingCount || 0),
-  uploadPending: Number(data?.uploadPending || 0),
-  competitorCount: Number(data?.competitorCount || 0) })
+const buildProjectDocumentPayload = (data = {}) => {
+  const file = data.file || null
+  const rawSize = data.size ?? file?.size
+  const size = rawSize == null ? '' : String(rawSize)
 
-const normalizeFetchResult = (item = {}) => ({
-  id: item?.id,
-  source: item?.source || '',
-  tenderId: item?.tenderId ?? null,
-  projectId: item?.projectId ?? null,
-  projectName: item?.projectName || '',
-  result: item?.result || 'lost',
-  amount: item?.amount ?? null,
-  fetchTime: item?.fetchTime || '',
-  status: item?.status || 'pending' })
+  return {
+    name: data.name || file?.name || '投标结果附件',
+    size,
+    fileType: data.fileType || file?.type || 'application/octet-stream',
+    documentCategory: data.documentCategory || '',
+    linkedEntityType: data.linkedEntityType || '',
+    linkedEntityId: data.linkedEntityId ?? null,
+    fileUrl: data.fileUrl || '',
+    uploaderId: data.uploaderId ?? null,
+    uploaderName: data.uploaderName || '',
+  }
+}
 
-const normalizeReminder = (item = {}) => ({
-  id: item?.id,
-  projectId: item?.projectId ?? null,
-  projectName: item?.projectName || '',
-  owner: item?.owner || '',
-  ownerId: item?.ownerId ?? null,
-  lastResultId: item?.lastResultId ?? null,
-  type: item?.type || 'report',
-  status: item?.status || 'pending',
-  remindTime: item?.remindTime || '',
-  lastReminderComment: item?.lastReminderComment || '' })
-
-const normalizeCompetitorReport = (item = {}) => ({
-  company: item?.company || '',
-  skuCount: item?.skuCount || '',
-  category: item?.category || '',
-  discount: item?.discount || '',
-  payment: item?.payment || '',
-  winRate: item?.winRate || '',
-  projectCount: Number(item?.projectCount || 0),
-  trend: item?.trend || 'flat' })
-
-const normalizeDetail = (data = {}) => ({
-  id: data?.id,
-  source: data?.source || '',
-  tenderId: data?.tenderId ?? null,
-  projectId: data?.projectId ?? null,
-  projectName: data?.projectName || '',
-  result: data?.result || 'lost',
-  amount: data?.amount ?? null,
-  status: data?.status || 'pending',
-  fetchTime: data?.fetchTime || '',
-  ignoredReason: data?.ignoredReason || '',
-  ownerName: data?.ownerName || '',
-  reminderTypes: Array.isArray(data?.reminderTypes) ? data.reminderTypes : [] })
+const buildCompetitorWinPayload = (data = {}) => ({
+  competitorId: data.competitorId ?? null,
+  competitorName: data.competitorName || data.company || '',
+  projectId: data.projectId ?? null,
+  skuCount: data.skuCount ?? null,
+  category: data.category || '',
+  discount: data.discount || '',
+  paymentTerms: data.paymentTerms || data.payment || '',
+  wonAt: data.wonAt || null,
+  amount: data.amount ?? null,
+  notes: data.notes || data.remark || '',
+})
 
 export const bidResultsApi = {
   async getOverview() {
@@ -73,10 +59,26 @@ export const bidResultsApi = {
     const response = await httpClient.get('/api/bid-results/fetch-results')
     return { ...response, data: Array.isArray(response?.data) ? response.data.map(normalizeFetchResult) : [] }
   },
-  async confirm(id) {
-    const response = await httpClient.post(`/api/bid-results/fetch-results/${id}/confirm`)
+
+  async register(data) {
+    const response = await httpClient.post('/api/bid-results/register', data)
     return { ...response, data: normalizeFetchResult(response?.data) }
   },
+
+  async update(id, data) {
+    const response = await httpClient.post(`/api/bid-results/${id}/update`, data)
+    return { ...response, data: normalizeFetchResult(response?.data) }
+  },
+
+  async confirm(id, data = {}) {
+    return this.confirmWithData(id, data)
+  },
+
+  async confirmWithData(id, data = {}) {
+    const response = await httpClient.post(`/api/bid-results/fetch-results/${id}/confirm-with-data`, data)
+    return { ...response, data: normalizeFetchResult(response?.data) }
+  },
+
   async ignore(id, comment = '') {
     return httpClient.post(`/api/bid-results/fetch-results/${id}/ignore`, { comment })
   },
@@ -94,6 +96,10 @@ export const bidResultsApi = {
   async sendReminderBatch(ids = [], comment = '') {
     return httpClient.post('/api/bid-results/reminders/send-batch', { ids, comment })
   },
+  async markReminderUploaded(reminderId, data) {
+    const response = await httpClient.post(`/api/bid-results/reminders/${reminderId}/mark-uploaded`, data)
+    return { ...response, data: normalizeReminder(response?.data) }
+  },
   async getDetail(id) {
     const response = await httpClient.get(`/api/bid-results/${id}`)
     return { ...response, data: normalizeDetail(response?.data) }
@@ -101,6 +107,17 @@ export const bidResultsApi = {
   async getCompetitorReport() {
     const response = await httpClient.get('/api/bid-results/competitor-report')
     return { ...response, data: Array.isArray(response?.data) ? response.data.map(normalizeCompetitorReport) : [] }
+  },
+  async createCompetitorWin(data) {
+    const response = await httpClient.post('/api/bid-results/competitor-wins', buildCompetitorWinPayload(data))
+    return { ...response, data: normalizeCompetitorRecord(response?.data) }
+  },
+  async uploadProjectDocument(projectId, data) {
+    return httpClient.post(`/api/projects/${projectId}/documents`, buildProjectDocumentPayload(data))
+  },
+  async bindAttachment(resultId, data) {
+    const response = await httpClient.post(`/api/bid-results/${resultId}/attachments/bind`, data)
+    return { ...response, data: normalizeFetchResult(response?.data) }
   } }
 
 export default bidResultsApi
