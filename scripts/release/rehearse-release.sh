@@ -1,12 +1,46 @@
 #!/usr/bin/env bash
 # Input: release environment variables, rehearsal configuration, and UAT/report paths
-# Output: rehearsal environment lifecycle, UAT execution, backup, and restore verification
+# Output: rehearsal lifecycle, UAT execution, backup, restore verification, and startup diagnostics
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT_DIR/scripts/release/rehearsal-env.sh"
+
+print_backend_log_tail() {
+  if [[ -f "$STATE_DIR/backend.log" ]]; then
+    printf '\n==> Backend log tail\n' >&2
+    tail -n 200 "$STATE_DIR/backend.log" >&2 || true
+  fi
+}
+
+wait_for_backend_health() {
+  local label="$1"
+  local pid
+
+  printf '==> Waiting for backend %s\n' "$label"
+  for i in {1..180}; do
+    if curl -fsS "$UAT_API_BASE_URL/actuator/health" >/dev/null 2>&1; then
+      return 0
+    fi
+
+    if [[ -f "$STATE_DIR/backend.pid" ]]; then
+      pid="$(cat "$STATE_DIR/backend.pid")"
+      if ! kill -0 "$pid" >/dev/null 2>&1; then
+        printf 'Backend process exited before health check passed after %s\n' "$label" >&2
+        print_backend_log_tail
+        return 1
+      fi
+    fi
+
+    sleep 2
+  done
+
+  printf 'Backend health check timed out after %s: %s\n' "$label" "$UAT_API_BASE_URL/actuator/health" >&2
+  print_backend_log_tail
+  return 1
+}
 
 cleanup() {
   bash "$ROOT_DIR/scripts/release/rehearsal-down.sh" >/dev/null 2>&1 || true
@@ -58,18 +92,12 @@ REDIS_HOST="$REDIS_HOST" \
 REDIS_PORT="$REDIS_PORT" \
 CORS_ALLOWED_ORIGINS="$CORS_ALLOWED_ORIGINS" \
 PLATFORM_ENCRYPTION_KEY="$PLATFORM_ENCRYPTION_KEY" \
+ADMIN_PASSWORD="$ADMIN_PASSWORD" \
 mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT} --spring.datasource.url=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME} --spring.datasource.username=${DB_USER} --spring.datasource.password=${DB_PASSWORD} --spring.data.redis.host=${REDIS_HOST} --spring.data.redis.port=${REDIS_PORT}" \
   > "$STATE_DIR/backend.log" 2>&1 < /dev/null &
 echo $! > "$STATE_DIR/backend.pid"
 
-printf '==> Waiting for backend after restore\n'
-for i in {1..120}; do
-  if curl -fsS "$UAT_API_BASE_URL/actuator/health" >/dev/null 2>&1; then
-    break
-  fi
-  sleep 2
-done
-curl -fsS "$UAT_API_BASE_URL/actuator/health" >/dev/null
+wait_for_backend_health "after restore"
 
 printf '==> Verifying restore removed post-backup mutation\n'
 POST_RESTORE_REPORT="$(node "$ROOT_DIR/scripts/release/verify-restore.mjs" "$UAT_REPORT_JSON" "$RESTORE_MARKER_JSON")"

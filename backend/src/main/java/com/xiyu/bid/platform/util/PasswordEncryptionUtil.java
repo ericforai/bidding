@@ -12,6 +12,7 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -53,9 +54,7 @@ public class PasswordEncryptionUtil {
         // 1. Application property (platform.account.encryption-key)
         // 2. Environment variable (PLATFORM_ENCRYPTION_KEY)
         // 3. Fallback key (dev/test only)
-        String keyFromEnv = configuredKey != null && !configuredKey.trim().isEmpty()
-                ? configuredKey
-                : System.getenv("PLATFORM_ENCRYPTION_KEY");
+        String keyFromEnv = resolveEncryptionKey();
 
         // Check if we're in a non-development environment
         boolean isProductionOrStaging = isProductionOrStagingEnvironment();
@@ -89,6 +88,17 @@ public class PasswordEncryptionUtil {
         // Ensure key is exactly 32 bytes (256 bits) for AES-256
         this.encryptionKey = deriveKey(keyFromEnv);
         log.info("PasswordEncryptionUtil initialized with AES-256-GCM in {} environment", getActiveProfiles());
+    }
+
+    private String resolveEncryptionKey() {
+        if (configuredKey != null && !configuredKey.trim().isEmpty()) {
+            return configuredKey;
+        }
+        String keyFromSystemProperty = System.getProperty("PLATFORM_ENCRYPTION_KEY");
+        if (keyFromSystemProperty != null) {
+            return keyFromSystemProperty;
+        }
+        return System.getenv("PLATFORM_ENCRYPTION_KEY");
     }
 
     /**
@@ -182,7 +192,7 @@ public class PasswordEncryptionUtil {
 
             // Return Base64 encoded result
             return Base64.getEncoder().encodeToString(byteBuffer.array());
-        } catch (Exception e) {
+        } catch (GeneralSecurityException e) {
             log.error("Failed to encrypt password", e);
             throw new RuntimeException("Password encryption failed", e);
         }
@@ -220,7 +230,7 @@ public class PasswordEncryptionUtil {
             byte[] decryptedData = cipher.doFinal(encryptedData);
 
             return new String(decryptedData, StandardCharsets.UTF_8);
-        } catch (Exception e) {
+        } catch (GeneralSecurityException | IllegalArgumentException e) {
             log.error("Failed to decrypt password", e);
             throw new RuntimeException("Password decryption failed", e);
         }

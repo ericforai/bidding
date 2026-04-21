@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Input: release environment variables and optional rehearsal overrides
-# Output: shared rehearsal environment defaults for release scripts
+# Input: release environment variables, admin bootstrap credentials, and optional rehearsal overrides
+# Output: shared rehearsal, UAT, and admin bootstrap environment defaults for release scripts
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -27,6 +27,8 @@ SPRING_PROFILES_ACTIVE="${SPRING_PROFILES_ACTIVE:-prod}"
 REDIS_HOST="${REDIS_HOST:-127.0.0.1}"
 CORS_ALLOWED_ORIGINS="${CORS_ALLOWED_ORIGINS:-http://127.0.0.1:${FRONTEND_PORT},http://localhost:${FRONTEND_PORT}}"
 PLATFORM_ENCRYPTION_KEY="${PLATFORM_ENCRYPTION_KEY:-xiyu-platform-key-2026}"
+UAT_TEST_PASSWORD="${UAT_TEST_PASSWORD:-XiyuGoLive!2026}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-$UAT_TEST_PASSWORD}"
 
 UAT_API_BASE_URL="${UAT_API_BASE_URL:-http://127.0.0.1:${BACKEND_PORT}}"
 UAT_WEB_BASE_URL="${UAT_WEB_BASE_URL:-http://127.0.0.1:${FRONTEND_PORT}}"
@@ -35,6 +37,6 @@ export ROOT_DIR BACKEND_DIR REPORT_DIR STATE_DIR
 export POSTGRES_CONTAINER_NAME REDIS_CONTAINER_NAME POSTGRES_PORT REDIS_PORT BACKEND_PORT FRONTEND_PORT
 export DB_HOST DB_PORT DB_NAME DB_USER DB_USERNAME DB_PASSWORD JWT_SECRET SPRING_PROFILES_ACTIVE REDIS_HOST
 export CORS_ALLOWED_ORIGINS
-export PLATFORM_ENCRYPTION_KEY UAT_API_BASE_URL UAT_WEB_BASE_URL
+export PLATFORM_ENCRYPTION_KEY UAT_TEST_PASSWORD ADMIN_PASSWORD UAT_API_BASE_URL UAT_WEB_BASE_URL
 
 mkdir -p "$REPORT_DIR" "$STATE_DIR"

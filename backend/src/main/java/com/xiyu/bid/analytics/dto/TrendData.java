@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 /**
@@ -14,7 +15,9 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TrendData {
+public class TrendData implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * Time period (e.g., "2024-01", "Q1 2024")

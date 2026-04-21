@@ -36,6 +36,7 @@ jobs:
       JWT_SECRET: ci-rehearsal-jwt-secret-key-with-32-chars-min
       PLATFORM_ENCRYPTION_KEY: ci-rehearsal-platform-key-2026
       UAT_TEST_PASSWORD: XiyuGoLive!2026
+      ADMIN_PASSWORD: XiyuGoLive!2026
     steps:
       - name: Checkout
         uses: actions/checkout@v4

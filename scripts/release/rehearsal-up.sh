@@ -1,12 +1,45 @@
 #!/usr/bin/env bash
-# Input: rehearsal environment variables and database container configuration
-# Output: running rehearsal database services and pid/state files
+# Input: rehearsal environment variables, database container configuration, and backend build inputs
+# Output: running rehearsal services, backend/frontend pid files, and failure log tails
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT_DIR/scripts/release/rehearsal-env.sh"
+
+print_backend_log_tail() {
+  if [[ -f "$STATE_DIR/backend.log" ]]; then
+    printf '\n==> Backend log tail\n' >&2
+    tail -n 200 "$STATE_DIR/backend.log" >&2 || true
+  fi
+}
+
+wait_for_backend_health() {
+  local pid
+
+  printf '==> Waiting for backend health\n'
+  for i in {1..180}; do
+    if curl -fsS "$UAT_API_BASE_URL/actuator/health" >/dev/null 2>&1; then
+      return 0
+    fi
+
+    if [[ -f "$STATE_DIR/backend.pid" ]]; then
+      pid="$(cat "$STATE_DIR/backend.pid")"
+      if ! kill -0 "$pid" >/dev/null 2>&1; then
+        printf 'Backend process exited before health check passed\n' >&2
+        print_backend_log_tail
+        return 1
+      fi
+    fi
+
+    sleep 2
+  done
+
+  printf 'Backend health check timed out: %s\n' "$UAT_API_BASE_URL/actuator/health" >&2
+  print_backend_log_tail
+  return 1
+}
 
 printf '==> Starting PostgreSQL container %s on %s\n' "$POSTGRES_CONTAINER_NAME" "$POSTGRES_PORT"
 docker rm -f "$POSTGRES_CONTAINER_NAME" >/dev/null 2>&1 || true
@@ -47,6 +80,10 @@ printf '==> Building frontend assets\n'
 cd "$ROOT_DIR"
 VITE_API_MODE=api VITE_API_BASE_URL="$UAT_API_BASE_URL" npm run build >/dev/null
 
+printf '==> Compiling backend\n'
+cd "$BACKEND_DIR"
+mvn -DskipTests compile -q
+
 printf '==> Starting backend on %s\n' "$BACKEND_PORT"
 cd "$BACKEND_DIR"
 nohup env \
@@ -58,18 +95,12 @@ REDIS_HOST="$REDIS_HOST" \
 REDIS_PORT="$REDIS_PORT" \
 CORS_ALLOWED_ORIGINS="$CORS_ALLOWED_ORIGINS" \
 PLATFORM_ENCRYPTION_KEY="$PLATFORM_ENCRYPTION_KEY" \
+ADMIN_PASSWORD="$ADMIN_PASSWORD" \
 mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT} --spring.datasource.url=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME} --spring.datasource.username=${DB_USER} --spring.datasource.password=${DB_PASSWORD} --spring.data.redis.host=${REDIS_HOST} --spring.data.redis.port=${REDIS_PORT}" \
   > "$STATE_DIR/backend.log" 2>&1 < /dev/null &
 echo $! > "$STATE_DIR/backend.pid"
 
-printf '==> Waiting for backend health\n'
-for i in {1..120}; do
-  if curl -fsS "$UAT_API_BASE_URL/actuator/health" >/dev/null 2>&1; then
-    break
-  fi
-  sleep 2
-done
-curl -fsS "$UAT_API_BASE_URL/actuator/health" >/dev/null
+wait_for_backend_health
 
 printf '==> Seeding default users when database is empty\n'
 USER_COUNT="$(docker exec "$POSTGRES_CONTAINER_NAME" psql -U "$DB_USER" -d "$DB_NAME" -t -A -c 'select count(*) from users;' | tr -d '[:space:]')"

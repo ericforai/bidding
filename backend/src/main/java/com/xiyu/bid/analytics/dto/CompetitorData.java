@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+import java.math.BigDecimal;
+
 /**
  * Competitor analysis data
  */
@@ -12,7 +15,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CompetitorData {
+public class CompetitorData implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * Competitor name or identifier
@@ -37,5 +42,5 @@ public class CompetitorData {
     /**
      * Total bid amount
      */
-    private java.math.BigDecimal totalBidAmount;
+    private BigDecimal totalBidAmount;
 }

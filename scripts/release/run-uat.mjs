@@ -243,6 +243,9 @@ async function main() {
     result = await authed('POST', '/api/knowledge/templates', {
       name: templateName,
       category: 'TECHNICAL',
+      productType: 'SMART_CITY',
+      industry: 'GOVERNMENT',
+      documentType: 'TECHNICAL_PROPOSAL',
       fileUrl: '/uat/template.docx',
       tags: ['uat', 'release'],
       createdBy: userId,

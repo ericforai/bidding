@@ -15,7 +15,7 @@
     "build:api": "vite build --mode api",
     "preview": "vite preview",
     "test:e2e": "npx playwright test --config playwright.config.js",
-    "test:e2e:commercial": "npx playwright test --config playwright.config.js",
+    "test:e2e:commercial": "npx playwright test commercial-main-flow --config playwright.config.js",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "check-docs": "bash scripts/check-doc-consistency.sh"
