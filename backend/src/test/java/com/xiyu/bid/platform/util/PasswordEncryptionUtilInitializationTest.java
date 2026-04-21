@@ -2,6 +2,7 @@ package com.xiyu.bid.platform.util;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -50,7 +51,9 @@ class PasswordEncryptionUtilInitializationTest extends AbstractPasswordEncryptio
     @Test
     @DisplayName("Should fail initialization when PLATFORM_ENCRYPTION_KEY is missing in production")
     void shouldFailWhenEnvironmentVariableMissingInProduction() {
-        System.setProperty("SPRING_PROFILES_ACTIVE", "prod");
+        MockEnvironment productionEnvironment = new MockEnvironment();
+        productionEnvironment.setActiveProfiles("prod");
+        ReflectionTestUtils.setField(passwordEncryptionUtil, "environment", productionEnvironment);
         ReflectionTestUtils.setField(passwordEncryptionUtil, "configuredKey", null);
 
         IllegalStateException exception = assertThrows(
