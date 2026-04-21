@@ -20,35 +20,51 @@ describe('contractBorrowApi', () => {
     vi.clearAllMocks()
   })
 
-  it('getList(): forwards filters and keeps OVERDUE as derived display status', async () => {
+  it('getList(): forwards filters and normalizes paged OVERDUE rows', async () => {
     httpClient.get.mockResolvedValue({
       success: true,
-      data: [
-        {
-          id: 7,
-          contractNo: 'HT-2026-0421',
-          contractName: '西域智算中心年度框架合同',
-          borrowerName: '小王',
-          expectedReturnDate: '2026-04-20',
-          status: 'APPROVED',
-          displayStatus: 'OVERDUE',
-          overdue: true
-        }
-      ]
+      data: {
+        items: [
+          {
+            id: 7,
+            contractNo: 'HT-2026-0421',
+            contractName: '西域智算中心年度框架合同',
+            borrowerName: '小王',
+            expectedReturnDate: '2026-04-20',
+            status: 'APPROVED',
+            displayStatus: 'OVERDUE',
+            overdue: true
+          }
+        ],
+        total: 21,
+        page: 2,
+        size: 10,
+        totalPages: 3
+      }
     })
 
     const result = await contractBorrowApi.getList({
       keyword: '智算',
-      status: 'overdue'
+      status: 'overdue',
+      page: 2,
+      size: 10
     })
 
     expect(httpClient.get).toHaveBeenCalledWith('/api/contract-borrows', {
       params: {
         keyword: '智算',
-        status: 'OVERDUE'
+        status: 'OVERDUE',
+        page: 2,
+        size: 10
       }
     })
-    expect(result.data[0]).toMatchObject({
+    expect(result.data).toMatchObject({
+      total: 21,
+      page: 2,
+      size: 10,
+      totalPages: 3
+    })
+    expect(result.data.items[0]).toMatchObject({
       id: 7,
       contractNo: 'HT-2026-0421',
       status: 'APPROVED',

@@ -54,6 +54,18 @@
       </el-table-column>
     </el-table>
 
+    <el-pagination
+      class="contract-borrow-pagination"
+      background
+      layout="total, sizes, prev, pager, next"
+      :current-page="pagination.page"
+      :page-size="pagination.size"
+      :total="pagination.total"
+      :page-sizes="[10, 20, 50, 100]"
+      @current-change="handlePageChange"
+      @size-change="handleSizeChange"
+    />
+
     <el-dialog v-model="createDialogVisible" title="发起合同借阅" width="640px">
       <el-form :model="createForm" label-width="96px">
         <el-form-item label="合同编号"><el-input v-model="createForm.contractNo" /></el-form-item>
@@ -101,6 +113,10 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { contractBorrowApi } from '@/api/modules/contractBorrow.js'
+import { useUserStore } from '@/stores/user.js'
+import './contractBorrow.css'
+
+const userStore = useUserStore()
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -114,6 +130,12 @@ const detailDrawerVisible = ref(false)
 const filters = reactive({
   keyword: '',
   status: ''
+})
+
+const pagination = reactive({
+  page: 1,
+  size: 20,
+  total: 0
 })
 
 const emptyForm = () => ({
@@ -144,15 +166,29 @@ function assignForm(target, source) {
 }
 
 async function loadOverview() {
-  const response = await contractBorrowApi.getOverview()
-  overview.value = response?.data || {}
+  try {
+    const response = await contractBorrowApi.getOverview()
+    overview.value = response?.data || {}
+  } catch (error) {
+    ElMessage.error(resolveErrorMessage(error, '合同借阅概览加载失败'))
+  }
 }
 
 async function loadList() {
   loading.value = true
   try {
-    const response = await contractBorrowApi.getList(filters)
-    records.value = response?.data || []
+    const response = await contractBorrowApi.getList({
+      ...filters,
+      page: pagination.page,
+      size: pagination.size
+    })
+    const pageData = response?.data || {}
+    records.value = pageData.items || []
+    pagination.total = Number(pageData.total || 0)
+  } catch (error) {
+    records.value = []
+    pagination.total = 0
+    ElMessage.error(resolveErrorMessage(error, '合同借阅列表加载失败'))
   } finally {
     loading.value = false
   }
@@ -161,6 +197,7 @@ async function loadList() {
 function resetFilters() {
   filters.keyword = ''
   filters.status = ''
+  pagination.page = 1
   loadList()
 }
 
@@ -176,6 +213,8 @@ async function submitCreate() {
     ElMessage.success('合同借阅申请已提交')
     createDialogVisible.value = false
     await refresh()
+  } catch (error) {
+    ElMessage.error(resolveErrorMessage(error, '合同借阅申请提交失败'))
   } finally {
     submitting.value = false
   }
@@ -184,27 +223,36 @@ async function submitCreate() {
 async function openDetail(row) {
   currentRecord.value = row
   detailDrawerVisible.value = true
-  const response = await contractBorrowApi.getEvents(row.id)
-  events.value = response?.data || []
+  try {
+    const response = await contractBorrowApi.getEvents(row.id)
+    events.value = response?.data || []
+  } catch (error) {
+    events.value = []
+    ElMessage.error(resolveErrorMessage(error, '合同借阅历史加载失败'))
+  }
 }
 
 async function runAction(row, action) {
   const payload = {
-    actorName: '当前用户',
+    actorName: userStore.userName || '当前用户',
     comment: action === 'return' ? '已归还' : '同意',
     reason: action === 'reject' ? '信息不完整' : '不再需要'
   }
-  if (action === 'approve') {
-    await contractBorrowApi.approve(row.id, payload)
-  } else if (action === 'reject') {
-    await contractBorrowApi.reject(row.id, payload)
-  } else if (action === 'return') {
-    await contractBorrowApi.returnBack(row.id, payload)
-  } else if (action === 'cancel') {
-    await contractBorrowApi.cancel(row.id, payload)
+  try {
+    if (action === 'approve') {
+      await contractBorrowApi.approve(row.id, payload)
+    } else if (action === 'reject') {
+      await contractBorrowApi.reject(row.id, payload)
+    } else if (action === 'return') {
+      await contractBorrowApi.returnBack(row.id, payload)
+    } else if (action === 'cancel') {
+      await contractBorrowApi.cancel(row.id, payload)
+    }
+    ElMessage.success('状态已更新')
+    await refresh()
+  } catch (error) {
+    ElMessage.error(resolveErrorMessage(error, '合同借阅状态更新失败'))
   }
-  ElMessage.success('状态已更新')
-  await refresh()
 }
 
 async function refresh() {
@@ -223,70 +271,20 @@ function formatDateTime(value) {
   return value ? String(value).replace('T', ' ').slice(0, 16) : ''
 }
 
+function handlePageChange(page) {
+  pagination.page = page
+  loadList()
+}
+
+function handleSizeChange(size) {
+  pagination.size = size
+  pagination.page = 1
+  loadList()
+}
+
+function resolveErrorMessage(error, fallback) {
+  return error?.response?.data?.message || error?.message || fallback
+}
+
 onMounted(refresh)
 </script>
-
-<style scoped lang="scss">
-.contract-borrow-page {
-  padding: 20px;
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-
-  h1 {
-    margin: 0;
-    font-size: 24px;
-  }
-
-  p {
-    margin: 6px 0 0;
-    color: var(--el-text-color-secondary);
-  }
-}
-
-.summary-row {
-  margin-bottom: 16px;
-}
-
-.summary-card {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px;
-  border: 1px solid var(--el-border-color);
-  border-radius: 8px;
-  background: var(--el-bg-color);
-
-  span {
-    color: var(--el-text-color-secondary);
-    font-size: 13px;
-  }
-
-  strong {
-    font-size: 24px;
-  }
-}
-
-.toolbar {
-  display: grid;
-  grid-template-columns: minmax(220px, 1fr) 180px auto auto;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-@media (max-width: 768px) {
-  .page-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .toolbar {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

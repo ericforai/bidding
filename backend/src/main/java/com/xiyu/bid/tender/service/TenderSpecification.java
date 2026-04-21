@@ -1,6 +1,8 @@
 package com.xiyu.bid.tender.service;
 
 import com.xiyu.bid.entity.Tender;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -20,22 +22,27 @@ public final class TenderSpecification {
 
             if (hasText(safeCriteria.getKeyword())) {
                 String pattern = containsPattern(safeCriteria.getKeyword());
-                predicates.add(criteriaBuilder.or(
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), pattern),
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("description")), pattern),
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("purchaserName")), pattern),
-                        criteriaBuilder.like(criteriaBuilder.lower(root.get("tags")), pattern)
-                ));
+                predicates.add(criteriaBuilder.like(root.get("searchTextNormalized"), pattern));
             }
 
             if (safeCriteria.getStatus() != null) {
                 predicates.add(criteriaBuilder.equal(root.get("status"), safeCriteria.getStatus()));
             }
-            addStringEquals(predicates, criteriaBuilder, root.get("source"), safeCriteria.getSource());
-            addStringEquals(predicates, criteriaBuilder, root.get("region"), safeCriteria.getRegion());
-            addStringEquals(predicates, criteriaBuilder, root.get("industry"), safeCriteria.getIndustry());
-            addStringContains(predicates, criteriaBuilder, root.get("purchaserName"), safeCriteria.getPurchaserName());
-            addStringEquals(predicates, criteriaBuilder, root.get("purchaserHash"), safeCriteria.getPurchaserHash());
+            addStringEquals(predicates, criteriaBuilder, root.get("sourceNormalized"), safeCriteria.getSource());
+            addStringEquals(predicates, criteriaBuilder, root.get("regionNormalized"), safeCriteria.getRegion());
+            addStringEquals(predicates, criteriaBuilder, root.get("industryNormalized"), safeCriteria.getIndustry());
+            addStringContains(
+                    predicates,
+                    criteriaBuilder,
+                    root.get("purchaserNameNormalized"),
+                    safeCriteria.getPurchaserName()
+            );
+            addStringEquals(
+                    predicates,
+                    criteriaBuilder,
+                    root.get("purchaserHashNormalized"),
+                    safeCriteria.getPurchaserHash()
+            );
 
             if (safeCriteria.getBudgetMin() != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("budget"), safeCriteria.getBudgetMin()));
@@ -74,23 +81,23 @@ public final class TenderSpecification {
 
     private static void addStringEquals(
             List<Predicate> predicates,
-            jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
-            jakarta.persistence.criteria.Expression<String> path,
+            CriteriaBuilder criteriaBuilder,
+            Expression<String> path,
             String value
     ) {
         if (hasText(value)) {
-            predicates.add(criteriaBuilder.equal(criteriaBuilder.lower(path), normalize(value)));
+            predicates.add(criteriaBuilder.equal(path, normalize(value)));
         }
     }
 
     private static void addStringContains(
             List<Predicate> predicates,
-            jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
-            jakarta.persistence.criteria.Expression<String> path,
+            CriteriaBuilder criteriaBuilder,
+            Expression<String> path,
             String value
     ) {
         if (hasText(value)) {
-            predicates.add(criteriaBuilder.like(criteriaBuilder.lower(path), containsPattern(value)));
+            predicates.add(criteriaBuilder.like(path, containsPattern(value)));
         }
     }
 

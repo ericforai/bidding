@@ -6,6 +6,7 @@ import com.xiyu.bid.analytics.service.CustomerTypeAnalyticsAssemblerService;
 import com.xiyu.bid.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,6 +23,7 @@ public class CustomerTypeAnalyticsController {
     private final CustomerTypeAnalyticsAssemblerService customerTypeAnalyticsService;
 
     @GetMapping("/customer-types")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<CustomerTypeAnalyticsResponse>> getCustomerTypes(
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate
@@ -30,6 +32,7 @@ public class CustomerTypeAnalyticsController {
     }
 
     @GetMapping("/drilldown/customer-type")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<List<CustomerTypeDrillDownRowDTO>>> getCustomerTypeDrillDown(
             @RequestParam(required = false) String customerType,
             @RequestParam(required = false) LocalDate startDate,

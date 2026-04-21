@@ -8,6 +8,8 @@
 
 - Store contract borrow applications as the workflow source of truth.
 - Store immutable lifecycle events for submit, approve, reject, return, and cancel actions.
+- Protect lifecycle transitions with optimistic locking so concurrent actions fail clearly.
+- Serve list filtering and pagination from the repository layer instead of in-memory filtering.
 - Keep pure lifecycle decisions in `domain`.
 - Keep use-case orchestration in `application.service`.
 - Keep JPA persistence details in `infrastructure.persistence`.
@@ -30,4 +32,4 @@
 | `application/service/` | Application Service | Workflow orchestration and view assembly |
 | `application/view/` | View Model | API response records |
 | `controller/` | Controller | Contract borrow REST API and request records |
-| `infrastructure/persistence/` | Persistence | JPA entities and repositories |
+| `infrastructure/persistence/` | Persistence | Versioned JPA entities, repositories, and query specifications |
