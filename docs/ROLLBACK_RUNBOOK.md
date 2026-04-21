@@ -15,6 +15,8 @@
 bash scripts/release/backup-db.sh
 ```
 
+默认按 PostgreSQL 执行。客户 MySQL 8.0 新库部署时，先设置 `DB_ENGINE=mysql`、`DB_HOST/DB_PORT/DB_NAME/DB_USERNAME/DB_PASSWORD`，脚本会生成 `.sql` 备份；脚本也兼容历史变量 `DB_USER`。
+
 ## Application Rollback
 1. 停止当前版本流量接入
 2. 回退前端静态资源到上一个稳定版本
@@ -28,7 +30,13 @@ bash scripts/release/backup-db.sh
 CONFIRM_RESTORE=YES bash scripts/release/restore-db.sh <backup-file>
 ```
 
-如果本机没有 `pg_dump/pg_restore`，可设置 `PG_CONTAINER_NAME=<postgres-container>` 使用 docker exec 回退路径。
+MySQL 8.0 环境恢复也必须显式声明数据库引擎：
+
+```bash
+CONFIRM_RESTORE=YES DB_ENGINE=mysql bash scripts/release/restore-db.sh <backup-file.sql>
+```
+
+如果本机没有 `pg_dump/pg_restore`，可设置 `PG_CONTAINER_NAME=<postgres-container>` 使用 docker exec 回退路径。MySQL 环境如果本机没有 `mysqldump/mysql`，可设置 `MYSQL_CONTAINER_NAME=<mysql-container>` 使用 docker exec 回退路径。
 
 ## Verification After Rollback
 - `GET /actuator/health` 返回 `UP`

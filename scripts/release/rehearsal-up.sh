@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Input: rehearsal environment variables, database container configuration, and backend build inputs
-# Output: running rehearsal services, backend/frontend pid files, and failure log tails
+# Input: rehearsal environment variables, database engine/container configuration, and backend build inputs
+# Output: running PostgreSQL/MySQL rehearsal services, backend/frontend pid files, and failure log tails
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -41,15 +41,74 @@ wait_for_backend_health() {
   return 1
 }
 
-printf '==> Starting PostgreSQL container %s on %s\n' "$POSTGRES_CONTAINER_NAME" "$POSTGRES_PORT"
-docker rm -f "$POSTGRES_CONTAINER_NAME" >/dev/null 2>&1 || true
-docker run -d \
-  --name "$POSTGRES_CONTAINER_NAME" \
-  -e POSTGRES_DB="$DB_NAME" \
-  -e POSTGRES_USER="$DB_USER" \
-  -e POSTGRES_PASSWORD="$DB_PASSWORD" \
-  -p "${POSTGRES_PORT}:5432" \
-  postgres:16-alpine >/dev/null
+start_database() {
+  case "$DB_ENGINE" in
+    postgres)
+      printf '==> Starting PostgreSQL container %s on %s\n' "$POSTGRES_CONTAINER_NAME" "$POSTGRES_PORT"
+      docker rm -f "$POSTGRES_CONTAINER_NAME" >/dev/null 2>&1 || true
+      docker run -d \
+        --name "$POSTGRES_CONTAINER_NAME" \
+        -e POSTGRES_DB="$DB_NAME" \
+        -e POSTGRES_USER="$DB_USER" \
+        -e POSTGRES_PASSWORD="$DB_PASSWORD" \
+        -p "${POSTGRES_PORT}:5432" \
+        postgres:16-alpine >/dev/null
+      ;;
+    mysql)
+      printf '==> Starting MySQL container %s on %s\n' "$MYSQL_CONTAINER_NAME" "$MYSQL_PORT"
+      docker rm -f "$MYSQL_CONTAINER_NAME" >/dev/null 2>&1 || true
+      docker run -d \
+        --name "$MYSQL_CONTAINER_NAME" \
+        -e MYSQL_DATABASE="$DB_NAME" \
+        -e MYSQL_USER="$DB_USER" \
+        -e MYSQL_PASSWORD="$DB_PASSWORD" \
+        -e MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PASSWORD" \
+        -p "${MYSQL_PORT}:3306" \
+        mysql:8.0 \
+        --character-set-server=utf8mb4 \
+        --collation-server=utf8mb4_unicode_ci >/dev/null
+      ;;
+  esac
+}
+
+wait_for_database() {
+  case "$DB_ENGINE" in
+    postgres)
+      printf '==> Waiting for PostgreSQL\n'
+      for i in {1..60}; do
+        if docker exec "$POSTGRES_CONTAINER_NAME" pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; then
+          break
+        fi
+        sleep 1
+      done
+      docker exec "$POSTGRES_CONTAINER_NAME" pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null
+      ;;
+    mysql)
+      printf '==> Waiting for MySQL\n'
+      for i in {1..90}; do
+        if docker exec "$MYSQL_CONTAINER_NAME" mysqladmin ping -h127.0.0.1 -u"$DB_USER" -p"$DB_PASSWORD" --silent >/dev/null 2>&1; then
+          break
+        fi
+        sleep 1
+      done
+      docker exec "$MYSQL_CONTAINER_NAME" mysqladmin ping -h127.0.0.1 -u"$DB_USER" -p"$DB_PASSWORD" --silent >/dev/null
+      docker exec "$MYSQL_CONTAINER_NAME" mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" -Nse 'select 1;' >/dev/null
+      ;;
+  esac
+}
+
+count_users() {
+  case "$DB_ENGINE" in
+    postgres)
+      docker exec "$POSTGRES_CONTAINER_NAME" psql -U "$DB_USER" -d "$DB_NAME" -t -A -c 'select count(*) from users;'
+      ;;
+    mysql)
+      docker exec "$MYSQL_CONTAINER_NAME" mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" -Nse 'select count(*) from users;'
+      ;;
+  esac
+}
+
+start_database
 
 printf '==> Starting Redis container %s on %s\n' "$REDIS_CONTAINER_NAME" "$REDIS_PORT"
 docker rm -f "$REDIS_CONTAINER_NAME" >/dev/null 2>&1 || true
@@ -58,14 +117,7 @@ docker run -d \
   -p "${REDIS_PORT}:6379" \
   redis:7-alpine >/dev/null
 
-printf '==> Waiting for PostgreSQL\n'
-for i in {1..60}; do
-  if docker exec "$POSTGRES_CONTAINER_NAME" pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; then
-    break
-  fi
-  sleep 1
-done
-docker exec "$POSTGRES_CONTAINER_NAME" pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null
+wait_for_database
 
 printf '==> Waiting for Redis\n'
 for i in {1..60}; do
@@ -88,6 +140,7 @@ printf '==> Starting backend on %s\n' "$BACKEND_PORT"
 cd "$BACKEND_DIR"
 nohup env \
 SPRING_PROFILES_ACTIVE="$SPRING_PROFILES_ACTIVE" \
+DB_URL="$DB_URL" \
 DB_PASSWORD="$DB_PASSWORD" \
 DB_USERNAME="$DB_USERNAME" \
 JWT_SECRET="$JWT_SECRET" \
@@ -96,14 +149,14 @@ REDIS_PORT="$REDIS_PORT" \
 CORS_ALLOWED_ORIGINS="$CORS_ALLOWED_ORIGINS" \
 PLATFORM_ENCRYPTION_KEY="$PLATFORM_ENCRYPTION_KEY" \
 ADMIN_PASSWORD="$ADMIN_PASSWORD" \
-mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT} --spring.datasource.url=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME} --spring.datasource.username=${DB_USER} --spring.datasource.password=${DB_PASSWORD} --spring.data.redis.host=${REDIS_HOST} --spring.data.redis.port=${REDIS_PORT}" \
+mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT} --spring.datasource.url=${DB_URL} --spring.datasource.username=${DB_USER} --spring.datasource.password=${DB_PASSWORD} --spring.data.redis.host=${REDIS_HOST} --spring.data.redis.port=${REDIS_PORT}" \
   > "$STATE_DIR/backend.log" 2>&1 < /dev/null &
 echo $! > "$STATE_DIR/backend.pid"
 
 wait_for_backend_health
 
 printf '==> Seeding default users when database is empty\n'
-USER_COUNT="$(docker exec "$POSTGRES_CONTAINER_NAME" psql -U "$DB_USER" -d "$DB_NAME" -t -A -c 'select count(*) from users;' | tr -d '[:space:]')"
+USER_COUNT="$(count_users | tr -d '[:space:]')"
 if [[ "${USER_COUNT:-0}" == "0" ]]; then
   seed_user() {
     local username="$1"
