@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * 客户商机生命周期服务。
@@ -78,24 +77,21 @@ public class CustomerOpportunityLifecycleService {
         CustomerPrediction prediction = customerPredictionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CustomerPrediction", String.valueOf(id)));
 
-        Long resolvedProjectId = projectId != null ? projectId : prediction.getConvertedProjectId();
-        boolean alreadyConverted = prediction.getStatus() == CustomerPrediction.Status.CONVERTED;
-        boolean projectIdUnchanged = Objects.equals(prediction.getConvertedProjectId(), resolvedProjectId);
-
-        if (alreadyConverted && projectIdUnchanged) {
-            return CustomerOpportunityAssembler.toDTO(prediction);
-        }
-
         PredictionTransitionPolicy.PredictionStatus coreCurrent = mapToCoreStatus(prediction.getStatus());
-        var result = PredictionTransitionPolicy.validateTransition(
-                coreCurrent, PredictionTransitionPolicy.PredictionStatus.CONVERTED);
+        var result = PredictionTransitionPolicy.validateConversion(
+                coreCurrent,
+                prediction.getConvertedProjectId(),
+                projectId);
         if (!result.allowed()) {
             throw new IllegalStateException(result.reason());
         }
+        if (!result.shouldSave()) {
+            return CustomerOpportunityAssembler.toDTO(prediction);
+        }
 
         prediction.setStatus(CustomerPrediction.Status.CONVERTED);
-        if (resolvedProjectId != null) {
-            prediction.setConvertedProjectId(resolvedProjectId);
+        if (result.resolvedProjectId() != null) {
+            prediction.setConvertedProjectId(result.resolvedProjectId());
         }
         CustomerPrediction saved = customerPredictionRepository.save(prediction);
         return CustomerOpportunityAssembler.toDTO(saved);

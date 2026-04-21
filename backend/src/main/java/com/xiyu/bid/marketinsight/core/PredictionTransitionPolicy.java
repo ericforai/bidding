@@ -2,6 +2,7 @@ package com.xiyu.bid.marketinsight.core;
 
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -60,6 +61,33 @@ public final class PredictionTransitionPolicy {
     }
 
     /**
+     * Decide whether converting a prediction should mutate the entity.
+     *
+     * @param current current prediction status
+     * @param currentProjectId currently linked project id
+     * @param requestedProjectId project id from command payload
+     * @return conversion decision with resolved project id
+     */
+    public static ConversionResult validateConversion(
+            final PredictionStatus current,
+            final Long currentProjectId,
+            final Long requestedProjectId) {
+        Long resolvedProjectId = requestedProjectId != null ? requestedProjectId : currentProjectId;
+        boolean alreadyConverted = current == PredictionStatus.CONVERTED;
+        boolean projectIdUnchanged = Objects.equals(currentProjectId, resolvedProjectId);
+
+        if (alreadyConverted && projectIdUnchanged) {
+            return ConversionResult.noChange(resolvedProjectId);
+        }
+
+        TransitionResult transition = validateTransition(current, PredictionStatus.CONVERTED);
+        if (!transition.allowed()) {
+            return ConversionResult.denied(resolvedProjectId, transition.reason());
+        }
+        return ConversionResult.shouldSave(resolvedProjectId);
+    }
+
+    /**
      * Result of a transition validation.
      *
      * @param allowed whether transition is legal
@@ -82,6 +110,51 @@ public final class PredictionTransitionPolicy {
          */
         public static TransitionResult denied(final String reason) {
             return new TransitionResult(false, reason);
+        }
+    }
+
+    /**
+     * Result of a conversion command validation.
+     *
+     * @param allowed whether conversion is legal
+     * @param shouldSave whether shell should persist a changed entity
+     * @param resolvedProjectId project id to write back, if present
+     * @param reason human-readable explanation if denied
+     */
+    public record ConversionResult(
+            boolean allowed,
+            boolean shouldSave,
+            Long resolvedProjectId,
+            String reason) {
+
+        /** Create an idempotent conversion result.
+         *
+         * @param resolvedProjectId retained project id
+         * @return conversion result that does not need persistence
+         */
+        public static ConversionResult noChange(final Long resolvedProjectId) {
+            return new ConversionResult(true, false, resolvedProjectId, "");
+        }
+
+        /** Create an accepted conversion result that should be persisted.
+         *
+         * @param resolvedProjectId project id to write back, if present
+         * @return conversion result that requires persistence
+         */
+        public static ConversionResult shouldSave(final Long resolvedProjectId) {
+            return new ConversionResult(true, true, resolvedProjectId, "");
+        }
+
+        /** Create a denied conversion result.
+         *
+         * @param resolvedProjectId resolved project id, if any
+         * @param reason denial reason
+         * @return denied conversion result
+         */
+        public static ConversionResult denied(
+                final Long resolvedProjectId,
+                final String reason) {
+            return new ConversionResult(false, false, resolvedProjectId, reason);
         }
     }
 

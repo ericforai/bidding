@@ -137,4 +137,40 @@ class PredictionTransitionPolicyTest {
         assertThat(result.allowed()).isTrue();
         assertThat(result.reason()).isEmpty();
     }
+
+    @Test
+    void validateConversion_AlreadyConvertedWithSameProject_ShouldBeNoChange() {
+        var result = PredictionTransitionPolicy.validateConversion(
+                PredictionTransitionPolicy.PredictionStatus.CONVERTED,
+                9001L,
+                null);
+
+        assertThat(result.allowed()).isTrue();
+        assertThat(result.shouldSave()).isFalse();
+        assertThat(result.resolvedProjectId()).isEqualTo(9001L);
+    }
+
+    @Test
+    void validateConversion_RecommendWithProject_ShouldRequireSave() {
+        var result = PredictionTransitionPolicy.validateConversion(
+                PredictionTransitionPolicy.PredictionStatus.RECOMMEND,
+                null,
+                500L);
+
+        assertThat(result.allowed()).isTrue();
+        assertThat(result.shouldSave()).isTrue();
+        assertThat(result.resolvedProjectId()).isEqualTo(500L);
+    }
+
+    @Test
+    void validateConversion_WatchToConverted_ShouldDeny() {
+        var result = PredictionTransitionPolicy.validateConversion(
+                PredictionTransitionPolicy.PredictionStatus.WATCH,
+                null,
+                500L);
+
+        assertThat(result.allowed()).isFalse();
+        assertThat(result.shouldSave()).isFalse();
+        assertThat(result.reason()).isNotBlank();
+    }
 }
