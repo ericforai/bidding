@@ -37,7 +37,7 @@ public class ProjectQualityCheck {
     @Column(nullable = false)
     private String status;
 
-    @Column(nullable = false)
+    @Column(name = "`empty`", nullable = false)
     private boolean empty;
 
     @Column(columnDefinition = "TEXT")

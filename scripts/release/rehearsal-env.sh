@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Input: release environment variables, admin bootstrap credentials, and optional rehearsal overrides
-# Output: shared rehearsal, UAT, and admin bootstrap environment defaults for release scripts
+# Input: release environment variables, database engine selection, admin bootstrap credentials, and optional rehearsal overrides
+# Output: shared PostgreSQL/MySQL rehearsal, UAT, and admin bootstrap environment defaults for release scripts
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -9,21 +9,23 @@ BACKEND_DIR="${BACKEND_DIR:-$ROOT_DIR/backend}"
 REPORT_DIR="${REPORT_DIR:-$ROOT_DIR/docs/reports}"
 STATE_DIR="${STATE_DIR:-$ROOT_DIR/.rehearsal}"
 
+DB_ENGINE="${DB_ENGINE:-postgres}"
 POSTGRES_CONTAINER_NAME="${POSTGRES_CONTAINER_NAME:-xiyu-bid-rehearsal-postgres}"
+MYSQL_CONTAINER_NAME="${MYSQL_CONTAINER_NAME:-xiyu-bid-rehearsal-mysql}"
 REDIS_CONTAINER_NAME="${REDIS_CONTAINER_NAME:-xiyu-bid-rehearsal-redis}"
 POSTGRES_PORT="${POSTGRES_PORT:-55432}"
+MYSQL_PORT="${MYSQL_PORT:-53306}"
 REDIS_PORT="${REDIS_PORT:-56379}"
 BACKEND_PORT="${BACKEND_PORT:-18080}"
 FRONTEND_PORT="${FRONTEND_PORT:-1314}"
 
 DB_HOST="${DB_HOST:-127.0.0.1}"
-DB_PORT="${DB_PORT:-$POSTGRES_PORT}"
 DB_NAME="${DB_NAME:-xiyu_bid}"
-DB_USER="${DB_USER:-xiyu_user}"
+DB_USER="${DB_USER:-${DB_USERNAME:-xiyu_user}}"
 DB_USERNAME="${DB_USERNAME:-$DB_USER}"
 DB_PASSWORD="${DB_PASSWORD:-XiyuDB!2026}"
+MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-XiyuRoot!2026}"
 JWT_SECRET="${JWT_SECRET:-xiyu-go-live-jwt-secret-2026-with-32-chars}"
-SPRING_PROFILES_ACTIVE="${SPRING_PROFILES_ACTIVE:-prod}"
 REDIS_HOST="${REDIS_HOST:-127.0.0.1}"
 CORS_ALLOWED_ORIGINS="${CORS_ALLOWED_ORIGINS:-http://127.0.0.1:${FRONTEND_PORT},http://localhost:${FRONTEND_PORT}}"
 PLATFORM_ENCRYPTION_KEY="${PLATFORM_ENCRYPTION_KEY:-xiyu-platform-key-2026}"
@@ -33,9 +35,29 @@ ADMIN_PASSWORD="${ADMIN_PASSWORD:-$UAT_TEST_PASSWORD}"
 UAT_API_BASE_URL="${UAT_API_BASE_URL:-http://127.0.0.1:${BACKEND_PORT}}"
 UAT_WEB_BASE_URL="${UAT_WEB_BASE_URL:-http://127.0.0.1:${FRONTEND_PORT}}"
 
+case "$DB_ENGINE" in
+  postgres)
+    DB_PORT="${DB_PORT:-$POSTGRES_PORT}"
+    DEFAULT_SPRING_PROFILES_ACTIVE="prod"
+    DEFAULT_DB_URL="jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}"
+    ;;
+  mysql)
+    DB_PORT="${DB_PORT:-$MYSQL_PORT}"
+    DEFAULT_SPRING_PROFILES_ACTIVE="prod,mysql"
+    DEFAULT_DB_URL="jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai"
+    ;;
+  *)
+    printf 'Unsupported DB_ENGINE: %s. Use postgres or mysql.\n' "$DB_ENGINE" >&2
+    exit 1
+    ;;
+esac
+
+SPRING_PROFILES_ACTIVE="${SPRING_PROFILES_ACTIVE:-$DEFAULT_SPRING_PROFILES_ACTIVE}"
+DB_URL="${DB_URL:-$DEFAULT_DB_URL}"
+
 export ROOT_DIR BACKEND_DIR REPORT_DIR STATE_DIR
-export POSTGRES_CONTAINER_NAME REDIS_CONTAINER_NAME POSTGRES_PORT REDIS_PORT BACKEND_PORT FRONTEND_PORT
-export DB_HOST DB_PORT DB_NAME DB_USER DB_USERNAME DB_PASSWORD JWT_SECRET SPRING_PROFILES_ACTIVE REDIS_HOST
+export DB_ENGINE POSTGRES_CONTAINER_NAME MYSQL_CONTAINER_NAME REDIS_CONTAINER_NAME POSTGRES_PORT MYSQL_PORT REDIS_PORT BACKEND_PORT FRONTEND_PORT
+export DB_HOST DB_PORT DB_NAME DB_USER DB_USERNAME DB_PASSWORD MYSQL_ROOT_PASSWORD DB_URL JWT_SECRET SPRING_PROFILES_ACTIVE REDIS_HOST
 export CORS_ALLOWED_ORIGINS
 export PLATFORM_ENCRYPTION_KEY UAT_TEST_PASSWORD ADMIN_PASSWORD UAT_API_BASE_URL UAT_WEB_BASE_URL
 
