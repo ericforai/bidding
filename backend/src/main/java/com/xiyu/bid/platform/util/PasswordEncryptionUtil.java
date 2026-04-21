@@ -98,6 +98,9 @@ public class PasswordEncryptionUtil {
         if (keyFromSystemProperty != null) {
             return keyFromSystemProperty;
         }
+        if (environment != null) {
+            return environment.getProperty("PLATFORM_ENCRYPTION_KEY");
+        }
         return System.getenv("PLATFORM_ENCRYPTION_KEY");
     }
 
