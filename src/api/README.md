@@ -45,3 +45,4 @@
 - 2026-03-19: 新增 `settings.js`，用于读取/保存真实数据权限配置，并让会话快照同时承载 `allowedDepts`
 - 2026-03-19: 新增 `projectGroups.js`，把项目组配置从数据权限配置中拆出，改走正式领域 API
 - 2026-04-19: 新增 `qualification.js` 并在 `index.js` 暴露独立 `qualificationsApi`，供资质页 store 与知识模块共享
+- 2026-04-21: `tenders.js` 改为透传服务端检索参数，并仅做标讯返回字段规范化

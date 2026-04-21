@@ -84,6 +84,9 @@ public class ProjectRequest {
     @Size(max = 50, message = "行业长度不能超过50个字符")
     private String industry;
 
+    @Size(max = 100, message = "客户类型长度不能超过100个字符")
+    private String customerType;
+
     @Size(max = 100, message = "地区长度不能超过100个字符")
     private String region;
 

@@ -16,3 +16,7 @@
 | `AIAnalysis.vue` | View | 标讯 AI 分析页 |
 | `CustomerOpportunityCenter.vue` | View | 客户机会中心容器页 |
 | `customer-opportunity/*` | View / Composable / UI | 客户池、看板、详情、历史抽屉与组合逻辑 |
+
+## 更新记录
+
+- 2026-04-21: `List.vue` 搜索改为刷新后端标讯检索结果，人工录入改为调用真实标讯创建接口入库

@@ -83,6 +83,7 @@ class ProjectControllerIntegrationTest extends AbstractProjectControllerIntegrat
                                   "startDate": "2026-04-01T09:00:00",
                                   "endDate": "2026-05-15T18:00:00",
                                   "customer": "西部某能源集团",
+                                  "customerType": "央国企客户",
                                   "budget": 12500000.50,
                                   "industry": "能源",
                                   "region": "新疆乌鲁木齐",
@@ -95,6 +96,7 @@ class ProjectControllerIntegrationTest extends AbstractProjectControllerIntegrat
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.customer").value("西部某能源集团"))
+                .andExpect(jsonPath("$.data.customerType").value("央国企客户"))
                 .andExpect(jsonPath("$.data.budget").value(12500000.50))
                 .andExpect(jsonPath("$.data.industry").value("能源"))
                 .andExpect(jsonPath("$.data.region").value("新疆乌鲁木齐"))
@@ -117,6 +119,7 @@ class ProjectControllerIntegrationTest extends AbstractProjectControllerIntegrat
                 .startDate(LocalDateTime.of(2026, 4, 1, 9, 0))
                 .endDate(LocalDateTime.of(2026, 5, 1, 18, 0))
                 .customer("初始客户")
+                .customerType("民营客户")
                 .industry("制造")
                 .build());
 
@@ -131,6 +134,7 @@ class ProjectControllerIntegrationTest extends AbstractProjectControllerIntegrat
                                   "startDate": "2026-04-01T09:00:00",
                                   "endDate": "2026-05-30T18:00:00",
                                   "customer": "更新后客户",
+                                  "customerType": "政府客户",
                                   "budget": 8800000.00,
                                   "industry": "智慧城市",
                                   "region": "北京",
@@ -144,6 +148,7 @@ class ProjectControllerIntegrationTest extends AbstractProjectControllerIntegrat
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("已更新项目"))
                 .andExpect(jsonPath("$.data.customer").value("更新后客户"))
+                .andExpect(jsonPath("$.data.customerType").value("政府客户"))
                 .andExpect(jsonPath("$.data.budget").value(8800000.00))
                 .andExpect(jsonPath("$.data.industry").value("智慧城市"))
                 .andExpect(jsonPath("$.data.region").value("北京"))
