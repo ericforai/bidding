@@ -36,9 +36,34 @@ function normalizeItem(item = {}) {
   }
 }
 
-function normalizeListResponse(response) {
-  const data = Array.isArray(response?.data) ? response.data.map(normalizeItem) : []
-  return { ...response, data }
+function normalizePageResponse(response) {
+  if (Array.isArray(response?.data)) {
+    const data = response.data.map(normalizeItem)
+    return {
+      ...response,
+      data: {
+        items: data,
+        total: data.length,
+        page: 1,
+        size: data.length,
+        totalPages: data.length > 0 ? 1 : 0
+      }
+    }
+  }
+
+  const payload = response?.data || {}
+  const items = Array.isArray(payload.items) ? payload.items.map(normalizeItem) : []
+  return {
+    ...response,
+    data: {
+      ...payload,
+      items,
+      total: Number(payload.total || items.length),
+      page: Number(payload.page || 1),
+      size: Number(payload.size || items.length),
+      totalPages: Number(payload.totalPages || 0)
+    }
+  }
 }
 
 function normalizeResponse(response) {
@@ -57,7 +82,7 @@ export const contractBorrowApi = {
     const response = await httpClient.get('/api/contract-borrows', {
       params: normalizeFilters(filters)
     })
-    return normalizeListResponse(response)
+    return normalizePageResponse(response)
   },
 
   async getDetail(id) {

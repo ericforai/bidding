@@ -3,19 +3,22 @@ package com.xiyu.bid.contractborrow.application.service;
 import com.xiyu.bid.contractborrow.application.command.ContractBorrowQueryCriteria;
 import com.xiyu.bid.contractborrow.application.view.ContractBorrowEventView;
 import com.xiyu.bid.contractborrow.application.view.ContractBorrowOverviewView;
+import com.xiyu.bid.contractborrow.application.view.ContractBorrowPageView;
 import com.xiyu.bid.contractborrow.application.view.ContractBorrowView;
 import com.xiyu.bid.contractborrow.domain.valueobject.ContractBorrowStatus;
 import com.xiyu.bid.contractborrow.infrastructure.persistence.entity.ContractBorrowApplicationEntity;
 import com.xiyu.bid.contractborrow.infrastructure.persistence.repository.ContractBorrowApplicationJpaRepository;
 import com.xiyu.bid.contractborrow.infrastructure.persistence.repository.ContractBorrowEventJpaRepository;
+import com.xiyu.bid.contractborrow.infrastructure.persistence.repository.ContractBorrowSpecification;
 import com.xiyu.bid.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -28,12 +31,12 @@ public class ContractBorrowQueryAppService {
     @Transactional(readOnly = true)
     public ContractBorrowOverviewView overview() {
         LocalDate today = LocalDate.now();
-        List<ContractBorrowApplicationEntity> applications = applicationRepository.findAll();
-        long overdue = applications.stream()
-            .filter(application -> mapper.toDomain(application).isOverdue(today))
-            .count();
+        long overdue = applicationRepository.countByStatusInAndExpectedReturnDateBefore(
+            ContractBorrowSpecification.activeBorrowingStatuses(),
+            today
+        );
         return new ContractBorrowOverviewView(
-            applications.size(),
+            applicationRepository.count(),
             applicationRepository.countByStatus(ContractBorrowStatus.PENDING_APPROVAL),
             applicationRepository.countByStatus(ContractBorrowStatus.APPROVED),
             applicationRepository.countByStatus(ContractBorrowStatus.BORROWED),
@@ -46,13 +49,26 @@ public class ContractBorrowQueryAppService {
 
     @Transactional(readOnly = true)
     public List<ContractBorrowView> list(ContractBorrowQueryCriteria criteria) {
+        return page(criteria, Pageable.unpaged()).items();
+    }
+
+    @Transactional(readOnly = true)
+    public ContractBorrowPageView page(ContractBorrowQueryCriteria criteria, Pageable pageable) {
         LocalDate today = LocalDate.now();
-        return applicationRepository.findByOrderBySubmittedAtDesc().stream()
+        Page<ContractBorrowApplicationEntity> page = applicationRepository.findAll(
+            ContractBorrowSpecification.byCriteria(criteria, today),
+            pageable
+        );
+        List<ContractBorrowView> items = page.getContent().stream()
             .map(application -> mapper.toView(application, today))
-            .filter(view -> matchesStatus(view, criteria.status()))
-            .filter(view -> containsKeyword(view, criteria.keyword()))
-            .filter(view -> sameText(view.borrowerName(), criteria.borrowerName()))
             .toList();
+        return new ContractBorrowPageView(
+            items,
+            page.getTotalElements(),
+            pageable.isPaged() ? pageable.getPageNumber() + 1 : 1,
+            pageable.isPaged() ? pageable.getPageSize() : items.size(),
+            page.getTotalPages()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -70,37 +86,5 @@ public class ContractBorrowQueryAppService {
         return eventRepository.findByApplicationIdOrderByCreatedAtAsc(applicationId).stream()
             .map(mapper::toEventView)
             .toList();
-    }
-
-    private boolean matchesStatus(ContractBorrowView view, String status) {
-        if (status == null || status.isBlank()) {
-            return true;
-        }
-        String expected = status.trim().toUpperCase(Locale.ROOT);
-        if ("OVERDUE".equals(expected)) {
-            return view.overdue();
-        }
-        return view.status().name().equals(expected);
-    }
-
-    private boolean containsKeyword(ContractBorrowView view, String keyword) {
-        if (keyword == null || keyword.isBlank()) {
-            return true;
-        }
-        String normalized = keyword.trim().toLowerCase(Locale.ROOT);
-        return contains(view.contractNo(), normalized)
-            || contains(view.contractName(), normalized)
-            || contains(view.customerName(), normalized)
-            || contains(view.borrowerName(), normalized);
-    }
-
-    private boolean sameText(String actual, String expected) {
-        return expected == null
-            || expected.isBlank()
-            || String.valueOf(actual).equalsIgnoreCase(expected.trim());
-    }
-
-    private boolean contains(String actual, String normalizedKeyword) {
-        return actual != null && actual.toLowerCase(Locale.ROOT).contains(normalizedKeyword);
     }
 }
