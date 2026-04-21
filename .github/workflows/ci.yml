@@ -70,7 +70,7 @@ jobs:
           PLATFORM_ENCRYPTION_KEY: ci-test-key-2026
 
       - name: Run migration and architecture gates
-        run: mvn -Dtest=FlywayPostgresContainerTest,ArchitectureTest test
+        run: mvn -Dtest=DualDatabaseMigrationParityTest,FlywayPostgresContainerTest,FlywayMysqlContainerTest,ArchitectureTest test
         env:
           PLATFORM_ENCRYPTION_KEY: ci-test-key-2026
 

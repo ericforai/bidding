@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Input: rehearsal environment variables and runtime pid/state files
-# Output: stopped rehearsal services and cleaned up local state
+# Input: rehearsal environment variables, database engine selection, and runtime pid/state files
+# Output: stopped PostgreSQL/MySQL rehearsal services and cleaned up local state
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -46,5 +46,6 @@ cleanup_port_listener "$BACKEND_PORT"
 
 docker rm -f "$REDIS_CONTAINER_NAME" >/dev/null 2>&1 || true
 docker rm -f "$POSTGRES_CONTAINER_NAME" >/dev/null 2>&1 || true
+docker rm -f "$MYSQL_CONTAINER_NAME" >/dev/null 2>&1 || true
 
 printf 'Rehearsal stack stopped.\n'
