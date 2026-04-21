@@ -28,8 +28,10 @@ mvn -Dtest=FlywayBaselineContextTest,ExpenseControllerIntegrationTest,BarCertifi
 if command -v docker >/dev/null 2>&1; then
   printf '\n==> Running PostgreSQL Testcontainers baseline verification\n'
   mvn -Dtest=FlywayPostgresContainerTest test
+  printf '\n==> Running MySQL Testcontainers baseline verification\n'
+  mvn -Dtest=FlywayMysqlContainerTest test
 else
-  printf '\nSkipping PostgreSQL Testcontainers verification because Docker is unavailable.\n'
+  printf '\nSkipping PostgreSQL/MySQL Testcontainers verification because Docker is unavailable.\n'
 fi
 
 printf '\n==> Packaging release archive\n'
