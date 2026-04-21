@@ -2,6 +2,7 @@ package com.xiyu.bid.marketinsight.lifecycle;
 
 import com.xiyu.bid.marketinsight.dto.CustomerPredictionDTO;
 import com.xiyu.bid.marketinsight.entity.CustomerPrediction;
+import com.xiyu.bid.marketinsight.support.CustomerOpportunityTenderSupport;
 import com.xiyu.bid.marketinsight.repository.CustomerPredictionRepository;
 import com.xiyu.bid.repository.TenderRepository;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,9 @@ class CustomerOpportunityLifecycleServiceTest {
 
     @Mock
     private CustomerPredictionRepository customerPredictionRepository;
+
+    @Mock
+    private CustomerOpportunityTenderSupport tenderSupport;
 
     @InjectMocks
     private CustomerOpportunityLifecycleService lifecycleService;

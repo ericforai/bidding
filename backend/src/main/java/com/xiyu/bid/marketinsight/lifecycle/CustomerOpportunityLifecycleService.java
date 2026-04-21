@@ -1,15 +1,14 @@
 package com.xiyu.bid.marketinsight.lifecycle;
 
-import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.exception.ResourceNotFoundException;
-import com.xiyu.bid.marketinsight.core.IndustryClassificationPolicy;
+import com.xiyu.bid.marketinsight.core.CustomerOpportunityTenderSnapshot;
 import com.xiyu.bid.marketinsight.core.OpportunityScoringPolicy;
 import com.xiyu.bid.marketinsight.core.PredictionTransitionPolicy;
-import com.xiyu.bid.marketinsight.core.PurchaserExtractionPolicy;
 import com.xiyu.bid.marketinsight.dto.CustomerOpportunityAssembler;
 import com.xiyu.bid.marketinsight.dto.CustomerPredictionDTO;
 import com.xiyu.bid.marketinsight.entity.CustomerPrediction;
 import com.xiyu.bid.marketinsight.repository.CustomerPredictionRepository;
+import com.xiyu.bid.marketinsight.support.CustomerOpportunityTenderSupport;
 import com.xiyu.bid.repository.TenderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,21 +34,14 @@ public class CustomerOpportunityLifecycleService {
 
     private final TenderRepository tenderRepository;
     private final CustomerPredictionRepository customerPredictionRepository;
-
-    record EnrichedTender(Tender tender, String purchaserName, String purchaserHash, String industry) {
-    }
+    private final CustomerOpportunityTenderSupport tenderSupport;
 
     @Transactional
     public void refreshInsights() {
-        List<Tender> tenders = tenderRepository.findAll();
-        List<EnrichedTender> enriched = enrichTenders(tenders);
-
-        Map<String, List<EnrichedTender>> byPurchaser = new LinkedHashMap<>();
-        for (EnrichedTender et : enriched) {
-            if (et.purchaserHash() != null && !et.purchaserHash().isBlank()) {
-                byPurchaser.computeIfAbsent(et.purchaserHash(), k -> new ArrayList<>()).add(et);
-            }
-        }
+        List<CustomerOpportunityTenderSnapshot> snapshots =
+                tenderSupport.createSnapshots(tenderRepository.findAll());
+        Map<String, List<CustomerOpportunityTenderSnapshot>> byPurchaser =
+                tenderSupport.groupByPurchaserHash(snapshots);
 
         LocalDateTime now = LocalDateTime.now();
         List<CustomerPrediction> predictions = new ArrayList<>(byPurchaser.size());
@@ -119,19 +111,10 @@ public class CustomerOpportunityLifecycleService {
         };
     }
 
-    private List<EnrichedTender> enrichTenders(List<Tender> tenders) {
-        List<EnrichedTender> result = new ArrayList<>(tenders.size());
-        for (Tender tender : tenders) {
-            var extraction = PurchaserExtractionPolicy.extractPurchaser(tender.getTitle());
-            String purchaserName = extraction.found() ? extraction.purchaserName() : "";
-            String purchaserHash = extraction.found() ? extraction.purchaserHash() : "";
-            String industry = IndustryClassificationPolicy.classifyIndustry(tender.getTitle());
-            result.add(new EnrichedTender(tender, purchaserName, purchaserHash, industry));
-        }
-        return result;
-    }
-
-    private CustomerPrediction buildPrediction(String hash, List<EnrichedTender> group, LocalDateTime now) {
+    private CustomerPrediction buildPrediction(
+            String hash,
+            List<CustomerOpportunityTenderSnapshot> group,
+            LocalDateTime now) {
         String name = group.get(0).purchaserName();
         String industry = group.get(0).industry();
         int frequency = group.size();
@@ -140,8 +123,8 @@ public class CustomerOpportunityLifecycleService {
         int monthsSinceLast = computeMonthsSinceLast(group, now);
 
         Map<Integer, Integer> monthCounts = new LinkedHashMap<>();
-        for (EnrichedTender et : group) {
-            LocalDateTime created = et.tender().getCreatedAt();
+        for (CustomerOpportunityTenderSnapshot snapshot : group) {
+            LocalDateTime created = snapshot.createdAt();
             if (created != null) {
                 monthCounts.merge(created.getMonthValue(), 1, Integer::sum);
             }
@@ -151,8 +134,15 @@ public class CustomerOpportunityLifecycleService {
         boolean hasCycle = "年度集中采购".equals(cycleType) || "季度规律采购".equals(cycleType);
         var score = OpportunityScoringPolicy.computeScore(frequency, monthsSinceLast, avgBudgetWan, hasCycle);
         var window = OpportunityScoringPolicy.predictNextWindow(monthCounts, now.getMonthValue(), now.getYear());
-        String evidenceIds = group.stream().map(et -> String.valueOf(et.tender().getId())).collect(Collectors.joining(","));
-        String mainCategories = group.stream().map(EnrichedTender::industry).distinct().collect(Collectors.joining(","));
+        String evidenceIds = group.stream()
+                .map(CustomerOpportunityTenderSnapshot::tenderId)
+                .filter(Objects::nonNull)
+                .map(String::valueOf)
+                .collect(Collectors.joining(","));
+        String mainCategories = group.stream()
+                .map(CustomerOpportunityTenderSnapshot::industry)
+                .distinct()
+                .collect(Collectors.joining(","));
         String periodMonths = monthCounts.keySet().stream().sorted().map(String::valueOf).collect(Collectors.joining(","));
         BigDecimal predictedMin = avgBudgetYuan.multiply(BigDecimal.valueOf(0.8));
         BigDecimal predictedMax = avgBudgetYuan.multiply(BigDecimal.valueOf(1.2));
@@ -194,13 +184,13 @@ public class CustomerOpportunityLifecycleService {
         }
     }
 
-    private BigDecimal computeAvgBudgetYuan(List<EnrichedTender> group) {
+    private BigDecimal computeAvgBudgetYuan(List<CustomerOpportunityTenderSnapshot> group) {
         if (group.isEmpty()) {
             return BigDecimal.ZERO;
         }
         BigDecimal total = BigDecimal.ZERO;
-        for (EnrichedTender et : group) {
-            BigDecimal budget = et.tender().getBudget();
+        for (CustomerOpportunityTenderSnapshot snapshot : group) {
+            BigDecimal budget = snapshot.budget();
             if (budget != null) {
                 total = total.add(budget);
             }
@@ -208,10 +198,12 @@ public class CustomerOpportunityLifecycleService {
         return total.divide(BigDecimal.valueOf(group.size()), 2, java.math.RoundingMode.HALF_UP);
     }
 
-    private int computeMonthsSinceLast(List<EnrichedTender> group, LocalDateTime now) {
+    private int computeMonthsSinceLast(
+            List<CustomerOpportunityTenderSnapshot> group,
+            LocalDateTime now) {
         LocalDateTime latest = null;
-        for (EnrichedTender et : group) {
-            LocalDateTime created = et.tender().getCreatedAt();
+        for (CustomerOpportunityTenderSnapshot snapshot : group) {
+            LocalDateTime created = snapshot.createdAt();
             if (created != null && (latest == null || created.isAfter(latest))) {
                 latest = created;
             }

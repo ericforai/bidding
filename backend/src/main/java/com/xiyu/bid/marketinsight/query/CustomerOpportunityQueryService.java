@@ -1,6 +1,5 @@
 package com.xiyu.bid.marketinsight.query;
 
-import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.marketinsight.dto.CustomerInsightDTO;
 import com.xiyu.bid.marketinsight.dto.CustomerOpportunityAssembler;
 import com.xiyu.bid.marketinsight.dto.CustomerPredictionDTO;
@@ -8,8 +7,7 @@ import com.xiyu.bid.marketinsight.dto.CustomerPurchaseDTO;
 import com.xiyu.bid.marketinsight.dto.request.CustomerInsightQuery;
 import com.xiyu.bid.marketinsight.entity.CustomerPrediction;
 import com.xiyu.bid.marketinsight.repository.CustomerPredictionRepository;
-import com.xiyu.bid.marketinsight.core.IndustryClassificationPolicy;
-import com.xiyu.bid.marketinsight.core.PurchaserExtractionPolicy;
+import com.xiyu.bid.marketinsight.support.CustomerOpportunityTenderSupport;
 import com.xiyu.bid.repository.TenderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,6 +27,7 @@ public class CustomerOpportunityQueryService {
 
     private final TenderRepository tenderRepository;
     private final CustomerPredictionRepository customerPredictionRepository;
+    private final CustomerOpportunityTenderSupport tenderSupport;
 
     @Transactional(readOnly = true)
     public List<CustomerInsightDTO> getCustomerInsights(CustomerInsightQuery query) {
@@ -40,17 +39,15 @@ public class CustomerOpportunityQueryService {
 
     @Transactional(readOnly = true)
     public List<CustomerPurchaseDTO> getCustomerPurchases(String purchaserHash) {
-        List<Tender> tenders = tenderRepository.findAll();
-
-        return tenders.stream()
-                .filter(t -> {
-                    var extraction = PurchaserExtractionPolicy.extractPurchaser(t.getTitle());
-                    return extraction.found() && extraction.purchaserHash().equals(purchaserHash);
-                })
-                .map(t -> {
-                    String industry = IndustryClassificationPolicy.classifyIndustry(t.getTitle());
-                    return CustomerOpportunityAssembler.toPurchaseDTO(t, purchaserHash, industry);
-                })
+        return tenderSupport.createSnapshots(tenderRepository.findAll()).stream()
+                .filter(snapshot -> purchaserHash.equals(snapshot.purchaserHash()))
+                .map(snapshot -> CustomerOpportunityAssembler.toPurchaseDTO(
+                        snapshot.tenderId(),
+                        snapshot.purchaserHash(),
+                        snapshot.createdAt(),
+                        snapshot.tenderTitle(),
+                        snapshot.industry(),
+                        snapshot.budget()))
                 .toList();
     }
 
