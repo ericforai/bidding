@@ -12,7 +12,7 @@
 | `audit.js` | API 模块 | 审计日志和系统审计相关调用 |
 | `auth.js` | API 模块 | 登录、登出、当前用户和鉴权相关调用 |
 | `collaboration.js` | API 模块 | 协作线程、评论、版本、文档协同调用 |
-| `customerOpportunity.js` | 特性 adapter 模块 | 客户机会中心的 demo 适配和未接入态治理 |
+| `customerOpportunity.js` | API 模块 | 客户机会中心的真实接口、响应规范和转项目闭环 |
 | `dashboard.js` | API 模块 | Dashboard 总览、统计、任务和日历调用 |
 | `export.js` | API 模块 | 导出任务、导出状态和格式枚举 |
 | `fees.js` | API 模块 | 费用申请、审批、退还等调用 |

@@ -62,12 +62,10 @@
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="searchForm.status" placeholder="全部状态" clearable style="width: 130px">
-            <el-option label="新建" value="new" />
-            <el-option label="已联系" value="contacted" />
-            <el-option label="跟进中" value="following" />
-            <el-option label="报价中" value="quoting" />
-            <el-option label="投标中" value="bidding" />
-            <el-option label="已放弃" value="abandoned" />
+            <el-option label="待处理" value="PENDING" />
+            <el-option label="跟踪中" value="TRACKING" />
+            <el-option label="已投标" value="BIDDED" />
+            <el-option label="已放弃" value="ABANDONED" />
           </el-select>
         </el-form-item>
         <el-form-item label="标讯来源">
@@ -193,11 +191,10 @@
             </el-button>
             <el-radio-group v-model="viewMode" size="small">
               <el-radio-button value="all">全部 ({{ filteredTenders.length }})</el-radio-button>
-              <el-radio-button value="new">新建 ({{ newTendersCount }})</el-radio-button>
-              <el-radio-button value="contacted">已联系 ({{ contactedTendersCount }})</el-radio-button>
-              <el-radio-button value="following">跟进中 ({{ followingTendersCount }})</el-radio-button>
-              <el-radio-button value="quoting">报价中 ({{ quotingTendersCount }})</el-radio-button>
-              <el-radio-button value="bidding">投标中 ({{ biddingTendersCount }})</el-radio-button>
+              <el-radio-button value="PENDING">待处理 ({{ newTendersCount }})</el-radio-button>
+              <el-radio-button value="TRACKING">跟踪中 ({{ trackingTendersCount }})</el-radio-button>
+              <el-radio-button value="BIDDED">已投标 ({{ biddedTendersCount }})</el-radio-button>
+              <el-radio-button value="ABANDONED">已放弃 ({{ abandonedTendersCount }})</el-radio-button>
             </el-radio-group>
           </div>
         </div>
@@ -277,7 +274,7 @@
           <el-table-column prop="deadline" label="截止日期" width="120" align="center" />
           <el-table-column prop="status" label="状态" width="100" align="center">
             <template #default="{ row = {} } = {}">
-              <span class="status-badge" :class="'status-' + row.status">
+              <span class="status-badge" :class="'status-' + getStatusBadgeClass(row.status)">
                 {{ getStatusText(row.status) }}
               </span>
             </template>
@@ -314,25 +311,21 @@
                       <!-- 分隔线 -->
                       <el-dropdown-item divided />
                       <!-- 分组：状态 -->
-                      <el-dropdown-item @click="handleUpdateStatus(row, 'contacted')">
-                        <el-icon class="status-icon"><Phone /></el-icon>
-                        <span>已联系</span>
-                      </el-dropdown-item>
-                      <el-dropdown-item @click="handleUpdateStatus(row, 'following')">
+                      <el-dropdown-item @click="handleUpdateStatus(row, 'TRACKING')">
                         <el-icon class="status-icon"><Star /></el-icon>
-                        <span>跟进中</span>
+                        <span>设为跟踪中</span>
                       </el-dropdown-item>
-                      <el-dropdown-item @click="handleUpdateStatus(row, 'quoting')">
-                        <el-icon class="status-icon"><EditPen /></el-icon>
-                        <span>报价中</span>
+                      <el-dropdown-item @click="handleUpdateStatus(row, 'PENDING')">
+                        <el-icon class="status-icon"><Phone /></el-icon>
+                        <span>恢复待处理</span>
                       </el-dropdown-item>
-                      <el-dropdown-item @click="handleUpdateStatus(row, 'bidding')">
+                      <el-dropdown-item @click="handleUpdateStatus(row, 'BIDDED')">
                         <el-icon class="status-icon"><Briefcase /></el-icon>
-                        <span>参与投标</span>
+                        <span>标记为已投标</span>
                       </el-dropdown-item>
-                      <el-dropdown-item @click="handleUpdateStatus(row, 'abandoned')">
+                      <el-dropdown-item @click="handleUpdateStatus(row, 'ABANDONED')">
                         <el-icon class="status-icon status-abandon"><Close /></el-icon>
-                        <span>放弃跟进</span>
+                        <span>标记为已放弃</span>
                       </el-dropdown-item>
                       <!-- 分隔线 -->
                       <el-dropdown-item divided />
@@ -1307,6 +1300,7 @@ import { useBiddingStore } from '@/stores/bidding'
 import { useUserStore } from '@/stores/user'
 import { tendersApi } from '@/api'
 import { crawlerApi } from '@/api/modules/tenders'
+import { batchTendersApi } from '@/api/modules/tenders/batch.js'
 import {
   Search, Plus, Download, Star, TrendCharts, List, Share, CircleCheck,
   MoreFilled, Check, User, Calendar, Flag, Briefcase, ChatDotRound,
@@ -1325,6 +1319,15 @@ import {
 } from '@/api/trendradar'
 import { useExport } from '@/composables/useExport'
 import { ExportType } from '@/api'
+import {
+  getTenderStatusBadgeClass,
+  getTenderStatusTagType,
+  getTenderStatusText,
+  matchesTenderStatus,
+  normalizeTenderStatusCode,
+  TENDER_STATUSES,
+} from './bidding-utils-status.js'
+import { normalizeBatchResult } from './bidding-utils.js'
 
 const router = useRouter()
 const biddingStore = useBiddingStore()
@@ -1809,7 +1812,7 @@ const mockExternalTenders = [
     aiScore: 92,
     aiReason: '与公司云计算产品高度匹配',
     tags: ['云计算', '政务云', '扩容'],
-    status: 'new'
+    status: 'PENDING'
   },
   {
     id: 'ext_002',
@@ -1823,7 +1826,7 @@ const mockExternalTenders = [
     aiScore: 88,
     aiReason: '交通行业智能化改造项目',
     tags: ['智慧交通', '系统集成'],
-    status: 'new'
+    status: 'PENDING'
   },
   {
     id: 'ext_003',
@@ -1837,7 +1840,7 @@ const mockExternalTenders = [
     aiScore: 85,
     aiReason: '能源行业信息化建设项目',
     tags: ['ERP', '系统升级'],
-    status: 'new'
+    status: 'PENDING'
   }
 ]
 
@@ -1939,7 +1942,7 @@ const filteredTenders = computed(() => {
   }
 
   if (searchForm.value.status) {
-    result = result.filter(t => t.status === searchForm.value.status)
+    result = result.filter(t => matchesTenderStatus(t.status, searchForm.value.status))
   }
 
   if (searchForm.value.source) {
@@ -1947,7 +1950,7 @@ const filteredTenders = computed(() => {
   }
 
   if (viewMode.value !== 'all') {
-    result = result.filter(t => t.status === viewMode.value)
+    result = result.filter(t => matchesTenderStatus(t.status, viewMode.value))
   }
 
   return result
@@ -1966,23 +1969,19 @@ const displayTenders = computed(() => {
 })
 
 const newTendersCount = computed(() =>
-  tenders.value.filter(t => t.status === 'new').length
+  tenders.value.filter(t => matchesTenderStatus(t.status, TENDER_STATUSES.PENDING)).length
 )
 
-const contactedTendersCount = computed(() =>
-  tenders.value.filter(t => t.status === 'contacted').length
+const trackingTendersCount = computed(() =>
+  tenders.value.filter(t => matchesTenderStatus(t.status, TENDER_STATUSES.TRACKING)).length
 )
 
-const followingTendersCount = computed(() =>
-  tenders.value.filter(t => t.status === 'following').length
+const biddedTendersCount = computed(() =>
+  tenders.value.filter(t => matchesTenderStatus(t.status, TENDER_STATUSES.BIDDED)).length
 )
 
-const quotingTendersCount = computed(() =>
-  tenders.value.filter(t => t.status === 'quoting').length
-)
-
-const biddingTendersCount = computed(() =>
-  tenders.value.filter(t => t.status === 'bidding').length
+const abandonedTendersCount = computed(() =>
+  tenders.value.filter(t => matchesTenderStatus(t.status, TENDER_STATUSES.ABANDONED)).length
 )
 
 const getScoreClass = (score) => {
@@ -1998,28 +1997,14 @@ const getScoreTagType = (score) => {
 }
 
 const getStatusType = (status) => {
-  const map = {
-    new: 'info',
-    contacted: '',
-    following: 'warning',
-    quoting: 'primary',
-    bidding: 'success',
-    abandoned: 'danger'
-  }
-  return map[status] || 'info'
+  return getTenderStatusTagType(status)
 }
 
 const getStatusText = (status) => {
-  const map = {
-    new: '新建',
-    contacted: '已联系',
-    following: '跟进中',
-    quoting: '报价中',
-    bidding: '投标中',
-    abandoned: '已放弃'
-  }
-  return map[status] || status
+  return getTenderStatusText(status)
 }
+
+const getStatusBadgeClass = (status) => getTenderStatusBadgeClass(status)
 
 const getSourceTagType = (source) => {
   const map = {
@@ -2147,7 +2132,7 @@ const handleViewAllRecommend = () => {
   viewMode.value = 'all'
 }
 
-const customerOpportunityCenterEnabled = computed(() => false)
+const customerOpportunityCenterEnabled = computed(() => true)
 
 const handleOpenCustomerOpportunityCenter = () => {
   router.push('/bidding/customer-opportunities')
@@ -2204,7 +2189,6 @@ const handleDistribute = async () => {
   distributeLoading.value = true
 
   try {
-    // 模拟分发逻辑
     const distribution = []
 
     if (distributeForm.value.type === 'auto') {
@@ -2258,11 +2242,16 @@ const handleDistribute = async () => {
       })
     }
 
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const results = await Promise.all(
+      distribution.map((item) =>
+        batchTendersApi.batchAssign([item.tenderId], item.assignee, distributeForm.value.remark),
+      ),
+    )
+    const succeededDistribution = distribution.filter((_, index) => results[index]?.success)
+    const partialDistribution = distribution.filter((_, index) => results[index]?.partialSuccess)
 
     // 添加到分发记录
-    distribution.forEach(item => {
+    ;[...succeededDistribution, ...partialDistribution].forEach(item => {
       distributeRecords.value.unshift({
         tenderTitle: item.tenderTitle,
         assignee: item.assigneeName,
@@ -2278,9 +2267,22 @@ const handleDistribute = async () => {
       })
     })
 
-    ElMessage.success(`成功分发 ${distribution.length} 条标讯`)
-    showDistributeDialog.value = false
-    handleClearSelection()
+    const successCount = results.reduce((count, item) => count + Number(item?.data?.successCount || 0), 0)
+    const failureCount = results.reduce((count, item) => count + Number(item?.data?.failureCount || 0), 0)
+
+    if (failureCount === 0) {
+      ElMessage.success(`成功分发 ${successCount} 条标讯`)
+    } else if (successCount > 0) {
+      ElMessage.warning(`分发部分成功：${successCount} 条成功，${failureCount} 条失败`)
+    } else {
+      ElMessage.error('分发失败，请重试')
+    }
+
+    if (successCount > 0) {
+      showDistributeDialog.value = false
+      handleClearSelection()
+      await refreshTenderList()
+    }
   } catch (error) {
     ElMessage.error('分发失败，请重试')
   } finally {
@@ -2310,21 +2312,12 @@ const handleBatchClaim = async () => {
     const tenderIds = selectedTenders.value.map(t => t.id)
     const userId = userStore.user?.id || 'U001'
 
-    const result = await tendersApi.batchClaim(tenderIds, userId)
+    const result = await batchTendersApi.batchClaim(tenderIds, userId)
 
-    if (result.success) {
-      // 更新本地数据状态
-      selectedTenders.value.forEach(tender => {
-        tender.status = 'following'
-        tender.assignee = userId
-      })
-
-      ElMessage.success(`成功领取 ${result.data?.claimed || tenderIds.length} 条标讯`)
+    showBatchOperationFeedback(result, '领取成功')
+    if (result.success || result.partialSuccess) {
       handleClearSelection()
-      // 刷新列表数据
-      await biddingStore.getTenders()
-    } else {
-      ElMessage.error(result.message || '领取失败，请重试')
+      await refreshTenderList()
     }
   } catch (error) {
     if (error !== 'cancel') {
@@ -2350,21 +2343,15 @@ const handleBatchFollow = async () => {
 
   // 使用批量更新状态API
   const tenderIds = selectedTenders.value.map(t => t.id)
-  const result = await tendersApi.batchUpdateStatus(tenderIds, 'following')
+  const result = await batchTendersApi.batchUpdateStatus(tenderIds, 'TRACKING')
 
-  if (result.success) {
+  if (result.success || result.partialSuccess) {
     followedTenders.value.push(...newFollows)
-    // 更新本地数据状态
-    selectedTenders.value.forEach(tender => {
-      tender.status = 'following'
-    })
-
-    ElMessage.success(`已关注 ${result.data?.updated || newFollows.length} 条标讯`)
+    showBatchOperationFeedback(result, '关注成功')
     handleClearSelection()
-    // 刷新列表数据
-    await biddingStore.getTenders()
+    await refreshTenderList()
   } else {
-    ElMessage.error(result.message || '关注失败，请重试')
+    showBatchOperationFeedback(result, '关注成功')
   }
 }
 
@@ -2392,6 +2379,31 @@ const handleSingleDistribute = (row) => {
   showDistributeDialog.value = true
 }
 
+const refreshTenderList = async () => {
+  await biddingStore.getTenders({
+    keyword: searchForm.value.keyword || undefined,
+    region: searchForm.value.region || undefined,
+    industry: searchForm.value.industry || undefined,
+    status: searchForm.value.status || undefined,
+    source: searchForm.value.source || undefined,
+  })
+}
+
+const showBatchOperationFeedback = (response, successVerb) => {
+  const normalized = normalizeBatchResult(response)
+  if (normalized.ok) {
+    ElMessage.success(normalized.message.replace('操作成功', successVerb))
+    return
+  }
+
+  if (response?.partialSuccess) {
+    ElMessage.warning(normalized.message)
+    return
+  }
+
+  ElMessage.error(normalized.message)
+}
+
 const handleSingleClaim = async (row) => {
   try {
     await ElMessageBox.confirm(
@@ -2404,7 +2416,13 @@ const handleSingleClaim = async (row) => {
       }
     )
 
-    ElMessage.success('领取成功')
+    const userId = userStore.user?.id || userStore.currentUser?.id
+    const result = await batchTendersApi.batchClaim([row.id], userId)
+    if (!result.success && !result.partialSuccess) {
+      throw new Error(result.message || '领取失败')
+    }
+    showBatchOperationFeedback(result, '领取成功')
+    await refreshTenderList()
   } catch {
     // 用户取消
   }
@@ -2443,20 +2461,13 @@ const handleAssign = async () => {
 
   try {
     // 使用批量分配API
-    const result = await tendersApi.batchAssign(
+    const result = await batchTendersApi.batchAssign(
       [assignForm.value.tenderId],
-      assignForm.value.assignee
+      assignForm.value.assignee,
+      assignForm.value.remark,
     )
 
-    if (result.success) {
-      // 更新本地数据
-      const tender = biddingStore.tenders?.find(t => t.id === assignForm.value.tenderId)
-      if (tender) {
-        tender.assignee = assignForm.value.assignee
-        tender.status = 'contacted'
-      }
-
-      // 添加到分发记录
+    if (result.success || result.partialSuccess) {
       distributeRecords.value.unshift({
         tenderTitle: assignForm.value.tenderTitle,
         assignee: salesMap[assignForm.value.assignee],
@@ -2471,12 +2482,11 @@ const handleAssign = async () => {
         operator: '当前用户'
       })
 
-      ElMessage.success(`已将"${assignForm.value.tenderTitle}"指派给${salesMap[assignForm.value.assignee]}`)
+      showBatchOperationFeedback(result, '指派成功')
       showAssignDialog.value = false
-      // 刷新列表数据
-      await biddingStore.getTenders()
+      await refreshTenderList()
     } else {
-      ElMessage.error(result.message || '指派失败，请重试')
+      showBatchOperationFeedback(result, '指派成功')
     }
   } catch (error) {
     ElMessage.error('指派失败，请重试')
@@ -2523,12 +2533,9 @@ const handleStatusChange = async (row, newStatus) => {
     )
 
     // 更新状态
-    const index = biddingStore.tenders?.findIndex(t => t.id === row.id)
-    if (index !== undefined && index > -1) {
-      biddingStore.tenders[index].status = newStatus
-    }
-
-    ElMessage.success(`状态已更新为"${getStatusText(newStatus)}"`)
+    const result = await batchTendersApi.batchUpdateStatus([row.id], normalizeTenderStatusCode(newStatus))
+    showBatchOperationFeedback(result, '状态更新成功')
+    await refreshTenderList()
   } catch {
     // 用户取消
   }
@@ -2540,25 +2547,22 @@ const handleUpdateStatus = async (row, newStatus) => {
   let confirmMessage = ''
 
   // 根据不同状态显示不同的确认信息
-  switch (newStatus) {
-    case 'contacted':
-      confirmMessage = `标记"${row.title}"为已联系状态？`
-      break
-    case 'following':
-      confirmMessage = `将"${row.title}"设为跟进中？`
-      break
-    case 'quoting':
-      confirmMessage = `开始为"${row.title}"准备报价？`
-      break
-    case 'bidding':
-      confirmMessage = `确认参与"${row.title}"投标？这将创建投标项目。`
-      break
-    case 'abandoned':
-      confirmMessage = `确定放弃跟进"${row.title}"吗？此操作可撤销。`
-      break
-    default:
-      confirmMessage = `确定要将"${row.title}"状态变更为"${statusText}"吗？`
-  }
+    switch (normalizeTenderStatusCode(newStatus)) {
+      case TENDER_STATUSES.PENDING:
+        confirmMessage = `确定将"${row.title}"恢复为待处理吗？`
+        break
+      case TENDER_STATUSES.TRACKING:
+        confirmMessage = `将"${row.title}"设为跟踪中？`
+        break
+      case TENDER_STATUSES.BIDDED:
+        confirmMessage = `确认将"${row.title}"标记为已投标？这将引导您继续创建项目。`
+        break
+      case TENDER_STATUSES.ABANDONED:
+        confirmMessage = `确定放弃跟进"${row.title}"吗？`
+        break
+      default:
+        confirmMessage = `确定要将"${row.title}"状态变更为"${statusText}"吗？`
+    }
 
   try {
     await ElMessageBox.confirm(
@@ -2567,33 +2571,22 @@ const handleUpdateStatus = async (row, newStatus) => {
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: newStatus === 'abandoned' ? 'error' : 'warning'
+        type: normalizeTenderStatusCode(newStatus) === TENDER_STATUSES.ABANDONED ? 'error' : 'warning'
       }
     )
 
-    // 更新状态
-    const index = biddingStore.tenders?.findIndex(t => t.id === row.id)
-    if (index !== undefined && index > -1) {
-      biddingStore.tenders[index].status = newStatus
+    const normalizedStatus = normalizeTenderStatusCode(newStatus)
+    const result = await batchTendersApi.batchUpdateStatus([row.id], normalizedStatus)
+    showBatchOperationFeedback(result, '状态更新成功')
+    await refreshTenderList()
 
-      // 如果是参与投标，可以引导用户创建项目
-      if (newStatus === 'bidding') {
-        ElMessage({
-          message: `状态已更新为"${statusText}"，是否立即创建投标项目？`,
-          type: 'success',
-          duration: 3000,
-          showClose: true
+    if (result.success && normalizedStatus === TENDER_STATUSES.BIDDED) {
+      setTimeout(() => {
+        router.push({
+          path: '/project/create',
+          query: { tenderId: row.id }
         })
-        // 可以延迟跳转到项目创建页
-        setTimeout(() => {
-          router.push({
-            path: '/project/create',
-            query: { tenderId: row.id }
-          })
-        }, 1000)
-      } else {
-        ElMessage.success(`状态已更新为"${statusText}"`)
-      }
+      }, 1000)
     }
   } catch {
     // 用户取消
@@ -2791,7 +2784,7 @@ const saveManualTender = async () => {
       tags: manualForm.value.tags,
       aiScore: Math.floor(Math.random() * 20) + 70,
       aiReason: '人工录入标讯',
-      status: 'new'
+      status: 'PENDING'
     }
 
     if (biddingStore.tenders) {
@@ -4145,27 +4138,17 @@ const handleOpportunityAction = (id) => {
   letter-spacing: 0.05em;
 }
 
-.status-badge.status-new {
+.status-badge.status-pending {
   background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
   color: #fff;
 }
 
-.status-badge.status-contacted {
-  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
-  color: #fff;
-}
-
-.status-badge.status-following {
+.status-badge.status-tracking {
   background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
   color: #fff;
 }
 
-.status-badge.status-quoting {
-  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
-  color: #fff;
-}
-
-.status-badge.status-bidding {
+.status-badge.status-bidded {
   background: linear-gradient(135deg, #10B981 0%, #059669 100%);
   color: #fff;
 }

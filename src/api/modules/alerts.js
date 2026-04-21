@@ -23,16 +23,18 @@ function normalizeAlertRule(item) {
 }
 
 function normalizeAlertHistory(item) {
+  const resolved = item?.resolved === true
+  const status = item?.status || (resolved ? 'RESOLVED' : item?.acknowledgedAt ? 'ACKNOWLEDGED' : 'ACTIVE')
   return {
     id: item?.id,
     ruleId: item?.ruleId || null,
     ruleName: item?.ruleName || '未知规则',
     alertType: item?.alertType || item?.type || 'SYSTEM',
     message: item?.message || item?.alertMessage || '',
-    severity: item?.severity || 'INFO',
-    status: item?.status || 'ACTIVE',
+    severity: item?.severity || item?.level || 'INFO',
+    status,
     projectId: item?.projectId || null,
-    projectName: item?.projectName || '',
+    projectName: item?.projectName || item?.relatedId || '',
     createdAt: item?.createdAt || item?.createTime || '',
     acknowledgedAt: item?.acknowledgedAt || null,
     resolvedAt: item?.resolvedAt || null }
@@ -88,11 +90,22 @@ export const alertHistoryApi = {
   },
 
   async getUnresolved(params = {}) {
-    return httpClient.get('/api/alerts/history/unresolved', { params })
+    const response = await httpClient.get('/api/alerts/history/unresolved', { params })
+    return {
+      ...response,
+      data: response?.data?.content
+        ? response.data.content.map(normalizeAlertHistory)
+        : (response?.data || []).map(normalizeAlertHistory),
+      total: response?.data?.totalElements || response?.data?.length || 0,
+    }
   },
 
   async acknowledge(id) {
     return httpClient.patch(`/api/alerts/history/${id}/acknowledge`)
+  },
+
+  async resolve(id) {
+    return httpClient.post(`/api/alerts/history/${id}/resolve`)
   } }
 
 export default {

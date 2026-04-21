@@ -8,7 +8,6 @@ package com.xiyu.bid.calendar.controller;
 import com.xiyu.bid.calendar.dto.CalendarEventCreateRequest;
 import com.xiyu.bid.calendar.dto.CalendarEventDTO;
 import com.xiyu.bid.calendar.dto.CalendarEventUpdateRequest;
-import com.xiyu.bid.calendar.entity.EventType;
 import com.xiyu.bid.calendar.service.CalendarService;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.util.InputSanitizer;
@@ -19,7 +18,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -49,8 +57,7 @@ public class CalendarController {
             @RequestParam LocalDate end) {
         log.info("GET /api/calendar - Fetching events from {} to {}", start, end);
 
-        // 使用月份查询作为临时实现
-        List<CalendarEventDTO> events = calendarService.getEventsByMonth(start.getYear(), start.getMonthValue());
+        List<CalendarEventDTO> events = calendarService.getEventsByDateRange(start, end);
 
         return ResponseEntity.ok(
                 ApiResponse.success("Successfully retrieved events", events)

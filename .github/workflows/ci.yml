@@ -57,27 +57,27 @@ jobs:
       - name: Compile backend
         run: mvn -DskipTests compile
         env:
-          PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
+          PLATFORM_ENCRYPTION_KEY: ci-test-key-2026
 
       - name: Run backend architecture tests
         run: mvn -DforkCount=0 -Dtest=FPJavaArchitectureTest,MaintainabilityArchitectureTest test
         env:
-          PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
+          PLATFORM_ENCRYPTION_KEY: ci-test-key-2026
 
       - name: Run baseline and resource integration tests
         run: mvn -Dtest=FlywayBaselineContextTest,ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest test
         env:
-          PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
+          PLATFORM_ENCRYPTION_KEY: ci-test-key-2026
 
       - name: Run migration and architecture gates
         run: mvn -Dtest=FlywayPostgresContainerTest,ArchitectureTest test
         env:
-          PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
+          PLATFORM_ENCRYPTION_KEY: ci-test-key-2026
 
       - name: Run backend quality gates
         run: mvn -Pjava-quality,java-quality-spotbugs,quality-strict -DskipTests -Djacoco.skip=true checkstyle:check pmd:check spotbugs:check
         env:
-          PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
+          PLATFORM_ENCRYPTION_KEY: ci-test-key-2026
 
   quality-scope:
     runs-on: ubuntu-latest
@@ -157,7 +157,7 @@ jobs:
       - name: Run backend quality strict gate
         run: mvn -Pjava-quality,java-quality-spotbugs,quality-strict -DforkCount=0 test checkstyle:check pmd:check spotbugs:check
         env:
-          PLATFORM_ACCOUNT_ENCRYPTION_KEY: ci-test-key-2026
+          PLATFORM_ENCRYPTION_KEY: ci-test-key-2026
 
   e2e:
     runs-on: ubuntu-latest

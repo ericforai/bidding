@@ -72,7 +72,9 @@ export function normalizeCalendarEvent(event) {
   if (!event) {
     return {
       id: undefined,
+      projectId: null,
       date: undefined,
+      eventType: 'REMINDER',
       type: 'reminder',
       title: '',
       project: '',
@@ -83,7 +85,9 @@ export function normalizeCalendarEvent(event) {
 
   return {
     id: event.id,
+    projectId: event.projectId || null,
     date: event.eventDate,
+    eventType: event.eventType || 'REMINDER',
     type: CALENDAR_EVENT_TYPES[event.eventType] || 'reminder',
     title: event.title || '',
     project: event.title || '',
@@ -93,12 +97,15 @@ export function normalizeCalendarEvent(event) {
 }
 
 export function normalizeAlertForTodo(alert) {
+  const normalizedLevel = alert?.severity || alert?.level
+  const normalizedStatus = String(alert?.status || '').toUpperCase()
   return {
     id: `alert-${alert?.id}`,
+    sourceId: alert?.id,
     title: alert?.message || '',
-    priority: ALERT_PRIORITY_MAP[alert?.level] || 'low',
+    priority: ALERT_PRIORITY_MAP[normalizedLevel] || 'low',
     type: 'warning',
-    done: Boolean(alert?.resolved),
+    done: normalizedStatus === 'RESOLVED' || Boolean(alert?.resolved),
     deadline: toDateOnly(alert?.createdAt),
     sourceType: 'alert',
   }

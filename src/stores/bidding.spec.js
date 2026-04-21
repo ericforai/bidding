@@ -49,21 +49,30 @@ describe('Bidding Store', () => {
 
   it('actions: getTenders 成功时应该更新 tenders', async () => {
     const store = useBiddingStore()
-    const tenderRows = [{ id: 1, title: '测试标讯' }]
+    const tenderRows = [{ id: 1, title: '测试标讯', status: 'following' }]
     tendersApi.getList.mockResolvedValue({ success: true, data: tenderRows })
 
     await store.getTenders()
 
-    expect(store.tenders).toEqual(tenderRows)
+    expect(store.tenders).toEqual([{ id: 1, title: '测试标讯', status: 'TRACKING' }])
     expect(tendersApi.getList).toHaveBeenCalledOnce()
   })
 
   it('actions: updateTenderStatus 应该更新本地状态', () => {
     const store = useBiddingStore()
-    store.tenders = [{ id: '100', status: 'new' }]
-    
+    store.tenders = [{ id: '100', status: 'PENDING' }]
+
     store.updateTenderStatus('100', 'following')
-    
-    expect(store.tenders[0].status).toBe('following')
+
+    expect(store.tenders[0].status).toBe('TRACKING')
+  })
+
+  it('actions: setCalendar 应该覆盖日历状态', () => {
+    const store = useBiddingStore()
+    const events = [{ id: 1, date: '2026-04-21', type: 'deadline' }]
+
+    store.setCalendar(events)
+
+    expect(store.calendar).toEqual(events)
   })
 })

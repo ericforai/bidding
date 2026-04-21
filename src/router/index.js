@@ -3,9 +3,7 @@ import { useUserStore } from '@/stores/user'
 import { hasStoredUserHint } from '@/api/session.js'
 
 const DEFAULT_AUTHENTICATED_HOME = '/dashboard'
-const HIDDEN_API_ROUTES = new Set([
-  'CustomerOpportunityCenter'
-])
+const HIDDEN_API_ROUTES = new Set([])
 
 const getNormalizedRole = (userStore) => {
   const role = userStore.currentUser?.role || ''
@@ -183,6 +181,18 @@ const routes = [
         meta: { title: '系统设置', roles: ['admin'] }
       },
       {
+        path: 'settings/alert-rules',
+        name: 'AlertRules',
+        component: () => import('@/views/System/AlertRules.vue'),
+        meta: { title: '告警规则', roles: ['admin', 'manager'] }
+      },
+      {
+        path: 'settings/alert-history',
+        name: 'AlertHistory',
+        component: () => import('@/views/System/AlertHistory.vue'),
+        meta: { title: '告警历史', roles: ['admin', 'manager', 'staff'] }
+      },
+      {
         path: 'document/editor/:id',
         name: 'DocumentEditor',
         component: () => import('@/views/Document/Editor.vue'),
@@ -212,14 +222,6 @@ router.beforeEach(async (to, from, next) => {
     next('/login')
   } else if (to.path === '/login' && hasAuthState) {
     next(DEFAULT_AUTHENTICATED_HOME)
-  } else if (HIDDEN_API_ROUTES.has(String(to.name || ''))) {
-    next(
-      to.name === 'CustomerOpportunityCenter'
-        ? '/bidding'
-        : to.name === 'BiddingAIAnalysis'
-            ? '/bidding'
-            : '/knowledge/qualification'
-    )
   } else if (hasAuthState && !hasRouteAccess(to, getNormalizedRole(userStore))) {
     next(DEFAULT_AUTHENTICATED_HOME)
   } else {

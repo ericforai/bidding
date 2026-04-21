@@ -14,7 +14,7 @@ function buildScorePanel(analysis = {}) {
   const dimensions = Array.isArray(analysis?.dimensions) ? analysis.dimensions : []
   const findScore = (candidates) => {
     const matched = dimensions.find((dimension) =>
-      candidates.some((candidate) => String(dimension?.dimensionName || '').includes(candidate)),
+      candidates.some((candidate) => String(dimension?.dimensionName || dimension?.name || '').includes(candidate)),
     )
     return Number(matched?.score || 0)
   }
@@ -34,10 +34,10 @@ export function useProjectDetailAI(context) {
   const { route, isDemoMode, isApiProject, project, message, state } = context
   const aiChecking = ref(false)
   const activeAITab = ref('compliance')
-  const aiResult = ref({ compliance: null, quality: null, score: null })
+  const aiResult = ref({ compliance: null, score: null })
 
   const hasAiCheckResult = computed(() => Boolean(
-    aiResult.value.compliance || aiResult.value.score || project.value?.aiCheck?.compliance || project.value?.aiCheck?.quality,
+    aiResult.value.compliance || aiResult.value.score || project.value?.aiCheck?.compliance || project.value?.aiCheck?.score,
   ))
   const canRunAICheck = computed(() => true)
   const showAICheckCard = computed(() => true)
@@ -60,7 +60,6 @@ export function useProjectDetailAI(context) {
       ]
       aiResult.value = {
         compliance: { score: Math.round((issues.filter((item) => item.status === 'pass').length / issues.length) * 100), issues },
-        quality: null,
         score: { total: 87, tech: 90, business: 85, price: 82, qualification: 95, comment: '技术方案整体完整，商务应答较为充分。', suggestions: ['补充技术参数响应说明', '修正目录页码一致性'] },
       }
       aiChecking.value = false
@@ -69,7 +68,7 @@ export function useProjectDetailAI(context) {
     }
 
     if (!isApiProject.value) {
-      aiResult.value = { compliance: null, quality: null, score: null }
+      aiResult.value = { compliance: null, score: null }
       message.warning('当前项目ID不是后端真实ID，无法执行AI检查')
       aiChecking.value = false
       return
@@ -83,12 +82,11 @@ export function useProjectDetailAI(context) {
       const complianceRecord = Array.isArray(complianceResponse?.data) ? complianceResponse.data[0] : complianceResponse?.data
       aiResult.value = {
         compliance: complianceRecord ? { score: Number(complianceRecord.overallScore || complianceRecord.riskScore || 0), issues: mapComplianceIssues(complianceRecord.issues || []) } : null,
-        quality: null,
         score: scoreResponse?.data ? buildScorePanel(scoreResponse.data) : null,
       }
       message.success('AI检查完成')
     } catch (error) {
-      aiResult.value = { compliance: null, quality: null, score: null }
+      aiResult.value = { compliance: null, score: null }
       message.error(error?.response?.data?.message || error?.message || 'AI检查失败')
     } finally {
       aiChecking.value = false

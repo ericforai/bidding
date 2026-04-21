@@ -5,6 +5,11 @@
 
 import { defineStore } from 'pinia'
 import { tendersApi } from '@/api'
+import {
+  normalizeTenderCollection,
+  normalizeTenderStatusCode,
+  TENDER_STATUSES,
+} from '@/views/Bidding/bidding-utils-status.js'
 
 export const useBiddingStore = defineStore('bidding', {
   state: () => ({
@@ -14,9 +19,9 @@ export const useBiddingStore = defineStore('bidding', {
   }),
 
   getters: {
-    newTenders: (state) => state.tenders.filter(t => t.status === 'new'),
-    followingTenders: (state) => state.tenders.filter(t => t.status === 'following'),
-    biddingTenders: (state) => state.tenders.filter(t => t.status === 'bidding'),
+    newTenders: (state) => state.tenders.filter(t => t.status === TENDER_STATUSES.PENDING),
+    followingTenders: (state) => state.tenders.filter(t => t.status === TENDER_STATUSES.TRACKING),
+    biddingTenders: (state) => state.tenders.filter(t => t.status === TENDER_STATUSES.BIDDED),
     highPriorityTenders: (state) => state.tenders.filter(t => t.aiScore >= 85),
     urgentTodos: (state) => state.todos.filter(t => t.priority === 'high'),
     todayEvents: (state) => {
@@ -29,7 +34,7 @@ export const useBiddingStore = defineStore('bidding', {
     async getTenders(filters = {}) {
       try {
         const result = await tendersApi.getList(filters)
-        this.tenders = result?.success ? (result.data || []) : []
+        this.tenders = result?.success ? normalizeTenderCollection(result.data || []) : []
       } catch (error) {
         console.warn('API 调用失败，返回空列表:', error.message)
         this.tenders = []
@@ -40,7 +45,7 @@ export const useBiddingStore = defineStore('bidding', {
     async updateTenderStatus(id, status) {
       const tender = this.tenders.find(t => String(t.id) === String(id))
       if (tender) {
-        tender.status = status
+        tender.status = normalizeTenderStatusCode(status)
       }
     },
 
@@ -57,6 +62,10 @@ export const useBiddingStore = defineStore('bidding', {
 
     async getCalendar() {
       return this.calendar
+    },
+
+    setCalendar(events = []) {
+      this.calendar = Array.isArray(events) ? events : []
     }
   }
 })

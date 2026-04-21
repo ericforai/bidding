@@ -5,7 +5,7 @@
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
 
-required_env=(RELEASE_ARCHIVE APP_ROOT FRONTEND_PUBLIC_DIR BACKEND_SERVICE_NAME)
+required_env=(RELEASE_ARCHIVE APP_ROOT FRONTEND_PUBLIC_DIR BACKEND_SERVICE_NAME HEALTHCHECK_URL)
 for name in "${required_env[@]}"; do
   if [[ -z "${!name:-}" ]]; then
     printf 'Missing required env: %s\n' "$name" >&2
@@ -20,17 +20,60 @@ fi
 
 RELEASE_ID="${RELEASE_ID:-$(date +%Y%m%d-%H%M%S)}"
 RELEASES_DIR="${RELEASES_DIR:-$APP_ROOT/releases}"
-CURRENT_LINK="${CURRENT_LINK:-$APP_ROOT/current}"
 BACKEND_RUNTIME_DIR="${BACKEND_RUNTIME_DIR:-$APP_ROOT/shared/backend}"
 BACKEND_JAR_PATH="${BACKEND_JAR_PATH:-$BACKEND_RUNTIME_DIR/app.jar}"
-BACKEND_PORT="${BACKEND_PORT:-8080}"
-HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://127.0.0.1:${BACKEND_PORT}/actuator/health}"
+DEPLOYED_RELEASE_RECORD="${DEPLOYED_RELEASE_RECORD:-$APP_ROOT/deployed-release.json}"
 SYSTEMCTL_BIN="${SYSTEMCTL_BIN:-systemctl}"
 SYSTEMCTL_SUDO="${SYSTEMCTL_SUDO:-false}"
 POST_DEPLOY_COMMAND="${POST_DEPLOY_COMMAND:-}"
 DB_BACKUP_COMMAND="${DB_BACKUP_COMMAND:-}"
 PENDING_FRONTEND_DIR="${FRONTEND_PUBLIC_DIR}.pending"
 RELEASE_DIR="$RELEASES_DIR/$RELEASE_ID"
+
+assert_not_nested_under() {
+  local label="$1"
+  local candidate="$2"
+  local forbidden_root="$3"
+
+  if [[ "$candidate" == "$forbidden_root" || "$candidate" == "$forbidden_root"/* ]]; then
+    printf '%s must not live under %s: %s\n' "$label" "$forbidden_root" "$candidate" >&2
+    exit 1
+  fi
+}
+
+write_deployed_release_record() {
+  local metadata_source="$RELEASE_DIR/release-metadata.json"
+  local activated_at
+  activated_at="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+  if [[ -f "$metadata_source" ]]; then
+    {
+      printf '{\n'
+      printf '  "releaseId": "%s",\n' "$RELEASE_ID"
+      printf '  "activatedAt": "%s",\n' "$activated_at"
+      printf '  "releaseDir": "%s",\n' "$RELEASE_DIR"
+      printf '  "frontendPublicDir": "%s",\n' "$FRONTEND_PUBLIC_DIR"
+      printf '  "backendJarPath": "%s",\n' "$BACKEND_JAR_PATH"
+      printf '  "backendServiceName": "%s",\n' "$BACKEND_SERVICE_NAME"
+      printf '  "healthcheckUrl": "%s",\n' "$HEALTHCHECK_URL"
+      printf '  "packageMetadata": '
+      sed 's/^/  /' "$metadata_source"
+      printf '\n}\n'
+    } > "$DEPLOYED_RELEASE_RECORD"
+  else
+    cat > "$DEPLOYED_RELEASE_RECORD" <<EOF
+{
+  "releaseId": "$RELEASE_ID",
+  "activatedAt": "$activated_at",
+  "releaseDir": "$RELEASE_DIR",
+  "frontendPublicDir": "$FRONTEND_PUBLIC_DIR",
+  "backendJarPath": "$BACKEND_JAR_PATH",
+  "backendServiceName": "$BACKEND_SERVICE_NAME",
+  "healthcheckUrl": "$HEALTHCHECK_URL"
+}
+EOF
+  fi
+}
 
 run_systemctl() {
   if [[ "$SYSTEMCTL_SUDO" == "true" ]]; then
@@ -42,6 +85,9 @@ run_systemctl() {
 
 printf '==> Preparing remote release directories\n'
 mkdir -p "$RELEASES_DIR" "$BACKEND_RUNTIME_DIR" "$FRONTEND_PUBLIC_DIR"
+assert_not_nested_under "FRONTEND_PUBLIC_DIR" "$FRONTEND_PUBLIC_DIR" "$RELEASES_DIR"
+assert_not_nested_under "BACKEND_RUNTIME_DIR" "$BACKEND_RUNTIME_DIR" "$RELEASES_DIR"
+assert_not_nested_under "BACKEND_JAR_PATH" "$BACKEND_JAR_PATH" "$RELEASES_DIR"
 rm -rf "$RELEASE_DIR"
 mkdir -p "$RELEASE_DIR"
 
@@ -62,7 +108,9 @@ mv "$PENDING_FRONTEND_DIR" "$FRONTEND_PUBLIC_DIR"
 
 printf '==> Updating backend artifact\n'
 cp "$RELEASE_DIR/backend/app.jar" "$BACKEND_JAR_PATH"
-ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"
+
+printf '==> Writing deployed release record %s\n' "$DEPLOYED_RELEASE_RECORD"
+write_deployed_release_record
 
 printf '==> Restarting backend service %s\n' "$BACKEND_SERVICE_NAME"
 run_systemctl daemon-reload || true

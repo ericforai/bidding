@@ -123,7 +123,9 @@ describe('normalizeCalendarEvent', () => {
   it('maps a normal DEADLINE event correctly', () => {
     const r = normalizeCalendarEvent(baseEvent)
     expect(r.id).toBe(1)
+    expect(r.projectId).toBe(3)
     expect(r.date).toBe('2026-05-15')
+    expect(r.eventType).toBe('DEADLINE')
     expect(r.type).toBe('deadline')
     expect(r.title).toBe('某某项目截标')
     expect(r.project).toBe('某某项目截标')
@@ -166,7 +168,9 @@ describe('normalizeCalendarEvent', () => {
     const r = normalizeCalendarEvent(null)
     expect(r).toEqual({
       id: undefined,
+      projectId: null,
       date: undefined,
+      eventType: 'REMINDER',
       type: 'reminder',
       title: '',
       project: '',
@@ -212,8 +216,16 @@ describe('normalizeAlertForTodo', () => {
     expect(normalizeAlertForTodo({ ...baseAlert, level: 'LOW' }).priority).toBe('low')
   })
 
+  it('prefers severity field when backend returns dto payload', () => {
+    expect(normalizeAlertForTodo({ ...baseAlert, level: undefined, severity: 'CRITICAL' }).priority).toBe('urgent')
+  })
+
   it('sets done to true when resolved is true', () => {
     expect(normalizeAlertForTodo({ ...baseAlert, resolved: true }).done).toBe(true)
+  })
+
+  it('sets done to true when dto status is RESOLVED', () => {
+    expect(normalizeAlertForTodo({ ...baseAlert, resolved: false, status: 'RESOLVED' }).done).toBe(true)
   })
 
   it('extracts date portion from ISO createdAt', () => {

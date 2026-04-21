@@ -3,17 +3,16 @@
 // Pos: src/views/Bidding/ - Bidding module utilities
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
+import {
+  getTenderStatusText,
+  toBackendTenderStatus,
+} from './bidding-utils-status.js'
+
 /**
  * Backend status enum → Chinese display text
  */
 export function normalizeTenderStatus(backendStatus) {
-  const map = {
-    PENDING: '待处理',
-    TRACKING: '跟踪中',
-    BIDDED: '已投标',
-    ABANDONED: '已放弃'
-  }
-  return map[backendStatus] || backendStatus || '未知'
+  return getTenderStatusText(backendStatus) || backendStatus || '未知'
 }
 
 /**
@@ -108,18 +107,16 @@ export function normalizeAiRisks(risks) {
  * Frontend status (lowercase) → Backend enum (uppercase)
  */
 export function toBackendStatus(frontendStatus) {
-  const map = {
-    new: 'PENDING',
-    pending: 'PENDING',
-    following: 'TRACKING',
-    tracking: 'TRACKING',
-    bidding: 'BIDDED',
-    bidded: 'BIDDED',
-    abandoned: 'ABANDONED',
-    '待处理': 'PENDING',
-    '跟踪中': 'TRACKING',
-    '已投标': 'BIDDED',
-    '已放弃': 'ABANDONED'
+  if (frontendStatus == null) {
+    return frontendStatus
   }
-  return map[frontendStatus] || frontendStatus
+
+  const normalized = toBackendTenderStatus(frontendStatus)
+  const rawValue = String(frontendStatus).trim()
+  return normalized === 'PENDING' && rawValue.toUpperCase() !== 'PENDING'
+    && rawValue.toLowerCase() !== 'new'
+    && rawValue.toLowerCase() !== 'pending'
+    && rawValue !== '待处理'
+    ? frontendStatus
+    : normalized
 }
