@@ -19,7 +19,7 @@ create table contract_borrow_applications (
     cancel_reason text,
     cancelled_at datetime(6),
     last_comment text,
-    status enum ('pending_approval','approved','rejected','borrowed','returned','cancelled') not null,
+    status enum ('PENDING_APPROVAL','APPROVED','REJECTED','BORROWED','RETURNED','CANCELLED') not null,
     created_at datetime(6) not null,
     updated_at datetime(6),
     primary key (id)
@@ -28,8 +28,8 @@ create table contract_borrow_applications (
 create table contract_borrow_events (
     id bigint not null auto_increment,
     application_id bigint not null,
-    event_type enum ('submitted','approved','rejected','returned','cancelled') not null,
-    status_after enum ('pending_approval','approved','rejected','borrowed','returned','cancelled') not null,
+    event_type enum ('SUBMITTED','APPROVED','REJECTED','RETURNED','CANCELLED') not null,
+    status_after enum ('PENDING_APPROVAL','APPROVED','REJECTED','BORROWED','RETURNED','CANCELLED') not null,
     actor_name varchar(100),
     comment text,
     created_at datetime(6) not null,

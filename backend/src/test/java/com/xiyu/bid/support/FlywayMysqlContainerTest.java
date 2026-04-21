@@ -1,5 +1,12 @@
 package com.xiyu.bid.support;
 
+import com.xiyu.bid.contractborrow.domain.valueobject.ContractBorrowEventType;
+import com.xiyu.bid.contractborrow.domain.valueobject.ContractBorrowStatus;
+import com.xiyu.bid.contractborrow.infrastructure.persistence.entity.ContractBorrowApplicationEntity;
+import com.xiyu.bid.contractborrow.infrastructure.persistence.entity.ContractBorrowEventEntity;
+import com.xiyu.bid.contractborrow.infrastructure.persistence.repository.ContractBorrowApplicationJpaRepository;
+import com.xiyu.bid.contractborrow.infrastructure.persistence.repository.ContractBorrowEventJpaRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,6 +19,8 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.LocalDateTime;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(properties = "spring.main.allow-bean-definition-overriding=true")
@@ -22,6 +31,15 @@ class FlywayMysqlContainerTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private ContractBorrowApplicationJpaRepository contractBorrowApplications;
+
+    @Autowired
+    private ContractBorrowEventJpaRepository contractBorrowEvents;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Container
     static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0")
@@ -93,5 +111,37 @@ class FlywayMysqlContainerTest {
         assertEquals(1, tenderAssignmentTableCount);
         assertEquals(3, roleSeedCount);
         assertEquals(0, postgresIncrementalRuns);
+    }
+
+    @Test
+    void contractBorrowEnumsRoundTripThroughJpaOnMysql() {
+        ContractBorrowApplicationEntity application = contractBorrowApplications.saveAndFlush(
+                ContractBorrowApplicationEntity.builder()
+                        .contractNo("HT-MYSQL-001")
+                        .contractName("MySQL enum smoke contract")
+                        .borrowerName("mysql-smoke")
+                        .submittedAt(LocalDateTime.now())
+                        .status(ContractBorrowStatus.PENDING_APPROVAL)
+                        .build()
+        );
+
+        ContractBorrowEventEntity event = contractBorrowEvents.saveAndFlush(
+                ContractBorrowEventEntity.builder()
+                        .applicationId(application.getId())
+                        .eventType(ContractBorrowEventType.SUBMITTED)
+                        .statusAfter(ContractBorrowStatus.PENDING_APPROVAL)
+                        .build()
+        );
+
+        entityManager.clear();
+
+        ContractBorrowApplicationEntity reloadedApplication = contractBorrowApplications
+                .findById(application.getId())
+                .orElseThrow();
+        ContractBorrowEventEntity reloadedEvent = contractBorrowEvents.findById(event.getId()).orElseThrow();
+
+        assertEquals(ContractBorrowStatus.PENDING_APPROVAL, reloadedApplication.getStatus());
+        assertEquals(ContractBorrowEventType.SUBMITTED, reloadedEvent.getEventType());
+        assertEquals(ContractBorrowStatus.PENDING_APPROVAL, reloadedEvent.getStatusAfter());
     }
 }
