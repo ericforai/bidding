@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Input: launchd command argument, optional runtime environment variables
+# Output: launchd-managed dev service lifecycle actions and status logs
+# Pos: scripts/ - macOS launchd wrapper for dev-services watchdog
+# 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
