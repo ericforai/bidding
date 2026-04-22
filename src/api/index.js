@@ -1,5 +1,5 @@
 // Input: API config, HTTP client, feature availability helpers, business API modules
-// Output: @/api public exports and lazy module accessors
+// Output: @/api public exports and Promise-compatible module accessors
 // Pos: src/api/ - Frontend data access public entry
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -17,44 +17,69 @@
 export { API_CONFIG, isCommercialMode, getApiUrl } from './config.js'
 export { buildFeatureUnavailableResponse, getFeaturePlaceholder, isFeatureUnavailableResponse } from './featureAvailability.js'
 
-export { default as httpClient } from './client.js'
+import httpClient from './client.js'
+import { authApi } from './modules/auth.js'
+import { tendersApi } from './modules/tenders.js'
+import { batchTendersApi } from './modules/tenders/batch.js'
+import { projectsApi } from './modules/projects.js'
+import qualificationsApi from './modules/qualification.js'
+import { templatesApi } from './modules/templates.js'
+import knowledgeApi from './modules/knowledge.js'
+import { feesApi } from './modules/fees.js'
+import aiApi from './modules/ai.js'
+import resourcesApi from './modules/resources.js'
+import collaborationApi from './modules/collaboration.js'
+import { dashboardApi } from './modules/dashboard.js'
+import { approvalApi } from './modules/approval.js'
+import { exportApi, ExportType, ExportFormat, ExportStatus } from './modules/export.js'
+import { auditApi } from './modules/audit.js'
+import { settingsApi } from './modules/settings.js'
+import { projectGroupsApi } from './modules/projectGroups.js'
+import { bidResultsApi } from './modules/bidResults.js'
+import { workbenchApi } from './modules/workbench.js'
 
-export { authApi } from './modules/auth.js'
-export { tendersApi } from './modules/tenders.js'
-export { batchTendersApi } from './modules/tenders/batch.js'
-export { projectsApi } from './modules/projects.js'
-export { default as qualificationsApi } from './modules/qualification.js'
-export { templatesApi } from './modules/templates.js'
-export { default as knowledgeApi } from './modules/knowledge.js'
-export { feesApi } from './modules/fees.js'
-export { default as aiApi } from './modules/ai.js'
-export { default as resourcesApi } from './modules/resources.js'
-export { default as collaborationApi } from './modules/collaboration.js'
-export { dashboardApi } from './modules/dashboard.js'
-export { approvalApi } from './modules/approval.js'
-export { exportApi, ExportType, ExportFormat, ExportStatus } from './modules/export.js'
-export { auditApi } from './modules/audit.js'
-export { settingsApi } from './modules/settings.js'
-export { projectGroupsApi } from './modules/projectGroups.js'
-export { bidResultsApi } from './modules/bidResults.js'
-export { workbenchApi } from './modules/workbench.js'
+export {
+  httpClient,
+  authApi,
+  tendersApi,
+  batchTendersApi,
+  projectsApi,
+  qualificationsApi,
+  templatesApi,
+  knowledgeApi,
+  feesApi,
+  aiApi,
+  resourcesApi,
+  collaborationApi,
+  dashboardApi,
+  approvalApi,
+  exportApi,
+  ExportType,
+  ExportFormat,
+  ExportStatus,
+  auditApi,
+  settingsApi,
+  projectGroupsApi,
+  bidResultsApi,
+  workbenchApi
+}
 
 export default {
-  auth: () => import('./modules/auth.js').then(m => m.authApi),
-  tenders: () => import('./modules/tenders.js').then(m => m.tendersApi),
-  tenderBatch: () => import('./modules/tenders/batch.js').then(m => m.batchTendersApi),
-  projects: () => import('./modules/projects.js').then(m => m.projectsApi),
-  qualifications: () => import('./modules/qualification.js').then(m => m.default),
-  knowledge: () => import('./modules/knowledge.js').then(m => m.default),
-  fees: () => import('./modules/fees.js').then(m => m.feesApi),
-  ai: () => import('./modules/ai.js').then(m => m.default),
-  resources: () => import('./modules/resources.js').then(m => m.default),
-  collaboration: () => import('./modules/collaboration.js').then(m => m.default),
-  dashboard: () => import('./modules/dashboard.js').then(m => m.default),
-  approval: () => import('./modules/approval.js').then(m => m.approvalApi),
-  export: () => import('./modules/export.js').then(m => m.exportApi),
-  audit: () => import('./modules/audit.js').then(m => m.default),
-  settings: () => import('./modules/settings.js').then(m => m.settingsApi),
-  projectGroups: () => import('./modules/projectGroups.js').then(m => m.projectGroupsApi),
-  workbench: () => import('./modules/workbench.js').then(m => m.workbenchApi)
+  auth: () => Promise.resolve(authApi),
+  tenders: () => Promise.resolve(tendersApi),
+  tenderBatch: () => Promise.resolve(batchTendersApi),
+  projects: () => Promise.resolve(projectsApi),
+  qualifications: () => Promise.resolve(qualificationsApi),
+  knowledge: () => Promise.resolve(knowledgeApi),
+  fees: () => Promise.resolve(feesApi),
+  ai: () => Promise.resolve(aiApi),
+  resources: () => Promise.resolve(resourcesApi),
+  collaboration: () => Promise.resolve(collaborationApi),
+  dashboard: () => Promise.resolve(dashboardApi),
+  approval: () => Promise.resolve(approvalApi),
+  export: () => Promise.resolve(exportApi),
+  audit: () => Promise.resolve(auditApi),
+  settings: () => Promise.resolve(settingsApi),
+  projectGroups: () => Promise.resolve(projectGroupsApi),
+  workbench: () => Promise.resolve(workbenchApi)
 }

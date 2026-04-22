@@ -9,6 +9,16 @@ export default defineConfig({
       '@': resolve(__dirname, 'src')
     }
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: 'modern-compiler'
+      },
+      sass: {
+        api: 'modern-compiler'
+      }
+    }
+  },
   build: {
     chunkSizeWarningLimit: 980,
     rollupOptions: {
