@@ -9,43 +9,13 @@
  */
 import httpClient from '../client.js'
 import { persistRuntimeSettings } from './settings.js'
+import { normalizeAuthSessionResponse, normalizeUser } from '../authNormalizer.js'
 import {
   clearSessionState,
   getStoredUser,
   hasPersistentUserHint,
   setAccessToken
 } from '../session.js'
-
-const normalizeAllowedProjectIds = (allowedProjectIds) => {
-  if (!Array.isArray(allowedProjectIds)) {
-    return []
-  }
-
-  return [...new Set(allowedProjectIds.filter((projectId) => projectId !== null && projectId !== undefined))]
-}
-
-const normalizeAllowedDepts = (allowedDepts) => {
-  if (!Array.isArray(allowedDepts)) {
-    return []
-  }
-
-  return [...new Set(allowedDepts.filter((deptCode) => deptCode !== null && deptCode !== undefined && deptCode !== ''))]
-}
-
-const normalizeUser = (authPayload) => ({
-  id: authPayload?.id,
-  name: authPayload?.fullName || authPayload?.name || authPayload?.username,
-  username: authPayload?.username,
-  email: authPayload?.email,
-  role: String(authPayload?.roleCode || authPayload?.role || '').toLowerCase(),
-  roleCode: String(authPayload?.roleCode || authPayload?.role || '').toLowerCase(),
-  roleName: authPayload?.roleName || '',
-  dept: authPayload?.dept || authPayload?.departmentName || '',
-  deptCode: authPayload?.deptCode || authPayload?.departmentCode || '',
-  allowedProjectIds: normalizeAllowedProjectIds(authPayload?.allowedProjectIds),
-  allowedDepts: normalizeAllowedDepts(authPayload?.allowedDepts),
-  menuPermissions: Array.isArray(authPayload?.menuPermissions) ? authPayload.menuPermissions : []
-})
 
 export const getSavedUser = () => getStoredUser()
 
@@ -71,14 +41,7 @@ export const authApi = {
       }]
     })
 
-    return {
-      ...response,
-      data: {
-        user: normalizedUser,
-        token: authPayload?.token,
-        type: authPayload?.type || 'Bearer'
-      }
-    }
+    return normalizeAuthSessionResponse(response)
   },
 
   async logout() {
@@ -124,14 +87,7 @@ export const authApi = {
       }]
     })
 
-    return {
-      ...response,
-      data: {
-        user: normalizedUser,
-        token: authPayload?.token,
-        type: authPayload?.type || 'Bearer'
-      }
-    }
+    return normalizeAuthSessionResponse(response)
   }
 }
 

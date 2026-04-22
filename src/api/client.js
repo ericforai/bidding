@@ -8,8 +8,11 @@ import { API_CONFIG } from './config'
 import {
   bootstrapLegacyAccessToken,
   clearSessionState,
-  getAccessToken
+  getAccessToken,
+  setAccessToken
 } from './session.js'
+import { normalizeAuthSessionResponse } from './authNormalizer.js'
+import { resetAuthStoreSession, syncAuthStoreSession } from './authStoreBridge.js'
 import router from '@/router/index.js'
 
 let refreshPromise = null
@@ -21,12 +24,21 @@ const syncRefreshedSession = async (refreshResult) => {
   }
 
   try {
-    const { useUserStore } = await import('@/stores/user')
-    const userStore = useUserStore()
-    userStore.applyAuthSession(refreshResult.data)
+    await syncAuthStoreSession(refreshResult.data)
   } catch (syncError) {
     console.warn('Failed to sync refreshed auth session:', syncError)
   }
+}
+
+const refreshAuthSession = async () => {
+  const response = await httpClient.post('/api/auth/refresh', null, {
+    skipAuthRefresh: true,
+    silentAuthError: true
+  })
+
+  const authPayload = response?.data
+  setAccessToken(authPayload?.token, true)
+  return normalizeAuthSessionResponse(response)
 }
 
 const shouldSkipAuthHeader = (config = {}) => {
@@ -70,9 +82,7 @@ const handleAuthFailure = async () => {
   clearSessionState()
 
   try {
-    const { useUserStore } = await import('@/stores/user.js')
-    const userStore = useUserStore()
-    userStore.resetSession()
+    await resetAuthStoreSession()
   } catch (syncError) {
     console.warn('Failed to reset auth store:', syncError)
   }
@@ -132,11 +142,9 @@ httpClient.interceptors.response.use(
 
       try {
         if (!refreshPromise) {
-          refreshPromise = import('./modules/auth.js')
-            .then(({ authApi }) => authApi.refreshToken())
-            .finally(() => {
-              refreshPromise = null
-            })
+          refreshPromise = refreshAuthSession().finally(() => {
+            refreshPromise = null
+          })
         }
 
         const refreshResult = await refreshPromise

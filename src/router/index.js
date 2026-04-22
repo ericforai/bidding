@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { hasStoredUserHint } from '@/api/session.js'
+import { registerLoginNavigator } from './sessionNavigation.js'
 
 const DEFAULT_AUTHENTICATED_HOME = '/dashboard'
 const HIDDEN_API_ROUTES = new Set([])
@@ -211,6 +212,18 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+registerLoginNavigator(async () => {
+  if (router.currentRoute.value.path === '/login') {
+    return
+  }
+
+  if (typeof window !== 'undefined' && Object.prototype.hasOwnProperty.call(window, 'routerPushCalled')) {
+    window.routerPushCalled = true
+  }
+
+  await router.push('/login')
 })
 
 // 路由守卫

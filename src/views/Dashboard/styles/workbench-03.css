@@ -1,0 +1,242 @@
+/* ==================== 动态列表 ==================== */
+.activity-list {
+  padding: 16px;
+}
+
+.activity-item {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 16px;
+}
+
+.activity-item:last-child {
+  padding-bottom: 0;
+}
+
+.activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.activity-dot.type-success {
+  background: #10B981;
+}
+
+.activity-dot.type-warning {
+  background: #F59E0B;
+}
+
+.activity-dot.type-info {
+  background: #3B82F6;
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-text {
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 2px;
+  line-height: 1.5;
+}
+
+.activity-time {
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+/* ==================== 角色化横幅样式 ==================== */
+.banner-admin {
+  background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%);
+}
+
+.banner-admin .banner-actions .el-button--primary {
+  background: #F5F3FF;
+  color: #7C3AED;
+  border-color: #F5F3FF;
+}
+
+/* ==================== 团队绩效卡片 ==================== */
+.team-performance-grid {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.team-performance-item {
+  padding: 12px;
+  background: #F9FAFB;
+  border-radius: 8px;
+}
+
+.team-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.team-name {
+  font-weight: 500;
+  color: #111827;
+}
+
+.team-size {
+  font-size: 12px;
+  color: #6B7280;
+}
+
+.team-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.team-progress .progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #E5E7EB;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.team-progress .progress-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.team-progress .progress-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  min-width: 36px;
+}
+
+.team-metrics {
+  display: flex;
+  gap: 16px;
+}
+
+.team-metric {
+  font-size: 12px;
+  color: #6B7280;
+}
+
+/* ==================== 审批列表 ==================== */
+.approvals-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.approval-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #F9FAFB;
+  border-radius: 8px;
+}
+
+.approval-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: #fff;
+}
+
+.approval-icon.type-budget { background: #3B82F6; }
+.approval-icon.type-project { background: #10B981; }
+.approval-icon.type-hr { background: #F59E0B; }
+
+.approval-content {
+  flex: 1;
+}
+
+.approval-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 2px;
+}
+
+.approval-meta {
+  font-size: 12px;
+  color: #6B7280;
+}
+
+.approval-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ==================== 标讯卡片 ==================== */
+.tenders-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tender-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #F9FAFB;
+  border-radius: 8px;
+  border-left: 3px solid #E5E7EB;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tender-card:hover {
+  background: #F3F4F6;
+  border-left-color: #3B82F6;
+}
+
+.tender-score {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.tender-score.score-high { background: linear-gradient(135deg, #10B981 0%, #059669 100%); }
+.tender-score.score-medium { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); }
+
+.tender-info {
+  flex: 1;
+}
+
+.tender-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.tender-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #6B7280;
+}
+

@@ -1,10 +1,19 @@
-import { describe, it, expect } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   normalizeProjectForWorkbench,
   normalizeCalendarEvent,
   normalizeAlertForTodo,
   extractCustomersFromProjects,
 } from '@/views/Dashboard/workbench-utils.js'
+
+beforeEach(() => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2026-04-22T09:00:00+08:00'))
+})
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 // ---------------------------------------------------------------------------
 // 1. normalizeProjectForWorkbench

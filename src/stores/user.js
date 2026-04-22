@@ -6,6 +6,7 @@
 import { defineStore } from 'pinia'
 import { authApi } from '@/api'
 import { getDemoUsers } from '@/api/mock-adapters/frontendDemo.js'
+import { registerAuthStoreBridge } from '@/api/authStoreBridge.js'
 import { clearAuthState, hasPersistentSession } from '@/api/modules/auth.js'
 import { persistRuntimeSettings } from '@/api/modules/settings.js'
 import {
@@ -13,16 +14,7 @@ import {
   getStoredUser,
   persistUserHint
 } from '@/api/session.js'
-
-const navigateToLogin = async () => {
-  const { default: router } = await import('@/router/index.js')
-  if (router.currentRoute.value.path !== '/login') {
-    if (typeof window !== 'undefined' && Object.prototype.hasOwnProperty.call(window, 'routerPushCalled')) {
-      window.routerPushCalled = true
-    }
-    await router.push('/login')
-  }
-}
+import { navigateToLogin } from '@/router/sessionNavigation.js'
 
 export const useUserStore = defineStore('user', {
   state: () => {
@@ -139,4 +131,9 @@ export const useUserStore = defineStore('user', {
       persistUserHint(this.currentUser, remember)
     }
   }
+})
+
+registerAuthStoreBridge({
+  applySession: (authData) => useUserStore().applyAuthSession(authData),
+  resetSession: () => useUserStore().resetSession()
 })
