@@ -13,7 +13,7 @@ vi.mock('@/api/client', () => ({
 }))
 
 import httpClient from '@/api/client'
-import { bidAgentApi } from './bidAgent.js'
+import { bidAgentApi, normalizeBidAgentRun } from './bidAgent.js'
 
 describe('bidAgentApi', () => {
   beforeEach(() => {
@@ -54,5 +54,28 @@ describe('bidAgentApi', () => {
     await bidAgentApi.createReview(12, payload)
 
     expect(httpClient.post).toHaveBeenCalledWith('/api/projects/12/bid-agent/reviews', payload)
+  })
+
+  it('normalizeBidAgentRun(): maps backend artifacts and review fields into drawer data', () => {
+    const run = normalizeBidAgentRun({
+      id: 100,
+      status: 'DRAFTED',
+      artifacts: [
+        { id: 200, artifactType: 'DRAFT_TEXT', title: '自动生成投标草稿', content: 'draft text' },
+        { id: 201, artifactType: 'HANDOFF_CHECKLIST', title: '文档写手交接清单', content: 'checklist' },
+      ],
+      gapCheck: { gaps: ['材料覆盖度不足'] },
+      manualConfirmation: { reasons: ['价格与报价口径需要人工复核'] },
+    })
+
+    expect(run.draft.sections).toHaveLength(2)
+    expect(run.draft.sections[0]).toMatchObject({
+      id: 200,
+      title: '自动生成投标草稿',
+      content: 'draft text',
+      source: 'bid-agent-artifact:200',
+    })
+    expect(run.gaps).toEqual(['材料覆盖度不足'])
+    expect(run.manualConfirmations).toEqual(['价格与报价口径需要人工复核'])
   })
 })

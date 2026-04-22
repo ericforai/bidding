@@ -145,6 +145,7 @@ export function useProjectDetailBidAgent(context) {
       bidAgentRunId: String(currentRunId.value || ''),
     }
     if (target?.documentId) query.documentId = String(target.documentId)
+    if (target?.structureId) query.structureId = String(target.structureId)
     if (target?.jobId) query.jobId = String(target.jobId)
 
     return router.push({

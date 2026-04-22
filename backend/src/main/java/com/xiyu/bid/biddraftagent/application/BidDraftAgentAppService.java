@@ -1,9 +1,15 @@
 package com.xiyu.bid.biddraftagent.application;
 
 import com.xiyu.bid.biddraftagent.domain.BidDraftSnapshot;
+import com.xiyu.bid.biddraftagent.domain.GapCheckResult;
+import com.xiyu.bid.biddraftagent.domain.ManualConfirmationDecision;
+import com.xiyu.bid.biddraftagent.domain.MaterialMatchScore;
+import com.xiyu.bid.biddraftagent.domain.RequirementClassification;
+import com.xiyu.bid.biddraftagent.domain.WriteCoverageDecision;
 import com.xiyu.bid.biddraftagent.dto.BidDraftAgentApplyResponseDTO;
 import com.xiyu.bid.biddraftagent.dto.BidDraftAgentReviewDTO;
 import com.xiyu.bid.biddraftagent.dto.BidDraftAgentRunDTO;
+import com.xiyu.bid.biddraftagent.dto.BidDraftAgentSkippedSectionDTO;
 import com.xiyu.bid.biddraftagent.entity.BidAgentArtifact;
 import com.xiyu.bid.biddraftagent.entity.BidAgentRun;
 import com.xiyu.bid.biddraftagent.repository.BidAgentArtifactRepository;
@@ -27,6 +33,8 @@ public class BidDraftAgentAppService {
     private final BidDraftAgentEntityFactory entityFactory;
     private final BidDraftAgentRunMapper runMapper;
     private final BidDraftAgentJsonCodec jsonCodec;
+    private final BidDraftAgentDocumentWritePlanner documentWritePlanner;
+    private final BidDraftAgentDocumentWriter documentWriter;
     private final BidAgentRunRepository runRepository;
     private final BidAgentArtifactRepository artifactRepository;
 
@@ -75,6 +83,15 @@ public class BidDraftAgentAppService {
                 .filter(artifact -> "DRAFT_TEXT".equalsIgnoreCase(artifact.getArtifactType()))
                 .findFirst()
                 .orElse(artifacts.get(0));
+        BidDraftAgentEvaluation evaluation = storedEvaluation(run);
+        BidDraftAgentDocumentWritePlan writePlan = documentWritePlanner.plan(
+                run,
+                artifacts,
+                evaluation.gapCheck(),
+                evaluation.manualConfirmation(),
+                evaluation.writeCoverage()
+        );
+        BidDraftAgentDocumentWriteResult writeResult = documentWriter.write(projectId, writePlan);
 
         primaryArtifact.setStatus(BidAgentArtifact.Status.READY_FOR_WRITER);
         primaryArtifact.setAppliedAt(LocalDateTime.now());
@@ -86,12 +103,22 @@ public class BidDraftAgentAppService {
 
         return BidDraftAgentApplyResponseDTO.builder()
                 .runId(run.getId())
+                .projectId(run.getProjectId())
                 .artifactId(primaryArtifact.getId())
                 .artifactType(primaryArtifact.getArtifactType())
                 .status(primaryArtifact.getStatus().name())
                 .readyForWriter(true)
                 .handoffTarget(primaryArtifact.getHandoffTarget())
-                .message("草稿产物已标记为文档写手可用")
+                .structureId(writeResult.structureId())
+                .structureCreated(writeResult.structureCreated())
+                .totalSections(writeResult.totalSections())
+                .createdSections(writeResult.createdSections())
+                .updatedSections(writeResult.updatedSections())
+                .skippedSectionsCount(writeResult.skippedSectionsCount())
+                .skippedSections(writeResult.skippedSections().stream()
+                        .map(this::toSkippedSectionDTO)
+                        .toList())
+                .message("AI 标书初稿已写入文档编辑器")
                 .build();
     }
 
@@ -112,6 +139,26 @@ public class BidDraftAgentAppService {
     private BidAgentRun requireRun(Long projectId, Long runId) {
         return runRepository.findByIdAndProjectId(runId, projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("BidAgentRun", String.valueOf(runId)));
+    }
+
+    private BidDraftAgentEvaluation storedEvaluation(BidAgentRun run) {
+        return new BidDraftAgentEvaluation(
+                jsonCodec.fromJson(run.getRequirementClassificationJson(), RequirementClassification.class),
+                jsonCodec.fromJson(run.getMaterialMatchScoreJson(), MaterialMatchScore.class),
+                jsonCodec.fromJson(run.getGapCheckJson(), GapCheckResult.class),
+                jsonCodec.fromJson(run.getManualConfirmationJson(), ManualConfirmationDecision.class),
+                jsonCodec.fromJson(run.getWriteCoverageJson(), WriteCoverageDecision.class)
+        );
+    }
+
+    private BidDraftAgentSkippedSectionDTO toSkippedSectionDTO(BidDraftAgentSkippedSection skipped) {
+        return BidDraftAgentSkippedSectionDTO.builder()
+                .sectionId(skipped.sectionId())
+                .sectionKey(skipped.sectionKey())
+                .title(skipped.title())
+                .locked(skipped.locked())
+                .reason(skipped.reason())
+                .build();
     }
 
     private void updateReviewArtifact(Long runId, String reviewSummary) {

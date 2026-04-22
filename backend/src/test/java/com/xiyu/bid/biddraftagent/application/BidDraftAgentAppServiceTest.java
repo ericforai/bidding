@@ -47,6 +47,9 @@ class BidDraftAgentAppServiceTest {
     @Mock
     private BidAgentArtifactRepository artifactRepository;
 
+    @Mock
+    private BidDraftAgentDocumentWriter documentWriter;
+
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     private BidDraftAgentAppService appService;
@@ -61,6 +64,8 @@ class BidDraftAgentAppServiceTest {
                 new BidDraftAgentEntityFactory(jsonCodec),
                 new BidDraftAgentRunMapper(jsonCodec),
                 jsonCodec,
+                new BidDraftAgentDocumentWritePlanner(),
+                documentWriter,
                 runRepository,
                 artifactRepository
         );
@@ -201,6 +206,16 @@ class BidDraftAgentAppServiceTest {
 
         when(runRepository.findByIdAndProjectId(100L, 11L)).thenReturn(Optional.of(run));
         when(artifactRepository.findByRunIdOrderByCreatedAtAsc(100L)).thenReturn(List.of(draftArtifact, reviewArtifact));
+        when(documentWriter.write(eq(11L), any())).thenReturn(new BidDraftAgentDocumentWriteResult(
+                11L,
+                400L,
+                true,
+                3,
+                3,
+                0,
+                0,
+                List.of()
+        ));
         when(artifactRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(runRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -208,7 +223,10 @@ class BidDraftAgentAppServiceTest {
 
         assertThat(response.isReadyForWriter()).isTrue();
         assertThat(response.getArtifactType()).isEqualTo("DRAFT_TEXT");
+        assertThat(response.getStructureId()).isEqualTo(400L);
+        assertThat(response.getCreatedSections()).isEqualTo(3);
         assertThat(draftArtifact.getStatus()).isEqualTo(BidAgentArtifact.Status.READY_FOR_WRITER);
+        verify(documentWriter).write(eq(11L), any(BidDraftAgentDocumentWritePlan.class));
         verify(artifactRepository).save(draftArtifact);
     }
 

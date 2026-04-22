@@ -15,14 +15,41 @@ function normalizeConfidence(value) {
 
 function normalizeSection(section = {}) {
   const metadata = section.metadata || {}
+  const sourceReferences = section.sourceReferences || metadata.sourceReferences || []
   return {
     ...section,
     id: section.id ?? section.sectionId ?? section.key,
     title: section.title || section.name || section.heading || '未命名章节',
     content: section.content || section.text || section.body || section.summary || '',
-    source: section.source || section.sourceName || section.sourceTitle || metadata.source || '',
+    source: section.source || section.sourceName || section.sourceTitle || metadata.source || sourceReferences[0] || '',
     confidence: normalizeConfidence(section.confidence ?? metadata.confidence),
   }
+}
+
+function artifactToSection(artifact = {}) {
+  return normalizeSection({
+    id: artifact.id,
+    title: artifact.title || artifact.artifactType || 'AI 生成内容',
+    content: artifact.content,
+    sourceReferences: [`bid-agent-artifact:${artifact.id}`],
+    confidence: artifact.confidence,
+  })
+}
+
+function normalizeDraftSections(data = {}, draft = {}) {
+  if (toArray(draft.sections).length) return toArray(draft.sections).map(normalizeSection)
+  if (toArray(data.draftSections).length || toArray(data.sections).length) {
+    return toArray(data.draftSections || data.sections).map(normalizeSection)
+  }
+  if (toArray(data.artifacts).length) {
+    return toArray(data.artifacts)
+      .filter((artifact) => ['DRAFT_TEXT', 'HANDOFF_CHECKLIST'].includes(String(artifact.artifactType || '').toUpperCase()))
+      .map(artifactToSection)
+  }
+  if (data.draftText) {
+    return [normalizeSection({ id: `${data.id ?? data.runId}-draft`, title: '自动生成投标草稿', content: data.draftText })]
+  }
+  return []
 }
 
 function normalizeStage(stage = {}) {
@@ -38,7 +65,8 @@ function normalizeStage(stage = {}) {
 export function normalizeBidAgentRun(data = null) {
   if (!data) return null
   const draft = data.draft || data.draftResult || {}
-  const sections = toArray(draft.sections).length ? draft.sections : (data.draftSections || data.sections)
+  const manualConfirmation = data.manualConfirmation || {}
+  const gapCheck = data.gapCheck || {}
 
   return {
     ...data,
@@ -48,11 +76,11 @@ export function normalizeBidAgentRun(data = null) {
     stages: toArray(data.stages || data.stageStatuses).map(normalizeStage),
     draft: {
       ...draft,
-      sections: toArray(sections).map(normalizeSection),
+      sections: normalizeDraftSections(data, draft),
     },
-    gaps: toArray(data.gaps || data.requirementGaps),
+    gaps: toArray(data.gaps || data.requirementGaps || gapCheck.gaps),
     risks: toArray(data.risks || data.riskItems),
-    manualConfirmations: toArray(data.manualConfirmations || data.confirmations),
+    manualConfirmations: toArray(data.manualConfirmations || data.confirmations || manualConfirmation.reasons),
   }
 }
 

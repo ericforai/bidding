@@ -182,6 +182,7 @@ mvn test -Dtest=FPJavaArchitectureTest
 说明：
 - 这是面向新增纯核心包的硬门禁，不会把当前存量 DTO、Service、JPA Entity 一次性纳入红灯区。
 - 如果某段逻辑需要被 FP-Java Profile 保护，应主动迁入 `core` / `domain` 非 Entity 包，而不是继续留在事务编排 Service 中。
+- 当前新增纯核心包包括 `com.xiyu.bid.ai.core` 与 `com.xiyu.bid.biddraftagent.domain`，分别承载 AI 基础规则和标书生成 Agent 规则。
 
 ### 2.6 Split-First 可执行门禁
 

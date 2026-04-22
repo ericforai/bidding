@@ -5,7 +5,7 @@
 ## 职责说明
 AI 分析能力的后端入口，负责标讯分析、项目分析与 AI Provider 适配。
 该模块只负责能力编排，不承载业务主数据或页面状态。
-真实接入与 mock 接入通过 Provider 抽象切换。
+真实接入与历史 mock 接入通过 Provider 抽象切换；新增能力默认走真实 API 单一路径，不再扩散 demo/mock 分支。
 
 ## 边界清单
 
@@ -14,8 +14,11 @@ AI 分析能力的后端入口，负责标讯分析、项目分析与 AI Provide
 | `client/` | 子目录 | AI 提供商接入边界 |
 | `client/AiProvider.java` | Interface | AI 提供者统一抽象 |
 | `client/MockAiProvider.java` | Implementation | Mock AI 提供者 |
-| `client/OpenAiProvider.java` | Implementation | OpenAI 真实接入实现 |
+| `client/OpenAiProvider.java` | Implementation | OpenAI Java SDK + Responses API 真实接入实现，配置由 Spring 注入 |
+| `core/` | 纯核心 | 评分、风险、缺口、任务状态等无副作用业务规则 |
 | `service/` | 子目录 | AI 分析编排边界 |
+| `service/AiDeepCapabilityService.java` | Application Service | 查询、调用 Provider、写库、DTO 组装 |
+| `service/AiDeepCapabilityAssembler.java` | Mapper/Assembler | AI 分析结果 DTO 组装 |
 | `service/AiService.java` | Service | 标讯/项目分析服务 |
 | `dto/` | 子目录 | AI 响应与评分边界 |
 | `dto/AiAnalysisResponse.java` | DTO | AI 分析响应 |
@@ -23,3 +26,9 @@ AI 分析能力的后端入口，负责标讯分析、项目分析与 AI Provide
 | `dto/ProjectAnalysisDTO.java` | DTO | 项目分析结果 |
 | `config/` | 子目录 | AI 异步执行配置边界 |
 | `config/AsyncConfiguration.java` | Config | 异步执行配置 |
+
+## 纯核心边界
+
+- `core/*` 受 `FPJavaArchitectureTest` 保护，不得依赖 Spring、Repository、JPA、日志、IO、时间或随机数。
+- `client/*` 是外部模型供应商边界，可以使用 OpenAI SDK、配置和网络调用。
+- `service/*` 只做应用编排，不新增评分/风险/缺口业务规则。

@@ -83,7 +83,7 @@ const visible = computed({
 const run = computed(() => agent.currentRun.value)
 const status = computed(() => String(run.value?.status || '').toUpperCase())
 const draftSections = computed(() => run.value?.draft?.sections || [])
-const isReady = computed(() => ['COMPLETED', 'READY', 'DONE', 'APPLIED'].includes(status.value))
+const isReady = computed(() => ['DRAFTED', 'COMPLETED', 'READY', 'DONE', 'APPLIED', 'READY_FOR_WRITER'].includes(status.value))
 const canApply = computed(() => Boolean(agent.currentRunId.value) && (isReady.value || draftSections.value.length > 0))
 const canReview = computed(() => Boolean(agent.currentRunId.value) && !['FAILED', 'ERROR'].includes(status.value))
 
@@ -102,8 +102,10 @@ const statusText = computed(() => ({
   QUEUED: '排队中',
   PENDING: '待处理',
   RUNNING: '生成中',
+  DRAFTED: '已生成',
   COMPLETED: '已完成',
   READY: '可写入',
+  READY_FOR_WRITER: '已写入',
   APPLIED: '已写入',
   FAILED: '失败',
   ERROR: '失败',
@@ -111,7 +113,9 @@ const statusText = computed(() => ({
 
 const statusType = computed(() => ({
   COMPLETED: 'success',
+  DRAFTED: 'success',
   READY: 'success',
+  READY_FOR_WRITER: 'success',
   APPLIED: 'success',
   RUNNING: 'primary',
   QUEUED: 'info',
@@ -126,6 +130,7 @@ const applyResultText = computed(() => {
   if (result.message) return result.message
   if (result.documentName) return `已写入 ${result.documentName}`
   if (result.documentId) return `已写入文档 #${result.documentId}`
+  if (result.structureId) return `已写入章节树 #${result.structureId}`
   return '后端已确认写入结果'
 })
 
@@ -141,7 +146,9 @@ function getStageText(stageStatus = '') {
     QUEUED: '等待后端调度',
     PENDING: '等待处理',
     RUNNING: '正在生成',
+    DRAFTED: '初稿已生成，可审查或写入',
     COMPLETED: '已完成',
+    READY_FOR_WRITER: '已写入文档编辑器',
     FAILED: '处理失败',
   }[String(stageStatus).toUpperCase()] || '等待后端状态')
 }
