@@ -4,6 +4,25 @@
 
 ## [未发布]
 
+## [1.0.2] - 2026-04-22
+
+### Added
+- 新增 Java 后端内置标书生成 Agent，支持项目详情发起运行、OpenAI Responses structured outputs 生成草稿、运行产物查询、审查和写入文档编辑器。
+- 新增 bid draft agent 纯核心策略、应用编排、持久化表、REST API、前端真实 API 模块、项目详情生成抽屉和编辑器跳转入口。
+- 新增文档编辑器草稿树批量写入能力，保留来源 metadata、置信度、人工确认标记，并跳过锁定章节。
+- 新增后端架构/领域/应用/控制器/文档写入测试、前端 bid-agent 单测和 E2E 回归覆盖。
+
+### Changed
+- 拆分 AI 深度能力服务，将评分、风险、gap、任务等规则下沉到纯核心包，应用服务收敛为编排职责。
+- OpenAI Provider 改为配置注入，移除手工 JSON 截取路径，并将标书 Agent 生产路径固定为 OpenAI structured outputs。
+- 项目详情、Dashboard、Bidding 相关前端测试拆分和稳定化，保持 Split-First 单文件 300 行约束。
+
+### Fixed
+- 修复 bid-agent 项目级访问校验缺口，STAFF/MANAGER 跨项目访问会返回 403。
+- 修复 Dashboard demo 项目链接误跳 `/project/P001`，现在使用 demo query 路由。
+- 修复项目详情 projectId prop 类型 warning、`/project/create` QA 路由、Bidding/Dashboard 既有单测和相关 E2E 稳定性问题。
+- 修复 AI 分析失败提示缺少“加载失败”前缀的问题。
+
 ## [1.0.1] - 2026-04-22
 
 ### Changed
