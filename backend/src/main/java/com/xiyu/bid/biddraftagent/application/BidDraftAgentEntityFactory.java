@@ -12,7 +12,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BidDraftAgentEntityFactory {
 
-    private static final String GENERATOR_KEY = "deterministic-v1";
+    private static final String GENERATOR_KEY = "openai-responses-v1";
 
     private final BidDraftAgentJsonCodec jsonCodec;
 

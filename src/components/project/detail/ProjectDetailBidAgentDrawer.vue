@@ -71,6 +71,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useProjectDetailContext } from '@/composables/projectDetail/context.js'
+import { useBidAgentDrawerView } from '@/composables/projectDetail/useBidAgentDrawerView.js'
 
 const detail = useProjectDetailContext()
 const agent = detail.bidAgent
@@ -80,110 +81,21 @@ const visible = computed({
   set: (value) => { agent.drawerVisible.value = value },
 })
 
-const run = computed(() => agent.currentRun.value)
-const status = computed(() => String(run.value?.status || '').toUpperCase())
-const draftSections = computed(() => run.value?.draft?.sections || [])
-const isReady = computed(() => ['DRAFTED', 'COMPLETED', 'READY', 'DONE', 'APPLIED', 'READY_FOR_WRITER'].includes(status.value))
-const canApply = computed(() => Boolean(agent.currentRunId.value) && (isReady.value || draftSections.value.length > 0))
-const canReview = computed(() => Boolean(agent.currentRunId.value) && !['FAILED', 'ERROR'].includes(status.value))
-
-const displayStages = computed(() => {
-  if (run.value?.stages?.length) return run.value.stages
-  return status.value ? [{ key: 'current', title: '当前状态', status: status.value }] : []
-})
-
-const warnings = computed(() => [
-  ...formatWarnings(run.value?.risks),
-  ...formatWarnings(run.value?.gaps),
-  ...formatWarnings(run.value?.manualConfirmations),
-])
-
-const statusText = computed(() => ({
-  QUEUED: '排队中',
-  PENDING: '待处理',
-  RUNNING: '生成中',
-  DRAFTED: '已生成',
-  COMPLETED: '已完成',
-  READY: '可写入',
-  READY_FOR_WRITER: '已写入',
-  APPLIED: '已写入',
-  FAILED: '失败',
-  ERROR: '失败',
-}[status.value] || '未启动'))
-
-const statusType = computed(() => ({
-  COMPLETED: 'success',
-  DRAFTED: 'success',
-  READY: 'success',
-  READY_FOR_WRITER: 'success',
-  APPLIED: 'success',
-  RUNNING: 'primary',
-  QUEUED: 'info',
-  PENDING: 'info',
-  FAILED: 'danger',
-  ERROR: 'danger',
-}[status.value] || 'info'))
-
-const applyResultText = computed(() => {
-  const result = agent.applyResult.value
-  if (!result) return ''
-  if (result.message) return result.message
-  if (result.documentName) return `已写入 ${result.documentName}`
-  if (result.documentId) return `已写入文档 #${result.documentId}`
-  if (result.structureId) return `已写入章节树 #${result.structureId}`
-  return '后端已确认写入结果'
-})
-
-const editorHref = computed(() => {
-  const target = agent.applyResult.value || {}
-  const targetProjectId = target.projectId ?? agent.projectId?.value ?? detail.project?.value?.id ?? ''
-  const query = new URLSearchParams()
-  if (agent.currentRunId.value) query.set('bidAgentRunId', String(agent.currentRunId.value))
-  if (target.documentId) query.set('documentId', String(target.documentId))
-  if (target.structureId) query.set('structureId', String(target.structureId))
-  if (target.jobId) query.set('jobId', String(target.jobId))
-
-  const queryText = query.toString()
-  return `/document/editor/${targetProjectId}${queryText ? `?${queryText}` : ''}`
-})
-
-function openEditor(event) {
-  event?.preventDefault?.()
-  const before = window.location.href
-  const navigation = agent.goToEditor(agent.applyResult.value)
-
-  if (!navigation || typeof navigation.finally !== 'function') return
-  Promise.resolve(navigation).finally(() => {
-    window.setTimeout(() => {
-      if (window.location.href === before && editorHref.value) {
-        window.location.assign(editorHref.value)
-      }
-    }, 100)
-  })
-}
-
-function formatWarnings(items = []) {
-  return items.map((item) => {
-    if (typeof item === 'string') return item
-    return item.title || item.message || item.description || item.name || ''
-  }).filter(Boolean)
-}
-
-function getStageText(stageStatus = '') {
-  return ({
-    QUEUED: '等待后端调度',
-    PENDING: '等待处理',
-    RUNNING: '正在生成',
-    DRAFTED: '初稿已生成，可审查或写入',
-    COMPLETED: '已完成',
-    READY_FOR_WRITER: '已写入文档编辑器',
-    FAILED: '处理失败',
-  }[String(stageStatus).toUpperCase()] || '等待后端状态')
-}
-
-function stageClass(stageStatus = '') {
-  return `stage-${String(stageStatus).toLowerCase() || 'pending'}`
-}
+const {
+  run,
+  draftSections,
+  displayStages,
+  warnings,
+  applyResultText,
+  editorHref,
+  canApply,
+  canReview,
+  statusText,
+  statusType,
+  openEditor,
+  getStageText,
+  stageClass,
+} = useBidAgentDrawerView(detail, agent)
 </script>
 
 <style scoped>

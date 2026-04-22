@@ -13,22 +13,27 @@ import com.xiyu.bid.biddraftagent.entity.BidAgentArtifact;
 import com.xiyu.bid.biddraftagent.entity.BidAgentRun;
 import com.xiyu.bid.biddraftagent.repository.BidAgentArtifactRepository;
 import com.xiyu.bid.biddraftagent.repository.BidAgentRunRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static com.xiyu.bid.biddraftagent.application.BidDraftAgentAppServiceFixtures.baseRun;
+import static com.xiyu.bid.biddraftagent.application.BidDraftAgentAppServiceFixtures.sampleSnapshot;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -50,6 +55,9 @@ class BidDraftAgentAppServiceTest {
     @Mock
     private BidDraftAgentDocumentWriter documentWriter;
 
+    @Mock
+    private ProjectAccessScopeService projectAccessScopeService;
+
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     private BidDraftAgentAppService appService;
@@ -67,7 +75,8 @@ class BidDraftAgentAppServiceTest {
                 new BidDraftAgentDocumentWritePlanner(),
                 documentWriter,
                 runRepository,
-                artifactRepository
+                artifactRepository,
+                projectAccessScopeService
         );
     }
 
@@ -131,6 +140,21 @@ class BidDraftAgentAppServiceTest {
         verify(runRepository).save(runCaptor.capture());
         assertThat(runCaptor.getValue().getProjectName()).isEqualTo("华东智慧园区改造项目");
         assertThat(runCaptor.getValue().getStatus()).isEqualTo(BidAgentRun.Status.DRAFTED);
+        verify(projectAccessScopeService).assertCurrentUserCanAccessProject(11L);
+    }
+
+    @Test
+    void createRun_shouldStopBeforeSnapshotWhenProjectAccessDenied() {
+        doThrow(new AccessDeniedException("权限不足"))
+                .when(projectAccessScopeService).assertCurrentUserCanAccessProject(11L);
+
+        assertThatThrownBy(() -> appService.createRun(11L))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("权限不足");
+
+        verify(snapshotAssembler, never()).assemble(11L);
+        verify(runRepository, never()).save(any());
+        verify(artifactRepository, never()).saveAll(any());
     }
 
     @Test
@@ -230,69 +254,4 @@ class BidDraftAgentAppServiceTest {
         verify(artifactRepository).save(draftArtifact);
     }
 
-    private BidDraftSnapshot sampleSnapshot() {
-        return new BidDraftSnapshot(
-                11L,
-                22L,
-                "华东智慧园区改造项目",
-                "项目需要报价、合同法务条款、实施方案和交付验收材料",
-                "已确认招标背景和客户范围",
-                "西域智算中心",
-                "重点客户",
-                "上海",
-                "信息化",
-                new BigDecimal("5000000"),
-                LocalDate.of(2026, 5, 30),
-                "2026园区改造招标公告",
-                "投标要求包含资质、报价、合同和实施计划",
-                "上海采购集团",
-                "公开招标",
-                List.of("智慧园区", "改造"),
-                List.of("建筑业企业资质证书 / CONSTRUCTION / FIRST"),
-                List.of("法务合同模板 / LEGAL / 投标说明"),
-                List.of("智慧园区实施案例 / 方案 / 交付验收 / 售后支持")
-        );
-    }
-
-    private BidAgentRun baseRun(BidDraftSnapshot snapshot) throws Exception {
-        RequirementClassification classification = new RequirementClassification(
-                List.of("价格"),
-                List.of("合同"),
-                List.of("资质"),
-                List.of("技术"),
-                List.of("交付"),
-                List.of("商务"),
-                List.of("项目背景")
-        );
-        MaterialMatchScore materialMatchScore = new MaterialMatchScore(100, 6, 6,
-                List.of("pricing", "legal", "qualification", "technical", "delivery", "commercial"),
-                List.of(), List.of(), List.of());
-        GapCheckResult gapCheck = new GapCheckResult(true, List.of(), List.of());
-        ManualConfirmationDecision manualConfirmation = new ManualConfirmationDecision(true, true, true, List.of("需要人工确认"));
-        WriteCoverageDecision writeCoverage = new WriteCoverageDecision(100, true,
-                List.of("项目概况", "商务响应"), List.of(), List.of("项目概况"));
-
-        return BidAgentRun.builder()
-                .projectId(snapshot.projectId())
-                .tenderId(snapshot.tenderId())
-                .projectName(snapshot.projectName())
-                .tenderTitle(snapshot.tenderTitle())
-                .status(BidAgentRun.Status.DRAFTED)
-                .snapshotJson(objectMapper().writeValueAsString(snapshot))
-                .requirementClassificationJson(objectMapper().writeValueAsString(classification))
-                .materialMatchScoreJson(objectMapper().writeValueAsString(materialMatchScore))
-                .gapCheckJson(objectMapper().writeValueAsString(gapCheck))
-                .manualConfirmationJson(objectMapper().writeValueAsString(manualConfirmation))
-                .writeCoverageJson(objectMapper().writeValueAsString(writeCoverage))
-                .draftText("draft text")
-                .reviewText("review text")
-                .generatorKey("deterministic-v1")
-                .createdAt(LocalDateTime.of(2026, 4, 22, 10, 0))
-                .updatedAt(LocalDateTime.of(2026, 4, 22, 10, 0))
-                .build();
-    }
-
-    private ObjectMapper objectMapper() {
-        return objectMapper;
-    }
 }

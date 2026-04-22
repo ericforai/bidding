@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -62,6 +63,19 @@ class BidDraftAgentControllerTest {
                 .andExpect(jsonPath("$.data.artifacts[0].artifactType").value("DRAFT_TEXT"));
 
         verify(appService).createRun(11L);
+    }
+
+    @Test
+    void createRun_shouldReturnForbiddenWhenProjectAccessDenied() throws Exception {
+        when(appService.createRun(12L)).thenThrow(new AccessDeniedException("权限不足"));
+
+        mockMvc.perform(post("/api/projects/{projectId}/bid-agent/runs", 12L)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(403));
+
+        verify(appService).createRun(12L);
     }
 
     @Test

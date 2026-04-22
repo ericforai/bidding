@@ -21,6 +21,27 @@ function resolveRunId(run) {
   return run?.runId ?? run?.id ?? null
 }
 
+export function buildBidAgentEditorRoute({ target = {}, projectId = '', runId = '' } = {}) {
+  const targetProjectId = target?.projectId ?? projectId
+  const query = {}
+  if (runId) query.bidAgentRunId = String(runId)
+  if (target?.documentId) query.documentId = String(target.documentId)
+  if (target?.structureId) query.structureId = String(target.structureId)
+  if (target?.jobId) query.jobId = String(target.jobId)
+
+  return {
+    name: 'DocumentEditor',
+    params: { id: String(targetProjectId) },
+    query,
+  }
+}
+
+export function buildBidAgentEditorHref({ target = {}, projectId = '', runId = '' } = {}) {
+  const editorRoute = buildBidAgentEditorRoute({ target, projectId, runId })
+  const queryText = new URLSearchParams(editorRoute.query).toString()
+  return `/document/editor/${editorRoute.params.id}${queryText ? `?${queryText}` : ''}`
+}
+
 export function useProjectDetailBidAgent(context) {
   const { route, router, project, message, bidAgentApi = defaultBidAgentApi } = context
 
@@ -140,19 +161,11 @@ export function useProjectDetailBidAgent(context) {
   }
 
   function goToEditor(target = applyResult.value) {
-    const targetProjectId = target?.projectId ?? projectId.value
-    const query = {
-      bidAgentRunId: String(currentRunId.value || ''),
-    }
-    if (target?.documentId) query.documentId = String(target.documentId)
-    if (target?.structureId) query.structureId = String(target.structureId)
-    if (target?.jobId) query.jobId = String(target.jobId)
-
-    return router.push({
-      name: 'DocumentEditor',
-      params: { id: String(targetProjectId) },
-      query,
-    })
+    return router.push(buildBidAgentEditorRoute({
+      target,
+      projectId: projectId.value,
+      runId: currentRunId.value,
+    }))
   }
 
   return {

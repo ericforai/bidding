@@ -23,7 +23,7 @@ class BidDraftAgentDocumentWritePlannerTest {
                 .projectId(11L)
                 .projectName("华东智慧园区改造项目")
                 .tenderTitle("2026园区改造招标公告")
-                .generatorKey("deterministic-v1")
+                .generatorKey("openai-responses-v1")
                 .build();
         List<BidAgentArtifact> artifacts = List.of(
                 BidAgentArtifact.builder()

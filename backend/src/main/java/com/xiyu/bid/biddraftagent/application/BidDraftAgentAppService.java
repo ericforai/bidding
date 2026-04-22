@@ -15,6 +15,7 @@ import com.xiyu.bid.biddraftagent.entity.BidAgentRun;
 import com.xiyu.bid.biddraftagent.repository.BidAgentArtifactRepository;
 import com.xiyu.bid.biddraftagent.repository.BidAgentRunRepository;
 import com.xiyu.bid.exception.ResourceNotFoundException;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,8 +38,10 @@ public class BidDraftAgentAppService {
     private final BidDraftAgentDocumentWriter documentWriter;
     private final BidAgentRunRepository runRepository;
     private final BidAgentArtifactRepository artifactRepository;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     public BidDraftAgentRunDTO createRun(Long projectId) {
+        assertProjectAccess(projectId);
         BidDraftSnapshot snapshot = snapshotAssembler.assemble(projectId);
         BidDraftAgentEvaluation evaluation = evaluator.evaluate(snapshot);
         BidDraftGenerationResult generation = generate(snapshot, evaluation);
@@ -50,12 +53,14 @@ public class BidDraftAgentAppService {
 
     @Transactional(readOnly = true)
     public BidDraftAgentRunDTO getRun(Long projectId, Long runId) {
+        assertProjectAccess(projectId);
         BidAgentRun run = requireRun(projectId, runId);
         List<BidAgentArtifact> artifacts = artifactRepository.findByRunIdOrderByCreatedAtAsc(runId);
         return runMapper.toRunDTO(run, artifacts);
     }
 
     public BidDraftAgentReviewDTO reviewCurrentDraft(Long projectId) {
+        assertProjectAccess(projectId);
         BidAgentRun run = runRepository.findTopByProjectIdOrderByCreatedAtDesc(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("BidAgentRun", String.valueOf(projectId)));
         BidDraftSnapshot snapshot = jsonCodec.fromJson(run.getSnapshotJson(), BidDraftSnapshot.class);
@@ -73,6 +78,7 @@ public class BidDraftAgentAppService {
     }
 
     public BidDraftAgentApplyResponseDTO applyRun(Long projectId, Long runId) {
+        assertProjectAccess(projectId);
         BidAgentRun run = requireRun(projectId, runId);
         List<BidAgentArtifact> artifacts = artifactRepository.findByRunIdOrderByCreatedAtAsc(runId);
         if (artifacts.isEmpty()) {
@@ -120,6 +126,10 @@ public class BidDraftAgentAppService {
                         .toList())
                 .message("AI 标书初稿已写入文档编辑器")
                 .build();
+    }
+
+    private void assertProjectAccess(Long projectId) {
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
     }
 
     private BidDraftGenerationResult generate(
