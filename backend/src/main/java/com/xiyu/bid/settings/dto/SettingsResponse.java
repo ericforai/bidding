@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.util.List;
 
 @Data
@@ -18,6 +19,7 @@ public class SettingsResponse {
     private List<DeptDataScopeSetting> deptDataScope;
     private List<ProjectGroupScopeSetting> projectGroupScope;
     private IntegrationConfig integrationConfig;
+    private AiModelConfig aiModelConfig;
     private List<FlowMappingSetting> flowMappings;
     private List<ApiSetting> apiList;
     private RuntimePermissionProfile runtimePermissionProfile;
@@ -86,6 +88,33 @@ public class SettingsResponse {
         private String callbackUrl;
         private String apiKey;
         private String ipWhitelist;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AiModelConfig {
+        private String activeProvider;
+        private List<AiProviderSetting> providers;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AiProviderSetting {
+        private String providerCode;
+        private String providerName;
+        private Boolean enabled;
+        private String baseUrl;
+        private String model;
+        private String encryptedApiKey;
+        private String apiKeyMasked;
+        private Boolean apiKeyConfigured;
+        private String lastTestStatus;
+        private String lastTestMessage;
+        private Instant lastTestAt;
     }
 
     @Data

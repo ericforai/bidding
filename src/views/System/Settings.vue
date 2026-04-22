@@ -8,7 +8,7 @@
           统一维护部门树、角色权限和用户组织归属，确保任务分配、Dashboard 团队负载和数据权限使用同一份组织主数据。
         </p>
       </div>
-      <el-button :loading="loading" type="primary" @click="load">刷新配置</el-button>
+      <el-button :loading="pageLoading" type="primary" @click="loadAll">刷新配置</el-button>
     </div>
 
     <el-alert
@@ -48,6 +48,17 @@
           :save-handler="saveUserOrganization"
         />
       </el-tab-pane>
+      <el-tab-pane label="AI模型" name="ai-models">
+        <AiModelSettingsPanel
+          :loading="aiLoading"
+          :saving="aiSaving"
+          :testing-provider="testingProvider"
+          :system-config="systemConfig"
+          :ai-model-config="aiModelConfig"
+          :save="saveAiSettings"
+          :test-provider="testProvider"
+        />
+      </el-tab-pane>
       <el-tab-pane label="审计日志" name="audit">
         <AuditLogPanel />
       </el-tab-pane>
@@ -56,12 +67,14 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import AiModelSettingsPanel from './settings/AiModelSettingsPanel.vue'
 import DepartmentTreePanel from './settings/DepartmentTreePanel.vue'
 import RoleManagementPanel from './settings/RoleManagementPanel.vue'
 import UserOrganizationPanel from './settings/UserOrganizationPanel.vue'
 import AuditLogPanel from './settings/AuditLogPanel.vue'
 import { useOrganizationSettings } from './settings/useOrganizationSettings'
+import { useAiModelSettings } from './settings/useAiModelSettings'
 
 const activeTab = ref('departments')
 
@@ -72,7 +85,7 @@ const {
   users,
   roles,
   enabledRoles,
-  load,
+  load: loadOrganizationSettings,
   saveDepartments,
   saveUserOrganization,
   saveRole,
@@ -80,7 +93,27 @@ const {
   resetRole
 } = useOrganizationSettings()
 
-onMounted(load)
+const {
+  loading: aiLoading,
+  saving: aiSaving,
+  testingProvider,
+  systemConfig,
+  aiModelConfig,
+  load: loadAiSettings,
+  save: saveAiSettings,
+  testProvider
+} = useAiModelSettings()
+
+const pageLoading = computed(() => loading.value || aiLoading.value)
+
+const loadAll = async () => {
+  await Promise.all([
+    loadOrganizationSettings(),
+    loadAiSettings()
+  ])
+}
+
+onMounted(loadAll)
 </script>
 
 <style scoped>

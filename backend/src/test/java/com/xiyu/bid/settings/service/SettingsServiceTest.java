@@ -3,6 +3,7 @@ package com.xiyu.bid.settings.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.platform.util.PasswordEncryptionUtil;
 import com.xiyu.bid.settings.dto.SettingsResponse;
 import com.xiyu.bid.settings.dto.SettingsUpdateRequest;
 import com.xiyu.bid.settings.repository.SystemSettingRepository;
@@ -17,6 +18,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -30,13 +32,17 @@ class SettingsServiceTest {
     private UserRepository userRepository;
     private ObjectMapper objectMapper;
     private SettingsService settingsService;
+    private AiProviderCatalog aiProviderCatalog;
 
     @BeforeEach
     void setUp() {
         userRepository = mock(UserRepository.class);
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
-        settingsService = new SettingsService(systemSettingRepository, userRepository, objectMapper);
+        aiProviderCatalog = new AiProviderCatalog();
+        PasswordEncryptionUtil passwordEncryptionUtil = new PasswordEncryptionUtil();
+        passwordEncryptionUtil.initialize();
+        settingsService = new SettingsService(systemSettingRepository, userRepository, objectMapper, passwordEncryptionUtil, aiProviderCatalog);
     }
 
     @Test
@@ -74,12 +80,96 @@ class SettingsServiceTest {
                 ))
                 .build());
 
-        SettingsService reloadedService = new SettingsService(systemSettingRepository, userRepository, objectMapper);
+        PasswordEncryptionUtil passwordEncryptionUtil = new PasswordEncryptionUtil();
+        passwordEncryptionUtil.initialize();
+        SettingsService reloadedService = new SettingsService(systemSettingRepository, userRepository, objectMapper, passwordEncryptionUtil, aiProviderCatalog);
         SettingsResponse reloaded = reloadedService.getSettings();
 
         assertEquals("整改后平台", reloaded.getSystemConfig().getSysName());
         assertEquals(12, reloaded.getSystemConfig().getDepositWarnDays());
         assertFalse(reloaded.getSystemConfig().getEnableAI());
         assertEquals("settings", reloaded.getRoles().get(0).getMenuPermissions().get(1));
+    }
+
+    @Test
+    void updateSettings_ShouldEncryptAndMaskAiProviderApiKey() {
+        settingsService.updateSettings(SettingsUpdateRequest.builder()
+                .aiModelConfig(SettingsUpdateRequest.AiModelConfigUpdate.builder()
+                        .activeProvider("doubao")
+                        .providers(List.of(
+                                SettingsUpdateRequest.AiProviderSettingUpdate.builder()
+                                        .providerCode("doubao")
+                                        .enabled(true)
+                                        .baseUrl("https://ark.cn-beijing.volces.com/api/v3/chat/completions")
+                                        .model("doubao-test")
+                                        .apiKeyPlaintext("sk-doubao-secret-1234")
+                                        .build()
+                        ))
+                        .build())
+                .build());
+
+        SettingsResponse response = settingsService.getSettings();
+        SettingsResponse.AiProviderSetting doubao = response.getAiModelConfig().getProviders().stream()
+                .filter(provider -> "doubao".equals(provider.getProviderCode()))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals("doubao", response.getAiModelConfig().getActiveProvider());
+        assertTrue(doubao.getApiKeyConfigured());
+        assertEquals("sk-d****1234", doubao.getApiKeyMasked());
+        assertNull(doubao.getEncryptedApiKey());
+        assertFalse(systemSettingRepository.findByConfigKey("default").orElseThrow()
+                .getPayloadJson()
+                .contains("sk-doubao-secret-1234"));
+    }
+
+    @Test
+    void updateSettings_BlankApiKey_ShouldKeepExistingEncryptedKey() {
+        settingsService.updateSettings(SettingsUpdateRequest.builder()
+                .aiModelConfig(SettingsUpdateRequest.AiModelConfigUpdate.builder()
+                        .activeProvider("deepseek")
+                        .providers(List.of(SettingsUpdateRequest.AiProviderSettingUpdate.builder()
+                                .providerCode("deepseek")
+                                .apiKeyPlaintext("sk-deepseek-secret-5678")
+                                .build()))
+                        .build())
+                .build());
+
+        settingsService.updateSettings(SettingsUpdateRequest.builder()
+                .aiModelConfig(SettingsUpdateRequest.AiModelConfigUpdate.builder()
+                        .activeProvider("deepseek")
+                        .providers(List.of(SettingsUpdateRequest.AiProviderSettingUpdate.builder()
+                                .providerCode("deepseek")
+                                .model("deepseek-chat-updated")
+                                .apiKeyPlaintext("")
+                                .build()))
+                        .build())
+                .build());
+
+        SettingsResponse.AiProviderSetting deepseek = settingsService.getSettings().getAiModelConfig().getProviders().stream()
+                .filter(provider -> "deepseek".equals(provider.getProviderCode()))
+                .findFirst()
+                .orElseThrow();
+
+        assertTrue(deepseek.getApiKeyConfigured());
+        assertEquals("sk-d****5678", deepseek.getApiKeyMasked());
+        assertEquals("deepseek-chat-updated", deepseek.getModel());
+    }
+
+    @Test
+    void updateSettings_WithUntrustedAiBaseUrl_ShouldRejectUpdate() {
+        IllegalArgumentException exception = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> settingsService.updateSettings(SettingsUpdateRequest.builder()
+                        .aiModelConfig(SettingsUpdateRequest.AiModelConfigUpdate.builder()
+                                .providers(List.of(SettingsUpdateRequest.AiProviderSettingUpdate.builder()
+                                        .providerCode("openai")
+                                        .baseUrl("https://metadata.internal/latest")
+                                        .build()))
+                                .build())
+                        .build())
+        );
+
+        assertEquals("AI API 地址必须匹配当前厂商的官方域名", exception.getMessage());
     }
 }
