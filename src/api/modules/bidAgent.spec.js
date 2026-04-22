@@ -29,6 +29,25 @@ describe('bidAgentApi', () => {
     expect(result.data).toMatchObject({ id: 'run-1', runId: 'run-1', status: 'QUEUED' })
   })
 
+  it('importTenderDocument(): uploads tender file through the bid-agent multipart endpoint', async () => {
+    const formData = new FormData()
+    formData.set('file', new Blob(['招标文件正文']), 'tender.docx')
+    formData.set('applyToEditor', 'true')
+    httpClient.post.mockResolvedValue({
+      success: true,
+      data: { run: { runId: 'run-2', status: 'DRAFTED' }, document: { id: 55 } },
+    })
+
+    const result = await bidAgentApi.importTenderDocument(12, formData)
+
+    expect(httpClient.post).toHaveBeenCalledWith(
+      '/api/projects/12/bid-agent/tender-documents',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    )
+    expect(result.data.run).toMatchObject({ runId: 'run-2', status: 'DRAFTED' })
+  })
+
   it('getRun(): fetches a single backend run without local fallback', async () => {
     httpClient.get.mockResolvedValue({ success: true, data: { id: 3, state: 'COMPLETED' } })
 
@@ -47,8 +66,17 @@ describe('bidAgentApi', () => {
     expect(httpClient.post).toHaveBeenCalledWith('/api/projects/12/bid-agent/runs/run-1/apply', payload)
   })
 
-  it('createReview(): posts review requests to the project review endpoint', async () => {
+  it('createReview(): posts run-scoped review requests when runId is present', async () => {
     const payload = { runId: 'run-1', reviewerIds: [5] }
+    httpClient.post.mockResolvedValue({ success: true, data: { reviewId: 9 } })
+
+    await bidAgentApi.createReview(12, payload)
+
+    expect(httpClient.post).toHaveBeenCalledWith('/api/projects/12/bid-agent/runs/run-1/reviews', { reviewerIds: [5] })
+  })
+
+  it('createReview(): keeps the project-level review endpoint for compatibility', async () => {
+    const payload = { reviewerIds: [5] }
     httpClient.post.mockResolvedValue({ success: true, data: { reviewId: 9 } })
 
     await bidAgentApi.createReview(12, payload)

@@ -29,6 +29,9 @@ class BidDraftAgentDomainTest {
                 "上海采购集团",
                 "公开招标",
                 List.of("智慧园区", "改造"),
+                List.of("technical / 必须响应 / 提供总体实施方案 / 包含部署、运维和培训"),
+                List.of("material / 必须响应 / 资质证书 / 提供有效资质证书"),
+                List.of("scoring / 参考 / 技术方案评分 / 技术方案占50分"),
                 List.of("建筑业企业资质证书 / CONSTRUCTION / FIRST", "安全生产许可证 / SERVICE / SECOND"),
                 List.of("法务合同模板 / LEGAL / 投标说明"),
                 List.of("智慧园区实施案例 / 方案 / 交付验收 / 售后支持")

@@ -85,6 +85,19 @@ export function normalizeBidAgentRun(data = null) {
 }
 
 export const bidAgentApi = {
+  async importTenderDocument(projectId, formData) {
+    const response = await httpClient.post(`/api/projects/${projectId}/bid-agent/tender-documents`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return {
+      ...response,
+      data: {
+        ...response?.data,
+        run: normalizeBidAgentRun(response?.data?.run),
+      },
+    }
+  },
+
   async createRun(projectId, payload = {}) {
     const response = await httpClient.post(`/api/projects/${projectId}/bid-agent/runs`, payload)
     return { ...response, data: normalizeBidAgentRun(response?.data) }
@@ -100,6 +113,10 @@ export const bidAgentApi = {
   },
 
   async createReview(projectId, payload = {}) {
+    if (payload.runId) {
+      const { runId, ...body } = payload
+      return httpClient.post(`/api/projects/${projectId}/bid-agent/runs/${runId}/reviews`, body)
+    }
     return httpClient.post(`/api/projects/${projectId}/bid-agent/reviews`, payload)
   },
 }

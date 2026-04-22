@@ -25,6 +25,7 @@ const stubs = {
   ElTag: { template: '<span><slot /></span>' },
   ElAlert: { props: ['title'], template: '<div>{{ title }}</div>' },
   ElEmpty: { props: ['description'], template: '<div>{{ description }}</div>' },
+  ElUpload: { template: '<div><slot /></div>' },
 }
 
 function resetContext() {
@@ -37,13 +38,20 @@ function resetContext() {
       draft: { sections: [{ id: 's1', title: '项目概况', content: '草稿内容' }] },
     }),
     applyResult: ref(applyResult),
+    importResult: ref(null),
+    tenderFile: ref(null),
     error: ref(''),
+    importing: ref(false),
     creating: ref(false),
     fetching: ref(false),
     applying: ref(false),
     reviewing: ref(false),
     projectId: ref(12),
     currentRunId: computed(() => context.bidAgent.currentRun.value?.runId || null),
+    selectedTenderFileName: computed(() => ''),
+    selectTenderFile: vi.fn(),
+    clearTenderFile: vi.fn(),
+    importTenderDocument: vi.fn(),
     createRun: vi.fn(),
     fetchRun: vi.fn(),
     applyBidAgentResult: vi.fn(),

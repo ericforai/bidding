@@ -4,16 +4,18 @@
       <section class="agent-hero">
         <div>
           <p class="agent-eyebrow">Bid Writing Agent</p>
-          <h3>从项目资料生成可审阅标书初稿</h3>
-          <p>基于真实后端运行结果展示章节、来源、置信度与需人工确认项。</p>
+          <h3>从招标文件生成可审阅标书初稿</h3>
+          <p>上传招标文件后自动拆解要求、匹配资料、生成初稿并写入文档编辑器。</p>
         </div>
         <el-tag :type="statusType" effect="dark">{{ statusText }}</el-tag>
       </section>
 
       <el-alert v-if="agent.error.value" :title="agent.error.value" type="error" show-icon :closable="false" />
 
+      <ProjectDetailBidAgentTenderUpload />
+
       <div class="agent-actions">
-        <el-button type="primary" :loading="agent.creating.value" @click="agent.createRun()">AI 生成初稿</el-button>
+        <el-button type="primary" plain :loading="agent.creating.value" @click="agent.createRun()">使用已有项目资料生成</el-button>
         <el-button :disabled="!agent.currentRunId.value" :loading="agent.fetching.value" @click="agent.fetchRun()">刷新状态</el-button>
       </div>
 
@@ -72,6 +74,7 @@
 import { computed } from 'vue'
 import { useProjectDetailContext } from '@/composables/projectDetail/context.js'
 import { useBidAgentDrawerView } from '@/composables/projectDetail/useBidAgentDrawerView.js'
+import ProjectDetailBidAgentTenderUpload from './ProjectDetailBidAgentTenderUpload.vue'
 
 const detail = useProjectDetailContext()
 const agent = detail.bidAgent

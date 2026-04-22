@@ -6,6 +6,7 @@ import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const apiMocks = vi.hoisted(() => ({
+  importTenderDocument: vi.fn(),
   createRun: vi.fn(),
   getRun: vi.fn(),
   applyRun: vi.fn(),
@@ -48,6 +49,48 @@ describe('useProjectDetailBidAgent', () => {
     expect(agent.currentRunId.value).toBe('run-7')
     expect(run.status).toBe('QUEUED')
     expect(context.message.success).toHaveBeenCalledWith('AI 初稿生成任务已启动')
+  })
+
+  it('imports a tender document, stores the run, and keeps apply metadata for editor navigation', async () => {
+    apiMocks.importTenderDocument.mockResolvedValue({
+      success: true,
+      data: {
+        message: '招标文件已解析，标书初稿已写入文档编辑器',
+        run: { runId: 'run-upload', status: 'READY_FOR_WRITER' },
+        applyResult: { projectId: 12, structureId: 88 },
+      },
+    })
+    const context = createContext()
+    const agent = useProjectDetailBidAgent(context)
+    const file = new File(['招标正文'], '招标文件.docx')
+
+    agent.selectTenderFile(file)
+    const result = await agent.importTenderDocument({ applyToEditor: true })
+    agent.goToEditor()
+
+    expect(apiMocks.importTenderDocument).toHaveBeenCalledWith(12, expect.any(FormData))
+    expect(result.run.runId).toBe('run-upload')
+    expect(agent.currentRunId.value).toBe('run-upload')
+    expect(agent.applyResult.value.structureId).toBe(88)
+    expect(context.router.push).toHaveBeenCalledWith({
+      name: 'DocumentEditor',
+      params: { id: '12' },
+      query: {
+        bidAgentRunId: 'run-upload',
+        structureId: '88',
+      },
+    })
+  })
+
+  it('requires a tender file before importing', async () => {
+    const context = createContext()
+    const agent = useProjectDetailBidAgent(context)
+
+    const result = await agent.importTenderDocument()
+
+    expect(result).toBeNull()
+    expect(context.message.warning).toHaveBeenCalledWith('请先选择招标文件')
+    expect(apiMocks.importTenderDocument).not.toHaveBeenCalled()
   })
 
   it('shows backend business errors instead of generic HTTP status text', async () => {

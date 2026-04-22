@@ -198,6 +198,28 @@ class BidDraftAgentAppServiceTest {
     }
 
     @Test
+    void reviewRun_shouldUseRequestedRunInsteadOfLatestProjectRun() throws Exception {
+        BidAgentRun run = baseRun(sampleSnapshot());
+        run.setId(101L);
+        BidDraftGenerationResult generationResult = new BidDraftGenerationResult(
+                run.getDraftText(),
+                "targeted review",
+                List.of(new GeneratedArtifactSpec("REVIEW_SUMMARY", "草稿审阅摘要", "targeted review", "bid-reviewer"))
+        );
+
+        when(runRepository.findByIdAndProjectId(101L, 11L)).thenReturn(Optional.of(run));
+        when(textGenerator.generate(any(), any(), any(), any(), any(), any())).thenReturn(generationResult);
+        when(runRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(artifactRepository.findByRunIdAndArtifactType(101L, "REVIEW_SUMMARY")).thenReturn(Optional.empty());
+
+        var reviewDto = appService.reviewRun(11L, 101L);
+
+        assertThat(reviewDto.getRunId()).isEqualTo(101L);
+        assertThat(reviewDto.getReviewSummary()).isEqualTo("targeted review");
+        verify(runRepository).findByIdAndProjectId(101L, 11L);
+    }
+
+    @Test
     void applyRun_shouldMarkPrimaryArtifactReadyForWriter() throws Exception {
         BidAgentRun run = baseRun(sampleSnapshot());
         run.setId(100L);

@@ -13,6 +13,7 @@
 - PostgreSQL
 - Redis
 - Lombok
+- Apache POI / PDFBox（招标文件 Word 与文本型 PDF 正文提取）
 
 ## 目录结构
 ```
@@ -84,3 +85,5 @@ mvn test -Dtest=FlywayBaselineContextTest,FlywayPostgresContainerTest,ExpenseCon
 - `JWT_SECRET` - JWT密钥，最少32字符（必填）
 - `CORS_ALLOWED_ORIGINS` - 允许的CORS源（默认：localhost:5173,5174,3000）
 - `SPRING_PROFILES_ACTIVE` - 环境配置（dev/prod，默认：dev）
+- `OPENAI_API_KEY` - 标书生成 Agent 拆解招标文件和生成草稿所需的 OpenAI API Key
+- `BID_AGENT_UPLOAD_DIR` - 招标文件上传保存目录；未配置时使用系统临时目录

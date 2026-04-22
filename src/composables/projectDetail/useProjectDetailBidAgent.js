@@ -52,7 +52,10 @@ export function useProjectDetailBidAgent(context) {
   const currentRun = ref(null)
   const applyResult = ref(null)
   const reviewResult = ref(null)
+  const importResult = ref(null)
+  const tenderFile = ref(null)
   const error = ref('')
+  const importing = ref(false)
   const creating = ref(false)
   const fetching = ref(false)
   const applying = ref(false)
@@ -60,7 +63,8 @@ export function useProjectDetailBidAgent(context) {
 
   const projectId = computed(() => project?.value?.id ?? route.params.id)
   const currentRunId = computed(() => resolveRunId(currentRun.value))
-  const isBusy = computed(() => creating.value || fetching.value || applying.value || reviewing.value)
+  const selectedTenderFileName = computed(() => tenderFile.value?.name || tenderFile.value?.fileName || '')
+  const isBusy = computed(() => importing.value || creating.value || fetching.value || applying.value || reviewing.value)
 
   const openDrawer = () => {
     drawerVisible.value = true
@@ -80,6 +84,49 @@ export function useProjectDetailBidAgent(context) {
     error.value = text
     message?.warning?.(text)
     return null
+  }
+
+  const selectTenderFile = (file) => {
+    tenderFile.value = file?.raw || file || null
+    return false
+  }
+
+  const clearTenderFile = () => {
+    tenderFile.value = null
+  }
+
+  const importTenderDocument = async ({ applyToEditor = true } = {}) => {
+    if (!tenderFile.value) {
+      const text = '请先选择招标文件'
+      error.value = text
+      message?.warning?.(text)
+      return null
+    }
+
+    drawerVisible.value = true
+    importing.value = true
+    error.value = ''
+    applyResult.value = null
+    reviewResult.value = null
+    importResult.value = null
+
+    try {
+      const formData = new FormData()
+      formData.set('file', tenderFile.value, selectedTenderFileName.value || '招标文件')
+      formData.set('applyToEditor', String(applyToEditor))
+      const response = await bidAgentApi.importTenderDocument(projectId.value, formData)
+      if (isFailedResponse(response)) throw new Error(response.message || '解析招标文件失败')
+      importResult.value = getResponseData(response)
+      currentRun.value = importResult.value?.run || null
+      applyResult.value = importResult.value?.applyResult || null
+      message?.success?.(importResult.value?.message || '招标文件已解析并生成标书初稿')
+      return importResult.value
+    } catch (err) {
+      reportError(err, '解析招标文件失败')
+      return null
+    } finally {
+      importing.value = false
+    }
   }
 
   const createRun = async (payload = {}) => {
@@ -178,15 +225,22 @@ export function useProjectDetailBidAgent(context) {
     currentRun,
     applyResult,
     reviewResult,
+    importResult,
+    tenderFile,
     error,
+    importing,
     creating,
     fetching,
     applying,
     reviewing,
     projectId,
     currentRunId,
+    selectedTenderFileName,
     isBusy,
     openDrawer,
+    selectTenderFile,
+    clearTenderFile,
+    importTenderDocument,
     createRun,
     fetchRun,
     applyBidAgentResult,

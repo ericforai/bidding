@@ -138,6 +138,9 @@ public class OpenAiBidDraftTextGenerator implements BidDraftTextGenerator {
         appendList(prompt, "技术要求", classification.technicalRequirements());
         appendList(prompt, "交付要求", classification.deliveryRequirements());
         appendList(prompt, "商务要求", classification.commercialRequirements());
+        appendList(prompt, "结构化招标要求", snapshot.structuredRequirementSignals());
+        appendList(prompt, "必须提供材料", snapshot.requiredMaterialSignals());
+        appendList(prompt, "评分标准线索", snapshot.scoringSignals());
         appendList(prompt, "资质材料线索", snapshot.qualificationSignals());
         appendList(prompt, "模板线索", snapshot.templateSignals());
         appendList(prompt, "案例线索", snapshot.caseSignals());

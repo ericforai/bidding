@@ -1,6 +1,10 @@
 package com.xiyu.bid.biddraftagent.application;
 
 import com.xiyu.bid.biddraftagent.domain.BidDraftSnapshot;
+import com.xiyu.bid.biddraftagent.entity.BidRequirementItem;
+import com.xiyu.bid.biddraftagent.entity.BidTenderDocumentSnapshot;
+import com.xiyu.bid.biddraftagent.repository.BidRequirementItemRepository;
+import com.xiyu.bid.biddraftagent.repository.BidTenderDocumentSnapshotRepository;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.exception.ResourceNotFoundException;
@@ -10,6 +14,8 @@ import com.xiyu.bid.repository.QualificationRepository;
 import com.xiyu.bid.repository.TemplateRepository;
 import com.xiyu.bid.repository.TenderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,12 +29,15 @@ public class BidDraftSnapshotAssembler {
     private final QualificationRepository qualificationRepository;
     private final TemplateRepository templateRepository;
     private final CaseRepository caseRepository;
+    private final BidRequirementItemRepository requirementItemRepository;
+    private final BidTenderDocumentSnapshotRepository documentSnapshotRepository;
 
     public BidDraftSnapshot assemble(Long projectId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", String.valueOf(projectId)));
         Tender tender = tenderRepository.findById(project.getTenderId())
                 .orElseThrow(() -> new ResourceNotFoundException("Tender", String.valueOf(project.getTenderId())));
+        List<BidRequirementItem> requirementItems = collectLatestRequirementItems(projectId);
 
         return new BidDraftSnapshot(
                 project.getId(),
@@ -47,6 +56,9 @@ public class BidDraftSnapshotAssembler {
                 tender.getPurchaserName(),
                 tender.getSource(),
                 tender.getTags() == null ? List.of() : splitValues(tender.getTags()),
+                collectRequirementSignals(requirementItems),
+                collectRequirementSignals(requirementItems, "material"),
+                collectRequirementSignals(requirementItems, "scoring"),
                 collectQualificationSignals(),
                 collectTemplateSignals(),
                 collectCaseSignals()
@@ -54,24 +66,25 @@ public class BidDraftSnapshotAssembler {
     }
 
     private List<String> collectQualificationSignals() {
-        return qualificationRepository.findAll().stream()
-                .limit(8)
+        return qualificationRepository.findAll(PageRequest.of(0, 8, Sort.by(Sort.Direction.DESC, "id"))).stream()
                 .map(qualification -> qualification.getName() + " / " + qualification.getType() + " / " + qualification.getLevel())
                 .toList();
     }
 
     private List<String> collectTemplateSignals() {
-        return templateRepository.findAll().stream()
-                .limit(8)
+        return templateRepository.findAll(PageRequest.of(0, 8, Sort.by(Sort.Direction.DESC, "id"))).stream()
                 .map(template -> template.getName() + " / " + template.getCategory() + (template.getDescription() == null ? "" : " / " + template.getDescription()))
                 .toList();
     }
 
     private List<String> collectCaseSignals() {
-        return caseRepository.findAll().stream()
-                .filter(caseEntity -> caseEntity.getTitle() != null && !caseEntity.getTitle().isBlank())
-                .filter(caseEntity -> caseEntity.getPublishedAt() != null || (caseEntity.getStatus() != null && caseEntity.getStatus().equalsIgnoreCase("PUBLISHED")))
-                .limit(8)
+        return caseRepository.searchCases(
+                        null,
+                        null,
+                        "PUBLISHED",
+                        null,
+                        PageRequest.of(0, 8, Sort.by(Sort.Direction.DESC, "publishedAt").and(Sort.by(Sort.Direction.DESC, "id")))
+                ).stream()
                 .map(caseEntity -> {
                     String highlights = caseEntity.getHighlights() == null || caseEntity.getHighlights().isEmpty()
                             ? ""
@@ -80,6 +93,38 @@ public class BidDraftSnapshotAssembler {
                     return caseEntity.getTitle() + summary + highlights;
                 })
                 .toList();
+    }
+
+    private List<BidRequirementItem> collectLatestRequirementItems(Long projectId) {
+        return documentSnapshotRepository.findTopByProjectIdOrderByCreatedAtDescIdDesc(projectId)
+                .map(BidTenderDocumentSnapshot::getProjectDocumentId)
+                .map(documentId -> requirementItemRepository.findByProjectIdAndProjectDocumentIdOrderByCreatedAtDesc(projectId, documentId))
+                .orElse(List.of());
+    }
+
+    private List<String> collectRequirementSignals(List<BidRequirementItem> requirementItems) {
+        return requirementItems.stream()
+                .limit(60)
+                .map(this::formatRequirementSignal)
+                .toList();
+    }
+
+    private List<String> collectRequirementSignals(List<BidRequirementItem> requirementItems, String category) {
+        return requirementItems.stream()
+                .filter(item -> item.getCategory() != null && item.getCategory().equalsIgnoreCase(category))
+                .limit(20)
+                .map(this::formatRequirementSignal)
+                .toList();
+    }
+
+    private String formatRequirementSignal(BidRequirementItem item) {
+        String mandatory = item.isMandatory() ? "必须响应" : "参考";
+        return String.join(" / ",
+                item.getCategory() == null ? "other" : item.getCategory(),
+                mandatory,
+                item.getTitle() == null ? "未命名要求" : item.getTitle(),
+                item.getContent() == null ? "" : item.getContent()
+        );
     }
 
     private List<String> splitValues(String value) {

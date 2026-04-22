@@ -63,6 +63,16 @@ public class BidDraftAgentAppService {
         assertProjectAccess(projectId);
         BidAgentRun run = runRepository.findTopByProjectIdOrderByCreatedAtDesc(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("BidAgentRun", String.valueOf(projectId)));
+        return reviewRun(run);
+    }
+
+    public BidDraftAgentReviewDTO reviewRun(Long projectId, Long runId) {
+        assertProjectAccess(projectId);
+        BidAgentRun run = requireRun(projectId, runId);
+        return reviewRun(run);
+    }
+
+    private BidDraftAgentReviewDTO reviewRun(BidAgentRun run) {
         BidDraftSnapshot snapshot = jsonCodec.fromJson(run.getSnapshotJson(), BidDraftSnapshot.class);
         BidDraftAgentEvaluation evaluation = evaluator.evaluate(snapshot);
         BidDraftGenerationResult generation = generate(snapshot, evaluation);

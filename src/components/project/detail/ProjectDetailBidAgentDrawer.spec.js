@@ -25,6 +25,7 @@ const stubs = {
   'el-tag': { template: '<span class="tag"><slot /></span>' },
   'el-alert': { props: ['title'], template: '<div class="alert">{{ title }}</div>' },
   'el-empty': { props: ['description'], template: '<div class="empty">{{ description }}</div>' },
+  'el-upload': { template: '<div><slot /></div>' },
 }
 
 function resetContext(overrides = {}) {
@@ -32,12 +33,19 @@ function resetContext(overrides = {}) {
     drawerVisible: ref(true),
     currentRun: ref(null),
     applyResult: ref(null),
+    importResult: ref(null),
+    tenderFile: ref(null),
     error: ref(''),
+    importing: ref(false),
     creating: ref(false),
     fetching: ref(false),
     applying: ref(false),
     reviewing: ref(false),
     currentRunId: computed(() => context.bidAgent.currentRun.value?.runId || null),
+    selectedTenderFileName: computed(() => context.bidAgent.tenderFile.value?.name || ''),
+    selectTenderFile: vi.fn(),
+    clearTenderFile: vi.fn(),
+    importTenderDocument: vi.fn(),
     createRun: vi.fn(),
     fetchRun: vi.fn(),
     applyBidAgentResult: vi.fn(),
@@ -56,6 +64,7 @@ function mountDrawer() {
         ElTag: stubs['el-tag'],
         ElAlert: stubs['el-alert'],
         ElEmpty: stubs['el-empty'],
+        ElUpload: stubs['el-upload'],
       },
     },
   })
@@ -74,9 +83,18 @@ describe('ProjectDetailBidAgentDrawer', () => {
     const wrapper = mountDrawer()
 
     expect(wrapper.find('el-empty').attributes('description')).toBe('尚未启动 AI 初稿生成')
-    await buttonByText(wrapper, 'AI 生成初稿').trigger('click')
+    expect(wrapper.text()).toContain('上传招标文件并生成初稿')
+    await buttonByText(wrapper, '使用已有项目资料生成').trigger('click')
 
     expect(context.bidAgent.createRun).toHaveBeenCalled()
+  })
+
+  it('starts the import-and-generate flow from the tender upload step', async () => {
+    const wrapper = mountDrawer()
+
+    await buttonByText(wrapper, '上传招标文件并生成初稿').trigger('click')
+
+    expect(context.bidAgent.importTenderDocument).toHaveBeenCalledWith({ applyToEditor: true })
   })
 
   it('renders stages, draft sections, sources, confidence, and warnings', () => {

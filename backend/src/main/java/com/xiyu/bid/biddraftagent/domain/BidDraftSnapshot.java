@@ -23,6 +23,9 @@ public record BidDraftSnapshot(
         String purchaserName,
         String source,
         List<String> tenderTags,
+        List<String> structuredRequirementSignals,
+        List<String> requiredMaterialSignals,
+        List<String> scoringSignals,
         List<String> qualificationSignals,
         List<String> templateSignals,
         List<String> caseSignals
@@ -30,6 +33,9 @@ public record BidDraftSnapshot(
 
     public BidDraftSnapshot {
         tenderTags = normalizeList(tenderTags);
+        structuredRequirementSignals = normalizeList(structuredRequirementSignals);
+        requiredMaterialSignals = normalizeList(requiredMaterialSignals);
+        scoringSignals = normalizeList(scoringSignals);
         qualificationSignals = normalizeList(qualificationSignals);
         templateSignals = normalizeList(templateSignals);
         caseSignals = normalizeList(caseSignals);
@@ -51,6 +57,9 @@ public record BidDraftSnapshot(
         addIfPresent(segments, purchaserName);
         addIfPresent(segments, source);
         segments.addAll(tenderTags);
+        segments.addAll(structuredRequirementSignals);
+        segments.addAll(requiredMaterialSignals);
+        segments.addAll(scoringSignals);
         segments.addAll(qualificationSignals);
         segments.addAll(templateSignals);
         segments.addAll(caseSignals);
