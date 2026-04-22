@@ -202,7 +202,7 @@ public class BidTenderDocumentImportAppService {
                 .projectId(projectId)
                 .name(fileName)
                 .size(formatSize(size))
-                .fileType(contentType)
+                .fileType(TenderDocumentFileType.toProjectDocumentType(fileName, contentType))
                 .documentCategory(DOCUMENT_CATEGORY)
                 .linkedEntityType(LINKED_ENTITY_TYPE)
                 .linkedEntityId(tender.getId())

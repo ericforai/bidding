@@ -137,8 +137,11 @@ class BidTenderDocumentImportAppServiceTest {
         assertThat(tender.getDescription()).contains("资格要求", "评分标准", "必须提供的材料");
         assertThat(tender.getTags()).contains("智慧园区");
 
+        ArgumentCaptor<ProjectDocument> documentCaptor = ArgumentCaptor.forClass(ProjectDocument.class);
         ArgumentCaptor<List<BidRequirementItem>> itemCaptor = ArgumentCaptor.forClass(List.class);
         verify(projectAccessScopeService).assertCurrentUserCanAccessProject(11L);
+        verify(projectDocumentRepository).save(documentCaptor.capture());
+        assertThat(documentCaptor.getValue().getFileType()).isEqualTo("docx");
         verify(requirementItemRepository).saveAll(itemCaptor.capture());
         assertThat(itemCaptor.getValue()).hasSize(2);
         assertThat(itemCaptor.getValue()).extracting(BidRequirementItem::getCategory)
