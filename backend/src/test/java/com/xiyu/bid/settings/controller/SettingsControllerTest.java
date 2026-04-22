@@ -1,11 +1,17 @@
 package com.xiyu.bid.settings.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiyu.bid.ai.client.AiProviderRuntimeConfig;
+import com.xiyu.bid.ai.client.OpenAiCompatibleClient;
+import com.xiyu.bid.settings.dto.AiModelTestRequest;
 import com.xiyu.bid.settings.dto.SettingsUpdateRequest;
+import com.xiyu.bid.settings.repository.SystemSettingRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -13,9 +19,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 
 @SpringBootTest(properties = "spring.main.allow-bean-definition-overriding=true")
 @AutoConfigureMockMvc
@@ -28,6 +40,18 @@ class SettingsControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private SystemSettingRepository systemSettingRepository;
+
+    @MockBean
+    private OpenAiCompatibleClient openAiCompatibleClient;
+
+    @BeforeEach
+    void setUp() {
+        systemSettingRepository.deleteAll();
+        reset(openAiCompatibleClient);
+    }
+
     @Test
     @WithMockUser(roles = {"ADMIN"})
     void getSettings_AsAdmin_ShouldReturnCurrentSettings() throws Exception {
@@ -37,7 +61,10 @@ class SettingsControllerTest {
                 .andExpect(jsonPath("$.data.systemConfig.sysName").exists())
                 .andExpect(jsonPath("$.data.roles").isArray())
                 .andExpect(jsonPath("$.data.deptDataScope").isArray())
-                .andExpect(jsonPath("$.data.projectGroupScope").isArray());
+                .andExpect(jsonPath("$.data.projectGroupScope").isArray())
+                .andExpect(jsonPath("$.data.aiModelConfig.activeProvider").value("deepseek"))
+                .andExpect(jsonPath("$.data.aiModelConfig.providers").isArray())
+                .andExpect(jsonPath("$.data.aiModelConfig.providers[0].encryptedApiKey").doesNotExist());
     }
 
     @Test
@@ -79,6 +106,16 @@ class SettingsControllerTest {
                                 .allowedRoles(List.of("admin", "manager"))
                                 .build()
                 ))
+                .aiModelConfig(SettingsUpdateRequest.AiModelConfigUpdate.builder()
+                        .activeProvider("doubao")
+                        .providers(List.of(SettingsUpdateRequest.AiProviderSettingUpdate.builder()
+                                .providerCode("doubao")
+                                .enabled(true)
+                                .baseUrl("https://ark.cn-beijing.volces.com/api/v3/chat/completions")
+                                .model("doubao-test")
+                                .apiKeyPlaintext("sk-doubao-secret-1234")
+                                .build()))
+                        .build())
                 .build();
 
         mockMvc.perform(put("/api/settings")
@@ -90,14 +127,19 @@ class SettingsControllerTest {
                 .andExpect(jsonPath("$.data.systemConfig.depositWarnDays").value(10))
                 .andExpect(jsonPath("$.data.roles[0].menuPermissions[1]").value("settings"))
                 .andExpect(jsonPath("$.data.deptDataScope[0].canViewOtherDepts").value(true))
-                .andExpect(jsonPath("$.data.projectGroupScope[0].visibility").value("custom"));
+                .andExpect(jsonPath("$.data.projectGroupScope[0].visibility").value("custom"))
+                .andExpect(jsonPath("$.data.aiModelConfig.activeProvider").value("doubao"))
+                .andExpect(jsonPath("$.data.aiModelConfig.providers[3].apiKeyConfigured").value(true))
+                .andExpect(jsonPath("$.data.aiModelConfig.providers[3].apiKeyMasked").value("sk-d****1234"))
+                .andExpect(jsonPath("$.data.aiModelConfig.providers[3].encryptedApiKey").doesNotExist());
 
         mockMvc.perform(get("/api/settings"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.systemConfig.sysName").value("西域数智化投标管理平台-整改版"))
                 .andExpect(jsonPath("$.data.roles[0].menuPermissions[1]").value("settings"))
                 .andExpect(jsonPath("$.data.deptDataScope[0].allowedDepts[1]").value("dept2"))
-                .andExpect(jsonPath("$.data.projectGroupScope[0].visibility").value("custom"));
+                .andExpect(jsonPath("$.data.projectGroupScope[0].visibility").value("custom"))
+                .andExpect(jsonPath("$.data.aiModelConfig.activeProvider").value("doubao"));
     }
 
     @Test
@@ -115,6 +157,76 @@ class SettingsControllerTest {
         mockMvc.perform(put("/api/settings")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void testAiModel_AsAdmin_ShouldReturnConnectionStatus() throws Exception {
+        AiModelTestRequest request = AiModelTestRequest.builder()
+                .providerCode("deepseek")
+                .baseUrl("https://api.deepseek.com/chat/completions")
+                .model("deepseek-chat")
+                .apiKeyPlaintext("sk-test")
+                .build();
+
+        mockMvc.perform(post("/api/settings/ai-models/test")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.providerCode").value("deepseek"))
+                .andExpect(jsonPath("$.data.status").value("success"));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void testAiModel_WhenProviderFails_ShouldReturnFailedStatus() throws Exception {
+        doThrow(new RuntimeException("invalid api key")).when(openAiCompatibleClient).testConnection(any(AiProviderRuntimeConfig.class));
+
+        AiModelTestRequest request = AiModelTestRequest.builder()
+                .providerCode("openai")
+                .baseUrl("https://api.openai.com/v1/chat/completions")
+                .model("gpt-4o-mini")
+                .apiKeyPlaintext("bad-key")
+                .build();
+
+        mockMvc.perform(post("/api/settings/ai-models/test")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.providerCode").value("openai"))
+                .andExpect(jsonPath("$.data.status").value("failed"))
+                .andExpect(jsonPath("$.data.message").value("invalid api key"));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void testAiModel_WithUntrustedHost_ShouldReturnFailedWithoutCallingProvider() throws Exception {
+        AiModelTestRequest request = AiModelTestRequest.builder()
+                .providerCode("openai")
+                .baseUrl("https://metadata.internal/latest")
+                .model("gpt-4o-mini")
+                .apiKeyPlaintext("sk-test")
+                .build();
+
+        mockMvc.perform(post("/api/settings/ai-models/test")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.providerCode").value("openai"))
+                .andExpect(jsonPath("$.data.status").value("failed"))
+                .andExpect(jsonPath("$.data.message").value("AI API 地址必须匹配当前厂商的官方域名"));
+
+        verify(openAiCompatibleClient, never()).testConnection(any(AiProviderRuntimeConfig.class));
+    }
+
+    @Test
+    @WithMockUser(roles = {"MANAGER"})
+    void testAiModel_AsNonAdmin_ShouldReturnForbidden() throws Exception {
+        mockMvc.perform(post("/api/settings/ai-models/test")
+                        .contentType("application/json")
+                        .content("{}"))
                 .andExpect(status().isForbidden());
     }
 }

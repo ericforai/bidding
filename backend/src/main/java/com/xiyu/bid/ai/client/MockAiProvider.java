@@ -4,7 +4,6 @@ import com.xiyu.bid.ai.dto.AiAnalysisResponse;
 import com.xiyu.bid.ai.dto.DimensionScore;
 import com.xiyu.bid.entity.Tender;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -14,14 +13,9 @@ import java.util.Map;
 /**
  * Mock AI Provider
  * Provides realistic mock AI analysis responses for testing and development
- * Activated when ai.provider property is set to "mock" or not specified (default)
+ * Used as the local development fallback when no real AI key is configured.
  */
 @Service
-@ConditionalOnProperty(
-    name = "ai.provider",
-    havingValue = "mock",
-    matchIfMissing = true
-)
 @Slf4j
 public class MockAiProvider implements AiProvider {
 
