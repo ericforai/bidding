@@ -6,7 +6,7 @@ This folder keeps the Workbench page split by responsibility.
 - `workbench-core.js` contains pure functions only: formatting, DTO mapping, role rules, and route targets.
 - `useWorkbench*.js` files are application-service composables. They perform API orchestration and state writes.
 - `components/` contains display components. They receive props and emit events, and do not access APIs, stores, or router.
-- `styles/` contains Workbench CSS split into small files and imported by `styles/workbench.css`.
+- `styles/` contains Workbench CSS split into small files and imported by `styles/workbench-styles.js` so Vite can bundle them without CSS `@import` waterfalls.
 - Empty/error states stay presentational; API composables expose state and the page shell wires retry actions.
 - Clickable cards must be keyboard reachable with visible focus states before shipping new interactions.
 
