@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.function.Function;
 
 final class ShadowInspectorJdbcSupport {
+    private static final int AUDIT_POLL_INTERVAL_MS = 50;
+    private static final int AUDIT_POLL_MAX_ATTEMPTS = 100;
 
     private ShadowInspectorJdbcSupport() {}
 
@@ -25,13 +27,13 @@ final class ShadowInspectorJdbcSupport {
 
     static Integer waitForAuditCount(JdbcTemplate jdbcTemplate, String sql, Object... args) {
         Integer count = 0;
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < AUDIT_POLL_MAX_ATTEMPTS; i++) {
             count = jdbcTemplate.queryForObject(sql, Integer.class, args);
             if (count != null && count > 0) {
                 return count;
             }
             try {
-                Thread.sleep(50);
+                Thread.sleep(AUDIT_POLL_INTERVAL_MS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
