@@ -49,13 +49,23 @@ function filterAccounts(accounts, params = {}) {
   })
 }
 
+function withSuccess(response, patch = {}) {
+  const base = response && !Array.isArray(response) && typeof response === 'object' ? response : {}
+  const success = typeof base.success === 'boolean' ? base.success : true
+  return {
+    ...base,
+    ...patch,
+    success
+  }
+}
+
 export const accountsApi = {
   async getList(params = {}) {
     const response = await httpClient.get('/api/platform/accounts')
     const { page, content } = pageContent(response)
     const accounts = content.map(normalizeAccount)
     const data = filterAccounts(accounts, params)
-    return { ...response, data, total: page?.totalElements ?? data.length }
+    return withSuccess(response, { data, total: page?.totalElements ?? data.length })
   },
 
   async getDetail(id) {

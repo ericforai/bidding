@@ -105,6 +105,25 @@ npm run dev:all
 - 前端默认启动到 `127.0.0.1:1314`
 - 前端会以 `VITE_API_MODE=api` 连接真实后端
 
+### 稳定常驻启动（推荐长期联调）
+
+当你需要服务在当前终端退出后仍保持可用，请使用守护式脚本：
+
+```bash
+npm run dev:stable:start
+npm run dev:stable:status
+npm run dev:stable:logs
+npm run dev:stable:watch:start
+npm run dev:stable:watch:status
+```
+
+停止服务：
+
+```bash
+npm run dev:stable:watch:stop
+npm run dev:stable:stop
+```
+
 ### 手动启动方式
 
 ```bash
