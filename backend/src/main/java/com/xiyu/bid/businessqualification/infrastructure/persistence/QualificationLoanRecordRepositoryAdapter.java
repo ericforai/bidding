@@ -39,6 +39,13 @@ public class QualificationLoanRecordRepositoryAdapter implements QualificationLo
                 .toList();
     }
 
+    @Override
+    public List<QualificationLoan> findAllOrderByBorrowedAtDesc() {
+        return jpaRepository.findAllByOrderByBorrowedAtDesc().stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
     private QualificationLoanRecordEntity toEntity(QualificationLoan loan) {
         return QualificationLoanRecordEntity.builder()
                 .id(loan.getId())

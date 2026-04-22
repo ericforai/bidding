@@ -103,4 +103,19 @@ class QualificationControllerTest {
                 .andExpect(jsonPath("$.data[0].qualificationName").value("高新技术企业证书"))
                 .andExpect(jsonPath("$.data[0].status").value("OVERDUE"));
     }
+
+    @Test
+    void getBorrowRecordsByQuery_WithoutQualificationId_ShouldReturnAllRecords() throws Exception {
+        when(qualificationService.getBorrowRecords(null)).thenReturn(List.of(QualificationBorrowRecordDTO.builder()
+                .id(12L)
+                .qualificationId(2L)
+                .qualificationName("总包资质")
+                .status("borrowed")
+                .build()));
+
+        mockMvc.perform(get("/api/knowledge/qualifications/borrow-records"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].qualificationName").value("总包资质"));
+    }
 }

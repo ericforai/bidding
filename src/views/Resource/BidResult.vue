@@ -3,7 +3,7 @@
     <div class="page-header">
       <div>
         <h2 class="page-title">投标结果闭环</h2>
-        <p class="page-subtitle">人工登记、抓取确认、资料上传和竞争对手分析统一收口到这里。</p>
+        <p class="page-subtitle">人工登记、外部结果确认、资料上传和竞争对手分析统一收口到这里。</p>
       </div>
     </div>
 

@@ -18,4 +18,9 @@ public class GetQualificationBorrowRecordsAppService {
     public List<QualificationLoan> getBorrowRecords(Long qualificationId) {
         return loanRecordRepository.findByQualificationId(qualificationId);
     }
+
+    @Transactional(readOnly = true)
+    public List<QualificationLoan> getBorrowRecords() {
+        return loanRecordRepository.findAllOrderByBorrowedAtDesc();
+    }
 }

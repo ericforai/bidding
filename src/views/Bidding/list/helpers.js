@@ -115,7 +115,6 @@ export function getSourceTagType(source) {
     internal: 'info',
     external: 'success',
     manual: 'warning',
-    CEB: 'success',
     中国招标投标公共服务平台: 'success',
   }
   return map[source] || 'info'
@@ -126,8 +125,7 @@ export function getSourceText(source) {
     internal: '内部',
     external: '外部获取',
     manual: '人工录入',
-    CEB: '公共平台(CEB)',
-    中国招标投标公共服务平台: '公共平台(CEB)',
+    中国招标投标公共服务平台: '外部获取',
   }
   return map[source] || source || '未知'
 }

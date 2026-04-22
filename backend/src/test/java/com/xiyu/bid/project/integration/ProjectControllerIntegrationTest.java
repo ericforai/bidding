@@ -87,7 +87,7 @@ class ProjectControllerIntegrationTest extends AbstractProjectControllerIntegrat
                                   "budget": 12500000.50,
                                   "industry": "能源",
                                   "region": "新疆乌鲁木齐",
-                                  "platform": "中国招标投标公共服务平台",
+                                  "platform": "外部标讯聚合平台",
                                   "deadline": "2026-05-10",
                                   "description": "项目背景: 风电场二期建设",
                                   "remark": "甲方要求增项响应",
@@ -100,7 +100,7 @@ class ProjectControllerIntegrationTest extends AbstractProjectControllerIntegrat
                 .andExpect(jsonPath("$.data.budget").value(12500000.50))
                 .andExpect(jsonPath("$.data.industry").value("能源"))
                 .andExpect(jsonPath("$.data.region").value("新疆乌鲁木齐"))
-                .andExpect(jsonPath("$.data.platform").value("中国招标投标公共服务平台"))
+                .andExpect(jsonPath("$.data.platform").value("外部标讯聚合平台"))
                 .andExpect(jsonPath("$.data.deadline").value("2026-05-10"))
                 .andExpect(jsonPath("$.data.description").value("项目背景: 风电场二期建设"))
                 .andExpect(jsonPath("$.data.remark").value("甲方要求增项响应"))

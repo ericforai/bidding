@@ -106,7 +106,7 @@ class ExpenseControllerIntegrationTest {
                 .build());
 
         bidResultFetchResultRepository.save(BidResultFetchResult.builder()
-                .source("公开信息抓取")
+                .source("公开信息同步")
                 .projectId(guaranteeExpense.getProjectId())
                 .projectName("测试项目")
                 .result(BidResultFetchResult.Result.LOST)

@@ -13,9 +13,9 @@
     <el-col :xs="24" :sm="12" :lg="6">
       <el-card shadow="hover" class="overview-card">
         <div class="icon fetch"><el-icon><Search /></el-icon></div>
-        <h3>公开结果抓取</h3>
+        <h3>公开结果同步</h3>
         <p>生成待确认结果，进入人工核验和补录。</p>
-        <el-button type="success" plain :loading="fetching" @click="$emit('fetch')">开始抓取</el-button>
+        <el-button type="success" plain :loading="fetching" @click="$emit('fetch')">开始同步</el-button>
         <div class="foot">{{ overview.pendingCount }} 条待确认</div>
       </el-card>
     </el-col>

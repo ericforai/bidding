@@ -34,7 +34,7 @@ describe('tendersApi', () => {
     const params = {
       keyword: 'GPU',
       status: 'PENDING',
-      source: '中国招标投标公共服务平台',
+      source: 'external',
       region: '上海',
       industry: '数据中心',
       purchaserName: '西域采购',

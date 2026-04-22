@@ -107,7 +107,7 @@ class BidResultQueryAggregateIntegrationTest extends AbstractBidResultIntegratio
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "comment": "重复抓取批次"
+                                  "comment": "重复同步批次"
                                 }
                                 """))
                 .andExpect(status().isOk())
@@ -160,7 +160,7 @@ class BidResultQueryAggregateIntegrationTest extends AbstractBidResultIntegratio
         assertThat(syncTypeCount).isEqualTo(3);
         assertThat(manualTypeCount).isEqualTo(1);
         assertThat(ignoredFetchNode).isNotNull();
-        assertThat(ignoredFetchNode.path("ignoredReason").asText()).isEqualTo("重复抓取批次");
+        assertThat(ignoredFetchNode.path("ignoredReason").asText()).isEqualTo("重复同步批次");
         assertThat(ignoredFetchNode.path("status").asText()).isEqualTo("IGNORED");
         assertThat(items.get(items.size() - 1).path("fetchTime").asText()).startsWith("2026-04-01T09:00");
     }

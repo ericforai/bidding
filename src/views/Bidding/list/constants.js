@@ -11,7 +11,6 @@ export const SOURCE_OPTIONS = [
   { label: '内部', value: 'internal' },
   { label: '外部获取', value: 'external' },
   { label: '人工录入', value: 'manual' },
-  { label: '公共服务平台(CEB)', value: 'CEB' },
 ]
 
 export const SOURCE_PLATFORM_OPTIONS = ['中国政府采购网', '各省招标网', '第三方商机服务', '企业招标平台']

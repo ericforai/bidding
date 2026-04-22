@@ -136,7 +136,7 @@ export function createBidResultPageActions(state) {
       }
       await persistAttachment(result.data.projectId, result.data.id, confirmForm)
       await persistCompetitors(result.data.projectId, confirmForm.competitors)
-      ElMessage.success('抓取结果已确认')
+      ElMessage.success('外部结果已确认')
       confirmDialogVisible.value = false
       await queryActions.loadPage()
     } catch (error) {
@@ -161,7 +161,7 @@ export function createBidResultPageActions(state) {
     try {
       const result = await bidResultsApi.ignore(currentFetchRecord.value.id, ignoreReason.value.trim())
       if (!result?.success) throw new Error(result?.message || '忽略失败')
-      ElMessage.success('已忽略该抓取结果')
+      ElMessage.success('已忽略该外部结果')
       ignoreDialogVisible.value = false
       await queryActions.loadPage()
     } catch (error) {

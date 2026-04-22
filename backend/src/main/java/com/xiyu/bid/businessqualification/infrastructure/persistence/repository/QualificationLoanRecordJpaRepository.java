@@ -10,4 +10,6 @@ public interface QualificationLoanRecordJpaRepository extends JpaRepository<Qual
     Optional<QualificationLoanRecordEntity> findFirstByQualificationIdAndReturnedAtIsNullOrderByBorrowedAtDesc(Long qualificationId);
 
     List<QualificationLoanRecordEntity> findByQualificationIdOrderByBorrowedAtDesc(Long qualificationId);
+
+    List<QualificationLoanRecordEntity> findAllByOrderByBorrowedAtDesc();
 }

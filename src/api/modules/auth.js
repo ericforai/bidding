@@ -88,8 +88,10 @@ export const authApi = {
     })
   },
 
-  async getCurrentUser() {
-    const response = await httpClient.get('/api/auth/me')
+  async getCurrentUser(options = {}) {
+    const response = await httpClient.get('/api/auth/me', {
+      silentAuthError: Boolean(options?.silentAuthError)
+    })
     const authPayload = response?.data
     const normalizedUser = normalizeUser(authPayload)
 

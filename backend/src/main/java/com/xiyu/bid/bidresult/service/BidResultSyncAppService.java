@@ -46,14 +46,14 @@ public class BidResultSyncAppService {
         syncLogRepository.save(BidResultSyncLog.builder()
                 .operationType(BidResultSyncLog.OperationType.FETCH)
                 .source("public-mock")
-                .message("已完成公开投标信息抓取 (Mock)")
+                .message("已完成公开投标信息同步 (Mock)")
                 .affectedCount(affected)
                 .operatorId(userId)
                 .operatorName(userName)
                 .build());
         return BidResultSyncResponseDTO.builder()
                 .affectedCount(affected)
-                .message("已完成公开投标信息抓取 (Mock)")
+                .message("已完成公开投标信息同步 (Mock)")
                 .build();
     }
 
@@ -75,7 +75,7 @@ public class BidResultSyncAppService {
                     .registrationType(type == BidResultSyncLog.OperationType.SYNC
                             ? BidResultFetchResult.RegistrationType.SYNC
                             : BidResultFetchResult.RegistrationType.FETCH)
-                    .remark(type == BidResultSyncLog.OperationType.SYNC ? "内部同步结果" : "公开抓取待确认")
+                    .remark(type == BidResultSyncLog.OperationType.SYNC ? "内部同步结果" : "公开同步待确认")
                     .build();
             fetchResultRepository.save(entity);
             affected++;

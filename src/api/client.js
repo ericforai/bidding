@@ -155,7 +155,7 @@ httpClient.interceptors.response.use(
       }
     }
 
-    if (response?.status === 401 && shouldStaySilent) {
+    if (shouldStaySilent && (response?.status === 401 || response?.status === 403)) {
       return Promise.reject(error)
     }
 

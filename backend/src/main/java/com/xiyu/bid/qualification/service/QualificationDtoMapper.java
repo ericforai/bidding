@@ -130,10 +130,14 @@ public class QualificationDtoMapper {
     }
 
     public QualificationBorrowRecordDTO toBorrowRecordDto(QualificationLoan loan, BusinessQualification qualification) {
+        return toBorrowRecordDto(loan, qualification.name());
+    }
+
+    public QualificationBorrowRecordDTO toBorrowRecordDto(QualificationLoan loan, String qualificationName) {
         return QualificationBorrowRecordDTO.builder()
                 .id(loan.getId())
                 .qualificationId(loan.getQualificationId())
-                .qualificationName(qualification.name())
+                .qualificationName(qualificationName)
                 .borrower(loan.getBorrower())
                 .department(loan.getDepartment())
                 .projectId(loan.getProjectId())

@@ -98,7 +98,9 @@ public class QualificationController {
     @GetMapping("/borrow-records")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "READ", entityType = "QualificationBorrow", description = "查看资质借阅记录")
-    public ResponseEntity<ApiResponse<List<QualificationBorrowRecordDTO>>> getBorrowRecordsByQuery(@RequestParam Long qualificationId) {
+    public ResponseEntity<ApiResponse<List<QualificationBorrowRecordDTO>>> getBorrowRecordsByQuery(
+            @RequestParam(required = false) Long qualificationId
+    ) {
         return ResponseEntity.ok(ApiResponse.success("Borrow records retrieved successfully",
                 qualificationService.getBorrowRecords(qualificationId)));
     }

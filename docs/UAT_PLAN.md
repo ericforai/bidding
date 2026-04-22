@@ -56,7 +56,7 @@
 - Dashboard 可加载真实聚合数据
 - Drill-down 在 API 模式下不展示伪造明细
 - `health` 返回 UP
-- `prometheus` 按安全策略暴露正常（公开抓取或受保护返回 401/403）
+- `prometheus` 按安全策略暴露正常（公开访问或受保护返回 401/403）
 
 ## Exit Criteria
 - 所有 P0 场景通过

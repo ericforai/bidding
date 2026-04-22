@@ -95,7 +95,7 @@ export const useUserStore = defineStore('user', {
 
       try {
         const result = this.token
-          ? await authApi.getCurrentUser()
+          ? await authApi.getCurrentUser({ silentAuthError: true })
           : await authApi.refreshToken()
 
         if (!result?.success || !result?.data) {

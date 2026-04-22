@@ -102,8 +102,13 @@ export function useQualificationPage() {
   }
 
   async function loadPageData() {
-    await qualificationStore.loadQualifications()
-    await qualificationStore.loadBorrowRecords()
+    try {
+      await qualificationStore.loadQualifications()
+      await qualificationStore.loadBorrowRecords()
+    } catch (error) {
+      console.error('Failed to load qualification page data:', error)
+      ElMessage.error('资质页面数据加载失败，请稍后重试')
+    }
   }
 
   function handleSearch() {

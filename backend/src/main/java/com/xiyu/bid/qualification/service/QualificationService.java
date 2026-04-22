@@ -24,6 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -103,6 +105,19 @@ public class QualificationService {
 
     @Transactional(readOnly = true)
     public List<QualificationBorrowRecordDTO> getBorrowRecords(Long id) {
+        if (id == null) {
+            Map<Long, String> qualificationNameById = listQualificationsAppService.list(mapper.toCriteria(null, null, null, null, null, null, null))
+                    .stream()
+                    .collect(Collectors.toMap(BusinessQualification::id, BusinessQualification::name, (left, right) -> left));
+
+            return getQualificationBorrowRecordsAppService.getBorrowRecords().stream()
+                    .map(loan -> mapper.toBorrowRecordDto(
+                            loan,
+                            qualificationNameById.getOrDefault(loan.getQualificationId(), "资质文件")
+                    ))
+                    .toList();
+        }
+
         BusinessQualification qualification = findQualification(id);
         return getQualificationBorrowRecordsAppService.getBorrowRecords(id).stream()
                 .map(item -> mapper.toBorrowRecordDto(item, qualification))

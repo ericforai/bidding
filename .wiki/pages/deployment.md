@@ -159,7 +159,7 @@ docker inspect xiyu-bid-rehearsal-postgres | grep POSTGRES_PASSWORD
 - [ ] Knowledge 主链路可访问
 - [ ] 资源审批与 BAR 证书借用可访问
 - [ ] 无高优先级错误告警
-- [ ] 数据库连接池稳定、Prometheus 指标可抓取
+- [ ] 数据库连接池稳定、Prometheus 指标可采集
 
 ---
 
@@ -298,7 +298,7 @@ CONFIRM_RESTORE=YES bash scripts/release/restore-db.sh <backup-file>
 
 | 维度 | 说明 |
 |------|------|
-| 健康检查 | `GET /actuator/health`（UP/DOWN）、`GET /actuator/prometheus`（指标抓取） |
+| 健康检查 | `GET /actuator/health`（UP/DOWN）、`GET /actuator/prometheus`（指标采集） |
 | 监控指标 | Micrometer + Prometheus：JVM、HTTP 请求、连接池、业务指标 |
 | 日志 | Logback，开发 DEBUG 控制台、生产 INFO 文件 + 结构化日志，AOP 审计切面 |
 | 告警 | 健康异常、5xx 持续、连接池耗尽、内存超阈值 |

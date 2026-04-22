@@ -298,7 +298,7 @@ curl -X PUT http://localhost:8080/api/projects/1/team \
 ## 下一步扩展
 
 1. **功能扩展**
-   - 标讯自动抓取和解析
+   - 标讯外部 API 同步和解析
    - AI分析服务集成
    - 工作流引擎
    - 文档管理

@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="visible" title="确认抓取结果" width="820px" @close="$emit('close')">
+  <el-dialog :model-value="visible" title="确认外部结果" width="820px" @close="$emit('close')">
     <div v-if="fetchRecord" class="summary">
       <el-tag size="small">{{ fetchRecord.source || '公开来源' }}</el-tag>
       <span>{{ fetchRecord.projectName }}</span>

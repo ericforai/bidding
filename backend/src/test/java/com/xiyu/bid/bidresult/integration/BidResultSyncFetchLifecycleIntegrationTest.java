@@ -32,9 +32,9 @@ class BidResultSyncFetchLifecycleIntegrationTest extends AbstractBidResultIntegr
 
     @BeforeEach
     void setUpProjects() {
-        fixtures.createProject("抓取同步闭环项目-A", 84001L);
-        fixtures.createProject("抓取同步闭环项目-B", 84002L);
-        fixtures.createProject("抓取同步闭环项目-C", 84003L);
+        fixtures.createProject("外部同步闭环项目-A", 84001L);
+        fixtures.createProject("外部同步闭环项目-B", 84002L);
+        fixtures.createProject("外部同步闭环项目-C", 84003L);
     }
 
     @Test
@@ -44,7 +44,7 @@ class BidResultSyncFetchLifecycleIntegrationTest extends AbstractBidResultIntegr
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.affectedCount").value(3))
-                .andExpect(jsonPath("$.data.message").value("已完成公开投标信息抓取 (Mock)"));
+                .andExpect(jsonPath("$.data.message").value("已完成公开投标信息同步 (Mock)"));
 
         List<BidResultFetchResult> fetchResults = fetchResultRepository.findAllByOrderByFetchTimeDesc().stream()
                 .filter(result -> result.getRegistrationType() == BidResultFetchResult.RegistrationType.FETCH)
@@ -56,7 +56,7 @@ class BidResultSyncFetchLifecycleIntegrationTest extends AbstractBidResultIntegr
             assertThat(result.getAmount()).isNull();
             assertThat(result.getConfirmedAt()).isNull();
             assertThat(result.getConfirmedBy()).isNull();
-            assertThat(result.getRemark()).isEqualTo("公开抓取待确认");
+            assertThat(result.getRemark()).isEqualTo("公开同步待确认");
         });
 
         BidResultSyncLog log = syncLogRepository.findFirstByOperationTypeOrderByCreatedAtDesc(
@@ -101,7 +101,7 @@ class BidResultSyncFetchLifecycleIntegrationTest extends AbstractBidResultIntegr
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "remark": "抓取结果已人工确认",
+                                  "remark": "外部结果已人工确认",
                                   "skuCount": 9
                                 }
                                 """))
@@ -122,7 +122,7 @@ class BidResultSyncFetchLifecycleIntegrationTest extends AbstractBidResultIntegr
         BidResultFetchResult confirmedResult = fetchResultRepository.findById(confirmTarget.getId()).orElseThrow();
         assertThat(confirmedResult.getStatus()).isEqualTo(BidResultFetchResult.Status.CONFIRMED);
         assertThat(confirmedResult.getConfirmedBy()).isEqualTo(adminUser.getId());
-        assertThat(confirmedResult.getRemark()).isEqualTo("抓取结果已人工确认");
+        assertThat(confirmedResult.getRemark()).isEqualTo("外部结果已人工确认");
         assertThat(confirmedResult.getSkuCount()).isEqualTo(9);
         assertThat(confirmedResult.getAnalysisDocumentId()).isNull();
 
@@ -138,7 +138,7 @@ class BidResultSyncFetchLifecycleIntegrationTest extends AbstractBidResultIntegr
                 confirmedResult.getProjectId(),
                 confirmedResult.getId(),
                 "BID_RESULT_ANALYSIS",
-                "抓取后分析报告.pdf"
+                "同步后分析报告.pdf"
         );
 
         BidResultFetchResult uploadedResult = fetchResultRepository.findById(confirmTarget.getId()).orElseThrow();

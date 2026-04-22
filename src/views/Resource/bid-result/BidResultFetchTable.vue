@@ -3,8 +3,8 @@
     <template #header>
       <div class="header">
         <div>
-          <div class="title">待确认抓取结果</div>
-          <div class="subtitle">公开信息抓取后，需要人工补录确认。</div>
+          <div class="title">待确认外部结果</div>
+          <div class="subtitle">公开信息同步后，需要人工补录确认。</div>
         </div>
         <el-button type="primary" size="small" :disabled="selectedIds.length === 0" @click="$emit('confirm-batch')">
           批量确认
@@ -26,7 +26,7 @@
       <el-table-column label="金额" width="120">
         <template #default="{ row }">{{ formatAmount(row.amount) }}</template>
       </el-table-column>
-      <el-table-column label="抓取时间" width="170">
+      <el-table-column label="同步时间" width="170">
         <template #default="{ row }">{{ formatDateTime(row.fetchTime) }}</template>
       </el-table-column>
       <el-table-column label="操作" width="190" fixed="right">

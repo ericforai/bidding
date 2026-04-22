@@ -27,7 +27,7 @@ class TenderRepositorySearchTest {
     void searchTenders_ShouldFilterByRealDimensions() {
         Tender matchingTender = Tender.builder()
                 .title("华东数据中心 GPU 算力平台采购项目")
-                .source("中国招标投标公共服务平台")
+                .source("外部标讯聚合平台")
                 .budget(new BigDecimal("5000000.00"))
                 .deadline(LocalDateTime.of(2026, 5, 8, 18, 0))
                 .status(Tender.Status.PENDING)
@@ -66,7 +66,7 @@ class TenderRepositorySearchTest {
         TenderSearchCriteria criteria = TenderSearchCriteria.builder()
                 .keyword("GPU")
                 .status(Tender.Status.PENDING)
-                .source("中国招标投标公共服务平台")
+                .source("外部标讯聚合平台")
                 .region("上海")
                 .industry("数据中心")
                 .purchaserName("西域采购")

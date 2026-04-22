@@ -136,6 +136,36 @@ class QualificationServiceTest {
         assertThat(records.get(0).getQualificationName()).isEqualTo("高新技术企业证书");
     }
 
+    @Test
+    @DisplayName("借阅记录 - 无 qualificationId 时返回全量兼容 DTO")
+    void getBorrowRecordsWithoutId_ShouldReturnAllCompatibilityPayload() {
+        when(listQualificationsAppService.list(any())).thenReturn(List.of(
+                sampleQualification(1L, LocalDate.now().plusDays(60), LoanStatus.BORROWED)
+        ));
+        when(getQualificationBorrowRecordsAppService.getBorrowRecords()).thenReturn(List.of(
+                new QualificationLoan(
+                        10L,
+                        1L,
+                        "小李",
+                        "商务部",
+                        null,
+                        "项目资审",
+                        null,
+                        LocalDateTime.now().minusDays(1),
+                        LocalDate.now().plusDays(6),
+                        null,
+                        null,
+                        LoanStatus.BORROWED
+                )
+        ));
+
+        var records = qualificationService.getBorrowRecords(null);
+
+        assertThat(records).hasSize(1);
+        assertThat(records.get(0).getQualificationName()).isEqualTo("高新技术企业证书");
+        assertThat(records.get(0).getBorrower()).isEqualTo("小李");
+    }
+
     private BusinessQualification sampleQualification(Long id, LocalDate expiryDate, LoanStatus loanStatus) {
         return BusinessQualification.create(
                 id,

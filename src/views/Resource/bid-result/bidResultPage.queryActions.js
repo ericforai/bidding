@@ -29,7 +29,7 @@ export function createBidResultPageQueryActions(context) {
 
   const loadFetchResults = async () => {
     const result = await bidResultsApi.getFetchResults()
-    if (!result?.success) throw new Error(result?.message || '加载抓取结果失败')
+    if (!result?.success) throw new Error(result?.message || '加载外部结果失败')
     fetchResults.value = result.data
   }
 
@@ -73,11 +73,11 @@ export function createBidResultPageQueryActions(context) {
     fetching.value = true
     try {
       const result = await bidResultsApi.fetch()
-      if (!result?.success) throw new Error(result?.message || '抓取失败')
-      ElMessage.success(result?.data?.message || '抓取完成')
+      if (!result?.success) throw new Error(result?.message || '同步失败')
+      ElMessage.success(result?.data?.message || '同步完成')
       await loadPage()
     } catch (error) {
-      ElMessage.error(error?.message || '抓取失败')
+      ElMessage.error(error?.message || '同步失败')
     } finally {
       fetching.value = false
     }

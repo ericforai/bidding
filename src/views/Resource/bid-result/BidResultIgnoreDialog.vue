@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="visible" title="忽略抓取结果" width="520px" @close="$emit('close')">
+  <el-dialog :model-value="visible" title="忽略外部结果" width="520px" @close="$emit('close')">
     <p class="hint">请填写忽略原因，后续复盘会保留这条人工决策。</p>
     <el-input
       :model-value="reason"

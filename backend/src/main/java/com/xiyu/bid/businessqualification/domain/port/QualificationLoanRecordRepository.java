@@ -13,4 +13,6 @@ public interface QualificationLoanRecordRepository {
     Optional<QualificationLoan> findActiveByQualificationId(Long qualificationId);
 
     List<QualificationLoan> findByQualificationId(Long qualificationId);
+
+    List<QualificationLoan> findAllOrderByBorrowedAtDesc();
 }
