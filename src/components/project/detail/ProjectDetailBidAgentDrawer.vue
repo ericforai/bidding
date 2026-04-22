@@ -62,7 +62,7 @@
       <div class="drawer-footer">
         <el-button :disabled="!canReview" :loading="agent.reviewing.value" @click="agent.createReview()">发起审查</el-button>
         <el-button type="primary" :disabled="!canApply" :loading="agent.applying.value" @click="agent.applyBidAgentResult()">写入文档编辑器</el-button>
-        <el-button v-if="agent.applyResult.value" type="success" plain @click="agent.goToEditor()">打开文档编辑器</el-button>
+        <el-button v-if="agent.applyResult.value" type="success" plain tag="a" :href="editorHref" @click="openEditor">打开文档编辑器</el-button>
       </div>
     </div>
   </el-drawer>
@@ -133,6 +133,34 @@ const applyResultText = computed(() => {
   if (result.structureId) return `已写入章节树 #${result.structureId}`
   return '后端已确认写入结果'
 })
+
+const editorHref = computed(() => {
+  const target = agent.applyResult.value || {}
+  const targetProjectId = target.projectId ?? agent.projectId?.value ?? detail.project?.value?.id ?? ''
+  const query = new URLSearchParams()
+  if (agent.currentRunId.value) query.set('bidAgentRunId', String(agent.currentRunId.value))
+  if (target.documentId) query.set('documentId', String(target.documentId))
+  if (target.structureId) query.set('structureId', String(target.structureId))
+  if (target.jobId) query.set('jobId', String(target.jobId))
+
+  const queryText = query.toString()
+  return `/document/editor/${targetProjectId}${queryText ? `?${queryText}` : ''}`
+})
+
+function openEditor(event) {
+  event?.preventDefault?.()
+  const before = window.location.href
+  const navigation = agent.goToEditor(agent.applyResult.value)
+
+  if (!navigation || typeof navigation.finally !== 'function') return
+  Promise.resolve(navigation).finally(() => {
+    window.setTimeout(() => {
+      if (window.location.href === before && editorHref.value) {
+        window.location.assign(editorHref.value)
+      }
+    }, 100)
+  })
+}
 
 function formatWarnings(items = []) {
   return items.map((item) => {
