@@ -6,8 +6,26 @@
 
 ROOT_DIR="${ROOT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 BACKEND_DIR="${BACKEND_DIR:-$ROOT_DIR/backend}"
-REPORT_DIR="${REPORT_DIR:-$ROOT_DIR/docs/reports}"
-STATE_DIR="${STATE_DIR:-$ROOT_DIR/.rehearsal}"
+resolve_path() {
+  local path="$1"
+  if [[ "$path" = /* ]]; then
+    printf '%s\n' "$path"
+  else
+    printf '%s\n' "$ROOT_DIR/$path"
+  fi
+}
+
+validate_port() {
+  local name="$1"
+  local value="$2"
+  if [[ ! "$value" =~ ^[0-9]+$ ]] || (( value < 1 || value > 65535 )); then
+    printf 'Invalid %s: %s. Must be an integer between 1 and 65535.\n' "$name" "$value" >&2
+    exit 1
+  fi
+}
+
+REPORT_DIR="$(resolve_path "${REPORT_DIR:-$ROOT_DIR/docs/reports}")"
+STATE_DIR="$(resolve_path "${STATE_DIR:-$ROOT_DIR/.rehearsal}")"
 
 DB_ENGINE="${DB_ENGINE:-postgres}"
 POSTGRES_CONTAINER_NAME="${POSTGRES_CONTAINER_NAME:-xiyu-bid-rehearsal-postgres}"
@@ -34,6 +52,7 @@ ADMIN_PASSWORD="${ADMIN_PASSWORD:-$UAT_TEST_PASSWORD}"
 
 UAT_API_BASE_URL="${UAT_API_BASE_URL:-http://127.0.0.1:${BACKEND_PORT}}"
 UAT_WEB_BASE_URL="${UAT_WEB_BASE_URL:-http://127.0.0.1:${FRONTEND_PORT}}"
+PLAYWRIGHT_API_BASE_URL="${PLAYWRIGHT_API_BASE_URL:-$UAT_API_BASE_URL}"
 
 case "$DB_ENGINE" in
   postgres)
@@ -55,10 +74,17 @@ esac
 SPRING_PROFILES_ACTIVE="${SPRING_PROFILES_ACTIVE:-$DEFAULT_SPRING_PROFILES_ACTIVE}"
 DB_URL="${DB_URL:-$DEFAULT_DB_URL}"
 
+validate_port "POSTGRES_PORT" "$POSTGRES_PORT"
+validate_port "MYSQL_PORT" "$MYSQL_PORT"
+validate_port "REDIS_PORT" "$REDIS_PORT"
+validate_port "BACKEND_PORT" "$BACKEND_PORT"
+validate_port "FRONTEND_PORT" "$FRONTEND_PORT"
+validate_port "DB_PORT" "$DB_PORT"
+
 export ROOT_DIR BACKEND_DIR REPORT_DIR STATE_DIR
 export DB_ENGINE POSTGRES_CONTAINER_NAME MYSQL_CONTAINER_NAME REDIS_CONTAINER_NAME POSTGRES_PORT MYSQL_PORT REDIS_PORT BACKEND_PORT FRONTEND_PORT
 export DB_HOST DB_PORT DB_NAME DB_USER DB_USERNAME DB_PASSWORD MYSQL_ROOT_PASSWORD DB_URL JWT_SECRET SPRING_PROFILES_ACTIVE REDIS_HOST
 export CORS_ALLOWED_ORIGINS
-export PLATFORM_ENCRYPTION_KEY UAT_TEST_PASSWORD ADMIN_PASSWORD UAT_API_BASE_URL UAT_WEB_BASE_URL
+export PLATFORM_ENCRYPTION_KEY UAT_TEST_PASSWORD ADMIN_PASSWORD UAT_API_BASE_URL UAT_WEB_BASE_URL PLAYWRIGHT_API_BASE_URL
 
 mkdir -p "$REPORT_DIR" "$STATE_DIR"

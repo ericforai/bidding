@@ -63,6 +63,7 @@ case "$DB_ENGINE" in
         --port "$DB_PORT" \
         --user "$DB_USER" \
         --default-character-set=utf8mb4 \
+        --no-tablespaces \
         --single-transaction \
         --hex-blob \
         --routines \
@@ -76,6 +77,7 @@ case "$DB_ENGINE" in
         --port 3306 \
         --user "$DB_USER" \
         --default-character-set=utf8mb4 \
+        --no-tablespaces \
         --single-transaction \
         --hex-blob \
         --routines \

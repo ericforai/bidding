@@ -11,6 +11,9 @@ BACKEND_DIR="$ROOT_DIR/backend"
 printf '==> Running release preflight\n'
 bash "$ROOT_DIR/scripts/release/preflight.sh"
 
+printf '\n==> Running rehearsal env contract checks\n'
+bash "$ROOT_DIR/scripts/test/release-rehearsal-contract.sh"
+
 printf '\n==> Building frontend (mock mode)\n'
 cd "$ROOT_DIR"
 npm run build
