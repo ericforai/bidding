@@ -7,6 +7,7 @@
     "dev": "vite",
     "dev:api": "vite --mode api",
     "dev:all": "bash ./start.sh",
+    "dev:default": "bash ./scripts/dev-default.sh",
     "sync:version": "node scripts/sync-version.mjs",
     "check:version-sync": "node scripts/check-version-sync.mjs",
     "check:front-data-boundaries": "node scripts/check-front-data-boundaries.mjs",

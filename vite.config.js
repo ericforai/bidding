@@ -43,7 +43,12 @@ export default defineConfig({
   },
   server: {
     port: 1314,
+    strictPort: true,
     open: true
+  },
+  preview: {
+    port: 1314,
+    strictPort: true
   },
   test: {
     globals: true,
