@@ -188,6 +188,6 @@ describe('CustomerOpportunityCenter', () => {
     const wrapper = mountPage()
 
     expect(wrapper.find('.btn-refresh').exists()).toBe(true)
-    expect(wrapper.find('.btn-refresh').attributes('data-loading')).toBe('true')
+    expect(wrapper.find('.scanning-overlay').exists()).toBe(true)
   })
 })

@@ -15,7 +15,7 @@ vi.mock('@/api/client', () => ({
 }))
 
 import httpClient from '@/api/client'
-import { tendersApi } from './tenders.js'
+import { crawlerApi, tendersApi } from './tenders.js'
 
 describe('tendersApi', () => {
   beforeEach(() => {
@@ -79,5 +79,15 @@ describe('tendersApi', () => {
     await tendersApi.create(payload)
 
     expect(httpClient.post).toHaveBeenCalledWith('/api/tenders', payload)
+  })
+
+  it('crawlerApi.trigger(): maps pageSize to the backend rows parameter', async () => {
+    httpClient.post.mockResolvedValue({ success: true, savedCount: 1 })
+
+    await crawlerApi.trigger({ keyword: '劳保', page: 2, pageSize: 1 })
+
+    expect(httpClient.post).toHaveBeenCalledWith('/api/admin/crawler/trigger', null, {
+      params: { keyword: '劳保', page: 2, rows: 1 }
+    })
   })
 })

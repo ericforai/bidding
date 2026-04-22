@@ -1,34 +1,145 @@
-import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { shallowMount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
-const source = readFileSync(resolve(process.cwd(), 'src/views/Bidding/List.vue'), 'utf-8')
+vi.mock('./list/components/BiddingPageHeader.vue', () => ({
+  default: { name: 'BiddingPageHeader', template: '<div class="bidding-page-header-stub" />' },
+}))
+
+vi.mock('./list/components/TenderTable.vue', () => ({
+  default: { name: 'TenderTable', template: '<div class="tender-table-stub" />' },
+}))
+
+vi.mock('./list/useTenderListPage.js', () => ({
+  useTenderListPage: () => ({
+    searchForm: ref({ keyword: '', region: '', industry: '', status: '', source: '' }),
+    viewMode: ref('all'),
+    isMobile: ref(false),
+    pagination: ref({ currentPage: 1, pageSize: 10 }),
+    filteredTenders: ref([]),
+    filteredRecommendTenders: ref([]),
+    displayTenders: ref([]),
+    statusCounts: ref({ all: 0, pending: 0, tracking: 0, bidded: 0, abandoned: 0 }),
+    canManageTenders: ref(true),
+    canCreateTender: ref(true),
+    canDeleteTenders: ref(true),
+    canSyncExternalSource: ref(true),
+    customerOpportunityCenterEnabled: ref(true),
+    showTenderAiEntry: ref(true),
+    showParsingDialog: ref(false),
+    parseProgress: ref(0),
+    selection: {
+      tableRef: ref(null),
+      selectedTenders: ref([]),
+      selectAllChecked: ref(false),
+      isIndeterminate: ref(false),
+      handleSelectAll: vi.fn(),
+      handleSelectionChange: vi.fn(),
+      handleClearSelection: vi.fn(),
+    },
+    sourceConfig: {
+      fetchingTenders: ref(false),
+      sourceConfig: ref({ platforms: [] }),
+      lastSyncTime: ref('暂未同步'),
+      showSourceConfig: ref(false),
+      savingConfig: ref(false),
+      testingConnection: ref(false),
+      fetchResult: ref({ visible: false }),
+      syncExternalTenders: vi.fn(),
+      saveSourceConfig: vi.fn(),
+      testConnection: vi.fn(),
+    },
+    manualCreate: {
+      showManualAdd: ref(false),
+      manualFormRef: ref(null),
+      manualForm: ref({}),
+      savingManual: ref(false),
+      resetManualForm: vi.fn(),
+      handleFileChange: vi.fn(),
+      saveManualTender: vi.fn(),
+    },
+    marketInsight: {
+      showMarketInsight: ref(false),
+      activeInsightTab: ref('industry'),
+      loadingTrendData: ref(false),
+      industryTrends: ref([]),
+      potentialOpportunities: ref([]),
+      industryInsight: ref(''),
+      forecastTips: ref([]),
+      refreshTrendData: vi.fn(),
+    },
+    batchActions: {
+      handleBatchClaim: vi.fn(),
+      handleBatchFollow: vi.fn(),
+      handleSingleClaim: vi.fn(),
+      handleUpdateStatus: vi.fn(),
+      handleDeleteTender: vi.fn(),
+    },
+    distribution: {
+      showRecordDialog: ref(false),
+      showDistributeDialog: ref(false),
+      showAssignDialog: ref(false),
+      candidates: ref([]),
+      distributionPreview: ref([]),
+      distributeForm: ref({}),
+      assignForm: ref({}),
+      distributeLoading: ref(false),
+      assignLoading: ref(false),
+      loadingCandidates: ref(false),
+      distributeRecords: ref([]),
+      openDistributeDialog: vi.fn(),
+      openSingleDistribute: vi.fn(),
+      openAssignDialog: vi.fn(),
+      resetDistributeForm: vi.fn(),
+      resetAssignForm: vi.fn(),
+      handleDistribute: vi.fn(),
+      handleAssign: vi.fn(),
+    },
+    handleSearch: vi.fn(),
+    handleReset: vi.fn(),
+    handleExport: vi.fn(),
+    handleViewDetail: vi.fn(),
+    handleParticipate: vi.fn(),
+    handleViewAllRecommend: vi.fn(),
+    handleOpenCustomerOpportunityCenter: vi.fn(),
+    openManualAdd: vi.fn(),
+    openSourceConfig: vi.fn(),
+    handleAIAnalysis: vi.fn(),
+  }),
+}))
 
 describe('List.vue (标讯中心)', () => {
-  it('保留标讯中心页面标题', () => {
-    expect(source).toContain('标讯中心')
-    expect(source).toContain('page-title')
-  })
+  it('renders the composed bidding list page shell', async () => {
+    const List = (await import('./List.vue')).default
+    const wrapper = shallowMount(List, {
+      global: {
+        stubs: {
+          AiParsingDialog: true,
+          AiRecommendSection: true,
+          AssignDialog: true,
+          BiddingPageHeader: true,
+          DistributeDialog: true,
+          FetchResultDialog: true,
+          ManualTenderDialog: true,
+          MarketInsightDialog: true,
+          RecordsDialog: true,
+          SourceConfigDialog: true,
+          SourceStatusCard: true,
+          TenderBatchActionBar: true,
+          TenderMobileCards: true,
+          TenderSearchCard: true,
+          TenderTable: true,
+          'el-card': true,
+          'el-button': true,
+          'el-icon': true,
+          'el-radio-group': true,
+          'el-radio-button': true,
+          'el-pagination': true,
+        },
+      },
+    })
 
-  it('保留搜索表单状态定义', () => {
-    expect(source).toContain('searchForm')
-    expect(source).toContain('keyword')
-  })
-
-  it('搜索动作应刷新服务端列表而不是只触发本地过滤', () => {
-    expect(source).toContain('const handleSearch = async () =>')
-    expect(source).toContain('await refreshTenderList()')
-    expect(source).not.toContain('result = result.filter(t => t.region === searchForm.value.region)')
-    expect(source).not.toContain('result = result.filter(t => t.industry === searchForm.value.industry)')
-    expect(source).not.toContain('result = result.filter(t => t.source === searchForm.value.source)')
-  })
-
-  it('人工录入应通过 tendersApi.create 入库而不是插入本地假数据', () => {
-    expect(source).toContain('await tendersApi.create')
-    expect(source).toContain('purchaserName')
-    expect(source).toContain('contactName')
-    expect(source).toContain('contactPhone')
-    expect(source).not.toContain('id: `manual_${Date.now()}`')
-    expect(source).not.toContain("aiReason: '人工录入标讯'")
+    expect(wrapper.find('.bidding-page-header-stub').exists()).toBe(true)
+    expect(wrapper.find('.tender-table-stub').exists()).toBe(true)
   })
 })

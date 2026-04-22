@@ -30,6 +30,11 @@ function isNumericId(id) {
   return /^\d+$/.test(String(id))
 }
 
+function normalizePositiveInteger(value, fallback) {
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue) && numericValue > 0 ? Math.floor(numericValue) : fallback
+}
+
 export const tendersApi = {
   async getList(params = {}) {
     const response = await httpClient.get('/api/tenders', { params })
@@ -102,9 +107,13 @@ export const tendersApi = {
 export default tendersApi
 
 export const crawlerApi = {
-  async trigger({ keyword = '', page = 1, pageSize = 20 } = {}) {
+  async trigger({ keyword = '', page = 1, pageSize, rows } = {}) {
     return httpClient.post('/api/admin/crawler/trigger', null, {
-      params: { keyword, page, pageSize }
+      params: {
+        keyword,
+        page: normalizePositiveInteger(page, 1),
+        rows: normalizePositiveInteger(rows ?? pageSize, 20)
+      }
     })
   }
 }

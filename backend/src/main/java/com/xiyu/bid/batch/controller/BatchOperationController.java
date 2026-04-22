@@ -57,18 +57,19 @@ public class BatchOperationController {
     @PostMapping("/tenders/claim")
     @PreAuthorize(ADMIN_MANAGER_EXPR)
     public ResponseEntity<ApiResponse<BatchOperationResponse>> batchClaimTenders(
-            @Valid @RequestBody BatchClaimRequest request) {
-
-        log.info("POST /api/batch/tenders/claim - Claiming {} tenders for user: {}",
-                request.getItemIds().size(), request.getUserId());
-
+            @Valid @RequestBody BatchClaimRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
         if (request.getItemIds() == null || request.getItemIds().isEmpty()) {
             return ResponseEntity.badRequest().body(
                     ApiResponse.error(400, "Item IDs list cannot be empty"));
         }
 
+        User currentUser = getCurrentUser(userDetails);
+        log.info("POST /api/batch/tenders/claim - Claiming {} tenders by user: {}",
+                request.getItemIds().size(), currentUser.getId());
+
         BatchOperationResponse response = batchOperationService.batchClaimTenders(
-                request.getItemIds(), request.getUserId());
+                request.getItemIds(), currentUser.getId());
 
         String message = buildSuccessMessage("claimed", "tender", response.getSuccessCount());
         return ResponseEntity.ok(ApiResponse.success(message, response));
