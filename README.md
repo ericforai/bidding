@@ -77,7 +77,7 @@
 - Java 21
 - Spring Security + JWT
 - Spring Data JPA
-- PostgreSQL
+- MySQL 8.0
 - Redis
 - Flyway
 
@@ -89,7 +89,7 @@
 - npm
 - Java 21
 - Maven 3.9+
-- PostgreSQL
+- MySQL 8.0
 - Redis
 
 ### 推荐启动方式
@@ -171,7 +171,7 @@ npm run test:e2e
 ```bash
 cd backend
 mvn test -Dtest=<相关测试类>
-mvn test -Dtest=FlywayBaselineContextTest,FlywayPostgresContainerTest
+mvn test -Dtest=FlywayBaselineContextTest,FlywayMysqlContainerTest
 mvn test -Dtest=ArchitectureTest
 mvn test
 ```

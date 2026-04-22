@@ -7,7 +7,7 @@
 - Java 21
 - Spring Boot 3.2.0
 - Spring Data JPA
-- PostgreSQL / H2
+- MySQL 8.0 / H2
 - Lombok
 - JUnit 5
 - Mockito

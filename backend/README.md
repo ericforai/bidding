@@ -10,7 +10,7 @@
 - Java 21
 - Spring Security + JWT认证
 - Spring Data JPA
-- PostgreSQL
+- MySQL 8.0
 - Redis
 - Lombok
 
@@ -73,7 +73,7 @@ mvn -Pjava-quality,java-quality-spotbugs,quality-strict -DskipTests -Djacoco.ski
 mvn test -Dtest=FPJavaArchitectureTest,MaintainabilityArchitectureTest,ArchitectureTest
 
 # Flyway / 资源链路门禁
-mvn test -Dtest=FlywayBaselineContextTest,FlywayPostgresContainerTest,ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest
+mvn test -Dtest=FlywayBaselineContextTest,FlywayMysqlContainerTest,ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest
 ```
 
 ## 环境变量

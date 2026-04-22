@@ -105,17 +105,15 @@ Go / No-Go 口径：
 
 ## 数据库部署路径
 
-默认生产数据库仍是 PostgreSQL，后端 profile 使用 `prod`，Flyway 迁移路径为 `classpath:db/migration`。
-
-客户 MySQL 8.0 仅支持新库部署，不做 PostgreSQL 历史数据迁移。启用时必须设置：
+生产数据库统一为 MySQL 8.0，后端 profile 使用 `prod,mysql`，Flyway 迁移路径为 `classpath:db/migration-mysql`。启用时必须设置：
 
 - `DB_ENGINE=mysql`
 - `SPRING_PROFILES_ACTIVE=prod,mysql`
 - `DB_HOST/DB_PORT/DB_NAME/DB_USERNAME/DB_PASSWORD`
-- 发布脚本也兼容历史变量 `DB_USER`；未设置时会从 `DB_USERNAME` 读取
+- 发布脚本兼容历史变量 `DB_USER`；未设置时会从 `DB_USERNAME` 读取
 - 可选 `DB_URL`，用于覆盖完整 JDBC URL
 
-MySQL profile 会使用 `classpath:db/migration-mysql`，当前 baseline 为 `B73__full_schema_baseline.sql`。从 `V74` 开始，业务迁移需要 PostgreSQL 与 MySQL 双路径同步提交。
+当前 baseline 为 `B73__full_schema_baseline.sql`。历史 PostgreSQL 路径仅保留兼容，不再作为默认发布口径。
 
 本地发布演练可用：
 
@@ -170,6 +168,6 @@ DB_ENGINE=mysql bash scripts/release/rehearse-release.sh
 
 - 生成后端环境变量文件
 - 初始化服务器基础设施
-- 配置 Nginx、systemd、PostgreSQL/MySQL、Redis
+- 配置 Nginx、systemd、MySQL、Redis
 
 这些属于一次性环境建设，应在上线前完成。

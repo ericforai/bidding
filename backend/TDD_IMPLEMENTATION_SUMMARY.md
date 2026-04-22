@@ -190,7 +190,7 @@
 - Spring Validation
 
 ### 数据库
-- PostgreSQL (生产环境)
+- MySQL 8.0 (生产环境)
 - H2 (测试环境)
 
 ### 工具库

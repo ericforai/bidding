@@ -41,7 +41,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev \
 
 > 后端必需环境变量（未设置会导致启动失败）：
 > - `JWT_SECRET`：JWT 签名密钥（至少 32 字节），`backend/start.sh` 已提供本地默认值
-> - `DB_PASSWORD`：PostgreSQL 密码，与容器 `xiyu-bid-rehearsal-postgres` 一致（默认 `XiyuDB!2026`）
+> - `DB_PASSWORD`：MySQL 8.0 密码（默认 `XiyuDB!2026`）
 > - `CORS_ALLOWED_ORIGINS`：允许的前端源地址，默认包含 `http://localhost:1314` 与 `http://127.0.0.1:1314`
 >
 > 生产部署必须通过真实环境注入这些值，**不得依赖上述默认值**。

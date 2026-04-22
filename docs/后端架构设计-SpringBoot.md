@@ -10,7 +10,7 @@
 核心框架:      Spring Boot 3.2
 JDK版本:       Java 17 (LTS)
 持久层:        MyBatis-Plus 3.5
-数据库:        PostgreSQL 15
+数据库:        MySQL 8.0
 缓存:          Redis 7
 搜索:          Elasticsearch 8
 消息队列:      RabbitMQ / RocketMQ
@@ -197,10 +197,10 @@ bidding-backend/
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
 
-        <!-- PostgreSQL -->
+        <!-- MySQL -->
         <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
         </dependency>
 
         <!-- MyBatis-Plus -->
@@ -1216,8 +1216,8 @@ spring:
 
   # 数据源配置
   datasource:
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/bidding_db
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/bidding_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: bidding_user
     password: ${DB_PASSWORD:bidding_pass}
     type: com.alibaba.druid.pool.DruidDataSource
@@ -1373,10 +1373,10 @@ app:
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
 
-        <!-- PostgreSQL -->
+        <!-- MySQL -->
         <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
         </dependency>
 
         <!-- MyBatis-Plus -->

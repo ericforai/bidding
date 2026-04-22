@@ -129,7 +129,7 @@
 - Spring Boot Starter Validation
 - Spring Boot Starter Security
 - Lombok
-- PostgreSQL Driver
+- MySQL Driver
 - H2 Database (测试)
 
 ## 文档
