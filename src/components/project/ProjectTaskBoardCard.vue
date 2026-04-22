@@ -30,7 +30,7 @@
 
     <TaskBoard
       :tasks="tasks"
-      :project-id="projectId"
+      :project-id="normalizedProjectId"
       :can-generate="!tasks || tasks.length === 0"
       @task-click="$emit('task-click', $event)"
       @status-change="$emit('status-change', $event)"
@@ -43,6 +43,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { List, Plus } from '@element-plus/icons-vue'
 import TaskBoard from '@/components/common/TaskBoard.vue'
 
@@ -57,7 +58,7 @@ defineEmits([
   'submit-to-document',
 ])
 
-defineProps({
+const props = defineProps({
   tasks: {
     type: Array,
     default: () => [],
@@ -75,6 +76,8 @@ defineProps({
     default: false,
   },
 })
+
+const normalizedProjectId = computed(() => String(props.projectId ?? ''))
 </script>
 
 <style scoped>

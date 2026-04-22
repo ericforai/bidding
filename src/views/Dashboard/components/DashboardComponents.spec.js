@@ -1,18 +1,28 @@
-import { mount, shallowMount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
-import { h } from 'vue'
-import ElementPlus from 'element-plus'
-import WelcomeBanner from './WelcomeBanner.vue'
-import MetricCards from './MetricCards.vue'
-import ProjectList from './ProjectList.vue'
-import PriorityTodos from './PriorityTodos.vue'
-import SupportRequestDialog from './SupportRequestDialog.vue'
-import WorkCalendar from './WorkCalendar.vue'
+import { mount } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 
-const DummyIcon = { render: () => h('span', 'icon') }
-
-const stubs = {
+const stubs = vi.hoisted(() => ({
+  ElButton: { template: '<button><slot /></button>' },
+  ElCalendar: {
+    props: ['modelValue'],
+    template: '<div class="el-calendar"><slot name="date-cell" :data="{ date: modelValue || new Date(), day: \'2026-04-22\', viewType: \'month\' }" /></div>',
+  },
+  ElDatePicker: { template: '<input @input="$emit(\'update:modelValue\', $event.target.value)">' },
+  ElDialog: { props: ['modelValue'], template: '<section><slot /><slot name="footer" /></section>' },
+  ElForm: { template: '<form><slot /></form>' },
+  ElFormItem: { template: '<div><slot /></div>' },
+  ElIcon: { template: '<span><slot /></span>' },
+  ElInput: { template: '<textarea @input="$emit(\'update:modelValue\', $event.target.value)"></textarea>' },
+  ElLink: { template: '<button><slot /></button>' },
+  ElOption: { template: '<option><slot /></option>' },
+  ElSelect: { template: '<select @change="$emit(\'update:modelValue\', $event.target.value)"><slot /></select>' },
+  ElTag: { template: '<span><slot /></span>' },
+  ElCheckbox: { template: '<input type="checkbox" @change="$emit(\'change\', $event.target.checked)">' },
   'el-button': { template: '<button><slot /></button>' },
+  'el-calendar': {
+    props: ['modelValue'],
+    template: '<div class="el-calendar"><slot name="date-cell" :data="{ date: modelValue || new Date(), day: \'2026-04-22\', viewType: \'month\' }" /></div>',
+  },
   'el-link': { template: '<button><slot /></button>' },
   'el-tag': { template: '<span><slot /></span>' },
   'el-icon': { template: '<span><slot /></span>' },
@@ -24,23 +34,56 @@ const stubs = {
   'el-option': { template: '<option><slot /></option>' },
   'el-date-picker': { template: '<input @input="$emit(\'update:modelValue\', $event.target.value)">' },
   'el-input': { template: '<textarea @input="$emit(\'update:modelValue\', $event.target.value)"></textarea>' },
-}
+}))
 
-const mountWithStubs = (component, options = {}) => shallowMount(component, {
-  ...options,
-  global: {
-    stubs,
-    directives: {
-      loading: {},
-    },
-    ...(options.global || {}),
-  },
+vi.mock('vue', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    resolveComponent: (name) => stubs[name] || actual.resolveComponent(name),
+    resolveDirective: (name) => (name === 'loading' ? {} : actual.resolveDirective(name)),
+  }
 })
+
+import { h, nextTick } from 'vue'
+import WelcomeBanner from './WelcomeBanner.vue'
+import MetricCards from './MetricCards.vue'
+import ProjectList from './ProjectList.vue'
+import PriorityTodos from './PriorityTodos.vue'
+import SupportRequestDialog from './SupportRequestDialog.vue'
+import WorkCalendar from './WorkCalendar.vue'
+
+const DummyIcon = { render: () => h('span', 'icon') }
+
+const mountWithStubs = async (component, options = {}) => {
+  const global = options.global || {}
+  const wrapper = mount(component, {
+    ...options,
+    global: {
+      ...global,
+      components: {
+        ...stubs,
+        ...(global.components || {}),
+      },
+      stubs: {
+        ...stubs,
+        ...(global.stubs || {}),
+      },
+      directives: {
+        loading: {},
+        ...(global.directives || {}),
+      },
+    },
+  })
+  wrapper.vm.$forceUpdate()
+  await nextTick()
+  return wrapper
+}
 
 describe('dashboard presentation components', () => {
   it('WelcomeBanner renders actions and emits selected action', async () => {
     const action = { key: 'report', label: '业绩报表', type: 'primary', icon: DummyIcon }
-    const wrapper = mountWithStubs(WelcomeBanner, {
+    const wrapper = await mountWithStubs(WelcomeBanner, {
       props: { role: 'admin', title: '上午好', subtitle: '今天有待办', actions: [action] },
     })
 
@@ -52,7 +95,7 @@ describe('dashboard presentation components', () => {
 
   it('MetricCards emits the clicked metric without owning navigation', async () => {
     const metric = { key: 'activeProjects', label: '进行中项目', value: '3个', icon: DummyIcon, variant: 'blue' }
-    const wrapper = mountWithStubs(MetricCards, { props: { metrics: [metric] } })
+    const wrapper = await mountWithStubs(MetricCards, { props: { metrics: [metric] } })
 
     await wrapper.find('.metric-card').trigger('click')
     await wrapper.find('.metric-card').trigger('keydown.enter')
@@ -63,7 +106,7 @@ describe('dashboard presentation components', () => {
   })
 
   it('MetricCards shows actionable empty and error states', async () => {
-    const wrapper = mountWithStubs(MetricCards, {
+    const wrapper = await mountWithStubs(MetricCards, {
       props: { metrics: [], loading: false },
       global: { stubs: { ...stubs, EmptyState: false } },
     })
@@ -78,7 +121,7 @@ describe('dashboard presentation components', () => {
 
   it('ProjectList emits view-all and project-click events', async () => {
     const project = { id: 'P001', name: '智慧办公平台', status: '编制中', progress: 45, deadline: '03-05', manager: '张经理' }
-    const wrapper = mountWithStubs(ProjectList, { props: { projects: [project] } })
+    const wrapper = await mountWithStubs(ProjectList, { props: { projects: [project] } })
 
     await wrapper.find('.project-card').trigger('click')
     await wrapper.find('.project-card').trigger('keydown.space')
@@ -91,7 +134,7 @@ describe('dashboard presentation components', () => {
 
   it('PriorityTodos keeps completion as an emitted parent concern', async () => {
     const todo = { id: 1, title: '补充业绩材料', priority: 'high', deadline: '今天', done: false, type: 'task' }
-    const wrapper = mountWithStubs(PriorityTodos, { props: { todos: [todo] } })
+    const wrapper = await mountWithStubs(PriorityTodos, { props: { todos: [todo] } })
 
     await wrapper.find('.todo-checkbox').trigger('click')
 
@@ -99,7 +142,7 @@ describe('dashboard presentation components', () => {
   })
 
   it('PriorityTodos shows a warm empty state and retryable error state', async () => {
-    const wrapper = mountWithStubs(PriorityTodos, {
+    const wrapper = await mountWithStubs(PriorityTodos, {
       props: { todos: [] },
       global: { stubs: { ...stubs, EmptyState: false } },
     })
@@ -114,7 +157,7 @@ describe('dashboard presentation components', () => {
 
   it('SupportRequestDialog emits immutable form updates and submit', async () => {
     const form = { projectId: 1, type: 'bid_support', dueDate: '', description: '' }
-    const wrapper = mountWithStubs(SupportRequestDialog, {
+    const wrapper = await mountWithStubs(SupportRequestDialog, {
       props: { modelValue: true, form, projects: [{ id: 1, name: '智慧办公平台' }] },
     })
 
@@ -125,7 +168,7 @@ describe('dashboard presentation components', () => {
     expect(wrapper.emitted('submit')).toHaveLength(1)
   })
 
-  it('WorkCalendar renders through real Element Plus calendar wiring', () => {
+  it('WorkCalendar renders through real Element Plus calendar wiring', async () => {
     const event = {
       id: 1,
       type: 'deadline',
@@ -141,7 +184,7 @@ describe('dashboard presentation components', () => {
       weekdayLabel: '四',
       fieldSummary: { owner: '负责人 商务专员', stage: '阶段 资料收口', blocker: '阻塞 待确认最终材料' },
     }
-    const wrapper = mount(WorkCalendar, {
+    const wrapper = await mountWithStubs(WorkCalendar, {
       props: {
         modelValue: new Date('2026-04-22T00:00:00'),
         activeFilter: 'all',
@@ -155,7 +198,6 @@ describe('dashboard presentation components', () => {
         calendarCellClass: () => 'calendar-day-urgent',
         getEventTypeTag: () => ({ type: 'danger', label: '截止' }),
       },
-      global: { plugins: [ElementPlus] },
     })
 
     expect(wrapper.text()).toContain('数字政府项目截标')
@@ -176,7 +218,7 @@ describe('dashboard presentation components', () => {
       weekdayLabel: '四',
       fieldSummary: { owner: '负责人 商务专员', stage: '阶段 资料收口', blocker: '阻塞 待确认最终材料' },
     }
-    const wrapper = mount(WorkCalendar, {
+    const wrapper = await mountWithStubs(WorkCalendar, {
       props: {
         modelValue: new Date('2026-04-22T00:00:00'),
         activeFilter: 'all',
@@ -189,7 +231,6 @@ describe('dashboard presentation components', () => {
         getEventsForDate: () => [event],
         getEventTypeTag: () => ({ type: 'danger', label: '截止' }),
       },
-      global: { plugins: [ElementPlus] },
     })
 
     await wrapper.find('.upcoming-event-item').trigger('keydown.enter')

@@ -165,10 +165,10 @@ export function useAiAnalysisPage() {
         return
       }
       tenderInfo.value = null
-      ElMessage.error(response?.message || '标讯信息加载失败')
+      ElMessage.error(`加载失败：${response?.message || '标讯信息加载失败'}`)
     } catch (error) {
       tenderInfo.value = null
-      ElMessage.error(error?.response?.data?.message || error?.message || '标讯信息加载失败')
+      ElMessage.error(`加载失败：${error?.response?.data?.message || error?.message || '标讯信息加载失败'}`)
     }
   }
 
@@ -180,10 +180,10 @@ export function useAiAnalysisPage() {
         return
       }
       analysisData.value = null
-      ElMessage.error(response?.message || 'AI 分析数据加载失败')
+      ElMessage.error(`加载失败：${response?.message || 'AI 分析数据加载失败'}`)
     } catch (error) {
       analysisData.value = null
-      ElMessage.error(error?.response?.data?.message || error?.message || 'AI 分析数据加载失败')
+      ElMessage.error(`加载失败：${error?.response?.data?.message || error?.message || 'AI 分析数据加载失败'}`)
     }
   }
 

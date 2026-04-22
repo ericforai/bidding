@@ -47,7 +47,7 @@ export function useTenderListPage() {
   const canCreateTender = computed(() => permissions.value.canCreateTender)
   const canDeleteTenders = computed(() => permissions.value.canDeleteTenders)
   const canSyncExternalSource = computed(() => permissions.value.canSyncExternalSource)
-  const customerOpportunityCenterEnabled = computed(() => true)
+  const customerOpportunityCenterEnabled = computed(() => false)
   const showTenderAiEntry = computed(() => true)
   const tenders = computed(() => biddingStore.tenders || [])
 

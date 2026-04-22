@@ -220,7 +220,6 @@ const activeProjects = computed(() => filterProjectsByRole(demoProjects, {
   role: currentUserRole.value,
   userName: currentUserName.value,
 }))
-
 const {
   calendarDate, activeCalendarFilter, selectedDateKey, calendarFilters, visibleCalendarEvents,
   selectedDateEvents, selectedDateLabel, monthCalendarSummary, upcomingCalendarEvents,
@@ -232,27 +231,28 @@ const {
   assigneeIdRef: currentUserId,
   onEventsLoaded: (events) => biddingStore.setCalendar(events),
 })
-
 function iconizeAction(action) {
   return { ...action, icon: Icons[action.icon] || action.icon }
 }
-
 function handleBannerAction(action) {
   if (action?.target) router.push(action.target)
 }
-
 function handleQuickAction(action) {
   if (action.key === 'support') openSupportRequestDialog()
   if (action.key === 'borrow') router.push('/resource/contract-borrow')
   if (action.key === 'expense') router.push('/resource/expense')
 }
-
 function handleTenderClick(tender) {
   router.push(`/bidding/${tender.id}`)
 }
 
 function handleProjectClick(project) {
-  router.push(`/project/${project.id}`)
+  const projectId = String(project?.id || '')
+  if (/^\d+$/.test(projectId)) {
+    router.push(`/project/${projectId}`)
+    return
+  }
+  router.push({ path: '/project', query: { demoProjectId: projectId } })
 }
 
 function handleReview(review) {
