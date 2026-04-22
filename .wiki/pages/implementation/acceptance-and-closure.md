@@ -9,6 +9,7 @@ sources:
   - docs/GO_LIVE_CHECKLIST.md
 backlinks:
   - _index
+  - design-system
   - implementation/delivery-playbook
   - implementation/risk-register
 created: 2026-04-21

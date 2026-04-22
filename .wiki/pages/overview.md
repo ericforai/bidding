@@ -2,17 +2,19 @@
 title: 项目综述
 space: engineering
 category: guide
-tags: [项目, 概述, POC, 西域]
+tags: [项目, 概述, 西域, 交付]
 sources:
   - README.md
   - AGENTS.md
+  - DESIGN.md
   - docs/COMMERCIAL_SCOPE.md
   - docs/西域数智化投标管理平台-实施计划书-60天版.md
 backlinks:
   - _index
+  - design-system
   - team-and-timeline
 created: 2026-04-15
-updated: 2026-04-15
+updated: 2026-04-22
 health_checked: 2026-04-22
 ---
 # 项目综述
@@ -44,26 +46,28 @@ health_checked: 2026-04-22
 
 ## 3. 当前状态
 
-### 双模式运行
+### 真实 API 交付口径（唯一支持路径）
 
-系统支持两种运行模式，可通过环境变量灵活切换：
+当前仓库已明确进入真实 API 交付开发阶段，Mock 不再作为正常开发路径。
 
-| 模式 | 前端端口 | 后端 API | 数据来源 | 用途 |
+| 路径 | 前端端口 | 后端 API | 数据来源 | 用途 |
 |------|----------|----------|----------|------|
-| Mock 模式 | 1314 | 无需后端 | `src/api/mock.js` 本地数据 | 长期演示、无后端场景展示 |
-| API 模式（默认） | 1314 | `http://localhost:18080` | 真实后端服务 | 真实联调、上线准备、UAT |
+| API 模式（唯一） | 1314 | `http://127.0.0.1:18080` | 真实后端服务 | 联调、UAT、上线准备 |
 
-### POC 阶段成果
+仓库中仍存在少量历史 Mock 代码与脚本，属于待清理技术债，不应继续扩散。
+
+### 设计系统已正式建制
 
 - 前后端统一 API 层已建立
 - 数据库 Flyway 基线已完成
 - 关键集成测试和 E2E 测试已覆盖
 - 最小可观测性基线（Actuator + Prometheus）已接入
 - 上线前演练脚本和检查清单已就绪
+- 已建立正式 `DESIGN.md` 作为视觉规范事实源，详见 [[design-system]]
 
 ### 进入 60 天正式实施
 
-系统已从 POC 阶段正式进入 60 天实施周期，以正式商用品范围（Commercial Whitelist）为交付基线，演示性功能在 API 模式下已隔离或隐藏。
+系统已进入 60 天实施周期，以正式商用品范围（Commercial Whitelist）为交付基线。
 
 ## 4. 技术栈概要
 

@@ -33,6 +33,7 @@ health_checked: 2026-04-22
 - [[dashboard-gap-analysis]] — 工作台卡片 vs 标书要求对照
 - [[data-model]] — 数据模型
 - [[deployment]] — 部署与上线
+- [[design-system]] — 设计系统基线
 - [[glossary]] — 术语表
 - [[modules]] — 模块目录
 - [[overview]] — 项目综述

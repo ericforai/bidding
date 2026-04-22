@@ -7,7 +7,7 @@
     "sources": [
       "WIKI.md",
       ".wiki/INDEX.md",
-      ".wiki/index.md"
+      ".wiki/PAGE_INDEX.md"
     ],
     "backlinks": [
       "_index"
@@ -101,7 +101,8 @@
       "src/views/Dashboard/Workbench.vue"
     ],
     "backlinks": [
-      "_index"
+      "_index",
+      "design-system"
     ],
     "updated": "2026-04-16",
     "health_checked": "2026-04-22",
@@ -153,6 +154,24 @@
     "path": ".wiki/pages/deployment.md"
   },
   {
+    "slug": "design-system",
+    "title": "设计系统基线",
+    "space": "engineering",
+    "category": "decision",
+    "sources": [
+      "DESIGN.md",
+      "CLAUDE.md",
+      "src/styles/variables.css",
+      "src/main.js"
+    ],
+    "backlinks": [
+      "overview"
+    ],
+    "updated": "2026-04-22",
+    "health_checked": "2026-04-22",
+    "path": ".wiki/pages/design-system.md"
+  },
+  {
     "slug": "glossary",
     "title": "术语表",
     "space": "engineering",
@@ -183,6 +202,7 @@
     ],
     "backlinks": [
       "_index",
+      "design-system",
       "implementation/delivery-playbook",
       "implementation/risk-register"
     ],
@@ -277,6 +297,7 @@
       "architecture",
       "business-process",
       "dashboard-gap-analysis",
+      "design-system",
       "implementation/delivery-playbook",
       "implementation/weekly-status",
       "overview",
@@ -295,14 +316,16 @@
     "sources": [
       "README.md",
       "AGENTS.md",
+      "DESIGN.md",
       "docs/COMMERCIAL_SCOPE.md",
       "docs/西域数智化投标管理平台-实施计划书-60天版.md"
     ],
     "backlinks": [
       "_index",
+      "design-system",
       "team-and-timeline"
     ],
-    "updated": "2026-04-15",
+    "updated": "2026-04-22",
     "health_checked": "2026-04-22",
     "path": ".wiki/pages/overview.md"
   },

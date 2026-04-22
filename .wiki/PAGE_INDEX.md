@@ -15,8 +15,14 @@
 | slug | title | sources | updated | backlinks |
 |---|---|---:|---|---:|
 | [business-process](pages/business-process.md) | 业务流程 | 4 | 2026-04-15 | 8 |
-| [dashboard-gap-analysis](pages/dashboard-gap-analysis.md) | 工作台卡片 vs 标书要求对照 | 4 | 2026-04-16 | 1 |
+| [dashboard-gap-analysis](pages/dashboard-gap-analysis.md) | 工作台卡片 vs 标书要求对照 | 4 | 2026-04-16 | 2 |
 | [requirements](pages/requirements.md) | 需求追溯 | 2 | 2026-04-21 | 5 |
+
+### decision
+
+| slug | title | sources | updated | backlinks |
+|---|---|---:|---|---:|
+| [design-system](pages/design-system.md) | 设计系统基线 | 4 | 2026-04-22 | 1 |
 
 ### guide
 
@@ -24,7 +30,7 @@
 |---|---|---:|---|---:|
 | [_index](pages/_index.md) | 西域投标管理平台知识库 | 3 | 2026-04-22 | 1 |
 | [deployment](pages/deployment.md) | 部署与上线 | 5 | 2026-04-15 | 9 |
-| [overview](pages/overview.md) | 项目综述 | 4 | 2026-04-15 | 2 |
+| [overview](pages/overview.md) | 项目综述 | 5 | 2026-04-22 | 3 |
 | [team-and-timeline](pages/team-and-timeline.md) | 团队与排期 | 3 | 2026-04-15 | 5 |
 
 ### module
@@ -32,7 +38,7 @@
 | slug | title | sources | updated | backlinks |
 |---|---|---:|---|---:|
 | [ai-capabilities](pages/ai-capabilities.md) | AI 能力 | 6 | 2026-04-15 | 4 |
-| [modules](pages/modules.md) | 模块目录 | 4 | 2026-04-15 | 9 |
+| [modules](pages/modules.md) | 模块目录 | 4 | 2026-04-15 | 10 |
 
 ### reference
 
@@ -48,7 +54,7 @@
 
 | slug | title | sources | updated | backlinks |
 |---|---|---:|---|---:|
-| [implementation/acceptance-and-closure](pages/implementation/acceptance-and-closure.md) | 实施验收与问题闭环 | 3 | 2026-04-21 | 3 |
+| [implementation/acceptance-and-closure](pages/implementation/acceptance-and-closure.md) | 实施验收与问题闭环 | 3 | 2026-04-21 | 4 |
 | [implementation/delivery-playbook](pages/implementation/delivery-playbook.md) | 实施交付作战包总览 | 3 | 2026-04-21 | 2 |
 | [implementation/milestones](pages/implementation/milestones.md) | 实施里程碑与依赖 | 2 | 2026-04-21 | 2 |
 | [implementation/risk-register](pages/implementation/risk-register.md) | 实施风险台账 | 2 | 2026-04-21 | 3 |
@@ -56,7 +62,7 @@
 
 ## Summary
 
-- pages: 18
-- engineering: 13
+- pages: 19
+- engineering: 14
 - implementation: 5
 

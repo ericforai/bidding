@@ -3,6 +3,12 @@
 > 按时间倒序记录所有 Wiki 操作。每条记录以 `## [日期] 操作类型 | 说明` 格式开头。
 > 可用 `grep "^## \[" .wiki/log.md | tail -5` 查看最近 5 条。
 
+## [2026-04-22] build | 设计系统知识页入库与总览口径更新
+- 新增页面：`pages/design-system.md`（正式 DESIGN.md 基线、落地策略、实施回链）
+- 更新页面：`pages/overview.md`（切换为真实 API 唯一路径口径，补充设计系统建制信息）
+- 自动重编：`pages/_index.md`、`PAGE_INDEX.md`、`catalog/page-catalog.json`
+- 校验结果：`npm run wiki:build` 与 `npm run wiki:check` 均通过（pages=19）
+
 ## [2026-04-15] ingest | 附件5：需求任务书 + 附件6：功能清单
 - 来源：`.wiki/sources/bidding/` 下 2 个文件（.docx + .xlsx）
 - 新建页面：`requirements.md`（需求追溯，29 功能点追溯矩阵）
