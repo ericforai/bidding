@@ -1,10 +1,12 @@
 // Input: documenteditor service and request DTOs
-// Output: Document Editor REST API endpoints
+// Output: Document Editor REST API endpoints, including draft tree import
 // Pos: Controller/控制器层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.documenteditor.controller;
 
 import com.xiyu.bid.documenteditor.dto.DocumentReminderDTO;
+import com.xiyu.bid.documenteditor.dto.DraftTreeUpsertRequest;
+import com.xiyu.bid.documenteditor.dto.DraftTreeUpsertResultDTO;
 import com.xiyu.bid.documenteditor.dto.DocumentSectionDTO;
 import com.xiyu.bid.documenteditor.dto.DocumentStructureDTO;
 import com.xiyu.bid.documenteditor.dto.SectionAssignmentRequest;
@@ -89,6 +91,22 @@ public class DocumentEditorController {
             @PathVariable Long projectId) {
         List<DocumentSectionDTO> tree = documentEditorService.getSectionTree(projectId);
         return ResponseEntity.ok(ApiResponse.success(tree));
+    }
+
+    /**
+     * 批量导入草稿树
+     *
+     * @param projectId 项目ID
+     * @param request 导入请求
+     * @return 导入结果
+     */
+    @PostMapping("/draft-tree")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<DraftTreeUpsertResultDTO>> upsertDraftTree(
+            @PathVariable Long projectId,
+            @Valid @RequestBody DraftTreeUpsertRequest request) {
+        DraftTreeUpsertResultDTO result = documentEditorService.upsertDraftTree(projectId, request);
+        return ResponseEntity.ok(ApiResponse.success("Draft tree imported successfully", result));
     }
 
     /**
