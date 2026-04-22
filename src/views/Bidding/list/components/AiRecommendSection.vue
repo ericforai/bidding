@@ -24,7 +24,7 @@
         </div>
         <div class="card-info">
           <span><el-icon><Location /></el-icon>{{ tender.region }}</span>
-          <span><el-icon><Wallet /></el-icon>{{ tender.budget }}万元</span>
+          <span><el-icon><Wallet /></el-icon>{{ formatBudgetWan(tender.budget) }}万元</span>
           <span><el-icon><Calendar /></el-icon>{{ tender.deadline }}截止</span>
         </div>
         <div class="card-tags">
@@ -41,7 +41,7 @@
 
 <script setup>
 import { ArrowRight, Calendar, Location, MagicStick, Wallet } from '@element-plus/icons-vue'
-import { getScoreClass, getSourceTagType, getSourceText } from '../helpers.js'
+import { formatBudgetWan, getScoreClass, getSourceTagType, getSourceText } from '../helpers.js'
 
 defineProps({
   tenders: { type: Array, default: () => [] },

@@ -6,7 +6,7 @@
         <el-tag v-if="row.aiScore >= 90" size="small" type="success">高匹配</el-tag>
       </div>
       <div class="mobile-card-body">
-        <div><span>预算</span><strong>{{ row.budget }}万元</strong></div>
+        <div><span>预算</span><strong>{{ formatBudgetWan(row.budget) }}万元</strong></div>
         <div><span>地区</span><strong>{{ row.region }}</strong></div>
         <div><span>行业</span><strong>{{ row.industry }}</strong></div>
         <div>
@@ -46,7 +46,7 @@
 </template>
 
 <script setup>
-import { getSourceTagType, getSourceText } from '../helpers.js'
+import { formatBudgetWan, getSourceTagType, getSourceText } from '../helpers.js'
 import { getTenderStatusTagType, getTenderStatusText } from '../../bidding-utils-status.js'
 
 defineProps({

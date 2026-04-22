@@ -11,7 +11,7 @@
               target="_blank"
               rel="noopener noreferrer"
               type="primary"
-              :underline="false"
+              underline="never"
             >
               <span>{{ row.title }}</span>
               <el-icon><LinkIcon /></el-icon>
@@ -22,7 +22,7 @@
         </template>
       </el-table-column>
       <el-table-column prop="budget" label="预算" width="100" align="center">
-        <template #default="{ row = {} } = {}">{{ row.budget }}万元</template>
+        <template #default="{ row = {} } = {}">{{ formatBudgetWan(row.budget) }}万元</template>
       </el-table-column>
       <el-table-column prop="region" label="地区" width="90" align="center" />
       <el-table-column prop="industry" label="行业" width="110" align="center" />
@@ -71,7 +71,7 @@
 <script setup>
 import { ref } from 'vue'
 import { Link as LinkIcon } from '@element-plus/icons-vue'
-import { getSourceTagType, getSourceText, safeTenderUrl } from '../helpers.js'
+import { formatBudgetWan, getSourceTagType, getSourceText, safeTenderUrl } from '../helpers.js'
 import { getTenderStatusTagType, getTenderStatusText } from '../../bidding-utils-status.js'
 import TenderActionMenu from './TenderActionMenu.vue'
 

@@ -1,16 +1,16 @@
 <template>
   <div class="table-actions">
     <ElTooltip content="查看详情" placement="top">
-      <ElButton size="small" :icon="View" @click="$emit('view-detail', row.id)" />
+      <ElButton size="small" :icon="View" aria-label="查看详情" @click="$emit('view-detail', row.id)" />
     </ElTooltip>
     <ElTooltip v-if="showAiEntry" content="AI分析" placement="top">
-      <ElButton size="small" :icon="MagicStick" @click="$emit('ai-analysis', row.id)" />
+      <ElButton size="small" :icon="MagicStick" aria-label="AI分析" @click="$emit('ai-analysis', row.id)" />
     </ElTooltip>
     <ElTooltip content="参与投标" placement="top">
-      <ElButton size="small" :icon="Document" @click="$emit('participate', row.id)" />
+      <ElButton size="small" :icon="Document" aria-label="参与投标" @click="$emit('participate', row.id)" />
     </ElTooltip>
     <ElDropdown v-if="canManageTenders || canDeleteTenders" trigger="click">
-      <ElButton size="small" :icon="MoreFilled" />
+      <ElButton size="small" :icon="MoreFilled" aria-label="更多操作" />
       <template #dropdown>
         <ElDropdownMenu>
           <template v-if="canManageTenders">

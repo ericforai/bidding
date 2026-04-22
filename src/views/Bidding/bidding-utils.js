@@ -48,6 +48,24 @@ export function buildTenderUpdatePayload(changes) {
   return payload
 }
 
+export function safeTenderUrl(value) {
+  if (!value) return ''
+  try {
+    const url = new URL(String(value))
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : ''
+  } catch {
+    return ''
+  }
+}
+
+export function formatBudgetWan(value) {
+  const number = Number(value)
+  if (!Number.isFinite(number)) return '0'
+  const wan = number / 10000
+  const maximumFractionDigits = Math.abs(wan) >= 100 ? 0 : 2
+  return wan.toLocaleString('zh-CN', { maximumFractionDigits })
+}
+
 /**
  * BatchOperationResponse → user-facing summary message
  */

@@ -31,7 +31,7 @@
 
         <el-descriptions :column="3" border>
           <el-descriptions-item label="预算金额">
-            <span class="amount-text">{{ tender.budget }}万元</span>
+            <span class="amount-text">{{ formatBudgetWan(tender.budget) }}万元</span>
           </el-descriptions-item>
           <el-descriptions-item label="所属地区">
             {{ tender.region }}
@@ -68,7 +68,7 @@
             <el-icon><DocumentAdd /></el-icon>
             立即投标
           </el-button>
-          <el-button v-if="tender && tender.originalUrl" type="success" size="large" @click="handleViewOriginal">
+          <el-button v-if="tender && safeTenderUrl(tender.originalUrl)" type="success" size="large" @click="handleViewOriginal">
             <el-icon><Link /></el-icon>
             查看官网公告
           </el-button>
@@ -232,6 +232,8 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { tendersApi } from '@/api'
+import { formatBudgetWan, safeTenderUrl } from './bidding-utils.js'
+import { getTenderStatusTagType, getTenderStatusText } from './bidding-utils-status.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -357,21 +359,11 @@ const getScoreClass = (score) => {
 }
 
 const getStatusType = (status) => {
-  const map = {
-    new: '',
-    following: 'warning',
-    bidding: 'primary'
-  }
-  return map[status] || ''
+  return getTenderStatusTagType(status)
 }
 
 const getStatusText = (status) => {
-  const map = {
-    new: '新建',
-    following: '跟进中',
-    bidding: '投标中'
-  }
-  return map[status] || status
+  return getTenderStatusText(status)
 }
 
 const getDeadlineClass = (deadline) => {
@@ -401,8 +393,9 @@ const handleShare = () => {
 }
 
 const handleViewOriginal = () => {
-  if (tender.value && tender.value.originalUrl) {
-    window.open(tender.value.originalUrl, '_blank')
+  const url = safeTenderUrl(tender.value?.originalUrl)
+  if (url) {
+    window.open(url, '_blank', 'noopener,noreferrer')
   } else {
     ElMessage.warning('该标讯暂无官网公告链接')
   }
