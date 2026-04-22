@@ -52,6 +52,10 @@ spring:
     default-property-inclusion: non_null
     serialization:
       write-dates-as-timestamps: false
+  task:
+    scheduling:
+      pool:
+        size: ${SPRING_TASK_SCHEDULING_POOL_SIZE:4}
 
 ai:
   provider: ${AI_PROVIDER:mock}  # Options: mock, openai
@@ -63,6 +67,16 @@ app:
     audit-enabled: ${APP_EXPORT_AUDIT:true}
     max-exports-per-hour: ${APP_EXPORT_RATE_LIMIT:10}
     query-timeout-seconds: ${APP_EXPORT_QUERY_TIMEOUT:60}  # Maximum query execution time for exports
+  tender-processing:
+    storage-root: ${APP_TENDER_STORAGE_ROOT:/data/shared/tenders}
+    max-global-concurrency: ${APP_TENDER_MAX_GLOBAL_CONCURRENCY:2}
+    max-per-user-concurrency: ${APP_TENDER_MAX_PER_USER_CONCURRENCY:1}
+    max-retries: ${APP_TENDER_MAX_RETRIES:3}
+    retry-delays-minutes: ${APP_TENDER_RETRY_DELAYS:1,5,15}
+    estimated-task-seconds: ${APP_TENDER_ESTIMATED_TASK_SECONDS:120}
+    cpu-threshold: ${APP_TENDER_CPU_THRESHOLD:0.92}
+    memory-threshold: ${APP_TENDER_MEMORY_THRESHOLD:0.92}
+    worker-fixed-delay-ms: ${APP_TENDER_WORKER_DELAY_MS:5000}
 
 server:
   port: 8080

@@ -80,4 +80,42 @@ describe('tendersApi', () => {
 
     expect(httpClient.post).toHaveBeenCalledWith('/api/tenders', payload)
   })
+
+  it('initUploadSession(): creates async upload session for large tender files', async () => {
+    const payload = {
+      fileName: '大型标书.pdf',
+      expectedFileSize: 83886080
+    }
+    httpClient.post.mockResolvedValue({
+      success: true,
+      data: { uploadId: 'abc123', relativePath: '2026/04/22/1/abc123_大型标书.pdf' }
+    })
+
+    await tendersApi.initUploadSession(payload)
+
+    expect(httpClient.post).toHaveBeenCalledWith('/api/tenders/upload-init', payload)
+  })
+
+  it('completeUpload(): queues task and returns task identifier', async () => {
+    const payload = {
+      uploadId: 'abc123',
+      pageCount: 360,
+      priority: 5
+    }
+    httpClient.post.mockResolvedValue({
+      success: true,
+      data: { fileId: 5, taskId: 88, status: 'QUEUED' }
+    })
+
+    await tendersApi.completeUpload(payload)
+
+    expect(httpClient.post).toHaveBeenCalledWith('/api/tenders/upload-complete', payload)
+  })
+
+  it('getUploadTaskStatus(): rejects non-numeric task IDs before request', async () => {
+    const result = await tendersApi.getUploadTaskStatus('task-88')
+
+    expect(httpClient.get).not.toHaveBeenCalled()
+    expect(result.success).toBe(false)
+  })
 })
