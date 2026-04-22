@@ -1,5 +1,5 @@
-<!-- Input: Workbench MetricCards props and user actions
-Output: presentational Workbench MetricCards section
+<!-- Input: Workbench MetricCards props and metric compare labels
+Output: presentational Workbench MetricCards section with resilient metric footer rendering
 Pos: src/views/Dashboard/components/ - Dashboard display components
 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。 -->
 <template>
@@ -45,8 +45,15 @@ Pos: src/views/Dashboard/components/ - Dashboard display components
         </div>
         <div class="metric-value">{{ metric.value }}</div>
         <div class="metric-footer">
-          <span class="metric-change" :class="metric.changeClass">{{ metric.change }}</span>
           <span class="metric-compare">{{ compareLabel }}</span>
+          <span
+            v-if="hasValidChange(metric.change)"
+            class="metric-change"
+            :class="metric.changeClass"
+          >
+            {{ metric.change }}
+          </span>
+          <span v-else class="metric-change metric-change-empty">暂无环比</span>
         </div>
       </div>
     </template>
@@ -65,4 +72,8 @@ defineProps({
 
 const emit = defineEmits(['metric-click', 'retry'])
 const selectMetric = (metric) => emit('metric-click', metric)
+const hasValidChange = (change) => {
+  const text = String(change ?? '').trim()
+  return text !== '' && text !== '--'
+}
 </script>
