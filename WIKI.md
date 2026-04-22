@@ -1,156 +1,127 @@
-# WIKI.md — LLM Wiki 治理规范 / LLM Wiki Governance Schema
+# WIKI.md — 双栈知识底座治理规范
 
-> 本文件定义项目 Wiki 知识库的三层架构、维护规范和工作流。
-> LLM 在操作 Wiki 时必须遵循此文件的约定。
+> 本文件定义 Wiki 在“研发 + 实施”阶段的统一治理协议。  
+> LLM 对 Wiki 的所有更新必须遵循此文件。
 
-## 1. 三层架构 / Three-Layer Architecture
+## 1. 架构目标
 
+- Wiki 同时服务两类核心场景：
+  - `Engineering Space`：研发设计、模块边界、技术决策、实现追溯
+  - `Implementation Space`：实施交付、里程碑推进、风险控制、验收闭环
+- 采用混合摄入模式：优先接收原始 Office/Markdown 文件，由 LLM 自动抽取并合成知识页面。
+
+## 2. 分层模型
+
+```text
+Layer 1  Raw Sources
+  .wiki/sources/
+  - 原始证据层（不可改写）
+
+Layer 1.5 Extracts
+  .wiki/extracts/
+  - 自动抽取中间层（可重跑、可审计）
+
+Layer 2  Wiki Pages
+  .wiki/pages/
+  - 合成知识页面（可维护、可互链）
+
+Layer 2.5 Outputs
+  .wiki/outputs/
+  - 问答产物回流层（答复稿、Marp、图表等）
+
+Layer 3  Schema
+  WIKI.md
+  - 治理协议（人工确认后变更）
 ```
-Layer 1 — 原始资料（Raw Sources）
-  存放位置：.wiki/sources/（外部资料：文章、论文、招标文件、图片等）
-  项目内源：docs/、backend/、src/ 等（已有的代码库文档）
-  索引：.wiki/INDEX.md（对以上两类来源统一编目）
-  性质：不可变。LLM 只读不写。这是事实的唯一来源。
 
-Layer 2 — Wiki 页面（Wiki Pages）
-  位置：.wiki/pages/*.md
-  性质：LLM 拥有此层。创建、更新、维护交叉引用、保持一致性。
+## 3. 目录与索引
 
-Layer 3 — Schema（本文件）
-  位置：WIKI.md（项目根目录）
-  性质：治理权威。人和 LLM 共同演进。
-```
-
-## 2. 目录结构 / Directory Structure
-
-```
+```text
 .wiki/
-├── INDEX.md                    # Layer 1: 源文档分类索引（编目所有来源）
-├── index.md                    # 页面索引：按分类组织的知识页面目录
-├── log.md                      # 操作日志：按时间倒序的所有 Wiki 操作记录
-├── sources/                    # Layer 1: 原始资料存放目录
-│   ├── README.md               # 存放规则与目录结构说明
-│   ├── bidding/                # 招标文件、投标要求、评分标准
-│   ├── industry/               # 行业资料、政策法规、市场报告
-│   ├── competitor/             # 竞对资料、竞品分析
-│   ├── customer/               # 客户需求、会议纪要、沟通记录
-│   ├── technical/              # 技术参考、架构文献、最佳实践
-│   └── internal/               # 内部文档、培训资料、知识沉淀
-└── pages/                      # Layer 2: Wiki 合成知识页面
-    ├── _index.md               # Wiki 首页 / 知识导航
-    ├── overview.md             # 项目综述
-    ├── architecture.md         # 架构合成
-    ├── business-process.md     # 业务流程
-    ├── modules.md              # 模块目录
-    ├── ai-capabilities.md      # AI 能力
-    ├── data-model.md           # 数据模型
-    ├── roles-and-permissions.md # 角色权限
-    ├── glossary.md             # 术语表
-    ├── team-and-timeline.md    # 团队与排期
-    └── deployment.md           # 部署与上线
+├── INDEX.md                  # Source Catalog（源文档编目）
+├── PAGE_INDEX.md             # Page Catalog（页面索引）
+├── log.md                    # 操作日志（可追加）
+├── catalog/
+│   ├── source-catalog.json   # Source Catalog 机器可读版本
+│   ├── page-catalog.json     # Page Catalog 机器可读版本
+│   └── pending-build.json    # 增量构建输入清单
+├── sources/                  # 原始资料（不可改写）
+├── extracts/                 # 自动抽取中间层
+├── pages/                    # 合成知识层
+└── outputs/                  # 输出回流层
 ```
 
-## 3. 页面 Frontmatter 规范 / Page Frontmatter Format
+## 4. 页面 Frontmatter 协议
 
-每个 Wiki 页面必须以 YAML frontmatter 开头：
+每个页面必须包含：
 
 ```yaml
 ---
 title: 页面标题
+space: engineering | implementation
 category: architecture | business | module | guide | reference | decision
 tags: [标签1, 标签2]
 sources:
-  - docs/技术架构方案.md
-  - backend/README.md
-created: 2026-04-15
-updated: 2026-04-15
+  - docs/xxx.md
+backlinks:
+  - other-page-slug
+created: 2026-04-22
+updated: 2026-04-22
+health_checked: 2026-04-22
 ---
 ```
 
-字段说明：
-- **title**: 页面中文标题
-- **category**: 分类（见第 4 节）
-- **tags**: 关键词标签，用于检索
-- **sources**: 本页合成内容所依据的源文件路径（相对于项目根）
-- **created**: 创建日期
-- **updated**: 最后更新日期
+## 5. 混合摄入模式（默认）
 
-## 4. 分类体系 / Categories
+- 用户优先提供原文件：`docx/xlsx/pdf/图片/md/txt`
+- LLM 执行 `npm run wiki:ingest`：
+  - 扫描 `.wiki/sources/`
+  - 抽取到 `.wiki/extracts/`
+  - 更新 Source Catalog
+- 对复杂版式或低置信度抽取，标记为 `manual_review`，允许人工补充 Markdown。
 
-| 分类 | 英文 | 适用范围 |
-|------|------|---------|
-| 技术架构 | architecture | 系统架构、技术选型、分层设计 |
-| 业务知识 | business | 业务流程、业务规则、领域概念 |
-| 功能模块 | module | 模块说明、模块边界、接口契约 |
-| 操作指南 | guide | 操作指南、开发指南、流程说明 |
-| 参考资料 | reference | 术语表、数据字典、API 参考 |
-| 架构决策 | decision | 技术选型记录、架构决策记录 |
+## 6. 命令与触发策略
 
-## 5. 交叉引用约定 / Cross-Reference Conventions
+- `npm run wiki:ingest`：摄入与抽取
+- `npm run wiki:build`：页面规范化、backlinks、Page Catalog 编译
+- `npm run wiki:check`：健康检查门禁
 
-- 使用 `[[page-name]]` 语法引用其他 Wiki 页面
-- `page-name` 为不含 `.md` 扩展名的文件名
-- 示例：`详见 [[architecture]] 中的前端架构部分`
-- 每个页面的 frontmatter `sources` 字段列出所依据的源文件路径
-- 术语首次出现时应链接到 `[[glossary]]`
+触发策略：
+- 手动运行 ingest/build
+- 提交前运行 `wiki:check`（pre-commit 阻断）
 
-## 6. 工作流 / Workflows
+大小写说明：
+- 当前环境文件系统大小写不敏感，不能同时稳定维护 `INDEX.md` 与 `index.md`。
+- 因此 Page Catalog 使用 `PAGE_INDEX.md` 命名避免冲突。
 
-### 6.1 回答问题工作流 / Query Workflow
+## 7. 质量门禁
 
-1. 阅读 `.wiki/pages/_index.md` 了解 Wiki 已有覆盖范围
-2. 查找最相关的 Wiki 页面，优先使用合成知识
-3. 必要时追溯到 `.wiki/INDEX.md` 中列出的源文件获取细节
-4. 回答时注明引用来源（Wiki 页面或源文件）
+- 页面 frontmatter 字段完整
+- `[[wiki-link]]` 目标页面存在
+- `sources` 路径必须可追溯
+- Source Catalog 与 Page Catalog 必须可读且非空
+- `updated` 不应超过 30 天未刷新
+- `health_checked` 不应超过 7 天
 
-### 6.2 摄入新源文档工作流 / Ingest Workflow
+## 8. 双空间治理约束
 
-1. 用户将原始资料放入 `.wiki/sources/` 对应子目录（按主题分类）
-2. LLM 阅读新文档，提取关键知识
-3. 更新 `.wiki/INDEX.md`，将新文档归入合适分类
-4. 判断是否需要更新现有 Wiki 页面或新建页面
-5. 更新受影响页面的 frontmatter（sources、updated）
-6. 添加或更新 `[[wiki-link]]` 交叉引用
-7. 更新 `.wiki/pages/_index.md` 目录
-8. 更新 `.wiki/index.md` 页面索引（新增或修改页面条目）
-9. 追加操作记录到 `.wiki/log.md`
+- Engineering 页面必须可追溯到代码/技术文档事实源
+- Implementation 页面必须可追溯到交付文档、计划、验收和风险台账
+- 两空间关键节点要双向链接，形成“研发事实 -> 实施动作 -> 验收证据”闭环
 
-### 6.3 维护页面工作流 / Maintenance Workflow
+## 9. 数据契约
 
-1. 检测源文件变更（git diff 或人工触发）
-2. 比对 Wiki 页面的 sources 列表与实际源文件内容
-3. 重新合成过时页面
-4. 更新 `updated` 日期
-5. 验证交叉引用完整性
-6. 同步更新 `.wiki/index.md` 中受影响页面的摘要和更新日期
-7. 追加操作记录到 `.wiki/log.md`
+### Source Catalog
 
-## 7. 更新触发规则 / Update Triggers
+- `id/path/type/topic/hash/status/extract_path/confidence/ingested_at`
 
-| 触发事件 | 需更新的页面 |
-|---------|------------|
-| 源文件修改 | 检查引用该源的所有 Wiki 页面 |
-| 新增 backend 模块 | `[[modules]]`、INDEX.md |
-| 新增 docs/ 文件 | INDEX.md，评估是否需要新页面 |
-| 架构变更 | `[[architecture]]` |
-| 新增 AI 功能 | `[[ai-capabilities]]` |
-| 角色/权限变更 | `[[roles-and-permissions]]` |
-| 数据模型变更 | `[[data-model]]` |
-| 里程碑推进 | `[[team-and-timeline]]` |
+### Page Catalog
 
-## 8. 质量规则 / Quality Rules
+- `slug/title/space/category/sources/backlinks/updated/health_checked/path`
 
-- 每个事实陈述应可追溯到至少一个 source
-- 页面不超过 300 行（超过应拆分）
-- 每个页面至少有 1 个 source
-- 交叉引用 `[[page-name]]` 的目标页面必须存在
-- 页面 `updated` 日期不应落后于源文件最后修改日 30 天以上
-- INDEX.md 只编目和分类，不摘录内容
+## 10. 变更原则
 
-## 9. 约束 / Constraints
-
-- **源文件不可变**：Layer 1 的源文件永远不可被 Wiki 系统修改
-- **合成非复制**：Wiki 页面是合成知识，不是源文件的副本或摘录
-- **Schema 变更需确认**：本文件（WIKI.md）的变更需要人工确认
-- **INDEX 只编目**：INDEX.md 只记录文件路径和一行概要，不摘录内容
-- **敏感信息**：标注为"内部机密"的源文档，Wiki 页面只合成结构性信息，不照搬商务细节
+- Layer 1 原始文件不可改写，仅允许新增版本
+- Layer 1.5 可重跑覆盖（由 ingest 负责）
+- Layer 2 页面由 build 统一规范化
+- WIKI.md 作为治理协议，重大变更需人工确认

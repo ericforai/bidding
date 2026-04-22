@@ -1,14 +1,21 @@
 ---
 title: 需求追溯
+space: engineering
 category: business
 tags: [需求, RFP, 功能清单, 需求任务书, 追溯矩阵]
 sources:
   - .wiki/sources/bidding/附件5：西域数智化投标管理平台建设项目需求任务书.docx
   - .wiki/sources/bidding/附件6：需求功能清单.xlsx
+backlinks:
+  - _index
+  - dashboard-gap-analysis
+  - implementation/acceptance-and-closure
+  - implementation/milestones
+  - implementation/risk-register
 created: 2026-04-15
-updated: 2026-04-15
+updated: 2026-04-21
+health_checked: 2026-04-22
 ---
-
 # 需求追溯
 
 > 本页合成自甲方正式招标文件（附件 5 需求任务书 + 附件 6 功能清单），

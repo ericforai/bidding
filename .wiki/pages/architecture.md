@@ -1,5 +1,6 @@
 ---
 title: 架构合成
+space: engineering
 category: architecture
 tags: [架构, 前端, 后端, 数据库, Vue, SpringBoot, 技术栈]
 sources:
@@ -8,10 +9,18 @@ sources:
   - docs/API_INTEGRATION.md
   - CLAUDE.md
   - backend/README.md
+backlinks:
+  - _index
+  - implementation/delivery-playbook
+  - implementation/milestones
+  - overview
+  - requirements
+  - roles-and-permissions
+  - team-and-timeline
 created: 2026-04-15
 updated: 2026-04-15
+health_checked: 2026-04-22
 ---
-
 # 架构合成
 
 ## 1. 总体架构分层

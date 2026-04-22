@@ -1,5 +1,6 @@
 ---
 title: 工作台卡片 vs 标书要求对照
+space: engineering
 category: business
 tags: [工作台, dashboard, 标书, 需求追溯, 缺口分析, gap]
 sources:
@@ -7,10 +8,12 @@ sources:
   - docs/西域数智化投标管理平台-实施计划书-60天版.md
   - docs/COMMERCIAL_SCOPE.md
   - src/views/Dashboard/Workbench.vue
+backlinks:
+  - _index
 created: 2026-04-16
 updated: 2026-04-16
+health_checked: 2026-04-22
 ---
-
 # 工作台卡片 vs 标书要求对照
 
 > 本页对照甲方标书要求与 `/dashboard` 工作台实际实现情况，

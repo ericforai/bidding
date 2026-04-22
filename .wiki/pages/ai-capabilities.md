@@ -1,5 +1,6 @@
 ---
 title: AI 能力
+space: engineering
 category: module
 tags: [AI, 智能, 大模型, 合规, 评分, 竞争情报, 智能装配]
 sources:
@@ -9,10 +10,15 @@ sources:
   - backend/SCORE_ANALYSIS_MODULE.md
   - backend/COMPETITION_INTEL_MODULE.md
   - docs/技术架构方案.md
+backlinks:
+  - _index
+  - business-process
+  - modules
+  - requirements
 created: 2026-04-15
 updated: 2026-04-15
+health_checked: 2026-04-22
 ---
-
 # AI 能力
 
 ## 1. AI 能力总览

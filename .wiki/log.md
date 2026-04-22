@@ -16,3 +16,11 @@
 - 生成 11 个 Wiki 页面：overview, architecture, business-process, modules, ai-capabilities, data-model, roles-and-permissions, glossary, team-and-timeline, deployment, _index
 - 交叉引用校验通过：所有 `[[wiki-link]]` 指向有效页面
 - 更新根文件：CLAUDE.md, README.md
+
+## [2026-04-22] upgrade | 双栈 Wiki 升级（研发 + 实施）
+- 新增自动化脚本：`scripts/wiki-ingest.mjs`、`scripts/wiki-build.mjs`、`scripts/wiki-check.mjs`
+- 新增目录：`.wiki/extracts/`、`.wiki/outputs/`、`.wiki/catalog/`
+- 双索引落地：`.wiki/INDEX.md`（Source Catalog）+ `.wiki/index.md`（Page Catalog）
+- 新增 Implementation Space 页面：`implementation/{delivery-playbook,milestones,risk-register,weekly-status,acceptance-and-closure}.md`
+- 执行真实增量演示：摄入 `docx + xlsx` 源文件并生成抽取结果与 catalog
+- pre-commit 门禁新增 `npm run wiki:check`

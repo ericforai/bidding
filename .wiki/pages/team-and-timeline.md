@@ -1,15 +1,22 @@
 ---
 title: 团队与排期
+space: engineering
 category: guide
 tags: [团队, 排期, 60天, 实施计划, 里程碑, 组织架构]
 sources:
   - docs/西域数智化投标管理平台-实施计划书-60天版.md
   - docs/启动会项目组织架构与沟通矩阵.md
   - docs/项目启动会PPT大纲与核心内容.md
+backlinks:
+  - _index
+  - deployment
+  - implementation/risk-register
+  - overview
+  - requirements
 created: 2026-04-15
 updated: 2026-04-15
+health_checked: 2026-04-22
 ---
-
 # 团队与排期
 
 ## 1. 项目概要

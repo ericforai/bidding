@@ -1,36 +1,20 @@
 # 原始资料 / Raw Sources
 
-> 本目录存放项目的原始参考资料。这些文件是不可变的——LLM 只读不写。
-> 这是知识的唯一真实来源（source of truth）。
+> 本目录存放项目原始资料，遵循“源文件不可变、仅追加版本”的原则。
 
-## 存放规则
+## 混合摄入模式（默认）
 
-1. **只放原始资料**：文章、论文、图片、数据文件、外部文档、会议纪要、客户需求原文等
-2. **不可修改**：放入后视为不可变，如需更新请放入新版本（带版本号或日期后缀）
-3. **按主题分目录**：建议使用下面的分类结构
-4. **命名规范**：`YYYY-MM-DD-简要描述.扩展名`，如 `2026-04-15-招标文件-XX项目.pdf`
+1. 优先直接放入原始文件（docx/xlsx/pdf/图片/md）
+2. 运行 `npm run wiki:ingest` 自动抽取到 `.wiki/extracts/`
+3. 抽取状态为 `manual_review` 时，补充人工 Markdown 再次执行 ingest
 
-## 目录结构
+## 分类目录
 
-```
-sources/
-├── README.md           ← 本文件
-├── bidding/            ← 招标文件、投标要求、评分标准
-├── industry/           ← 行业资料、政策法规、市场报告
-├── competitor/         ← 竞对资料、竞品分析
-├── customer/           ← 客户需求、会议纪要、沟通记录
-├── technical/          ← 技术参考、架构文献、最佳实践
-└── internal/           ← 内部文档、培训资料、知识沉淀
-```
+- `bidding/`
+- `industry/`
+- `competitor/`
+- `customer/`
+- `technical/`
+- `internal/`
+- `implementation/`
 
-## 与 Wiki 的关系
-
-```
-sources/（本目录）  →  LLM 阅读  →  pages/（Wiki 页面）
-   不可变                            LLM 生成并维护
-```
-
-当新资料放入本目录后，请告知 LLM 执行 WIKI.md 中的"摄入工作流"：
-1. LLM 阅读新资料
-2. 更新 INDEX.md 编目
-3. 创建或更新相关 Wiki 页面

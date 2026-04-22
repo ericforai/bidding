@@ -1,16 +1,20 @@
 ---
 title: 角色与权限
+space: engineering
 category: reference
 tags: [角色, 权限, 用户, 认证, RBAC]
 sources:
-  - src/api/mock.js
   - src/router/index.js
   - AGENTS.md
   - backend/src/main/java/com/xiyu/bid/auth/README.md
+backlinks:
+  - _index
+  - business-process
+  - overview
 created: 2026-04-15
 updated: 2026-04-15
+health_checked: 2026-04-22
 ---
-
 # 角色与权限
 
 ## 1. 角色体系

@@ -1,5 +1,6 @@
 ---
 title: 术语表
+space: engineering
 category: reference
 tags: [术语, 投标, 招标, MRO, 词汇]
 sources:
@@ -7,10 +8,13 @@ sources:
   - docs/讲标文件-功能响应与亮点.md
   - docs/COMMERCIAL_SCOPE.md
   - README.md
+backlinks:
+  - _index
+  - data-model
 created: 2026-04-15
 updated: 2026-04-15
+health_checked: 2026-04-22
 ---
-
 # 术语表
 
 本术语表汇集了西域数智化投标管理平台涉及的业务术语、技术术语和系统概念，按拼音排序，供项目团队统一认知参考。

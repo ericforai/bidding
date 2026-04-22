@@ -1,55 +1,56 @@
 ---
 title: 西域投标管理平台知识库
+space: engineering
 category: guide
-tags: [首页, 目录, 导航]
+tags: [首页, 导航, wiki]
 sources:
-  - README.md
-  - CLAUDE.md
-created: 2026-04-15
-updated: 2026-04-15
+  - WIKI.md
+  - .wiki/INDEX.md
+  - .wiki/PAGE_INDEX.md
+backlinks:
+created: 2026-04-22
+updated: 2026-04-22
+health_checked: 2026-04-22
 ---
-
 # 西域投标管理平台知识库
 
-> 本知识库由 LLM 从项目源文档自动合成并维护。
-> 治理规范见项目根目录 `WIKI.md`，源文档索引见 `.wiki/INDEX.md`。
+> 本知识库按研发与实施双空间组织，支持原始 Office 文件混合摄入和增量编译。
 
-## 知识导航
+## 快速入口
 
-### 项目基础
-- [[overview]] — 项目综述：背景、目标、当前状态
-- [[glossary]] — 术语表：投标领域专业术语释义
+- 规则协议：`WIKI.md`
+- 源文档编目：`.wiki/INDEX.md`
+- 页面索引：`.wiki/PAGE_INDEX.md`
+- 抽取中间层：`.wiki/extracts/`
+- 产物回流层：`.wiki/outputs/`
 
-### 技术架构
-- [[architecture]] — 架构合成：前端 + 后端 + 数据层
-- [[data-model]] — 数据模型：核心实体与关系
-- [[deployment]] — 部署模式与上线准备
+## Engineering Space
 
-### 业务知识
-- [[business-process]] — 业务流程：6 阶段投标生命周期
-- [[requirements]] — 需求追溯：甲方 RFP 需求→系统实现追溯矩阵
-- [[dashboard-gap-analysis]] — 工作台缺口分析：卡片 vs 标书要求逐项对照
-- [[modules]] — 模块目录：所有功能模块边界与职责
-- [[ai-capabilities]] — AI 能力：3 大类 9 项智能功能
-- [[roles-and-permissions]] — 角色权限：用户体系与访问控制
+- [[_index]] — 西域投标管理平台知识库
+- [[ai-capabilities]] — AI 能力
+- [[architecture]] — 架构合成
+- [[business-process]] — 业务流程
+- [[dashboard-gap-analysis]] — 工作台卡片 vs 标书要求对照
+- [[data-model]] — 数据模型
+- [[deployment]] — 部署与上线
+- [[glossary]] — 术语表
+- [[modules]] — 模块目录
+- [[overview]] — 项目综述
+- [[requirements]] — 需求追溯
+- [[roles-and-permissions]] — 角色与权限
+- [[team-and-timeline]] — 团队与排期
 
-### 项目管理
-- [[team-and-timeline]] — 团队与排期：60 天实施计划
+## Implementation Space
 
-## 使用说明
+- [[implementation/acceptance-and-closure]] — 实施验收与问题闭环
+- [[implementation/delivery-playbook]] — 实施交付作战包总览
+- [[implementation/milestones]] — 实施里程碑与依赖
+- [[implementation/risk-register]] — 实施风险台账
+- [[implementation/weekly-status]] — 实施周报与例会纪要模板
 
-1. **查找知识** — 从上方导航选择最相关的页面
-2. **追溯源文档** — 每个页面的 frontmatter 中 `sources` 字段列出了原始文档路径
-3. **源文档索引** — 阅读 `.wiki/INDEX.md` 查看所有源文档分类目录
-4. **治理规范** — 阅读 `WIKI.md` 了解本知识库的维护规则
-5. **交叉引用** — 页面中使用 `[[page-name]]` 语法引用其他页面
+## 操作命令
 
-## 页面统计
+1. `npm run wiki:ingest`
+2. `npm run wiki:build`
+3. `npm run wiki:check`
 
-| 分类 | 页面数 | 页面列表 |
-|------|--------|---------|
-| 操作指南 (guide) | 3 | overview, deployment, team-and-timeline |
-| 参考资料 (reference) | 3 | glossary, data-model, roles-and-permissions |
-| 功能模块 (module) | 2 | modules, ai-capabilities |
-| 业务知识 (business) | 3 | business-process, requirements, dashboard-gap-analysis |
-| 技术架构 (architecture) | 1 | architecture |

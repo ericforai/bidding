@@ -1,16 +1,19 @@
 ---
 title: 数据模型
+space: engineering
 category: reference
 tags: [数据模型, 实体, JPA, Mock, 数据库]
 sources:
-  - src/api/mock.js
   - backend/src/main/java/com/xiyu/bid/entity/README.md
   - backend/src/main/java/com/xiyu/bid/dto/README.md
   - docs/后端架构设计.md
+backlinks:
+  - _index
+  - architecture
 created: 2026-04-15
 updated: 2026-04-15
+health_checked: 2026-04-22
 ---
-
 # 数据模型
 
 ## 1. 核心实体清单

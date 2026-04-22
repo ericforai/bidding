@@ -1,5 +1,6 @@
 ---
 title: 模块目录
+space: engineering
 category: module
 tags: [模块, 前端, 后端, 功能清单, 边界]
 sources:
@@ -7,10 +8,20 @@ sources:
   - CLAUDE.md
   - backend/MODULES_QUICK_REFERENCE.md
   - backend/README.md
+backlinks:
+  - _index
+  - architecture
+  - business-process
+  - dashboard-gap-analysis
+  - implementation/delivery-playbook
+  - implementation/weekly-status
+  - overview
+  - requirements
+  - team-and-timeline
 created: 2026-04-15
 updated: 2026-04-15
+health_checked: 2026-04-22
 ---
-
 # 模块目录
 
 ## 1. 模块总览

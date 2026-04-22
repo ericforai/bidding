@@ -1,5 +1,6 @@
 ---
 title: 业务流程
+space: engineering
 category: business
 tags: [业务流程, 投标生命周期, 六阶段, 标讯, 立项, 标书, 闭环]
 sources:
@@ -7,10 +8,19 @@ sources:
   - docs/讲标文件-功能响应与亮点.md
   - README.md
   - 演示脚本.md
+backlinks:
+  - _index
+  - ai-capabilities
+  - dashboard-gap-analysis
+  - implementation/milestones
+  - modules
+  - requirements
+  - roles-and-permissions
+  - team-and-timeline
 created: 2026-04-15
 updated: 2026-04-15
+health_checked: 2026-04-22
 ---
-
 # 业务流程
 
 ## 1. 投标全生命周期概述

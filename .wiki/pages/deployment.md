@@ -1,5 +1,6 @@
 ---
 title: 部署与上线
+space: engineering
 category: guide
 tags: [部署, 上线, 发布, 运维, Docker, UAT]
 sources:
@@ -8,10 +9,20 @@ sources:
   - docs/UAT_PLAN.md
   - README.md
   - docs/plans/2026-03-10-go-live-execution-plan.md
+backlinks:
+  - _index
+  - architecture
+  - implementation/acceptance-and-closure
+  - implementation/delivery-playbook
+  - implementation/milestones
+  - implementation/risk-register
+  - implementation/weekly-status
+  - requirements
+  - team-and-timeline
 created: 2026-04-15
 updated: 2026-04-15
+health_checked: 2026-04-22
 ---
-
 # 部署与上线
 
 ## 1. 运行模式

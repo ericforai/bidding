@@ -1,5 +1,6 @@
 ---
 title: 项目综述
+space: engineering
 category: guide
 tags: [项目, 概述, POC, 西域]
 sources:
@@ -7,10 +8,13 @@ sources:
   - AGENTS.md
   - docs/COMMERCIAL_SCOPE.md
   - docs/西域数智化投标管理平台-实施计划书-60天版.md
+backlinks:
+  - _index
+  - team-and-timeline
 created: 2026-04-15
 updated: 2026-04-15
+health_checked: 2026-04-22
 ---
-
 # 项目综述
 
 ## 1. 项目背景
