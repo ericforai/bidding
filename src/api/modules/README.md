@@ -11,6 +11,7 @@
 | `approval.js` | API 模块 | 审批流和审批记录相关调用 |
 | `audit.js` | API 模块 | 审计日志和系统审计相关调用 |
 | `auth.js` | API 模块 | 登录、登出、当前用户和鉴权相关调用 |
+| `bidAgent.js` | API 模块 | 项目标书写作 Agent 运行、状态、写入和审查调用 |
 | `collaboration.js` | API 模块 | 协作线程、评论、版本、文档协同调用 |
 | `customerOpportunity.js` | API 模块 | 客户机会中心的真实接口、响应规范和转项目闭环 |
 | `dashboard.js` | API 模块 | Dashboard 总览、统计、任务和日历调用 |
@@ -28,3 +29,4 @@
 
 - 2026-04-19: 新增 `qualification.js`，把资质 CRUD 从 `knowledge.js` 拆出，并为借阅接口未接入场景提供统一的前端未接入态响应。
 - 2026-04-19: `knowledge.js` 的案例列表改为携带查询参数请求真实接口，并在模块内统一做分页/筛选整形，供案例页和详情页复用。
+- 2026-04-22: 新增 `bidAgent.js`，通过真实项目 API 接入标书写作 Agent 的 run/status/apply/review 生命周期。
