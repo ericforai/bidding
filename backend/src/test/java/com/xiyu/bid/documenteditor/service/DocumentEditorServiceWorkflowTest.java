@@ -1,6 +1,8 @@
 package com.xiyu.bid.documenteditor.service;
 
 import com.xiyu.bid.documenteditor.dto.DocumentReminderDTO;
+import com.xiyu.bid.documenteditor.dto.DraftTreeUpsertRequest;
+import com.xiyu.bid.documenteditor.dto.DraftTreeUpsertResultDTO;
 import com.xiyu.bid.documenteditor.dto.DocumentSectionDTO;
 import com.xiyu.bid.documenteditor.dto.SectionAssignmentRequest;
 import com.xiyu.bid.documenteditor.dto.SectionLockRequest;
@@ -45,6 +47,8 @@ class DocumentEditorServiceWorkflowTest {
     private DocumentSectionLockRepository lockRepository;
     @Mock
     private DocumentReminderRepository reminderRepository;
+    @Mock
+    private DocumentDraftTreeImportService draftTreeImportService;
     private DocumentEditorService documentEditorService;
 
     private DocumentStructure structure;
@@ -76,7 +80,8 @@ class DocumentEditorServiceWorkflowTest {
                 structureService,
                 sectionCommandService,
                 sectionCollaborationService,
-                sectionTreeService
+                sectionTreeService,
+                draftTreeImportService
         );
 
         structure = DocumentStructure.builder()
@@ -252,5 +257,23 @@ class DocumentEditorServiceWorkflowTest {
         );
 
         assertEquals("Section with id 20 does not belong to the specified structure", exception.getMessage());
+    }
+
+    @Test
+    void upsertDraftTree_shouldDelegateToImportService() {
+        DraftTreeUpsertRequest request = DraftTreeUpsertRequest.builder()
+                .structureName("Draft Tree")
+                .sections(List.of())
+                .build();
+        DraftTreeUpsertResultDTO result = DraftTreeUpsertResultDTO.builder()
+                .projectId(100L)
+                .structureId(10L)
+                .structureCreated(true)
+                .build();
+
+        when(draftTreeImportService.upsertDraftTree(100L, request)).thenReturn(result);
+
+        assertSame(result, documentEditorService.upsertDraftTree(100L, request));
+        verify(draftTreeImportService).upsertDraftTree(100L, request);
     }
 }
