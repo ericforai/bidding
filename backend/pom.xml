@@ -14,7 +14,7 @@
 
     <groupId>com.xiyu</groupId>
     <artifactId>bid-poc</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <name>XiYu Bid POC</name>
     <description>XiYu Bidding System POC Backend</description>
 

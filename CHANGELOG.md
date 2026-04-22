@@ -4,6 +4,22 @@
 
 ## [未发布]
 
+## [1.0.1] - 2026-04-22
+
+### Changed
+- 拆分 Dashboard Workbench 巨型页面为页面编排、纯核心规则、应用服务 composable、展示组件和独立样式模块。
+- 将投标日历、指标卡、项目列表、待办、审批、流程、团队表现、快速发起等区块迁移为职责单一的组件。
+- 补齐 Dashboard 空状态、错误状态和重试入口，避免 API 空数据或失败时出现沉默空白。
+- 为可点击卡片和日历节点补充键盘访问与可见 focus 状态。
+
+### Added
+- 新增 Workbench characterization、纯核心、composable 和展示组件测试，覆盖角色视图、API 映射、路由、支持申请、待办完成和日历 store 接线。
+- 新增 Dashboard README，记录 Workbench 拆分边界、空态/a11y 约束和 300 行拆分规则。
+
+### Fixed
+- 移除 Workbench 样式入口中的 CSS `@import` 串联，改由 JS 入口交给 Vite 打包。
+- 移除日历样式覆盖中的 `!important`，降低样式特异性债务。
+
 ### 2026-04-20
 
 #### 新增 (Features)
