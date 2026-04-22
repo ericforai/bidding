@@ -56,7 +56,7 @@ public class Tender {
     private Long id;
 
     /**
-     * 外部唯一标识 (来自 CEB 平台)
+     * 外部平台唯一标识
      */
     @Column(name = "external_id", length = 100, unique = true)
     private String externalId;

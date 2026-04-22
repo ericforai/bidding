@@ -73,7 +73,6 @@
             <el-option label="内部" value="internal" />
             <el-option label="外部获取" value="external" />
             <el-option label="人工录入" value="manual" />
-            <el-option label="公共服务平台(CEB)" value="CEB" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -180,12 +179,7 @@
               <el-icon><Download /></el-icon>
               导出
             </el-button>
-            <el-button
-              size="small"
-              type="warning"
-              :loading="crawlerLoading"
-              @click="handleFetchFromCeb"
-            >
+            <el-button size="small" type="warning" :loading="fetchingTenders" @click="handleFetchExternalTenders">
               <el-icon><Refresh /></el-icon>
               一键获取标讯
             </el-button>
@@ -1299,7 +1293,6 @@ import { useRouter } from 'vue-router'
 import { useBiddingStore } from '@/stores/bidding'
 import { useUserStore } from '@/stores/user'
 import { tendersApi } from '@/api'
-import { crawlerApi } from '@/api/modules/tenders'
 import { batchTendersApi } from '@/api/modules/tenders/batch.js'
 import {
   Search, Plus, Download, Star, TrendCharts, List, Share, CircleCheck,
@@ -1351,27 +1344,6 @@ const viewMode = ref('all')
 
 // 移动端检测
 const isMobile = ref(false)
-
-// 爬虫触发
-const crawlerLoading = ref(false)
-const handleFetchFromCeb = async () => {
-  crawlerLoading.value = true
-  try {
-    const res = await crawlerApi.trigger({ keyword: searchForm.value?.keyword || '', pageSize: 20 })
-    if (res?.success || res?.data) {
-      const d = res.data || {}
-      ElMessage.success(`标讯同步完成：新增 ${d.saved ?? 0} 条，跳过 ${d.skipped ?? 0} 条`)
-      // 刷新列表
-      await refreshTenderList()
-    } else {
-      ElMessage.warning(res?.message || '同步完成，但未得到结果')
-    }
-  } catch (e) {
-    ElMessage.error('获取标讯失败，请检查网络或后端服务')
-  } finally {
-    crawlerLoading.value = false
-  }
-}
 
 const checkMobile = () => {
   isMobile.value = window.innerWidth < 768
@@ -1798,8 +1770,8 @@ const savingConfig = ref(false)
 const testingConnection = ref(false)
 const lastSyncTime = ref('暂未同步')
 
-// 模拟外部标讯数据
-const mockExternalTenders = [
+// 外部 API 未就绪时的预览数据
+const fallbackExternalTenders = [
   {
     id: 'ext_001',
     title: '某省政务云平台扩容采购项目',
@@ -1987,7 +1959,6 @@ const getSourceTagType = (source) => {
     internal: 'info',
     external: 'success',
     manual: 'warning',
-    'CEB': 'success',
     '中国招标投标公共服务平台': 'success'
   }
   return map[source] || 'info'
@@ -1998,8 +1969,7 @@ const getSourceText = (source) => {
     internal: '内部',
     external: '外部获取',
     manual: '人工录入',
-    'CEB': '公共平台(CEB)',
-    '中国招标投标公共服务平台': '公共平台(CEB)'
+    '中国招标投标公共服务平台': '外部平台'
   }
   return map[source] || source
 }
@@ -2630,6 +2600,10 @@ const testConnection = async () => {
 }
 
 // ========== 获取外部标讯相关 ==========
+const fetchExternalTendersFromApi = async () => {
+  // TODO: 待外部标讯聚合 API 完成后替换为真实请求
+  throw new Error('EXTERNAL_API_NOT_READY')
+}
 
 const handleFetchExternalTenders = async () => {
   if (sourceConfig.value.platforms.length === 0) {
@@ -2640,9 +2614,23 @@ const handleFetchExternalTenders = async () => {
 
   fetchingTenders.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    let results = []
+    let usingFallback = false
+    const endpointConfigured = Boolean(sourceConfig.value.apiEndpoint?.trim())
 
-    let results = mockExternalTenders
+    if (endpointConfigured) {
+      try {
+        results = await fetchExternalTendersFromApi()
+      } catch (error) {
+        usingFallback = true
+        results = fallbackExternalTenders
+      }
+    } else {
+      usingFallback = true
+      results = fallbackExternalTenders
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 1200))
     if (sourceConfig.value.keywords.length > 0) {
       results = results.filter(t =>
         sourceConfig.value.keywords.some(kw =>
@@ -2680,7 +2668,11 @@ const handleFetchExternalTenders = async () => {
 
     if (results.length > 0) {
       showFetchResult.value = true
-      ElMessage.success(`成功获取 ${results.length} 条标讯`)
+      if (usingFallback) {
+        ElMessage.warning(`外部API暂未对接完成，当前展示 ${results.length} 条预览数据`)
+      } else {
+        ElMessage.success(`成功获取 ${results.length} 条标讯`)
+      }
     } else {
       ElMessage.info('未获取到匹配的标讯，请调整筛选条件')
     }

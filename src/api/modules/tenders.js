@@ -100,11 +100,3 @@ export const tendersApi = {
 }
 
 export default tendersApi
-
-export const crawlerApi = {
-  async trigger({ keyword = '', page = 1, pageSize = 20 } = {}) {
-    return httpClient.post('/api/admin/crawler/trigger', null, {
-      params: { keyword, page, pageSize }
-    })
-  }
-}

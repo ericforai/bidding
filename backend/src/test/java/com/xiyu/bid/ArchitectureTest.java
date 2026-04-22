@@ -128,14 +128,12 @@ public class ArchitectureTest {
         "AdminSettingsController",
         "AdminUserController",
         "AuthController",
-        "CebCrawlerController",
         "TestController"
     );
 
     private static final Set<String> ALLOWED_ROOT_SERVICES = Set.of(
         "AdminUserService",
         "AuthService",
-        "CebCrawlerService",
         "DataScopeConfigService",
         "EmailService",
         "EmailVerificationService",
