@@ -158,8 +158,8 @@
 }
 
 .calendar-wrapper .el-calendar-table .el-calendar-day.is-selected {
-  background: linear-gradient(135deg, #E0ECFF 0%, #DBEAFE 100%) !important;
-  color: #1D4ED8 !important;
+  background: linear-gradient(135deg, #E0ECFF 0%, #DBEAFE 100%);
+  color: #1D4ED8;
 }
 
 .calendar-wrapper .el-calendar-table .el-calendar-day.is-today {

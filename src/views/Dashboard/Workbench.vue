@@ -163,7 +163,7 @@ import WorkCalendar from '@/views/Dashboard/components/WorkCalendar.vue'
 import {
   Briefcase, Calendar, Check, DataAnalysis, Document, Flag, FolderOpened, TrendCharts, User, Wallet,
 } from '@element-plus/icons-vue'
-import '@/views/Dashboard/styles/workbench.css'
+import '@/views/Dashboard/styles/workbench-styles.js'
 
 const Icons = markRaw({ Briefcase, Calendar, Check, DataAnalysis, Document, Flag, FolderOpened, TrendCharts, User, Wallet })
 const router = useRouter()
