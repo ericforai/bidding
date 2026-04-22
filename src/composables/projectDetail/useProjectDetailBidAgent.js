@@ -14,7 +14,10 @@ function isFailedResponse(response) {
 }
 
 function getMessage(error, fallback) {
-  return error?.message || fallback
+  return error?.response?.data?.message
+    || error?.response?.data?.error
+    || error?.message
+    || fallback
 }
 
 function resolveRunId(run) {
@@ -66,7 +69,9 @@ export function useProjectDetailBidAgent(context) {
   const reportError = (err, fallback) => {
     const text = getMessage(err, fallback)
     error.value = text
-    message?.error?.(text)
+    if (!err?.response) {
+      message?.error?.(text)
+    }
   }
 
   const ensureRunId = () => {

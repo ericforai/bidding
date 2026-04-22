@@ -50,6 +50,25 @@ describe('useProjectDetailBidAgent', () => {
     expect(context.message.success).toHaveBeenCalledWith('AI 初稿生成任务已启动')
   })
 
+  it('shows backend business errors instead of generic HTTP status text', async () => {
+    apiMocks.createRun.mockRejectedValue({
+      message: 'Request failed with status code 409',
+      response: {
+        data: {
+          message: 'ai.openai.api-key must be configured for bid draft generation',
+        },
+      },
+    })
+    const context = createContext()
+    const agent = useProjectDetailBidAgent(context)
+
+    const run = await agent.createRun()
+
+    expect(run).toBeNull()
+    expect(agent.error.value).toBe('ai.openai.api-key must be configured for bid draft generation')
+    expect(context.message.error).not.toHaveBeenCalled()
+  })
+
   it('fetches the latest run state using the current run id', async () => {
     apiMocks.createRun.mockResolvedValue({ success: true, data: { runId: 'run-8', status: 'QUEUED' } })
     apiMocks.getRun.mockResolvedValue({ success: true, data: { runId: 'run-8', status: 'COMPLETED' } })
