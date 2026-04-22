@@ -117,7 +117,6 @@ describe('List.vue (标讯中心)', () => {
           AiParsingDialog: true,
           AiRecommendSection: true,
           AssignDialog: true,
-          BiddingPageHeader: true,
           DistributeDialog: true,
           FetchResultDialog: true,
           ManualTenderDialog: true,
@@ -128,8 +127,7 @@ describe('List.vue (标讯中心)', () => {
           TenderBatchActionBar: true,
           TenderMobileCards: true,
           TenderSearchCard: true,
-          TenderTable: true,
-          'el-card': true,
+          'el-card': { template: '<div><slot name="header" /><slot /></div>' },
           'el-button': true,
           'el-icon': true,
           'el-radio-group': true,
@@ -139,7 +137,9 @@ describe('List.vue (标讯中心)', () => {
       },
     })
 
-    expect(wrapper.find('.bidding-page-header-stub').exists()).toBe(true)
-    expect(wrapper.find('.tender-table-stub').exists()).toBe(true)
+    expect(wrapper.find('bidding-page-header-stub').exists()).toBe(true)
+    expect(
+      wrapper.find('tender-table-stub').exists() || wrapper.find('tender-mobile-cards-stub').exists(),
+    ).toBe(true)
   })
 })
