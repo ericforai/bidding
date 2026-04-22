@@ -61,7 +61,7 @@ VITE_API_MODE=api VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --host
 - **前端**：Vue 3 + Vite 5 + Element Plus + Pinia + Vue Router 4 + Axios + ECharts + Sass
 - **单元测试**：Vitest
 - **端到端测试**：Playwright
-- **后端**：Spring Boot 3.2 + Java 21 + Spring Data JPA + PostgreSQL + Redis + Flyway
+- **后端**：Spring Boot 3.2 + Java 21 + Spring Data JPA + MySQL 8.0 + Redis + Flyway
 
 ### 端口约定
 

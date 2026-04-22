@@ -7,10 +7,9 @@
 - [ ] `VITE_API_MODE=api npm run build` 通过
 - [ ] `mvn -DskipTests compile` 通过
 - [ ] 关键测试通过
-- [ ] PostgreSQL baseline Testcontainers 验证通过
-- [ ] MySQL 8.0 baseline Testcontainers 验证通过，或确认本次发布不启用 MySQL profile
+- [ ] MySQL 8.0 baseline Testcontainers 验证通过
 - [ ] 数据库备份已执行并校验产物存在
-- [ ] 数据库引擎已确认：默认 PostgreSQL；客户 MySQL 新库部署使用 `DB_ENGINE=mysql` 与 `SPRING_PROFILES_ACTIVE=prod,mysql`
+- [ ] 数据库引擎已确认：MySQL 8.0（`DB_ENGINE=mysql`，`SPRING_PROFILES_ACTIVE=prod,mysql`）
 - [ ] 监控面板与告警规则已配置
 - [ ] UAT 已通过并签字
 - [ ] 已知 P0 缺陷为 0
@@ -23,7 +22,7 @@
 - [ ] 执行 `scripts/release/preflight.sh`
 - [ ] 记录当前版本号/提交号
 - [ ] 停止流量或进入维护窗口
-- [ ] 执行数据库迁移；PostgreSQL 使用 `db/migration`，MySQL 使用 `db/migration-mysql`
+- [ ] 执行数据库迁移（MySQL 路径 `db/migration-mysql`）
 - [ ] 部署后端应用
 - [ ] 部署前端静态资源
 - [ ] 产物版本与 `main` 提交号一致

@@ -10,7 +10,7 @@
 - **Spring Boot**: 3.2.0
 - **Spring Security**: 6.1.1
 - **Spring Data JPA**: 3.2.0
-- **数据库**: PostgreSQL (生产) / H2 (开发/测试)
+- **数据库**: MySQL 8.0 (生产) / H2 (开发/测试)
 - **构建工具**: Maven
 - **测试框架**: JUnit 5, MockMvc, TestContainers
 - **JWT**: JJWT 0.12.3

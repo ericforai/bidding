@@ -401,7 +401,7 @@ CREATE TABLE document_sections (
 - Spring Boot 3.2.0
 - Spring Data JPA
 - Lombok
-- PostgreSQL/H2
+- MySQL 8.0/H2
 - Spring Security
 
 ## Future Enhancements

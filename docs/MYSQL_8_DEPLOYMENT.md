@@ -2,9 +2,9 @@
 
 ## 范围
 
-MySQL 8.0 是客户专项的新库部署路径。PostgreSQL 仍是默认和主线数据库。
+MySQL 8.0 是当前生产主线数据库部署路径。
 
-本路径不包含 PostgreSQL 历史数据迁移到 MySQL。
+历史 PostgreSQL 数据迁移不在本文档范围内，按专项迁移方案执行。
 
 ## 运行配置
 
@@ -24,10 +24,9 @@ DB_PASSWORD=<mysql-password>
 
 ## Flyway
 
-- PostgreSQL 继续使用 `classpath:db/migration`。
 - MySQL 使用 `classpath:db/migration-mysql`。
 - 当前 MySQL baseline 为 `B73__full_schema_baseline.sql`。
-- 从 `V74` 开始，新业务迁移必须同时提交 PostgreSQL 与 MySQL 两条路径。
+- 历史 PostgreSQL 路径仅作兼容保留，不再作为默认发布路径。
 
 ## 本地演练
 

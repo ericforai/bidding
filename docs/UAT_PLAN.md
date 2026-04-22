@@ -13,7 +13,7 @@
 
 ## Environment
 - 前端：`VITE_API_MODE=api`
-- 后端：Spring Boot + PostgreSQL + Redis
+- 后端：Spring Boot + MySQL 8.0 + Redis
 - 数据库：已应用 Flyway baseline 与增量迁移
 - 监控：`/actuator/health` 可访问，`/actuator/prometheus` 按安全策略可访问或返回 401/403
 - 本地全流程演练入口：`bash scripts/release/rehearse-release.sh`

@@ -218,7 +218,7 @@ CREATE TABLE document_sections (
 - Spring Data JPA
 - Spring Security
 - Lombok
-- PostgreSQL/H2
+- MySQL 8.0/H2
 - Jackson (JSON processing)
 
 ## Testing Instructions
