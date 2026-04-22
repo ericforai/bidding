@@ -96,6 +96,24 @@ export const tendersApi = {
       }
       return httpClient.post(`/api/tenders/${id}/ai-analysis`)
     }
+  },
+
+  async initUploadSession(data) {
+    return httpClient.post('/api/tenders/upload-init', data)
+  },
+
+  async completeUpload(data) {
+    return httpClient.post('/api/tenders/upload-complete', data)
+  },
+
+  async getUploadTaskStatus(taskId) {
+    if (!isNumericId(taskId)) {
+      return {
+        success: false,
+        message: '当前后端仅支持数字型任务 ID'
+      }
+    }
+    return httpClient.get(`/api/tenders/tasks/${taskId}`)
   }
 }
 
