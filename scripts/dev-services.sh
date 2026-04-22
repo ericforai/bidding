@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Input: local dev environment and repository startup commands
+# Input: local dev environment, backend profile options, and repository startup commands
 # Output: stable daemon-like start/stop/status/log control for frontend/backend dev services
 # Pos: scripts/ - local service lifecycle management
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
@@ -21,6 +21,72 @@ FRONTEND_LOG="$RUNTIME_DIR/frontend.log"
 WATCHDOG_PID_FILE="$RUNTIME_DIR/watchdog.pid"
 WATCHDOG_LOG="$RUNTIME_DIR/watchdog.log"
 WATCHDOG_INTERVAL_SECONDS="${WATCHDOG_INTERVAL_SECONDS:-5}"
+DEFAULT_BACKEND_PROFILE="${BACKEND_PROFILE:-dev,mysql}"
+BACKEND_PROFILE_OVERRIDE=""
+ACTIVE_BACKEND_PROFILE=""
+
+is_valid_command() {
+  case "$1" in
+    start|stop|restart|status|logs|watch-start|watch-stop|watch-status|watch-run)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+parse_args() {
+  local cmd_seen=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -p|--profile)
+        if [[ $# -lt 2 ]]; then
+          echo "missing value for $1" >&2
+          usage
+          exit 1
+        fi
+        BACKEND_PROFILE_OVERRIDE="$2"
+        shift 2
+        ;;
+      --profile=*)
+        BACKEND_PROFILE_OVERRIDE="${1#--profile=}"
+        shift
+        ;;
+      *)
+        if is_valid_command "$1"; then
+          if [[ -n "$cmd_seen" ]]; then
+            echo "multiple commands specified: $cmd_seen and $1" >&2
+            usage
+            exit 1
+          fi
+          cmd_seen="$1"
+          shift
+        else
+          echo "unknown argument: $1" >&2
+          usage
+          exit 1
+        fi
+        ;;
+    esac
+  done
+
+  if [[ -n "$BACKEND_PROFILE_OVERRIDE" ]]; then
+    ACTIVE_BACKEND_PROFILE="$BACKEND_PROFILE_OVERRIDE"
+  else
+    ACTIVE_BACKEND_PROFILE="$DEFAULT_BACKEND_PROFILE"
+  fi
+
+  if [[ -n "$cmd_seen" ]]; then
+    CMD="$cmd_seen"
+  else
+    CMD="status"
+  fi
+}
+
+profile_args() {
+  printf '%s\n%s\n' "--profile" "$ACTIVE_BACKEND_PROFILE"
+}
 
 is_pid_running() {
   local pid="$1"
@@ -57,17 +123,22 @@ wait_http() {
 start_backend() {
   local pid=""
   pid="$(read_pid "$BACKEND_PID_FILE" 2>/dev/null || true)"
-  if is_pid_running "$pid" && is_port_listening "$BACKEND_PORT"; then
-    echo "[backend] already running (pid=$pid, port=$BACKEND_PORT)"
+  if is_pid_running "$pid"; then
+    if is_port_listening "$BACKEND_PORT"; then
+      echo "[backend] already running (pid=$pid, port=$BACKEND_PORT)"
+    else
+      echo "[backend] process is running (pid=$pid), waiting for port $BACKEND_PORT to become ready"
+    fi
     return 0
   fi
 
   echo "[backend] starting on :$BACKEND_PORT"
+  echo "[backend] profile: $ACTIVE_BACKEND_PROFILE"
   : >"$BACKEND_LOG"
   (
     cd "$ROOT_DIR/backend"
     nohup env \
-      SPRING_PROFILES_ACTIVE=e2e \
+      SPRING_PROFILES_ACTIVE="$ACTIVE_BACKEND_PROFILE" \
       CORS_ALLOWED_ORIGINS="http://localhost:${FRONTEND_PORT},http://127.0.0.1:${FRONTEND_PORT}" \
       mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT}" \
       >>"$BACKEND_LOG" 2>&1 < /dev/null &
@@ -78,8 +149,12 @@ start_backend() {
 start_frontend() {
   local pid=""
   pid="$(read_pid "$FRONTEND_PID_FILE" 2>/dev/null || true)"
-  if is_pid_running "$pid" && is_port_listening "$FRONTEND_PORT"; then
-    echo "[frontend] already running (pid=$pid, port=$FRONTEND_PORT)"
+  if is_pid_running "$pid"; then
+    if is_port_listening "$FRONTEND_PORT"; then
+      echo "[frontend] already running (pid=$pid, port=$FRONTEND_PORT)"
+    else
+      echo "[frontend] process is running (pid=$pid), waiting for port $FRONTEND_PORT to become ready"
+    fi
     return 0
   fi
 
@@ -201,11 +276,11 @@ watchdog_start() {
   fi
 
   : >"$WATCHDOG_LOG"
-  nohup bash -lc "cd \"$ROOT_DIR\" && \"$0\" watch-run" >>"$WATCHDOG_LOG" 2>&1 < /dev/null &
+  nohup bash -lc "cd \"$ROOT_DIR\" && \"$0\" --profile \"$ACTIVE_BACKEND_PROFILE\" watch-run" >>"$WATCHDOG_LOG" 2>&1 < /dev/null &
   echo $! >"$WATCHDOG_PID_FILE"
   sleep 1
   if watchdog_running; then
-    echo "[watchdog] started pid=$(watchdog_pid), interval=${WATCHDOG_INTERVAL_SECONDS}s"
+    echo "[watchdog] started pid=$(watchdog_pid), interval=${WATCHDOG_INTERVAL_SECONDS}s, profile=${ACTIVE_BACKEND_PROFILE}"
   else
     echo "[watchdog] failed to start"
     tail -n 80 "$WATCHDOG_LOG" 2>/dev/null || true
@@ -239,12 +314,19 @@ watchdog_status() {
 
 usage() {
   cat <<'EOF'
-Usage: scripts/dev-services.sh <start|stop|restart|status|logs|watch-start|watch-stop|watch-status>
+Usage: scripts/dev-services.sh [--profile <spring_profiles>] <start|stop|restart|status|logs|watch-start|watch-stop|watch-status>
+
+Examples:
+  scripts/dev-services.sh start
+  scripts/dev-services.sh --profile e2e restart
+  scripts/dev-services.sh --profile dev,mysql watch-start
 EOF
 }
 
-cmd="${1:-status}"
-case "$cmd" in
+CMD=""
+parse_args "$@"
+
+case "$CMD" in
   start)
     start_backend
     if ! wait_http "$BACKEND_HEALTH_URL" 120; then
@@ -259,6 +341,7 @@ case "$cmd" in
       exit 1
     fi
     echo "services started successfully."
+    echo "backend profile: $ACTIVE_BACKEND_PROFILE"
     status
     ;;
   stop)
@@ -267,8 +350,8 @@ case "$cmd" in
     stop_one "backend" "$BACKEND_PID_FILE"
     ;;
   restart)
-    "$0" stop
-    "$0" start
+    "$0" --profile "$ACTIVE_BACKEND_PROFILE" stop
+    "$0" --profile "$ACTIVE_BACKEND_PROFILE" start
     ;;
   status)
     status
