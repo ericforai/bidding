@@ -30,8 +30,8 @@
         <spotbugs.maven.plugin.version>4.8.6.6</spotbugs.maven.plugin.version>
         <quality.skip>true</quality.skip>
         <quality.failOnViolation>true</quality.failOnViolation>
-        <quality.includes>**/marketinsight/core/**/*.java,**/admin/settings/core/**/*.java,**/task/core/**/*.java,**/bidresult/core/**/*.java,**/projectworkflow/**/*.java</quality.includes>
-        <quality.onlyAnalyze>com.xiyu.bid.marketinsight.core.*,com.xiyu.bid.admin.settings.core.*,com.xiyu.bid.task.core.*,com.xiyu.bid.bidresult.core.*,com.xiyu.bid.projectworkflow.*</quality.onlyAnalyze>
+        <quality.includes>**/marketinsight/core/**/*.java,**/admin/settings/core/**/*.java,**/task/core/**/*.java,**/bidresult/core/**/*.java,**/projectworkflow/**/*.java,**/ai/core/**/*.java</quality.includes>
+        <quality.onlyAnalyze>com.xiyu.bid.marketinsight.core.*,com.xiyu.bid.admin.settings.core.*,com.xiyu.bid.task.core.*,com.xiyu.bid.bidresult.core.*,com.xiyu.bid.projectworkflow.*,com.xiyu.bid.ai.core.*</quality.onlyAnalyze>
         <jacoco.check.skip>false</jacoco.check.skip>
         <jacoco.minimum.coveredratio>0.10</jacoco.minimum.coveredratio>
     </properties>
@@ -144,6 +144,13 @@
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-scratchpad</artifactId>
             <version>5.2.5</version>
+        </dependency>
+
+        <!-- OpenAI SDK -->
+        <dependency>
+            <groupId>com.openai</groupId>
+            <artifactId>openai-java</artifactId>
+            <version>4.32.0</version>
         </dependency>
         <!-- Test Dependencies -->
         <dependency>
