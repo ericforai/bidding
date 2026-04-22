@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getTimeGreeting } from '@/views/Dashboard/workbench-utils.js'
+import { getTimeGreeting } from '@/views/Dashboard/workbench-core.js'
 
 describe('getTimeGreeting', () => {
   it('returns "上午好" for morning hours (8)', () => {
