@@ -6,6 +6,8 @@ import {
   normalizeBatchResult,
   normalizeAiDimensions,
   normalizeAiRisks,
+  formatBudgetWan,
+  safeTenderUrl,
   toBackendStatus
 } from './bidding-utils.js'
 
@@ -157,6 +159,21 @@ describe('buildTenderUpdatePayload', () => {
   it('ignores fields not in the allowed set', () => {
     const result = buildTenderUpdatePayload({ id: 999, createdAt: '2026-01-01' })
     expect(result).toEqual({})
+  })
+})
+
+describe('display and URL helpers', () => {
+  it('formats backend yuan budgets as ten-thousand-yuan display values', () => {
+    expect(formatBudgetWan(15800000)).toBe('1,580')
+    expect(formatBudgetWan(4500000)).toBe('450')
+    expect(formatBudgetWan(12500)).toBe('1.25')
+  })
+
+  it('allows only http and https tender URLs', () => {
+    expect(safeTenderUrl('https://example.com/tender')).toBe('https://example.com/tender')
+    expect(safeTenderUrl('http://example.com/tender')).toBe('http://example.com/tender')
+    expect(safeTenderUrl('javascript:alert(1)')).toBe('')
+    expect(safeTenderUrl('/relative/path')).toBe('')
   })
 })
 

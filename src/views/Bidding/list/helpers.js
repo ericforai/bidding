@@ -4,6 +4,10 @@
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 import { DEFAULT_SOURCE_CONFIG } from './constants.js'
+import {
+  formatBudgetWan as formatBudgetWanValue,
+  safeTenderUrl as safeTenderUrlValue,
+} from '../bidding-utils.js'
 
 export function normalizeRole(value) {
   return String(value || '').trim().toLowerCase().replace(/^role_/, '')
@@ -57,18 +61,9 @@ export function restoreSourceConfig(rawValue, storageWriter) {
   }
 }
 
-export function safeTenderUrl(value) {
-  if (!value) {
-    return ''
-  }
+export const safeTenderUrl = safeTenderUrlValue
 
-  try {
-    const url = new URL(String(value))
-    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : ''
-  } catch {
-    return ''
-  }
-}
+export const formatBudgetWan = formatBudgetWanValue
 
 export function formatLocalDateTime(value) {
   if (!value) return null

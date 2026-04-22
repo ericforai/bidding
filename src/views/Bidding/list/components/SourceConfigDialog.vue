@@ -8,7 +8,7 @@
     <el-form :model="sourceConfig" label-width="120px">
       <el-form-item label="标讯源平台">
         <el-checkbox-group v-model="sourceConfig.platforms">
-          <el-checkbox v-for="platform in sourcePlatforms" :key="platform" :label="platform" />
+          <el-checkbox v-for="platform in sourcePlatforms" :key="platform" :label="platform" :value="platform" />
         </el-checkbox-group>
       </el-form-item>
       <el-form-item label="API端点">

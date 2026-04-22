@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   buildPermissionFlags,
+  formatBudgetWan,
   restoreSourceConfig,
   safeTenderUrl,
   sanitizeSourceConfigForStorage,
@@ -41,6 +42,12 @@ describe('bidding list helpers', () => {
     expect(safeTenderUrl('http://example.com/tender')).toBe('http://example.com/tender')
     expect(safeTenderUrl('javascript:alert(1)')).toBe('')
     expect(safeTenderUrl('/relative/path')).toBe('')
+  })
+
+  it('formats backend yuan budgets as ten-thousand-yuan display values', () => {
+    expect(formatBudgetWan(15800000)).toBe('1,580')
+    expect(formatBudgetWan(4500000)).toBe('450')
+    expect(formatBudgetWan(12500)).toBe('1.25')
   })
 
   it('matches frontend permission flags to backend role boundary', () => {
