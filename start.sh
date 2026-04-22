@@ -6,7 +6,6 @@ BACKEND_DIR="$ROOT_DIR/backend"
 DEV_LOG="/tmp/xiyu-bid-poc-dev.log"
 BACKEND_PORT="${BACKEND_PORT:-18080}"
 FRONTEND_PORT="${FRONTEND_PORT:-1314}"
-BACKEND_PROFILE="${BACKEND_PROFILE:-dev,mysql}"
 BACKEND_HEALTH_URL="http://127.0.0.1:${BACKEND_PORT}/actuator/health"
 FRONTEND_URL="http://127.0.0.1:${FRONTEND_PORT}/"
 CORS_ORIGINS="${CORS_ALLOWED_ORIGINS:-http://localhost:1314,http://127.0.0.1:1314}"
@@ -14,40 +13,6 @@ BACKEND_PID=""
 FRONTEND_PID=""
 STARTED_ANYTHING=false
 FRONTEND_ALREADY_UP=false
-
-usage() {
-  cat <<'EOF'
-Usage: ./start.sh [--profile <spring_profiles>]
-
-Examples:
-  ./start.sh
-  ./start.sh --profile e2e
-  BACKEND_PROFILE=dev,mysql ./start.sh
-EOF
-}
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    -p|--profile)
-      if [[ $# -lt 2 ]]; then
-        echo "missing value for $1" >&2
-        usage
-        exit 1
-      fi
-      BACKEND_PROFILE="$2"
-      shift 2
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      echo "unknown argument: $1" >&2
-      usage
-      exit 1
-      ;;
-  esac
-done
 
 is_http_ready() {
   curl -fsS "$1" >/dev/null 2>&1
@@ -84,7 +49,6 @@ trap cleanup EXIT INT TERM
 : > "$DEV_LOG"
 
 printf 'Dev log: %s\n' "$DEV_LOG"
-printf 'Backend profile: %s\n' "$BACKEND_PROFILE"
 
 if is_http_ready "$BACKEND_HEALTH_URL"; then
   printf '[backend] already healthy at %s\n' "$BACKEND_HEALTH_URL"
@@ -92,7 +56,7 @@ else
   printf '[backend] starting on %s\n' "$BACKEND_PORT"
   pushd "$BACKEND_DIR" >/dev/null
   env \
-    SPRING_PROFILES_ACTIVE="$BACKEND_PROFILE" \
+    SPRING_PROFILES_ACTIVE=e2e \
     CORS_ALLOWED_ORIGINS="$CORS_ORIGINS" \
     mvn clean spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT}" \
     >> "$DEV_LOG" 2>&1 &
