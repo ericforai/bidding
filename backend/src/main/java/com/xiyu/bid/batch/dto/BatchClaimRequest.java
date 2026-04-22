@@ -14,7 +14,6 @@ import java.util.List;
 public class BatchClaimRequest {
     @NotEmpty(message = "项目ID列表不能为空")
     private List<@NotNull(message = "项目ID不能为空") Long> itemIds;
-    @NotNull(message = "认领人ID不能为空")
     private Long userId;
     private String itemType;
 }

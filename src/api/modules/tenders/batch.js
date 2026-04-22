@@ -24,10 +24,9 @@ function normalizeBatchResponse(response = {}) {
 }
 
 export const batchTendersApi = {
-  async batchClaim(tenderIds, userId) {
+  async batchClaim(tenderIds) {
     const response = await httpClient.post('/api/batch/tenders/claim', {
       itemIds: tenderIds,
-      userId: Number(userId),
       itemType: 'tender',
     })
     return normalizeBatchResponse(response)
