@@ -33,6 +33,7 @@
 | `tasks.js` | 任务管理 |
 | `fees.js` | 费用管理 |
 | `ai.js` | AI 智能分析 |
+| `bidAgent.js` | 标书写作 Agent 的运行、状态、写入和审查调用 |
 | ... | 其他业务模块 |
 
 ## 治理底线
@@ -49,3 +50,4 @@
 - 2026-04-19: 新增 `qualification.js` 并在 `index.js` 暴露独立 `qualificationsApi`，供资质页 store 与知识模块共享
 - 2026-04-21: `tenders.js` 改为透传服务端检索参数，并仅做标讯返回字段规范化
 - 2026-04-22: API 聚合入口移除重复动态 import，认证刷新通过 `authNormalizer.js` 与 `authStoreBridge.js` 消除 Vite 动静态导入警告
+- 2026-04-22: 新增 `bidAgent.js` 并在 `index.js` 暴露 `bidAgentApi`，接入项目标书写作 Agent 的真实 API 单一路径
