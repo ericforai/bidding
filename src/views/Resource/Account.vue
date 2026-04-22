@@ -233,12 +233,19 @@ const createForm = ref({
 const editingAccountId = ref(null)
 
 const loadAccounts = async () => {
-  const response = await resourcesApi.accounts.getList(searchForm.value)
-  if (!response?.success) {
-    ElMessage.error(response?.message || '账户数据加载失败')
-    return
+  try {
+    const response = await resourcesApi.accounts.getList(searchForm.value)
+    if (!response?.success) {
+      ElMessage.error(response?.message || '账户数据加载失败')
+      accounts.value = []
+      return
+    }
+    accounts.value = Array.isArray(response.data) ? response.data : []
+  } catch (error) {
+    console.error('Failed to load accounts:', error)
+    accounts.value = []
+    ElMessage.error('账户数据加载失败')
   }
-  accounts.value = Array.isArray(response.data) ? response.data : []
 }
 
 const handleBorrow = (row) => {

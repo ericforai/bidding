@@ -43,6 +43,7 @@ test-login.html
 .worktrees/
 .gstack/
 .context/
+.runtime/
 
 # OMC 运行态文件（本地 agent/session 状态，不提交）
 .omc/
