@@ -32,6 +32,7 @@
 - 项目立项
 - 项目详情与进度跟踪
 - 协同任务分配
+- AI 标书初稿生成、缺漏检查与写入文档编辑器
 - AI 合规检查与质量评分
 - 投标结果闭环
 
@@ -189,11 +190,13 @@ mvn -Pjava-quality,java-quality-spotbugs,quality-strict -DskipTests -Djacoco.ski
 
 ## 当前验证基线
 
-截至 2026-04-16：
+截至 2026-04-22：
 - `npm run check:front-data-boundaries` 可通过
 - `npm run check:doc-governance` 可通过
 - `npm run build` 可通过
-- `backend` 的 `ArchitectureTest` 已修复并恢复全绿
+- `npm run test:unit` 可通过，当前基线为 `61` 个测试文件、`341` 个测试
+- `npm run test:e2e` 可通过，当前基线为 `26` 通过、`2` 跳过
+- `backend` 的 `mvn test` 可通过，当前基线为 `1043` 个测试
 
 后端架构测试已修复的历史问题包括：
 - `config -> service` 依赖：`E2eDemoDataInitializer` 不再直接依赖 `RoleProfileService`

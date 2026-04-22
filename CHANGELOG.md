@@ -7,14 +7,14 @@
 ## [1.0.2] - 2026-04-22
 
 ### Added
-- 新增 Java 后端内置标书生成 Agent，支持项目详情发起运行、OpenAI Responses structured outputs 生成草稿、运行产物查询、审查和写入文档编辑器。
-- 新增 bid draft agent 纯核心策略、应用编排、持久化表、REST API、前端真实 API 模块、项目详情生成抽屉和编辑器跳转入口。
-- 新增文档编辑器草稿树批量写入能力，保留来源 metadata、置信度、人工确认标记，并跳过锁定章节。
+- 可以在项目详情直接发起 AI 标书初稿生成，查看运行产物、审查摘要，并把草稿写入文档编辑器。
+- 标书生成链路现在使用 OpenAI Responses structured outputs 作为生产路径，生成内容会保留来源线索、置信度和人工确认项。
+- 文档编辑器支持批量写入 AI 草稿章节树，保留来源 metadata，并自动跳过已锁定章节。
 - 新增后端架构/领域/应用/控制器/文档写入测试、前端 bid-agent 单测和 E2E 回归覆盖。
 
 ### Changed
-- 拆分 AI 深度能力服务，将评分、风险、gap、任务等规则下沉到纯核心包，应用服务收敛为编排职责。
-- OpenAI Provider 改为配置注入，移除手工 JSON 截取路径，并将标书 Agent 生产路径固定为 OpenAI structured outputs。
+- AI 深度能力服务完成拆分，评分、风险、gap、任务等规则进入可单测的纯核心，应用服务只负责编排。
+- OpenAI Provider 改为配置注入，减少环境变量和手工 JSON 截取造成的运行风险。
 - 项目详情、Dashboard、Bidding 相关前端测试拆分和稳定化，保持 Split-First 单文件 300 行约束。
 
 ### Fixed
