@@ -167,7 +167,7 @@ class SettingsControllerTest {
                 .providerCode("deepseek")
                 .baseUrl("https://api.deepseek.com/chat/completions")
                 .model("deepseek-chat")
-                .apiKeyPlaintext("sk-test")
+                .apiKeyPlaintext("sk-deepseek-secret-1234")
                 .build();
 
         mockMvc.perform(post("/api/settings/ai-models/test")
@@ -177,6 +177,13 @@ class SettingsControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.providerCode").value("deepseek"))
                 .andExpect(jsonPath("$.data.status").value("success"));
+
+        mockMvc.perform(get("/api/settings"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.aiModelConfig.providers[1].providerCode").value("deepseek"))
+                .andExpect(jsonPath("$.data.aiModelConfig.providers[1].apiKeyConfigured").value(true))
+                .andExpect(jsonPath("$.data.aiModelConfig.providers[1].apiKeyMasked").value("sk-d****1234"))
+                .andExpect(jsonPath("$.data.aiModelConfig.providers[1].encryptedApiKey").doesNotExist());
     }
 
     @Test

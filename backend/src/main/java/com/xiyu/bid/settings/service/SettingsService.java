@@ -339,6 +339,40 @@ public class SettingsService {
         return copyAiModelConfigForResponse(config);
     }
 
+    @Transactional
+    public SettingsResponse.AiModelConfig saveSuccessfulAiProviderTestConfig(
+            String providerCode,
+            String baseUrl,
+            String model,
+            String apiKeyPlaintext,
+            String message
+    ) {
+        SettingsResponse settings = readSettings();
+        SettingsResponse.AiModelConfig config = normalizeAiModelConfig(settings.getAiModelConfig());
+        String normalizedProviderCode = normalizeProviderCode(providerCode);
+        SettingsResponse.AiProviderSetting provider = findAiProvider(config, normalizedProviderCode);
+        if (provider == null) {
+            throw new IllegalArgumentException("Unsupported AI provider: " + providerCode);
+        }
+
+        if (baseUrl != null && !baseUrl.isBlank()) {
+            aiProviderCatalog.validateBaseUrl(normalizedProviderCode, baseUrl);
+            provider.setBaseUrl(baseUrl.trim());
+        }
+        if (model != null && !model.isBlank()) {
+            provider.setModel(model.trim());
+        }
+        if (apiKeyPlaintext != null && !apiKeyPlaintext.isBlank()) {
+            provider.setEncryptedApiKey(passwordEncryptionUtil.encrypt(apiKeyPlaintext.trim()));
+        }
+        provider.setLastTestStatus("success");
+        provider.setLastTestMessage(message);
+        provider.setLastTestAt(java.time.Instant.now());
+        settings.setAiModelConfig(config);
+        saveSettings(settings);
+        return copyAiModelConfigForResponse(config);
+    }
+
     private SettingsResponse.AiModelConfig mergeAiModelConfig(
             SettingsResponse.AiModelConfig current,
             SettingsUpdateRequest.AiModelConfigUpdate update

@@ -37,12 +37,12 @@ public class AiModelConnectionTestService {
         try {
             aiProviderCatalog.validateBaseUrl(providerCode, baseUrl);
             openAiCompatibleClient.testConnection(new AiProviderRuntimeConfig(providerCode, baseUrl, model, apiKey));
+            settingsService.saveSuccessfulAiProviderTestConfig(providerCode, baseUrl, model, apiKey, message);
         } catch (RuntimeException exception) {
             status = "failed";
             message = rootMessage(exception);
+            settingsService.updateAiProviderTestResult(providerCode, status, message);
         }
-
-        settingsService.updateAiProviderTestResult(providerCode, status, message);
         return AiModelTestResponse.builder()
                 .providerCode(providerCode)
                 .status(status)
