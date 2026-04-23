@@ -1,16 +1,5 @@
 import { shallowMount } from '@vue/test-utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-
-vi.mock('element-plus', () => {
-  const SlotStub = { template: '<div><slot /></div>' }
-  return {
-    ElButton: SlotStub,
-    ElDropdown: { template: '<div><slot /><slot name="dropdown" /></div>' },
-    ElDropdownItem: SlotStub,
-    ElDropdownMenu: SlotStub,
-    ElTooltip: SlotStub,
-  }
-})
+import { afterEach, describe, expect, it } from 'vitest'
 
 import TenderActionMenu from './TenderActionMenu.vue'
 
@@ -24,6 +13,15 @@ function mountMenu(props = {}) {
       canDeleteTenders: false,
       showAiEntry: true,
       ...props,
+    },
+    global: {
+      stubs: {
+        ElButton: { template: '<button><slot /></button>' },
+        ElDropdown: { template: '<div><slot /><slot name="dropdown" /></div>' },
+        ElDropdownItem: { template: '<div><slot /></div>' },
+        ElDropdownMenu: { template: '<div><slot /></div>' },
+        ElTooltip: { template: '<div><slot /></div>' },
+      },
     },
   })
 }
