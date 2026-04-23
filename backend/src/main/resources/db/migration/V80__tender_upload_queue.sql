@@ -14,8 +14,7 @@ create table if not exists tender_file (
 );
 
 create unique index if not exists uk_tender_file_user_sha256
-    on tender_file(user_id, file_sha256)
-    where file_sha256 is not null;
+    on tender_file(user_id, file_sha256);
 
 create index if not exists idx_tender_file_user_status_created
     on tender_file(user_id, upload_status, created_at);
