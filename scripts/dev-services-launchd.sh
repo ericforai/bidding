@@ -20,6 +20,8 @@ DB_PORT="${DB_PORT:-3306}"
 DB_NAME="${DB_NAME:-xiyu_bid}"
 DB_USERNAME="${DB_USERNAME:-xiyu_user}"
 DB_PASSWORD="${DB_PASSWORD:-XiyuDB!2026}"
+REDIS_HOST="${REDIS_HOST:-localhost}"
+REDIS_PORT="${REDIS_PORT:-6379}"
 PLIST_PATH="${HOME}/Library/LaunchAgents/${LAUNCHD_LABEL}.plist"
 LAUNCHD_STDOUT_LOG="$RUNTIME_DIR/launchd.out.log"
 LAUNCHD_STDERR_LOG="$RUNTIME_DIR/launchd.err.log"
@@ -39,6 +41,7 @@ Environment variables:
   JWT_SECRET                 JWT secret passed to backend process
   DB_HOST/DB_PORT/DB_NAME    MySQL connection target
   DB_USERNAME/DB_PASSWORD    MySQL credentials
+  REDIS_HOST/REDIS_PORT      Redis connection target
 EOF
 }
 
@@ -91,6 +94,10 @@ write_plist() {
     <string>${DB_USERNAME}</string>
     <key>DB_PASSWORD</key>
     <string>${DB_PASSWORD}</string>
+    <key>REDIS_HOST</key>
+    <string>${REDIS_HOST}</string>
+    <key>REDIS_PORT</key>
+    <string>${REDIS_PORT}</string>
     <key>BACKEND_PORT</key>
     <string>${BACKEND_PORT}</string>
     <key>FRONTEND_PORT</key>

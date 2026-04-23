@@ -12,9 +12,11 @@ import com.xiyu.bid.documenteditor.dto.DraftTreeUpsertResultDTO;
 import com.xiyu.bid.documenteditor.entity.SectionType;
 import com.xiyu.bid.documenteditor.service.DocumentEditorService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
+@Service
 @RequiredArgsConstructor
-public class DocumentEditorBidDraftAgentWriter implements BidDraftAgentDocumentWriter {
+public class SpringDocumentEditorBidDraftAgentWriter implements BidDraftAgentDocumentWriter {
 
     private final DocumentEditorService documentEditorService;
 
