@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
@@ -98,10 +99,79 @@ public class OpenAiCompatibleClient {
                 return extractContentFromResponse(response.getBody());
             }
             throw new RuntimeException("AI API request failed with status: " + response.getStatusCode());
+        } catch (HttpStatusCodeException exception) {
+            String message = buildProviderErrorMessage(config.providerCode(), exception);
+            log.warn("AI provider {} request failed: {}", config.providerCode(), message);
+            throw new RuntimeException(message, exception);
         } catch (RuntimeException exception) {
-            log.warn("AI provider {} request failed: {}", config.providerCode(), exception.getMessage());
-            throw new RuntimeException("Failed to call AI provider " + config.providerCode(), exception);
+            String message = "调用 AI 厂商 " + providerDisplayName(config.providerCode()) + " 失败：" + safeMessage(exception);
+            log.warn("AI provider {} request failed: {}", config.providerCode(), safeMessage(exception));
+            throw new RuntimeException(message, exception);
         }
+    }
+
+    private String buildProviderErrorMessage(String providerCode, HttpStatusCodeException exception) {
+        String providerName = providerDisplayName(providerCode);
+        String providerMessage = extractProviderErrorMessage(exception.getResponseBodyAsString());
+        String statusText = exception.getStatusCode().value() + " " + exception.getStatusText();
+
+        if (exception.getStatusCode().value() == 402 && containsIgnoreCase(providerMessage, "insufficient balance")) {
+            return providerName + " API 余额不足，请在 " + providerName + " 控制台充值，或更换有余额的 API Key 后再测试。";
+        }
+        if (exception.getStatusCode().value() == 401 || exception.getStatusCode().value() == 403) {
+            return providerName + " API Key 无效或无权限，请检查后台配置的 API Key。";
+        }
+        if (exception.getStatusCode().value() == 429) {
+            return providerName + " API 请求过于频繁或额度受限，请稍后重试或检查厂商限额。";
+        }
+
+        if (providerMessage != null && !providerMessage.isBlank()) {
+            return providerName + " API 请求失败（" + statusText + "）：" + providerMessage;
+        }
+        return providerName + " API 请求失败（" + statusText + "）。";
+    }
+
+    private String extractProviderErrorMessage(String responseBody) {
+        if (responseBody == null || responseBody.isBlank()) {
+            return "";
+        }
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            JsonNode error = root.path("error");
+            if (error.isObject()) {
+                String message = error.path("message").asText("");
+                String code = error.path("code").asText("");
+                if (!message.isBlank() && !code.isBlank()) {
+                    return message + " (" + code + ")";
+                }
+                if (!message.isBlank()) {
+                    return message;
+                }
+            }
+            return root.path("message").asText("");
+        } catch (JsonProcessingException ignored) {
+            return responseBody.length() > 300 ? responseBody.substring(0, 300) : responseBody;
+        }
+    }
+
+    private boolean containsIgnoreCase(String value, String expected) {
+        return value != null && value.toLowerCase().contains(expected.toLowerCase());
+    }
+
+    private String providerDisplayName(String providerCode) {
+        return switch (providerCode == null ? "" : providerCode.trim().toLowerCase()) {
+            case "openai" -> "OpenAI";
+            case "deepseek" -> "DeepSeek";
+            case "qwen" -> "通义千问";
+            case "doubao" -> "豆包";
+            default -> providerCode == null || providerCode.isBlank() ? "AI" : providerCode;
+        };
+    }
+
+    private String safeMessage(Throwable exception) {
+        return exception.getMessage() == null || exception.getMessage().isBlank()
+                ? "未知错误"
+                : exception.getMessage();
     }
 
     private String buildTenderAnalysisPrompt(String content, Map<String, Object> context) {

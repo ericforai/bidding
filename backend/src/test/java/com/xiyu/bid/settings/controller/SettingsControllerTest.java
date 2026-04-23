@@ -202,6 +202,30 @@ class SettingsControllerTest {
 
     @Test
     @WithMockUser(roles = {"ADMIN"})
+    void testAiModel_WhenDeepSeekBalanceInsufficient_ShouldKeepActionableMessage() throws Exception {
+        String actionableMessage = "DeepSeek API 余额不足，请在 DeepSeek 控制台充值，或更换有余额的 API Key 后再测试。";
+        doThrow(new RuntimeException(actionableMessage, new RuntimeException("402 Payment Required")))
+                .when(openAiCompatibleClient)
+                .testConnection(any(AiProviderRuntimeConfig.class));
+
+        AiModelTestRequest request = AiModelTestRequest.builder()
+                .providerCode("deepseek")
+                .baseUrl("https://api.deepseek.com/chat/completions")
+                .model("deepseek-chat")
+                .apiKeyPlaintext("sk-test")
+                .build();
+
+        mockMvc.perform(post("/api/settings/ai-models/test")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.providerCode").value("deepseek"))
+                .andExpect(jsonPath("$.data.status").value("failed"))
+                .andExpect(jsonPath("$.data.message").value(actionableMessage));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
     void testAiModel_WithUntrustedHost_ShouldReturnFailedWithoutCallingProvider() throws Exception {
         AiModelTestRequest request = AiModelTestRequest.builder()
                 .providerCode("openai")

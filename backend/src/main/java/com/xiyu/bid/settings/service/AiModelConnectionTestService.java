@@ -85,6 +85,9 @@ public class AiModelConnectionTestService {
     }
 
     private String rootMessage(Throwable throwable) {
+        if (throwable.getMessage() != null && !throwable.getMessage().isBlank()) {
+            return throwable.getMessage();
+        }
         Throwable cursor = throwable;
         while (cursor.getCause() != null) {
             cursor = cursor.getCause();
