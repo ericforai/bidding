@@ -9,10 +9,11 @@ sources:
   - src/styles/variables.css
   - src/main.js
 backlinks:
+  - _index
   - overview
 created: 2026-04-22
 updated: 2026-04-22
-health_checked: 2026-04-22
+health_checked: 2026-04-23
 ---
 # 设计系统基线
 

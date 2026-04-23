@@ -4,7 +4,6 @@ space: implementation
 category: guide
 tags: [implementation, delivery]
 sources:
-  - docs/西域数智化投标管理平台-实施计划书-60天版.md
   - docs/UAT_PLAN.md
   - docs/GO_LIVE_CHECKLIST.md
 backlinks:
@@ -12,7 +11,7 @@ backlinks:
   - implementation/acceptance-and-closure
 created: 2026-04-21
 updated: 2026-04-21
-health_checked: 2026-04-22
+health_checked: 2026-04-23
 ---
 # 实施交付作战包总览
 

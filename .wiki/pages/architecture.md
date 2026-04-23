@@ -11,6 +11,7 @@ sources:
   - backend/README.md
 backlinks:
   - _index
+  - contract-constraints
   - implementation/delivery-playbook
   - implementation/milestones
   - overview
@@ -19,7 +20,7 @@ backlinks:
   - team-and-timeline
 created: 2026-04-15
 updated: 2026-04-15
-health_checked: 2026-04-22
+health_checked: 2026-04-23
 ---
 # 架构合成
 

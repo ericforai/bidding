@@ -3,6 +3,14 @@
 > 按时间倒序记录所有 Wiki 操作。每条记录以 `## [日期] 操作类型 | 说明` 格式开头。
 > 可用 `grep "^## \[" .wiki/log.md | tail -5` 查看最近 5 条。
 
+## [2026-04-23] ingest+build | 合同与附件硬约束入库
+- 新增源文件：`.wiki/sources/contract/` 下合同正文、附件 3 报价清单 PDF、附件 4 需求任务书
+- 新增人工摘录：`.wiki/sources/contract/附件3-合同报价清单人工摘录.md`（扫描 PDF 无文本层）
+- 新增页面：`pages/contract-constraints.md`（范围、付款、里程碑、验收、运维、违约责任约束）
+- 更新页面：`overview.md`、`requirements.md`、`team-and-timeline.md`、`deployment.md`、`implementation/{milestones,acceptance-and-closure,risk-register}.md`
+- 更新脚本：`scripts/wiki-ingest.mjs` 将 `contract/` 纳入源目录说明
+- 校验结果：`npm run wiki:ingest`、`npm run wiki:build`、`npm run wiki:check`、`npm run check:doc-governance` 均通过（pages=20）
+
 ## [2026-04-22] build | 设计系统知识页入库与总览口径更新
 - 新增页面：`pages/design-system.md`（正式 DESIGN.md 基线、落地策略、实施回链）
 - 更新页面：`pages/overview.md`（切换为真实 API 唯一路径口径，补充设计系统建制信息）

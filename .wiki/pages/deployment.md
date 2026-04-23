@@ -9,9 +9,12 @@ sources:
   - docs/UAT_PLAN.md
   - README.md
   - docs/plans/2026-03-10-go-live-execution-plan.md
+  - .wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx
+  - .wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx
 backlinks:
   - _index
   - architecture
+  - contract-constraints
   - implementation/acceptance-and-closure
   - implementation/delivery-playbook
   - implementation/milestones
@@ -20,12 +23,14 @@ backlinks:
   - requirements
   - team-and-timeline
 created: 2026-04-15
-updated: 2026-04-15
-health_checked: 2026-04-22
+updated: 2026-04-23
+health_checked: 2026-04-23
 ---
 # 部署与上线
 
 ## 1. 运行模式
+
+合同要求甲方指定私有云/本地化部署，支持主流浏览器访问、HTTPS、权限控制、审计日志、备份恢复、自动化发布与失败回滚。完整非功能性与运维 SLA 见 [[contract-constraints]]。
 
 平台支持两种运行模式，通过环境变量和 `.env` 文件切换：
 

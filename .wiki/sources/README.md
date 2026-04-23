@@ -11,6 +11,7 @@
 ## 分类目录
 
 - `bidding/`
+- `contract/`
 - `industry/`
 - `competitor/`
 - `customer/`

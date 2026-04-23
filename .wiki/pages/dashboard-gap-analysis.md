@@ -5,7 +5,6 @@ category: business
 tags: [工作台, dashboard, 标书, 需求追溯, 缺口分析, gap]
 sources:
   - docs/讲标文件-功能响应与亮点.md
-  - docs/西域数智化投标管理平台-实施计划书-60天版.md
   - docs/COMMERCIAL_SCOPE.md
   - src/views/Dashboard/Workbench.vue
 backlinks:
@@ -13,7 +12,7 @@ backlinks:
   - design-system
 created: 2026-04-16
 updated: 2026-04-16
-health_checked: 2026-04-22
+health_checked: 2026-04-23
 ---
 # 工作台卡片 vs 标书要求对照
 

@@ -1,4 +1,4 @@
-// Input: files under .wiki/sources plus previous source catalog snapshot
+// Input: files under .wiki/sources, including bidding/contract/etc., plus previous source catalog snapshot
 // Output: extracted markdown artifacts and refreshed source catalog with pending changes
 // Pos: scripts/ - Wiki source ingestion pipeline for mixed raw-file onboarding
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
@@ -255,7 +255,7 @@ function main() {
     pending_paths: pending,
   })
 
-  fs.writeFileSync(path.join(sourcesRoot, 'README.md'), `# 原始资料 / Raw Sources\n\n> 本目录存放项目原始资料，遵循“源文件不可变、仅追加版本”的原则。\n\n## 混合摄入模式（默认）\n\n1. 优先直接放入原始文件（docx/xlsx/pdf/图片/md）\n2. 运行 \`npm run wiki:ingest\` 自动抽取到 \`.wiki/extracts/\`\n3. 抽取状态为 \`manual_review\` 时，补充人工 Markdown 再次执行 ingest\n\n## 分类目录\n\n- \`bidding/\`\n- \`industry/\`\n- \`competitor/\`\n- \`customer/\`\n- \`technical/\`\n- \`internal/\`\n- \`implementation/\`\n\n`, 'utf8')
+  fs.writeFileSync(path.join(sourcesRoot, 'README.md'), `# 原始资料 / Raw Sources\n\n> 本目录存放项目原始资料，遵循“源文件不可变、仅追加版本”的原则。\n\n## 混合摄入模式（默认）\n\n1. 优先直接放入原始文件（docx/xlsx/pdf/图片/md）\n2. 运行 \`npm run wiki:ingest\` 自动抽取到 \`.wiki/extracts/\`\n3. 抽取状态为 \`manual_review\` 时，补充人工 Markdown 再次执行 ingest\n\n## 分类目录\n\n- \`bidding/\`\n- \`contract/\`\n- \`industry/\`\n- \`competitor/\`\n- \`customer/\`\n- \`technical/\`\n- \`internal/\`\n- \`implementation/\`\n\n`, 'utf8')
 
   fs.writeFileSync(path.join(path.dirname(sourcesRoot), 'INDEX.md'), toSourceCatalogMarkdown(records), 'utf8')
 

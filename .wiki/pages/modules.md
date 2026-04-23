@@ -12,6 +12,7 @@ backlinks:
   - _index
   - architecture
   - business-process
+  - contract-constraints
   - dashboard-gap-analysis
   - design-system
   - implementation/delivery-playbook
@@ -21,7 +22,7 @@ backlinks:
   - team-and-timeline
 created: 2026-04-15
 updated: 2026-04-15
-health_checked: 2026-04-22
+health_checked: 2026-04-23
 ---
 # 模块目录
 

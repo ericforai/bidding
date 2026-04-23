@@ -8,9 +8,9 @@ sources:
   - .wiki/INDEX.md
   - .wiki/PAGE_INDEX.md
 backlinks:
-created: 2026-04-22
-updated: 2026-04-22
-health_checked: 2026-04-22
+created: 2026-04-23
+updated: 2026-04-23
+health_checked: 2026-04-23
 ---
 # 西域投标管理平台知识库
 
@@ -43,6 +43,7 @@ health_checked: 2026-04-22
 
 ## Implementation Space
 
+- [[contract-constraints]] — 合同约束
 - [[implementation/acceptance-and-closure]] — 实施验收与问题闭环
 - [[implementation/delivery-playbook]] — 实施交付作战包总览
 - [[implementation/milestones]] — 实施里程碑与依赖

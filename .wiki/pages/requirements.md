@@ -2,24 +2,39 @@
 title: 需求追溯
 space: engineering
 category: business
-tags: [需求, RFP, 功能清单, 需求任务书, 追溯矩阵]
+tags: [需求, RFP, 功能清单, 需求任务书, 追溯矩阵, 合同]
 sources:
   - .wiki/sources/bidding/附件5：西域数智化投标管理平台建设项目需求任务书.docx
   - .wiki/sources/bidding/附件6：需求功能清单.xlsx
+  - .wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx
+  - .wiki/sources/contract/附件3-合同报价清单人工摘录.md
+  - .wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx
 backlinks:
   - _index
+  - contract-constraints
   - dashboard-gap-analysis
   - implementation/acceptance-and-closure
   - implementation/milestones
   - implementation/risk-register
 created: 2026-04-15
-updated: 2026-04-21
-health_checked: 2026-04-22
+updated: 2026-04-23
+health_checked: 2026-04-23
 ---
 # 需求追溯
 
 > 本页合成自甲方正式招标文件（附件 5 需求任务书 + 附件 6 功能清单），
 > 建立需求→系统实现的追溯关系。
+> 合同签署后，正式执行边界同步参见 [[contract-constraints]]。
+
+## 0. 合同执行基线
+
+| 事项 | 执行口径 |
+|---|---|
+| 范围来源 | 合同正文、SOW/需求任务书、报价清单、双方书面确认件 |
+| 报表范围 | 本期 6 张报表，以《6 张报表定义表》书面确认为准 |
+| 集成范围 | cebpubservice 标讯 API、CRM、企业微信组织架构、OA/审批流、开放 API |
+| 第三方费用 | 第三方 API、账号、授权、测试环境、网络白名单由甲方或第三方提供；第三方接口费、账号费、订阅费、AI Token 费不含本期报价 |
+| 变更管理 | 蓝图锁定后新增或变更需求需 5 日内答复并提交交付规范，双方书面确认或签补充协议后执行 |
 
 ## 1. 项目背景与建设目标
 
@@ -113,13 +128,13 @@ health_checked: 2026-04-22
 
 | 要求项 | 甲方要求 | 对应安排 |
 |-------|---------|---------|
-| 实施周期 | 功能上线时间 2026 年 5 月 | 60 天实施，详见 [[team-and-timeline]] |
+| 实施周期 | 需求任务书保留“2026 年 5 月功能上线”口径；合同/SOW 排期为 2026-04-27 至 2026-06-25 正式上线 | 以双方签发计划为准，详见 [[team-and-timeline]] 与 [[contract-constraints]] |
 | 项目经理 | 5 年以上经验，全程驻场 | 唐诵文（项目经理） |
-| 试运行保障 | ≥3 个月，2 小时响应 | 合同约定 |
+| 试运行保障 | 需求任务书要求不少于 3 个月；合同付款门禁包含 6 个月试运行 | 按合同付款与验收门禁管理 |
 | 质保期 | 验收后 12 个月免费技术支持 | 合同约定 |
 | 知识转移 | 分层次多轮次培训 | W7-W8 UAT & 培训阶段 |
 | 源码交付 | 定制开发源码归甲方 | 源码级交付 |
-| 验收标准 | 软件 + 文档 + 培训 + 过程 + 整体 | 详见 [[deployment]] UAT 流程 |
+| 验收标准 | 软件 + 文档 + 培训 + 过程 + 整体 | 详见 [[deployment]] UAT 流程与 [[contract-constraints]] |
 
 ## 5. 覆盖度总结
 
@@ -131,4 +146,4 @@ health_checked: 2026-04-22
 | 非功能性需求 | 7 类 | 5 | 1 | 1 |
 
 > 主要缺口集中在**系统集成**（OA/CRM/组织架构对接）和**移动端支持**，
-> 这两项属于正式实施阶段的交付范围，POC 阶段已预留 API 接口。
+> 这两项属于正式实施阶段的交付范围，前期实现已预留 API 接口，最终以蓝图、接口清单和双方书面确认件为准。

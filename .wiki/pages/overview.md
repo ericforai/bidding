@@ -2,20 +2,21 @@
 title: 项目综述
 space: engineering
 category: guide
-tags: [项目, 概述, 西域, 交付]
+tags: [项目, 概述, 西域, 交付, 合同]
 sources:
   - README.md
   - AGENTS.md
   - DESIGN.md
   - docs/COMMERCIAL_SCOPE.md
-  - docs/西域数智化投标管理平台-实施计划书-60天版.md
+  - .wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx
+  - .wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx
 backlinks:
   - _index
   - design-system
   - team-and-timeline
 created: 2026-04-15
-updated: 2026-04-22
-health_checked: 2026-04-22
+updated: 2026-04-23
+health_checked: 2026-04-23
 ---
 # 项目综述
 
@@ -24,6 +25,8 @@ health_checked: 2026-04-22
 西域集团是国内领先的 MRO（Maintenance, Repair & Operations）工业供应链服务企业，业务覆盖全国多个区域，年度参与投标项目数量众多。长期以来，投标管理依赖人工流程和分散的工具，存在信息孤岛、协同效率低、合规风险高、经验难以沉淀等痛点。为推动投标管理的数字化转型，西域集团启动了"西域数智化投标管理平台"建设项目，旨在通过统一的数字化平台实现投标全生命周期的线上闭环管理。
 
 本项目由乙方团队负责实施交付，项目编号 XY-BID-SOW-2026-001，计划工期 60 个自然日（2026-04-27 至 2026-06-25），采用甲方指定的私有云/本地化部署模式。
+
+合同硬约束已入库为 [[contract-constraints]]。范围、付款、验收、运维、知识产权、违约责任等判断，均应先按该页及原始合同源文件核对。
 
 ## 2. 建设目标
 
@@ -68,6 +71,8 @@ health_checked: 2026-04-22
 ### 进入 60 天正式实施
 
 系统已进入 60 天实施周期，以正式商用品范围（Commercial Whitelist）为交付基线。
+
+合同总价固定为 350000 元，首年运维费 0 元，后续运维服务费 30000 元/年；付款与验收按阶段文档签发、测试上线、试运行、总体验收等合同门禁触发，详见 [[contract-constraints]]。
 
 ## 4. 技术栈概要
 

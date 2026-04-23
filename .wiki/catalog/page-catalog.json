@@ -12,8 +12,8 @@
     "backlinks": [
       "_index"
     ],
-    "updated": "2026-04-22",
-    "health_checked": "2026-04-22",
+    "updated": "2026-04-23",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/_index.md"
   },
   {
@@ -32,11 +32,12 @@
     "backlinks": [
       "_index",
       "business-process",
+      "contract-constraints",
       "modules",
       "requirements"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-22",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/ai-capabilities.md"
   },
   {
@@ -53,6 +54,7 @@
     ],
     "backlinks": [
       "_index",
+      "contract-constraints",
       "implementation/delivery-playbook",
       "implementation/milestones",
       "overview",
@@ -61,7 +63,7 @@
       "team-and-timeline"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-22",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/architecture.md"
   },
   {
@@ -78,6 +80,7 @@
     "backlinks": [
       "_index",
       "ai-capabilities",
+      "contract-constraints",
       "dashboard-gap-analysis",
       "implementation/milestones",
       "modules",
@@ -86,8 +89,33 @@
       "team-and-timeline"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-22",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/business-process.md"
+  },
+  {
+    "slug": "contract-constraints",
+    "title": "合同约束",
+    "space": "implementation",
+    "category": "reference",
+    "sources": [
+      ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
+      ".wiki/sources/contract/附件3：西域数智化投标管理平台建设项目合同报价清单.pdf",
+      ".wiki/sources/contract/附件3-合同报价清单人工摘录.md",
+      ".wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx"
+    ],
+    "backlinks": [
+      "_index",
+      "deployment",
+      "implementation/acceptance-and-closure",
+      "implementation/milestones",
+      "implementation/risk-register",
+      "overview",
+      "requirements",
+      "team-and-timeline"
+    ],
+    "updated": "2026-04-23",
+    "health_checked": "2026-04-23",
+    "path": ".wiki/pages/contract-constraints.md"
   },
   {
     "slug": "dashboard-gap-analysis",
@@ -96,7 +124,6 @@
     "category": "business",
     "sources": [
       "docs/讲标文件-功能响应与亮点.md",
-      "docs/西域数智化投标管理平台-实施计划书-60天版.md",
       "docs/COMMERCIAL_SCOPE.md",
       "src/views/Dashboard/Workbench.vue"
     ],
@@ -105,7 +132,7 @@
       "design-system"
     ],
     "updated": "2026-04-16",
-    "health_checked": "2026-04-22",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/dashboard-gap-analysis.md"
   },
   {
@@ -123,7 +150,7 @@
       "architecture"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-22",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/data-model.md"
   },
   {
@@ -136,11 +163,14 @@
       "docs/ROLLBACK_RUNBOOK.md",
       "docs/UAT_PLAN.md",
       "README.md",
-      "docs/plans/2026-03-10-go-live-execution-plan.md"
+      "docs/plans/2026-03-10-go-live-execution-plan.md",
+      ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
+      ".wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx"
     ],
     "backlinks": [
       "_index",
       "architecture",
+      "contract-constraints",
       "implementation/acceptance-and-closure",
       "implementation/delivery-playbook",
       "implementation/milestones",
@@ -149,8 +179,8 @@
       "requirements",
       "team-and-timeline"
     ],
-    "updated": "2026-04-15",
-    "health_checked": "2026-04-22",
+    "updated": "2026-04-23",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/deployment.md"
   },
   {
@@ -165,10 +195,11 @@
       "src/main.js"
     ],
     "backlinks": [
+      "_index",
       "overview"
     ],
     "updated": "2026-04-22",
-    "health_checked": "2026-04-22",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/design-system.md"
   },
   {
@@ -187,7 +218,7 @@
       "data-model"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-22",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/glossary.md"
   },
   {
@@ -198,16 +229,19 @@
     "sources": [
       "docs/UAT_PLAN.md",
       "docs/UAT_SIGNOFF_TEMPLATE.md",
-      "docs/GO_LIVE_CHECKLIST.md"
+      "docs/GO_LIVE_CHECKLIST.md",
+      ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
+      ".wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx"
     ],
     "backlinks": [
       "_index",
+      "contract-constraints",
       "design-system",
       "implementation/delivery-playbook",
       "implementation/risk-register"
     ],
-    "updated": "2026-04-21",
-    "health_checked": "2026-04-22",
+    "updated": "2026-04-23",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/implementation/acceptance-and-closure.md"
   },
   {
@@ -216,7 +250,6 @@
     "space": "implementation",
     "category": "guide",
     "sources": [
-      "docs/西域数智化投标管理平台-实施计划书-60天版.md",
       "docs/UAT_PLAN.md",
       "docs/GO_LIVE_CHECKLIST.md"
     ],
@@ -225,7 +258,7 @@
       "implementation/acceptance-and-closure"
     ],
     "updated": "2026-04-21",
-    "health_checked": "2026-04-22",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/implementation/delivery-playbook.md"
   },
   {
@@ -234,15 +267,17 @@
     "space": "implementation",
     "category": "guide",
     "sources": [
-      "docs/西域数智化投标管理平台-实施计划书-60天版.md",
-      "docs/DELIVERY_BLOCKERS_SCHEDULE.md"
+      "docs/DELIVERY_BLOCKERS_SCHEDULE.md",
+      ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
+      ".wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx"
     ],
     "backlinks": [
       "_index",
+      "contract-constraints",
       "implementation/delivery-playbook"
     ],
-    "updated": "2026-04-21",
-    "health_checked": "2026-04-22",
+    "updated": "2026-04-23",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/implementation/milestones.md"
   },
   {
@@ -252,15 +287,18 @@
     "category": "guide",
     "sources": [
       "docs/DELIVERY_BLOCKERS_SCHEDULE.md",
-      "docs/UAT_PLAN.md"
+      "docs/UAT_PLAN.md",
+      ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
+      ".wiki/sources/contract/附件3-合同报价清单人工摘录.md"
     ],
     "backlinks": [
       "_index",
+      "contract-constraints",
       "implementation/delivery-playbook",
       "implementation/weekly-status"
     ],
-    "updated": "2026-04-21",
-    "health_checked": "2026-04-22",
+    "updated": "2026-04-23",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/implementation/risk-register.md"
   },
   {
@@ -278,7 +316,7 @@
       "implementation/risk-register"
     ],
     "updated": "2026-04-21",
-    "health_checked": "2026-04-22",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/implementation/weekly-status.md"
   },
   {
@@ -296,6 +334,7 @@
       "_index",
       "architecture",
       "business-process",
+      "contract-constraints",
       "dashboard-gap-analysis",
       "design-system",
       "implementation/delivery-playbook",
@@ -305,7 +344,7 @@
       "team-and-timeline"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-22",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/modules.md"
   },
   {
@@ -318,15 +357,16 @@
       "AGENTS.md",
       "DESIGN.md",
       "docs/COMMERCIAL_SCOPE.md",
-      "docs/西域数智化投标管理平台-实施计划书-60天版.md"
+      ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
+      ".wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx"
     ],
     "backlinks": [
       "_index",
       "design-system",
       "team-and-timeline"
     ],
-    "updated": "2026-04-22",
-    "health_checked": "2026-04-22",
+    "updated": "2026-04-23",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/overview.md"
   },
   {
@@ -336,17 +376,21 @@
     "category": "business",
     "sources": [
       ".wiki/sources/bidding/附件5：西域数智化投标管理平台建设项目需求任务书.docx",
-      ".wiki/sources/bidding/附件6：需求功能清单.xlsx"
+      ".wiki/sources/bidding/附件6：需求功能清单.xlsx",
+      ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
+      ".wiki/sources/contract/附件3-合同报价清单人工摘录.md",
+      ".wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx"
     ],
     "backlinks": [
       "_index",
+      "contract-constraints",
       "dashboard-gap-analysis",
       "implementation/acceptance-and-closure",
       "implementation/milestones",
       "implementation/risk-register"
     ],
-    "updated": "2026-04-21",
-    "health_checked": "2026-04-22",
+    "updated": "2026-04-23",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/requirements.md"
   },
   {
@@ -362,10 +406,11 @@
     "backlinks": [
       "_index",
       "business-process",
+      "contract-constraints",
       "overview"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-22",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/roles-and-permissions.md"
   },
   {
@@ -374,19 +419,21 @@
     "space": "engineering",
     "category": "guide",
     "sources": [
-      "docs/西域数智化投标管理平台-实施计划书-60天版.md",
       "docs/启动会项目组织架构与沟通矩阵.md",
-      "docs/项目启动会PPT大纲与核心内容.md"
+      "docs/项目启动会PPT大纲与核心内容.md",
+      ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
+      ".wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx"
     ],
     "backlinks": [
       "_index",
+      "contract-constraints",
       "deployment",
       "implementation/risk-register",
       "overview",
       "requirements"
     ],
-    "updated": "2026-04-15",
-    "health_checked": "2026-04-22",
+    "updated": "2026-04-23",
+    "health_checked": "2026-04-23",
     "path": ".wiki/pages/team-and-timeline.md"
   }
 ]

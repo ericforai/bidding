@@ -11,6 +11,7 @@ sources:
 backlinks:
   - _index
   - ai-capabilities
+  - contract-constraints
   - dashboard-gap-analysis
   - implementation/milestones
   - modules
@@ -19,7 +20,7 @@ backlinks:
   - team-and-timeline
 created: 2026-04-15
 updated: 2026-04-15
-health_checked: 2026-04-22
+health_checked: 2026-04-23
 ---
 # 业务流程
 
