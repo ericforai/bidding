@@ -35,7 +35,10 @@ class DashboardAnalyticsTrendAndDistributionService {
         if (snapshot == null || normalizeCount(snapshot.biddedTenders()) == 0L) {
             return 0.0;
         }
-        return (snapshot.winningProjects() * 100.0) / snapshot.biddedTenders();
+        long biddedTenders = normalizeCount(snapshot.biddedTenders());
+        long winningProjects = normalizeCount(snapshot.winningProjects());
+        long normalizedWins = Math.min(winningProjects, biddedTenders);
+        return (normalizedWins * 100.0) / biddedTenders;
     }
 
     List<RegionalData> buildRegionalDistribution(List<DashboardAnalyticsRepository.SourceAggregateRow> rows) {

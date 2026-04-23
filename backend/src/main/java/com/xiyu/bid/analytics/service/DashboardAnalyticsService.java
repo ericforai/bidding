@@ -45,6 +45,7 @@ public class DashboardAnalyticsService {
     private final DashboardAnalyticsComputationService computationService;
     private final DashboardAnalyticsAssemblerService assemblerService;
     private final DashboardAnalyticsMetricDrillDownService metricDrillDownService;
+    private final DashboardDemoFusionService demoFusionService;
 
     @Cacheable(value = "dashboard:overview", key = "'overview'")
     public DashboardOverviewDTO getOverview() {
@@ -61,35 +62,45 @@ public class DashboardAnalyticsService {
 
     public SummaryStats getSummaryStats() {
         DashboardAnalyticsRepository.OverviewSnapshot snapshot = queryService.fetchOverviewSnapshot();
-        return assemblerService.buildSummaryStats(snapshot, computationService.calculateSuccessRate(snapshot));
+        SummaryStats real = assemblerService.buildSummaryStats(
+                snapshot,
+                computationService.calculateSuccessRate(snapshot)
+        );
+        return demoFusionService.mergeSummary(real);
     }
 
     public List<TrendData> getTenderTrends() {
-        return computationService.buildTenderTrends(queryService.fetchTenderTrendRows());
+        List<TrendData> real = computationService.buildTenderTrends(queryService.fetchTenderTrendRows());
+        return demoFusionService.mergeTenderTrends(real);
     }
 
     public List<TrendData> getProjectTrends() {
-        return computationService.buildProjectTrends(queryService.fetchProjectTrendRows());
+        List<TrendData> real = computationService.buildProjectTrends(queryService.fetchProjectTrendRows());
+        return demoFusionService.mergeProjectTrends(real);
     }
 
     public Map<String, Long> getStatusDistribution() {
-        return assemblerService.buildStatusDistribution(
+        Map<String, Long> distribution = assemblerService.buildStatusDistribution(
                 Tender.Status.values(),
                 computationService.buildStatusDistributionCounts(queryService.fetchStatusCounts())
         );
+        return demoFusionService.mergeStatusDistribution(distribution);
     }
 
     public List<CompetitorData> getTopCompetitors(Integer limit) {
         int requestedLimit = limit == null || limit < 1 ? 5 : limit;
-        return computationService.buildTopCompetitors(queryService.fetchSourceAggregateRows(requestedLimit));
+        List<CompetitorData> real = computationService.buildTopCompetitors(queryService.fetchSourceAggregateRows(requestedLimit));
+        return demoFusionService.mergeCompetitors(real);
     }
 
     public List<RegionalData> getRegionalDistribution() {
-        return computationService.buildRegionalDistribution(queryService.fetchSourceAggregateRows(Integer.MAX_VALUE));
+        List<RegionalData> real = computationService.buildRegionalDistribution(queryService.fetchSourceAggregateRows(Integer.MAX_VALUE));
+        return demoFusionService.mergeRegions(real);
     }
 
     public List<ProductLineData> getProductLinePerformance() {
-        return computationService.buildProductLinePerformance(queryService.fetchProductLineCandidateRows());
+        List<ProductLineData> real = computationService.buildProductLinePerformance(queryService.fetchProductLineCandidateRows());
+        return demoFusionService.mergeProductLines(real);
     }
 
     @Transactional(readOnly = true)

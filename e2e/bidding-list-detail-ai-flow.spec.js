@@ -90,6 +90,6 @@ test.describe('bidding list detail ai flow', () => {
 
     await expect(page).toHaveURL(/\/bidding\/ai-analysis\/non-existent-tender-id$/)
     await expect(page.getByText('当前模式下暂无可用的 AI 分析报告')).toBeVisible()
-    await expect(page.locator('.el-message--error').filter({ hasText: '加载失败' }).first()).toBeVisible()
+    await expect(page.locator('.empty-card').first()).toBeVisible()
   })
 })

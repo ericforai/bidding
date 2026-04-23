@@ -63,7 +63,7 @@ export function normalizeProjectForWorkbench(project) {
     status: meta.status,
     progress: meta.progress,
     deadline: project.endDate,
-    manager: project.managerName || '',
+    manager: project.managerName || project.customerManager || (project.managerId ? `负责人#${project.managerId}` : ''),
     priority: resolveProjectPriority(project.endDate),
   }
 }

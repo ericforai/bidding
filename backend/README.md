@@ -80,4 +80,10 @@ mvn test -Dtest=FlywayBaselineContextTest,FlywayMysqlContainerTest,ExpenseContro
 - `DB_PASSWORD` - 数据库密码（必填）
 - `JWT_SECRET` - JWT密钥，最少32字符（必填）
 - `CORS_ALLOWED_ORIGINS` - 允许的CORS源（默认：localhost:5173,5174,3000）
-- `SPRING_PROFILES_ACTIVE` - 环境配置（dev/prod，默认：dev）
+- `SPRING_PROFILES_ACTIVE` - 环境配置（常用：`e2e`、`dev,mysql`、`prod,mysql`）
+
+## e2e(H2) Demo 融合约定
+- 当 `SPRING_PROFILES_ACTIVE` 包含 `e2e` 时，读取类 API 会返回“真实数据 + 内存 Demo 数据”的融合结果。
+- Demo 记录统一使用负数 ID，避免与真实数据库主键冲突。
+- 对 Demo 负数 ID 的写操作（新增/修改/删除）会返回受控失败，语义为“演示数据只读”。
+- 非 `e2e` 环境不启用上述融合逻辑。

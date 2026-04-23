@@ -25,6 +25,7 @@
     "dev:stable:daemon:status": "bash ./scripts/dev-services-launchd.sh status",
     "dev:stable:daemon:logs": "bash ./scripts/dev-services-launchd.sh logs",
     "dev:stable:daemon:uninstall": "bash ./scripts/dev-services-launchd.sh uninstall",
+    "dev:mode": "bash ./scripts/dev-current-mode.sh",
     "sync:version": "node scripts/sync-version.mjs",
     "check:version-sync": "node scripts/check-version-sync.mjs",
     "check:front-data-boundaries": "node scripts/check-front-data-boundaries.mjs",

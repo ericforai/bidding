@@ -39,13 +39,24 @@ function applyProjectFilters(projects, params = {}) {
 }
 
 function isNumericId(id) {
-  return /^\d+$/.test(String(id))
+  return /^-?\d+$/.test(String(id))
+}
+
+function isDemoEntityId(id) {
+  return Number(id) < 0
 }
 
 function apiModeFailure(entityName) {
   return {
     success: false,
     message: `Current backend only supports numeric ${entityName} IDs in API mode`
+  }
+}
+
+function demoReadonlyFailure() {
+  return {
+    success: false,
+    message: 'Demo records are read-only in e2e mode'
   }
 }
 
@@ -132,6 +143,10 @@ export const projectsApi = {
       return apiModeFailure('project')
     }
 
+    if (isDemoEntityId(id)) {
+      return demoReadonlyFailure()
+    }
+
     return httpClient.put(`/api/projects/${id}`, data)
   },
 
@@ -142,6 +157,10 @@ export const projectsApi = {
 
     if (!isNumericId(id)) {
       return apiModeFailure('project')
+    }
+
+    if (isDemoEntityId(id)) {
+      return demoReadonlyFailure()
     }
 
     return httpClient.delete(`/api/projects/${id}`)
@@ -156,6 +175,10 @@ export const projectsApi = {
       return apiModeFailure('project')
     }
 
+    if (isDemoEntityId(projectId)) {
+      return { success: true, data: [] }
+    }
+
     return httpClient.get(`/api/projects/${projectId}/tasks`)
   },
 
@@ -165,6 +188,10 @@ export const projectsApi = {
       return apiModeFailure('project')
     }
 
+    if (isDemoEntityId(projectId)) {
+      return demoReadonlyFailure()
+    }
+
     return httpClient.post(`/api/projects/${projectId}/tasks`, data)
   },
 
@@ -172,6 +199,10 @@ export const projectsApi = {
 
     if (!isNumericId(projectId) || !isNumericId(taskId)) {
       return apiModeFailure('task')
+    }
+
+    if (isDemoEntityId(projectId) || isDemoEntityId(taskId)) {
+      return demoReadonlyFailure()
     }
 
     return httpClient.patch(`/api/projects/${projectId}/tasks/${taskId}/status`, { status })
@@ -186,6 +217,10 @@ export const projectsApi = {
       return apiModeFailure('project')
     }
 
+    if (isDemoEntityId(projectId)) {
+      return { success: true, data: [] }
+    }
+
     return httpClient.get(`/api/projects/${projectId}/documents`)
   },
 
@@ -196,6 +231,10 @@ export const projectsApi = {
 
     if (!isNumericId(projectId)) {
       return apiModeFailure('project')
+    }
+
+    if (isDemoEntityId(projectId)) {
+      return demoReadonlyFailure()
     }
 
     return httpClient.post(`/api/projects/${projectId}/documents`, {
@@ -212,6 +251,10 @@ export const projectsApi = {
       return apiModeFailure('document')
     }
 
+    if (isDemoEntityId(projectId) || isDemoEntityId(documentId)) {
+      return demoReadonlyFailure()
+    }
+
     return httpClient.delete(`/api/projects/${projectId}/documents/${documentId}`)
   },
 
@@ -221,6 +264,10 @@ export const projectsApi = {
       return apiModeFailure('project')
     }
 
+    if (isDemoEntityId(projectId)) {
+      return demoReadonlyFailure()
+    }
+
     return httpClient.post(`/api/projects/${projectId}/reminders`, data)
   },
 
@@ -228,6 +275,10 @@ export const projectsApi = {
 
     if (!isNumericId(projectId)) {
       return apiModeFailure('project')
+    }
+
+    if (isDemoEntityId(projectId)) {
+      return demoReadonlyFailure()
     }
 
     return httpClient.post(`/api/projects/${projectId}/share-links`, data)

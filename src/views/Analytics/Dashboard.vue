@@ -450,7 +450,6 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Download, Document, FolderOpened, User, Loading } from '@element-plus/icons-vue'
 import { dashboardApi, projectsApi, getFeaturePlaceholder, isFeatureUnavailableResponse } from '@/api'
-import { getDemoDashboardProjects } from '@/api/mock-adapters/frontendDemo.js'
 import LineChart from '@/components/charts/LineChart.vue'
 import PieChart from '@/components/charts/PieChart.vue'
 import BarChart from '@/components/charts/BarChart.vue'
@@ -1351,65 +1350,39 @@ const buildAggregateOnlyDrillDown = (stats) => ({
 })
 
 const loadTrendDrillDownData = async (monthData) => {
-  if (!isDemoMode) {
-    try {
-      const projectResult = await projectsApi.getList()
-      const projects = projectResult?.success && Array.isArray(projectResult.data)
-        ? projectResult.data.map((project) => ({
-          id: project.id,
-          name: project.name,
-          customer: project.customer || '-',
-          budget: project.budget || 0,
-          status: project.status || '-',
-          manager: project.manager || '-',
-          result: project.status === 'won' ? 'won' : project.status === 'lost' ? 'lost' : null
-        }))
-        : []
+  try {
+    const projectResult = await projectsApi.getList()
+    const projects = projectResult?.success && Array.isArray(projectResult.data)
+      ? projectResult.data.map((project) => ({
+        id: project.id,
+        name: project.name,
+        customer: project.customer || '-',
+        budget: project.budget || 0,
+        status: project.status || '-',
+        manager: project.manager || '-',
+        result: project.status === 'won' ? 'won' : project.status === 'lost' ? 'lost' : null
+      }))
+      : []
 
-      drillDownData.value = {
-        projects,
-        team: [],
-        files: [],
-        stats: {
-          totalParticipation: monthData.bids,
-          wonCount: monthData.wins,
-          teamWinRate: monthData.rate,
-          totalAmount: monthData.amount
-        }
-      }
-      return
-    } catch (error) {
-      ElMessage.warning('真实项目明细加载失败，当前仅展示聚合统计')
-      drillDownData.value = buildAggregateOnlyDrillDown({
+    drillDownData.value = {
+      projects,
+      team: [],
+      files: [],
+      stats: {
         totalParticipation: monthData.bids,
         wonCount: monthData.wins,
         teamWinRate: monthData.rate,
         totalAmount: monthData.amount
-      })
-      return
+      }
     }
-  }
-
-  const mockProjects = getDemoDashboardProjects()
-
-  drillDownData.value = {
-    projects: mockProjects.map(p => ({
-      id: p.id,
-      name: p.name,
-      customer: p.customer,
-      budget: p.budget,
-      status: p.status,
-      manager: p.manager,
-      result: p.result
-    })),
-    team: generateMockTeamData(),
-    files: generateMockFiles(),
-    stats: {
+  } catch (error) {
+    ElMessage.warning('真实项目明细加载失败，当前仅展示聚合统计')
+    drillDownData.value = buildAggregateOnlyDrillDown({
       totalParticipation: monthData.bids,
       wonCount: monthData.wins,
       teamWinRate: monthData.rate,
       totalAmount: monthData.amount
-    }
+    })
   }
 }
 

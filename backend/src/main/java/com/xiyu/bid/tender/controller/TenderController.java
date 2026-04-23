@@ -6,6 +6,9 @@ package com.xiyu.bid.tender.controller;
 
 import com.xiyu.bid.ai.dto.TenderAiAnalysisDTO;
 import com.xiyu.bid.ai.service.AiDeepCapabilityService;
+import com.xiyu.bid.demo.service.DemoDataProvider;
+import com.xiyu.bid.demo.service.DemoFusionService;
+import com.xiyu.bid.demo.service.DemoModeService;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.tender.dto.TenderRequest;
 import com.xiyu.bid.tender.dto.TenderDTO;
@@ -44,6 +47,9 @@ public class TenderController {
     private final TenderCommandService tenderCommandService;
     private final TenderMapper tenderMapper;
     private final AiDeepCapabilityService aiDeepCapabilityService;
+    private final DemoModeService demoModeService;
+    private final DemoDataProvider demoDataProvider;
+    private final DemoFusionService demoFusionService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
@@ -51,6 +57,9 @@ public class TenderController {
         log.info("GET /api/tenders - Searching tenders");
         sanitizeTenderSearchCriteria(criteria);
         List<TenderDTO> tenders = tenderQueryService.searchTenders(criteria);
+        if (demoModeService.isEnabled()) {
+            tenders = demoFusionService.mergeByKey(tenders, demoDataProvider.getDemoTenders(), TenderDTO::getId);
+        }
         return ResponseEntity.ok(ApiResponse.success("Successfully retrieved tenders", tenders));
     }
 
@@ -58,6 +67,12 @@ public class TenderController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<TenderDTO>> getTenderById(@PathVariable Long id) {
         log.info("GET /api/tenders/{} - Fetching tender", id);
+        if (isDemoEntityId(id)) {
+            return ResponseEntity.ok(ApiResponse.success(
+                    "Successfully retrieved tender",
+                    demoDataProvider.findDemoTenderById(id).orElseThrow(() -> new com.xiyu.bid.exception.ResourceNotFoundException("Tender", id.toString()))
+            ));
+        }
         TenderDTO tender = tenderQueryService.getTenderById(id);
         return ResponseEntity.ok(ApiResponse.success("Successfully retrieved tender", tender));
     }
@@ -76,6 +91,7 @@ public class TenderController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<TenderDTO>> updateTender(@PathVariable Long id, @Valid @RequestBody TenderRequest tenderRequest) {
         log.info("PUT /api/tenders/{} - Updating tender", id);
+        rejectDemoMutation(id);
         sanitizeTenderRequest(tenderRequest);
         TenderDTO tenderDTO = tenderMapper.toDTO(tenderRequest);
         TenderDTO updatedTender = tenderCommandService.updateTender(id, tenderDTO);
@@ -86,6 +102,7 @@ public class TenderController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteTender(@PathVariable Long id) {
         log.info("DELETE /api/tenders/{} - Deleting tender", id);
+        rejectDemoMutation(id);
         tenderCommandService.deleteTender(id);
         return ResponseEntity.ok(ApiResponse.success("Tender deleted successfully", null));
     }
@@ -94,6 +111,7 @@ public class TenderController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<TenderDTO>> analyzeTender(@PathVariable Long id) {
         log.info("POST /api/tenders/{}/analyze - Analyzing tender", id);
+        rejectDemoMutation(id);
         TenderDTO analyzedTender = tenderCommandService.analyzeTender(id);
         return ResponseEntity.ok(ApiResponse.success("Tender analyzed successfully", analyzedTender));
     }
@@ -102,6 +120,19 @@ public class TenderController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<TenderAiAnalysisDTO>> getTenderAiAnalysis(@PathVariable Long id) {
         log.info("GET /api/tenders/{}/ai-analysis - Fetching tender AI analysis", id);
+        if (isDemoEntityId(id)) {
+            TenderDTO tender = demoDataProvider.findDemoTenderById(id)
+                    .orElseThrow(() -> new com.xiyu.bid.exception.ResourceNotFoundException("Tender", id.toString()));
+            TenderAiAnalysisDTO dto = TenderAiAnalysisDTO.builder()
+                    .tenderId(tender.getId())
+                    .winScore(tender.getAiScore() == null ? 80 : tender.getAiScore())
+                    .suggestion("Demo 标讯分析：重点关注资质响应、交付周期和付款条件。")
+                    .dimensionScores(List.of())
+                    .risks(List.of())
+                    .autoTasks(List.of())
+                    .build();
+            return ResponseEntity.ok(ApiResponse.success("Tender AI analysis retrieved successfully", dto));
+        }
         Optional<TenderAiAnalysisDTO> analysis = aiDeepCapabilityService.getLatestTenderAnalysis(id);
         if (analysis.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(404, "Tender AI analysis not found"));
@@ -113,6 +144,7 @@ public class TenderController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<TenderAiAnalysisDTO>> createTenderAiAnalysis(@PathVariable Long id) {
         log.info("POST /api/tenders/{}/ai-analysis - Generating tender AI analysis", id);
+        rejectDemoMutation(id);
         TenderAiAnalysisDTO analysis = aiDeepCapabilityService.analyzeTender(id, null);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tender AI analysis generated successfully", analysis));
     }
@@ -168,5 +200,15 @@ public class TenderController {
         if (criteria.getIndustry() != null) criteria.setIndustry(InputSanitizer.sanitizeString(criteria.getIndustry(), 100));
         if (criteria.getPurchaserName() != null) criteria.setPurchaserName(InputSanitizer.sanitizeString(criteria.getPurchaserName(), 255));
         if (criteria.getPurchaserHash() != null) criteria.setPurchaserHash(InputSanitizer.sanitizeString(criteria.getPurchaserHash(), 64));
+    }
+
+    private boolean isDemoEntityId(Long id) {
+        return demoModeService.isEnabled() && id != null && id < 0;
+    }
+
+    private void rejectDemoMutation(Long id) {
+        if (isDemoEntityId(id)) {
+            throw new IllegalArgumentException("Demo records are read-only in e2e mode");
+        }
     }
 }

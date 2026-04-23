@@ -1,6 +1,16 @@
 <template>
   <div class="workbench">
-    <div class="page-identity"><span class="page-kicker">工作台</span></div>
+    <div class="page-identity">
+      <span class="page-kicker">工作台</span>
+      <el-tag
+        v-if="runtimeModeLabel"
+        class="runtime-mode-tag"
+        :type="runtimeModeTagType"
+        size="small"
+      >
+        {{ runtimeModeLabel }}
+      </el-tag>
+    </div>
     <WelcomeBanner
       :role="currentUserRole"
       :title="bannerTitle"
@@ -124,9 +134,10 @@
 </template>
 
 <script setup>
-import { computed, markRaw, onMounted, watch } from 'vue'
+import { computed, markRaw, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { dashboardApi, projectsApi, tendersApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { useBiddingStore } from '@/stores/bidding'
 import { useWorkbenchSchedule } from '@/views/Dashboard/useWorkbenchSchedule.js'
@@ -139,10 +150,7 @@ import {
   getBannerSubtitle, getBannerTitle, getPriorityLabel, getPriorityType, getProgressColor,
   getProjectStatusType,
 } from '@/views/Dashboard/workbench-core.js'
-import {
-  activities, demoProjects, followUpCustomers, hotTenders, myTechnicalTasks,
-  pendingReviews, quickActions, teamMembers, teamPerformance,
-} from '@/views/Dashboard/workbench-demo-data.js'
+import { extractCustomersFromProjects, normalizeProjectForWorkbench } from '@/views/Dashboard/workbench-utils.js'
 import ApprovalDialog from '@/components/common/ApprovalDialog.vue'
 import ActivityList from '@/views/Dashboard/components/ActivityList.vue'
 import ApprovalList from '@/views/Dashboard/components/ApprovalList.vue'
@@ -174,6 +182,15 @@ const currentUserRole = computed(() => userStore.currentUser?.role || 'staff')
 const currentUserName = computed(() => userStore.currentUser?.name || '用户')
 const currentUserId = computed(() => userStore.currentUser?.id || null)
 const currentDate = computed(() => formatCurrentDate())
+const workbenchProjects = ref([])
+const hotTenders = ref([])
+const runtimeMode = ref(null)
+
+const quickActions = [
+  { key: 'support', title: '标书支持申请', desc: '申请技术/商务支持', icon: 'Document', iconStyle: 'background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%); color: #1E40AF;' },
+  { key: 'borrow', title: '资质/合同借阅', desc: '申请借阅相关文件', icon: 'FolderOpened', iconStyle: 'background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); color: #059669;' },
+  { key: 'expense', title: '投标费用申请', desc: '保证金/标书费', icon: 'Wallet', iconStyle: 'background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); color: #D97706;' },
+]
 
 const {
   pendingApprovals, pendingApprovalsTotalCount, approvalDialogVisible, approvalMode,
@@ -215,11 +232,90 @@ const bannerSubtitle = computed(() => getBannerSubtitle(currentUserRole.value, {
   pendingCount: pendingCount.value,
 }))
 const bannerActions = computed(() => getBannerActionConfig(currentUserRole.value).map(iconizeAction))
+const runtimeModeLabel = computed(() => runtimeMode.value?.modeLabel || '')
+const runtimeModeTagType = computed(() => (runtimeMode.value?.demoFusionEnabled ? 'warning' : 'success'))
 const mappedQuickActions = computed(() => quickActions.map(iconizeAction))
-const activeProjects = computed(() => filterProjectsByRole(demoProjects, {
+const activeProjects = computed(() => filterProjectsByRole(workbenchProjects.value, {
   role: currentUserRole.value,
   userName: currentUserName.value,
 }))
+const followUpCustomers = computed(() => extractCustomersFromProjects(workbenchProjects.value))
+const teamMembers = computed(() => {
+  const byManager = new Map()
+  for (const project of workbenchProjects.value) {
+    if (!project?.manager) continue
+    const existing = byManager.get(project.manager) || {
+      id: project.manager,
+      name: project.manager,
+      tasks: [],
+      workload: '0%',
+      workloadLevel: 'low',
+    }
+    existing.tasks.push({
+      id: `${project.id}-task`,
+      title: project.name,
+      priority: project.priority === 'high' ? 'high' : 'medium',
+    })
+    byManager.set(project.manager, existing)
+  }
+
+  return Array.from(byManager.values()).map((item) => {
+    const taskCount = item.tasks.length
+    const workload = Math.min(95, 20 + taskCount * 20)
+    return {
+      ...item,
+      workload: `${workload}%`,
+      workloadLevel: workload >= 80 ? 'high' : workload >= 50 ? 'medium' : 'low',
+    }
+  })
+})
+const myTechnicalTasks = computed(() => priorityTodos.value
+  .filter((todo) => todo.sourceType === 'task')
+  .slice(0, 6)
+  .map((todo) => ({
+    id: todo.id,
+    title: todo.title,
+    project: '项目任务',
+    deadline: todo.deadline || '待定',
+    priority: todo.priority === 'urgent' || todo.priority === 'high' ? 'high' : 'medium',
+    done: todo.done,
+  })))
+const pendingReviews = computed(() => pendingApprovals.value.slice(0, 6).map((item) => ({
+  id: item.id,
+  title: item.title,
+  author: item.applicantName || '待确认',
+  time: item.submitTime || item.time || '刚刚',
+})))
+const teamPerformance = computed(() => teamMembers.value.map((member) => {
+  const projectCount = member.tasks.length
+  const wins = member.tasks.filter((task) => task.priority === 'high').length
+  const active = Math.max(projectCount - wins, 0)
+  return {
+    dept: member.name,
+    size: Math.max(1, Math.min(12, projectCount * 2)),
+    progress: Number.parseInt(member.workload, 10) || 0,
+    color: '#3B82F6',
+    wins,
+    active,
+  }
+}))
+const activities = computed(() => {
+  const processActivities = myProcesses.value.slice(0, 4).map((process) => ({
+    id: `process-${process.id}`,
+    type: process.status === 'urgent' ? 'warning' : process.status === 'in-progress' ? 'success' : 'info',
+    text: process.title,
+    time: process.time || '刚刚',
+  }))
+  if (processActivities.length > 0) {
+    return processActivities
+  }
+  return priorityTodos.value.slice(0, 4).map((todo) => ({
+    id: `todo-${todo.id}`,
+    type: todo.done ? 'success' : 'warning',
+    text: todo.title,
+    time: todo.deadline || '待处理',
+  }))
+})
 
 const {
   calendarDate, activeCalendarFilter, selectedDateKey, calendarFilters, visibleCalendarEvents,
@@ -248,6 +344,10 @@ function handleQuickAction(action) {
 }
 
 function handleTenderClick(tender) {
+  if (String(tender.id || '').startsWith('-')) {
+    router.push('/bidding')
+    return
+  }
   router.push(`/bidding/${tender.id}`)
 }
 
@@ -265,9 +365,52 @@ async function reloadMetrics() {
   metricsLoading.value = false
 }
 
+async function loadWorkbenchProjects() {
+  try {
+    const response = await projectsApi.getList()
+    workbenchProjects.value = Array.isArray(response?.data)
+      ? response.data.map(normalizeProjectForWorkbench)
+      : []
+  } catch {
+    workbenchProjects.value = []
+  }
+}
+
+async function loadWorkbenchTenders() {
+  try {
+    const response = await tendersApi.getList()
+    const tenders = Array.isArray(response?.data) ? response.data : []
+    hotTenders.value = tenders.slice(0, 6).map((item) => {
+      const score = Number(item.aiScore || 0)
+      const probability = score >= 85 ? 'high' : 'medium'
+      return {
+        id: item.id,
+        title: item.title || '未命名标讯',
+        budget: Number(item.budget || 0),
+        region: item.region || '-',
+        aiScore: score,
+        scoreLevel: score >= 85 ? 'high' : score >= 70 ? 'medium' : 'low',
+        probability,
+        probibilityText: probability === 'high' ? '高概率' : '中等概率',
+      }
+    })
+  } catch {
+    hotTenders.value = []
+  }
+}
+
 async function reloadSchedule() {
   await loadScheduleOverview()
   syncSelectedDate()
+}
+
+async function loadRuntimeMode() {
+  try {
+    const response = await dashboardApi.getRuntimeMode()
+    runtimeMode.value = response?.success ? response.data : null
+  } catch {
+    runtimeMode.value = null
+  }
 }
 
 async function reloadSupportProjects() {
@@ -278,6 +421,9 @@ async function reloadSupportProjects() {
 onMounted(async () => {
   metricsLoading.value = true
   await Promise.allSettled([
+    loadRuntimeMode(),
+    loadWorkbenchProjects(),
+    loadWorkbenchTenders(),
     loadScheduleOverview(), loadTodos(), loadPendingApprovals(), loadMyProcesses(),
     loadSupportRequestProjects(), loadWorkbenchSummary(),
   ])

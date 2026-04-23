@@ -5,7 +5,6 @@
 
 import { defineStore } from 'pinia'
 import { authApi } from '@/api'
-import { getDemoUsers } from '@/api/mock-adapters/frontendDemo.js'
 import { registerAuthStoreBridge } from '@/api/authStoreBridge.js'
 import { clearAuthState, hasPersistentSession } from '@/api/modules/auth.js'
 import { persistRuntimeSettings } from '@/api/modules/settings.js'
@@ -23,7 +22,7 @@ export const useUserStore = defineStore('user', {
     return {
       currentUser: savedUser,
       token: bootstrapLegacyAccessToken(),
-      users: getDemoUsers(),
+      users: [],
       isRestoringSession: false,
       hasRestoredSession: false
     }
