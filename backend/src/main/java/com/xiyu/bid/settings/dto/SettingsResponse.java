@@ -87,6 +87,8 @@ public class SettingsResponse {
         private Boolean ssoEnabled;
         private String callbackUrl;
         private String apiKey;
+        private String aiBaseUrl;
+        private String aiModel;
         private String ipWhitelist;
     }
 

@@ -76,12 +76,14 @@ mvn test
 
 ### 1. 当前可直接信任的前端基线
 
-以下命令截至 2026-04-16 当前可通过：
+以下命令截至 2026-04-22 当前可通过：
 
 ```bash
 npm run check:front-data-boundaries
 npm run check:doc-governance
 npm run build
+npm run test:unit
+npm run test:e2e
 ```
 
 ### 2. 后端验证口径
@@ -149,6 +151,8 @@ npm run build
 - 后端启动初始化：`backend/src/main/java/com/xiyu/bid/bootstrap/`（独立于 config 包，避免 ArchitectureTest RULE 9）
 - 后端测试：`backend/src/test/java/com/xiyu/bid/`
 - E2E：`e2e/`
+- 标书生成 Agent：`backend/src/main/java/com/xiyu/bid/biddraftagent/`
+- 文档编辑器草稿树写入：`backend/src/main/java/com/xiyu/bid/documenteditor/`
 - 治理脚本：`scripts/`
 - 交付与规范文档：`docs/`
 - 项目知识库（Wiki）：`.wiki/pages/`（含标书需求追溯、架构、模块、缺口分析等，导航见 `.wiki/pages/_index.md`）

@@ -26,6 +26,7 @@
 - **开场约定**：AI 代理开启新任务或接收复杂任务时，应先说明当前项目采用“真实 API 单一路径”的交付开发模式；仓库中仍存在少量本地 demo 适配残留，但它们只属于待删除遗留，不是允许的开发、联调、演示或验收路径。随后按 `RULES.md` 中的四阶段流程（plan → tdd → code-review → refactor-clean）和核心业务逻辑架构约束展开工作。
 - **架构约束**：详细解释见 `RULES.md`；后端纯核心门禁由 `FPJavaArchitectureTest` 执行。
 - **可维护性约束**：受保护模块的防上帝类门禁由 `MaintainabilityArchitectureTest` 执行。
+- **标书生成 Agent**：`com.xiyu.bid.biddraftagent.domain` 是纯核心，`application` 只做 run 编排和写入计划，`infrastructure/documenteditor` 负责实际写入章节树。
 
 ## Mock 政策（统一决策）
 

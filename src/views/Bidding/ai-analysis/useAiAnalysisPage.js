@@ -43,6 +43,7 @@ export function useAiAnalysisPage() {
   const showParsingDialog = ref(false)
   const parseProgress = ref(0)
   const parseTimer = ref(null)
+  const loadError = ref('')
 
   const progressColors = [
     { color: '#f56c6c', percentage: 30 },
@@ -157,6 +158,15 @@ export function useAiAnalysisPage() {
     }, 800)
   }
 
+  const showLoadError = (message) => {
+    loadError.value = `加载失败：${message}`
+    ElMessage.error({
+      message: loadError.value,
+      duration: 10000,
+      showClose: true,
+    })
+  }
+
   const loadTenderInfo = async () => {
     try {
       const response = await tendersApi.getDetail(tenderId.value)
@@ -165,10 +175,10 @@ export function useAiAnalysisPage() {
         return
       }
       tenderInfo.value = null
-      ElMessage.error(response?.message || '标讯信息加载失败')
+      showLoadError(response?.message || '标讯信息加载失败')
     } catch (error) {
       tenderInfo.value = null
-      ElMessage.error(error?.response?.data?.message || error?.message || '标讯信息加载失败')
+      showLoadError(error?.response?.data?.message || error?.message || '标讯信息加载失败')
     }
   }
 
@@ -180,14 +190,15 @@ export function useAiAnalysisPage() {
         return
       }
       analysisData.value = null
-      ElMessage.error(response?.message || 'AI 分析数据加载失败')
+      showLoadError(response?.message || 'AI 分析数据加载失败')
     } catch (error) {
       analysisData.value = null
-      ElMessage.error(error?.response?.data?.message || error?.message || 'AI 分析数据加载失败')
+      showLoadError(error?.response?.data?.message || error?.message || 'AI 分析数据加载失败')
     }
   }
 
   const initializePage = async () => {
+    loadError.value = ''
     const showParsing = !route.params.fromList
     if (showParsing) {
       startParsingAnimation()
@@ -217,6 +228,7 @@ export function useAiAnalysisPage() {
     activeDimensions,
     showParsingDialog,
     parseProgress,
+    loadError,
     progressColors,
     dimensionDetails,
     getScoreColor,

@@ -10,15 +10,31 @@
 - 系统设置新增 AI 模型供应商运行时配置能力，支持按供应商维护模型、基地址、密钥与可用状态。
 - 新增 AI 模型连通性测试接口与前端配置面板，支持在保存前进行连接验证与错误提示。
 - 新增 `AiProviderCatalog` 与 `RoutingAiProvider` 相关后端单元测试，补齐多供应商路由与配置边界场景覆盖。
+- 可以在项目详情直接发起 AI 标书初稿生成，查看运行产物、审查摘要，并把草稿写入文档编辑器。
+- 标书生成链路现在使用 OpenAI Responses structured outputs 作为生产路径，生成内容会保留来源线索、置信度和人工确认项。
+- 文档编辑器支持批量写入 AI 草稿章节树，保留来源 metadata，并自动跳过已锁定章节。
+- 新增后端架构/领域/应用/控制器/文档写入测试、前端 bid-agent 单测和 E2E 回归覆盖。
 
 ### Changed
 - `SettingsController` 与 `SettingsService` 扩展 AI 配置读写契约，返回脱敏后的密钥状态并保持治理字段一致性。
 - 工作台指标卡与系统设置页面样式/组件结构同步更新，适配新增 AI 设置交互与信息展示。
 - 启动脚本与 Dashboard 相关说明文档同步更新，保持开发启动与页面边界文档一致。
+- AI 深度能力服务完成拆分，评分、风险、gap、任务等规则进入可单测的纯核心，应用服务只负责编排。
+- OpenAI Provider 改为配置注入，减少环境变量和手工 JSON 截取造成的运行风险。
+- 项目详情、Dashboard、Bidding 相关前端测试拆分和稳定化，保持 Split-First 单文件 300 行约束。
 
 ### Fixed
 - 修复 AI 模型配置明文密钥回传风险，接口响应统一返回掩码与是否已配置标识。
 - 修复供应商路由在异常配置下的回退与错误分支处理，避免请求落到错误 provider。
+- 修复 bid-agent 项目级访问校验缺口，STAFF/MANAGER 跨项目访问会返回 403。
+- 修复 Dashboard demo 项目链接误跳 `/project/P001`，现在使用 demo query 路由。
+- 修复项目详情 projectId prop 类型 warning、`/project/create` QA 路由、Bidding/Dashboard 既有单测和相关 E2E 稳定性问题。
+- 修复 AI 分析失败提示缺少“加载失败”前缀的问题。
+- 修复 API 交付模式下客户商机中心仍可直连的问题，隐藏入口和路由都会回到标讯中心。
+- 修复 Playwright API E2E 会复用其它 worktree 旧服务的问题，现在只复用自身管理的测试栈。
+- 修复合并主线后的 Flyway 迁移版本冲突，将文档章节 metadata 扩容脚本顺延到 v84。
+- 修复 OpenAI 招标要求结构化输出落库前缺少分类 allowlist 和置信度范围校验的问题。
+- 修复 tender upload 队列迁移在 H2/MySQL schema validation 下的兼容问题，上传状态和任务状态保持 `VARCHAR` 持久化口径。
 
 ## [1.0.1] - 2026-04-22
 

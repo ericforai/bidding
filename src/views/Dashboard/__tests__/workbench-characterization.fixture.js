@@ -1,0 +1,163 @@
+import { flushPromises, mount } from '@vue/test-utils'
+import { vi } from 'vitest'
+
+const elementComponentStubs = vi.hoisted(() => {
+  const passthrough = (template, props = [], emits = []) => ({ props, emits, template })
+  return {
+    'el-button': passthrough('<button type="button" :disabled="loading" @click="$emit(\'click\', $event)"><slot /></button>', ['type', 'size', 'text', 'loading', 'icon'], ['click']),
+    'el-link': passthrough('<button type="button" class="el-link-stub" @click="$emit(\'click\', $event)"><slot /></button>', ['type', 'underline'], ['click']),
+    'el-tag': passthrough('<span class="el-tag-stub"><slot /></span>', ['type', 'size', 'effect']),
+    'el-icon': passthrough('<span class="el-icon-stub"><slot /></span>', ['size']),
+    'el-form': passthrough('<form><slot /></form>', ['model', 'labelWidth']),
+    'el-form-item': passthrough('<label><span>{{ label }}</span><slot /></label>', ['label', 'required']),
+    'el-option': passthrough('<option :value="value">{{ label }}</option>', ['label', 'value']),
+    'el-select': {
+      props: ['modelValue', 'placeholder', 'filterable'],
+      emits: ['update:modelValue'],
+      template: '<select class="el-select-stub" :value="modelValue ?? \'\'" @change="$emit(\'update:modelValue\', $event.target.value)"><slot /></select>',
+    },
+    'el-date-picker': {
+      props: ['modelValue', 'type', 'placeholder', 'valueFormat'],
+      emits: ['update:modelValue'],
+      template: '<input class="el-date-picker-stub" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+    },
+    'el-input': {
+      props: ['modelValue', 'type', 'rows', 'maxlength', 'showWordLimit', 'placeholder'],
+      emits: ['update:modelValue'],
+      template: '<textarea v-if="type === \'textarea\'" class="el-input-stub" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" /><input v-else class="el-input-stub" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+    },
+    'el-checkbox': {
+      props: ['modelValue'],
+      emits: ['update:modelValue', 'change'],
+      template: '<input type="checkbox" class="el-checkbox-stub" :checked="modelValue" @change="$emit(\'update:modelValue\', $event.target.checked); $emit(\'change\', $event.target.checked)" />',
+    },
+    'el-dialog': {
+      props: ['modelValue', 'title', 'width', 'destroyOnClose'],
+      emits: ['update:modelValue'],
+      template: '<section v-if="modelValue" class="el-dialog-stub"><h2>{{ title }}</h2><slot /><footer><slot name="footer" /></footer></section>',
+    },
+    'el-calendar': {
+      props: ['modelValue'],
+      emits: ['update:modelValue'],
+      template: '<div class="el-calendar-stub"><slot name="date-cell" :data="{ date: modelValue || new Date(), day: \'2026-04-22\', viewType: \'month\' }" /></div>',
+    },
+    ApprovalDialog: passthrough('<div class="approval-dialog-stub" />', ['visible', 'mode', 'approvalInfo']),
+  }
+})
+
+vi.mock('vue', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    resolveComponent: (name) => elementComponentStubs[name] || actual.resolveComponent(name),
+    resolveDirective: (name) => (name === 'loading' ? {} : actual.resolveDirective(name)),
+  }
+})
+
+import { nextTick } from 'vue'
+
+const mockState = vi.hoisted(() => ({
+  routerPush: vi.fn(),
+  currentUser: { id: 7, name: '小王', role: 'staff' },
+  setCalendar: vi.fn(),
+  dashboardGetSummary: vi.fn(),
+  tasksGetMine: vi.fn(),
+  tasksComplete: vi.fn(),
+  alertGetUnresolved: vi.fn(),
+  alertAcknowledge: vi.fn(),
+  approvalGetPendingApprovals: vi.fn(),
+  approvalGetMyApprovals: vi.fn(),
+  approvalSubmitApproval: vi.fn(),
+  projectsGetList: vi.fn(),
+  scheduleGetOverview: vi.fn(),
+  messageSuccess: vi.fn(),
+  messageWarning: vi.fn(),
+  messageError: vi.fn(),
+  messageInfo: vi.fn(),
+}))
+export const mocks = mockState
+
+vi.mock('vue-router', () => ({ useRouter: () => ({ push: mockState.routerPush }) }))
+vi.mock('@/stores/user', () => ({ useUserStore: () => ({ get currentUser() { return mockState.currentUser } }) }))
+vi.mock('@/stores/bidding', () => ({ useBiddingStore: () => ({ setCalendar: mockState.setCalendar }) }))
+vi.mock('@/api', () => ({
+  dashboardApi: { getSummary: mockState.dashboardGetSummary },
+  approvalApi: {
+    getPendingApprovals: mockState.approvalGetPendingApprovals,
+    getMyApprovals: mockState.approvalGetMyApprovals,
+    submitApproval: mockState.approvalSubmitApproval,
+  },
+  projectsApi: { getList: mockState.projectsGetList },
+}))
+vi.mock('@/api/modules/dashboard.js', () => ({ tasksApi: { getMine: mockState.tasksGetMine, complete: mockState.tasksComplete } }))
+vi.mock('@/api/modules/alerts.js', () => ({ alertHistoryApi: { getUnresolved: mockState.alertGetUnresolved, acknowledge: mockState.alertAcknowledge } }))
+vi.mock('@/api/modules/workbench.js', () => ({ workbenchApi: { getScheduleOverview: mockState.scheduleGetOverview } }))
+vi.mock('element-plus', () => ({
+  ElMessage: {
+    success: mockState.messageSuccess,
+    warning: mockState.messageWarning,
+    error: mockState.messageError,
+    info: mockState.messageInfo,
+  },
+}))
+
+import Workbench from '@/views/Dashboard/Workbench.vue'
+
+const globalMountOptions = {
+  directives: { loading: {} },
+  stubs: elementComponentStubs,
+  components: elementComponentStubs,
+}
+
+export const users = {
+  sales: { id: 7, name: '小王', role: 'staff' },
+  manager: { id: 8, name: '张经理', role: 'manager' },
+  staff: { id: 9, name: '李工', role: 'staff' },
+  admin: { id: 1, name: '管理员', role: 'admin' },
+}
+
+export function resetApiMocks() {
+  mockState.dashboardGetSummary.mockResolvedValue({
+    success: true,
+    data: { totalBudget: 2000000, successRate: 48.6, totalTenders: 12, activeProjects: 4, pendingTasks: 3 },
+  })
+  mockState.tasksGetMine.mockResolvedValue({ data: [{ id: 501, title: 'API任务：完善技术方案', priority: 'HIGH', status: 'TODO', dueDate: '2026-04-23T10:30:00' }] })
+  mockState.tasksComplete.mockResolvedValue({ success: true, data: { status: 'COMPLETED' } })
+  mockState.alertGetUnresolved.mockResolvedValue({ data: [{ id: 601, severity: 'CRITICAL', message: '保证金即将到期', status: 'ACTIVE', createdAt: '2026-04-21T09:00:00' }] })
+  mockState.alertAcknowledge.mockResolvedValue({ success: true })
+  mockState.approvalGetPendingApprovals.mockResolvedValue({
+    totalCount: 2,
+    data: [{ id: 701, title: '数字政府项目 - 预算审批', approvalType: 'expense', applicantDept: '销售一部', submitTime: '2026-04-22 09:00' }],
+  })
+  mockState.approvalGetMyApprovals.mockResolvedValue({
+    data: [{ id: 801, title: '数字政府项目 - 标书支持申请', status: 'PENDING', description: '等待技术支持排期', submitTime: '2026-04-22 08:30' }],
+  })
+  mockState.approvalSubmitApproval.mockResolvedValue({ success: true, data: { id: 901 } })
+  mockState.projectsGetList.mockResolvedValue({
+    success: true,
+    data: [{ id: '101', name: '数字政府项目' }, { id: '102', projectName: '智慧园区项目' }],
+  })
+  mockState.scheduleGetOverview.mockResolvedValue({
+    data: { events: [{ id: 301, eventDate: '2026-04-23', eventType: 'DEADLINE', title: '数字政府项目截标', projectId: 101, isUrgent: true }] },
+  })
+}
+
+export async function mountWorkbench(user = users.sales) {
+  Object.assign(mockState.currentUser, user)
+  const wrapper = mount(Workbench, { global: globalMountOptions })
+  await flushPromises()
+  await nextTick()
+  wrapper.vm.$forceUpdate()
+  await nextTick()
+  return wrapper
+}
+
+export async function refreshWorkbench(wrapper) {
+  await flushPromises()
+  wrapper.vm.$forceUpdate()
+  await nextTick()
+}
+
+export function findByText(wrapper, selector, text) {
+  return wrapper.findAll(selector).find((item) => item.text().includes(text))
+}

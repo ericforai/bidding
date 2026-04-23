@@ -65,7 +65,7 @@ export function useProjectDetailState(context) {
     return null
   })
 
-  const dialogProjectId = computed(() => project.value?.id ?? route.params.id)
+  const dialogProjectId = computed(() => String(project.value?.id ?? route.params.id ?? ''))
   const canManageProjectTasks = computed(() => isDemoMode || isApiProject.value)
   const canManageProjectDocuments = computed(() => isDemoMode || isApiProject.value)
   const canSetProjectReminder = computed(() => isDemoMode || isApiProject.value)

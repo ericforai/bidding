@@ -168,11 +168,11 @@
             <div class="form-section">
               <h4 class="section-label">包含章节</h4>
               <el-checkbox-group v-model="assemblyForm.sections" class="section-checkboxes">
-                <el-checkbox :label="'technical'">技术方案</el-checkbox>
-                <el-checkbox :label="'cases'">案例展示</el-checkbox>
-                <el-checkbox :label="'qualification'">资质文件</el-checkbox>
-                <el-checkbox :label="'service'">服务承诺</el-checkbox>
-                <el-checkbox :label="'delivery'">交付计划</el-checkbox>
+                <el-checkbox value="technical">技术方案</el-checkbox>
+                <el-checkbox value="cases">案例展示</el-checkbox>
+                <el-checkbox value="qualification">资质文件</el-checkbox>
+                <el-checkbox value="service">服务承诺</el-checkbox>
+                <el-checkbox value="delivery">交付计划</el-checkbox>
               </el-checkbox-group>
             </div>
 

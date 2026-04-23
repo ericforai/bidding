@@ -24,6 +24,14 @@ is_pid_alive() {
   [[ -f "$pid_file" ]] && kill -0 "$(cat "$pid_file")" >/dev/null 2>&1
 }
 
+is_managed_stack_ready() {
+  [[ -f "$MARKER_FILE" ]] &&
+    is_pid_alive "$BACKEND_PID_FILE" &&
+    is_pid_alive "$FRONTEND_PID_FILE" &&
+    is_http_ready "$UAT_API_BASE_URL/actuator/health" &&
+    is_http_ready "$UAT_WEB_BASE_URL"
+}
+
 cleanup_port_listener() {
   local port="$1"
   local pids
@@ -83,22 +91,21 @@ EOF
 )" >/dev/null 2>&1 || true
 }
 
-if is_http_ready "$UAT_API_BASE_URL/actuator/health" && is_http_ready "$UAT_WEB_BASE_URL"; then
+if is_managed_stack_ready; then
   printf 'Playwright API stack already healthy at %s and %s\n' "$UAT_API_BASE_URL" "$UAT_WEB_BASE_URL"
-  rm -f "$MARKER_FILE"
   exit 0
 fi
 
 printf 'Preparing lightweight Playwright API-backed E2E stack\n'
 rm -f "$MARKER_FILE"
+cleanup_port_listener "$BACKEND_PORT"
+cleanup_port_listener "$FRONTEND_PORT"
+rm -f "$BACKEND_PID_FILE" "$FRONTEND_PID_FILE"
 
 if ! is_http_ready "$UAT_API_BASE_URL/actuator/health"; then
   printf '==> Building frontend assets for API mode\n'
   cd "$ROOT_DIR"
   VITE_API_BASE_URL="$UAT_API_BASE_URL" npm run build:api >/dev/null
-
-  cleanup_port_listener "$BACKEND_PORT"
-  rm -f "$BACKEND_PID_FILE"
 
   printf '==> Starting backend on %s with e2e profile\n' "$BACKEND_PORT"
   cd "$BACKEND_DIR"
@@ -121,9 +128,6 @@ if ! is_http_ready "$UAT_API_BASE_URL/actuator/health"; then
 fi
 
 if ! is_http_ready "$UAT_WEB_BASE_URL"; then
-  cleanup_port_listener "$FRONTEND_PORT"
-  rm -f "$FRONTEND_PID_FILE"
-
   printf '==> Starting frontend preview on %s\n' "$FRONTEND_PORT"
   cd "$ROOT_DIR"
   nohup npm run preview -- --host 127.0.0.1 --port "$FRONTEND_PORT" > "$FRONTEND_LOG_FILE" 2>&1 < /dev/null &

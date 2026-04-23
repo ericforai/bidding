@@ -3,7 +3,7 @@
 一旦我所属的文件夹有所变化，请更新我。
 
 ## 功能概述
-基于Spring Boot 3.2 + Java 21的投标管理平台后端服务，提供标讯管理、项目管理、任务协作、知识库、资源管理和智能预警等核心业务功能。
+基于Spring Boot 3.2 + Java 21的投标管理平台后端服务，提供标讯管理、项目管理、任务协作、知识库、资源管理、标书生成 Agent 和智能预警等核心业务功能。
 
 ## 技术栈
 - Spring Boot 3.2.0
@@ -13,6 +13,7 @@
 - MySQL 8.0
 - Redis
 - Lombok
+- Apache POI / PDFBox（招标文件 Word 与文本型 PDF 正文提取）
 
 ## 目录结构
 ```
@@ -28,6 +29,9 @@ src/main/java/com/xiyu/bid/
 ├── repository/        # 数据访问层
 ├── service/           # 业务逻辑层
 ├── util/              # 工具类
+├── ai/                # AI Provider 与可测试的 AI 规则核心
+├── biddraftagent/     # 标书生成 Agent：run 编排、OpenAI 生成、审查与文档写入计划
+├── documenteditor/    # 文档编辑器与草稿树批量写入
 ├── alerts/            # 智能预警模块
 └── resources/        # 资源管理模块
 ```
@@ -81,6 +85,8 @@ mvn test -Dtest=FlywayBaselineContextTest,FlywayMysqlContainerTest,ExpenseContro
 - `JWT_SECRET` - JWT密钥，最少32字符（必填）
 - `CORS_ALLOWED_ORIGINS` - 允许的CORS源（默认：localhost:5173,5174,3000）
 - `SPRING_PROFILES_ACTIVE` - 环境配置（常用：`e2e`、`dev,mysql`、`prod,mysql`）
+- `OPENAI_API_KEY` - 标书生成 Agent 拆解招标文件和生成草稿所需的 OpenAI API Key
+- `BID_AGENT_UPLOAD_DIR` - 招标文件上传保存目录；未配置时使用系统临时目录
 
 ## e2e(H2) Demo 融合约定
 - 当 `SPRING_PROFILES_ACTIVE` 包含 `e2e` 时，读取类 API 会返回“真实数据 + 内存 Demo 数据”的融合结果。

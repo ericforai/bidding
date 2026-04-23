@@ -14,6 +14,7 @@
 | `service/DocumentSectionCommandService.java` | Service | 章节新增、更新、删除、重排 |
 | `service/DocumentSectionCollaborationService.java` | Service | 分配、锁定、提醒等协作动作 |
 | `service/DocumentSectionTreeService.java` | Service | 章节树查询与富化组装 |
+| `service/DocumentDraftTreeImportService.java` | Service | 草稿树批量导入与章节上修 |
 | `service/DocumentEditorGuard.java` | Guard | 项目/结构/章节归属校验 |
 | `service/DocumentEditorMapper.java` | Mapper | 结构、章节、提醒 DTO 组装 |
 | `entity/DocumentStructure.java` | Entity | 文档结构实体 |
@@ -35,5 +36,9 @@
 | `dto/SectionAssignmentRequest.java` | DTO | 章节分配请求 |
 | `dto/SectionLockRequest.java` | DTO | 章节锁定请求 |
 | `dto/SectionReminderRequest.java` | DTO | 章节提醒请求 |
+| `dto/DraftTreeUpsertRequest.java` | DTO | 草稿树导入请求 |
+| `dto/DraftTreeUpsertNodeRequest.java` | DTO | 草稿树节点请求 |
+| `dto/DraftTreeUpsertResultDTO.java` | DTO | 草稿树导入结果 |
+| `dto/DraftTreeSkippedSectionDTO.java` | DTO | 草稿树跳过项 |
 | `dto/DocumentReminderDTO.java` | DTO | 提醒视图对象 |
 | `dto/SectionType.java` | Enum | 章节类型 |

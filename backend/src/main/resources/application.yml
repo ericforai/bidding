@@ -59,8 +59,15 @@ spring:
 
 ai:
   provider: ${AI_PROVIDER:mock}  # Options: mock, openai
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    model: ${OPENAI_MODEL:gpt-5.2}
+    timeout: ${OPENAI_TIMEOUT:PT30S}
 
 app:
+  bid-agent:
+    upload-dir: ${BID_AGENT_UPLOAD_DIR:}
   export:
     max-records: ${APP_EXPORT_MAX_RECORDS:10000}  # Maximum records per export
     max-file-size-bytes: ${APP_EXPORT_MAX_SIZE:52428800}  # 50MB default

@@ -17,12 +17,13 @@
       <ProjectDetailAssistantPanels />
       <ProjectDetailResultDialogs />
       <ProjectDetailWorkflowDialogs />
+      <ProjectDetailBidAgentDrawer />
     </el-container>
   </div>
 </template>
 
 <script setup>
-import { computed, provide, reactive, ref } from 'vue'
+import { computed, markRaw, provide, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { projectsApi } from '@/api'
@@ -32,6 +33,7 @@ import { useBarStore } from '@/stores/bar'
 import { useProjectExpenseAggregation } from '@/components/project/composables/useProjectExpenseAggregation.js'
 import { projectDetailKey } from '@/composables/projectDetail/context.js'
 import { useProjectDetailAI } from '@/composables/projectDetail/useProjectDetailAI.js'
+import { useProjectDetailBidAgent } from '@/composables/projectDetail/useProjectDetailBidAgent.js'
 import { useProjectDetailBoot } from '@/composables/projectDetail/useProjectDetailBoot.js'
 import { useProjectDetailDocumentActions } from '@/composables/projectDetail/useProjectDetailDocumentActions.js'
 import { useProjectDetailFormatting } from '@/composables/projectDetail/useProjectDetailFormatting.js'
@@ -42,6 +44,7 @@ import { useProjectDetailState } from '@/composables/projectDetail/useProjectDet
 import { useProjectDetailTaskActions } from '@/composables/projectDetail/useProjectDetailTaskActions.js'
 import { useProjectDetailWorkflow } from '@/composables/projectDetail/useProjectDetailWorkflow.js'
 import ProjectDetailAssistantPanels from './ProjectDetailAssistantPanels.vue'
+import ProjectDetailBidAgentDrawer from './ProjectDetailBidAgentDrawer.vue'
 import ProjectDetailHeader from './ProjectDetailHeader.vue'
 import ProjectDetailMainColumn from './ProjectDetailMainColumn.vue'
 import ProjectDetailResultDialogs from './ProjectDetailResultDialogs.vue'
@@ -67,6 +70,7 @@ const expenseAggregation = useProjectExpenseAggregation({ projectStore, project:
 const formatting = useProjectDetailFormatting({ project: state.project })
 const ai = useProjectDetailAI({ ...baseContext, project: state.project, state })
 const quality = useProjectDetailQuality({ ...baseContext, project: state.project })
+const bidAgent = useProjectDetailBidAgent({ ...baseContext, project: state.project })
 const navigation = useProjectDetailNavigation({ route, router, project: state.project, assetCheckResult: state.assetCheckResult })
 const documentActions = useProjectDetailDocumentActions({ route, project: state.project, projectExpenses: expenseAggregation.projectExpenses, userStore, projectsApi, isApiProject, message, state })
 const boot = useProjectDetailBoot({ ...baseContext, state, workflow, expenseAggregation, loadProjectWorkflowData: documentActions.loadProjectWorkflowData, demoAutoTasks, demoMobileCard })
@@ -89,6 +93,7 @@ const projectDetailContext = reactive({
   ...formatting,
   ...ai,
   ...quality,
+  bidAgent: markRaw(bidAgent),
   ...navigation,
   ...documentActions,
   ...resultActions,

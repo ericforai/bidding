@@ -105,6 +105,8 @@ test('template advanced actions use real API contracts', async ({ page }) => {
 
   await page.goto('/knowledge/template')
   const findTemplateRow = (name) => page.locator('.el-table__row').filter({ hasText: name }).first()
+  await page.getByLabel('模板名称').fill(templateName)
+  await page.getByRole('button', { name: '搜索' }).click()
 
   let row = findTemplateRow(templateName)
   await expect(row).toBeVisible()

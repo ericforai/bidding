@@ -1,11 +1,13 @@
 // Input: documenteditor workflow services
-// Output: Document Editor facade over split-first workflow services
+// Output: Document Editor facade over split-first workflow services, including draft tree import
 // Pos: Service/业务层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.documenteditor.service;
 
 import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.documenteditor.dto.DocumentReminderDTO;
+import com.xiyu.bid.documenteditor.dto.DraftTreeUpsertRequest;
+import com.xiyu.bid.documenteditor.dto.DraftTreeUpsertResultDTO;
 import com.xiyu.bid.documenteditor.dto.DocumentSectionDTO;
 import com.xiyu.bid.documenteditor.dto.DocumentStructureDTO;
 import com.xiyu.bid.documenteditor.dto.SectionAssignmentRequest;
@@ -33,6 +35,7 @@ public class DocumentEditorService {
     private final DocumentSectionCommandService sectionCommandService;
     private final DocumentSectionCollaborationService sectionCollaborationService;
     private final DocumentSectionTreeService sectionTreeService;
+    private final DocumentDraftTreeImportService draftTreeImportService;
 
     @Auditable(action = "CREATE", entityType = "DocumentStructure", description = "Create document structure")
     @Transactional
@@ -84,5 +87,10 @@ public class DocumentEditorService {
 
     public List<DocumentSectionDTO> getSectionTree(Long projectId) {
         return sectionTreeService.getSectionTree(projectId);
+    }
+
+    @Transactional
+    public DraftTreeUpsertResultDTO upsertDraftTree(Long projectId, DraftTreeUpsertRequest request) {
+        return draftTreeImportService.upsertDraftTree(projectId, request);
     }
 }

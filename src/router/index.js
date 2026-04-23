@@ -4,7 +4,7 @@ import { hasStoredUserHint } from '@/api/session.js'
 import { registerLoginNavigator } from './sessionNavigation.js'
 
 const DEFAULT_AUTHENTICATED_HOME = '/dashboard'
-const HIDDEN_API_ROUTES = new Set(['CustomerOpportunityCenter'])
+const HIDDEN_API_ROUTES = new Set(['CustomerOpportunityCenter', '/bidding/customer-opportunities'])
 
 const getNormalizedRole = (userStore) => {
   const role = userStore.currentUser?.role || ''
@@ -60,7 +60,7 @@ const routes = [
       {
         path: 'bidding/customer-opportunities',
         name: 'CustomerOpportunityCenter',
-        component: () => import('@/views/Bidding/CustomerOpportunityCenter.vue'),
+        redirect: '/bidding',
         meta: { title: '客户商机中心', icon: 'bidding' }
       },
       {

@@ -31,6 +31,7 @@ class SettingsServiceTest {
 
     private UserRepository userRepository;
     private ObjectMapper objectMapper;
+    private SettingsPayloadMapper payloadMapper;
     private SettingsService settingsService;
     private AiProviderCatalog aiProviderCatalog;
 
@@ -40,9 +41,17 @@ class SettingsServiceTest {
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         aiProviderCatalog = new AiProviderCatalog();
+        payloadMapper = new SettingsPayloadMapper(new SettingsDefaultPayloadFactory());
         PasswordEncryptionUtil passwordEncryptionUtil = new PasswordEncryptionUtil();
         passwordEncryptionUtil.initialize();
-        settingsService = new SettingsService(systemSettingRepository, userRepository, objectMapper, passwordEncryptionUtil, aiProviderCatalog);
+        settingsService = new SettingsService(
+                systemSettingRepository,
+                userRepository,
+                objectMapper,
+                payloadMapper,
+                passwordEncryptionUtil,
+                aiProviderCatalog
+        );
     }
 
     @Test
@@ -78,17 +87,31 @@ class SettingsServiceTest {
                                 .allowedDepts(List.of("dept1"))
                                 .build()
                 ))
+                .integrationConfig(SettingsUpdateRequest.IntegrationConfigUpdate.builder()
+                        .apiKey("sk-system-test")
+                        .aiBaseUrl("https://gateway.example.test/v1")
+                        .aiModel("gpt-system")
+                        .build())
                 .build());
 
         PasswordEncryptionUtil passwordEncryptionUtil = new PasswordEncryptionUtil();
         passwordEncryptionUtil.initialize();
-        SettingsService reloadedService = new SettingsService(systemSettingRepository, userRepository, objectMapper, passwordEncryptionUtil, aiProviderCatalog);
+        SettingsService reloadedService = new SettingsService(
+                systemSettingRepository,
+                userRepository,
+                objectMapper,
+                payloadMapper,
+                passwordEncryptionUtil,
+                aiProviderCatalog
+        );
         SettingsResponse reloaded = reloadedService.getSettings();
 
         assertEquals("整改后平台", reloaded.getSystemConfig().getSysName());
         assertEquals(12, reloaded.getSystemConfig().getDepositWarnDays());
         assertFalse(reloaded.getSystemConfig().getEnableAI());
         assertEquals("settings", reloaded.getRoles().get(0).getMenuPermissions().get(1));
+        assertEquals("https://gateway.example.test/v1", reloaded.getIntegrationConfig().getAiBaseUrl());
+        assertEquals("gpt-system", reloaded.getIntegrationConfig().getAiModel());
     }
 
     @Test

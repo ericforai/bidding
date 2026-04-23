@@ -1,6 +1,6 @@
-import { shallowMount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 vi.mock('./list/components/BiddingPageHeader.vue', () => ({
   default: { name: 'BiddingPageHeader', template: '<div class="bidding-page-header-stub" />' },
@@ -111,7 +111,7 @@ vi.mock('./list/useTenderListPage.js', () => ({
 describe('List.vue (标讯中心)', () => {
   it('renders the composed bidding list page shell', async () => {
     const List = (await import('./List.vue')).default
-    const wrapper = shallowMount(List, {
+    const wrapper = mount(List, {
       global: {
         stubs: {
           AiParsingDialog: true,
@@ -128,18 +128,27 @@ describe('List.vue (标讯中心)', () => {
           TenderMobileCards: true,
           TenderSearchCard: true,
           'el-card': { template: '<div><slot name="header" /><slot /></div>' },
-          'el-button': true,
-          'el-icon': true,
-          'el-radio-group': true,
-          'el-radio-button': true,
-          'el-pagination': true,
+          ElButton: { template: '<button><slot /></button>' },
+          ElCard: { template: '<div><slot name="header" /><slot /></div>' },
+          ElIcon: { template: '<span><slot /></span>' },
+          ElPagination: { template: '<nav />' },
+          ElRadioButton: { template: '<button><slot /></button>' },
+          ElRadioGroup: { template: '<div><slot /></div>' },
+          'el-button': { template: '<button><slot /></button>' },
+          'el-card': { template: '<div><slot name="header" /><slot /></div>' },
+          'el-icon': { template: '<span><slot /></span>' },
+          'el-pagination': { template: '<nav />' },
+          'el-radio-button': { template: '<button><slot /></button>' },
+          'el-radio-group': { template: '<div><slot /></div>' },
         },
       },
     })
+    wrapper.vm.$forceUpdate()
+    await nextTick()
 
-    expect(wrapper.find('bidding-page-header-stub').exists()).toBe(true)
+    expect(wrapper.find('.bidding-page-header-stub').exists()).toBe(true)
     expect(
-      wrapper.find('tender-table-stub').exists() || wrapper.find('tender-mobile-cards-stub').exists(),
+      wrapper.find('.tender-table-stub').exists() || wrapper.find('tender-mobile-cards-stub').exists(),
     ).toBe(true)
   })
 })
