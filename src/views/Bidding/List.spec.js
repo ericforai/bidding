@@ -127,7 +127,6 @@ describe('List.vue (标讯中心)', () => {
           TenderBatchActionBar: true,
           TenderMobileCards: true,
           TenderSearchCard: true,
-          'el-card': { template: '<div><slot name="header" /><slot /></div>' },
           ElButton: { template: '<button><slot /></button>' },
           ElCard: { template: '<div><slot name="header" /><slot /></div>' },
           ElIcon: { template: '<span><slot /></span>' },
