@@ -19,6 +19,15 @@
       </div>
     </div>
 
+    <el-alert
+      v-if="loadError"
+      class="ai-load-error"
+      :title="loadError"
+      type="error"
+      show-icon
+      :closable="false"
+    />
+
     <div v-if="analysisData" class="main-content">
       <div class="ai-left-section">
         <el-card class="score-card" shadow="never">
@@ -204,6 +213,7 @@ const {
   activeDimensions,
   showParsingDialog,
   parseProgress,
+  loadError,
   progressColors,
   dimensionDetails,
   getScoreColor,

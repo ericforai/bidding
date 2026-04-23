@@ -4,7 +4,7 @@
 
 ## [未发布]
 
-## [1.0.2] - 2026-04-22
+## [1.0.2] - 2026-04-23
 
 ### Added
 - 可以在项目详情直接发起 AI 标书初稿生成，查看运行产物、审查摘要，并把草稿写入文档编辑器。
@@ -22,6 +22,11 @@
 - 修复 Dashboard demo 项目链接误跳 `/project/P001`，现在使用 demo query 路由。
 - 修复项目详情 projectId prop 类型 warning、`/project/create` QA 路由、Bidding/Dashboard 既有单测和相关 E2E 稳定性问题。
 - 修复 AI 分析失败提示缺少“加载失败”前缀的问题。
+- 修复 API 交付模式下客户商机中心仍可直连的问题，隐藏入口和路由都会回到标讯中心。
+- 修复 Playwright API E2E 会复用其它 worktree 旧服务的问题，现在只复用自身管理的测试栈。
+- 修复合并主线后的 Flyway 迁移版本冲突，将文档章节 metadata 扩容脚本顺延到 v84。
+- 修复 OpenAI 招标要求结构化输出落库前缺少分类 allowlist 和置信度范围校验的问题。
+- 修复 tender upload 队列迁移在 H2/MySQL schema validation 下的兼容问题，上传状态和任务状态保持 `VARCHAR` 持久化口径。
 
 ## [1.0.1] - 2026-04-22
 

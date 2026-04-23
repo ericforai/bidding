@@ -8,9 +8,22 @@ import com.xiyu.bid.projectworkflow.entity.ProjectDocument;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Set;
 
 @Component
 class TenderRequirementEntityFactory {
+
+    private static final Set<String> ALLOWED_CATEGORIES = Set.of(
+            "qualification",
+            "technical",
+            "commercial",
+            "pricing",
+            "legal",
+            "delivery",
+            "scoring",
+            "material",
+            "other"
+    );
 
     List<BidRequirementItem> buildItems(
             Long projectId,
@@ -58,13 +71,25 @@ class TenderRequirementEntityFactory {
                 .projectId(projectId)
                 .tenderId(tenderId)
                 .projectDocumentId(documentId)
-                .category(defaultText(item.category(), "other"))
+                .category(normalizeCategory(item.category()))
                 .title(defaultText(item.title(), "未命名要求"))
                 .content(defaultText(item.content(), item.title()))
                 .sourceExcerpt(trimToNull(item.sourceExcerpt()))
                 .mandatory(item.mandatory())
-                .confidence(item.confidence())
+                .confidence(normalizeConfidence(item.confidence()))
                 .build();
+    }
+
+    private String normalizeCategory(String category) {
+        String value = defaultText(category, "other").toLowerCase();
+        return ALLOWED_CATEGORIES.contains(value) ? value : "other";
+    }
+
+    private Integer normalizeConfidence(Integer confidence) {
+        if (confidence == null) {
+            return null;
+        }
+        return Math.max(0, Math.min(100, confidence));
     }
 
     private String defaultText(String value, String fallback) {

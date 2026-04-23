@@ -166,6 +166,9 @@ const userAvatar = computed(() => {
 const userName = computed(() => userStore.currentUser?.name || '游客')
 const userRoleText = computed(() => userStore.currentUser?.roleName || roleTextMap[userStore.userRole] || '游客')
 const canAccessSettings = computed(() => {
+  if (userStore.userRole !== 'admin') {
+    return false
+  }
   const decision = hasMenuAccessForRole(userStore.userRole, ['settings'])
   if (decision !== null) {
     return decision

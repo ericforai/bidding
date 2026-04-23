@@ -52,7 +52,7 @@ const routes = [
       {
         path: 'bidding/customer-opportunities',
         name: 'CustomerOpportunityCenter',
-        component: () => import('@/views/Bidding/CustomerOpportunityCenter.vue'),
+        redirect: '/bidding',
         meta: { title: '客户商机中心', icon: 'bidding' }
       },
       {
@@ -239,10 +239,10 @@ router.beforeEach(async (to, from, next) => {
 
   if (to.meta.requiresAuth && !hasAuthState) {
     next('/login')
+  } else if (HIDDEN_API_ROUTES.has(to.path)) {
+    next('/bidding')
   } else if (to.path === '/login' && hasAuthState) {
     next(DEFAULT_AUTHENTICATED_HOME)
-  } else if (hasAuthState && HIDDEN_API_ROUTES.has(to.path)) {
-    next('/bidding')
   } else if (hasAuthState && !hasRouteAccess(to, getNormalizedRole(userStore))) {
     next(DEFAULT_AUTHENTICATED_HOME)
   } else {

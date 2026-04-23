@@ -13,6 +13,10 @@
   border-radius: 8px;
 }
 
+.ai-load-error {
+  margin-bottom: 20px;
+}
+
 .ai-header-left {
   display: flex;
   flex-direction: column;

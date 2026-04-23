@@ -1,14 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { attachRefreshSession, extractRefreshToken } from './support/auth-session.js'
-
-const apiBaseUrl = process.env.PLAYWRIGHT_API_BASE_URL || 'http://127.0.0.1:18080'
-const demoPassword = process.env.E2E_DEMO_PASSWORD || '123456'
-
-const users = {
-  admin: { username: 'lizong', password: demoPassword },
-  manager: { username: 'zhangjingli', password: demoPassword },
-  staff: { username: 'xiaowang', password: demoPassword },
-}
+import { ensureApiSession, injectSession } from './auth-helpers.js'
 
 const readStoredUserHint = () => {
   const rawUser =
@@ -19,40 +10,16 @@ const readStoredUserHint = () => {
   return JSON.parse(rawUser)
 }
 
-async function loginViaApi(page, user) {
-  const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      username: user.username,
-      password: user.password,
-      rememberMe: true
-    })
+async function loginAsRole(page, role, fullName) {
+  const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+  const session = await ensureApiSession({
+    username: `access_${String(role).toLowerCase()}_${suffix}`,
+    role,
+    fullName
   })
 
-  if (!response.ok) {
-    throw new Error(`Login failed with status ${response.status}`)
-  }
-
-  const responseBody = await response.json()
-  await attachRefreshSession(page, extractRefreshToken(response))
-  await page.addInitScript((authData) => {
-    const normalizedUser = {
-      id: authData?.id,
-      name: authData?.fullName || authData?.name || authData?.username,
-      username: authData?.username,
-      email: authData?.email,
-      role: String(authData?.role || '').toLowerCase(),
-      allowedProjectIds: Array.isArray(authData?.allowedProjectIds) ? authData.allowedProjectIds : [],
-      allowedDepts: Array.isArray(authData?.allowedDepts) ? authData.allowedDepts : []
-    }
-
-    sessionStorage.setItem('token', authData?.token || '')
-    sessionStorage.setItem('user', JSON.stringify(normalizedUser))
-  }, responseBody.data)
-  return responseBody.data
+  await injectSession(page, session)
+  return session
 }
 
 test.describe('auth access control', () => {
@@ -64,7 +31,7 @@ test.describe('auth access control', () => {
   })
 
   test('blocks manager from admin-only settings route', async ({ page }) => {
-    await loginViaApi(page, users.manager)
+    await loginAsRole(page, 'MANAGER', 'Access Manager')
 
     await page.goto('/settings')
 
@@ -75,7 +42,7 @@ test.describe('auth access control', () => {
   })
 
   test('blocks staff from analytics dashboard route', async ({ page }) => {
-    await loginViaApi(page, users.staff)
+    await loginAsRole(page, 'STAFF', 'Access Staff')
 
     await page.goto('/analytics/dashboard')
 

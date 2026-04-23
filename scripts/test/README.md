@@ -7,5 +7,5 @@
 
 | 文件 | 地位 | 功能 |
 |------|------|------|
-| `start-api-e2e-stack.sh` | 启动脚本 | 准备 API 联调所需的后端、前端预览和依赖容器 |
+| `start-api-e2e-stack.sh` | 启动脚本 | 准备 API 联调所需的后端、前端预览和依赖容器；只复用带本地 marker/pid 的 Playwright 托管栈，避免跨 worktree 端口污染 |
 | `stop-api-e2e-stack.sh` | 停止脚本 | 仅关闭由 Playwright 基线启动脚本拉起的本地联调环境 |

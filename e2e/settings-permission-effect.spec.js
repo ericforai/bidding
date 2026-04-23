@@ -117,7 +117,7 @@ test('api settings page supports custom roles and still blocks managers from adm
   })
   await page.reload()
   await page.getByRole('tab', { name: /角色权限/ }).click()
-  await expect(page.getByText('自定义回归角色')).toBeVisible()
+  await expect(page.getByText('自定义回归角色').first()).toBeVisible()
   const customUsername = `settings_custom_${suffix}`
   await adminRequest('/api/admin/users', adminSession.token, {
     method: 'POST',

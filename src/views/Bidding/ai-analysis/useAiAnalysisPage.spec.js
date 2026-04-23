@@ -83,7 +83,12 @@ describe('useAiAnalysisPage', () => {
     await flushPromises()
 
     expect(wrapper.vm.analysisData).toBe(null)
-    expect(elMessage.error).toHaveBeenCalledWith('加载失败：AI服务异常')
+    expect(wrapper.vm.loadError).toBe('加载失败：AI服务异常')
+    expect(elMessage.error).toHaveBeenCalledWith({
+      message: '加载失败：AI服务异常',
+      duration: 10000,
+      showClose: true,
+    })
   })
 
   it('clears parsing timer on unmount when parsing animation is enabled', async () => {
