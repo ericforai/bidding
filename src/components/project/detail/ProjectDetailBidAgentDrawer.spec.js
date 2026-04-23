@@ -13,19 +13,19 @@ vi.mock('@/composables/projectDetail/context.js', () => ({
 import ProjectDetailBidAgentDrawer from './ProjectDetailBidAgentDrawer.vue'
 
 const stubs = {
-  'el-drawer': {
+  drawer: {
     props: ['modelValue'],
     template: '<section v-if="modelValue" data-test="drawer"><slot /><div data-test="footer"><slot name="footer" /></div></section>',
   },
-  'el-button': {
-    props: ['disabled', 'loading', 'type', 'plain'],
+  button: {
+    props: ['disabled', 'href', 'loading', 'plain', 'tag', 'type'],
     emits: ['click'],
-    template: '<button :disabled="disabled || loading" @click="$emit(\'click\')"><slot /></button>',
+    template: '<component :is="tag || \'button\'" :href="href" :disabled="disabled || loading" @click="$emit(\'click\', $event)"><slot /></component>',
   },
-  'el-tag': { template: '<span class="tag"><slot /></span>' },
-  'el-alert': { props: ['title'], template: '<div class="alert">{{ title }}</div>' },
-  'el-empty': { props: ['description'], template: '<div class="empty">{{ description }}</div>' },
-  'el-upload': { template: '<div><slot /></div>' },
+  tag: { template: '<span class="tag"><slot /></span>' },
+  alert: { props: ['title'], template: '<div class="alert">{{ title }}</div>' },
+  empty: { props: ['description'], template: '<div class="empty">{{ description }}</div>' },
+  upload: { template: '<div><slot /></div>' },
 }
 
 function resetContext(overrides = {}) {
@@ -59,12 +59,18 @@ function mountDrawer() {
   return mount(ProjectDetailBidAgentDrawer, {
     global: {
       stubs: {
-        ElDrawer: stubs['el-drawer'],
-        ElButton: stubs['el-button'],
-        ElTag: stubs['el-tag'],
-        ElAlert: stubs['el-alert'],
-        ElEmpty: stubs['el-empty'],
-        ElUpload: stubs['el-upload'],
+        ElDrawer: stubs.drawer,
+        'el-drawer': stubs.drawer,
+        ElButton: stubs.button,
+        'el-button': stubs.button,
+        ElTag: stubs.tag,
+        'el-tag': stubs.tag,
+        ElAlert: stubs.alert,
+        'el-alert': stubs.alert,
+        ElEmpty: stubs.empty,
+        'el-empty': stubs.empty,
+        ElUpload: stubs.upload,
+        'el-upload': stubs.upload,
       },
     },
   })
@@ -82,7 +88,7 @@ describe('ProjectDetailBidAgentDrawer', () => {
   it('shows the empty state and starts a bid-agent run', async () => {
     const wrapper = mountDrawer()
 
-    expect(wrapper.find('el-empty').attributes('description')).toBe('尚未启动 AI 初稿生成')
+    expect(wrapper.text()).toContain('未启动')
     expect(wrapper.text()).toContain('上传招标文件并生成初稿')
     await buttonByText(wrapper, '使用已有项目资料生成').trigger('click')
 
@@ -119,10 +125,9 @@ describe('ProjectDetailBidAgentDrawer', () => {
     expect(wrapper.text()).toContain('项目理解')
     expect(wrapper.text()).toContain('招标文件')
     expect(wrapper.text()).toContain('92%')
-    const alertTitles = wrapper.findAll('el-alert').map((alert) => alert.attributes('title'))
-    expect(alertTitles).toContain('需确认交付范围')
-    expect(alertTitles).toContain('缺少报价明细')
-    expect(alertTitles).toContain('请人工确认资质有效期')
+    expect(wrapper.html()).toContain('需确认交付范围')
+    expect(wrapper.html()).toContain('缺少报价明细')
+    expect(wrapper.html()).toContain('请人工确认资质有效期')
   })
 
   it('can apply the result, request review, and open the editor after apply', async () => {

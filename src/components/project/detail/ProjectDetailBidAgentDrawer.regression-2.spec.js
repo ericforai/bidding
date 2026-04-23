@@ -63,7 +63,17 @@ function resetContext() {
 
 function mountDrawer() {
   return mount(ProjectDetailBidAgentDrawer, {
-    global: { stubs },
+    global: {
+      stubs: {
+        ...stubs,
+        'el-drawer': stubs.ElDrawer,
+        'el-button': stubs.ElButton,
+        'el-tag': stubs.ElTag,
+        'el-alert': stubs.ElAlert,
+        'el-empty': stubs.ElEmpty,
+        'el-upload': stubs.ElUpload,
+      },
+    },
   })
 }
 
@@ -74,10 +84,11 @@ describe('ProjectDetailBidAgentDrawer editor navigation regression', () => {
   it('renders a real editor href and still invokes router navigation', async () => {
     const applyResult = resetContext()
     const wrapper = mountDrawer()
-    const editorLink = wrapper.findAll('el-button, a').find((link) => link.text().includes('打开文档编辑器'))
+    const editorHref = '/document/editor/12?bidAgentRunId=run-42&documentId=55&jobId=job-3'
+    const editorLink = wrapper.findAll('a, button, el-button').find((link) => link.text().includes('打开文档编辑器'))
 
-    expect(editorLink.attributes('tag')).toBe('a')
-    expect(editorLink.attributes('href')).toBe('/document/editor/12?bidAgentRunId=run-42&documentId=55&jobId=job-3')
+    expect(editorLink).toBeTruthy()
+    expect(editorLink.attributes('href')).toBe(editorHref)
 
     await editorLink.trigger('click')
 

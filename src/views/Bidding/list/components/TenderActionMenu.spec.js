@@ -1,4 +1,4 @@
-import { shallowMount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('element-plus', () => ({
@@ -14,7 +14,15 @@ import TenderActionMenu from './TenderActionMenu.vue'
 const row = { id: 1, title: '测试标讯' }
 
 function mountMenu(props = {}) {
-  return shallowMount(TenderActionMenu, {
+  const stubs = {
+    ElButton: { template: '<button><slot /></button>' },
+    ElDropdown: { template: '<div><slot /><slot name="dropdown" /></div>' },
+    ElDropdownItem: { template: '<div><slot /></div>' },
+    ElDropdownMenu: { template: '<div><slot /></div>' },
+    ElTooltip: { template: '<div><slot /></div>' },
+  }
+
+  return mount(TenderActionMenu, {
     props: {
       row,
       canManageTenders: false,
@@ -24,11 +32,12 @@ function mountMenu(props = {}) {
     },
     global: {
       stubs: {
-        ElButton: { template: '<button><slot /></button>' },
-        ElDropdown: { template: '<div><slot /><slot name="dropdown" /></div>' },
-        ElDropdownItem: { template: '<div><slot /></div>' },
-        ElDropdownMenu: { template: '<div><slot /></div>' },
-        ElTooltip: { template: '<div><slot /></div>' },
+        ...stubs,
+        'el-button': stubs.ElButton,
+        'el-dropdown': stubs.ElDropdown,
+        'el-dropdown-item': stubs.ElDropdownItem,
+        'el-dropdown-menu': stubs.ElDropdownMenu,
+        'el-tooltip': stubs.ElTooltip,
       },
     },
   })
