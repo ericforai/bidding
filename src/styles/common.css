@@ -76,6 +76,51 @@
   border: 1px solid var(--gray-100);
 }
 
+/* ========== 移动端企业表格控件优化 ========== */
+@media (max-width: 768px) {
+  .el-pagination {
+    max-width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 6px;
+  }
+
+  .el-pagination .el-pagination__total,
+  .el-pagination .el-pagination__sizes,
+  .el-pagination .el-pagination__jump {
+    display: none;
+  }
+
+  .el-pagination .btn-prev,
+  .el-pagination .btn-next,
+  .el-pagination .el-pager li {
+    min-width: 40px;
+    height: 40px;
+    line-height: 40px;
+  }
+
+  .el-radio-group {
+    max-width: 100%;
+  }
+
+  .el-radio-button__inner {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .el-dialog {
+    max-width: calc(100vw - 24px);
+    margin: 12px auto;
+  }
+
+  .el-drawer {
+    max-width: calc(100vw - 16px);
+  }
+}
+
 /* ========== 无障碍：减少动画偏好 ========== */
 @media (prefers-reduced-motion: reduce) {
   *,

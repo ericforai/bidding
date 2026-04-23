@@ -193,6 +193,7 @@ import TenderSearchCard from './list/components/TenderSearchCard.vue'
 import TenderTable from './list/components/TenderTable.vue'
 import { useTenderListPage } from './list/useTenderListPage.js'
 import './list/styles/list-page.css'
+import './list/styles/mobile-page.css'
 
 const {
   searchForm,

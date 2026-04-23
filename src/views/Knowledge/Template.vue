@@ -309,9 +309,42 @@ const {
 }
 
 @media (max-width: 768px) {
+  .template-container {
+    padding: 0;
+  }
+
   .page-header {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .category-tabs {
+    border-radius: 8px;
+    padding: 12px 12px 0;
+    overflow: hidden;
+
+    :deep(.el-tabs__nav-wrap) {
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding-bottom: 4px;
+    }
+
+    :deep(.el-tabs__nav-wrap::after) {
+      display: none;
+    }
+
+    :deep(.el-tabs__nav-scroll) {
+      overflow: visible;
+    }
+
+    :deep(.el-tabs__nav) {
+      white-space: nowrap;
+    }
+
+    :deep(.el-tabs__item) {
+      min-height: 40px;
+      padding: 0 14px;
+    }
   }
 
   .results-header {
