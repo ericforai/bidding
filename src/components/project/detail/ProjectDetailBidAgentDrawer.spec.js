@@ -77,7 +77,7 @@ function mountDrawer() {
 }
 
 function buttonByText(wrapper, text) {
-  return wrapper.findAll('button, el-button').find((button) => button.text().includes(text))
+  return wrapper.findAll('a, button, el-button').find((button) => button.text().includes(text))
 }
 
 describe('ProjectDetailBidAgentDrawer', () => {
