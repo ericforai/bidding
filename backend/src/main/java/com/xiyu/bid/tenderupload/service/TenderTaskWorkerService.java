@@ -16,8 +16,8 @@ import com.xiyu.bid.tenderupload.repository.TenderTaskRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,12 +35,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 @Service
+@ConditionalOnProperty(prefix = "app.tender-processing", name = "worker-enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
 public class TenderTaskWorkerService {
 
     private static final int DEFAULT_TASK_LIMIT = 16;
-    private static final String GLOBAL_CLAIM_LOCK = "tender-task-global-claim";
 
     private final TenderProcessingProperties properties;
     private final TenderTaskRepository tenderTaskRepository;
@@ -48,7 +48,7 @@ public class TenderTaskWorkerService {
     private final TenderFileRepository tenderFileRepository;
     private final TenderTaskStateMachine taskStateMachine;
     private final StorageGuardService storageGuardService;
-    private final JdbcTemplate jdbcTemplate;
+    private final TenderTaskClaimLock claimLock;
     private final TransactionTemplate transactionTemplate;
     @Qualifier("applicationTaskExecutor")
     private final Executor applicationTaskExecutor;
@@ -90,7 +90,7 @@ public class TenderTaskWorkerService {
             return List.of();
         }
 
-        if (!tryAcquireGlobalClaimLock()) {
+        if (!claimLock.tryAcquire()) {
             return List.of();
         }
 
@@ -115,7 +115,7 @@ public class TenderTaskWorkerService {
             tasks.forEach(task -> taskStateMachine.markRunning(task, workerId, now));
             return tenderTaskRepository.saveAll(tasks);
         } finally {
-            releaseGlobalClaimLock();
+            claimLock.release();
         }
     }
 
@@ -272,21 +272,4 @@ public class TenderTaskWorkerService {
         return (double) used / (double) max;
     }
 
-    private boolean tryAcquireGlobalClaimLock() {
-        try {
-            Integer gotLock = jdbcTemplate.queryForObject("select GET_LOCK(?, 0)", Integer.class, GLOBAL_CLAIM_LOCK);
-            return gotLock != null && gotLock == 1;
-        } catch (RuntimeException ex) {
-            log.warn("Global claim lock unavailable, fallback to non-lock mode: {}", ex.getMessage());
-            return true;
-        }
-    }
-
-    private void releaseGlobalClaimLock() {
-        try {
-            jdbcTemplate.queryForObject("select RELEASE_LOCK(?)", Integer.class, GLOBAL_CLAIM_LOCK);
-        } catch (RuntimeException ex) {
-            log.warn("Failed to release global claim lock: {}", ex.getMessage());
-        }
-    }
 }

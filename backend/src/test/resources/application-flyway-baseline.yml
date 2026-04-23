@@ -35,6 +35,10 @@ jwt:
   expiration: 3600000
   refresh-expiration: 7200000
 
+app:
+  tender-processing:
+    worker-enabled: false
+
 logging:
   level:
     com.xiyu: WARN

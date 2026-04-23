@@ -42,6 +42,10 @@ platform:
   account:
     encryption-key: test-platform-encryption-key-2026
 
+app:
+  tender-processing:
+    worker-enabled: false
+
 logging:
   level:
     com.xiyu: DEBUG

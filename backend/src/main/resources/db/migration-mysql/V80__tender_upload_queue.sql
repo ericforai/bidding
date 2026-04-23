@@ -6,7 +6,7 @@ create table if not exists tender_file (
     file_sha256 varchar(64),
     file_size bigint,
     page_count int,
-    upload_status varchar(20) not null default 'INITIATED',
+    upload_status enum ('INITIATED','COMPLETED','DUPLICATE','FAILED') not null default 'INITIATED',
     created_at datetime(6) not null default current_timestamp(6),
     updated_at datetime(6) not null default current_timestamp(6) on update current_timestamp(6),
     constraint uk_tender_file_upload_id unique (upload_id),
@@ -19,7 +19,7 @@ create index idx_tender_file_user_status_created on tender_file(user_id, upload_
 create table if not exists tender_task (
     id bigint primary key auto_increment,
     file_id bigint not null,
-    status varchar(20) not null,
+    status enum ('QUEUED','RUNNING','RETRYING','SUCCEEDED','FAILED','DLQ') not null,
     priority int not null default 5,
     attempts int not null default 0,
     available_at datetime(6) not null default current_timestamp(6),
