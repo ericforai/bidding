@@ -1,4 +1,4 @@
-package com.xiyu.bid.controller;
+package com.xiyu.bid.demo.controller;
 
 import com.xiyu.bid.demo.service.RuntimeModeService;
 import com.xiyu.bid.dto.ApiResponse;
