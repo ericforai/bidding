@@ -22,6 +22,7 @@ WATCHDOG_PID_FILE="$RUNTIME_DIR/watchdog.pid"
 WATCHDOG_LOG="$RUNTIME_DIR/watchdog.log"
 WATCHDOG_INTERVAL_SECONDS="${WATCHDOG_INTERVAL_SECONDS:-5}"
 DEFAULT_BACKEND_PROFILE="${BACKEND_PROFILE:-dev,mysql}"
+FRONTEND_HEALTH_SCRIPT="$ROOT_DIR/scripts/dev-frontend-health.sh"
 BACKEND_PROFILE_OVERRIDE=""
 ACTIVE_BACKEND_PROFILE=""
 
@@ -120,6 +121,37 @@ wait_http() {
   done
 }
 
+frontend_matches_workspace() {
+  ROOT_DIR="$ROOT_DIR" \
+    FRONTEND_URL="$FRONTEND_URL" \
+    FRONTEND_PORT="$FRONTEND_PORT" \
+    BACKEND_PORT="$BACKEND_PORT" \
+    "$FRONTEND_HEALTH_SCRIPT" >/dev/null 2>&1
+}
+
+print_frontend_mismatch() {
+  ROOT_DIR="$ROOT_DIR" \
+    FRONTEND_URL="$FRONTEND_URL" \
+    FRONTEND_PORT="$FRONTEND_PORT" \
+    BACKEND_PORT="$BACKEND_PORT" \
+    "$FRONTEND_HEALTH_SCRIPT" >&2 || true
+}
+
+wait_frontend() {
+  local timeout="${1:-60}"
+  local start
+  start="$(date +%s)"
+  while true; do
+    if frontend_matches_workspace; then
+      return 0
+    fi
+    if (( $(date +%s) - start >= timeout )); then
+      return 1
+    fi
+    sleep 1
+  done
+}
+
 start_backend() {
   local pid=""
   pid="$(read_pid "$BACKEND_PID_FILE" 2>/dev/null || true)"
@@ -151,11 +183,28 @@ start_frontend() {
   pid="$(read_pid "$FRONTEND_PID_FILE" 2>/dev/null || true)"
   if is_pid_running "$pid"; then
     if is_port_listening "$FRONTEND_PORT"; then
-      echo "[frontend] already running (pid=$pid, port=$FRONTEND_PORT)"
+      if frontend_matches_workspace; then
+        echo "[frontend] already running (pid=$pid, port=$FRONTEND_PORT)"
+      else
+        echo "[frontend] pid=$pid is listening on port $FRONTEND_PORT, but it is not this workspace in API mode" >&2
+        print_frontend_mismatch
+        return 1
+      fi
     else
       echo "[frontend] process is running (pid=$pid), waiting for port $FRONTEND_PORT to become ready"
     fi
     return 0
+  fi
+
+  if is_port_listening "$FRONTEND_PORT"; then
+    if frontend_matches_workspace; then
+      echo "[frontend] already running (untracked, port=$FRONTEND_PORT)"
+      return 0
+    fi
+    echo "[frontend] port $FRONTEND_PORT is occupied by another service" >&2
+    print_frontend_mismatch
+    echo "[frontend] stop the conflicting service or run: npm run dev:stable:stop" >&2
+    return 1
   fi
 
   echo "[frontend] starting on :$FRONTEND_PORT"
@@ -216,15 +265,23 @@ status() {
   fi
   if is_port_listening "$FRONTEND_PORT"; then
     if is_pid_running "$fpid"; then
-      fstate="up(pid=$fpid)"
+      if frontend_matches_workspace; then
+        fstate="up(pid=$fpid)"
+      else
+        fstate="up(pid=$fpid,mismatch)"
+      fi
     else
-      fstate="up(port=$FRONTEND_PORT)"
+      if frontend_matches_workspace; then
+        fstate="up(port=$FRONTEND_PORT)"
+      else
+        fstate="up(port=$FRONTEND_PORT,mismatch)"
+      fi
     fi
   fi
   if curl -fsS "$BACKEND_HEALTH_URL" >/dev/null 2>&1; then
     bhttp="ok"
   fi
-  if curl -fsS "$FRONTEND_URL" >/dev/null 2>&1; then
+  if frontend_matches_workspace; then
     fhttp="ok"
   fi
 
@@ -259,10 +316,13 @@ watchdog_loop() {
       wait_http "$BACKEND_HEALTH_URL" 120 >/dev/null 2>&1 || true
     fi
 
-    if ! curl -fsS "$FRONTEND_URL" >/dev/null 2>&1; then
+    if ! frontend_matches_workspace; then
       echo "[$(date '+%F %T')] frontend unhealthy, attempting restart"
-      start_frontend
-      wait_http "$FRONTEND_URL" 60 >/dev/null 2>&1 || true
+      if start_frontend; then
+        wait_frontend 60 >/dev/null 2>&1 || true
+      else
+        echo "[$(date '+%F %T')] frontend restart skipped because port identity check failed"
+      fi
     fi
 
     sleep "$WATCHDOG_INTERVAL_SECONDS"
@@ -335,8 +395,9 @@ case "$CMD" in
       exit 1
     fi
     start_frontend
-    if ! wait_http "$FRONTEND_URL" 60; then
+    if ! wait_frontend 60; then
       echo "[frontend] failed to become healthy. See logs:"
+      print_frontend_mismatch
       logs
       exit 1
     fi

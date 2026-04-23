@@ -25,6 +25,7 @@ LAUNCHD_STDOUT_LOG="$RUNTIME_DIR/launchd.out.log"
 LAUNCHD_STDERR_LOG="$RUNTIME_DIR/launchd.err.log"
 BACKEND_PORT="${BACKEND_PORT:-18080}"
 FRONTEND_PORT="${FRONTEND_PORT:-1314}"
+FRONTEND_HEALTH_SCRIPT="$ROOT_DIR/scripts/dev-frontend-health.sh"
 
 usage() {
   cat <<'EOF'
@@ -90,6 +91,10 @@ write_plist() {
     <string>${DB_USERNAME}</string>
     <key>DB_PASSWORD</key>
     <string>${DB_PASSWORD}</string>
+    <key>BACKEND_PORT</key>
+    <string>${BACKEND_PORT}</string>
+    <key>FRONTEND_PORT</key>
+    <string>${FRONTEND_PORT}</string>
   </dict>
   <key>StandardOutPath</key>
   <string>${LAUNCHD_STDOUT_LOG}</string>
@@ -154,7 +159,7 @@ status_service() {
   if curl -fsS "http://127.0.0.1:${BACKEND_PORT}/actuator/health" >/dev/null 2>&1; then
     bhttp="ok"
   fi
-  if curl -fsS "http://127.0.0.1:${FRONTEND_PORT}/" >/dev/null 2>&1; then
+  if ROOT_DIR="$ROOT_DIR" FRONTEND_URL="http://127.0.0.1:${FRONTEND_PORT}/" BACKEND_PORT="$BACKEND_PORT" "$FRONTEND_HEALTH_SCRIPT" >/dev/null 2>&1; then
     fhttp="ok"
   fi
 

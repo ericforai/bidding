@@ -114,13 +114,16 @@
 /* ==================== 统计指标网格 ==================== */
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 16px;
+  align-items: stretch;
   margin-bottom: 24px;
 }
 
 .metric-card {
-  padding: 20px;
+  display: block;
+  min-width: 0;
+  padding: 18px 20px;
   background: #fff;
   border-radius: 12px;
   border: 1px solid #E5E7EB;
@@ -152,17 +155,27 @@
 .metric-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 12px;
+  min-width: 0;
 }
 
 .metric-label {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 13px;
   font-weight: 500;
   color: #6B7280;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .metric-icon {
+  flex: 0 0 auto;
   width: 40px;
   height: 40px;
   border-radius: 10px;
@@ -173,22 +186,34 @@
 }
 
 .metric-value {
-  font-size: 32px;
+  display: block;
+  width: 100%;
+  font-size: 30px;
   font-weight: 700;
   color: #111827;
-  line-height: 1;
+  line-height: 1.1;
   margin-bottom: 12px;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .metric-footer {
   display: flex;
+  width: 100%;
   align-items: center;
+  flex-wrap: nowrap;
   gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .metric-change {
   font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .metric-change.up { color: #059669; }
@@ -198,6 +223,7 @@
 .metric-compare {
   font-size: 12px;
   color: #9CA3AF;
+  white-space: nowrap;
 }
 
 /* ==================== 内容网格 ==================== */

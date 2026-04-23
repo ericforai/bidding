@@ -7,6 +7,7 @@ This folder keeps the Workbench page split by responsibility.
 - `useWorkbench*.js` files are application-service composables. They perform API orchestration and state writes.
 - `components/` contains display components. They receive props and emit events, and do not access APIs, stores, or router.
 - `styles/` contains Workbench CSS split into small files and imported by `styles/workbench-styles.js` so Vite can bundle them without CSS `@import` waterfalls.
+- `MetricCards.vue` renders responsive KPI cards; the grid must adapt to the sidebar-constrained dashboard width without wrapping labels, values, or comparison text into vertical fragments.
 - Empty/error states stay presentational; API composables expose state and the page shell wires retry actions.
 - Clickable cards must be keyboard reachable with visible focus states before shipping new interactions.
 

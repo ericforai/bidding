@@ -1,5 +1,5 @@
 <!-- Input: Workbench MetricCards props and user actions
-Output: presentational Workbench MetricCards section
+Output: responsive presentational Workbench MetricCards section
 Pos: src/views/Dashboard/components/ - Dashboard display components
 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。 -->
 <template>

@@ -9,6 +9,7 @@ FRONTEND_PORT="${FRONTEND_PORT:-1314}"
 BACKEND_HEALTH_URL="http://127.0.0.1:${BACKEND_PORT}/actuator/health"
 FRONTEND_URL="http://127.0.0.1:${FRONTEND_PORT}/"
 CORS_ORIGINS="${CORS_ALLOWED_ORIGINS:-http://localhost:1314,http://127.0.0.1:1314}"
+FRONTEND_HEALTH_SCRIPT="$ROOT_DIR/scripts/dev-frontend-health.sh"
 BACKEND_PID=""
 FRONTEND_PID=""
 STARTED_ANYTHING=false
@@ -16,6 +17,22 @@ FRONTEND_ALREADY_UP=false
 
 is_http_ready() {
   curl -fsS "$1" >/dev/null 2>&1
+}
+
+is_expected_frontend() {
+  ROOT_DIR="$ROOT_DIR" \
+    FRONTEND_URL="$FRONTEND_URL" \
+    FRONTEND_PORT="$FRONTEND_PORT" \
+    BACKEND_PORT="$BACKEND_PORT" \
+    "$FRONTEND_HEALTH_SCRIPT" >/dev/null 2>&1
+}
+
+print_frontend_mismatch() {
+  ROOT_DIR="$ROOT_DIR" \
+    FRONTEND_URL="$FRONTEND_URL" \
+    FRONTEND_PORT="$FRONTEND_PORT" \
+    BACKEND_PORT="$BACKEND_PORT" \
+    "$FRONTEND_HEALTH_SCRIPT" >&2 || true
 }
 
 wait_for_http() {
@@ -66,8 +83,15 @@ else
 fi
 
 if is_http_ready "$FRONTEND_URL"; then
-  printf '[frontend] already healthy at %s\n' "$FRONTEND_URL"
-  FRONTEND_ALREADY_UP=true
+  if is_expected_frontend; then
+    printf '[frontend] already healthy at %s\n' "$FRONTEND_URL"
+    FRONTEND_ALREADY_UP=true
+  else
+    printf '[frontend] port %s is reachable but not serving this workspace in API mode.\n' "$FRONTEND_PORT" >&2
+    print_frontend_mismatch
+    printf 'Stop the conflicting service or run: npm run dev:stable:stop\n' >&2
+    exit 1
+  fi
 else
   printf '[frontend] starting on %s\n' "$FRONTEND_PORT"
   STARTED_ANYTHING=true
