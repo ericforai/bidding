@@ -29,7 +29,7 @@
 - `domain/*` 不依赖 Spring、Repository、JPA、日志、IO、异常业务流、时间或随机数。
 - 应用层只负责编排：取快照、调用纯核心、生成 artifact、写 run 状态、调用文档写入端口。
 - `documenteditor` 写入只发生在基础设施适配器中，且必须尊重锁定章节和来源 metadata。
-- 招标文件结构化拆解和草稿正文生成只有 OpenAI 真实调用路径；未配置 `ai.openai.api-key` 时应显式失败，不回落到模板或 mock 生成。
+- 招标文件结构化拆解和草稿正文生成只有 OpenAI 真实调用路径；API key 优先读取 `ai.openai.api-key`，缺省时读取系统设置 `integrationConfig.apiKey`。baseUrl/model 同理可通过 `ai.openai.*` 或系统设置 `integrationConfig.aiBaseUrl`、`integrationConfig.aiModel` 配置；未配置有效 key 时应显式失败，不回落到模板或 mock 生成。
 
 ## 招标文件到标书初稿链路
 
