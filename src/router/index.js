@@ -4,7 +4,7 @@ import { hasStoredUserHint } from '@/api/session.js'
 import { registerLoginNavigator } from './sessionNavigation.js'
 
 const DEFAULT_AUTHENTICATED_HOME = '/dashboard'
-const HIDDEN_API_ROUTES = new Set([])
+const HIDDEN_API_ROUTES = new Set(['CustomerOpportunityCenter'])
 
 const getNormalizedRole = (userStore) => {
   const role = userStore.currentUser?.role || ''
@@ -19,6 +19,14 @@ const getRequiredRoles = (to) => {
 const hasRouteAccess = (to, role) => {
   const requiredRoles = getRequiredRoles(to)
   return requiredRoles.length === 0 || requiredRoles.includes(role)
+}
+
+const isHiddenApiRoute = (to) => {
+  if (!to) return false
+  if (typeof to.name === 'string' && HIDDEN_API_ROUTES.has(to.name)) {
+    return true
+  }
+  return HIDDEN_API_ROUTES.has(to.path)
 }
 
 const routes = [
@@ -239,6 +247,8 @@ router.beforeEach(async (to, from, next) => {
 
   if (to.meta.requiresAuth && !hasAuthState) {
     next('/login')
+  } else if (hasAuthState && isHiddenApiRoute(to)) {
+    next('/bidding')
   } else if (to.path === '/login' && hasAuthState) {
     next(DEFAULT_AUTHENTICATED_HOME)
   } else if (hasAuthState && !hasRouteAccess(to, getNormalizedRole(userStore))) {

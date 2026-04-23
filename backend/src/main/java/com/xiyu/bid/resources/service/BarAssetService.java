@@ -4,6 +4,9 @@
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.resources.service;
 
+import com.xiyu.bid.demo.service.DemoDataProvider;
+import com.xiyu.bid.demo.service.DemoFusionService;
+import com.xiyu.bid.demo.service.DemoModeService;
 import com.xiyu.bid.exception.ResourceNotFoundException;
 import com.xiyu.bid.resources.dto.BarAssetCreateRequest;
 import com.xiyu.bid.resources.dto.BarAssetResponseDTO;
@@ -29,6 +32,9 @@ import java.util.Map;
 public class BarAssetService {
 
     private final BarAssetRepository barAssetRepository;
+    private final DemoModeService demoModeService;
+    private final DemoDataProvider demoDataProvider;
+    private final DemoFusionService demoFusionService;
 
     @Transactional
     public BarAssetResponseDTO createBarAsset(BarAssetCreateRequest request) {
@@ -65,13 +71,21 @@ public class BarAssetService {
     }
 
     public BarAssetResponseDTO getBarAssetById(Long id) {
+        if (isDemoEntityId(id)) {
+            return demoDataProvider.findDemoBarAssetById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("BarAsset", id.toString()));
+        }
         return barAssetRepository.findById(id)
                 .map(ResourceResponseMapper::toDto)
                 .orElseThrow(() -> new ResourceNotFoundException("BarAsset", id.toString()));
     }
 
     public Page<BarAssetResponseDTO> getAllBarAssets(Pageable pageable) {
-        return barAssetRepository.findAll(pageable).map(ResourceResponseMapper::toDto);
+        Page<BarAssetResponseDTO> realPage = barAssetRepository.findAll(pageable).map(ResourceResponseMapper::toDto);
+        if (!demoModeService.isEnabled()) {
+            return realPage;
+        }
+        return demoFusionService.mergePage(realPage, demoDataProvider.getDemoBarAssets(), BarAssetResponseDTO::getId);
     }
 
     public Page<BarAssetResponseDTO> getBarAssetsByType(String type, Pageable pageable) {
@@ -101,6 +115,7 @@ public class BarAssetService {
 
     @Transactional
     public BarAssetResponseDTO updateBarAsset(Long id, BarAssetUpdateRequest request) {
+        rejectDemoEntityMutation(id);
         BarAsset asset = getBarAssetEntityById(id);
 
         if (request.getName() != null && !request.getName().trim().isEmpty()) {
@@ -133,6 +148,7 @@ public class BarAssetService {
 
     @Transactional
     public void deleteBarAsset(Long id) {
+        rejectDemoEntityMutation(id);
         if (!barAssetRepository.existsById(id)) {
             throw new ResourceNotFoundException("BarAsset", id.toString());
         }
@@ -141,7 +157,14 @@ public class BarAssetService {
 
     public BigDecimal getTotalAssetValue() {
         BigDecimal total = barAssetRepository.sumTotalValue();
-        return total != null ? total : BigDecimal.ZERO;
+        BigDecimal normalized = total != null ? total : BigDecimal.ZERO;
+        if (!demoModeService.isEnabled()) {
+            return normalized;
+        }
+        BigDecimal demoTotal = demoDataProvider.getDemoBarAssets().stream()
+                .map(BarAssetResponseDTO::getValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return normalized.add(demoTotal);
     }
 
     public Map<String, Object> getAssetStatistics() {
@@ -152,6 +175,11 @@ public class BarAssetService {
         for (BarAsset.AssetType type : BarAsset.AssetType.values()) {
             statistics.put(type.name().toLowerCase() + "Count", barAssetRepository.countByType(type));
         }
+        if (demoModeService.isEnabled()) {
+            long demoCount = demoDataProvider.getDemoBarAssets().size();
+            Number existing = (Number) statistics.getOrDefault("totalAssets", 0L);
+            statistics.put("totalAssets", existing.longValue() + demoCount);
+        }
 
         return statistics;
     }
@@ -159,5 +187,15 @@ public class BarAssetService {
     private BarAsset getBarAssetEntityById(Long id) {
         return barAssetRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("BarAsset", id.toString()));
+    }
+
+    private boolean isDemoEntityId(Long id) {
+        return demoModeService.isEnabled() && id != null && id < 0;
+    }
+
+    private void rejectDemoEntityMutation(Long id) {
+        if (isDemoEntityId(id)) {
+            throw new IllegalArgumentException("Demo records are read-only in e2e mode");
+        }
     }
 }

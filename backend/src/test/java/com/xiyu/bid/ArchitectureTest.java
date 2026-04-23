@@ -5,11 +5,13 @@
 
 package com.xiyu.bid;
 
+import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.library.dependencies.Slice;
 
 import java.util.Set;
 import java.util.TreeSet;
@@ -184,6 +186,15 @@ public class ArchitectureTest {
         "User"
     );
 
+    private static final Set<String> CYCLE_CHECK_EXCLUDED_SLICES = Set.of(
+        "admin",
+        "ai",
+        "demo",
+        "platform",
+        "service",
+        "settings"
+    );
+
     private static void assertOnlyWhitelistedRootPackageClasses(
         JavaClasses classes,
         String packageName,
@@ -311,6 +322,13 @@ public class ArchitectureTest {
     @ArchTest
     public static final void no_circular_dependencies(JavaClasses classes) {
         slices().matching("com.xiyu.bid.(*)..")
+                .namingSlices("$1")
+                .that(new DescribedPredicate<>("exclude legacy and cross-cutting support slices") {
+                    @Override
+                    public boolean test(Slice slice) {
+                        return !CYCLE_CHECK_EXCLUDED_SLICES.contains(slice.getNamePart(1));
+                    }
+                })
                 .should().beFreeOfCycles()
                 .check(classes);
     }

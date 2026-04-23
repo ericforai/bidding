@@ -6,6 +6,9 @@
 package com.xiyu.bid.project.service;
 
 import com.xiyu.bid.annotation.Auditable;
+import com.xiyu.bid.demo.service.DemoDataProvider;
+import com.xiyu.bid.demo.service.DemoFusionService;
+import com.xiyu.bid.demo.service.DemoModeService;
 import com.xiyu.bid.project.dto.ProjectDTO;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.exception.ResourceNotFoundException;
@@ -45,18 +48,26 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final ProjectAccessScopeService projectAccessScopeService;
+    private final DemoModeService demoModeService;
+    private final DemoDataProvider demoDataProvider;
+    private final DemoFusionService demoFusionService;
 
     @Transactional(readOnly = true)
     public List<ProjectDTO> getAllProjects() {
         log.debug("Fetching all projects");
-        return projectAccessScopeService.filterAccessibleProjects(projectRepository.findAll()).stream()
+        List<ProjectDTO> projects = projectAccessScopeService.filterAccessibleProjects(projectRepository.findAll()).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+        return mergeDemoProjectsIfNeeded(projects);
     }
 
     @Transactional(readOnly = true)
     public ProjectDTO getProjectById(Long id) {
         log.debug("Fetching project by id: {}", id);
+        if (isDemoEntityId(id)) {
+            return demoDataProvider.findDemoProjectById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Project", id.toString()));
+        }
         projectAccessScopeService.assertCurrentUserCanAccessProject(id);
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", id.toString()));
@@ -74,6 +85,7 @@ public class ProjectService {
 
     public ProjectDTO updateProject(Long id, ProjectDTO projectDTO) {
         log.debug("Updating project with id: {}", id);
+        rejectDemoEntityMutation(id);
         projectAccessScopeService.assertCurrentUserCanAccessProject(id);
         Project existingProject = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", id.toString()));
@@ -86,6 +98,7 @@ public class ProjectService {
 
     public void deleteProject(Long id) {
         log.debug("Deleting project with id: {}", id);
+        rejectDemoEntityMutation(id);
         projectAccessScopeService.assertCurrentUserCanAccessProject(id);
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", id.toString()));
@@ -96,6 +109,7 @@ public class ProjectService {
     @Auditable(action = "UPDATE_STATUS", entityType = "Project", description = "更新项目状态")
     public ProjectDTO updateProjectStatus(Long id, Project.Status status) {
         log.debug("Updating status for project with id: {} to {}", id, status);
+        rejectDemoEntityMutation(id);
         projectAccessScopeService.assertCurrentUserCanAccessProject(id);
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", id.toString()));
@@ -108,6 +122,7 @@ public class ProjectService {
     @Auditable(action = "UPDATE_TEAM", entityType = "Project", description = "更新项目团队成员")
     public ProjectDTO updateProjectTeam(Long id, List<Long> teamMembers) {
         log.debug("Updating team for project with id: {}", id);
+        rejectDemoEntityMutation(id);
         projectAccessScopeService.assertCurrentUserCanAccessProject(id);
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", id.toString()));
@@ -120,47 +135,70 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public List<ProjectDTO> getProjectsByStatus(Project.Status status) {
         log.debug("Fetching projects by status: {}", status);
-        return projectAccessScopeService.filterAccessibleProjects(projectRepository.findByStatus(status)).stream()
+        List<ProjectDTO> projects = projectAccessScopeService.filterAccessibleProjects(projectRepository.findByStatus(status)).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+        return mergeDemoProjectsIfNeeded(projects).stream()
+                .filter(item -> item.getStatus() == status)
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public List<ProjectDTO> getProjectsByManager(Long managerId) {
         log.debug("Fetching projects by manager: {}", managerId);
-        return projectAccessScopeService.filterAccessibleProjects(projectRepository.findByManagerId(managerId)).stream()
+        List<ProjectDTO> projects = projectAccessScopeService.filterAccessibleProjects(projectRepository.findByManagerId(managerId)).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+        return mergeDemoProjectsIfNeeded(projects).stream()
+                .filter(item -> managerId.equals(item.getManagerId()))
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public List<ProjectDTO> getProjectsByTender(Long tenderId) {
         log.debug("Fetching projects by tender: {}", tenderId);
-        return projectAccessScopeService.filterAccessibleProjects(projectRepository.findByTenderId(tenderId)).stream()
+        List<ProjectDTO> projects = projectAccessScopeService.filterAccessibleProjects(projectRepository.findByTenderId(tenderId)).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+        return mergeDemoProjectsIfNeeded(projects).stream()
+                .filter(item -> tenderId.equals(item.getTenderId()))
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public List<ProjectDTO> getActiveProjects() {
         log.debug("Fetching active projects");
-        return projectAccessScopeService.filterAccessibleProjects(projectRepository.findActiveProjects()).stream()
+        List<ProjectDTO> projects = projectAccessScopeService.filterAccessibleProjects(projectRepository.findActiveProjects()).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+        return mergeDemoProjectsIfNeeded(projects).stream()
+                .filter(item -> item.getStatus() != Project.Status.ARCHIVED)
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public List<ProjectDTO> searchProjectsByName(String name) {
         log.debug("Searching projects by name: {}", name);
-        return projectAccessScopeService.filterAccessibleProjects(projectRepository.findByNameContainingIgnoreCase(name)).stream()
+        List<ProjectDTO> projects = projectAccessScopeService.filterAccessibleProjects(projectRepository.findByNameContainingIgnoreCase(name)).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+        String normalizedKeyword = name == null ? "" : name.toLowerCase();
+        return mergeDemoProjectsIfNeeded(projects).stream()
+                .filter(item -> item.getName() != null && item.getName().toLowerCase().contains(normalizedKeyword))
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public Map<Project.Status, Long> getProjectStatistics() {
         log.debug("Fetching project statistics");
-        List<Project> visibleProjects = projectAccessScopeService.filterAccessibleProjects(projectRepository.findAll());
+        List<Project> visibleProjects = new ArrayList<>(projectAccessScopeService.filterAccessibleProjects(projectRepository.findAll()));
+        if (demoModeService.isEnabled()) {
+            demoDataProvider.getDemoProjects().forEach(demo -> {
+                Project project = new Project();
+                project.setStatus(demo.getStatus());
+                visibleProjects.add(project);
+            });
+        }
         return Map.of(
             Project.Status.INITIATED, countProjectsByStatus(visibleProjects, Project.Status.INITIATED),
             Project.Status.PREPARING, countProjectsByStatus(visibleProjects, Project.Status.PREPARING),
@@ -340,5 +378,22 @@ public class ProjectService {
 
     private long countProjectsByStatus(List<Project> projects, Project.Status status) {
         return projects.stream().filter(project -> project.getStatus() == status).count();
+    }
+
+    private List<ProjectDTO> mergeDemoProjectsIfNeeded(List<ProjectDTO> projects) {
+        if (!demoModeService.isEnabled()) {
+            return projects;
+        }
+        return demoFusionService.mergeByKey(projects, demoDataProvider.getDemoProjects(), ProjectDTO::getId);
+    }
+
+    private boolean isDemoEntityId(Long id) {
+        return demoModeService.isEnabled() && id != null && id < 0;
+    }
+
+    private void rejectDemoEntityMutation(Long id) {
+        if (isDemoEntityId(id)) {
+            throw new IllegalArgumentException("Demo records are read-only in e2e mode");
+        }
     }
 }

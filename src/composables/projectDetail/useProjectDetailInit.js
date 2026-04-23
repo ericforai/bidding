@@ -1,8 +1,7 @@
 import { onMounted } from 'vue'
-import { getDemoAutoTasks, getDemoMobileCard } from '@/api/mock-adapters/frontendDemo.js'
 
 export function useProjectDetailInit(context) {
-  const { route, projectStore, knowledgeApi, barStore, approvalApi, projectsApi, isDemoMode } = context
+  const { route, projectStore, knowledgeApi, barStore, approvalApi, projectsApi } = context
 
   const loadProjectWorkflowData = async (projectId) => {
     if (!context.project.value || !context.isApiProject.value) return
@@ -26,13 +25,9 @@ export function useProjectDetailInit(context) {
     await projectStore.getProjectById(projectId)
     const templateResult = await knowledgeApi.templates.getList()
     context.templates.value = templateResult?.success && Array.isArray(templateResult.data) ? templateResult.data : []
-    if (!projectStore.currentProject) projectStore.currentProject = isDemoMode ? context.project.value : null
+    if (!projectStore.currentProject) projectStore.currentProject = null
     await context.loadProjectExpenseAggregation(projectId)
     await loadProjectWorkflowData(projectId)
-    if (isDemoMode) {
-      context.demoAutoTasks.value = getDemoAutoTasks()
-      context.demoMobileCard.value = getDemoMobileCard(projectId)
-    }
     await barStore.getSites()
     const currentProject = projectStore.currentProject
     if (currentProject) {

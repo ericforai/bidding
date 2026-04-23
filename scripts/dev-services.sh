@@ -25,6 +25,7 @@ DEFAULT_BACKEND_PROFILE="${BACKEND_PROFILE:-dev,mysql}"
 FRONTEND_HEALTH_SCRIPT="$ROOT_DIR/scripts/dev-frontend-health.sh"
 BACKEND_PROFILE_OVERRIDE=""
 ACTIVE_BACKEND_PROFILE=""
+JWT_SECRET="${JWT_SECRET:-xiyu-bid-poc-local-dev-secret-key-please-change-in-prod-32bytes-min}"
 
 is_valid_command() {
   case "$1" in
@@ -171,6 +172,7 @@ start_backend() {
     cd "$ROOT_DIR/backend"
     nohup env \
       SPRING_PROFILES_ACTIVE="$ACTIVE_BACKEND_PROFILE" \
+      JWT_SECRET="$JWT_SECRET" \
       CORS_ALLOWED_ORIGINS="http://localhost:${FRONTEND_PORT},http://127.0.0.1:${FRONTEND_PORT}" \
       mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT}" \
       >>"$BACKEND_LOG" 2>&1 < /dev/null &

@@ -185,6 +185,19 @@ export const dashboardApi = {
           totalBudget: 0,
           successRate: 0 } }
     }
+  },
+
+  async getRuntimeMode() {
+    const response = await httpClient.get('/api/system/runtime-mode')
+    const raw = response?.data || {}
+    return {
+      success: response?.success === true,
+      data: {
+        modeCode: String(raw.modeCode || ''),
+        modeLabel: String(raw.modeLabel || ''),
+        database: String(raw.database || ''),
+        demoFusionEnabled: Boolean(raw.demoFusionEnabled),
+        activeProfiles: Array.isArray(raw.activeProfiles) ? raw.activeProfiles : [] } }
   } }
 
 export const tasksApi = {

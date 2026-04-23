@@ -27,7 +27,7 @@ export function useProjectDetailPage() {
   const isDemoMode = false
   const demoAutoTasks = ref([])
   const demoMobileCard = ref(null)
-  const isApiProject = computed(() => !isDemoMode && /^\d+$/.test(String(route.params.id || '')))
+  const isApiProject = computed(() => !isDemoMode && /^-?\d+$/.test(String(route.params.id || '')))
 
   const context = {
     route, router, projectStore, userStore, barStore, projectsApi, collaborationApi, approvalApi, knowledgeApi, complianceApi, scoreAnalysisApi,

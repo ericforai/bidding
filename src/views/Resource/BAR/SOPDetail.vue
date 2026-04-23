@@ -138,7 +138,6 @@ import {
   QuestionFilled, Clock, Star, InfoFilled
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { getBarSiteDemoOverride, saveBarSiteDemoPatch } from '@/api/mock-adapters/frontendDemo.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -146,23 +145,6 @@ const barStore = useBarStore()
 
 const loading = ref(false)
 const site = ref(null)
-
-const applySitePersistence = (data) => {
-  if (!data) return data
-  const persisted = getBarSiteDemoOverride(data.id)
-  if (!persisted) return data
-  return {
-    ...data,
-    ...persisted,
-    sop: persisted.sop ? { ...(data.sop || {}), ...persisted.sop } : data.sop }
-}
-
-const persistSitePatch = (siteId, patch) => {
-  if (true) {
-    return
-  }
-  saveBarSiteDemoPatch(siteId, patch)
-}
 
 const downloadTextFile = (filename, content, mimeType = 'text/plain;charset=utf-8') => {
   const blob = new Blob([content], { type: mimeType })
@@ -192,11 +174,8 @@ const handleEdit = () => {
       ElMessage.error(response?.message || 'SOP 保存失败')
       return
     }
-    persistSitePatch(site.value.id, {
-      sop: {
-        history: nextHistory } })
     const latestSite = await barStore.getSiteById(route.params.siteId)
-    site.value = applySitePersistence(latestSite)
+    site.value = latestSite
     ElMessage.success(`已保存「${site.value?.name || '当前站点'}」SOP 修改`)
   })
 }
@@ -216,7 +195,7 @@ onMounted(async () => {
   loading.value = true
   await barStore.getSites()
   const latestSite = await barStore.getSiteById(route.params.siteId)
-  site.value = applySitePersistence(latestSite)
+  site.value = latestSite
   loading.value = false
 })
 </script>

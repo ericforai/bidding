@@ -1,6 +1,5 @@
 import { computed, ref } from 'vue'
 import { getAccessToken } from '@/api/session.js'
-import { getDemoProjectById } from '@/api/mock-adapters/frontendDemo.js'
 import { initialActivities } from './constants.js'
 
 export function useProjectDetailState(context) {
@@ -32,7 +31,7 @@ export function useProjectDetailState(context) {
   const assistantPanelVisible = ref(false)
 
   const noticeFileList = ref([])
-  const uploadAction = ref(isDemoMode ? '/api/upload' : '')
+  const uploadAction = ref('')
   const uploadHeaders = computed(() => {
     const token = getAccessToken()
     return token ? { Authorization: `Bearer ${token}` } : {}
@@ -63,8 +62,7 @@ export function useProjectDetailState(context) {
 
   const project = computed(() => {
     if (projectStore.currentProject) return projectStore.currentProject
-    if (!isDemoMode) return null
-    return getDemoProjectById(String(route.params.id || ''))
+    return null
   })
 
   const dialogProjectId = computed(() => project.value?.id ?? route.params.id)

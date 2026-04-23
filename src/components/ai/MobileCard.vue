@@ -148,7 +148,6 @@
 <script setup>
 import { computed } from 'vue'
 import { Share, Cellphone, Warning } from '@element-plus/icons-vue'
-import { getDemoMobileCard } from '@/api/mock-adapters/frontendDemo.js'
 
 const props = defineProps({
   modelValue: {

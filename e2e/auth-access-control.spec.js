@@ -2,12 +2,15 @@ import { test, expect } from '@playwright/test'
 import { attachRefreshSession, extractRefreshToken } from './support/auth-session.js'
 
 const apiBaseUrl = process.env.PLAYWRIGHT_API_BASE_URL || 'http://127.0.0.1:18080'
-const demoPassword = process.env.E2E_DEMO_PASSWORD || '123456'
+const demoPassword =
+  process.env.COMMERCIAL_E2E_PASSWORD ||
+  process.env.E2E_DEMO_PASSWORD ||
+  'XiyuDemo!2026'
 
 const users = {
-  admin: { username: 'lizong', password: demoPassword },
-  manager: { username: 'zhangjingli', password: demoPassword },
-  staff: { username: 'xiaowang', password: demoPassword },
+  admin: { username: 'lizong', password: demoPassword, role: 'ADMIN', fullName: '李总' },
+  manager: { username: `auth_manager_${Date.now()}`, password: demoPassword, role: 'MANAGER', fullName: '权限经理' },
+  staff: { username: `auth_staff_${Date.now()}`, password: demoPassword, role: 'STAFF', fullName: '权限员工' },
 }
 
 const readStoredUserHint = () => {
@@ -20,7 +23,7 @@ const readStoredUserHint = () => {
 }
 
 async function loginViaApi(page, user) {
-  const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
+  let response = await fetch(`${apiBaseUrl}/api/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -31,6 +34,34 @@ async function loginViaApi(page, user) {
       rememberMe: true
     })
   })
+
+  if (!response.ok) {
+    await fetch(`${apiBaseUrl}/api/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username: user.username,
+        password: user.password,
+        email: `${user.username}@example.com`,
+        fullName: user.fullName || user.username,
+        role: user.role || 'STAFF'
+      })
+    }).catch(() => null)
+
+    response = await fetch(`${apiBaseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username: user.username,
+        password: user.password,
+        rememberMe: true
+      })
+    })
+  }
 
   if (!response.ok) {
     throw new Error(`Login failed with status ${response.status}`)

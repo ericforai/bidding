@@ -312,7 +312,6 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import BorrowDialog from './components/BorrowDialog.vue'
-import { getBarSiteDemoOverride, saveBarSiteDemoPatch } from '@/api/mock-adapters/frontendDemo.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -364,24 +363,6 @@ const ukRules = {
   expiryDate: [{ required: true, message: '请选择有效期', trigger: 'change' }]
 }
 
-const applySitePersistence = (data) => {
-  if (!data) return data
-  const persisted = getBarSiteDemoOverride(data.id)
-  if (!persisted) return data
-  return {
-    ...data,
-    ...persisted,
-    auditLog: Array.isArray(persisted.auditLog) ? persisted.auditLog : data.auditLog,
-    sop: persisted.sop ? { ...(data.sop || {}), ...persisted.sop } : data.sop }
-}
-
-const persistSitePatch = (siteId, patch) => {
-  if (true) {
-    return
-  }
-  saveBarSiteDemoPatch(siteId, patch)
-}
-
 const getLoginTypeText = (type) => {
   const map = {
     'password': '密码登录',
@@ -431,8 +412,6 @@ const handleEdit = async () => {
     user: '李总',
     action: '更新了站点基础信息'
   })
-  persistSitePatch(site.value.id, {
-    auditLog: site.value.auditLog })
   await refreshSite()
   ElMessage.success(`已保存站点「${site.value?.name || ''}」修改`)
 }
@@ -625,7 +604,7 @@ const handleUploadAttachment = async () => {
 
 const refreshSite = async () => {
   const latestSite = await barStore.getSiteById(route.params.id)
-  site.value = applySitePersistence(latestSite)
+  site.value = latestSite
 }
 
 onMounted(async () => {

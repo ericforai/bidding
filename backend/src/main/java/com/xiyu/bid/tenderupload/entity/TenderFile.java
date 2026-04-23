@@ -20,6 +20,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -57,6 +59,7 @@ public class TenderFile {
     private Integer pageCount;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "upload_status", nullable = false, length = 20)
     @Builder.Default
     private TenderFileUploadStatus uploadStatus = TenderFileUploadStatus.INITIATED;

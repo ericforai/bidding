@@ -193,7 +193,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { Plus, InfoFilled, Clock } from '@element-plus/icons-vue'
-import { getDemoAutomationPanelData } from '@/api/mock-adapters/frontendDemo.js'
 
 const props = defineProps({
   modelValue: {
@@ -222,17 +221,14 @@ const urgencyFilter = ref('all')
 const ruleDialogVisible = ref(false)
 const editingRule = ref(null)
 
-const useDemoFallback = false
-const demoPanelData = getDemoAutomationPanelData()
-
-const getSectionData = (key, demoValue = []) => {
+const getSectionData = (key) => {
   const provided = props.data?.[key]
 
   if (Array.isArray(provided)) {
     return provided
   }
 
-  return useDemoFallback ? demoValue : []
+  return []
 }
 
 const rulesData = ref([])
@@ -240,9 +236,9 @@ const pendingReminders = ref([])
 const executionHistory = ref([])
 
 const syncAutoTaskData = () => {
-  rulesData.value = getSectionData('rules', demoPanelData.rules)
-  pendingReminders.value = getSectionData('pendingReminders', demoPanelData.pendingReminders)
-  executionHistory.value = getSectionData('executionHistory', demoPanelData.executionHistory)
+  rulesData.value = getSectionData('rules')
+  pendingReminders.value = getSectionData('pendingReminders')
+  executionHistory.value = getSectionData('executionHistory')
 }
 
 watch(

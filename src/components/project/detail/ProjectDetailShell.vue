@@ -58,7 +58,7 @@ const barStore = useBarStore()
 const isDemoMode = false
 const demoAutoTasks = ref([])
 const demoMobileCard = ref(null)
-const isApiProject = computed(() => !isDemoMode && /^\d+$/.test(String(route.params.id || '')))
+const isApiProject = computed(() => !isDemoMode && /^-?\d+$/.test(String(route.params.id || '')))
 const message = { success: ElMessage.success, error: ElMessage.error, warning: ElMessage.warning, info: ElMessage.info }
 const baseContext = { route, router, projectStore, userStore, barStore, isDemoMode, isApiProject, message }
 const state = useProjectDetailState(baseContext)
