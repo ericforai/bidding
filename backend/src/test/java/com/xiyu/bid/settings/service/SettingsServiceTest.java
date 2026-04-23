@@ -29,6 +29,7 @@ class SettingsServiceTest {
 
     private UserRepository userRepository;
     private ObjectMapper objectMapper;
+    private SettingsPayloadMapper payloadMapper;
     private SettingsService settingsService;
 
     @BeforeEach
@@ -36,7 +37,8 @@ class SettingsServiceTest {
         userRepository = mock(UserRepository.class);
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
-        settingsService = new SettingsService(systemSettingRepository, userRepository, objectMapper);
+        payloadMapper = new SettingsPayloadMapper(new SettingsDefaultPayloadFactory());
+        settingsService = new SettingsService(systemSettingRepository, userRepository, objectMapper, payloadMapper);
     }
 
     @Test
@@ -72,14 +74,21 @@ class SettingsServiceTest {
                                 .allowedDepts(List.of("dept1"))
                                 .build()
                 ))
+                .integrationConfig(SettingsUpdateRequest.IntegrationConfigUpdate.builder()
+                        .apiKey("sk-system-test")
+                        .aiBaseUrl("https://gateway.example.test/v1")
+                        .aiModel("gpt-system")
+                        .build())
                 .build());
 
-        SettingsService reloadedService = new SettingsService(systemSettingRepository, userRepository, objectMapper);
+        SettingsService reloadedService = new SettingsService(systemSettingRepository, userRepository, objectMapper, payloadMapper);
         SettingsResponse reloaded = reloadedService.getSettings();
 
         assertEquals("整改后平台", reloaded.getSystemConfig().getSysName());
         assertEquals(12, reloaded.getSystemConfig().getDepositWarnDays());
         assertFalse(reloaded.getSystemConfig().getEnableAI());
         assertEquals("settings", reloaded.getRoles().get(0).getMenuPermissions().get(1));
+        assertEquals("https://gateway.example.test/v1", reloaded.getIntegrationConfig().getAiBaseUrl());
+        assertEquals("gpt-system", reloaded.getIntegrationConfig().getAiModel());
     }
 }
