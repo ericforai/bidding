@@ -4,6 +4,7 @@ space: engineering
 category: guide
 tags: [部署, 上线, 发布, 运维, Docker, UAT]
 sources:
+  - .wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx
   - docs/GO_LIVE_CHECKLIST.md
   - docs/ROLLBACK_RUNBOOK.md
   - docs/UAT_PLAN.md
@@ -21,6 +22,7 @@ backlinks:
   - implementation/delivery-playbook
   - implementation/milestones
   - implementation/risk-register
+  - implementation/sow-2026-v1-4
   - implementation/weekly-status
   - requirements
   - team-and-timeline
@@ -32,30 +34,40 @@ health_checked: 2026-04-24
 
 ## 1. 运行模式
 
-合同要求甲方指定私有云/本地化部署，支持主流浏览器访问、HTTPS、权限控制、审计日志、备份恢复、自动化发布与失败回滚。完整非功能性与运维 SLA 见 [[contract-constraints]]。
+SOW V1.4 要求甲方指定私有云/本地化部署，支持主流浏览器访问、HTTPS、权限控制、审计日志、备份恢复、自动化发布与失败回滚。完整执行基准见 [[implementation/sow-2026-v1-4]]，合同硬约束见 [[contract-constraints]]。
 
-平台支持两种运行模式，通过环境变量和 `.env` 文件切换：
+当前唯一支持的交付、联调、UAT、演示和验收路径是真实后端 API 模式：
 
-| 维度 | Mock 模式 | API 模式 |
-|------|-----------|----------|
-| 环境变量 | `VITE_API_MODE=mock` | `VITE_API_MODE=api` |
-| 前端端口 | 1314 | 1314 |
-| 后端 API | 无需后端 | `http://localhost:18080` |
-| 数据来源 | `src/api/mock.js` 本地数据 | 真实后端服务 |
-| 适用场景 | 前端开发、长期 MVP 演示 | 联调、UAT、发布演练、生产 |
-| 启动命令 | `npm run dev:mock` | `npm run dev:api` 或 `npm run dev` |
+| 维度 | API 模式 |
+|------|----------|
+| 环境变量 | `VITE_API_MODE=api` |
+| 前端端口 | 1314 |
+| 后端 API | `http://127.0.0.1:18080` |
+| 数据来源 | 真实后端服务 |
+| 适用场景 | 开发联调、UAT、发布演练、演示、生产 |
+| 启动命令 | `npm run dev:api` 或 `npm run dev` |
 
-**切换方法：**
+历史 Mock/demo 适配只作为待清理遗留，不作为开发、联调、演示或验收路径。第三阶段必须按 SOW 要求隔离演示入口并清理 API 模式下的 Mock 数据硬编码路径。
+
+**API 模式确认方法：**
 
 ```bash
-# 切换到 API 模式（默认模式）
 cp .env.api .env
-
-# 切换到 Mock 模式
-cp .env.mock .env
 ```
 
 修改 `.env` 文件后需重启开发服务器。
+
+## 1.1 SOW V1.4 部署容量基线
+
+| 环境 | 组件 | 基线 |
+|---|---|---|
+| 正式生产 | 访问层 | 2 台，2 vCPU / 4 GB / 50 GB SSD，Nginx 或同类 Web 服务 |
+| 正式生产 | 应用服务 | 2 台，4 vCPU / 8~16 GB / 100 GB SSD，Spring Boot 双节点 |
+| 正式生产 | MySQL 8.0 | 主库 1 台 + 备库 1 台，均为 8 vCPU / 16 GB / 500 GB SSD |
+| 正式生产 | Redis | 1 台，2~4 vCPU / 4 GB / 50 GB SSD |
+| 正式生产 | 文件存储 | 初始 500 GB，可扩展，对象存储、NAS 或甲方现有文件服务 |
+| 正式生产 | 监控日志 | 1 台，2 vCPU / 4 GB / 100 GB SSD，与甲方运维平台整合 |
+| 试运行/预生产 | 访问层 + 应用 + MySQL + Redis | 单节点预生产配置，仅用于测试、预生产和短期试运行，不作为长期正式生产架构 |
 
 ---
 
@@ -82,9 +94,6 @@ npm install
 
 # 启动开发服务器（默认 API 模式）
 npm run dev
-
-# Mock 模式启动
-npm run dev:mock
 
 # 生产构建
 npm run build

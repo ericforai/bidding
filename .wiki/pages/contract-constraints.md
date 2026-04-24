@@ -4,6 +4,7 @@ space: implementation
 category: reference
 tags: [合同, SOW, 约束, 验收, 付款, 范围]
 sources:
+  - .wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx
   - .wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx
   - .wiki/sources/contract/附件3：西域数智化投标管理平台建设项目合同报价清单.pdf
   - .wiki/sources/contract/附件3-合同报价清单人工摘录.md
@@ -14,23 +15,25 @@ backlinks:
   - implementation/acceptance-and-closure
   - implementation/milestones
   - implementation/risk-register
+  - implementation/sow-2026-v1-4
   - overview
   - requirements
   - team-and-timeline
 created: 2026-04-23
-updated: 2026-04-23
+updated: 2026-04-24
 health_checked: 2026-04-24
 ---
 # 合同约束
 
 > 本页是“西域数智化投标管理平台建设项目”的合同硬约束索引。所有研发、实施、验收、付款和变更判断，优先回到本页及其原始合同源文件核对。
+> 当前开发、产品规划和实施主执行基准参见 [[implementation/sow-2026-v1-4]]。
 
 ## 1. 约束优先级
 
 | 层级 | 执行口径 |
 |---|---|
 | 主合同 | 合同正文优先；附件与正文不一致时，以主合同为准 |
-| SOW / 需求任务书 | 作为服务内容、实施范围、文档交付、验收准则的直接依据 |
+| SOW V1.4 / 需求任务书 | SOW V1.4 是当前项目实施、开发排期、产品规划、上线切换和验收的主执行基准；作为服务内容、实施范围、文档交付、验收准则的直接依据 |
 | 报价清单 | 作为固定总价、模块报价、人天、运维费和增补报价的依据 |
 | 双方书面确认件 | 蓝图、接口清单、报表定义、阶段确认、验收报告等一经签发即成为执行基线 |
 
@@ -191,3 +194,4 @@ health_checked: 2026-04-24
 - 验收和付款前，先核对 [[implementation/acceptance-and-closure]] 与本页第 4、8、9 节。
 - 风险升级时，先核对 [[implementation/risk-register]] 与本页第 11 节。
 - 技术设计和部署方案变更时，先核对 [[architecture]]、[[deployment]] 与本页第 10 节。
+- 开发排期、产品规划和实施推进时，先核对 [[implementation/sow-2026-v1-4]]。

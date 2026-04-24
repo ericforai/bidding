@@ -8,7 +8,7 @@
 
 | slug | title | sources | updated | backlinks |
 |---|---|---:|---|---:|
-| [architecture](pages/architecture.md) | 架构合成 | 9 | 2026-04-24 | 8 |
+| [architecture](pages/architecture.md) | 架构合成 | 10 | 2026-04-24 | 8 |
 
 ### business
 
@@ -16,7 +16,7 @@
 |---|---|---:|---|---:|
 | [business-process](pages/business-process.md) | 业务流程 | 4 | 2026-04-15 | 9 |
 | [dashboard-gap-analysis](pages/dashboard-gap-analysis.md) | 工作台卡片 vs 标书要求对照 | 3 | 2026-04-16 | 2 |
-| [requirements](pages/requirements.md) | 需求追溯 | 7 | 2026-04-24 | 6 |
+| [requirements](pages/requirements.md) | 需求追溯 | 8 | 2026-04-24 | 7 |
 
 ### decision
 
@@ -28,10 +28,10 @@
 
 | slug | title | sources | updated | backlinks |
 |---|---|---:|---|---:|
-| [_index](pages/_index.md) | 西域投标管理平台知识库 | 3 | 2026-04-23 | 1 |
-| [deployment](pages/deployment.md) | 部署与上线 | 9 | 2026-04-24 | 10 |
-| [overview](pages/overview.md) | 项目综述 | 6 | 2026-04-23 | 3 |
-| [team-and-timeline](pages/team-and-timeline.md) | 团队与排期 | 4 | 2026-04-23 | 6 |
+| [_index](pages/_index.md) | 西域投标管理平台知识库 | 3 | 2026-04-24 | 1 |
+| [deployment](pages/deployment.md) | 部署与上线 | 10 | 2026-04-24 | 11 |
+| [overview](pages/overview.md) | 项目综述 | 7 | 2026-04-24 | 4 |
+| [team-and-timeline](pages/team-and-timeline.md) | 团队与排期 | 5 | 2026-04-24 | 7 |
 
 ### module
 
@@ -44,9 +44,9 @@
 
 | slug | title | sources | updated | backlinks |
 |---|---|---:|---|---:|
-| [data-model](pages/data-model.md) | 数据模型 | 3 | 2026-04-15 | 2 |
+| [data-model](pages/data-model.md) | 数据模型 | 4 | 2026-04-24 | 2 |
 | [glossary](pages/glossary.md) | 术语表 | 4 | 2026-04-15 | 2 |
-| [roles-and-permissions](pages/roles-and-permissions.md) | 角色与权限 | 3 | 2026-04-15 | 4 |
+| [roles-and-permissions](pages/roles-and-permissions.md) | 角色与权限 | 4 | 2026-04-24 | 4 |
 
 ## Implementation Space
 
@@ -54,21 +54,22 @@
 
 | slug | title | sources | updated | backlinks |
 |---|---|---:|---|---:|
-| [implementation/acceptance-and-closure](pages/implementation/acceptance-and-closure.md) | 实施验收与问题闭环 | 5 | 2026-04-23 | 5 |
-| [implementation/delivery-playbook](pages/implementation/delivery-playbook.md) | 实施交付作战包总览 | 2 | 2026-04-21 | 2 |
-| [implementation/milestones](pages/implementation/milestones.md) | 实施里程碑与依赖 | 3 | 2026-04-23 | 3 |
-| [implementation/risk-register](pages/implementation/risk-register.md) | 实施风险台账 | 4 | 2026-04-23 | 4 |
-| [implementation/weekly-status](pages/implementation/weekly-status.md) | 实施周报与例会纪要模板 | 2 | 2026-04-21 | 3 |
+| [implementation/acceptance-and-closure](pages/implementation/acceptance-and-closure.md) | 实施验收与问题闭环 | 6 | 2026-04-24 | 6 |
+| [implementation/delivery-playbook](pages/implementation/delivery-playbook.md) | 实施交付作战包总览 | 3 | 2026-04-24 | 3 |
+| [implementation/milestones](pages/implementation/milestones.md) | 实施里程碑与依赖 | 4 | 2026-04-24 | 4 |
+| [implementation/risk-register](pages/implementation/risk-register.md) | 实施风险台账 | 5 | 2026-04-24 | 5 |
+| [implementation/weekly-status](pages/implementation/weekly-status.md) | 实施周报与例会纪要模板 | 3 | 2026-04-24 | 3 |
 
 ### reference
 
 | slug | title | sources | updated | backlinks |
 |---|---|---:|---|---:|
-| [contract-constraints](pages/contract-constraints.md) | 合同约束 | 4 | 2026-04-23 | 8 |
+| [contract-constraints](pages/contract-constraints.md) | 合同约束 | 5 | 2026-04-24 | 9 |
+| [implementation/sow-2026-v1-4](pages/implementation/sow-2026-v1-4.md) | SOW 2026 V1.4 执行基准 | 1 | 2026-04-24 | 11 |
 
 ## Summary
 
-- pages: 20
+- pages: 21
 - engineering: 14
-- implementation: 6
+- implementation: 7
 

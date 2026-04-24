@@ -12,7 +12,7 @@
     "backlinks": [
       "_index"
     ],
-    "updated": "2026-04-23",
+    "updated": "2026-04-24",
     "health_checked": "2026-04-24",
     "path": ".wiki/pages/_index.md"
   },
@@ -49,6 +49,7 @@
     "space": "engineering",
     "category": "architecture",
     "sources": [
+      ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx",
       "docs/技术架构方案.md",
       "docs/后端架构设计-SpringBoot.md",
       "docs/API_INTEGRATION.md",
@@ -105,6 +106,7 @@
     "space": "implementation",
     "category": "reference",
     "sources": [
+      ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx",
       ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
       ".wiki/sources/contract/附件3：西域数智化投标管理平台建设项目合同报价清单.pdf",
       ".wiki/sources/contract/附件3-合同报价清单人工摘录.md",
@@ -116,11 +118,12 @@
       "implementation/acceptance-and-closure",
       "implementation/milestones",
       "implementation/risk-register",
+      "implementation/sow-2026-v1-4",
       "overview",
       "requirements",
       "team-and-timeline"
     ],
-    "updated": "2026-04-23",
+    "updated": "2026-04-24",
     "health_checked": "2026-04-24",
     "path": ".wiki/pages/contract-constraints.md"
   },
@@ -148,6 +151,7 @@
     "space": "engineering",
     "category": "reference",
     "sources": [
+      ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx",
       "backend/src/main/java/com/xiyu/bid/entity/README.md",
       "backend/src/main/java/com/xiyu/bid/dto/README.md",
       "docs/后端架构设计.md"
@@ -156,7 +160,7 @@
       "_index",
       "architecture"
     ],
-    "updated": "2026-04-15",
+    "updated": "2026-04-24",
     "health_checked": "2026-04-24",
     "path": ".wiki/pages/data-model.md"
   },
@@ -166,6 +170,7 @@
     "space": "engineering",
     "category": "guide",
     "sources": [
+      ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx",
       "docs/GO_LIVE_CHECKLIST.md",
       "docs/ROLLBACK_RUNBOOK.md",
       "docs/UAT_PLAN.md",
@@ -184,6 +189,7 @@
       "implementation/delivery-playbook",
       "implementation/milestones",
       "implementation/risk-register",
+      "implementation/sow-2026-v1-4",
       "implementation/weekly-status",
       "requirements",
       "team-and-timeline"
@@ -236,6 +242,7 @@
     "space": "implementation",
     "category": "guide",
     "sources": [
+      ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx",
       "docs/UAT_PLAN.md",
       "docs/UAT_SIGNOFF_TEMPLATE.md",
       "docs/GO_LIVE_CHECKLIST.md",
@@ -247,9 +254,10 @@
       "contract-constraints",
       "design-system",
       "implementation/delivery-playbook",
-      "implementation/risk-register"
+      "implementation/risk-register",
+      "implementation/sow-2026-v1-4"
     ],
-    "updated": "2026-04-23",
+    "updated": "2026-04-24",
     "health_checked": "2026-04-24",
     "path": ".wiki/pages/implementation/acceptance-and-closure.md"
   },
@@ -259,14 +267,16 @@
     "space": "implementation",
     "category": "guide",
     "sources": [
+      ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx",
       "docs/UAT_PLAN.md",
       "docs/GO_LIVE_CHECKLIST.md"
     ],
     "backlinks": [
       "_index",
-      "implementation/acceptance-and-closure"
+      "implementation/acceptance-and-closure",
+      "implementation/sow-2026-v1-4"
     ],
-    "updated": "2026-04-21",
+    "updated": "2026-04-24",
     "health_checked": "2026-04-24",
     "path": ".wiki/pages/implementation/delivery-playbook.md"
   },
@@ -276,6 +286,7 @@
     "space": "implementation",
     "category": "guide",
     "sources": [
+      ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx",
       "docs/DELIVERY_BLOCKERS_SCHEDULE.md",
       ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
       ".wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx"
@@ -283,9 +294,10 @@
     "backlinks": [
       "_index",
       "contract-constraints",
-      "implementation/delivery-playbook"
+      "implementation/delivery-playbook",
+      "implementation/sow-2026-v1-4"
     ],
-    "updated": "2026-04-23",
+    "updated": "2026-04-24",
     "health_checked": "2026-04-24",
     "path": ".wiki/pages/implementation/milestones.md"
   },
@@ -295,6 +307,7 @@
     "space": "implementation",
     "category": "guide",
     "sources": [
+      ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx",
       "docs/DELIVERY_BLOCKERS_SCHEDULE.md",
       "docs/UAT_PLAN.md",
       ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
@@ -304,11 +317,37 @@
       "_index",
       "contract-constraints",
       "implementation/delivery-playbook",
+      "implementation/sow-2026-v1-4",
       "implementation/weekly-status"
     ],
-    "updated": "2026-04-23",
+    "updated": "2026-04-24",
     "health_checked": "2026-04-24",
     "path": ".wiki/pages/implementation/risk-register.md"
+  },
+  {
+    "slug": "implementation/sow-2026-v1-4",
+    "title": "SOW 2026 V1.4 执行基准",
+    "space": "implementation",
+    "category": "reference",
+    "sources": [
+      ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx"
+    ],
+    "backlinks": [
+      "_index",
+      "contract-constraints",
+      "deployment",
+      "implementation/acceptance-and-closure",
+      "implementation/delivery-playbook",
+      "implementation/milestones",
+      "implementation/risk-register",
+      "implementation/weekly-status",
+      "overview",
+      "requirements",
+      "team-and-timeline"
+    ],
+    "updated": "2026-04-24",
+    "health_checked": "2026-04-24",
+    "path": ".wiki/pages/implementation/sow-2026-v1-4.md"
   },
   {
     "slug": "implementation/weekly-status",
@@ -316,6 +355,7 @@
     "space": "implementation",
     "category": "guide",
     "sources": [
+      ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx",
       "docs/启动会项目组织架构与沟通矩阵.md",
       "docs/tasks/production-task-breakdown.md"
     ],
@@ -324,7 +364,7 @@
       "implementation/delivery-playbook",
       "implementation/risk-register"
     ],
-    "updated": "2026-04-21",
+    "updated": "2026-04-24",
     "health_checked": "2026-04-24",
     "path": ".wiki/pages/implementation/weekly-status.md"
   },
@@ -373,15 +413,17 @@
       "AGENTS.md",
       "DESIGN.md",
       "docs/COMMERCIAL_SCOPE.md",
+      ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx",
       ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
       ".wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx"
     ],
     "backlinks": [
       "_index",
       "design-system",
+      "implementation/sow-2026-v1-4",
       "team-and-timeline"
     ],
-    "updated": "2026-04-23",
+    "updated": "2026-04-24",
     "health_checked": "2026-04-24",
     "path": ".wiki/pages/overview.md"
   },
@@ -391,6 +433,7 @@
     "space": "engineering",
     "category": "business",
     "sources": [
+      ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx",
       ".wiki/sources/bidding/附件5：西域数智化投标管理平台建设项目需求任务书.docx",
       ".wiki/sources/bidding/附件6：需求功能清单.xlsx",
       ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
@@ -405,7 +448,8 @@
       "dashboard-gap-analysis",
       "implementation/acceptance-and-closure",
       "implementation/milestones",
-      "implementation/risk-register"
+      "implementation/risk-register",
+      "implementation/sow-2026-v1-4"
     ],
     "updated": "2026-04-24",
     "health_checked": "2026-04-24",
@@ -417,6 +461,7 @@
     "space": "engineering",
     "category": "reference",
     "sources": [
+      ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx",
       "src/router/index.js",
       "AGENTS.md",
       "backend/src/main/java/com/xiyu/bid/auth/README.md"
@@ -427,7 +472,7 @@
       "contract-constraints",
       "overview"
     ],
-    "updated": "2026-04-15",
+    "updated": "2026-04-24",
     "health_checked": "2026-04-24",
     "path": ".wiki/pages/roles-and-permissions.md"
   },
@@ -437,6 +482,7 @@
     "space": "engineering",
     "category": "guide",
     "sources": [
+      ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx",
       "docs/启动会项目组织架构与沟通矩阵.md",
       "docs/项目启动会PPT大纲与核心内容.md",
       ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
@@ -447,10 +493,11 @@
       "contract-constraints",
       "deployment",
       "implementation/risk-register",
+      "implementation/sow-2026-v1-4",
       "overview",
       "requirements"
     ],
-    "updated": "2026-04-23",
+    "updated": "2026-04-24",
     "health_checked": "2026-04-24",
     "path": ".wiki/pages/team-and-timeline.md"
   }
