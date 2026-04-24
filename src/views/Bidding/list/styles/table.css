@@ -1,0 +1,100 @@
+.table-container {
+  width: 100%;
+  overflow: hidden;
+}
+
+.tender-table {
+  --el-table-row-hover-bg-color: #eff6ff;
+}
+
+.tender-table .tender-main-column .cell {
+  display: block;
+  min-width: 0;
+}
+
+.tender-main-cell {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 4px 0;
+}
+
+.tender-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tender-title-link,
+.tender-title-line > .tender-title-text {
+  min-width: 0;
+  max-width: 100%;
+  font-weight: 650;
+  color: #1f3a5f;
+}
+
+.tender-title-link .el-link__inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.tender-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tender-meta-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  min-width: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.tender-meta-line .meta-item {
+  min-width: 0;
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.budget-cell {
+  font-weight: 650;
+  color: #334155;
+}
+
+.table-actions {
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  min-width: 194px;
+}
+
+.table-actions .el-button + .el-button {
+  margin-left: 0;
+}
+
+.table-actions .el-dropdown {
+  line-height: 0;
+}
+
+.table-container .el-scrollbar__bar.is-horizontal {
+  height: 9px;
+  opacity: 1;
+}
+
+.table-container .el-scrollbar__bar.is-horizontal .el-scrollbar__thumb {
+  background-color: #94a3b8;
+}
+
+.table-container .el-table__fixed-right::before {
+  box-shadow: -8px 0 16px -14px #475569;
+}

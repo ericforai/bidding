@@ -1,52 +1,62 @@
 <template>
   <div class="table-container">
-    <el-table ref="innerTableRef" :data="rows" stripe @selection-change="$emit('selection-change', $event)">
-      <el-table-column type="selection" width="50" />
-      <el-table-column prop="title" label="标讯标题" min-width="280" show-overflow-tooltip>
+    <el-table
+      ref="innerTableRef"
+      class="tender-table"
+      :data="rows"
+      stripe
+      scrollbar-always-on
+      @selection-change="$emit('selection-change', $event)"
+    >
+      <el-table-column type="selection" width="44" />
+      <el-table-column prop="title" label="标讯" min-width="260" class-name="tender-main-column">
         <template #default="{ row = {} } = {}">
-          <div class="title-cell">
-            <el-link
-              v-if="safeTenderUrl(row.originalUrl)"
-              :href="safeTenderUrl(row.originalUrl)"
-              target="_blank"
-              rel="noopener noreferrer"
-              type="primary"
-              underline="never"
-            >
-              <span>{{ row.title }}</span>
-              <el-icon><LinkIcon /></el-icon>
-            </el-link>
-            <span v-else>{{ row.title }}</span>
-            <el-tag v-if="row.aiScore >= 90" size="small" type="success">高匹配</el-tag>
+          <div class="tender-main-cell">
+            <div class="tender-title-line">
+              <el-link
+                v-if="safeTenderUrl(row.originalUrl)"
+                class="tender-title-link"
+                :href="safeTenderUrl(row.originalUrl)"
+                target="_blank"
+                rel="noopener noreferrer"
+                type="primary"
+                underline="never"
+              >
+                <span class="tender-title-text">{{ row.title }}</span>
+                <el-icon><LinkIcon /></el-icon>
+              </el-link>
+              <span v-else class="tender-title-text">{{ row.title }}</span>
+              <el-tag v-if="row.aiScore >= 90" size="small" type="success">高匹配</el-tag>
+            </div>
+            <div class="tender-meta-line">
+              <el-tag v-if="row.source" :type="getSourceTagType(row.source)" size="small">
+                {{ getSourceText(row.source) }}
+              </el-tag>
+              <span v-if="row.region" class="meta-item">{{ row.region }}</span>
+              <span v-if="row.industry" class="meta-item">{{ row.industry }}</span>
+              <span v-if="row.deadline" class="meta-item">截止 {{ row.deadline }}</span>
+            </div>
           </div>
         </template>
       </el-table-column>
-      <el-table-column prop="budget" label="预算" width="100" align="center">
-        <template #default="{ row = {} } = {}">{{ formatBudgetWan(row.budget) }}万元</template>
-      </el-table-column>
-      <el-table-column prop="region" label="地区" width="90" align="center" />
-      <el-table-column prop="industry" label="行业" width="110" align="center" />
-      <el-table-column prop="source" label="来源" width="120" align="center">
+      <el-table-column prop="budget" label="预算" width="82" align="center">
         <template #default="{ row = {} } = {}">
-          <el-tag v-if="row.source" :type="getSourceTagType(row.source)" size="small">
-            {{ getSourceText(row.source) }}
-          </el-tag>
+          <span class="budget-cell">{{ formatBudgetWan(row.budget) }}万</span>
         </template>
       </el-table-column>
-      <el-table-column prop="aiScore" label="AI评分" width="90" align="center">
+      <el-table-column prop="aiScore" label="AI评分" width="78" align="center">
         <template #default="{ row = {} } = {}">
           <span class="ai-score-highlight">{{ row.aiScore || 0 }}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="deadline" label="截止日期" width="120" align="center" />
-      <el-table-column prop="status" label="状态" width="100" align="center">
+      <el-table-column prop="status" label="状态" width="92" align="center">
         <template #default="{ row = {} } = {}">
           <el-tag :type="getTenderStatusTagType(row.status)" size="small">
             {{ getTenderStatusText(row.status) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="270" align="center" fixed="right">
+      <el-table-column label="操作" width="224" align="center" fixed="right">
         <template #default="{ row = {} } = {}">
           <TenderActionMenu
             :row="row"
