@@ -167,6 +167,7 @@ Vue 组件和 Pinia Store 可以进行受控状态更新，但更新前的业务
 门禁内容：
 - 纯核心不得依赖 Controller、Repository、Config、Adapter、Gateway。
 - 纯核心不得依赖 Spring Web/Data/JDBC、JPA、日志、文件、网络等命令式外壳或 I/O API。
+- 纯核心不得显式依赖 `System`、`Clock`、随机数等隐式输入；Java 枚举 `values()` 编译器生成的 `System.arraycopy` 属于合成字节码误报，不代表业务代码读取系统状态。
 - 纯核心不得依赖项目业务异常包；预期业务失败应通过 Result / Optional / ValidationResult 返回。
 - 纯核心业务方法不得返回 `void`；状态变化必须通过返回值表达。
 - 纯核心业务方法不得声明、构造或捕获异常来表达业务流程。
