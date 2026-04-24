@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Input: release environment variables, PostgreSQL/MySQL rehearsal configuration, and UAT/report paths
-# Output: rehearsal lifecycle, UAT execution, backup, restore verification, and startup diagnostics
+# Input: release environment variables, PostgreSQL/MySQL rehearsal configuration, UAT/report paths, and Playwright bootstrap controls
+# Output: rehearsal lifecycle using the release stack, UAT execution, backup, restore verification, and startup diagnostics
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -60,7 +60,7 @@ export PLAYWRIGHT_API_BASE_URL="${PLAYWRIGHT_API_BASE_URL:-$UAT_API_BASE_URL}"
 printf 'UAT report: %s\n' "$UAT_REPORT_JSON"
 
 printf '\n==> Running browser E2E gate\n'
-npm run test:e2e:commercial
+PLAYWRIGHT_DISABLE_API_BOOTSTRAP=1 npm run test:e2e:commercial
 
 printf '\n==> Creating rehearsal backup\n'
 if [[ "$DB_ENGINE" == "mysql" ]]; then
