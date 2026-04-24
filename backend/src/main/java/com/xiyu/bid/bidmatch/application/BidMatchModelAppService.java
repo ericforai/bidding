@@ -79,14 +79,22 @@ public class BidMatchModelAppService {
     }
 
     @Transactional
-    public BidMatchModelVersionSnapshot activeSnapshot() {
+    public BidMatchActiveModelVersion activeVersion() {
         BidMatchModelVersionEntity version = activeVersionEntity();
-        return jsonCodec.fromJson(version.getSnapshotJson(), BidMatchModelVersionSnapshot.class);
+        return new BidMatchActiveModelVersion(
+                version.getId(),
+                jsonCodec.fromJson(version.getSnapshotJson(), BidMatchModelVersionSnapshot.class)
+        );
+    }
+
+    @Transactional
+    public BidMatchModelVersionSnapshot activeSnapshot() {
+        return activeVersion().snapshot();
     }
 
     @Transactional
     public Long activeVersionId() {
-        return activeVersionEntity().getId();
+        return activeVersion().versionEntityId();
     }
 
     @Transactional

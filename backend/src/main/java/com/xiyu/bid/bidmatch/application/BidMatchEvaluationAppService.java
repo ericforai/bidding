@@ -29,13 +29,14 @@ public class BidMatchEvaluationAppService {
 
     @Transactional
     public BidMatchEvaluationResponse evaluate(Long tenderId) {
-        BidMatchModelVersionSnapshot snapshot = modelAppService.activeSnapshot();
+        BidMatchActiveModelVersion activeVersion = modelAppService.activeVersion();
+        BidMatchModelVersionSnapshot snapshot = activeVersion.snapshot();
         BidMatchEvidenceBundle evidenceBundle = evidenceAssembler.assemble(tenderId);
         BidMatchScoreEvaluation evaluation = policy.evaluate(snapshot, evidenceBundle.evidence());
         BidMatchScoreEvaluationEntity entity = new BidMatchScoreEvaluationEntity();
         entity.setTenderId(tenderId);
         entity.setModelId(snapshot.modelId());
-        entity.setModelVersionId(modelAppService.activeVersionId());
+        entity.setModelVersionId(activeVersion.versionEntityId());
         entity.setModelVersionNo(snapshot.versionNo());
         entity.setTotalScore(evaluation.totalScore());
         entity.setDimensionScoresJson(jsonCodec.toJson(evaluation.dimensionScores()));
@@ -75,9 +76,9 @@ public class BidMatchEvaluationAppService {
 
     private StaleContext staleContext(Long tenderId) {
         try {
-            Long activeVersionId = modelAppService.activeVersionId();
+            BidMatchActiveModelVersion activeVersion = modelAppService.activeVersion();
             String currentFingerprint = evidenceAssembler.assemble(tenderId).fingerprint();
-            return new StaleContext(activeVersionId, currentFingerprint);
+            return new StaleContext(activeVersion.versionEntityId(), currentFingerprint);
         } catch (IllegalStateException exception) {
             return null;
         }
