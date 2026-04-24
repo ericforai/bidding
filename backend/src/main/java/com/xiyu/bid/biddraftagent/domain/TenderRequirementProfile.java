@@ -3,6 +3,8 @@ package com.xiyu.bid.biddraftagent.domain;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 public record TenderRequirementProfile(
         String projectName,
@@ -20,13 +22,23 @@ public record TenderRequirementProfile(
         List<TenderRequirementItemSnapshot> items
 ) {
 
+    private static final Set<String> READABLE_LIST_NOISE = Set.of(
+            "qualification", "technical", "commercial", "pricing", "legal",
+            "delivery", "scoring", "material", "other", "risk",
+            "true", "false", "null"
+    );
+    private static final Set<String> PLACEHOLDER_VALUES = Set.of(
+            "未明确提及，根据通用要求推断"
+    );
+    private static final Pattern BARE_INTEGER = Pattern.compile("^\\d{1,3}$");
+
     public TenderRequirementProfile {
-        qualificationRequirements = normalizeStrings(qualificationRequirements);
-        technicalRequirements = normalizeStrings(technicalRequirements);
-        commercialRequirements = normalizeStrings(commercialRequirements);
-        scoringCriteria = normalizeStrings(scoringCriteria);
-        requiredMaterials = normalizeStrings(requiredMaterials);
-        riskPoints = normalizeStrings(riskPoints);
+        qualificationRequirements = normalizeReadableStrings(qualificationRequirements);
+        technicalRequirements = normalizeReadableStrings(technicalRequirements);
+        commercialRequirements = normalizeReadableStrings(commercialRequirements);
+        scoringCriteria = normalizeReadableStrings(scoringCriteria);
+        requiredMaterials = normalizeReadableStrings(requiredMaterials);
+        riskPoints = normalizeReadableStrings(riskPoints);
         tags = normalizeStrings(tags);
         items = normalizeItems(items);
     }
@@ -56,9 +68,15 @@ public record TenderRequirementProfile(
         }
         return values.stream()
                 .filter(Objects::nonNull)
-                .map(String::trim)
+                .map(TenderRequirementProfile::normalizeWhitespace)
                 .filter(value -> !value.isBlank())
                 .distinct()
+                .toList();
+    }
+
+    private static List<String> normalizeReadableStrings(List<String> values) {
+        return normalizeStrings(values).stream()
+                .filter(value -> !isReadableListNoise(value))
                 .toList();
     }
 
@@ -73,5 +91,16 @@ public record TenderRequirementProfile(
 
     private static String blankToEmpty(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private static String normalizeWhitespace(String value) {
+        return value == null ? "" : value.trim().replaceAll("\\s+", " ");
+    }
+
+    private static boolean isReadableListNoise(String value) {
+        String normalized = value.trim().toLowerCase();
+        return READABLE_LIST_NOISE.contains(normalized)
+                || PLACEHOLDER_VALUES.contains(value.trim())
+                || BARE_INTEGER.matcher(normalized).matches();
     }
 }

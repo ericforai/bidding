@@ -32,10 +32,9 @@ describe('bidAgentApi', () => {
   it('importTenderDocument(): uploads tender file through the bid-agent multipart endpoint', async () => {
     const formData = new FormData()
     formData.set('file', new Blob(['招标文件正文']), 'tender.docx')
-    formData.set('applyToEditor', 'true')
     httpClient.post.mockResolvedValue({
       success: true,
-      data: { run: { runId: 'run-2', status: 'DRAFTED' }, document: { id: 55 } },
+      data: { document: { id: 55, snapshotId: 601 } },
     })
 
     const result = await bidAgentApi.importTenderDocument(12, formData)
@@ -45,7 +44,7 @@ describe('bidAgentApi', () => {
       formData,
       { headers: { 'Content-Type': 'multipart/form-data' } },
     )
-    expect(result.data.run).toMatchObject({ runId: 'run-2', status: 'DRAFTED' })
+    expect(result.data.document).toMatchObject({ id: 55, snapshotId: 601 })
   })
 
   it('getRun(): fetches a single backend run without local fallback', async () => {

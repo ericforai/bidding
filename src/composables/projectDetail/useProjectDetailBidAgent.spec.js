@@ -51,15 +51,16 @@ describe('useProjectDetailBidAgent', () => {
     expect(context.message.success).toHaveBeenCalledWith('AI 初稿生成任务已启动')
   })
 
-  it('imports a tender document, stores the run, and keeps apply metadata for editor navigation', async () => {
+  it('imports a tender document, then creates a run from the parsed snapshot and applies it', async () => {
     apiMocks.importTenderDocument.mockResolvedValue({
       success: true,
       data: {
-        message: '招标文件已解析，标书初稿已写入文档编辑器',
-        run: { runId: 'run-upload', status: 'READY_FOR_WRITER' },
-        applyResult: { projectId: 12, structureId: 88 },
+        message: '招标文件已解析，已更新招标要求快照',
+        document: { id: 55, snapshotId: 601 },
       },
     })
+    apiMocks.createRun.mockResolvedValue({ success: true, data: { runId: 'run-upload', status: 'DRAFTED' } })
+    apiMocks.applyRun.mockResolvedValue({ success: true, data: { projectId: 12, structureId: 88 } })
     const context = createContext()
     const agent = useProjectDetailBidAgent(context)
     const file = new File(['招标正文'], '招标文件.docx')
@@ -69,6 +70,8 @@ describe('useProjectDetailBidAgent', () => {
     agent.goToEditor()
 
     expect(apiMocks.importTenderDocument).toHaveBeenCalledWith(12, expect.any(FormData))
+    expect(apiMocks.createRun).toHaveBeenCalledWith(12, { snapshotId: 601 })
+    expect(apiMocks.applyRun).toHaveBeenCalledWith(12, 'run-upload', {})
     expect(result.run.runId).toBe('run-upload')
     expect(agent.currentRunId.value).toBe('run-upload')
     expect(agent.applyResult.value.structureId).toBe(88)

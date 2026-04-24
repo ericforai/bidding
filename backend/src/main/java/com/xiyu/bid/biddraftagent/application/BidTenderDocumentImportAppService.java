@@ -1,10 +1,8 @@
 package com.xiyu.bid.biddraftagent.application;
 
 import com.xiyu.bid.biddraftagent.domain.TenderRequirementProfile;
-import com.xiyu.bid.biddraftagent.dto.BidDraftAgentApplyResponseDTO;
-import com.xiyu.bid.biddraftagent.dto.BidDraftAgentRunDTO;
 import com.xiyu.bid.biddraftagent.dto.BidTenderDocumentDTO;
-import com.xiyu.bid.biddraftagent.dto.BidTenderDocumentImportDTO;
+import com.xiyu.bid.biddraftagent.dto.BidTenderDocumentParseDTO;
 import com.xiyu.bid.biddraftagent.entity.BidRequirementItem;
 import com.xiyu.bid.biddraftagent.entity.BidTenderDocumentSnapshot;
 import com.xiyu.bid.biddraftagent.repository.BidRequirementItemRepository;
@@ -18,7 +16,6 @@ import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TenderRepository;
 import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,6 +31,7 @@ public class BidTenderDocumentImportAppService {
     private static final long MAX_FILE_SIZE_BYTES = 30L * 1024L * 1024L;
     private static final String DOCUMENT_CATEGORY = "TENDER_FILE";
     private static final String LINKED_ENTITY_TYPE = "TENDER";
+    private static final String PARSE_SUCCESS_MESSAGE = "招标文件已解析，已更新招标要求快照";
 
     private final ProjectAccessScopeService projectAccessScopeService;
     private final ProjectRepository projectRepository;
@@ -47,15 +45,10 @@ public class BidTenderDocumentImportAppService {
     private final TenderRequirementSnapshotUpdater snapshotUpdater;
     private final TenderRequirementEntityFactory entityFactory;
     private final BidDraftAgentJsonCodec jsonCodec;
-    private final BidDraftAgentAppService bidDraftAgentAppService;
     private final BidAgentOperatorResolver operatorResolver;
     private final TransactionTemplate transactionTemplate;
 
-    public BidTenderDocumentImportDTO importAndGenerate(
-            Long projectId,
-            MultipartFile file,
-            boolean applyToEditor
-    ) {
+    public BidTenderDocumentParseDTO parseTenderDocument(Long projectId, MultipartFile file) {
         projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
         validateFile(file);
 
@@ -84,44 +77,7 @@ public class BidTenderDocumentImportAppService {
                 extracted,
                 profile
         );
-
-        BidDraftAgentRunDTO run;
-        try {
-            run = bidDraftAgentAppService.createRun(projectId);
-        } catch (RuntimeException ex) {
-            rethrowSecurityException(ex);
-            return buildImportResult(
-                    persistedDocument,
-                    tender.getId(),
-                    extracted.textLength(),
-                    profile,
-                    null,
-                    null,
-                    "招标文件已解析并保存，标书初稿生成失败，可稍后重试：" + ex.getMessage()
-            );
-        }
-
-        BidDraftAgentApplyResponseDTO applyResult = null;
-        String message = "招标文件已解析并生成标书初稿";
-        if (applyToEditor) {
-            try {
-                applyResult = bidDraftAgentAppService.applyRun(projectId, run.getId());
-                message = "招标文件已解析，标书初稿已写入文档编辑器";
-            } catch (RuntimeException ex) {
-                rethrowSecurityException(ex);
-                message = "招标文件已解析并生成初稿，写入文档编辑器失败，可稍后重试：" + ex.getMessage();
-            }
-        }
-
-        return buildImportResult(
-                persistedDocument,
-                tender.getId(),
-                extracted.textLength(),
-                profile,
-                run,
-                applyResult,
-                message
-        );
+        return buildParseResult(persistedDocument, tender.getId(), extracted.textLength(), profile);
     }
 
     private void validateFile(MultipartFile file) {
@@ -236,41 +192,26 @@ public class BidTenderDocumentImportAppService {
         return snapshot;
     }
 
-    private BidTenderDocumentDTO toDocumentDTO(ProjectDocument document, Long tenderId, Long snapshotId, int textLength) {
-        return BidTenderDocumentDTO.builder()
-                .id(document.getId())
-                .projectId(document.getProjectId())
-                .tenderId(tenderId)
-                .name(document.getName())
-                .fileType(document.getFileType())
-                .size(document.getSize())
-                .fileUrl(document.getFileUrl())
-                .snapshotId(snapshotId)
-                .extractedTextLength(textLength)
-                .build();
-    }
-
-    private BidTenderDocumentImportDTO buildImportResult(
+    private BidTenderDocumentParseDTO buildParseResult(
             PersistedTenderDocument persistedDocument,
             Long tenderId,
             int textLength,
-            TenderRequirementProfile profile,
-            BidDraftAgentRunDTO run,
-            BidDraftAgentApplyResponseDTO applyResult,
-            String message
+            TenderRequirementProfile profile
     ) {
-        return BidTenderDocumentImportDTO.builder()
-                .document(toDocumentDTO(
-                        persistedDocument.document(),
-                        tenderId,
-                        persistedDocument.snapshot().getId(),
-                        textLength
-                ))
+        return BidTenderDocumentParseDTO.builder()
+                .document(BidTenderDocumentDTO.builder()
+                        .id(persistedDocument.document().getId())
+                        .projectId(persistedDocument.document().getProjectId())
+                        .tenderId(tenderId)
+                        .name(persistedDocument.document().getName())
+                        .fileType(persistedDocument.document().getFileType())
+                        .size(persistedDocument.document().getSize())
+                        .fileUrl(persistedDocument.document().getFileUrl())
+                        .snapshotId(persistedDocument.snapshot().getId())
+                        .extractedTextLength(textLength)
+                        .build())
                 .requirementProfile(profile)
-                .run(run)
-                .applyResult(applyResult)
-                .appliedToEditor(applyResult != null)
-                .message(message)
+                .message(PARSE_SUCCESS_MESSAGE)
                 .build();
     }
 
@@ -280,12 +221,6 @@ public class BidTenderDocumentImportAppService {
             return kb + "KB";
         }
         return Math.round(kb / 1024.0) + "MB";
-    }
-
-    private void rethrowSecurityException(RuntimeException ex) {
-        if (ex instanceof AccessDeniedException) {
-            throw ex;
-        }
     }
 
     private record PersistedTenderDocument(ProjectDocument document, BidTenderDocumentSnapshot snapshot) {

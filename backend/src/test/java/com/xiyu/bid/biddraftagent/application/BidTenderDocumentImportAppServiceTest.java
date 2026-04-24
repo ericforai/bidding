@@ -3,8 +3,6 @@ package com.xiyu.bid.biddraftagent.application;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.biddraftagent.domain.TenderRequirementItemSnapshot;
 import com.xiyu.bid.biddraftagent.domain.TenderRequirementProfile;
-import com.xiyu.bid.biddraftagent.dto.BidDraftAgentApplyResponseDTO;
-import com.xiyu.bid.biddraftagent.dto.BidDraftAgentRunDTO;
 import com.xiyu.bid.biddraftagent.entity.BidRequirementItem;
 import com.xiyu.bid.biddraftagent.entity.BidTenderDocumentSnapshot;
 import com.xiyu.bid.biddraftagent.repository.BidRequirementItemRepository;
@@ -33,13 +31,14 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class BidTenderDocumentImportAppServiceTest {
@@ -63,8 +62,6 @@ class BidTenderDocumentImportAppServiceTest {
     @Mock
     private TenderDocumentAnalyzer documentAnalyzer;
     @Mock
-    private BidDraftAgentAppService bidDraftAgentAppService;
-    @Mock
     private BidAgentOperatorResolver operatorResolver;
     @Mock
     private TransactionTemplate transactionTemplate;
@@ -87,21 +84,15 @@ class BidTenderDocumentImportAppServiceTest {
                 new TenderRequirementSnapshotUpdater(),
                 new TenderRequirementEntityFactory(),
                 jsonCodec,
-                bidDraftAgentAppService,
                 operatorResolver,
                 transactionTemplate
         );
     }
 
     @Test
-    void importAndGenerate_shouldPersistRequirementsUpdateTenderCreateRunAndApply() {
+    void parseTenderDocument_shouldPersistRequirementsAndUpdateTenderSnapshot() {
         allowTransactionCallbacks();
-        MockMultipartFile file = new MockMultipartFile(
-                "file",
-                "招标文件.docx",
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                "资格要求：提供资质证书\n技术要求：提供实施方案\n评分标准：技术方案50分".getBytes(StandardCharsets.UTF_8)
-        );
+        MockMultipartFile file = sampleFile();
         Project project = Project.builder().id(11L).tenderId(22L).name("华东智慧园区改造项目").managerId(1L).build();
         Tender tender = Tender.builder().id(22L).title("旧标题").description("旧描述").tags("旧标签").build();
         TenderRequirementProfile profile = sampleProfile();
@@ -125,14 +116,12 @@ class BidTenderDocumentImportAppServiceTest {
             return snapshot;
         });
         when(requirementItemRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(bidDraftAgentAppService.createRun(11L)).thenReturn(BidDraftAgentRunDTO.builder().id(701L).projectId(11L).build());
-        when(bidDraftAgentAppService.applyRun(11L, 701L)).thenReturn(BidDraftAgentApplyResponseDTO.builder().runId(701L).readyForWriter(true).build());
 
-        var result = appService.importAndGenerate(11L, file, true);
+        var result = appService.parseTenderDocument(11L, file);
 
-        assertThat(result.isAppliedToEditor()).isTrue();
+        assertThat(result.getMessage()).isEqualTo("招标文件已解析，已更新招标要求快照");
         assertThat(result.getDocument().getSnapshotId()).isEqualTo(601L);
-        assertThat(result.getRun().getId()).isEqualTo(701L);
+        assertThat(result.getRequirementProfile().projectName()).isEqualTo("华东智慧园区改造项目");
         assertThat(tender.getTitle()).isEqualTo("2026园区改造招标公告");
         assertThat(tender.getDescription()).contains("资格要求", "评分标准", "必须提供的材料");
         assertThat(tender.getTags()).contains("智慧园区");
@@ -146,12 +135,10 @@ class BidTenderDocumentImportAppServiceTest {
         assertThat(itemCaptor.getValue()).hasSize(2);
         assertThat(itemCaptor.getValue()).extracting(BidRequirementItem::getCategory)
                 .contains("qualification", "technical");
-        verify(bidDraftAgentAppService).createRun(11L);
-        verify(bidDraftAgentAppService).applyRun(11L, 701L);
     }
 
     @Test
-    void importAndGenerate_shouldKeepParsedSnapshotWhenRunGenerationFails() {
+    void parseTenderDocument_shouldReturnSnapshotEvenWithoutGenerationStep() {
         allowTransactionCallbacks();
         MockMultipartFile file = sampleFile();
         Project project = Project.builder().id(11L).tenderId(22L).name("华东智慧园区改造项目").managerId(1L).build();
@@ -176,59 +163,18 @@ class BidTenderDocumentImportAppServiceTest {
             return snapshot;
         });
         when(requirementItemRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(bidDraftAgentAppService.createRun(11L)).thenThrow(new IllegalStateException("provider unavailable"));
 
-        var result = appService.importAndGenerate(11L, file, true);
+        var result = appService.parseTenderDocument(11L, file);
 
         assertThat(result.getDocument().getSnapshotId()).isEqualTo(601L);
-        assertThat(result.getRun()).isNull();
-        assertThat(result.isAppliedToEditor()).isFalse();
-        assertThat(result.getMessage()).contains("招标文件已解析并保存", "标书初稿生成失败");
+        assertThat(result.getMessage()).isEqualTo("招标文件已解析，已更新招标要求快照");
         verify(projectDocumentRepository).save(any());
         verify(documentSnapshotRepository).save(any());
         verify(requirementItemRepository).saveAll(any());
-        verify(bidDraftAgentAppService, never()).applyRun(any(), any());
     }
 
     @Test
-    void importAndGenerate_shouldKeepRunWhenEditorApplyFails() {
-        allowTransactionCallbacks();
-        MockMultipartFile file = sampleFile();
-        Project project = Project.builder().id(11L).tenderId(22L).name("华东智慧园区改造项目").managerId(1L).build();
-        Tender tender = Tender.builder().id(22L).title("旧标题").description("旧描述").tags("旧标签").build();
-
-        when(projectRepository.findById(11L)).thenReturn(Optional.of(project));
-        when(tenderRepository.findById(22L)).thenReturn(Optional.of(tender));
-        when(documentStorage.store(eq(11L), eq("招标文件.docx"), any(), any()))
-                .thenReturn(new StoredTenderDocument("bid-agent://tender-documents/11/file", "/tmp/file", "abc"));
-        when(textExtractor.extract(eq("招标文件.docx"), any(), any()))
-                .thenReturn(new ExtractedTenderDocument("招标文件.docx", file.getContentType(), "抽取正文", 4, "test-extractor"));
-        when(documentAnalyzer.analyze(any())).thenReturn(sampleProfile());
-        when(operatorResolver.currentOperator()).thenReturn(new BidAgentOperator(7L, "张经理"));
-        when(projectDocumentRepository.save(any())).thenAnswer(invocation -> {
-            ProjectDocument document = invocation.getArgument(0);
-            document.setId(501L);
-            return document;
-        });
-        when(documentSnapshotRepository.save(any())).thenAnswer(invocation -> {
-            BidTenderDocumentSnapshot snapshot = invocation.getArgument(0);
-            snapshot.setId(601L);
-            return snapshot;
-        });
-        when(requirementItemRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(bidDraftAgentAppService.createRun(11L)).thenReturn(BidDraftAgentRunDTO.builder().id(701L).projectId(11L).build());
-        when(bidDraftAgentAppService.applyRun(11L, 701L)).thenThrow(new IllegalStateException("editor locked"));
-
-        var result = appService.importAndGenerate(11L, file, true);
-
-        assertThat(result.getRun().getId()).isEqualTo(701L);
-        assertThat(result.getApplyResult()).isNull();
-        assertThat(result.isAppliedToEditor()).isFalse();
-        assertThat(result.getMessage()).contains("招标文件已解析并生成初稿", "写入文档编辑器失败");
-    }
-
-    @Test
-    void importAndGenerate_shouldStopBeforeReadingFileWhenProjectAccessDenied() {
+    void parseTenderDocument_shouldStopBeforeReadingFileWhenProjectAccessDenied() {
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "招标文件.docx",
@@ -238,12 +184,11 @@ class BidTenderDocumentImportAppServiceTest {
         doThrow(new AccessDeniedException("权限不足"))
                 .when(projectAccessScopeService).assertCurrentUserCanAccessProject(11L);
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> appService.importAndGenerate(11L, file, true))
+        assertThatThrownBy(() -> appService.parseTenderDocument(11L, file))
                 .isInstanceOf(AccessDeniedException.class);
 
         verify(documentStorage, never()).store(any(), any(), any(), any());
         verify(textExtractor, never()).extract(any(), any(), any());
-        verify(bidDraftAgentAppService, never()).createRun(any());
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

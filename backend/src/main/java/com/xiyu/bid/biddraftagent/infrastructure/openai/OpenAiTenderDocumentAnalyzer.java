@@ -1,10 +1,5 @@
 package com.xiyu.bid.biddraftagent.infrastructure.openai;
 
-import com.openai.client.OpenAIClient;
-import com.openai.client.okhttp.OpenAIOkHttpClient;
-import com.openai.models.responses.ResponseCreateParams;
-import com.openai.models.responses.StructuredResponse;
-import com.openai.models.responses.StructuredResponseCreateParams;
 import com.xiyu.bid.biddraftagent.application.TenderDocumentAnalysisInput;
 import com.xiyu.bid.biddraftagent.application.TenderDocumentAnalyzer;
 import com.xiyu.bid.biddraftagent.domain.TenderRequirementItemSnapshot;
@@ -13,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class OpenAiTenderDocumentAnalyzer implements TenderDocumentAnalyzer {
@@ -23,9 +17,14 @@ public class OpenAiTenderDocumentAnalyzer implements TenderDocumentAnalyzer {
     private static final String USE_CASE = "tender document analysis";
 
     private final OpenAiBidAgentConfigurationResolver configurationResolver;
+    private final OpenAiStructuredOutputService structuredOutputService;
 
-    public OpenAiTenderDocumentAnalyzer(OpenAiBidAgentConfigurationResolver configurationResolver) {
+    public OpenAiTenderDocumentAnalyzer(
+            OpenAiBidAgentConfigurationResolver configurationResolver,
+            OpenAiStructuredOutputService structuredOutputService
+    ) {
         this.configurationResolver = configurationResolver;
+        this.structuredOutputService = structuredOutputService;
     }
 
     @Override
@@ -45,32 +44,12 @@ public class OpenAiTenderDocumentAnalyzer implements TenderDocumentAnalyzer {
 
     private TenderRequirementOutput requestAnalysis(String prompt) {
         OpenAiBidAgentRequestConfig config = configurationResolver.resolve(USE_CASE);
-        StructuredResponseCreateParams<TenderRequirementOutput> params = ResponseCreateParams.builder()
-                .input(prompt)
-                .model(config.model())
-                .text(TenderRequirementOutput.class)
-                .build();
-        StructuredResponse<TenderRequirementOutput> response = client(config).responses().create(params);
-        return extractPayload(response)
-                .orElseThrow(() -> new IllegalStateException("OpenAI structured response did not include tender requirements"));
-    }
-
-    private OpenAIClient client(OpenAiBidAgentRequestConfig config) {
-        return OpenAIOkHttpClient.builder()
-                .apiKey(config.apiKey())
-                .baseUrl(config.baseUrl())
-                .timeout(config.timeout())
-                .build();
-    }
-
-    private Optional<TenderRequirementOutput> extractPayload(StructuredResponse<TenderRequirementOutput> response) {
-        return response.output().stream()
-                .map(item -> item.message())
-                .flatMap(Optional::stream)
-                .flatMap(message -> message.content().stream())
-                .map(content -> content.outputText())
-                .flatMap(Optional::stream)
-                .findFirst();
+        return structuredOutputService.request(
+                prompt,
+                TenderRequirementOutput.class,
+                config,
+                "OpenAI structured response did not include tender requirements"
+        );
     }
 
     private String buildPrompt(TenderDocumentAnalysisInput input, String chunkText, int chunkIndex, int chunkTotal) {

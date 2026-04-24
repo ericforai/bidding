@@ -9,10 +9,11 @@ import com.xiyu.bid.biddraftagent.domain.TenderRequirementProfile;
 import com.xiyu.bid.biddraftagent.domain.WriteCoverageDecision;
 import com.xiyu.bid.biddraftagent.dto.BidDraftAgentApplyResponseDTO;
 import com.xiyu.bid.biddraftagent.dto.BidDraftAgentArtifactDTO;
+import com.xiyu.bid.biddraftagent.dto.BidDraftAgentCreateRunRequest;
 import com.xiyu.bid.biddraftagent.dto.BidDraftAgentReviewDTO;
 import com.xiyu.bid.biddraftagent.dto.BidDraftAgentRunDTO;
 import com.xiyu.bid.biddraftagent.dto.BidTenderDocumentDTO;
-import com.xiyu.bid.biddraftagent.dto.BidTenderDocumentImportDTO;
+import com.xiyu.bid.biddraftagent.dto.BidTenderDocumentParseDTO;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -67,14 +68,15 @@ final class BidDraftAgentControllerFixtures {
                 .build();
     }
 
-    static BidTenderDocumentImportDTO sampleImportDto() {
-        return BidTenderDocumentImportDTO.builder()
+    static BidTenderDocumentParseDTO sampleParseDto() {
+        return BidTenderDocumentParseDTO.builder()
                 .document(BidTenderDocumentDTO.builder()
                         .id(501L)
                         .projectId(11L)
                         .tenderId(22L)
                         .name("file")
                         .fileType("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                        .snapshotId(601L)
                         .extractedTextLength(1200)
                         .build())
                 .requirementProfile(new TenderRequirementProfile(
@@ -92,15 +94,12 @@ final class BidDraftAgentControllerFixtures {
                         List.of("智慧园区"),
                         List.of()
                 ))
-                .run(sampleRunDto())
-                .applyResult(BidDraftAgentApplyResponseDTO.builder()
-                        .runId(100L)
-                        .readyForWriter(true)
-                        .structureId(900L)
-                        .build())
-                .appliedToEditor(true)
-                .message("招标文件已解析，标书初稿已写入文档编辑器")
+                .message("招标文件已解析，已更新招标要求快照")
                 .build();
+    }
+
+    static BidDraftAgentCreateRunRequest sampleCreateRunRequest() {
+        return new BidDraftAgentCreateRunRequest(601L);
     }
 
     static BidDraftAgentReviewDTO sampleReviewDto() {

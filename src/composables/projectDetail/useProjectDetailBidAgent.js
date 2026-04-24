@@ -109,18 +109,45 @@ export function useProjectDetailBidAgent(context) {
     applyResult.value = null
     reviewResult.value = null
     importResult.value = null
+    currentRun.value = null
 
     try {
       const formData = new FormData()
       formData.set('file', tenderFile.value, selectedTenderFileName.value || '招标文件')
-      formData.set('applyToEditor', String(applyToEditor))
       const response = await bidAgentApi.importTenderDocument(projectId.value, formData)
       if (isFailedResponse(response)) throw new Error(response.message || '解析招标文件失败')
-      importResult.value = getResponseData(response)
-      currentRun.value = importResult.value?.run || null
-      applyResult.value = importResult.value?.applyResult || null
-      message?.success?.(importResult.value?.message || '招标文件已解析并生成标书初稿')
-      return importResult.value
+      const parsedResult = getResponseData(response)
+      importResult.value = parsedResult
+
+      const snapshotId = parsedResult?.document?.snapshotId
+      let run = null
+      let applied = null
+
+      if (snapshotId) {
+        run = await createRun({ snapshotId }, { silentSuccess: true })
+        if (run && applyToEditor) {
+          applied = await applyBidAgentResult({ silentSuccess: true })
+        }
+      }
+
+      const combinedResult = {
+        ...parsedResult,
+        run,
+        applyResult: applied,
+        appliedToEditor: Boolean(applied),
+      }
+      importResult.value = combinedResult
+
+      if (!error.value) {
+        if (applied) {
+          message?.success?.('招标文件已解析，标书初稿已写入文档编辑器')
+        } else if (run) {
+          message?.success?.('招标文件已解析并生成标书初稿')
+        } else {
+          message?.success?.(parsedResult?.message || '招标文件已解析，已更新招标要求快照')
+        }
+      }
+      return combinedResult
     } catch (err) {
       reportError(err, '解析招标文件失败')
       return null
@@ -129,7 +156,8 @@ export function useProjectDetailBidAgent(context) {
     }
   }
 
-  const createRun = async (payload = {}) => {
+  const createRun = async (payload = {}, options = {}) => {
+    const { silentSuccess = false } = options
     drawerVisible.value = true
     creating.value = true
     error.value = ''
@@ -140,7 +168,9 @@ export function useProjectDetailBidAgent(context) {
       const response = await bidAgentApi.createRun(projectId.value, payload)
       if (isFailedResponse(response)) throw new Error(response.message || '启动 AI 生成初稿失败')
       currentRun.value = getResponseData(response)
-      message?.success?.('AI 初稿生成任务已启动')
+      if (!silentSuccess) {
+        message?.success?.('AI 初稿生成任务已启动')
+      }
       return currentRun.value
     } catch (err) {
       reportError(err, '启动 AI 生成初稿失败')
@@ -172,7 +202,7 @@ export function useProjectDetailBidAgent(context) {
     const runId = ensureRunId()
     if (!runId) return null
 
-    const { navigate = false, ...payload } = options
+    const { navigate = false, silentSuccess = false, ...payload } = options
     applying.value = true
     error.value = ''
 
@@ -180,7 +210,9 @@ export function useProjectDetailBidAgent(context) {
       const response = await bidAgentApi.applyRun(projectId.value, runId, payload)
       if (isFailedResponse(response)) throw new Error(response.message || '写入文档编辑器失败')
       applyResult.value = getResponseData(response) || response
-      message?.success?.('AI 初稿已写入文档编辑器')
+      if (!silentSuccess) {
+        message?.success?.('AI 初稿已写入文档编辑器')
+      }
       if (navigate) goToEditor(applyResult.value)
       return applyResult.value
     } catch (err) {

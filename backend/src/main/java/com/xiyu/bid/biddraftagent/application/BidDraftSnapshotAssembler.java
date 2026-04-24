@@ -33,11 +33,15 @@ public class BidDraftSnapshotAssembler {
     private final BidTenderDocumentSnapshotRepository documentSnapshotRepository;
 
     public BidDraftSnapshot assemble(Long projectId) {
+        return assemble(projectId, null);
+    }
+
+    public BidDraftSnapshot assemble(Long projectId, Long snapshotId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", String.valueOf(projectId)));
         Tender tender = tenderRepository.findById(project.getTenderId())
                 .orElseThrow(() -> new ResourceNotFoundException("Tender", String.valueOf(project.getTenderId())));
-        List<BidRequirementItem> requirementItems = collectLatestRequirementItems(projectId);
+        List<BidRequirementItem> requirementItems = collectRequirementItems(projectId, snapshotId);
 
         return new BidDraftSnapshot(
                 project.getId(),
@@ -95,7 +99,13 @@ public class BidDraftSnapshotAssembler {
                 .toList();
     }
 
-    private List<BidRequirementItem> collectLatestRequirementItems(Long projectId) {
+    private List<BidRequirementItem> collectRequirementItems(Long projectId, Long snapshotId) {
+        if (snapshotId != null) {
+            return documentSnapshotRepository.findByIdAndProjectId(snapshotId, projectId)
+                    .map(BidTenderDocumentSnapshot::getProjectDocumentId)
+                    .map(documentId -> requirementItemRepository.findByProjectIdAndProjectDocumentIdOrderByCreatedAtDesc(projectId, documentId))
+                    .orElseThrow(() -> new ResourceNotFoundException("BidTenderDocumentSnapshot", String.valueOf(snapshotId)));
+        }
         return documentSnapshotRepository.findTopByProjectIdOrderByCreatedAtDescIdDesc(projectId)
                 .map(BidTenderDocumentSnapshot::getProjectDocumentId)
                 .map(documentId -> requirementItemRepository.findByProjectIdAndProjectDocumentIdOrderByCreatedAtDesc(projectId, documentId))

@@ -6,12 +6,9 @@ import lombok.Data;
 
 @Data
 @Builder
-public class BidTenderDocumentImportDTO {
+public class BidTenderDocumentParseDTO {
 
     private BidTenderDocumentDTO document;
     private TenderRequirementProfile requirementProfile;
-    private BidDraftAgentRunDTO run;
-    private BidDraftAgentApplyResponseDTO applyResult;
-    private boolean appliedToEditor;
     private String message;
 }

@@ -1,10 +1,5 @@
 package com.xiyu.bid.biddraftagent.infrastructure.openai;
 
-import com.openai.client.OpenAIClient;
-import com.openai.client.okhttp.OpenAIOkHttpClient;
-import com.openai.models.responses.ResponseCreateParams;
-import com.openai.models.responses.StructuredResponse;
-import com.openai.models.responses.StructuredResponseCreateParams;
 import com.xiyu.bid.biddraftagent.application.BidDraftGenerationResult;
 import com.xiyu.bid.biddraftagent.application.BidDraftTextGenerator;
 import com.xiyu.bid.biddraftagent.application.GeneratedArtifactSpec;
@@ -17,7 +12,6 @@ import com.xiyu.bid.biddraftagent.domain.WriteCoverageDecision;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class OpenAiBidDraftTextGenerator implements BidDraftTextGenerator {
@@ -25,9 +19,14 @@ public class OpenAiBidDraftTextGenerator implements BidDraftTextGenerator {
     private static final String USE_CASE = "bid draft generation";
 
     private final OpenAiBidAgentConfigurationResolver configurationResolver;
+    private final OpenAiStructuredOutputService structuredOutputService;
 
-    public OpenAiBidDraftTextGenerator(OpenAiBidAgentConfigurationResolver configurationResolver) {
+    public OpenAiBidDraftTextGenerator(
+            OpenAiBidAgentConfigurationResolver configurationResolver,
+            OpenAiStructuredOutputService structuredOutputService
+    ) {
         this.configurationResolver = configurationResolver;
+        this.structuredOutputService = structuredOutputService;
     }
 
     @Override
@@ -64,32 +63,12 @@ public class OpenAiBidDraftTextGenerator implements BidDraftTextGenerator {
 
     private DraftOutput requestDraft(String prompt) {
         OpenAiBidAgentRequestConfig config = configurationResolver.resolve(USE_CASE);
-        StructuredResponseCreateParams<DraftOutput> params = ResponseCreateParams.builder()
-                .input(prompt)
-                .model(config.model())
-                .text(DraftOutput.class)
-                .build();
-        StructuredResponse<DraftOutput> response = client(config).responses().create(params);
-        return extractPayload(response)
-                .orElseThrow(() -> new IllegalStateException("OpenAI structured response did not include bid draft output"));
-    }
-
-    private OpenAIClient client(OpenAiBidAgentRequestConfig config) {
-        return OpenAIOkHttpClient.builder()
-                .apiKey(config.apiKey())
-                .baseUrl(config.baseUrl())
-                .timeout(config.timeout())
-                .build();
-    }
-
-    private Optional<DraftOutput> extractPayload(StructuredResponse<DraftOutput> response) {
-        return response.output().stream()
-                .map(item -> item.message())
-                .flatMap(Optional::stream)
-                .flatMap(message -> message.content().stream())
-                .map(content -> content.outputText())
-                .flatMap(Optional::stream)
-                .findFirst();
+        return structuredOutputService.request(
+                prompt,
+                DraftOutput.class,
+                config,
+                "OpenAI structured response did not include bid draft output"
+        );
     }
 
     private String buildPrompt(
