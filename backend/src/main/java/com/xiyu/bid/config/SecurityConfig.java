@@ -57,7 +57,12 @@ public class SecurityConfig {
             "/actuator/health/**",
             "/actuator/info",
             "/error",
-            "/h2-console/**"
+            "/h2-console/**",
+            "/v3/api-docs",
+            "/v3/api-docs/**",
+            "/v3/api-docs.yaml",
+            "/swagger-ui.html",
+            "/swagger-ui/**"
     };
 
     @Bean
