@@ -9,6 +9,9 @@ import {
   formatBudgetWan,
   formatTenderDate,
   formatTenderDateTime,
+  formatTenderDisplayField,
+  getTenderDateTimeParts,
+  buildWinProbabilityView,
   safeTenderUrl,
   toBackendStatus
 } from './bidding-utils.js'
@@ -183,6 +186,21 @@ describe('display and URL helpers', () => {
     expect(formatTenderDateTime('2026-05-31')).toBe('2026-05-31')
   })
 
+  it('splits tender date time into separate date and time display parts', () => {
+    expect(getTenderDateTimeParts('2026-05-31T18:00:00')).toEqual({
+      date: '2026-05-31',
+      time: '18:00',
+      text: '2026-05-31 18:00',
+      hasTime: true
+    })
+    expect(getTenderDateTimeParts('2026-05-31')).toEqual({
+      date: '2026-05-31',
+      time: '',
+      text: '2026-05-31',
+      hasTime: false
+    })
+  })
+
   it('uses placeholder for empty or invalid tender date values', () => {
     expect(formatTenderDate(null)).toBe('--')
     expect(formatTenderDate('')).toBe('--')
@@ -190,6 +208,12 @@ describe('display and URL helpers', () => {
     expect(formatTenderDateTime(undefined)).toBe('--')
     expect(formatTenderDateTime('not-a-date')).toBe('--')
     expect(formatTenderDateTime('2026-05-31T25:00:00')).toBe('--')
+    expect(getTenderDateTimeParts('not-a-date')).toEqual({
+      date: '--',
+      time: '',
+      text: '--',
+      hasTime: false
+    })
   })
 
   it('allows only http and https tender URLs', () => {
@@ -197,6 +221,44 @@ describe('display and URL helpers', () => {
     expect(safeTenderUrl('http://example.com/tender')).toBe('http://example.com/tender')
     expect(safeTenderUrl('javascript:alert(1)')).toBe('')
     expect(safeTenderUrl('/relative/path')).toBe('')
+  })
+
+  it('marks empty tender detail fields as not extracted without guessing values', () => {
+    expect(formatTenderDisplayField('上海')).toEqual({
+      text: '上海',
+      isMissing: false,
+      tooltip: ''
+    })
+    expect(formatTenderDisplayField('')).toEqual({
+      text: '未提取',
+      isMissing: true,
+      tooltip: '真实 API 暂无该字段，未做推断填充'
+    })
+    expect(formatTenderDisplayField(null, '暂无行业')).toMatchObject({
+      text: '暂无行业',
+      isMissing: true
+    })
+  })
+
+  it('maps match score to stars and percent probability display', () => {
+    expect(buildWinProbabilityView(100)).toMatchObject({
+      rate: 5,
+      percent: 100,
+      label: '100%',
+      sourceScore: 100
+    })
+    expect(buildWinProbabilityView(86)).toMatchObject({
+      rate: 4,
+      percent: 80,
+      label: '80%',
+      sourceScore: 86
+    })
+    expect(buildWinProbabilityView(null)).toMatchObject({
+      rate: 1,
+      percent: 20,
+      label: '20%',
+      sourceScore: 0
+    })
   })
 })
 
