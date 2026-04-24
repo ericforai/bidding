@@ -76,6 +76,7 @@
   flex-wrap: nowrap;
   gap: 6px;
   min-width: 194px;
+  padding-right: 12px;
 }
 
 .table-actions .el-button + .el-button {
@@ -97,4 +98,9 @@
 
 .table-container .el-table__fixed-right::before {
   box-shadow: -8px 0 16px -14px #475569;
+}
+
+.tender-table .el-table-fixed-column--right .cell,
+.tender-table .el-table__fixed-right .cell {
+  padding-right: 18px;
 }
