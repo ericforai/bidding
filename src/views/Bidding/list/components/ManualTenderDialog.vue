@@ -63,7 +63,15 @@
         </el-col>
         <el-col :span="24">
           <el-form-item label="附件">
-            <el-upload :auto-upload="false" :on-change="onFileChange" :file-list="form.attachments" :limit="5" multiple drag>
+            <el-upload
+              class="manual-tender-upload"
+              :auto-upload="false"
+              :on-change="onFileChange"
+              :file-list="form.attachments"
+              :limit="5"
+              multiple
+              drag
+            >
               <el-icon class="el-icon--upload"><Upload /></el-icon>
               <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
             </el-upload>
@@ -102,3 +110,50 @@ defineExpose({
   validate: () => innerFormRef.value?.validate(),
 })
 </script>
+
+<style scoped>
+.manual-tender-upload {
+  width: 100%;
+  min-width: 0;
+}
+
+.manual-tender-upload :deep(.el-upload) {
+  display: block;
+  width: 100%;
+}
+
+.manual-tender-upload :deep(.el-upload-dragger) {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.manual-tender-upload :deep(.el-upload-list) {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.manual-tender-upload :deep(.el-upload-list__item) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.manual-tender-upload :deep(.el-upload-list__item-info),
+.manual-tender-upload :deep(.el-upload-list__item-name) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.manual-tender-upload :deep(.el-upload-list__item-name) {
+  display: flex;
+  padding-right: 28px;
+}
+
+.manual-tender-upload :deep(.el-upload-list__item-file-name) {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+</style>
