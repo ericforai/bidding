@@ -59,6 +59,24 @@
           :test-provider="testProvider"
         />
       </el-tab-pane>
+      <el-tab-pane label="投标匹配评分" name="bid-match-scoring">
+        <BidMatchScoringSettingsPanel
+          :loading="bidScoringLoading"
+          :saving="bidScoringSaving"
+          :activating="bidScoringActivating"
+          :current-model="bidScoringCurrentModel"
+          :weight-validation="bidScoringWeightValidation"
+          :enabled-dimension-count="enabledBidScoringDimensionCount"
+          :save="saveBidScoringSettings"
+          :activate-current-model="activateBidScoringModel"
+          :add-dimension="addBidScoringDimension"
+          :remove-dimension="removeBidScoringDimension"
+          :add-rule="addBidScoringRule"
+          :remove-rule="removeBidScoringRule"
+          :evidence-key-options="evidenceKeyOptions"
+          :rule-type-options="ruleTypeOptions"
+        />
+      </el-tab-pane>
       <el-tab-pane label="审计日志" name="audit">
         <AuditLogPanel />
       </el-tab-pane>
@@ -68,15 +86,23 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import AiModelSettingsPanel from './settings/AiModelSettingsPanel.vue'
+import BidMatchScoringSettingsPanel from './settings/BidMatchScoringSettingsPanel.vue'
 import DepartmentTreePanel from './settings/DepartmentTreePanel.vue'
 import RoleManagementPanel from './settings/RoleManagementPanel.vue'
 import UserOrganizationPanel from './settings/UserOrganizationPanel.vue'
 import AuditLogPanel from './settings/AuditLogPanel.vue'
 import { useOrganizationSettings } from './settings/useOrganizationSettings'
 import { useAiModelSettings } from './settings/useAiModelSettings'
+import {
+  EVIDENCE_KEY_OPTIONS,
+  RULE_TYPE_OPTIONS,
+  useBidMatchScoringSettings
+} from './settings/useBidMatchScoringSettings'
 
-const activeTab = ref('departments')
+const route = useRoute()
+const activeTab = ref(typeof route.query.tab === 'string' ? route.query.tab : 'departments')
 
 const {
   loading,
@@ -104,12 +130,31 @@ const {
   testProvider
 } = useAiModelSettings()
 
-const pageLoading = computed(() => loading.value || aiLoading.value)
+const {
+  loading: bidScoringLoading,
+  saving: bidScoringSaving,
+  activating: bidScoringActivating,
+  currentModel: bidScoringCurrentModel,
+  weightValidation: bidScoringWeightValidation,
+  enabledDimensionCount: enabledBidScoringDimensionCount,
+  load: loadBidScoringSettings,
+  save: saveBidScoringSettings,
+  activateCurrentModel: activateBidScoringModel,
+  addDimension: addBidScoringDimension,
+  removeDimension: removeBidScoringDimension,
+  addRule: addBidScoringRule,
+  removeRule: removeBidScoringRule,
+} = useBidMatchScoringSettings()
+
+const pageLoading = computed(() => loading.value || aiLoading.value || bidScoringLoading.value)
+const evidenceKeyOptions = EVIDENCE_KEY_OPTIONS
+const ruleTypeOptions = RULE_TYPE_OPTIONS
 
 const loadAll = async () => {
   await Promise.all([
     loadOrganizationSettings(),
-    loadAiSettings()
+    loadAiSettings(),
+    loadBidScoringSettings()
   ])
 }
 

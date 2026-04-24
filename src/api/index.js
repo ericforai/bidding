@@ -1,5 +1,5 @@
 // Input: API config, HTTP client, feature availability helpers, business API modules
-// Output: @/api public exports and Promise-compatible module accessors including bid-agent APIs
+// Output: @/api public exports and Promise-compatible module accessors including bid-agent and match-scoring APIs
 // Pos: src/api/ - Frontend data access public entry
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -38,6 +38,7 @@ import { projectGroupsApi } from './modules/projectGroups.js'
 import { bidResultsApi } from './modules/bidResults.js'
 import { workbenchApi } from './modules/workbench.js'
 import { bidAgentApi } from './modules/bidAgent.js'
+import { bidMatchScoringApi } from './modules/bidMatchScoring.js'
 
 export {
   httpClient,
@@ -63,7 +64,8 @@ export {
   projectGroupsApi,
   bidResultsApi,
   workbenchApi,
-  bidAgentApi
+  bidAgentApi,
+  bidMatchScoringApi
 }
 
 export default {
@@ -84,5 +86,6 @@ export default {
   settings: () => Promise.resolve(settingsApi),
   projectGroups: () => Promise.resolve(projectGroupsApi),
   workbench: () => Promise.resolve(workbenchApi),
-  bidAgent: () => Promise.resolve(bidAgentApi)
+  bidAgent: () => Promise.resolve(bidAgentApi),
+  bidMatchScoring: () => Promise.resolve(bidMatchScoringApi)
 }

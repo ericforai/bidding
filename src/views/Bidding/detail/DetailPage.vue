@@ -17,10 +17,10 @@
                 <el-tag v-for="tag in tender.tags" :key="tag" size="small">{{ tag }}</el-tag>
               </div>
             </div>
-            <div class="detail-header-right">
-              <div class="ai-score-large" :class="getScoreClass(tender.aiScore)">
-                <div class="score-value">{{ tender.aiScore }}分</div>
-                <div class="score-label">AI评分</div>
+            <div v-if="matchScoreState === 'ready' && matchScore" class="detail-header-right">
+              <div class="ai-score-large" :class="getScoreClass(matchScore.totalScore)">
+                <div class="score-value">{{ matchScore.totalScore }}分</div>
+                <div class="score-label">匹配评分</div>
               </div>
             </div>
           </div>
@@ -41,7 +41,7 @@
           </el-descriptions-item>
           <el-descriptions-item label="中标概率" :span="3">
             <el-rate
-              v-model="probabilityRate"
+              :model-value="probabilityRate"
               disabled
               show-score
               text-color="#ff9900"
@@ -85,37 +85,15 @@
 
         <div class="analysis-content">
           <div class="analysis-section">
-            <h4 class="detail-section-title">匹配度分析</h4>
-            <div class="match-bars">
-              <div class="match-bar-item">
-                <div class="bar-label">
-                  <span>行业匹配</span>
-                  <span class="bar-value">95%</span>
-                </div>
-                <el-progress :percentage="95" :stroke-width="10" :show-text="false" />
-              </div>
-              <div class="match-bar-item">
-                <div class="bar-label">
-                  <span>地区匹配</span>
-                  <span class="bar-value">88%</span>
-                </div>
-                <el-progress :percentage="88" :stroke-width="10" :show-text="false" color="#e6a23c" />
-              </div>
-              <div class="match-bar-item">
-                <div class="bar-label">
-                  <span>资质匹配</span>
-                  <span class="bar-value">92%</span>
-                </div>
-                <el-progress :percentage="92" :stroke-width="10" :show-text="false" color="#67c23a" />
-              </div>
-              <div class="match-bar-item">
-                <div class="bar-label">
-                  <span>历史合作</span>
-                  <span class="bar-value">80%</span>
-                </div>
-                <el-progress :percentage="80" :stroke-width="10" :show-text="false" color="#909399" />
-              </div>
-            </div>
+            <MatchScorePanel
+              :score="matchScore"
+              :loading="scoreLoading"
+              :generating="scoreGenerating"
+              :error="scoreError"
+              @generate="handleGenerateMatchScore"
+              @reload="loadMatchScore(tender.id)"
+              @configure="handleConfigureMatchScore"
+            />
           </div>
 
           <el-divider />
@@ -196,6 +174,7 @@
 <script setup>
 import { ArrowRight, Briefcase, CircleCheckFilled, Document, DocumentAdd, Link, MagicStick, Share, Star, StarFilled } from '@element-plus/icons-vue'
 import { formatBudgetWan, safeTenderUrl } from '../bidding-utils.js'
+import MatchScorePanel from '../match-scoring/MatchScorePanel.vue'
 import { useBiddingDetailPage } from './useBiddingDetailPage.js'
 import './styles/detail-layout.css'
 import './styles/detail-overrides.css'
@@ -204,6 +183,11 @@ const {
   showTenderAiSection,
   tender,
   isFollowed,
+  matchScore,
+  scoreLoading,
+  scoreGenerating,
+  scoreError,
+  matchScoreState,
   probabilityRate,
   advantages,
   suggestions,
@@ -217,5 +201,8 @@ const {
   handleShare,
   handleViewOriginal,
   handleViewCase,
+  loadMatchScore,
+  handleGenerateMatchScore,
+  handleConfigureMatchScore,
 } = useBiddingDetailPage()
 </script>

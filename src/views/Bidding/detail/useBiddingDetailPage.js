@@ -1,9 +1,10 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { tendersApi } from '@/api'
+import { bidMatchScoringApi, tendersApi } from '@/api'
 import { safeTenderUrl } from '../bidding-utils.js'
 import { getTenderStatusTagType, getTenderStatusText } from '../bidding-utils-status.js'
+import { normalizeMatchScoreForView, summarizeScoreState } from '../match-scoring/normalizers.js'
 
 export function useBiddingDetailPage() {
   const router = useRouter()
@@ -12,10 +13,24 @@ export function useBiddingDetailPage() {
 
   const tender = ref(null)
   const isFollowed = ref(false)
+  const matchScore = ref(null)
+  const scoreLoading = ref(false)
+  const scoreGenerating = ref(false)
+  const scoreError = ref('')
+
+  const scoreForView = computed(() => normalizeMatchScoreForView(matchScore.value))
+  const scoreSummary = computed(() => summarizeScoreState({
+    loading: scoreLoading.value,
+    generating: scoreGenerating.value,
+    error: scoreError.value,
+    score: scoreForView.value,
+  }))
+  const matchScoreState = computed(() => scoreSummary.value.state)
+  const scoreEmptyText = computed(() => scoreSummary.value.actionText || scoreSummary.value.text)
+  const scoreEmptyDescription = computed(() => scoreSummary.value.description)
 
   const probabilityRate = computed(() => {
-    if (!tender.value) return 0
-    const score = tender.value.aiScore
+    const score = scoreForView.value?.totalScore ?? tender.value?.aiScore ?? 0
     if (score >= 90) return 5
     if (score >= 80) return 4
     if (score >= 70) return 3
@@ -24,41 +39,33 @@ export function useBiddingDetailPage() {
   })
 
   const advantages = computed(() => {
-    if (!tender.value) return []
-    const advantageList = []
-    if (tender.value.aiScore >= 90) {
-      advantageList.push('该客户历史合作记录良好，累计中标3次')
-      advantageList.push('我司在信创领域具有较强技术优势')
-      advantageList.push('拥有相关行业成功案例')
-    } else if (tender.value.aiScore >= 80) {
-      advantageList.push('传统优势领域，有行业经验')
-      advantageList.push('前期已建立良好客户关系')
-    } else {
-      advantageList.push('预算充足，项目规模适中')
-      advantageList.push('技术要求在现有能力范围内')
-    }
-    return advantageList
+    const dimensions = scoreForView.value?.dimensionSummaries || []
+    return dimensions
+      .filter((dimension) => dimension.score >= 70)
+      .slice(0, 4)
+      .map((dimension) => `${dimension.name}当前得分 ${dimension.score} 分，可作为投标策略重点。`)
   })
 
   const suggestions = computed(() => {
-    if (!tender.value) return []
+    const summary = scoreForView.value?.summary || tender.value?.aiReason
+    if (!summary && advantages.value.length === 0) return []
     return [
       {
-        title: '投标策略建议',
+        title: '评分建议',
         type: 'success',
-        content: tender.value.aiReason || '建议优先跟进，预计中标概率较高',
+        content: summary || '请结合高分维度组织投标响应材料。',
       },
       {
-        title: '注意事项',
+        title: '跟进提醒',
         type: 'warning',
-        content: '需提前准备相关资质文件，确保符合招标要求',
+        content: '请核对评分证据与招标文件要求，缺口项应在立项前闭环。',
       },
     ]
   })
 
   const relatedCases = computed(() => {
     if (!tender.value) return []
-    const mockCases = {
+    const caseCatalog = {
       政府: [
         {
           id: 'C001',
@@ -104,7 +111,7 @@ export function useBiddingDetailPage() {
         },
       ],
     }
-    return mockCases[tender.value.industry] || mockCases.政府
+    return caseCatalog[tender.value.industry] || caseCatalog.政府
   })
 
   const getScoreClass = (score) => {
@@ -158,25 +165,74 @@ export function useBiddingDetailPage() {
     })
   }
 
-  onMounted(async () => {
+  const loadMatchScore = async (tenderId) => {
+    scoreLoading.value = true
+    scoreError.value = ''
+    try {
+      const result = await bidMatchScoringApi.getLatestScore(tenderId)
+      if (!result?.success) throw new Error(result?.message || '获取匹配评分失败')
+      matchScore.value = result.data || null
+    } catch (error) {
+      scoreError.value = error?.response?.data?.message || error?.message || '获取匹配评分失败'
+    } finally {
+      scoreLoading.value = false
+    }
+  }
+
+  const handleGenerateMatchScore = async () => {
+    const tenderId = tender.value?.id || route.params.id
+    if (!tenderId) return
+
+    scoreGenerating.value = true
+    scoreError.value = ''
+    try {
+      const result = await bidMatchScoringApi.generateScore(tenderId)
+      if (!result?.success) throw new Error(result?.message || '生成匹配评分失败')
+      matchScore.value = result.data || null
+      await loadMatchScore(tenderId)
+      ElMessage.success('匹配评分已生成')
+    } catch (error) {
+      scoreError.value = error?.response?.data?.message || error?.message || '生成匹配评分失败'
+      ElMessage.error(scoreError.value)
+    } finally {
+      scoreGenerating.value = false
+    }
+  }
+
+  const handleConfigureMatchScore = () => {
+    router.push({
+      path: '/settings',
+      query: { tab: 'bid-match-scoring' },
+    })
+  }
+
+  const loadTenderDetail = async () => {
     const tenderId = route.params.id
     try {
       const result = await tendersApi.getDetail(tenderId)
-      if (result?.success) {
-        tender.value = result.data
-      } else {
-        ElMessage.error(result?.message || '获取标讯详情失败')
-      }
+      if (!result?.success) throw new Error(result?.message || '获取标讯详情失败')
+      tender.value = result.data
+      await loadMatchScore(tenderId)
     } catch (error) {
-      console.error('Failed to fetch tender detail:', error)
-      ElMessage.error('网络请求失败，请稍后重试')
+      ElMessage.error(error?.message || '网络请求失败，请稍后重试')
     }
+  }
+
+  onMounted(async () => {
+    await loadTenderDetail()
   })
 
   return {
     showTenderAiSection,
     tender,
     isFollowed,
+    matchScore,
+    scoreLoading,
+    scoreGenerating,
+    scoreError,
+    matchScoreState,
+    scoreEmptyText,
+    scoreEmptyDescription,
     probabilityRate,
     advantages,
     suggestions,
@@ -190,5 +246,8 @@ export function useBiddingDetailPage() {
     handleShare,
     handleViewOriginal,
     handleViewCase,
+    loadMatchScore,
+    handleGenerateMatchScore,
+    handleConfigureMatchScore,
   }
 }

@@ -32,38 +32,33 @@
       <div class="ai-left-section">
         <el-card class="score-card" shadow="never">
           <div class="win-score-display">
-            <div class="score-circle" :class="getScoreLevelClass(analysisData.winScore)">
+            <div
+              class="score-circle"
+              :class="getScoreLevelClass(analysisData.winScore)"
+              :style="{ '--score': analysisData.winScore }"
+            >
               <div class="score-inner">
-                <span class="score-value">{{ analysisData.winScore }}</span>
-                <span class="score-label">赢面分</span>
+                <div class="score-value">{{ analysisData.winScore }}</div>
+                <div class="score-label">AI分析分</div>
               </div>
             </div>
-            <div class="score-suggestion">
-              <el-icon><InfoFilled /></el-icon>
+            <div v-if="analysisData.suggestion" class="score-suggestion">
+              <el-icon><Guide /></el-icon>
               {{ analysisData.suggestion }}
             </div>
           </div>
 
-          <div class="radar-section">
-            <h4 class="ai-section-title">维度分析</h4>
-            <WinScoreChart :dimension-scores="analysisData.dimensionScores" />
-          </div>
+          <MatchScorePanel
+            :score="matchScoreForDisplay"
+            :loading="matchScoreLoading"
+            :error="matchScoreError"
+            :show-action="false"
+            compact
+          />
 
-          <div class="dimension-list">
-            <div v-for="dim in analysisData.dimensionScores" :key="dim.name" class="dimension-item">
-              <div class="dim-header">
-                <span class="dim-name">{{ dim.name }}</span>
-                <el-tag :type="getDimensionTagType(dim.score)" size="small">
-                  {{ dim.score }}分
-                </el-tag>
-              </div>
-              <div class="dim-bar">
-                <div
-                  class="dim-bar-fill"
-                  :style="{ width: dim.score + '%', backgroundColor: getScoreColor(dim.score) }"
-                ></div>
-              </div>
-            </div>
+          <div v-if="matchScoreForDisplay?.dimensionSummaries?.length" class="radar-section">
+            <h4 class="ai-section-title">维度分析</h4>
+            <WinScoreChart :dimension-scores="matchScoreForDisplay.dimensionSummaries" />
           </div>
         </el-card>
       </div>
@@ -200,8 +195,9 @@
 </template>
 
 <script setup>
-import { ArrowLeft, Calendar, Download, Guide, InfoFilled, List, Plus, Refresh, Star, User, Warning } from '@element-plus/icons-vue'
+import { ArrowLeft, Calendar, Download, Guide, List, Plus, Refresh, Star, User, Warning } from '@element-plus/icons-vue'
 import WinScoreChart from '@/components/ai/WinScoreChart.vue'
+import MatchScorePanel from '../match-scoring/MatchScorePanel.vue'
 import { useAiAnalysisPage } from './useAiAnalysisPage.js'
 import './styles/ai-analysis-layout.css'
 import './styles/ai-analysis-overrides.css'
@@ -214,6 +210,9 @@ const {
   showParsingDialog,
   parseProgress,
   loadError,
+  matchScoreForDisplay,
+  matchScoreLoading,
+  matchScoreError,
   progressColors,
   dimensionDetails,
   getScoreColor,

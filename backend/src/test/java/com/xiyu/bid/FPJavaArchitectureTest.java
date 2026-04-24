@@ -81,7 +81,7 @@ class FPJavaArchitectureTest {
         List<String> violations = productionClasses.stream()
             .filter(FPJavaArchitectureTest::isPureCoreClass)
             .flatMap(javaClass -> javaClass.getDirectDependenciesFromSelf().stream()
-                .filter(FPJavaArchitectureTest::targetsForbiddenShellOrIo)
+                .filter(dependency -> targetsForbiddenShellOrIo(javaClass, dependency))
                 .map(dependency -> formatDependency(javaClass, dependency)))
             .sorted()
             .toList();
@@ -190,10 +190,19 @@ class FPJavaArchitectureTest {
             && !packageName.contains(".entity.");
     }
 
-    private static boolean targetsForbiddenShellOrIo(Dependency dependency) {
+    private static boolean targetsForbiddenShellOrIo(JavaClass originClass, Dependency dependency) {
+        if (isCompilerGeneratedEnumValuesArrayCopy(originClass, dependency)) {
+            return false;
+        }
         String targetName = dependency.getTargetClass().getName();
         return FORBIDDEN_SHELL_PACKAGE_MARKERS.stream().anyMatch(targetName::contains)
             || FORBIDDEN_IMPLICIT_INPUTS.contains(targetName);
+    }
+
+    private static boolean isCompilerGeneratedEnumValuesArrayCopy(JavaClass originClass, Dependency dependency) {
+        return originClass.isEnum()
+            && "java.lang.System".equals(dependency.getTargetClass().getName())
+            && dependency.getDescription().contains(".values()> calls method <java.lang.System.arraycopy(");
     }
 
     private static boolean isMutableInstanceField(JavaField field) {
