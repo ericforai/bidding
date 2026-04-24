@@ -1,5 +1,7 @@
 package com.xiyu.bid.bidmatch.application;
 
+import com.xiyu.bid.bidmatch.domain.BidMatchEvidenceScope;
+import com.xiyu.bid.bidmatch.domain.BidMatchEvidenceScopePolicy;
 import com.xiyu.bid.bidmatch.domain.MatchEvidence;
 import com.xiyu.bid.bidresult.entity.BidResultFetchResult;
 import com.xiyu.bid.bidresult.repository.BidResultFetchResultRepository;
@@ -29,26 +31,38 @@ import java.util.stream.Stream;
 public class BidMatchEvidenceAssembler {
 
     private static final int MAX_CASE_EVIDENCE = 200;
+    private static final int MAX_BID_RESULT_EVIDENCE = 200;
 
     private final TenderRepository tenderRepository;
     private final CaseRepository caseRepository;
     private final BusinessQualificationRepository qualificationRepository;
     private final BidResultFetchResultRepository bidResultRepository;
+    private final BidMatchEvidenceScopePolicy scopePolicy = new BidMatchEvidenceScopePolicy();
 
     public BidMatchEvidenceBundle assemble(Long tenderId) {
         Tender tender = tenderRepository.findById(tenderId)
                 .orElseThrow(() -> new IllegalArgumentException("标讯不存在"));
-        List<Case> wonCases = caseRepository.findByOutcome(
-                Case.Outcome.WON,
+        BidMatchEvidenceScope scope = scopePolicy.fromTender(
+                tender.getTitle(),
+                tender.getDescription(),
+                tender.getTags(),
+                tender.getRegion(),
+                tender.getIndustry(),
+                tender.getPurchaserName()
+        );
+        List<Case> wonCases = caseRepository.findScopedWonCasesForBidMatch(
+                toCaseIndustry(scope.caseIndustryCode()),
+                scope.keyword(),
+                scope.purchaserName(),
+                scope.region(),
                 PageRequest.of(0, MAX_CASE_EVIDENCE)
         ).getContent();
-        List<BusinessQualification> qualifications = qualificationRepository.findAll(
-                QualificationListCriteria.builder().status("VALID").build()
+        List<BusinessQualification> qualifications = findScopedQualifications(scope);
+        List<BidResultFetchResult> confirmedWins = bidResultRepository.findScopedConfirmedWins(
+                tenderId,
+                scope.keyword(),
+                PageRequest.of(0, MAX_BID_RESULT_EVIDENCE)
         );
-        List<BidResultFetchResult> confirmedWins = bidResultRepository
-                .findByStatusOrderByFetchTimeDesc(BidResultFetchResult.Status.CONFIRMED).stream()
-                .filter(item -> item.getResult() == BidResultFetchResult.Result.WON)
-                .toList();
 
         Map<String, String> texts = new LinkedHashMap<>();
         Map<String, BigDecimal> numbers = new LinkedHashMap<>();
@@ -67,6 +81,25 @@ public class BidMatchEvidenceAssembler {
         String fingerprint = BidMatchEvidenceSnapshotFactory.fingerprint(snapshot);
         MatchEvidence evidence = new MatchEvidence(fingerprint, texts, numbers, presentKeys);
         return new BidMatchEvidenceBundle(evidence, snapshot, fingerprint);
+    }
+
+    private List<BusinessQualification> findScopedQualifications(BidMatchEvidenceScope scope) {
+        if (!scope.hasKeyword()) {
+            return List.of();
+        }
+        return qualificationRepository.findAll(
+                QualificationListCriteria.builder()
+                        .status("VALID")
+                        .keyword(scope.keyword())
+                        .build()
+        );
+    }
+
+    private Case.Industry toCaseIndustry(String caseIndustryCode) {
+        if (caseIndustryCode == null || caseIndustryCode.isBlank()) {
+            return null;
+        }
+        return Case.Industry.valueOf(caseIndustryCode);
     }
 
     private void fillTenderEvidence(
