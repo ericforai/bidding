@@ -53,7 +53,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    include: ['src/**/*.{test,spec}.{js,ts,jsx,tsx}'],
+    include: [
+      'src/**/*.{test,spec}.{js,ts,jsx,tsx}',
+      'scripts/**/*.{test,spec}.{js,ts,jsx,tsx}',
+    ],
     coverage: {
       reporter: ['text', 'json', 'html']
     }

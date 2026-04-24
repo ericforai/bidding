@@ -231,6 +231,44 @@ mvn test -Dtest=MaintainabilityArchitectureTest
 - 一旦某条目对应的类回落到门禁阈值以下，必须**从白名单中移除**；不允许以”也在白名单里”为由继续堆。
 - 新增 Service 不允许直接进入白名单；必须按 Split-First Rule 在落地时就符合 300/5/8 预算。
 
+### 2.6.2 核心源码 300 行棘轮门禁
+
+仓库级 `check-line-budgets.mjs` 将 300 行预算扩展到核心源码目录，避免前端页面、组件、composable、API 模块与后端主源码继续无约束膨胀。
+
+当前纳入范围：
+- `src/views/**`
+- `src/components/**`
+- `src/composables/**`
+- `src/api/modules/**`
+- `backend/src/main/java/**`
+
+当前排除范围：
+- `**/*.spec.*`
+- `**/*.test.*`
+- `backend/src/test/**`
+- `scripts/**`
+- `.github/workflows/**`
+- `backend/src/main/resources/db/**`
+- `package.json`
+- `backend/pom.xml`
+
+门禁口径：
+- 新文件超过 `300` 行，直接失败。
+- 原本 `<=300` 行的文件，本次改动后超过 `300` 行，直接失败。
+- 原本已经 `>300` 行的历史文件，本次改动行数只能减不能增；继续增长直接失败。
+
+执行命令：
+
+```bash
+cd /Users/user/xiyu/xiyu-bid-poc
+npm run check:line-budgets
+```
+
+说明：
+- 该门禁按 diff 范围执行，是棘轮，不是要求一次性清空所有历史超线文件。
+- 本地手动执行 `npm run check:line-budgets` 默认检查当前工作区；`.githooks/pre-commit` 执行暂存区检查；CI 按 PR / push diff 执行相同规则。
+- 现有局部门禁（如 `MaintainabilityArchitectureTest` 与 Bidding 页面预算测试）继续保留，作为更细粒度的专项约束。
+
 ---
 
 ## 3. Mock 政策（统一决策）
@@ -263,12 +301,14 @@ mvn test -Dtest=MaintainabilityArchitectureTest
 以下命令当前在仓库中可执行，并应作为前端与文档的硬门禁：
 
 ```bash
+npm run check:line-budgets
 npm run check:front-data-boundaries
 npm run check:doc-governance
 npm run build
 ```
 
 说明：
+- `npm run check:line-budgets` 默认检查当前工作区；如需与 pre-commit 一致的暂存区口径，执行 `npm run check:line-budgets:staged`。它在 pre-commit 与 CI 中独立执行，不并入 `build`。
 - `npm run build` 当前会串行执行前两条门禁后再进行 Vite 构建。
 - 这些门禁当前是可信的，但覆盖范围主要在前端边界与文档治理，不代表后端架构已完全收口。
 

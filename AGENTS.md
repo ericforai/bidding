@@ -82,7 +82,7 @@ VITE_API_MODE=api VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --host
 
 在宣布任务完成前，AI 代理必须主动运行与改动范围匹配的验证命令，并在结论中说明结果：
 
-- **前端改动**：优先运行 `npx vitest run <相关测试文件>`，并至少执行 `npm run check:front-data-boundaries`、`npm run check:doc-governance`、`npm run build`。
+- **前端改动**：优先运行 `npx vitest run <相关测试文件>`；如触及 `src/views` / `src/components` / `src/composables` / `src/api/modules`，再执行 `npm run check:line-budgets`；并至少执行 `npm run check:front-data-boundaries`、`npm run check:doc-governance`、`npm run build`。
 - **后端改动**：运行 `mvn test -Dtest=<相关测试类>`；如涉及架构边界，再运行 `mvn test -Dtest=ArchitectureTest`，并把结果作为常规门禁如实汇报。
 - **纯核心改动**：如新增或修改 `..core..` / `..domain..` 非 Entity 代码，必须运行 `mvn test -Dtest=FPJavaArchitectureTest`。
 - **结构性后端改动**：如新增或扩展受保护模块的 Service，必须运行 `mvn test -Dtest=MaintainabilityArchitectureTest`。

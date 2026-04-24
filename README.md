@@ -171,8 +171,11 @@ VITE_API_MODE=api VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --host
 ```bash
 npm run check:front-data-boundaries
 npm run check:doc-governance
+npm run check:line-budgets
 npm run build
 ```
+
+`npm run check:line-budgets` 默认检查当前工作区；如需与 pre-commit 完全一致的暂存区口径，执行 `npm run check:line-budgets:staged`。
 
 ### 前端测试
 

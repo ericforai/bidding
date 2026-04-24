@@ -14,8 +14,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  line-budget:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Resolve line budget base
+        id: line-budget-base
+        env:
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            git fetch --no-tags --depth=1 origin "${GITHUB_BASE_REF}"
+            base="$(git merge-base HEAD "origin/${GITHUB_BASE_REF}")"
+          else
+            base="${PUSH_BEFORE_SHA:-}"
+            if [[ -z "$base" || "$base" == "0000000000000000000000000000000000000000" ]]; then
+              if [[ -n "${DEFAULT_BRANCH:-}" ]]; then
+                git fetch --no-tags --depth=1 origin "${DEFAULT_BRANCH}"
+                base="$(git merge-base HEAD "origin/${DEFAULT_BRANCH}")"
+              else
+                base="$(git rev-parse HEAD~1)"
+              fi
+            fi
+          fi
+
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+
+      - name: Run line budget gate
+        run: node scripts/check-line-budgets.mjs --base "${{ steps.line-budget-base.outputs.base }}" --head HEAD
+
   frontend:
     runs-on: ubuntu-latest
+    needs: [line-budget]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,6 +82,7 @@ jobs:
 
   backend:
     runs-on: ubuntu-latest
+    needs: [line-budget]
     defaults:
       run:
         working-directory: backend
@@ -81,6 +124,7 @@ jobs:
 
   quality-scope:
     runs-on: ubuntu-latest
+    needs: [line-budget]
     # dorny/paths-filter 在 PR 场景会调 GitHub API listFiles，需要 pull-requests: read。
     # push 场景走 git 本地 diff，不需要此权限，所以历史直推 main 时从未暴露。
     permissions:

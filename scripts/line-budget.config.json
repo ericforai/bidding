@@ -1,0 +1,40 @@
+{
+  "maxLines": 300,
+  "includePrefixes": [
+    "src/views/",
+    "src/components/",
+    "src/composables/",
+    "src/api/modules/",
+    "backend/src/main/java/"
+  ],
+  "includeExtensions": [
+    ".vue",
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".css",
+    ".scss",
+    ".java"
+  ],
+  "excludePrefixes": [
+    "backend/src/test/",
+    "backend/src/main/resources/db/",
+    "scripts/",
+    ".github/workflows/"
+  ],
+  "excludeFiles": [
+    "package.json",
+    "backend/pom.xml"
+  ],
+  "excludeSuffixes": [
+    ".spec.js",
+    ".spec.jsx",
+    ".spec.ts",
+    ".spec.tsx",
+    ".test.js",
+    ".test.jsx",
+    ".test.ts",
+    ".test.tsx"
+  ]
+}

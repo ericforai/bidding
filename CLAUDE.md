@@ -58,6 +58,7 @@ VITE_API_MODE=api VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --host
 cd /Users/user/xiyu/xiyu-bid-poc
 npm run check:front-data-boundaries
 npm run check:doc-governance
+npm run check:line-budgets
 npm run build
 npm run test:unit
 npm run test:e2e
@@ -81,6 +82,7 @@ mvn test
 ```bash
 npm run check:front-data-boundaries
 npm run check:doc-governance
+npm run check:line-budgets
 npm run build
 npm run test:unit
 npm run test:e2e

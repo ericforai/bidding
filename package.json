@@ -30,6 +30,8 @@
     "check:version-sync": "node scripts/check-version-sync.mjs",
     "check:front-data-boundaries": "node scripts/check-front-data-boundaries.mjs",
     "check:doc-governance": "node scripts/check-doc-governance.mjs",
+    "check:line-budgets": "node scripts/check-line-budgets.mjs",
+    "check:line-budgets:staged": "node scripts/check-line-budgets.mjs --staged",
     "wiki:ingest": "node scripts/wiki-ingest.mjs",
     "wiki:build": "node scripts/wiki-build.mjs",
     "wiki:check": "node scripts/wiki-check.mjs",
