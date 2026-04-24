@@ -4,6 +4,7 @@ space: engineering
 category: architecture
 tags: [架构, 前端, 后端, 数据库, Vue, SpringBoot, 技术栈]
 sources:
+  - .wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx
   - docs/技术架构方案.md
   - docs/后端架构设计-SpringBoot.md
   - docs/API_INTEGRATION.md
@@ -65,7 +66,7 @@ src/
 ├── api/                  # API 层
 │   ├── config.js         # API 配置（模式切换、基础 URL）
 │   ├── client.js         # Axios 客户端封装
-│   ├── mock.js           # Mock 数据源（单一真理源）
+│   ├── mock.js           # 历史遗留 Mock 数据源，待清理，不作为交付路径
 │   ├── modules/          # 按模块分组的 API 调用
 │   │   ├── auth.js       # 认证模块
 │   │   ├── tenders.js    # 标讯模块
@@ -112,7 +113,7 @@ import Something from '@/components/...'
 ### 2.4 状态管理模式
 
 - 使用 Pinia + Composition API 风格的 `defineStore`
-- 数据初始化来源：Mock 模式从 `src/api/mock.js`，API 模式从后端接口
+- 数据初始化来源：正式交付、联调、UAT、演示和验收均来自后端真实 API
 - 用户状态持久化到 `localStorage`（token、用户信息）
 - 路由守卫在 401 时自动调用 `userStore.resetSession()` 清除状态并重定向至登录页
 
@@ -214,28 +215,25 @@ Entity（JPA 实体 / 数据库映射）
 
 ## 5. API 集成层
 
-### 5.1 双模式切换机制
+### 5.1 真实 API 单一路径
 
-项目支持 **Mock 模式** 和 **API 模式** 无缝切换：
+SOW V1.4 与项目协作口径要求后续开发、联调、演示、UAT 和验收均以真实后端 API 为唯一事实源。历史 Mock/demo 适配只作为待清理遗留，不作为正常开发或验收路径。
 
-| 维度 | Mock 模式 | API 模式 |
-|------|-----------|----------|
-| 数据来源 | `src/api/mock.js` 本地数据 | 后端 REST API |
-| 后端依赖 | 无需后端 | Spring Boot + MySQL 8 + Redis |
-| 适用场景 | 前端开发、演示 | 联调、UAT、生产 |
-| 切换方式 | `cp .env.mock .env` | `cp .env.api .env` |
+| 维度 | API 模式 |
+|------|----------|
+| 数据来源 | 后端 REST API |
+| 后端依赖 | Spring Boot + MySQL 8 + Redis |
+| 适用场景 | 开发联调、演示、UAT、生产 |
+| 切换方式 | `cp .env.api .env` |
 
 ### 5.2 环境变量控制
 
-通过 `VITE_API_MODE` 环境变量控制当前运行模式：
+通过 `VITE_API_MODE` 环境变量确认当前运行模式：
 
 ```bash
-# Mock 模式
-VITE_API_MODE=mock
-
 # API 模式
 VITE_API_MODE=api
-VITE_API_BASE_URL=http://localhost:18080
+VITE_API_BASE_URL=http://127.0.0.1:18080
 ```
 
 修改 `.env` 文件后需重启开发服务器。

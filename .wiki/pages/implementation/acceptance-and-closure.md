@@ -4,6 +4,7 @@ space: implementation
 category: guide
 tags: [implementation, delivery]
 sources:
+  - .wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx
   - docs/UAT_PLAN.md
   - docs/UAT_SIGNOFF_TEMPLATE.md
   - docs/GO_LIVE_CHECKLIST.md
@@ -15,14 +16,16 @@ backlinks:
   - design-system
   - implementation/delivery-playbook
   - implementation/risk-register
+  - implementation/sow-2026-v1-4
 created: 2026-04-21
-updated: 2026-04-23
+updated: 2026-04-24
 health_checked: 2026-04-24
 ---
 # 实施验收与问题闭环
 
 ## 验收清单
 
+- 主基准：与 [[implementation/sow-2026-v1-4]] 的正式版白名单、测试门禁、上线前置条件和试运行口径一致
 - 范围对齐：与商业范围白名单一致
 - 测试证据：UAT、SIT、回归报告完整
 - 上线演练：回滚与 smoke 结果可追溯
@@ -40,6 +43,14 @@ health_checked: 2026-04-24
 | 实施过程 | 通过甲方组织的全部质量控制点评审 |
 | 系统整体 | 试运行验证后，系统符合需求任务书所有要求并达到建设目标 |
 
+## SOW V1.4 量化门禁
+
+| 验收层级 | 通过标准 |
+|---|---|
+| 上线前准入 | 核心业务闭环通过率 100%；P0/P1 为 0；高危/严重安全问题为 0；关键接口联调通过；至少完成一次备份恢复演练；部署包、数据库脚本、配置说明、运维手册、用户手册等上线资料齐全 |
+| 初验 | 合同范围内功能覆盖率 100%；UAT 总体通过率不低于 99%；关键业务场景通过率 100%；P0/P1 为 0；P2 不超过 5 个；P3 不超过 10 个 |
+| 试运行与终验 | 试运行周期按 6 个月跟踪；核心业务正常运行；不出现阻断核心业务的 P0/P1；运行报告完整；试运行问题闭环率 100%；不影响核心业务闭环的 P2/P3 可纳入后续优化 |
+
 ## 问题闭环
 
 - 问题描述
@@ -53,5 +64,6 @@ health_checked: 2026-04-24
 
 - [[deployment]]
 - [[requirements]]
+- [[implementation/sow-2026-v1-4]]
 - [[contract-constraints]]
 - [[implementation/delivery-playbook]]

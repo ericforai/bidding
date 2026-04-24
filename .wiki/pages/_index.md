@@ -48,6 +48,7 @@ health_checked: 2026-04-24
 - [[implementation/delivery-playbook]] — 实施交付作战包总览
 - [[implementation/milestones]] — 实施里程碑与依赖
 - [[implementation/risk-register]] — 实施风险台账
+- [[implementation/sow-2026-v1-4]] — SOW 2026 V1.4 执行基准
 - [[implementation/weekly-status]] — 实施周报与例会纪要模板
 
 ## 操作命令

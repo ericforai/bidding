@@ -4,6 +4,7 @@ space: engineering
 category: business
 tags: [需求, RFP, 功能清单, 需求任务书, 追溯矩阵, 合同]
 sources:
+  - .wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx
   - .wiki/sources/bidding/附件5：西域数智化投标管理平台建设项目需求任务书.docx
   - .wiki/sources/bidding/附件6：需求功能清单.xlsx
   - .wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx
@@ -18,6 +19,7 @@ backlinks:
   - implementation/acceptance-and-closure
   - implementation/milestones
   - implementation/risk-register
+  - implementation/sow-2026-v1-4
 created: 2026-04-15
 updated: 2026-04-24
 health_checked: 2026-04-24
@@ -27,6 +29,7 @@ health_checked: 2026-04-24
 > 本页合成自甲方正式招标文件（附件 5 需求任务书 + 附件 6 功能清单），
 > 建立需求→系统实现的追溯关系。
 > 合同签署后，正式执行边界同步参见 [[contract-constraints]]。
+> 后续开发与产品规划的主执行基准为 [[implementation/sow-2026-v1-4]]。
 
 ## 0. 合同执行基线
 
@@ -37,6 +40,7 @@ health_checked: 2026-04-24
 | 集成范围 | cebpubservice 标讯 API、CRM、企业微信组织架构、OA/审批流、开放 API |
 | 第三方费用 | 第三方 API、账号、授权、测试环境、网络白名单由甲方或第三方提供；第三方接口费、账号费、订阅费、AI Token 费不含本期报价 |
 | 变更管理 | 蓝图锁定后新增或变更需求需 5 日内答复并提交交付规范，双方书面确认或签补充协议后执行 |
+| 产品规划 | 本期只规划 SOW V1.4 正式版白名单、蓝图确认件和已签署变更单范围；演示性能力、未闭环能力和未经确认的新增需求不得进入本期承诺 |
 
 ## 1. 项目背景与建设目标
 
@@ -131,9 +135,9 @@ health_checked: 2026-04-24
 
 | 要求项 | 甲方要求 | 对应安排 |
 |-------|---------|---------|
-| 实施周期 | 需求任务书保留“2026 年 5 月功能上线”口径；合同/SOW 排期为 2026-04-27 至 2026-06-25 正式上线 | 以双方签发计划为准，详见 [[team-and-timeline]] 与 [[contract-constraints]] |
-| 项目经理 | 5 年以上经验，全程驻场 | 唐诵文（项目经理） |
-| 试运行保障 | 需求任务书要求不少于 3 个月；合同付款门禁包含 6 个月试运行 | 按合同付款与验收门禁管理 |
+| 实施周期 | SOW V1.4 以 2026-04-27 启动、2026-06-25 正式上线为基线；阶段表以 2026-05-06 至 2026-06-25 为实施主计划 | 以 [[implementation/sow-2026-v1-4]]、[[team-and-timeline]] 与 [[contract-constraints]] 为准 |
+| 项目经理 | 5 年以上经验，全程驻场 | 卢文融（项目经理）；唐诵文作为项目顾问支持关键节点 |
+| 试运行保障 | SOW V1.4 与合同付款门禁均按 6 个月试运行跟踪 | 按 [[implementation/sow-2026-v1-4]]、合同付款与验收门禁管理 |
 | 质保期 | 验收后 12 个月免费技术支持 | 合同约定 |
 | 知识转移 | 分层次多轮次培训 | W7-W8 UAT & 培训阶段 |
 | 源码交付 | 定制开发源码归甲方 | 源码级交付 |

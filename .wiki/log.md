@@ -3,6 +3,14 @@
 > 按时间倒序记录所有 Wiki 操作。每条记录以 `## [日期] 操作类型 | 说明` 格式开头。
 > 可用 `grep "^## \[" .wiki/log.md | tail -5` 查看最近 5 条。
 
+## [2026-04-24] ingest+build | SOW V1.4 执行基准入库
+- 新增源文件：`.wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx`
+- 新增抽取件：`.wiki/extracts/implementation__西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx.md`
+- 新增页面：`pages/implementation/sow-2026-v1-4.md`（开发排期、产品规划、实施推进、验收判断、上线切换和运维保障主基准）
+- 更新页面：`overview.md`、`requirements.md`、`architecture.md`、`data-model.md`、`roles-and-permissions.md`、`team-and-timeline.md`、`deployment.md`、`contract-constraints.md`、`implementation/{delivery-playbook,milestones,acceptance-and-closure,risk-register,weekly-status}.md`
+- 执行口径：后续开发、产品规划和项目实施均优先核对 SOW V1.4；真实 API 为唯一交付路径，历史 Mock/demo 适配仅作为待清理遗留
+- 版本口径：Wiki 统一按 `SOW V1.4` 执行；若原始 Word 正文仍出现 `V1.3`，作为对外签发前需校准的显示问题处理
+
 ## [2026-04-23] ingest+build | 合同与附件硬约束入库
 - 新增源文件：`.wiki/sources/contract/` 下合同正文、附件 3 报价清单 PDF、附件 4 需求任务书
 - 新增人工摘录：`.wiki/sources/contract/附件3-合同报价清单人工摘录.md`（扫描 PDF 无文本层）

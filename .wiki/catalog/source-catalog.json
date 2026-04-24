@@ -8,7 +8,7 @@
     "status": "extracted",
     "extract_path": ".wiki/extracts/bidding__附件5：西域数智化投标管理平台建设项目需求任务书.docx.md",
     "confidence": 0.85,
-    "ingested_at": "2026-04-23T09:03:46.508Z"
+    "ingested_at": "2026-04-24T06:11:26.017Z"
   },
   {
     "id": "ae594bd338028a36",
@@ -19,7 +19,7 @@
     "status": "extracted",
     "extract_path": ".wiki/extracts/bidding__附件6：需求功能清单.xlsx.md",
     "confidence": 0.75,
-    "ingested_at": "2026-04-23T09:03:46.520Z"
+    "ingested_at": "2026-04-24T06:11:26.032Z"
   },
   {
     "id": "7214c18393c19d8a",
@@ -30,7 +30,7 @@
     "status": "extracted",
     "extract_path": ".wiki/extracts/contract__西域数智化投标管理平台建设项目合同-V1_0420.docx.md",
     "confidence": 0.85,
-    "ingested_at": "2026-04-23T09:03:46.535Z"
+    "ingested_at": "2026-04-24T06:11:26.061Z"
   },
   {
     "id": "3dd8dee6dce7f5a0",
@@ -41,7 +41,7 @@
     "status": "extracted",
     "extract_path": ".wiki/extracts/contract__附件3-合同报价清单人工摘录.md.md",
     "confidence": 1,
-    "ingested_at": "2026-04-23T09:03:46.547Z"
+    "ingested_at": "2026-04-24T06:11:26.077Z"
   },
   {
     "id": "f05a34b855849f3c",
@@ -52,7 +52,7 @@
     "status": "manual_review",
     "extract_path": ".wiki/extracts/contract__附件3：西域数智化投标管理平台建设项目合同报价清单.pdf.md",
     "confidence": 0.2,
-    "ingested_at": "2026-04-23T09:03:46.549Z"
+    "ingested_at": "2026-04-24T06:11:26.078Z"
   },
   {
     "id": "bd76b85a21b0568f",
@@ -63,6 +63,17 @@
     "status": "extracted",
     "extract_path": ".wiki/extracts/contract__附件4：西域数智化投标管理平台建设项目需求任务书.docx.md",
     "confidence": 0.85,
-    "ingested_at": "2026-04-23T09:03:46.584Z"
+    "ingested_at": "2026-04-24T06:11:26.234Z"
+  },
+  {
+    "id": "0c61664242899d57",
+    "path": ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx",
+    "type": "docx",
+    "topic": "implementation",
+    "hash": "0c61664242899d579f2f92377ac5dc05b1cd8f6075ae0acffb43a16e58fcc344",
+    "status": "extracted",
+    "extract_path": ".wiki/extracts/implementation__西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx.md",
+    "confidence": 0.85,
+    "ingested_at": "2026-04-24T06:11:26.245Z"
   }
 ]

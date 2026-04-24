@@ -3,7 +3,7 @@
 - source_path: .wiki/sources/bidding/附件6：需求功能清单.xlsx
 - source_type: xlsx
 - topic: bidding
-- generated_at: 2026-04-23T09:03:46.529Z
+- generated_at: 2026-04-24T06:11:26.053Z
 - status: extracted
 - confidence: 0.75
 ## sheet1

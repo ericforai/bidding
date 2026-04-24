@@ -24,14 +24,14 @@ health_checked: 2026-04-24
 | BAR（投标资产台账） | Bid Asset Registry | 平台扩展模块，对投标相关站点、UK/CA 证书、SOP 等资产进行集中登记、借还管理和生命周期跟踪 |
 | CRM | Customer Relationship Management | 客户关系管理系统，平台通过接口同步客户信息和商机数据，支撑项目立项时的客户数据预填 |
 | 废标 | Bid Disqualification | 因标书不合规（缺少必要文件、格式错误、资质过期等）导致投标被判无效的结果，平台通过 AI 合规检查降低废标风险 |
-| Flyway | Flyway | 数据库版本迁移工具，用于管理 PostgreSQL 的结构变更脚本，确保数据库 schema 的版本一致性 |
+| Flyway | Flyway | 数据库版本迁移工具，用于管理 MySQL 8.0 的结构变更脚本，确保数据库 schema 的版本一致性 |
 | 合规雷达 | Compliance Radar | 平台 AI 能力之一，对标书进行强制条款检查、格式检查和签章资质检查，以雷达图方式呈现合规覆盖度 |
 | 集采 | Centralized Procurement | 集中采购，指由采购方统一组织的大规模批量采购活动，常见于央企和大型集团 |
 | 竞争情报 | Competition Intelligence | 平台对竞争对手的分析能力，包括竞对参与项目、报价策略、SKU、折扣率、账期等信息的记录和分析 |
 | 讲标 | Bid Presentation | 投标人在开标或评标环节向评标委员会进行方案演示和答辩的过程 |
 | JWT | JSON Web Token | 一种基于 JSON 的开放标准令牌格式，平台后端使用 JWT 实现用户认证和会话管理 |
 | 开标 | Bid Opening | 招标方在规定时间和地点公开拆封投标文件、宣布投标人名称和报价的程序 |
-| 客户商机中心 | Customer Opportunity Center | 平台模块，以客户维度聚合标讯和商机信息，帮助销售人员识别和跟进高价值客户机会（当前为 Mock 模式功能） |
+| 客户商机中心 | Customer Opportunity Center | 平台模块，以客户维度聚合标讯和商机信息，帮助销售人员识别和跟进高价值客户机会；是否进入本期验收以 SOW、蓝图确认件和变更单为准 |
 | 立项 | Project Initiation | 投标项目的正式创建过程，包括填写项目基本信息、同步 CRM 客户数据、分解任务、提交审批 |
 | MRO | Maintenance, Repair & Operations | 非生产性物料的维护、维修和运营用品，西域集团的核心业务领域，涵盖工业品供应链服务 |
 | OA | Office Automation | 办公自动化系统，平台与甲方 OA 系统集成，实现立项审批、用印审批、付款审批等流程的映射和回调 |
