@@ -11,7 +11,7 @@ backlinks:
   - implementation/acceptance-and-closure
 created: 2026-04-21
 updated: 2026-04-21
-health_checked: 2026-04-23
+health_checked: 2026-04-24
 ---
 # 实施交付作战包总览
 

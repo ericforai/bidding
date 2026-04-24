@@ -13,7 +13,7 @@
       "_index"
     ],
     "updated": "2026-04-23",
-    "health_checked": "2026-04-23",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/_index.md"
   },
   {
@@ -24,6 +24,9 @@
     "sources": [
       "src/config/ai-prompts.js",
       "backend/AI_MODULE_SUMMARY.md",
+      "backend/src/main/java/com/xiyu/bid/ai/README.md",
+      "backend/src/main/java/com/xiyu/bid/ai/client/RoutingAiProvider.java",
+      "backend/src/main/java/com/xiyu/bid/settings/controller/SettingsController.java",
       "backend/COMPLIANCE_MODULE_SUMMARY.md",
       "backend/SCORE_ANALYSIS_MODULE.md",
       "backend/COMPETITION_INTEL_MODULE.md",
@@ -36,8 +39,8 @@
       "modules",
       "requirements"
     ],
-    "updated": "2026-04-15",
-    "health_checked": "2026-04-23",
+    "updated": "2026-04-24",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/ai-capabilities.md"
   },
   {
@@ -49,6 +52,10 @@
       "docs/技术架构方案.md",
       "docs/后端架构设计-SpringBoot.md",
       "docs/API_INTEGRATION.md",
+      "docs/MYSQL_8_DEPLOYMENT.md",
+      "backend/src/main/resources/application.yml",
+      "backend/src/main/java/com/xiyu/bid/tenderupload/README.md",
+      "backend/src/main/java/com/xiyu/bid/settings/README.md",
       "CLAUDE.md",
       "backend/README.md"
     ],
@@ -62,8 +69,8 @@
       "roles-and-permissions",
       "team-and-timeline"
     ],
-    "updated": "2026-04-15",
-    "health_checked": "2026-04-23",
+    "updated": "2026-04-24",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/architecture.md"
   },
   {
@@ -89,7 +96,7 @@
       "team-and-timeline"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-23",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/business-process.md"
   },
   {
@@ -114,7 +121,7 @@
       "team-and-timeline"
     ],
     "updated": "2026-04-23",
-    "health_checked": "2026-04-23",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/contract-constraints.md"
   },
   {
@@ -132,7 +139,7 @@
       "design-system"
     ],
     "updated": "2026-04-16",
-    "health_checked": "2026-04-23",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/dashboard-gap-analysis.md"
   },
   {
@@ -150,7 +157,7 @@
       "architecture"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-23",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/data-model.md"
   },
   {
@@ -162,7 +169,9 @@
       "docs/GO_LIVE_CHECKLIST.md",
       "docs/ROLLBACK_RUNBOOK.md",
       "docs/UAT_PLAN.md",
+      "docs/MYSQL_8_DEPLOYMENT.md",
       "README.md",
+      "backend/src/main/resources/application.yml",
       "docs/plans/2026-03-10-go-live-execution-plan.md",
       ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
       ".wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx"
@@ -179,8 +188,8 @@
       "requirements",
       "team-and-timeline"
     ],
-    "updated": "2026-04-23",
-    "health_checked": "2026-04-23",
+    "updated": "2026-04-24",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/deployment.md"
   },
   {
@@ -199,7 +208,7 @@
       "overview"
     ],
     "updated": "2026-04-22",
-    "health_checked": "2026-04-23",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/design-system.md"
   },
   {
@@ -218,7 +227,7 @@
       "data-model"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-23",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/glossary.md"
   },
   {
@@ -241,7 +250,7 @@
       "implementation/risk-register"
     ],
     "updated": "2026-04-23",
-    "health_checked": "2026-04-23",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/implementation/acceptance-and-closure.md"
   },
   {
@@ -258,7 +267,7 @@
       "implementation/acceptance-and-closure"
     ],
     "updated": "2026-04-21",
-    "health_checked": "2026-04-23",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/implementation/delivery-playbook.md"
   },
   {
@@ -277,7 +286,7 @@
       "implementation/delivery-playbook"
     ],
     "updated": "2026-04-23",
-    "health_checked": "2026-04-23",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/implementation/milestones.md"
   },
   {
@@ -298,7 +307,7 @@
       "implementation/weekly-status"
     ],
     "updated": "2026-04-23",
-    "health_checked": "2026-04-23",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/implementation/risk-register.md"
   },
   {
@@ -316,7 +325,7 @@
       "implementation/risk-register"
     ],
     "updated": "2026-04-21",
-    "health_checked": "2026-04-23",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/implementation/weekly-status.md"
   },
   {
@@ -328,7 +337,14 @@
       "README.md",
       "CLAUDE.md",
       "backend/MODULES_QUICK_REFERENCE.md",
-      "backend/README.md"
+      "backend/README.md",
+      "backend/src/main/java/com/xiyu/bid/tenderupload/README.md",
+      "backend/src/main/java/com/xiyu/bid/settings/README.md",
+      "src/api/modules/marketInsight.js",
+      "src/views/Bidding/list/useMarketInsight.js",
+      "backend/src/main/java/com/xiyu/bid/marketinsight/controller/MarketInsightController.java",
+      "backend/src/main/java/com/xiyu/bid/marketinsight/service/MarketInsightService.java",
+      "src/api/modules/dashboard.js"
     ],
     "backlinks": [
       "_index",
@@ -343,8 +359,8 @@
       "requirements",
       "team-and-timeline"
     ],
-    "updated": "2026-04-15",
-    "health_checked": "2026-04-23",
+    "updated": "2026-04-24",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/modules.md"
   },
   {
@@ -366,7 +382,7 @@
       "team-and-timeline"
     ],
     "updated": "2026-04-23",
-    "health_checked": "2026-04-23",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/overview.md"
   },
   {
@@ -379,7 +395,9 @@
       ".wiki/sources/bidding/附件6：需求功能清单.xlsx",
       ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
       ".wiki/sources/contract/附件3-合同报价清单人工摘录.md",
-      ".wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx"
+      ".wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx",
+      "backend/src/main/java/com/xiyu/bid/tenderupload/README.md",
+      "backend/src/main/resources/application.yml"
     ],
     "backlinks": [
       "_index",
@@ -389,8 +407,8 @@
       "implementation/milestones",
       "implementation/risk-register"
     ],
-    "updated": "2026-04-23",
-    "health_checked": "2026-04-23",
+    "updated": "2026-04-24",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/requirements.md"
   },
   {
@@ -410,7 +428,7 @@
       "overview"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-23",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/roles-and-permissions.md"
   },
   {
@@ -433,7 +451,7 @@
       "requirements"
     ],
     "updated": "2026-04-23",
-    "health_checked": "2026-04-23",
+    "health_checked": "2026-04-24",
     "path": ".wiki/pages/team-and-timeline.md"
   }
 ]

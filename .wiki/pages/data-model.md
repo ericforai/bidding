@@ -12,7 +12,7 @@ backlinks:
   - architecture
 created: 2026-04-15
 updated: 2026-04-15
-health_checked: 2026-04-23
+health_checked: 2026-04-24
 ---
 # 数据模型
 

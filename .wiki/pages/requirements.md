@@ -9,6 +9,8 @@ sources:
   - .wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx
   - .wiki/sources/contract/附件3-合同报价清单人工摘录.md
   - .wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx
+  - backend/src/main/java/com/xiyu/bid/tenderupload/README.md
+  - backend/src/main/resources/application.yml
 backlinks:
   - _index
   - contract-constraints
@@ -18,7 +20,7 @@ backlinks:
   - implementation/risk-register
 created: 2026-04-15
 updated: 2026-04-24
-health_checked: 2026-04-23
+health_checked: 2026-04-24
 ---
 # 需求追溯
 
@@ -63,6 +65,7 @@ health_checked: 2026-04-23
 | 标讯信息管理 | 外部标讯获取与入库 | 多渠道接入、关键字配置、人工录入 | 标讯中心（Bidding） | ✅ 已实现 |
 | | 标讯分发与指派跟进 | 规则分发 + 手动分发、状态跟进闭环 | 标讯分发功能 | ✅ 已实现 |
 | | 超前预测与市场洞察 | 历史数据趋势预测、高潜力机会预判 | 客户商机中心 | ✅ 已实现（真实后端计算 + 前端兜底展示） |
+| | 大文件异步上传与处理 | 多人并发上传大标书时前台秒级受理、后台排队可追踪 | `tenderupload` 队列（upload-init / upload-complete / task-status） | ✅ 已实现 |
 | 投标项目过程管理 | 项目立项与信息登记 | CRM 集成客户信息、记录核心信息 | 投标项目（Project）立项 | ✅ 已实现 |
 | | 流程驱动与任务协同 | 可配置审批流、任务在线分解分配 | 任务看板 + 审批流 | ✅ 已实现 |
 | | 执行跟踪与交付物关联 | 任务进度跟踪、交付物管理 | 四阶段看板 | ✅ 已实现 |
@@ -122,7 +125,7 @@ health_checked: 2026-04-23
 | 性能 | 200 并发、<2s 响应、99.5% 可用 | 详见 [[deployment]] | ✅ 目标设定 |
 | 集成性 | OA/CRM/企业微信 API | REST API 预留 | ⬜ 待实施 |
 | 移动支持 | 企业微信小程序或移动浏览器 | 响应式布局基础 | ⬜ 待规划 |
-| 信创标准 | 支持国产化技术栈 | PostgreSQL + 开源技术栈 | ✅ |
+| 信创标准 | 支持国产化技术栈 | MySQL 8 + 开源技术栈 | ✅ |
 
 ## 4. 实施与验收要求摘要
 

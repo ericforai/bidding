@@ -6,6 +6,9 @@ tags: [AI, 智能, 大模型, 合规, 评分, 竞争情报, 智能装配]
 sources:
   - src/config/ai-prompts.js
   - backend/AI_MODULE_SUMMARY.md
+  - backend/src/main/java/com/xiyu/bid/ai/README.md
+  - backend/src/main/java/com/xiyu/bid/ai/client/RoutingAiProvider.java
+  - backend/src/main/java/com/xiyu/bid/settings/controller/SettingsController.java
   - backend/COMPLIANCE_MODULE_SUMMARY.md
   - backend/SCORE_ANALYSIS_MODULE.md
   - backend/COMPETITION_INTEL_MODULE.md
@@ -17,8 +20,8 @@ backlinks:
   - modules
   - requirements
 created: 2026-04-15
-updated: 2026-04-15
-health_checked: 2026-04-23
+updated: 2026-04-24
+health_checked: 2026-04-24
 ---
 # AI 能力
 
@@ -213,14 +216,21 @@ health_checked: 2026-04-23
 
 ### Provider 抽象
 
-后端 AI 模块采用接口化设计，通过 `AiProvider` 接口实现 Provider 可切换：
+后端 AI 模块采用接口化设计，通过 `AiProvider` + `RoutingAiProvider` 实现运行时路由：
 
-| Provider | 配置值 | 说明 |
-|----------|--------|------|
-| MockAiProvider | `ai.provider=mock` | 默认实现，返回模拟数据，无需外部依赖 |
-| OpenAiProvider | `ai.provider=openai` | 对接 OpenAI API，需配置 `OPENAI_API_KEY` |
+| Provider | 路由来源 | 说明 |
+|----------|----------|------|
+| MockAiProvider | `ai.provider=mock` 或设置中心 activeProvider=mock | 默认兜底实现，返回模拟数据 |
+| OpenAI Compatible | 系统设置 `aiModelConfig.providers` + `activeProvider` | 统一兼容 OpenAI / DeepSeek / 通义千问 / 豆包 等 OpenAI 兼容协议厂商 |
 
-切换方式：通过环境变量 `AI_PROVIDER` 或应用配置 `ai.provider` 指定。
+配置入口：
+- 系统设置读取/更新：`GET/PUT /api/settings`
+- AI 连接测试：`POST /api/settings/ai-models/test`
+- 运行时权限：`GET /api/settings/runtime-permissions`
+
+安全口径：
+- API Key 仅存储加密值，接口响应只返回 `apiKeyConfigured` 和脱敏 `apiKeyMasked`
+- 运行时优先读取设置中心密钥，缺失时才回退到环境变量
 
 ### 异步执行
 

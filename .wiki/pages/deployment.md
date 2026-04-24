@@ -7,7 +7,9 @@ sources:
   - docs/GO_LIVE_CHECKLIST.md
   - docs/ROLLBACK_RUNBOOK.md
   - docs/UAT_PLAN.md
+  - docs/MYSQL_8_DEPLOYMENT.md
   - README.md
+  - backend/src/main/resources/application.yml
   - docs/plans/2026-03-10-go-live-execution-plan.md
   - .wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx
   - .wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx
@@ -23,8 +25,8 @@ backlinks:
   - requirements
   - team-and-timeline
 created: 2026-04-15
-updated: 2026-04-23
-health_checked: 2026-04-23
+updated: 2026-04-24
+health_checked: 2026-04-24
 ---
 # 部署与上线
 
@@ -63,7 +65,7 @@ cp .env.mock .env
 |------|------|------|
 | 前端开发服务器 | **1314** | 固定端口，vite.config.js / playwright.config.js / 演示统一使用 |
 | 后端 API 服务 | **18080** | Spring Boot 应用端口 |
-| PostgreSQL | **55432**（主机）-> 5432（容器） | Docker 容器 `xiyu-bid-rehearsal-postgres` |
+| MySQL 8 | **3306** | 生产主线数据库端口（容器或托管实例） |
 | Redis | 6379 | 缓存与会话存储 |
 
 > 注意：`14173` 等临时端口仅允许用于排查，排查结束后必须关闭，不作为项目约定端口。
@@ -113,20 +115,27 @@ mvn clean package
 - `DB_PASSWORD` -- 数据库密码（必填）
 - `JWT_SECRET` -- JWT 密钥，最少 32 字符（必填）
 - `CORS_ALLOWED_ORIGINS` -- 允许的 CORS 源（默认：localhost:5173,5174,3000）
-- `SPRING_PROFILES_ACTIVE` -- 环境配置（dev/prod，默认：dev）
+- `SPRING_PROFILES_ACTIVE` -- 环境配置（建议 `prod,mysql`）
+- `APP_TENDER_STORAGE_ROOT` -- 标书共享存储根目录（例如 `/data/shared/tenders`）
 
 ### 3.3 数据库
 
 ```bash
-# 方式 1：进入 Docker 容器
-docker exec -it xiyu-bid-rehearsal-postgres psql -U xiyu_user -d xiyu_bid
+# 方式 1：本机连接
+mysql -h localhost -P 3306 -u xiyu_user -p xiyu_bid
 
-# 方式 2：从主机连接
-psql -h localhost -p 55432 -U xiyu_user -d xiyu_bid
-
-# 查看密码
-docker inspect xiyu-bid-rehearsal-postgres | grep POSTGRES_PASSWORD
+# 方式 2：容器连接
+docker exec -it <mysql-container> mysql -u xiyu_user -p xiyu_bid
 ```
+
+### 3.4 大标书异步处理参数
+
+后端通过 `app.tender-processing.*` 配置并发阀值与保护策略：
+- `max-global-concurrency`（默认 2）
+- `max-per-user-concurrency`（默认 1）
+- `max-retries`、`retry-delays-minutes`（默认 3 次：1/5/15 分钟）
+- `cpu-threshold`、`memory-threshold`（超阈值暂停拉新任务）
+- `worker-fixed-delay-ms`（默认 5000ms）
 
 ---
 
@@ -140,7 +149,7 @@ docker inspect xiyu-bid-rehearsal-postgres | grep POSTGRES_PASSWORD
 - [ ] `docs/COMMERCIAL_SCOPE.md` 已确认正式版白名单与 demo-only 黑名单
 - [ ] `npm run build` 和 `VITE_API_MODE=api npm run build` 均通过
 - [ ] `mvn -DskipTests compile` 通过
-- [ ] 关键测试通过，PostgreSQL baseline Testcontainers 验证通过
+- [ ] 关键测试通过，MySQL 主线回归验证通过
 - [ ] 数据库备份已执行并校验产物存在
 - [ ] 监控面板与告警规则已配置
 - [ ] UAT 已通过并签字
@@ -237,7 +246,7 @@ bash scripts/release/backup-db.sh
 CONFIRM_RESTORE=YES bash scripts/release/restore-db.sh <backup-file>
 ```
 
-如果本机没有 `pg_dump/pg_restore`，可设置 `PG_CONTAINER_NAME=<postgres-container>` 使用 docker exec 回退路径。
+如果本机没有 MySQL 客户端工具，可设置 `MYSQL_CONTAINER_NAME=<mysql-container>` 使用 docker exec 回退路径。
 
 ### 6.4 回滚后验证
 

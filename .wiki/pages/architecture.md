@@ -221,7 +221,7 @@ Entity（JPA 实体 / 数据库映射）
 | 维度 | Mock 模式 | API 模式 |
 |------|-----------|----------|
 | 数据来源 | `src/api/mock.js` 本地数据 | 后端 REST API |
-| 后端依赖 | 无需后端 | Spring Boot + PostgreSQL + Redis |
+| 后端依赖 | 无需后端 | Spring Boot + MySQL 8 + Redis |
 | 适用场景 | 前端开发、演示 | 联调、UAT、生产 |
 | 切换方式 | `cp .env.mock .env` | `cp .env.api .env` |
 
