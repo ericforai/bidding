@@ -81,7 +81,7 @@ class BidDraftAgentAppServiceTest {
     }
 
     @Test
-    void createRun_shouldPersistRunAndArtifacts() {
+    void createRun_shouldPersistRunAndArtifactsForSelectedSnapshot() {
         BidDraftSnapshot snapshot = sampleSnapshot();
         RequirementClassification classification = new RequirementClassification(
                 List.of("价格"),
@@ -108,7 +108,7 @@ class BidDraftAgentAppServiceTest {
                 )
         );
 
-        when(snapshotAssembler.assemble(11L)).thenReturn(snapshot);
+        when(snapshotAssembler.assemble(11L, 601L)).thenReturn(snapshot);
         when(textGenerator.generate(any(), any(), any(), any(), any(), any())).thenReturn(generationResult);
         when(runRepository.save(any())).thenAnswer(invocation -> {
             BidAgentRun run = invocation.getArgument(0);
@@ -128,7 +128,7 @@ class BidDraftAgentAppServiceTest {
             return artifacts;
         });
 
-        BidDraftAgentRunDTO dto = appService.createRun(11L);
+        BidDraftAgentRunDTO dto = appService.createRun(11L, 601L);
 
         assertThat(dto.getId()).isEqualTo(100L);
         assertThat(dto.getProjectId()).isEqualTo(11L);
@@ -141,6 +141,7 @@ class BidDraftAgentAppServiceTest {
         assertThat(runCaptor.getValue().getProjectName()).isEqualTo("华东智慧园区改造项目");
         assertThat(runCaptor.getValue().getStatus()).isEqualTo(BidAgentRun.Status.DRAFTED);
         verify(projectAccessScopeService).assertCurrentUserCanAccessProject(11L);
+        verify(snapshotAssembler).assemble(11L, 601L);
     }
 
     @Test
@@ -148,11 +149,11 @@ class BidDraftAgentAppServiceTest {
         doThrow(new AccessDeniedException("权限不足"))
                 .when(projectAccessScopeService).assertCurrentUserCanAccessProject(11L);
 
-        assertThatThrownBy(() -> appService.createRun(11L))
+        assertThatThrownBy(() -> appService.createRun(11L, 601L))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("权限不足");
 
-        verify(snapshotAssembler, never()).assemble(11L);
+        verify(snapshotAssembler, never()).assemble(11L, 601L);
         verify(runRepository, never()).save(any());
         verify(artifactRepository, never()).saveAll(any());
     }

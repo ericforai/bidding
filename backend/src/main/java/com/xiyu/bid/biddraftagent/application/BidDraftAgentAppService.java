@@ -41,8 +41,12 @@ public class BidDraftAgentAppService {
     private final ProjectAccessScopeService projectAccessScopeService;
 
     public BidDraftAgentRunDTO createRun(Long projectId) {
+        return createRun(projectId, null);
+    }
+
+    public BidDraftAgentRunDTO createRun(Long projectId, Long snapshotId) {
         assertProjectAccess(projectId);
-        BidDraftSnapshot snapshot = snapshotAssembler.assemble(projectId);
+        BidDraftSnapshot snapshot = snapshotAssembler.assemble(projectId, snapshotId);
         BidDraftAgentEvaluation evaluation = evaluator.evaluate(snapshot);
         BidDraftGenerationResult generation = generate(snapshot, evaluation);
 

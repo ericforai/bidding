@@ -4,6 +4,7 @@ import com.xiyu.bid.biddraftagent.application.BidDraftAgentAppService;
 import com.xiyu.bid.biddraftagent.application.BidTenderDocumentImportAppService;
 import com.xiyu.bid.biddraftagent.dto.BidDraftAgentApplyResponseDTO;
 import com.xiyu.bid.exception.GlobalExceptionHandler;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,7 +15,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import static com.xiyu.bid.biddraftagent.controller.BidDraftAgentControllerFixtures.sampleImportDto;
+import static com.xiyu.bid.biddraftagent.controller.BidDraftAgentControllerFixtures.sampleCreateRunRequest;
+import static com.xiyu.bid.biddraftagent.controller.BidDraftAgentControllerFixtures.sampleParseDto;
 import static com.xiyu.bid.biddraftagent.controller.BidDraftAgentControllerFixtures.sampleReviewDto;
 import static com.xiyu.bid.biddraftagent.controller.BidDraftAgentControllerFixtures.sampleRunDto;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,6 +31,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ExtendWith(MockitoExtension.class)
 class BidDraftAgentControllerTest {
+
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     @Mock
     private BidDraftAgentAppService appService;
@@ -46,64 +50,65 @@ class BidDraftAgentControllerTest {
     }
 
     @Test
-    void importTenderDocument_shouldUploadParseGenerateAndApply() throws Exception {
-        when(importAppService.importAndGenerate(eq(11L), any(), eq(true))).thenReturn(sampleImportDto());
+    void importTenderDocument_shouldUploadAndParseTenderRequirements() throws Exception {
+        when(importAppService.parseTenderDocument(eq(11L), any())).thenReturn(sampleParseDto());
 
         mockMvc.perform(multipart("/api/projects/{projectId}/bid-agent/tender-documents", 11L)
                         .file("file", "招标范围和评分标准".getBytes())
-                        .param("applyToEditor", "true")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.message").value("招标文件已解析，标书初稿已写入文档编辑器"))
+                .andExpect(jsonPath("$.message").value("招标文件已解析，已更新招标要求快照"))
                 .andExpect(jsonPath("$.data.document.name").value("file"))
+                .andExpect(jsonPath("$.data.document.snapshotId").value(601))
                 .andExpect(jsonPath("$.data.requirementProfile.technicalRequirements[0]").value("提供实施方案"))
-                .andExpect(jsonPath("$.data.run.id").value(100))
-                .andExpect(jsonPath("$.data.appliedToEditor").value(true));
+                .andExpect(jsonPath("$.data.message").value("招标文件已解析，已更新招标要求快照"));
 
-        verify(importAppService).importAndGenerate(eq(11L), any(), eq(true));
+        verify(importAppService).parseTenderDocument(eq(11L), any());
     }
 
     @Test
     void importTenderDocument_shouldReturnForbiddenWhenProjectAccessDenied() throws Exception {
-        when(importAppService.importAndGenerate(eq(12L), any(), eq(true)))
+        when(importAppService.parseTenderDocument(eq(12L), any()))
                 .thenThrow(new AccessDeniedException("权限不足"));
 
         mockMvc.perform(multipart("/api/projects/{projectId}/bid-agent/tender-documents", 12L)
                         .file("file", "招标范围和评分标准".getBytes())
-                        .param("applyToEditor", "true")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(403));
 
-        verify(importAppService).importAndGenerate(eq(12L), any(), eq(true));
+        verify(importAppService).parseTenderDocument(eq(12L), any());
     }
 
     @Test
     void createRun_shouldReturnCreatedRunPayload() throws Exception {
-        when(appService.createRun(11L)).thenReturn(sampleRunDto());
+        when(appService.createRun(11L, 601L)).thenReturn(sampleRunDto());
 
         mockMvc.perform(post("/api/projects/{projectId}/bid-agent/runs", 11L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(sampleCreateRunRequest()))
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.projectName").value("华东智慧园区改造项目"))
                 .andExpect(jsonPath("$.data.artifacts[0].artifactType").value("DRAFT_TEXT"));
 
-        verify(appService).createRun(11L);
+        verify(appService).createRun(11L, 601L);
     }
 
     @Test
     void createRun_shouldReturnForbiddenWhenProjectAccessDenied() throws Exception {
-        when(appService.createRun(12L)).thenThrow(new AccessDeniedException("权限不足"));
+        when(appService.createRun(12L, null)).thenThrow(new AccessDeniedException("权限不足"));
 
         mockMvc.perform(post("/api/projects/{projectId}/bid-agent/runs", 12L)
+                        .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(403));
 
-        verify(appService).createRun(12L);
+        verify(appService).createRun(12L, null);
     }
 
     @Test

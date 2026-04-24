@@ -12,7 +12,7 @@
     >
       <div class="upload-copy">
         <strong>{{ agent.selectedTenderFileName.value || '选择 .doc/.docx/文本型 PDF 招标文件' }}</strong>
-        <span>上传后会提取正文、拆解要求、生成初稿，并默认写入文档编辑器。</span>
+        <span>上传后会先提取正文并拆解要求，再生成初稿；生成或写入失败都可以单独重试。</span>
       </div>
     </el-upload>
 

@@ -3,9 +3,10 @@ package com.xiyu.bid.biddraftagent.controller;
 import com.xiyu.bid.biddraftagent.application.BidDraftAgentAppService;
 import com.xiyu.bid.biddraftagent.application.BidTenderDocumentImportAppService;
 import com.xiyu.bid.biddraftagent.dto.BidDraftAgentApplyResponseDTO;
+import com.xiyu.bid.biddraftagent.dto.BidDraftAgentCreateRunRequest;
 import com.xiyu.bid.biddraftagent.dto.BidDraftAgentReviewDTO;
 import com.xiyu.bid.biddraftagent.dto.BidDraftAgentRunDTO;
-import com.xiyu.bid.biddraftagent.dto.BidTenderDocumentImportDTO;
+import com.xiyu.bid.biddraftagent.dto.BidTenderDocumentParseDTO;
 import com.xiyu.bid.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,9 +16,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -30,20 +32,22 @@ public class BidDraftAgentController {
 
     @PostMapping(value = "/tender-documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<BidTenderDocumentImportDTO>> importTenderDocument(
+    public ResponseEntity<ApiResponse<BidTenderDocumentParseDTO>> importTenderDocument(
             @PathVariable Long projectId,
-            @RequestParam("file") MultipartFile file,
-            @RequestParam(defaultValue = "true") boolean applyToEditor) {
-        BidTenderDocumentImportDTO result = bidTenderDocumentImportAppService.importAndGenerate(projectId, file, applyToEditor);
+            @RequestParam("file") MultipartFile file) {
+        BidTenderDocumentParseDTO result = bidTenderDocumentImportAppService.parseTenderDocument(projectId, file);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(result.getMessage(), result));
     }
 
     @PostMapping("/runs")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<BidDraftAgentRunDTO>> createRun(@PathVariable Long projectId) {
+    public ResponseEntity<ApiResponse<BidDraftAgentRunDTO>> createRun(
+            @PathVariable Long projectId,
+            @RequestBody(required = false) BidDraftAgentCreateRunRequest request) {
+        Long snapshotId = request == null ? null : request.snapshotId();
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("草稿运行已创建", bidDraftAgentAppService.createRun(projectId)));
+                .body(ApiResponse.success("草稿运行已创建", bidDraftAgentAppService.createRun(projectId, snapshotId)));
     }
 
     @GetMapping("/runs/{runId}")

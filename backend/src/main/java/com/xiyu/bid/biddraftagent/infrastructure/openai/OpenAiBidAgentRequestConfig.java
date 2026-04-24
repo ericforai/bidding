@@ -6,6 +6,7 @@ record OpenAiBidAgentRequestConfig(
         String apiKey,
         String baseUrl,
         String model,
-        Duration timeout
+        Duration timeout,
+        OpenAiBidAgentApiStyle apiStyle
 ) {
 }

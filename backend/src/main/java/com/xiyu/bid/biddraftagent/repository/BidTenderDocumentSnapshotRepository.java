@@ -7,5 +7,7 @@ import java.util.Optional;
 
 public interface BidTenderDocumentSnapshotRepository extends JpaRepository<BidTenderDocumentSnapshot, Long> {
 
+    Optional<BidTenderDocumentSnapshot> findByIdAndProjectId(Long id, Long projectId);
+
     Optional<BidTenderDocumentSnapshot> findTopByProjectIdOrderByCreatedAtDescIdDesc(Long projectId);
 }
