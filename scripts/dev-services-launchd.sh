@@ -21,7 +21,9 @@ DB_NAME="${DB_NAME:-xiyu_bid}"
 DB_USERNAME="${DB_USERNAME:-xiyu_user}"
 DB_PASSWORD="${DB_PASSWORD:-XiyuDB!2026}"
 REDIS_HOST="${REDIS_HOST:-localhost}"
-REDIS_PORT="${REDIS_PORT:-6379}"
+DEFAULT_REDIS_PORT="6379"
+FALLBACK_REDIS_PORT="16379"
+REDIS_PORT="${REDIS_PORT:-}"
 PLIST_PATH="${HOME}/Library/LaunchAgents/${LAUNCHD_LABEL}.plist"
 LAUNCHD_STDOUT_LOG="$RUNTIME_DIR/launchd.out.log"
 LAUNCHD_STDERR_LOG="$RUNTIME_DIR/launchd.err.log"
@@ -53,7 +55,27 @@ is_loaded() {
   launchctl print "$(service_target)" >/dev/null 2>&1
 }
 
+is_port_listening() {
+  local port="$1"
+  lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1
+}
+
+resolve_redis_port() {
+  if [[ -n "$REDIS_PORT" ]]; then
+    return 0
+  fi
+
+  if is_port_listening "$DEFAULT_REDIS_PORT"; then
+    REDIS_PORT="$DEFAULT_REDIS_PORT"
+  elif is_port_listening "$FALLBACK_REDIS_PORT"; then
+    REDIS_PORT="$FALLBACK_REDIS_PORT"
+  else
+    REDIS_PORT="$DEFAULT_REDIS_PORT"
+  fi
+}
+
 write_plist() {
+  resolve_redis_port
   mkdir -p "$(dirname "$PLIST_PATH")"
   cat >"$PLIST_PATH" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>

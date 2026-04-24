@@ -97,14 +97,20 @@
 
 ```bash
 npm install
-npm run dev:all
+npm run dev:stable:start
+npm run dev:stable:status
 ```
 
 说明：
-- `npm run dev:all` 会调用根目录 `start.sh`
+- `npm run dev:stable:start` 会调用 `scripts/dev-services.sh`，适合日常联调和反复重启
+- `npm run dev:all` 会调用根目录 `start.sh`，适合前台一次性拉起整套服务
 - 后端默认启动到 `127.0.0.1:18080`
 - 前端默认启动到 `127.0.0.1:1314`
+- 后端默认使用 `dev,mysql`
+- 启动脚本会自动传入本地 MySQL 默认值：`localhost:3306/xiyu_bid`、用户 `xiyu_user`
+- 启动脚本会自动识别本机 Redis：优先 `6379`，若仅 Docker 暴露 `16379` 也会自动切换
 - 前端会以 `VITE_API_MODE=api` 连接真实后端（不新增前端 mock 主入口）
+- 如需覆盖本地连接信息，可在启动前设置 `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USERNAME`、`DB_PASSWORD`、`REDIS_HOST`、`REDIS_PORT`
 
 ### 运行模式矩阵
 
@@ -127,6 +133,11 @@ npm run dev:stable:watch:start
 npm run dev:stable:watch:status
 ```
 
+这套方式会自动：
+- 以 `dev,mysql` 启动后端
+- 传入本地数据库和 Redis 连接参数
+- 校验前端是否真的是当前工作区对应的 API 模式实例
+
 停止服务：
 
 ```bash
@@ -145,12 +156,23 @@ npm run dev:mode
 ```bash
 # 终端 1：启动后端
 cd /Users/user/xiyu/xiyu-bid-poc/backend
+SPRING_PROFILES_ACTIVE=dev,mysql \
+DB_HOST=localhost \
+DB_PORT=3306 \
+DB_NAME=xiyu_bid \
+DB_USERNAME=xiyu_user \
+DB_PASSWORD='XiyuDB!2026' \
+REDIS_HOST=localhost \
+REDIS_PORT=16379 \
+JWT_SECRET='xiyu-bid-poc-local-dev-secret-key-please-change-in-prod-32bytes-min' \
 mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=18080"
 
 # 终端 2：启动前端
 cd /Users/user/xiyu/xiyu-bid-poc
 VITE_API_MODE=api VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --host 127.0.0.1 --port 1314
 ```
+
+如果你的 Redis 本机就跑在 `6379`，把上面的 `REDIS_PORT=16379` 改成 `6379` 即可。
 
 ### 访问地址
 

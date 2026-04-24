@@ -26,6 +26,15 @@ FRONTEND_HEALTH_SCRIPT="$ROOT_DIR/scripts/dev-frontend-health.sh"
 BACKEND_PROFILE_OVERRIDE=""
 ACTIVE_BACKEND_PROFILE=""
 JWT_SECRET="${JWT_SECRET:-xiyu-bid-poc-local-dev-secret-key-please-change-in-prod-32bytes-min}"
+DB_HOST="${DB_HOST:-localhost}"
+DB_PORT="${DB_PORT:-3306}"
+DB_NAME="${DB_NAME:-xiyu_bid}"
+DB_USERNAME="${DB_USERNAME:-xiyu_user}"
+DB_PASSWORD="${DB_PASSWORD:-XiyuDB!2026}"
+REDIS_HOST="${REDIS_HOST:-localhost}"
+DEFAULT_REDIS_PORT="6379"
+FALLBACK_REDIS_PORT="16379"
+REDIS_PORT="${REDIS_PORT:-}"
 
 is_valid_command() {
   case "$1" in
@@ -100,6 +109,20 @@ is_port_listening() {
   lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1
 }
 
+resolve_redis_port() {
+  if [[ -n "$REDIS_PORT" ]]; then
+    return 0
+  fi
+
+  if is_port_listening "$DEFAULT_REDIS_PORT"; then
+    REDIS_PORT="$DEFAULT_REDIS_PORT"
+  elif is_port_listening "$FALLBACK_REDIS_PORT"; then
+    REDIS_PORT="$FALLBACK_REDIS_PORT"
+  else
+    REDIS_PORT="$DEFAULT_REDIS_PORT"
+  fi
+}
+
 read_pid() {
   local file="$1"
   [[ -f "$file" ]] || return 1
@@ -155,6 +178,7 @@ wait_frontend() {
 
 start_backend() {
   local pid=""
+  resolve_redis_port
   pid="$(read_pid "$BACKEND_PID_FILE" 2>/dev/null || true)"
   if is_pid_running "$pid"; then
     if is_port_listening "$BACKEND_PORT"; then
@@ -167,12 +191,21 @@ start_backend() {
 
   echo "[backend] starting on :$BACKEND_PORT"
   echo "[backend] profile: $ACTIVE_BACKEND_PROFILE"
+  echo "[backend] database: MySQL at ${DB_HOST}:${DB_PORT}/${DB_NAME}"
+  echo "[backend] redis: ${REDIS_HOST}:${REDIS_PORT}"
   : >"$BACKEND_LOG"
   (
     cd "$ROOT_DIR/backend"
     nohup env \
       SPRING_PROFILES_ACTIVE="$ACTIVE_BACKEND_PROFILE" \
       JWT_SECRET="$JWT_SECRET" \
+      DB_HOST="$DB_HOST" \
+      DB_PORT="$DB_PORT" \
+      DB_NAME="$DB_NAME" \
+      DB_USERNAME="$DB_USERNAME" \
+      DB_PASSWORD="$DB_PASSWORD" \
+      REDIS_HOST="$REDIS_HOST" \
+      REDIS_PORT="$REDIS_PORT" \
       CORS_ALLOWED_ORIGINS="http://localhost:${FRONTEND_PORT},http://127.0.0.1:${FRONTEND_PORT}" \
       mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT}" \
       >>"$BACKEND_LOG" 2>&1 < /dev/null &
@@ -382,6 +415,12 @@ Examples:
   scripts/dev-services.sh start
   scripts/dev-services.sh --profile e2e restart
   scripts/dev-services.sh --profile dev,mysql watch-start
+
+Environment:
+  DB_HOST/DB_PORT/DB_NAME    MySQL connection target
+  DB_USERNAME/DB_PASSWORD    MySQL credentials
+  REDIS_HOST/REDIS_PORT      Redis connection target
+  JWT_SECRET                 JWT secret for local auth
 EOF
 }
 

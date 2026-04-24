@@ -57,6 +57,12 @@ mvn spring-boot:run
 mvn clean package
 ```
 
+## 本地联调启动建议
+- 推荐从仓库根目录使用 `npm run dev:stable:start` 或 `bash scripts/dev-services.sh start`，由根目录脚本统一拉起前后端。
+- 根目录启动脚本会自动传入 `dev,mysql`、本地 MySQL 默认连接和 Redis 连接参数。
+- 本机如果没有 `6379`，但 Docker 把 Redis 暴露在 `16379`，根目录脚本会自动识别并切换。
+- 如果你只在 `backend/` 目录里单独执行 `mvn spring-boot:run`，请自己显式提供数据库、Redis 和 JWT 环境变量。
+
 ## 质量门禁策略
 - `quality-audit`: 审计模式，打开质量插件但不阻断构建，适合先盘点问题。
 - `quality-strict`: 严格模式，默认由 Checkstyle + SpotBugs 对受保护范围做真实阻断。
@@ -81,7 +87,13 @@ mvn test -Dtest=FlywayBaselineContextTest,FlywayMysqlContainerTest,ExpenseContro
 ```
 
 ## 环境变量
+- `DB_HOST` - 数据库主机（默认：`localhost`）
+- `DB_PORT` - 数据库端口（默认：`3306`）
+- `DB_NAME` - 数据库名（默认：`xiyu_bid`）
+- `DB_USERNAME` - 数据库用户名（默认：`xiyu_user`）
 - `DB_PASSWORD` - 数据库密码（必填）
+- `REDIS_HOST` - Redis 主机（默认：`localhost`）
+- `REDIS_PORT` - Redis 端口（应用默认：`6379`；根目录启动脚本会自动在 `6379/16379` 间选择可用端口）
 - `JWT_SECRET` - JWT密钥，最少32字符（必填）
 - `CORS_ALLOWED_ORIGINS` - 允许的CORS源（默认：localhost:5173,5174,3000）
 - `SPRING_PROFILES_ACTIVE` - 环境配置（常用：`e2e`、`dev,mysql`、`prod,mysql`）
