@@ -23,7 +23,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="地区">
-        <el-select v-model="sourceConfig.regions" multiple placeholder="选择目标地区" class="full-width">
+        <el-select v-model="sourceConfig.regions" multiple placeholder="不选则全国" class="full-width">
           <el-option v-for="region in regionOptions" :key="region" :label="region" :value="region" />
         </el-select>
       </el-form-item>

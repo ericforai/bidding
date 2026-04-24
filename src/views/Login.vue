@@ -58,27 +58,9 @@
           </div>
         </div>
 
-        <!-- 数据统计 -->
-        <div class="stats-row">
-          <div class="stat-item">
-            <div class="stat-value">500+</div>
-            <div class="stat-label">服务企业</div>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <div class="stat-value">35%</div>
-            <div class="stat-label">平均中标率提升</div>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat-item">
-            <div class="stat-value">10000+</div>
-            <div class="stat-label">管理项目</div>
-          </div>
-        </div>
-
         <!-- 底部版权 -->
         <div class="brand-footer">
-          <span>© 2025 西域数智化投标管理平台</span>
+          <span>© 西域数智化投标管理平台</span>
         </div>
       </div>
     </div>
@@ -394,41 +376,6 @@ const handleLogin = async () => {
   color: rgba(255, 255, 255, 0.9);
 }
 
-/* 统计数据 */
-.stats-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  margin-bottom: 48px;
-}
-
-.stat-item {
-  text-align: center;
-  flex: 1;
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.stat-divider {
-  width: 1px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.1);
-}
-
 /* 底部版权 */
 .brand-footer {
   text-align: center;
@@ -492,14 +439,14 @@ const handleLogin = async () => {
   border-color: #cbd5e1;
 }
 
-.form-input :deep(.el-input__wrapper.is-focus) {
-  border-color: #0369A1;
-  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
-}
+.form-input:focus-within { box-shadow: none; }
+.form-input :deep(.el-input.is-focus .el-input__wrapper), .form-input :deep(.el-input__wrapper.is-focus) { border-color: var(--brand-primary, #0066CC); box-shadow: none; }
 
 .form-input :deep(.el-input__inner) {
   font-size: 14px;
   color: #0F172A;
+  outline: none;
+  box-shadow: none;
 }
 
 .form-input :deep(.el-input__inner::placeholder) {
