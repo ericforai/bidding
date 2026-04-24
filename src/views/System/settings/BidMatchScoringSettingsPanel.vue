@@ -60,7 +60,7 @@
         </el-button>
       </div>
 
-      <el-table :data="currentModel.dimensions" class="dimension-table">
+      <el-table :data="currentModel.dimensions" row-key="key" class="dimension-table">
         <el-table-column type="expand" width="48">
           <template #default="{ row }">
             <BidMatchRulesEditor
@@ -188,6 +188,20 @@ defineProps({
 
 .dimension-table {
   width: 100%;
+}
+
+.dimension-table :deep(.el-table__expand-icon) {
+  color: #1f2d1d;
+  font-weight: 700;
+}
+
+.dimension-table :deep(.el-table__expand-icon .el-icon) {
+  font-size: 16px;
+}
+
+.dimension-table :deep(.el-table__expand-column .cell) {
+  display: flex;
+  justify-content: center;
 }
 
 @media (max-width: 960px) {
