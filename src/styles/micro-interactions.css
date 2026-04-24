@@ -113,15 +113,6 @@ body, .text-body, .el-main, .el-card__body {
   box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
 }
 
-.el-input:focus-within {
-  box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
-  border-radius: 6px;
-}
-
-.el-select:focus-within .el-input__wrapper {
-  box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
-}
-
 .el-checkbox:focus-visible .el-checkbox__inner {
   box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
 }
@@ -256,8 +247,8 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-input.is-focus .el-input__wrapper {
-  border-color: #0369A1;
-  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+  border-color: var(--gray-200, #D0D0D0);
+  box-shadow: none;
 }
 
 /* Input inner text - minimum touch target 44px */

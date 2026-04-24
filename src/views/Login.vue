@@ -439,9 +439,6 @@ const handleLogin = async () => {
   border-color: #cbd5e1;
 }
 
-.form-input:focus-within { box-shadow: none; }
-.form-input :deep(.el-input.is-focus .el-input__wrapper), .form-input :deep(.el-input__wrapper.is-focus) { border-color: var(--brand-primary, #0066CC); box-shadow: none; }
-
 .form-input :deep(.el-input__inner) {
   font-size: 14px;
   color: #0F172A;

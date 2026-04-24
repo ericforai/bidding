@@ -1,0 +1,169 @@
+/* ========== 全局表单控件基线 ========== */
+/* 输入框、选择框保持静态灰边，避免点击或输入时出现额外光圈。 */
+:root {
+  --xiyu-control-height: 40px;
+  --xiyu-control-width: 168px;
+  --xiyu-control-radius: var(--radius-sm, 4px);
+  --xiyu-control-border: var(--gray-200, #D0D0D0);
+  --xiyu-control-error-border: var(--color-danger, #DD2200);
+  --xiyu-control-bg: #FFFFFF;
+}
+
+.el-input,
+.el-select,
+.el-input-number,
+.el-date-editor,
+.el-cascader,
+.el-autocomplete,
+.el-textarea {
+  --focus-ring-color: transparent;
+  --focus-ring-width: 0;
+  --el-color-primary: var(--xiyu-control-border);
+  --el-input-focus-border-color: var(--xiyu-control-border);
+  --el-input-hover-border-color: var(--xiyu-control-border);
+  --el-select-input-focus-border-color: var(--xiyu-control-border);
+}
+
+.el-input:not(.el-input--small) .el-input__wrapper,
+.el-select:not(.el-select--small) .el-select__wrapper,
+.el-input-number:not(.el-input-number--small) .el-input__wrapper,
+.el-date-editor.el-input:not(.el-input--small) .el-input__wrapper,
+.el-cascader:not(.el-cascader--small) .el-input__wrapper,
+.el-autocomplete .el-input:not(.el-input--small) .el-input__wrapper {
+  box-sizing: border-box;
+  height: var(--xiyu-control-height) !important;
+  min-height: var(--xiyu-control-height) !important;
+  padding: 0 12px !important;
+  border: 1px solid var(--xiyu-control-border) !important;
+  border-radius: var(--xiyu-control-radius) !important;
+  background: var(--xiyu-control-bg) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transition: none !important;
+}
+
+.el-input:not(.el-input--small) .el-input__inner,
+.el-select:not(.el-select--small) .el-select__input,
+.el-date-editor.el-input:not(.el-input--small) .el-input__inner {
+  height: calc(var(--xiyu-control-height) - 2px) !important;
+  min-height: 0 !important;
+  line-height: calc(var(--xiyu-control-height) - 2px) !important;
+}
+
+.el-input,
+.el-select,
+.el-input-number,
+.el-date-editor,
+.el-cascader,
+.el-autocomplete,
+.el-textarea,
+.el-input:focus,
+.el-select:focus,
+.el-input-number:focus,
+.el-date-editor:focus,
+.el-cascader:focus,
+.el-autocomplete:focus,
+.el-textarea:focus,
+.el-input:focus-within,
+.el-select:focus-within,
+.el-input-number:focus-within,
+.el-date-editor:focus-within,
+.el-cascader:focus-within,
+.el-autocomplete:focus-within,
+.el-textarea:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.el-input__wrapper,
+.el-select__wrapper,
+.el-input__inner,
+.el-select__input,
+.el-textarea__inner,
+.el-input__wrapper:hover,
+.el-select__wrapper:hover,
+.el-select__wrapper.is-hovering,
+.el-input__wrapper:focus,
+.el-select__wrapper:focus,
+.el-input__wrapper:focus-visible,
+.el-select__wrapper:focus-visible,
+.el-input__wrapper:active,
+.el-select__wrapper:active,
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focus,
+.el-select__wrapper.is-focused,
+.el-input.is-focus .el-input__wrapper,
+.el-select .el-input.is-focus .el-input__wrapper,
+.el-input__inner:focus,
+.el-select__input:focus,
+.el-input__inner:focus-visible,
+.el-select__input:focus-visible,
+.el-textarea__inner:focus,
+.el-textarea__inner:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+
+.el-input__wrapper:hover,
+.el-select__wrapper:hover,
+.el-select__wrapper.is-hovering,
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focus,
+.el-select__wrapper.is-focused,
+.el-input.is-focus .el-input__wrapper,
+.el-select .el-input.is-focus .el-input__wrapper {
+  border-color: var(--xiyu-control-border) !important;
+}
+
+html[data-keyboard-nav="true"] .el-input.is-focus .el-input__wrapper,
+html[data-keyboard-nav="true"] .el-input__wrapper:has(.el-input__inner:focus),
+html[data-keyboard-nav="true"] .el-select__wrapper.is-focused,
+html[data-keyboard-nav="true"] .el-select__wrapper:has(.el-select__input:focus),
+html[data-keyboard-nav="true"] .el-textarea__inner:focus {
+  border-color: var(--gray-300, #B0B0B0) !important;
+}
+
+.el-textarea__inner {
+  border: 1px solid var(--xiyu-control-border) !important;
+  border-radius: var(--xiyu-control-radius) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transition: none !important;
+}
+
+.el-textarea__inner:hover,
+.el-textarea__inner:focus,
+.el-textarea__inner:focus-visible {
+  border-color: var(--xiyu-control-border) !important;
+}
+
+.el-form-item.is-error .el-input__wrapper,
+.el-form-item.is-error .el-select__wrapper,
+.el-form-item.is-error .el-textarea__inner {
+  border-color: var(--xiyu-control-error-border) !important;
+}
+
+.search-card .el-form--inline .el-input:not(.el-input--small),
+.search-card .el-form--inline .el-select:not(.el-select--small),
+.search-card .el-form--inline .el-input-number:not(.el-input-number--small),
+.search-card .el-form--inline .el-date-editor:not(.el-input--small),
+.filter-card .el-form--inline .el-input:not(.el-input--small),
+.filter-card .el-form--inline .el-select:not(.el-select--small),
+.filter-card .el-form--inline .el-input-number:not(.el-input-number--small),
+.filter-card .el-form--inline .el-date-editor:not(.el-input--small) {
+  width: var(--xiyu-control-width) !important;
+}
+
+@media (max-width: 768px) {
+  .search-card .el-form--inline .el-input,
+  .search-card .el-form--inline .el-select,
+  .search-card .el-form--inline .el-input-number,
+  .search-card .el-form--inline .el-date-editor,
+  .filter-card .el-form--inline .el-input,
+  .filter-card .el-form--inline .el-select,
+  .filter-card .el-form--inline .el-input-number,
+  .filter-card .el-form--inline .el-date-editor {
+    width: 100% !important;
+  }
+}

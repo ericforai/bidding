@@ -11,7 +11,10 @@
 | 文件 | 地位 | 功能 |
 |------|------|------|
 | `variables.css` | Style | CSS 变量定义 |
-| `global.css` | Style | 全局样式 |
+| `common.css` | Style | 通用工具样式与基础无障碍规则 |
+| `form-controls.css` | Style | 全局输入框/选择框尺寸与静态边框基线 |
+| `micro-interactions.css` | Style | 非表单控件的微交互与状态样式 |
+| `accessibility.css` | Style | 跳转、可读性与辅助访问样式 |
 
 ## CSS 变量分类
 
@@ -36,3 +39,9 @@
 - `--shadow-sm`: 小阴影
 - `--shadow-md`: 中阴影
 - `--shadow-lg`: 大阴影
+
+## 表单控件基线
+
+- 默认输入框、选择框、日期框高度统一为 `40px`。
+- 搜索/筛选类内联表单控件桌面宽度统一为 `168px`，移动端占满容器。
+- 输入、选择、文本域在 hover / focus / active 时不增加蓝色描边、光圈或阴影；校验错误态仍保留红色边框。

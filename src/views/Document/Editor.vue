@@ -1334,12 +1334,11 @@ watch(() => route.params.id, () => {
 .content-textarea {
   border-radius: 8px;
   border: 1.5px solid #e5e7eb;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .content-textarea:focus {
   outline: none;
-  border-color: #0369a1;
-  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+  border-color: #e5e7eb;
+  box-shadow: none;
 }
 </style>

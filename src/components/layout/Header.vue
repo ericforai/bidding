@@ -336,13 +336,7 @@ const handleCommand = async (command) => {
 .search-input :deep(.el-input__wrapper:hover) {
   background: #ffffff;
   border-color: var(--border-color, #e5e7eb);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.search-input :deep(.el-input__wrapper.is-focus) {
-  background: #ffffff;
-  border-color: var(--brand-primary, #0369a1);
-  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: none;
 }
 
 .search-input :deep(.el-input__inner) {
