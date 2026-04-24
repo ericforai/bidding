@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Input: release environment variables, database engine selection, and local tool availability
-# Output: preflight checks for PostgreSQL/MySQL release and rehearsal workflows
+# Input: release environment variables, MySQL-first database engine selection, and local tool availability
+# Output: preflight checks for MySQL 8.0 release workflows and explicit legacy PostgreSQL compatibility
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -13,7 +13,7 @@ optional_commands=(docker pg_dump psql mysqldump mysql)
 DB_USER="${DB_USER:-${DB_USERNAME:-}}"
 DB_USERNAME="${DB_USERNAME:-$DB_USER}"
 required_env=(SPRING_PROFILES_ACTIVE DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD JWT_SECRET REDIS_HOST CORS_ALLOWED_ORIGINS)
-DB_ENGINE="${DB_ENGINE:-postgres}"
+DB_ENGINE="${DB_ENGINE:-mysql}"
 
 printf '==> Preflight checks\n'
 printf 'Root: %s\n' "$ROOT_DIR"

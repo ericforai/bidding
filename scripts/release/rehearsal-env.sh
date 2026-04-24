@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Input: release environment variables, database engine selection, admin bootstrap credentials, and optional rehearsal overrides
-# Output: shared PostgreSQL/MySQL rehearsal, UAT, and admin bootstrap environment defaults for release scripts
+# Input: release environment variables, MySQL-first database engine selection, admin bootstrap credentials, and optional rehearsal overrides
+# Output: shared MySQL 8.0 defaults plus explicit legacy PostgreSQL rehearsal compatibility for release scripts
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -27,7 +27,7 @@ validate_port() {
 REPORT_DIR="$(resolve_path "${REPORT_DIR:-$ROOT_DIR/docs/reports}")"
 STATE_DIR="$(resolve_path "${STATE_DIR:-$ROOT_DIR/.rehearsal}")"
 
-DB_ENGINE="${DB_ENGINE:-postgres}"
+DB_ENGINE="${DB_ENGINE:-mysql}"
 POSTGRES_CONTAINER_NAME="${POSTGRES_CONTAINER_NAME:-xiyu-bid-rehearsal-postgres}"
 MYSQL_CONTAINER_NAME="${MYSQL_CONTAINER_NAME:-xiyu-bid-rehearsal-mysql}"
 REDIS_CONTAINER_NAME="${REDIS_CONTAINER_NAME:-xiyu-bid-rehearsal-redis}"

@@ -8,6 +8,13 @@ sources:
   - CLAUDE.md
   - backend/MODULES_QUICK_REFERENCE.md
   - backend/README.md
+  - backend/src/main/java/com/xiyu/bid/tenderupload/README.md
+  - backend/src/main/java/com/xiyu/bid/settings/README.md
+  - src/api/modules/marketInsight.js
+  - src/views/Bidding/list/useMarketInsight.js
+  - backend/src/main/java/com/xiyu/bid/marketinsight/controller/MarketInsightController.java
+  - backend/src/main/java/com/xiyu/bid/marketinsight/service/MarketInsightService.java
+  - src/api/modules/dashboard.js
 backlinks:
   - _index
   - architecture
@@ -21,8 +28,8 @@ backlinks:
   - requirements
   - team-and-timeline
 created: 2026-04-15
-updated: 2026-04-15
-health_checked: 2026-04-23
+updated: 2026-04-24
+health_checked: 2026-04-24
 ---
 # 模块目录
 
@@ -31,7 +38,7 @@ health_checked: 2026-04-23
 平台采用前后端分离架构，包含 **前端 7 大功能模块** 和 **后端 40 个技术模块**。
 
 - **前端**：Vue 3 + Vite + Element Plus + Pinia，按功能域划分为工作台、标讯中心、投标项目、知识资产、资源管理、数据分析、AI 智能中心、系统设置共 8 个一级入口（其中 AI 智能中心与系统设置合计为第 7、8 模块）。
-- **后端**：Spring Boot 3.2 + Java 21 + PostgreSQL + Redis，按领域驱动设计将业务拆分为标讯域、项目域、文档域、知识域、资源域、AI 域、协作域和基础域共 8 大域。
+- **后端**：Spring Boot 3.2 + Java 21 + MySQL 8 + Redis，按领域驱动设计将业务拆分为标讯域、项目域、文档域、知识域、资源域、AI 域、协作域和基础域共 8 大域。
 
 ---
 
@@ -61,6 +68,11 @@ health_checked: 2026-04-23
 | AI 评分推荐 | AI 智能评分（0-100）与风险等级判定，优先展示高价值标讯 |
 | 标讯详情与分析 | 招标文件解析、关键信息提取、相关案例推荐 |
 | 采购方规律分析 | 超前预测与市场洞察，识别高潜力机会 |
+
+`Trend` 功能口径（市场洞察）：
+- 为真实后端能力，前端调用 `GET /api/market-insight/insight` 获取 `industryTrends/purchaserPatterns/forecastTips`。
+- 后端基于标讯数据计算趋势（当前 3 个月 vs 前 3 个月），输出 `up/down/stable`、增长率、热度等级。
+- 前端保留默认示例与失败兜底文案；因此“页面有数据”不等于“本次接口一定成功返回真实数据”。
 
 ### 2.3 投标项目（Project）
 
@@ -103,6 +115,9 @@ health_checked: 2026-04-23
 | 多维度分析图表 | 按区域、产品线、销售团队、客户类型、竞争对手等维度分析 |
 | 数据穿透下钻 | 点击数据查看项目详情、过程文件、团队信息 |
 
+`Trend` 功能口径（经营看板）：
+- 趋势图接口为 `GET /api/analytics/trends`，用于管理看板趋势可视化与下钻。
+
 ### 2.7 AI 智能中心
 
 路由：`/ai-center`
@@ -130,10 +145,19 @@ health_checked: 2026-04-23
 |------|--------|------|
 | tender | `com.xiyu.bid.tender` | 标讯管理（CRUD、状态流转、AI 分析触发） |
 | bidresult | `com.xiyu.bid.bidresult` | 投标结果管理（中标登记、结果分析） |
+| tenderupload | `com.xiyu.bid.tenderupload` | 大标书异步上传受理队列（上传会话、任务入队、状态追踪） |
 
 **Tender 状态枚举**：PENDING、TRACKING、BIDDED、ABANDONED
 
 **API 端点**：9 个（列表、详情、创建、更新、删除、AI 分析、按状态/来源查询、统计）
+
+异步上传端点：
+
+| Method | Path | 用途 |
+|--------|------|------|
+| POST | `/api/tenders/upload-init` | 创建上传会话，返回上传标识与目标路径 |
+| POST | `/api/tenders/upload-complete` | 完成上传并写入处理队列，立即返回 `taskId` |
+| GET | `/api/tenders/tasks/{taskId}` | 查询状态、排队深度与预计开始时间 |
 
 ### 3.2 项目域
 
@@ -224,7 +248,7 @@ health_checked: 2026-04-23
 | aspect | `com.xiyu.bid.aspect` | AOP 切面（审计日志切面） |
 | audit | `com.xiyu.bid.audit` | 审计日志服务 |
 | batch | `com.xiyu.bid.batch` | 批量操作与定时任务 |
-| settings | `com.xiyu.bid.settings` | 系统设置管理 |
+| settings | `com.xiyu.bid.settings` | 系统设置管理（含 AI Provider 配置与运行时权限） |
 | export | `com.xiyu.bid.export` | 通用导出服务（Excel 等） |
 
 ---

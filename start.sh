@@ -10,6 +10,10 @@ BACKEND_HEALTH_URL="http://127.0.0.1:${BACKEND_PORT}/actuator/health"
 FRONTEND_URL="http://127.0.0.1:${FRONTEND_PORT}/"
 CORS_ORIGINS="${CORS_ALLOWED_ORIGINS:-http://localhost:1314,http://127.0.0.1:1314}"
 FRONTEND_HEALTH_SCRIPT="$ROOT_DIR/scripts/dev-frontend-health.sh"
+BACKEND_PROFILES="${SPRING_PROFILES_ACTIVE:-dev,mysql}"
+JWT_SECRET="${JWT_SECRET:-xiyu-bid-poc-local-dev-secret-key-please-change-in-prod-32bytes-min}"
+DB_USERNAME="${DB_USERNAME:-xiyu_user}"
+DB_PASSWORD="${DB_PASSWORD:-XiyuDB!2026}"
 BACKEND_PID=""
 FRONTEND_PID=""
 STARTED_ANYTHING=false
@@ -71,9 +75,14 @@ if is_http_ready "$BACKEND_HEALTH_URL"; then
   printf '[backend] already healthy at %s\n' "$BACKEND_HEALTH_URL"
 else
   printf '[backend] starting on %s\n' "$BACKEND_PORT"
+  printf '[backend] profile: %s\n' "$BACKEND_PROFILES"
+  printf '[backend] database: MySQL 8.0 at %s:%s/%s\n' "${DB_HOST:-localhost}" "${DB_PORT:-3306}" "${DB_NAME:-xiyu_bid}"
   pushd "$BACKEND_DIR" >/dev/null
   env \
-    SPRING_PROFILES_ACTIVE=e2e \
+    SPRING_PROFILES_ACTIVE="$BACKEND_PROFILES" \
+    JWT_SECRET="$JWT_SECRET" \
+    DB_USERNAME="$DB_USERNAME" \
+    DB_PASSWORD="$DB_PASSWORD" \
     CORS_ALLOWED_ORIGINS="$CORS_ORIGINS" \
     mvn clean spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT}" \
     >> "$DEV_LOG" 2>&1 &

@@ -7,6 +7,10 @@ sources:
   - docs/技术架构方案.md
   - docs/后端架构设计-SpringBoot.md
   - docs/API_INTEGRATION.md
+  - docs/MYSQL_8_DEPLOYMENT.md
+  - backend/src/main/resources/application.yml
+  - backend/src/main/java/com/xiyu/bid/tenderupload/README.md
+  - backend/src/main/java/com/xiyu/bid/settings/README.md
   - CLAUDE.md
   - backend/README.md
 backlinks:
@@ -19,8 +23,8 @@ backlinks:
   - roles-and-permissions
   - team-and-timeline
 created: 2026-04-15
-updated: 2026-04-15
-health_checked: 2026-04-23
+updated: 2026-04-24
+health_checked: 2026-04-24
 ---
 # 架构合成
 
@@ -34,9 +38,9 @@ health_checked: 2026-04-23
 | L2 | **业务应用层** | 标讯中心、投标项目、智能编制、知识库、AI 智能中心、数据分析 |
 | L3 | **AI 能力层** | AI 分析、评分覆盖、合规雷达、竞争情报、智能装配、ROI 核算 |
 | L4 | **数据服务层** | 项目数据、文档数据、知识数据、竞品数据、历史数据 |
-| L5 | **基础设施层** | Spring Boot / Nginx、PostgreSQL + Redis、OSS 对象存储 |
+| L5 | **基础设施层** | Spring Boot / Nginx、MySQL 8 + Redis、共享文件存储（NFS/NAS） |
 
-各层通过 RESTful API 解耦通信。前端展示层与业务应用层之间通过统一 API 客户端交互；AI 能力层作为核心差异化竞争力，为业务应用层提供 10 大智能功能；数据服务层统一管理五类业务数据；基础设施层提供运行时环境、持久化存储和文件服务。
+各层通过 RESTful API 解耦通信。前端展示层与业务应用层之间通过统一 API 客户端交互；AI 能力层作为核心差异化竞争力，为业务应用层提供 10 大智能功能；数据服务层统一管理五类业务数据；基础设施层提供运行时环境、持久化存储和共享文件服务（不依赖对象存储）。
 
 ---
 
@@ -125,7 +129,7 @@ import Something from '@/components/...'
 | Spring Security | - | 安全认证与授权 |
 | JWT | - | 无状态令牌认证 |
 | Spring Data JPA | - | 持久层框架 |
-| PostgreSQL | 15+ | 主数据库 |
+| MySQL | 8.0+ | 主数据库 |
 | Redis | 7 | 缓存与会话 |
 | Flyway | - | 数据库迁移管理 |
 | Lombok | - | 代码简化 |
@@ -183,12 +187,12 @@ Entity（JPA 实体 / 数据库映射）
 
 ## 4. 数据层
 
-### 4.1 PostgreSQL（主数据库）
+### 4.1 MySQL 8（主数据库）
 
 - 存储所有业务实体数据（用户、标讯、项目、任务、资质、案例、模板等）
-- 使用 Flyway 管理数据库迁移脚本（`backend/src/main/resources/db/migration/`）
-- 当前已有 V1 ~ V50 的迁移版本
-- Docker 容器名：`xiyu-bid-rehearsal-postgres`，映射端口 `55432 -> 5432`
+- 使用 Flyway 管理数据库迁移脚本（`backend/src/main/resources/db/migration-mysql/`）
+- MySQL 主线 baseline：`B73__full_schema_baseline.sql`
+- 默认连接：`jdbc:mysql://<host>:3306/xiyu_bid`
 
 ### 4.2 Redis（缓存与会话）
 
@@ -196,6 +200,13 @@ Entity（JPA 实体 / 数据库映射）
 - 热点数据缓存（标讯列表、项目统计等）
 - 速率限制计数器
 - 会话辅助存储
+
+### 4.3 共享文件存储（标书大文件）
+
+- 标书文件落盘到共享路径（`app.tender-processing.storage-root`，默认 `/data/shared/tenders`）
+- 应用节点只写共享目录，不将大文件作为长期数据写入数据库
+- 元数据与处理状态写入 MySQL（`tender_file` / `tender_task` / `tender_task_dlq`）
+- 通过 SHA-256 + 用户维度唯一约束实现幂等去重，降低重复处理成本
 
 详细数据模型参见 [[data-model]]。
 

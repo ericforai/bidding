@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Input: rehearsal environment variables, database engine selection, and runtime pid/state files
-# Output: stopped PostgreSQL/MySQL rehearsal services and cleaned up local state
+# Output: stopped MySQL 8.0 rehearsal services or explicit legacy PostgreSQL compatibility services and cleaned up local state
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail

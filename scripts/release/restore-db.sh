@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Input: backup archive path, PostgreSQL/MySQL connection environment variables, and confirmation flags
+# Input: backup archive path, MySQL 8.0 connection environment variables, optional legacy PostgreSQL selection, and confirmation flags
 # Output: restored database state and restore verification side effects
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
@@ -26,7 +26,7 @@ for name in "${required_env[@]}"; do
   fi
 done
 
-DB_ENGINE="${DB_ENGINE:-postgres}"
+DB_ENGINE="${DB_ENGINE:-mysql}"
 
 if [[ "${CONFIRM_RESTORE:-}" != "YES" ]]; then
   printf 'Restore is destructive. Re-run with CONFIRM_RESTORE=YES to continue.\n' >&2

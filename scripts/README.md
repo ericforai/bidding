@@ -23,5 +23,5 @@
 | `dev-frontend.sh` | 启动脚本 | 统一前端本地启动入口，强制 Vite 使用真实 API 模式和默认后端地址 |
 | `dev-frontend-health.sh` | 健康检查脚本 | 校验 `1314` 前端服务是否来自当前仓库，并确认运行时 API 模式和后端地址正确 |
 | `sync-version.mjs` | 维护脚本 | 以根目录 `VERSION` 为单一版本源，同步前端 `package.json` 和后端 `backend/pom.xml` |
-| `release/` | 发布脚本目录 | 管理发布演练、后端预编译与启动诊断、复用演练栈的 E2E 门禁、产物打包、远端激活、备份恢复和生产 smoke 验活 |
+| `release/` | 发布脚本目录 | 管理发布演练、后端预编译与启动诊断、复用演练栈的 E2E 门禁、产物打包、远端激活、备份恢复和生产 smoke 验活；默认数据库口径为 MySQL 8.0，历史 PostgreSQL 仅保留显式兼容路径 |
 | `test/` | 测试基线目录 | Playwright 与 API 联调测试的启动、停止和说明脚本 |

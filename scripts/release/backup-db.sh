@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Input: PostgreSQL/MySQL connection environment variables and backup destination arguments
+# Input: MySQL 8.0 connection environment variables, optional legacy PostgreSQL selection, and backup destination arguments
 # Output: release backup archive files and backup metadata
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
@@ -15,7 +15,7 @@ for name in "${required_env[@]}"; do
   fi
 done
 
-DB_ENGINE="${DB_ENGINE:-postgres}"
+DB_ENGINE="${DB_ENGINE:-mysql}"
 
 OUTPUT_DIR="${BACKUP_DIR:-$(pwd)/backups}"
 mkdir -p "$OUTPUT_DIR"

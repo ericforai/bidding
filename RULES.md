@@ -403,7 +403,7 @@ Controller → Service → Repository → Entity
 
 补充说明：
 - 根目录 `npm run dev:all` 会以真实 API 模式启动前后端。
-- 根目录 `start.sh` 当前会给后端注入 `SPRING_PROFILES_ACTIVE=e2e`，并给前端注入 `VITE_API_MODE=api`。
+- 根目录 `start.sh` 当前会给后端注入 `SPRING_PROFILES_ACTIVE=dev,mysql`，并给前端注入 `VITE_API_MODE=api`。
 - `14173` 等临时端口只能用于短时排查，不作为项目口径写回文档、截图、测试或演示说明。
 
 ---

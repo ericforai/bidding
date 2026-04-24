@@ -124,7 +124,7 @@ npm run test:e2e
    如果任务需要真实链路联调，优先使用 `npm run dev:all`，不要误以为单独前端已经代表系统启动完成。
 
 2. **根目录 `start.sh` 会强制真实 API 模式**
-   当前脚本会给后端注入 `SPRING_PROFILES_ACTIVE=e2e`，给前端注入 `VITE_API_MODE=api` 和 `VITE_API_BASE_URL=http://127.0.0.1:18080`。
+   当前脚本会给后端注入 `SPRING_PROFILES_ACTIVE=dev,mysql`，给前端注入 `VITE_API_MODE=api` 和 `VITE_API_BASE_URL=http://127.0.0.1:18080`。
 
 3. **后端默认端口不是 8080，而是 18080**
    当前文档、脚本、E2E 和联调路径都以 `18080` 为准。

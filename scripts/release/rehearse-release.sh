@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Input: release environment variables, PostgreSQL/MySQL rehearsal configuration, UAT/report paths, and Playwright bootstrap controls
+# Input: release environment variables, MySQL 8.0 rehearsal configuration, optional legacy PostgreSQL selection, UAT/report paths, and Playwright bootstrap controls
 # Output: rehearsal lifecycle using the release stack, UAT execution, backup, restore verification, and startup diagnostics
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。

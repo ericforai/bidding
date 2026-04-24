@@ -110,8 +110,9 @@ npm run dev:all
 
 | 场景 | 前端数据来源 | 后端 Profile | 数据行为 |
 | --- | --- | --- | --- |
-| 本地联调（推荐） | 真实 API | `e2e`（`start.sh` 默认） | API 返回真实数据 + 内存 Demo 融合；Demo 使用负数 ID 且只读 |
-| 开发/生产真实库 | 真实 API | `dev,mysql` / `prod,mysql`（或等价真实库 profile） | 仅真实数据库数据，不注入 Demo |
+| 本地联调（推荐） | 真实 API | `dev,mysql`（`start.sh` 默认） | 连接 MySQL 8.0，仅真实数据库数据，不注入 Demo |
+| 生产真实库 | 真实 API | `prod,mysql`（或等价真实库 profile） | 连接 MySQL 8.0，仅真实数据库数据，不注入 Demo |
+| 自动化 E2E 基线 | 真实 API | `e2e`（测试脚本专用） | API 返回真实数据 + 内存 Demo 融合；Demo 使用负数 ID 且只读 |
 | 历史 mock 资产 | 禁止作为页面主路径 | 不适用 | 仅保留为迁移技术债与参考，不允许新增页面直连 |
 
 ### 稳定常驻启动（推荐长期联调）
@@ -229,7 +230,7 @@ mvn -Pjava-quality,java-quality-spotbugs,quality-strict -DskipTests -Djacoco.ski
 - 若本地 `127.0.0.1:18080` 和 `127.0.0.1:1314` 都可用，测试会直接使用现有环境
 - 若环境未启动，Playwright 会调用 `scripts/test/start-api-e2e-stack.sh` 准备 API 联调环境
 - 测试结束后，仅会关闭由本次 Playwright 启动的进程
-- `e2e` profile 现在会在后端启用 H2 Demo 融合（全角色生效）：读取接口返回“真实数据 + 内存 Demo 数据”，写接口对 Demo 负数 ID 返回只读提示
+- `e2e` profile 仅用于自动化 E2E 基线，会在后端启用 H2 Demo 融合（全角色生效）：读取接口返回“真实数据 + 内存 Demo 数据”，写接口对 Demo 负数 ID 返回只读提示
 - CI 当前至少执行三条真实 API 冒烟链路：
   - `e2e/commercial-main-flow.spec.js`
   - `e2e/project-detail-workflow.spec.js`

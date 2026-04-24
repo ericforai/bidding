@@ -47,4 +47,26 @@ if [[ "$PLAYWRIGHT_OVERRIDE_VALUE" != "http://127.0.0.1:39080" ]]; then
   exit 1
 fi
 
+DEFAULT_DB_OUTPUT="$(bash -lc "source '$ENV_SCRIPT'; printf '%s\n%s\n%s\n%s\n' \"\$DB_ENGINE\" \"\$DB_PORT\" \"\$SPRING_PROFILES_ACTIVE\" \"\$DB_URL\"")"
+DEFAULT_DB_ENGINE="$(printf '%s\n' "$DEFAULT_DB_OUTPUT" | sed -n '1p')"
+DEFAULT_DB_PORT="$(printf '%s\n' "$DEFAULT_DB_OUTPUT" | sed -n '2p')"
+DEFAULT_SPRING_PROFILES_ACTIVE="$(printf '%s\n' "$DEFAULT_DB_OUTPUT" | sed -n '3p')"
+DEFAULT_DB_URL="$(printf '%s\n' "$DEFAULT_DB_OUTPUT" | sed -n '4p')"
+if [[ "$DEFAULT_DB_ENGINE" != "mysql" ]]; then
+  printf 'Expected default DB_ENGINE to be mysql, got %s.\n' "$DEFAULT_DB_ENGINE" >&2
+  exit 1
+fi
+if [[ "$DEFAULT_DB_PORT" != "53306" ]]; then
+  printf 'Expected default MySQL rehearsal DB_PORT to be 53306, got %s.\n' "$DEFAULT_DB_PORT" >&2
+  exit 1
+fi
+if [[ "$DEFAULT_SPRING_PROFILES_ACTIVE" != "prod,mysql" ]]; then
+  printf 'Expected default SPRING_PROFILES_ACTIVE to be prod,mysql, got %s.\n' "$DEFAULT_SPRING_PROFILES_ACTIVE" >&2
+  exit 1
+fi
+if [[ "$DEFAULT_DB_URL" != jdbc:mysql://* ]]; then
+  printf 'Expected default DB_URL to be a MySQL JDBC URL, got %s.\n' "$DEFAULT_DB_URL" >&2
+  exit 1
+fi
+
 printf 'Release rehearsal env contract checks passed.\n'
