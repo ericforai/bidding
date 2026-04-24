@@ -8,9 +8,9 @@ sources:
   - .wiki/INDEX.md
   - .wiki/PAGE_INDEX.md
 backlinks:
-created: 2026-04-24
-updated: 2026-04-24
-health_checked: 2026-04-24
+created: 2026-04-25
+updated: 2026-04-25
+health_checked: 2026-04-25
 ---
 # 西域投标管理平台知识库
 
@@ -45,6 +45,7 @@ health_checked: 2026-04-24
 
 - [[contract-constraints]] — 合同约束
 - [[implementation/acceptance-and-closure]] — 实施验收与问题闭环
+- [[implementation/attachment4-requirement-task-book]] — 附件4需求任务书交付基线
 - [[implementation/delivery-playbook]] — 实施交付作战包总览
 - [[implementation/milestones]] — 实施里程碑与依赖
 - [[implementation/risk-register]] — 实施风险台账

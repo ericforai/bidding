@@ -1,6 +1,7 @@
 # TODO
 
 - [ ] 对接外部标讯聚合 API（替换 `src/views/Bidding/List.vue` 中 `fetchExternalTendersFromApi` 的占位实现，打通“一键获取标讯”真实链路）
+- [ ] 补跑 Microsoft Edge 浏览器兼容测试：当前 Chrome、Firefox 29 个页面巡检已通过；Edge 因测试机未安装 `/Applications/Microsoft Edge.app` 且自动安装需要 sudo 密码暂未完成。安装 Edge 后按真实 API 模式补跑同一套页面兼容巡检，并更新验收结论。
 
 ## Bid Agent 优化
 

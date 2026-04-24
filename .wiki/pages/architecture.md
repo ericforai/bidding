@@ -17,6 +17,7 @@ sources:
 backlinks:
   - _index
   - contract-constraints
+  - implementation/attachment4-requirement-task-book
   - implementation/delivery-playbook
   - implementation/milestones
   - overview
@@ -24,8 +25,8 @@ backlinks:
   - roles-and-permissions
   - team-and-timeline
 created: 2026-04-15
-updated: 2026-04-24
-health_checked: 2026-04-24
+updated: 2026-04-25
+health_checked: 2026-04-25
 ---
 # 架构合成
 

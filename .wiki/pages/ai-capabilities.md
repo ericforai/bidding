@@ -17,11 +17,12 @@ backlinks:
   - _index
   - business-process
   - contract-constraints
+  - implementation/attachment4-requirement-task-book
   - modules
   - requirements
 created: 2026-04-15
 updated: 2026-04-24
-health_checked: 2026-04-24
+health_checked: 2026-04-25
 ---
 # AI 能力
 

@@ -17,12 +17,13 @@ backlinks:
   - contract-constraints
   - dashboard-gap-analysis
   - implementation/acceptance-and-closure
+  - implementation/attachment4-requirement-task-book
   - implementation/milestones
   - implementation/risk-register
   - implementation/sow-2026-v1-4
 created: 2026-04-15
-updated: 2026-04-24
-health_checked: 2026-04-24
+updated: 2026-04-25
+health_checked: 2026-04-25
 ---
 # 需求追溯
 
@@ -30,6 +31,7 @@ health_checked: 2026-04-24
 > 建立需求→系统实现的追溯关系。
 > 合同签署后，正式执行边界同步参见 [[contract-constraints]]。
 > 后续开发与产品规划的主执行基准为 [[implementation/sow-2026-v1-4]]。
+> 附件4需求任务书的完整交付核查基线参见 [[implementation/attachment4-requirement-task-book]]。
 
 ## 0. 合同执行基线
 

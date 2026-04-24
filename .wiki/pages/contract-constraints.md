@@ -13,6 +13,7 @@ backlinks:
   - _index
   - deployment
   - implementation/acceptance-and-closure
+  - implementation/attachment4-requirement-task-book
   - implementation/milestones
   - implementation/risk-register
   - implementation/sow-2026-v1-4
@@ -20,13 +21,14 @@ backlinks:
   - requirements
   - team-and-timeline
 created: 2026-04-23
-updated: 2026-04-24
-health_checked: 2026-04-24
+updated: 2026-04-25
+health_checked: 2026-04-25
 ---
 # 合同约束
 
 > 本页是“西域数智化投标管理平台建设项目”的合同硬约束索引。所有研发、实施、验收、付款和变更判断，优先回到本页及其原始合同源文件核对。
 > 当前开发、产品规划和实施主执行基准参见 [[implementation/sow-2026-v1-4]]。
+> 附件4需求任务书的章节级交付核查参见 [[implementation/attachment4-requirement-task-book]]。
 
 ## 1. 约束优先级
 
