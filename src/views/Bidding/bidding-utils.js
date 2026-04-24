@@ -1,5 +1,5 @@
 // Input: backend response objects, frontend form data
-// Output: pure normalizer and display formatter functions for bidding data transformations
+// Output: pure normalizer and display formatter functions for bidding data transformations and detail display
 // Pos: src/views/Bidding/ - Bidding module utilities
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -95,6 +95,50 @@ export function formatTenderDateTime(value) {
   const parts = parseTenderDateParts(value)
   if (!parts) return '--'
   return parts.time ? `${parts.date} ${parts.time}` : parts.date
+}
+
+export function getTenderDateTimeParts(value) {
+  const parts = parseTenderDateParts(value)
+  if (!parts) {
+    return { date: '--', time: '', text: '--', hasTime: false }
+  }
+  return {
+    date: parts.date,
+    time: parts.time,
+    text: parts.time ? `${parts.date} ${parts.time}` : parts.date,
+    hasTime: Boolean(parts.time)
+  }
+}
+
+export function formatTenderDisplayField(value, missingText = '未提取') {
+  const text = value == null ? '' : String(value).trim()
+  if (text) {
+    return { text, isMissing: false, tooltip: '' }
+  }
+  return {
+    text: missingText,
+    isMissing: true,
+    tooltip: '真实 API 暂无该字段，未做推断填充'
+  }
+}
+
+export function buildWinProbabilityView(scoreValue) {
+  const score = Number(scoreValue)
+  const sourceScore = Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 0
+  let rate = 1
+  if (sourceScore >= 90) rate = 5
+  else if (sourceScore >= 80) rate = 4
+  else if (sourceScore >= 70) rate = 3
+  else if (sourceScore >= 60) rate = 2
+
+  const percent = rate * 20
+  return {
+    rate,
+    percent,
+    label: `${percent}%`,
+    sourceScore,
+    tooltip: '由投标匹配评分按星级分档换算，仅作投标概率参考，不是后端直接返回的独立概率'
+  }
 }
 
 /**

@@ -2,7 +2,12 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { bidMatchScoringApi, tendersApi } from '@/api'
-import { safeTenderUrl } from '../bidding-utils.js'
+import {
+  buildWinProbabilityView,
+  formatTenderDisplayField,
+  getTenderDateTimeParts,
+  safeTenderUrl,
+} from '../bidding-utils.js'
 import { getTenderStatusTagType, getTenderStatusText } from '../bidding-utils-status.js'
 import { normalizeMatchScoreForView, summarizeScoreState } from '../match-scoring/normalizers.js'
 
@@ -29,14 +34,14 @@ export function useBiddingDetailPage() {
   const scoreEmptyText = computed(() => scoreSummary.value.actionText || scoreSummary.value.text)
   const scoreEmptyDescription = computed(() => scoreSummary.value.description)
 
-  const probabilityRate = computed(() => {
+  const regionMeta = computed(() => formatTenderDisplayField(tender.value?.region))
+  const industryMeta = computed(() => formatTenderDisplayField(tender.value?.industry))
+  const deadlineParts = computed(() => getTenderDateTimeParts(tender.value?.deadline))
+  const winProbabilityView = computed(() => {
     const score = scoreForView.value?.totalScore ?? tender.value?.aiScore ?? 0
-    if (score >= 90) return 5
-    if (score >= 80) return 4
-    if (score >= 70) return 3
-    if (score >= 60) return 2
-    return 1
+    return buildWinProbabilityView(score)
   })
+  const probabilityRate = computed(() => winProbabilityView.value.rate)
 
   const advantages = computed(() => {
     const dimensions = scoreForView.value?.dimensionSummaries || []
@@ -233,6 +238,10 @@ export function useBiddingDetailPage() {
     matchScoreState,
     scoreEmptyText,
     scoreEmptyDescription,
+    regionMeta,
+    industryMeta,
+    deadlineParts,
+    winProbabilityView,
     probabilityRate,
     advantages,
     suggestions,

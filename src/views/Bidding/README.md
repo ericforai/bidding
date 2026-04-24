@@ -20,7 +20,7 @@
 | `ai-analysis/*` | View / Composable / UI | AI 分析页局部组件、组合逻辑与样式 |
 | `match-scoring/*` | UI / Pure Helper | 标讯投标匹配评分面板与展示归一化 |
 | `customer-opportunity/*` | View / Composable / UI | 客户池、看板、详情、历史抽屉与组合逻辑 |
-| `bidding-utils.js` | Pure Helper | 标讯状态、金额、日期等展示归一化与请求载荷转换 |
+| `bidding-utils.js` | Pure Helper | 标讯状态、金额、日期、详情空值与概率展示归一化与请求载荷转换 |
 
 ## 更新记录
 
@@ -28,6 +28,7 @@
 - 2026-04-22: `AIAnalysis.vue` 与 `Detail.vue` 拆为页面壳，新增 `ai-analysis/*` 与 `detail/*` 局部模块并增加行数预算门禁
 - 2026-04-24: 新增 `match-scoring/*`，标讯详情与 AI 分析页改用真实投标匹配评分结果展示。
 - 2026-04-24: `bidding-utils.js` 新增标讯日期展示格式化，详情页发布日期与截止日期不再直接展示 ISO 原始字符串。
+- 2026-04-24: 标讯详情页空地区/行业改为明确显示未提取，截止日期拆分日期与时间，中标概率改为百分比说明。
 - 2026-04-24: `list/constants.js` 地区筛选改为省级全国清单，标讯源默认不限定地区。
 - 2026-04-24: `TenderSearchCard` 筛选控件统一朴素灰边，去除输入框与下拉框点击蓝色焦点光圈。
 - 2026-04-21: `List.vue` 搜索改为刷新后端标讯检索结果，人工录入改为调用真实标讯创建接口入库

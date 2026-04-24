@@ -30,23 +30,38 @@
           <el-descriptions-item label="预算金额">
             <span class="amount-text">{{ formatBudgetWan(tender.budget) }}万元</span>
           </el-descriptions-item>
-          <el-descriptions-item label="所属地区">{{ tender.region }}</el-descriptions-item>
-          <el-descriptions-item label="所属行业">{{ tender.industry }}</el-descriptions-item>
+          <el-descriptions-item label="所属地区">
+            <el-tooltip v-if="regionMeta.isMissing" :content="regionMeta.tooltip" placement="top">
+              <span class="field-missing">{{ regionMeta.text }}</span>
+            </el-tooltip>
+            <span v-else>{{ regionMeta.text }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="所属行业">
+            <el-tooltip v-if="industryMeta.isMissing" :content="industryMeta.tooltip" placement="top">
+              <span class="field-missing">{{ industryMeta.text }}</span>
+            </el-tooltip>
+            <span v-else>{{ industryMeta.text }}</span>
+          </el-descriptions-item>
           <el-descriptions-item label="发布日期">{{ formatTenderDate(tender.publishDate || tender.date) }}</el-descriptions-item>
           <el-descriptions-item label="截止日期">
-            <span :class="getDeadlineClass(tender.deadline)">{{ formatTenderDateTime(tender.deadline) }}</span>
+            <span class="deadline-display" :class="getDeadlineClass(tender.deadline)">
+              <span>{{ deadlineParts.date }}</span>
+              <template v-if="deadlineParts.hasTime">
+                <span class="deadline-separator">|</span>
+                <span>{{ deadlineParts.time }}</span>
+              </template>
+            </span>
           </el-descriptions-item>
           <el-descriptions-item label="当前状态">
             <el-tag :type="getStatusType(tender.status)" size="small">{{ getStatusText(tender.status) }}</el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="中标概率" :span="3">
-            <el-rate
-              :model-value="probabilityRate"
-              disabled
-              show-score
-              text-color="#ff9900"
-              score-template="{value}"
-            />
+            <div class="win-probability-display">
+              <el-rate :model-value="winProbabilityView.rate" disabled />
+              <el-tooltip :content="winProbabilityView.tooltip" placement="top">
+                <span class="win-probability-label">{{ winProbabilityView.label }}</span>
+              </el-tooltip>
+            </div>
           </el-descriptions-item>
         </el-descriptions>
 
@@ -173,7 +188,7 @@
 
 <script setup>
 import { ArrowRight, Briefcase, CircleCheckFilled, Document, DocumentAdd, Link, MagicStick, Share, Star, StarFilled } from '@element-plus/icons-vue'
-import { formatBudgetWan, formatTenderDate, formatTenderDateTime, safeTenderUrl } from '../bidding-utils.js'
+import { formatBudgetWan, formatTenderDate, safeTenderUrl } from '../bidding-utils.js'
 import MatchScorePanel from '../match-scoring/MatchScorePanel.vue'
 import { useBiddingDetailPage } from './useBiddingDetailPage.js'
 import './styles/detail-layout.css'
@@ -188,7 +203,10 @@ const {
   scoreGenerating,
   scoreError,
   matchScoreState,
-  probabilityRate,
+  regionMeta,
+  industryMeta,
+  deadlineParts,
+  winProbabilityView,
   advantages,
   suggestions,
   relatedCases,

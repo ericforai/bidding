@@ -91,6 +91,29 @@
   color: #f56c6c;
 }
 
+.field-missing {
+  color: #909399;
+  font-weight: 500;
+  cursor: help;
+}
+
+.deadline-display,
+.win-probability-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.deadline-separator {
+  color: #c0c4cc;
+}
+
+.win-probability-label {
+  color: #409eff;
+  font-weight: 600;
+  cursor: help;
+}
+
 .deadline-urgent {
   color: #f56c6c;
   font-weight: 600;

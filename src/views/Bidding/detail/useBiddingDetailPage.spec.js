@@ -50,7 +50,9 @@ describe('useBiddingDetailPage', () => {
       success: true,
       data: {
         id: '9001',
+        region: '上海',
         industry: '政府',
+        deadline: '2026-05-31T18:00:00',
         originalUrl: 'https://example.com/tender',
       },
     })
@@ -91,7 +93,35 @@ describe('useBiddingDetailPage', () => {
     expect(wrapper.vm.matchScore.totalScore).toBe(86)
     expect(wrapper.vm.matchScoreState).toBe('ready')
     expect(wrapper.vm.probabilityRate).toBe(4)
+    expect(wrapper.vm.winProbabilityView.label).toBe('80%')
+    expect(wrapper.vm.deadlineParts).toMatchObject({ date: '2026-05-31', time: '18:00', hasTime: true })
     expect(wrapper.vm.matchScore.dimensions.map((dimension) => dimension.name)).toEqual(['预算匹配', '交付窗口'])
+  })
+
+  it('keeps missing region and industry explicit without inferred values', async () => {
+    getDetail.mockResolvedValue({
+      success: true,
+      data: {
+        id: '9001',
+        region: '',
+        industry: null,
+        deadline: '2026-05-31T18:00:00',
+        originalUrl: 'https://example.com/tender',
+      },
+    })
+    getLatestScore.mockResolvedValue({
+      success: true,
+      data: { id: 'S9001', tenderId: '9001', totalScore: 100, status: 'READY', dimensions: [] },
+    })
+
+    const wrapper = mount(createHarness())
+    await flushPromises()
+
+    expect(wrapper.vm.regionMeta).toMatchObject({ text: '未提取', isMissing: true })
+    expect(wrapper.vm.industryMeta).toMatchObject({ text: '未提取', isMissing: true })
+    expect(wrapper.vm.probabilityRate).toBe(5)
+    expect(wrapper.vm.winProbabilityView).toMatchObject({ label: '100%', percent: 100, rate: 5 })
+    expect(wrapper.vm.winProbabilityView.label).not.toBe('5')
   })
 
   it('reports error when detail request fails', async () => {
