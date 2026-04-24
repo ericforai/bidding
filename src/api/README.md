@@ -34,6 +34,7 @@
 | `fees.js` | 费用管理 |
 | `ai.js` | AI 智能分析 |
 | `bidAgent.js` | 标书写作 Agent 的运行、状态、写入和审查调用 |
+| `bidMatchScoring.js` | 自定义投标匹配评分模型和标讯评分结果 |
 | ... | 其他业务模块 |
 
 ## 治理底线
@@ -51,3 +52,4 @@
 - 2026-04-21: `tenders.js` 改为透传服务端检索参数，并仅做标讯返回字段规范化
 - 2026-04-22: API 聚合入口移除重复动态 import，认证刷新通过 `authNormalizer.js` 与 `authStoreBridge.js` 消除 Vite 动静态导入警告
 - 2026-04-22: 新增 `bidAgent.js` 并在 `index.js` 暴露 `bidAgentApi`，接入项目标书写作 Agent 的真实 API 单一路径
+- 2026-04-24: 新增 `bidMatchScoring.js` 并在 `index.js` 暴露 `bidMatchScoringApi`，接入自定义投标匹配评分真实 API。

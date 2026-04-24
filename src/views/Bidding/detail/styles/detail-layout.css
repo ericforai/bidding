@@ -142,30 +142,6 @@
   margin: 0 0 16px;
 }
 
-.match-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.match-bar-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.bar-label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  color: #606266;
-}
-
-.bar-value {
-  font-weight: 600;
-  color: #303133;
-}
-
 .advantages-list {
   display: flex;
   flex-direction: column;

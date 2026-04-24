@@ -1,35 +1,8 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { aiApi, tendersApi } from '@/api'
-
-const dimensionDetailsMap = {
-  客户关系: {
-    score: 80,
-    description: '与客户有历史合作记录，关系维护良好，但近期高层互动较少',
-    suggestion: '建议安排分管领导或高层进行技术交流，加深客户印象',
-  },
-  需求匹配: {
-    score: 70,
-    description: '核心业务领域匹配，但部分新技术要求需要补充技术储备',
-    suggestion: '梳理现有技术方案，结合新要求进行针对性优化',
-  },
-  资质满足: {
-    score: 60,
-    description: '基础资质齐全，但部分高等级资质缺失或即将过期',
-    suggestion: '及时更新即将过期的资质，考虑与合作方联合投标',
-  },
-  交付能力: {
-    score: 85,
-    description: '具备完善的交付团队和成功案例，交付风险较低',
-    suggestion: '保持优势，提前组建项目团队进行资源准备',
-  },
-  竞争态势: {
-    score: 50,
-    description: '竞争对手实力较强，预计至少3-5家优质竞争对手',
-    suggestion: '分析竞争对手特点，制定差异化竞争策略',
-  },
-}
+import { aiApi, bidMatchScoringApi, tendersApi } from '@/api'
+import { normalizeMatchScoreForView } from '../match-scoring/normalizers.js'
 
 export function useAiAnalysisPage() {
   const router = useRouter()
@@ -44,6 +17,9 @@ export function useAiAnalysisPage() {
   const parseProgress = ref(0)
   const parseTimer = ref(null)
   const loadError = ref('')
+  const latestMatchScore = ref(null)
+  const matchScoreLoading = ref(false)
+  const matchScoreError = ref('')
 
   const progressColors = [
     { color: '#f56c6c', percentage: 30 },
@@ -52,17 +28,16 @@ export function useAiAnalysisPage() {
     { color: '#67c23a', percentage: 100 },
   ]
 
-  const dimensionDetails = computed(() => {
-    if (!analysisData.value) return []
-    return analysisData.value.dimensionScores.map((dim) => ({
+  const matchScoreForDisplay = computed(() => normalizeMatchScoreForView(latestMatchScore.value))
+
+  const dimensionDetails = computed(() => (
+    matchScoreForDisplay.value?.dimensionSummaries.map((dim) => ({
       name: dim.name,
       score: dim.score,
-      ...(dimensionDetailsMap[dim.name] || {
-        description: '暂无维度说明',
-        suggestion: '暂无改进建议',
-      }),
-    }))
-  })
+      description: dim.description || dim.evidence[0]?.content || '暂无维度说明',
+      suggestion: dim.suggestion || dim.evidence[1]?.content || '暂无改进建议',
+    })) || []
+  ))
 
   const getScoreColor = (score) => {
     if (score >= 71) return '#67c23a'
@@ -197,6 +172,21 @@ export function useAiAnalysisPage() {
     }
   }
 
+  const loadLatestMatchScore = async () => {
+    matchScoreLoading.value = true
+    matchScoreError.value = ''
+    try {
+      const response = await bidMatchScoringApi.getLatestScore(tenderId.value)
+      if (!response?.success) throw new Error(response?.message || '匹配评分加载失败')
+      latestMatchScore.value = response.data || null
+    } catch (error) {
+      latestMatchScore.value = null
+      matchScoreError.value = error?.response?.data?.message || error?.message || '匹配评分加载失败'
+    } finally {
+      matchScoreLoading.value = false
+    }
+  }
+
   const initializePage = async () => {
     loadError.value = ''
     const showParsing = !route.params.fromList
@@ -210,7 +200,10 @@ export function useAiAnalysisPage() {
       await new Promise((resolve) => setTimeout(resolve, 1000))
     }
 
-    await loadAnalysis()
+    await Promise.all([
+      loadAnalysis(),
+      loadLatestMatchScore(),
+    ])
   }
 
   onMounted(() => {
@@ -229,6 +222,10 @@ export function useAiAnalysisPage() {
     showParsingDialog,
     parseProgress,
     loadError,
+    latestMatchScore,
+    matchScoreForDisplay,
+    matchScoreLoading,
+    matchScoreError,
     progressColors,
     dimensionDetails,
     getScoreColor,

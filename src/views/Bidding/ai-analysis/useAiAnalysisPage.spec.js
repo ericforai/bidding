@@ -10,6 +10,7 @@ const routeState = {
 
 const getDetail = vi.fn()
 const getAnalysis = vi.fn()
+const getLatestScore = vi.fn()
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: routerPush, back: routerBack }),
@@ -19,6 +20,7 @@ vi.mock('vue-router', () => ({
 vi.mock('@/api', () => ({
   tendersApi: { getDetail },
   aiApi: { bid: { getAnalysis } },
+  bidMatchScoringApi: { getLatestScore },
 }))
 
 const elMessage = {
@@ -56,9 +58,20 @@ describe('useAiAnalysisPage', () => {
       data: {
         winScore: 88,
         suggestion: '建议跟进',
-        dimensionScores: [{ name: '客户关系', score: 80 }],
+        dimensionScores: [{ name: '动态分析维度', score: 80, description: '动态说明' }],
         risks: [],
         autoTasks: [],
+      },
+    })
+    getLatestScore.mockResolvedValue({
+      success: true,
+      data: {
+        id: 'S001',
+        tenderId: 'T001',
+        totalScore: 82,
+        status: 'READY',
+        modelVersion: '2026.04',
+        dimensions: [{ key: 'budgetFit', name: '预算匹配', score: 82, weight: 100 }],
       },
     })
   })
@@ -73,8 +86,11 @@ describe('useAiAnalysisPage', () => {
 
     expect(getDetail).toHaveBeenCalledWith('T001')
     expect(getAnalysis).toHaveBeenCalledWith('T001')
+    expect(getLatestScore).toHaveBeenCalledWith('T001')
     expect(wrapper.vm.tenderInfo.title).toBe('测试标讯')
     expect(wrapper.vm.analysisData.winScore).toBe(88)
+    expect(wrapper.vm.matchScoreForDisplay.totalScore).toBe(82)
+    expect(wrapper.vm.matchScoreForDisplay.dimensionSummaries[0].name).toBe('预算匹配')
   })
 
   it('reports backend error when analysis request fails', async () => {
@@ -89,6 +105,15 @@ describe('useAiAnalysisPage', () => {
       duration: 10000,
       showClose: true,
     })
+  })
+
+  it('does not present AI analysis dimensions as real match score when latest score is empty', async () => {
+    getLatestScore.mockResolvedValue({ success: true, data: null })
+    const wrapper = mount(createHarness())
+    await flushPromises()
+
+    expect(wrapper.vm.matchScoreForDisplay).toBe(null)
+    expect(wrapper.vm.dimensionDetails).toEqual([])
   })
 
   it('clears parsing timer on unmount when parsing animation is enabled', async () => {
