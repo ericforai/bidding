@@ -22,6 +22,11 @@ final class TenderRequirementProfileMerger {
                 firstNonBlank(profiles, TenderRequirementProfile::tenderTitle),
                 firstNonBlank(profiles, TenderRequirementProfile::tenderScope),
                 firstNonBlank(profiles, TenderRequirementProfile::purchaserName),
+                firstNonNull(profiles, TenderRequirementProfile::budget),
+                firstNonBlank(profiles, TenderRequirementProfile::region),
+                firstNonBlank(profiles, TenderRequirementProfile::industry),
+                firstNonNull(profiles, TenderRequirementProfile::publishDate),
+                firstNonNull(profiles, TenderRequirementProfile::deadline),
                 collect(profiles, TenderRequirementProfile::qualificationRequirements),
                 collect(profiles, TenderRequirementProfile::technicalRequirements),
                 collect(profiles, TenderRequirementProfile::commercialRequirements),
@@ -47,6 +52,17 @@ final class TenderRequirementProfileMerger {
                 .map(extractor::extract)
                 .filter(value -> value != null && !value.isBlank())
                 .map(String::trim)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static <T> T firstNonNull(
+            List<TenderRequirementProfile> profiles,
+            ValueFieldExtractor<T> extractor
+    ) {
+        return profiles.stream()
+                .map(extractor::extract)
+                .filter(value -> value != null)
                 .findFirst()
                 .orElse(null);
     }
@@ -88,5 +104,10 @@ final class TenderRequirementProfileMerger {
     @FunctionalInterface
     private interface ListFieldExtractor {
         List<String> extract(TenderRequirementProfile profile);
+    }
+
+    @FunctionalInterface
+    private interface ValueFieldExtractor<T> {
+        T extract(TenderRequirementProfile profile);
     }
 }

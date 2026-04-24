@@ -7,6 +7,8 @@ import {
   normalizeAiDimensions,
   normalizeAiRisks,
   formatBudgetWan,
+  formatTenderDate,
+  formatTenderDateTime,
   safeTenderUrl,
   toBackendStatus
 } from './bidding-utils.js'
@@ -167,6 +169,27 @@ describe('display and URL helpers', () => {
     expect(formatBudgetWan(15800000)).toBe('1,580')
     expect(formatBudgetWan(4500000)).toBe('450')
     expect(formatBudgetWan(12500)).toBe('1.25')
+  })
+
+  it('formats tender dates from LocalDate and ISO datetime values', () => {
+    expect(formatTenderDate('2026-05-31')).toBe('2026-05-31')
+    expect(formatTenderDate('2026-05-31T18:00:00')).toBe('2026-05-31')
+    expect(formatTenderDate('2026-05-31T18:00:00Z')).toBe('2026-05-31')
+  })
+
+  it('formats tender date times from ISO datetime values', () => {
+    expect(formatTenderDateTime('2026-05-31T18:00:00')).toBe('2026-05-31 18:00')
+    expect(formatTenderDateTime('2026-05-31T18:00:00Z')).toBe('2026-05-31 18:00')
+    expect(formatTenderDateTime('2026-05-31')).toBe('2026-05-31')
+  })
+
+  it('uses placeholder for empty or invalid tender date values', () => {
+    expect(formatTenderDate(null)).toBe('--')
+    expect(formatTenderDate('')).toBe('--')
+    expect(formatTenderDate('2026-02-30')).toBe('--')
+    expect(formatTenderDateTime(undefined)).toBe('--')
+    expect(formatTenderDateTime('not-a-date')).toBe('--')
+    expect(formatTenderDateTime('2026-05-31T25:00:00')).toBe('--')
   })
 
   it('allows only http and https tender URLs', () => {

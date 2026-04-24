@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const routerPush = vi.fn()
 const routeState = {
-  params: { id: 'T9001' },
+  params: { id: '9001' },
 }
 
 const getDetail = vi.fn()
@@ -45,11 +45,11 @@ function createHarness() {
 describe('useBiddingDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    routeState.params = { id: 'T9001' }
+    routeState.params = { id: '9001' }
     getDetail.mockResolvedValue({
       success: true,
       data: {
-        id: 'T9001',
+        id: '9001',
         industry: '政府',
         originalUrl: 'https://example.com/tender',
       },
@@ -58,7 +58,7 @@ describe('useBiddingDetailPage', () => {
       success: true,
       data: {
         id: 'S9001',
-        tenderId: 'T9001',
+        tenderId: '9001',
         totalScore: 86,
         modelVersion: '2026.04',
         status: 'READY',
@@ -72,7 +72,7 @@ describe('useBiddingDetailPage', () => {
       success: true,
       data: {
         id: 'S9002',
-        tenderId: 'T9001',
+        tenderId: '9001',
         totalScore: 91,
         modelVersion: '2026.05',
         status: 'READY',
@@ -85,9 +85,9 @@ describe('useBiddingDetailPage', () => {
     const wrapper = mount(createHarness())
     await flushPromises()
 
-    expect(getDetail).toHaveBeenCalledWith('T9001')
-    expect(getLatestScore).toHaveBeenCalledWith('T9001')
-    expect(wrapper.vm.tender.id).toBe('T9001')
+    expect(getDetail).toHaveBeenCalledWith('9001')
+    expect(getLatestScore).toHaveBeenCalledWith('9001')
+    expect(wrapper.vm.tender.id).toBe('9001')
     expect(wrapper.vm.matchScore.totalScore).toBe(86)
     expect(wrapper.vm.matchScoreState).toBe('ready')
     expect(wrapper.vm.probabilityRate).toBe(4)
@@ -137,7 +137,7 @@ describe('useBiddingDetailPage', () => {
 
     await wrapper.vm.handleGenerateMatchScore()
 
-    expect(generateScore).toHaveBeenCalledWith('T9001')
+    expect(generateScore).toHaveBeenCalledWith('9001')
     expect(wrapper.vm.matchScore.totalScore).toBe(91)
     expect(elMessage.success).toHaveBeenCalledWith('匹配评分已生成')
   })
@@ -162,7 +162,7 @@ describe('useBiddingDetailPage', () => {
     wrapper.vm.handleParticipate()
     expect(routerPush).toHaveBeenCalledWith({
       path: '/project/create',
-      query: { tenderId: 'T9001' },
+      query: { tenderId: '9001' },
     })
   })
 })

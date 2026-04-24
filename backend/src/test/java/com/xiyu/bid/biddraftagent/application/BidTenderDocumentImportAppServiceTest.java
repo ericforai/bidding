@@ -26,7 +26,10 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -94,7 +97,7 @@ class BidTenderDocumentImportAppServiceTest {
         allowTransactionCallbacks();
         MockMultipartFile file = sampleFile();
         Project project = Project.builder().id(11L).tenderId(22L).name("华东智慧园区改造项目").managerId(1L).build();
-        Tender tender = Tender.builder().id(22L).title("旧标题").description("旧描述").tags("旧标签").build();
+        Tender tender = Tender.builder().id(22L).title(" ").description(" ").tags(" ").build();
         TenderRequirementProfile profile = sampleProfile();
 
         when(projectRepository.findById(11L)).thenReturn(Optional.of(project));
@@ -123,8 +126,14 @@ class BidTenderDocumentImportAppServiceTest {
         assertThat(result.getDocument().getSnapshotId()).isEqualTo(601L);
         assertThat(result.getRequirementProfile().projectName()).isEqualTo("华东智慧园区改造项目");
         assertThat(tender.getTitle()).isEqualTo("2026园区改造招标公告");
+        assertThat(tender.getPurchaserName()).isEqualTo("上海采购集团");
         assertThat(tender.getDescription()).contains("资格要求", "评分标准", "必须提供的材料");
         assertThat(tender.getTags()).contains("智慧园区");
+        assertThat(tender.getBudget()).isEqualByComparingTo("1250000.00");
+        assertThat(tender.getRegion()).isEqualTo("上海浦东");
+        assertThat(tender.getIndustry()).isEqualTo("智慧园区");
+        assertThat(tender.getPublishDate()).isEqualTo(LocalDate.of(2026, 4, 1));
+        assertThat(tender.getDeadline()).isEqualTo(LocalDateTime.of(2026, 5, 30, 17, 30));
 
         ArgumentCaptor<ProjectDocument> documentCaptor = ArgumentCaptor.forClass(ProjectDocument.class);
         ArgumentCaptor<List<BidRequirementItem>> itemCaptor = ArgumentCaptor.forClass(List.class);
@@ -135,6 +144,57 @@ class BidTenderDocumentImportAppServiceTest {
         assertThat(itemCaptor.getValue()).hasSize(2);
         assertThat(itemCaptor.getValue()).extracting(BidRequirementItem::getCategory)
                 .contains("qualification", "technical");
+    }
+
+    @Test
+    void parseTenderDocument_shouldNotOverwriteExistingTenderStructuredFields() {
+        allowTransactionCallbacks();
+        MockMultipartFile file = sampleFile();
+        Project project = Project.builder().id(11L).tenderId(22L).name("华东智慧园区改造项目").managerId(1L).build();
+        Tender tender = Tender.builder()
+                .id(22L)
+                .title("旧标题")
+                .purchaserName("旧采购单位")
+                .description("旧描述")
+                .tags("旧标签")
+                .budget(new BigDecimal("9900000.00"))
+                .region("北京")
+                .industry("制造业")
+                .publishDate(LocalDate.of(2026, 3, 1))
+                .deadline(LocalDateTime.of(2026, 4, 20, 10, 0))
+                .build();
+
+        when(projectRepository.findById(11L)).thenReturn(Optional.of(project));
+        when(tenderRepository.findById(22L)).thenReturn(Optional.of(tender));
+        when(documentStorage.store(eq(11L), eq("招标文件.docx"), any(), any()))
+                .thenReturn(new StoredTenderDocument("bid-agent://tender-documents/11/file", "/tmp/file", "abc"));
+        when(textExtractor.extract(eq("招标文件.docx"), any(), any()))
+                .thenReturn(new ExtractedTenderDocument("招标文件.docx", file.getContentType(), "抽取正文", 4, "test-extractor"));
+        when(documentAnalyzer.analyze(any())).thenReturn(sampleProfile());
+        when(operatorResolver.currentOperator()).thenReturn(new BidAgentOperator(7L, "张经理"));
+        when(projectDocumentRepository.save(any())).thenAnswer(invocation -> {
+            ProjectDocument document = invocation.getArgument(0);
+            document.setId(501L);
+            return document;
+        });
+        when(documentSnapshotRepository.save(any())).thenAnswer(invocation -> {
+            BidTenderDocumentSnapshot snapshot = invocation.getArgument(0);
+            snapshot.setId(601L);
+            return snapshot;
+        });
+        when(requirementItemRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        appService.parseTenderDocument(11L, file);
+
+        assertThat(tender.getTitle()).isEqualTo("旧标题");
+        assertThat(tender.getPurchaserName()).isEqualTo("旧采购单位");
+        assertThat(tender.getDescription()).isEqualTo("旧描述");
+        assertThat(tender.getTags()).isEqualTo("旧标签");
+        assertThat(tender.getBudget()).isEqualByComparingTo("9900000.00");
+        assertThat(tender.getRegion()).isEqualTo("北京");
+        assertThat(tender.getIndustry()).isEqualTo("制造业");
+        assertThat(tender.getPublishDate()).isEqualTo(LocalDate.of(2026, 3, 1));
+        assertThat(tender.getDeadline()).isEqualTo(LocalDateTime.of(2026, 4, 20, 10, 0));
     }
 
     @Test
@@ -214,6 +274,11 @@ class BidTenderDocumentImportAppServiceTest {
                 "2026园区改造招标公告",
                 "园区数字化改造",
                 "上海采购集团",
+                new BigDecimal("1250000.00"),
+                "上海浦东",
+                "智慧园区",
+                LocalDate.of(2026, 4, 1),
+                LocalDateTime.of(2026, 5, 30, 17, 30),
                 List.of("提供有效资质证书"),
                 List.of("提供实施方案"),
                 List.of("响应付款和交付条款"),

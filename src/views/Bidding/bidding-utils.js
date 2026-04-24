@@ -1,5 +1,5 @@
 // Input: backend response objects, frontend form data
-// Output: pure normalizer functions for bidding data transformations
+// Output: pure normalizer and display formatter functions for bidding data transformations
 // Pos: src/views/Bidding/ - Bidding module utilities
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -64,6 +64,37 @@ export function formatBudgetWan(value) {
   const wan = number / 10000
   const maximumFractionDigits = Math.abs(wan) >= 100 ? 0 : 2
   return wan.toLocaleString('zh-CN', { maximumFractionDigits })
+}
+
+function isValidDateParts(year, month, day) {
+  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)))
+  return date.getUTCFullYear() === Number(year)
+    && date.getUTCMonth() === Number(month) - 1
+    && date.getUTCDate() === Number(day)
+}
+
+function parseTenderDateParts(value) {
+  if (value == null || value === '') return null
+  const rawValue = String(value).trim()
+  const match = rawValue.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/)
+  if (!match) return null
+
+  const [, year, month, day, hour, minute] = match
+  if (!isValidDateParts(year, month, day)) return null
+  if (hour != null && (Number(hour) > 23 || Number(minute) > 59)) return null
+
+  return { date: `${year}-${month}-${day}`, time: hour == null ? '' : `${hour}:${minute}` }
+}
+
+export function formatTenderDate(value) {
+  const parts = parseTenderDateParts(value)
+  return parts?.date || '--'
+}
+
+export function formatTenderDateTime(value) {
+  const parts = parseTenderDateParts(value)
+  if (!parts) return '--'
+  return parts.time ? `${parts.date} ${parts.time}` : parts.date
 }
 
 /**

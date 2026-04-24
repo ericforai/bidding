@@ -18,6 +18,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -51,10 +53,10 @@ public class BidDraftSnapshotAssembler {
                 project.getSourceReasoningSummary(),
                 project.getCustomer(),
                 project.getCustomerType(),
-                project.getRegion(),
-                project.getIndustry(),
-                project.getBudget(),
-                project.getDeadline(),
+                firstText(project.getRegion(), tender.getRegion()),
+                firstText(project.getIndustry(), tender.getIndustry()),
+                firstBudget(project.getBudget(), tender.getBudget()),
+                firstDeadline(project.getDeadline(), tender),
                 tender.getTitle(),
                 tender.getDescription(),
                 tender.getPurchaserName(),
@@ -142,5 +144,23 @@ public class BidDraftSnapshotAssembler {
             return List.of();
         }
         return List.of(value.split(","));
+    }
+
+    private String firstText(String projectValue, String tenderValue) {
+        if (projectValue != null && !projectValue.isBlank()) {
+            return projectValue;
+        }
+        return tenderValue == null || tenderValue.isBlank() ? null : tenderValue;
+    }
+
+    private BigDecimal firstBudget(BigDecimal projectBudget, BigDecimal tenderBudget) {
+        return projectBudget == null ? tenderBudget : projectBudget;
+    }
+
+    private LocalDate firstDeadline(LocalDate projectDeadline, Tender tender) {
+        if (projectDeadline != null) {
+            return projectDeadline;
+        }
+        return tender.getDeadline() == null ? null : tender.getDeadline().toLocalDate();
     }
 }

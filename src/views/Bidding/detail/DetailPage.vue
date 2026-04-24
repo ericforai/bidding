@@ -32,9 +32,9 @@
           </el-descriptions-item>
           <el-descriptions-item label="所属地区">{{ tender.region }}</el-descriptions-item>
           <el-descriptions-item label="所属行业">{{ tender.industry }}</el-descriptions-item>
-          <el-descriptions-item label="发布日期">{{ tender.date }}</el-descriptions-item>
+          <el-descriptions-item label="发布日期">{{ formatTenderDate(tender.publishDate || tender.date) }}</el-descriptions-item>
           <el-descriptions-item label="截止日期">
-            <span :class="getDeadlineClass(tender.deadline)">{{ tender.deadline }}</span>
+            <span :class="getDeadlineClass(tender.deadline)">{{ formatTenderDateTime(tender.deadline) }}</span>
           </el-descriptions-item>
           <el-descriptions-item label="当前状态">
             <el-tag :type="getStatusType(tender.status)" size="small">{{ getStatusText(tender.status) }}</el-tag>
@@ -173,7 +173,7 @@
 
 <script setup>
 import { ArrowRight, Briefcase, CircleCheckFilled, Document, DocumentAdd, Link, MagicStick, Share, Star, StarFilled } from '@element-plus/icons-vue'
-import { formatBudgetWan, safeTenderUrl } from '../bidding-utils.js'
+import { formatBudgetWan, formatTenderDate, formatTenderDateTime, safeTenderUrl } from '../bidding-utils.js'
 import MatchScorePanel from '../match-scoring/MatchScorePanel.vue'
 import { useBiddingDetailPage } from './useBiddingDetailPage.js'
 import './styles/detail-layout.css'

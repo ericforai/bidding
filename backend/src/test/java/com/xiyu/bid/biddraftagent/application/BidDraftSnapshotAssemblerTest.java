@@ -19,6 +19,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -101,6 +104,35 @@ class BidDraftSnapshotAssemblerTest {
         assertThat(snapshot.structuredRequirementSignals()).isEmpty();
         verify(requirementItemRepository, never()).findByProjectIdOrderByCreatedAtDesc(any());
         verify(requirementItemRepository, never()).findByProjectIdAndProjectDocumentIdOrderByCreatedAtDesc(any(), any());
+    }
+
+    @Test
+    void assemble_shouldFallbackProjectEmptyFieldsToTenderStructuredFields() {
+        when(projectRepository.findById(11L)).thenReturn(Optional.of(Project.builder()
+                .id(11L)
+                .tenderId(22L)
+                .name("华东智慧园区改造项目")
+                .region(" ")
+                .build()));
+        when(tenderRepository.findById(22L)).thenReturn(Optional.of(Tender.builder()
+                .id(22L)
+                .title("2026园区改造招标公告")
+                .description("修正版招标文件")
+                .budget(new BigDecimal("1250000.00"))
+                .region("上海浦东")
+                .industry("智慧园区")
+                .deadline(LocalDateTime.of(2026, 5, 30, 17, 30))
+                .build()));
+        when(documentSnapshotRepository.findTopByProjectIdOrderByCreatedAtDescIdDesc(11L))
+                .thenReturn(Optional.empty());
+        mockEmptyKnowledgePages();
+
+        var snapshot = assembler.assemble(11L);
+
+        assertThat(snapshot.region()).isEqualTo("上海浦东");
+        assertThat(snapshot.industry()).isEqualTo("智慧园区");
+        assertThat(snapshot.budget()).isEqualByComparingTo("1250000.00");
+        assertThat(snapshot.deadline()).isEqualTo(LocalDate.of(2026, 5, 30));
     }
 
     private void mockProjectAndTender() {

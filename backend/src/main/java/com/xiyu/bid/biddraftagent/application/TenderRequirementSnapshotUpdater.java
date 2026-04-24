@@ -12,14 +12,37 @@ import java.util.Set;
 class TenderRequirementSnapshotUpdater {
 
     void apply(Tender tender, TenderRequirementProfile profile) {
-        if (profile.tenderTitle() != null && !profile.tenderTitle().isBlank()) {
+        if (isBlank(tender.getTitle()) && !isBlank(profile.tenderTitle())) {
             tender.setTitle(profile.tenderTitle().trim());
         }
-        if (profile.purchaserName() != null && !profile.purchaserName().isBlank()) {
+        if (isBlank(tender.getPurchaserName()) && !isBlank(profile.purchaserName())) {
             tender.setPurchaserName(profile.purchaserName().trim());
         }
-        tender.setDescription(buildDescription(profile));
-        tender.setTags(mergeTags(tender.getTags(), profile.tags()));
+        applyStructuredProjectFields(tender, profile);
+        if (isBlank(tender.getDescription())) {
+            tender.setDescription(buildDescription(profile));
+        }
+        if (isBlank(tender.getTags())) {
+            tender.setTags(mergeTags(tender.getTags(), profile.tags()));
+        }
+    }
+
+    private void applyStructuredProjectFields(Tender tender, TenderRequirementProfile profile) {
+        if (tender.getBudget() == null && profile.budget() != null) {
+            tender.setBudget(profile.budget());
+        }
+        if (isBlank(tender.getRegion()) && !isBlank(profile.region())) {
+            tender.setRegion(profile.region());
+        }
+        if (isBlank(tender.getIndustry()) && !isBlank(profile.industry())) {
+            tender.setIndustry(profile.industry());
+        }
+        if (tender.getPublishDate() == null && profile.publishDate() != null) {
+            tender.setPublishDate(profile.publishDate());
+        }
+        if (tender.getDeadline() == null && profile.deadline() != null) {
+            tender.setDeadline(profile.deadline());
+        }
     }
 
     private String buildDescription(TenderRequirementProfile profile) {
@@ -64,5 +87,9 @@ class TenderRequirementSnapshotUpdater {
         if (tag != null && !tag.isBlank()) {
             tags.add(tag.trim());
         }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

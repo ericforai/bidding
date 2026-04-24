@@ -1,5 +1,8 @@
 package com.xiyu.bid.biddraftagent.domain;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -11,6 +14,11 @@ public record TenderRequirementProfile(
         String tenderTitle,
         String tenderScope,
         String purchaserName,
+        BigDecimal budget,
+        String region,
+        String industry,
+        LocalDate publishDate,
+        LocalDateTime deadline,
         List<String> qualificationRequirements,
         List<String> technicalRequirements,
         List<String> commercialRequirements,
@@ -33,6 +41,8 @@ public record TenderRequirementProfile(
     private static final Pattern BARE_INTEGER = Pattern.compile("^\\d{1,3}$");
 
     public TenderRequirementProfile {
+        region = normalizeText(region);
+        industry = normalizeText(industry);
         qualificationRequirements = normalizeReadableStrings(qualificationRequirements);
         technicalRequirements = normalizeReadableStrings(technicalRequirements);
         commercialRequirements = normalizeReadableStrings(commercialRequirements);
@@ -41,6 +51,43 @@ public record TenderRequirementProfile(
         riskPoints = normalizeReadableStrings(riskPoints);
         tags = normalizeStrings(tags);
         items = normalizeItems(items);
+    }
+
+    public TenderRequirementProfile(
+            String projectName,
+            String tenderTitle,
+            String tenderScope,
+            String purchaserName,
+            List<String> qualificationRequirements,
+            List<String> technicalRequirements,
+            List<String> commercialRequirements,
+            List<String> scoringCriteria,
+            String deadlineText,
+            List<String> requiredMaterials,
+            List<String> riskPoints,
+            List<String> tags,
+            List<TenderRequirementItemSnapshot> items
+    ) {
+        this(
+                projectName,
+                tenderTitle,
+                tenderScope,
+                purchaserName,
+                null,
+                null,
+                null,
+                null,
+                null,
+                qualificationRequirements,
+                technicalRequirements,
+                commercialRequirements,
+                scoringCriteria,
+                deadlineText,
+                requiredMaterials,
+                riskPoints,
+                tags,
+                items
+        );
     }
 
     public List<String> requirementSignals() {
@@ -95,6 +142,13 @@ public record TenderRequirementProfile(
 
     private static String normalizeWhitespace(String value) {
         return value == null ? "" : value.trim().replaceAll("\\s+", " ");
+    }
+
+    private static String normalizeText(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return normalizeWhitespace(value);
     }
 
     private static boolean isReadableListNoise(String value) {

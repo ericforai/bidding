@@ -4,6 +4,9 @@ import com.xiyu.bid.biddraftagent.domain.TenderRequirementItemSnapshot;
 import com.xiyu.bid.biddraftagent.domain.TenderRequirementProfile;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,11 +46,33 @@ class TenderRequirementProfileMergerTest {
         TenderRequirementProfile merged = TenderRequirementProfileMerger.merge(List.of(first, second));
 
         assertThat(merged.projectName()).isEqualTo("中国兵器电子商城项目");
+        assertThat(merged.budget()).isEqualByComparingTo("6800000");
+        assertThat(merged.region()).isEqualTo("新疆乌鲁木齐");
+        assertThat(merged.industry()).isEqualTo("工业品电商");
+        assertThat(merged.publishDate()).isEqualTo(LocalDate.of(2026, 4, 1));
+        assertThat(merged.deadline()).isEqualTo(LocalDateTime.of(2026, 5, 30, 17, 30));
         assertThat(merged.qualificationRequirements())
                 .containsExactly("具备独立法人资格", "提供售后服务承诺");
         assertThat(merged.technicalRequirements())
                 .containsExactly("支持电子商城接口对接", "提供商品上架能力");
         assertThat(merged.items()).hasSize(2);
+    }
+
+    @Test
+    void parser_shouldReturnNullForUnconfirmedStructuredValues() {
+        assertThat(OpenAiTenderDocumentAnalyzer.parseBudget("6800000.50"))
+                .isEqualByComparingTo("6800000.50");
+        assertThat(OpenAiTenderDocumentAnalyzer.parseBudget("680万元"))
+                .isEqualByComparingTo("6800000");
+        assertThat(OpenAiTenderDocumentAnalyzer.parseBudget("约680万元")).isNull();
+        assertThat(OpenAiTenderDocumentAnalyzer.parsePublishDate("2026-04-01"))
+                .isEqualTo(LocalDate.of(2026, 4, 1));
+        assertThat(OpenAiTenderDocumentAnalyzer.parsePublishDate("2026-02-30")).isNull();
+        assertThat(OpenAiTenderDocumentAnalyzer.parseDeadline("2026-05-30T17:30:00"))
+                .isEqualTo(LocalDateTime.of(2026, 5, 30, 17, 30));
+        assertThat(OpenAiTenderDocumentAnalyzer.parseDeadline("2026-05-30"))
+                .isEqualTo(LocalDateTime.of(2026, 5, 30, 23, 59, 59));
+        assertThat(OpenAiTenderDocumentAnalyzer.parseDeadline("2026-05-30 17:30")).isNull();
     }
 
     private TenderRequirementProfile profile(
@@ -61,6 +86,11 @@ class TenderRequirementProfileMergerTest {
                 "谈判采购文件",
                 "电商供应商引入",
                 "中国兵器装备集团有限公司",
+                projectName == null ? null : new BigDecimal("6800000"),
+                projectName == null ? null : "新疆乌鲁木齐",
+                projectName == null ? null : "工业品电商",
+                projectName == null ? null : LocalDate.of(2026, 4, 1),
+                projectName == null ? null : LocalDateTime.of(2026, 5, 30, 17, 30),
                 qualificationRequirements,
                 technicalRequirements,
                 List.of(),
