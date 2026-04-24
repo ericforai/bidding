@@ -4,6 +4,27 @@
 
 ## [未发布]
 
+### Added
+- 本周交付了投标编写 Agent 闭环，覆盖草稿生成、parse-run-apply 工作流和文档编辑器批量导入能力。
+- 本周新增可配置 AI Provider 路由、投标匹配评分模型，以及 MySQL 8 部署支持，补齐关键交付路径。
+
+### Changed
+- 本周持续推进 Dashboard、Bidding、合规规则和评分策略的 Split-First / pure core 拆分，收敛编排层职责并补齐测试门禁。
+- 发布与开发链路补齐主线发布流水线、生产 smoke checks、dev service/watchdog 以及 E2E 诊断与复用策略稳定化。
+
+### Fixed
+- 修复标讯上传迁移与 schema 校验、E2E rehearsal 栈复用、移动端投标管理布局，以及匹配评分证据范围等回归问题。
+
+### Key PRs
+- [#55 MySQL 8 main sync](https://github.com/ericforai/bidding/pull/55)
+- [#52 Non-integration gap closure](https://github.com/ericforai/bidding/pull/52)
+- [#51 Full-green stabilization](https://github.com/ericforai/bidding/pull/51)
+- [#50 Score draft policy rescue](https://github.com/ericforai/bidding/pull/50)
+- [#49 Compliance check split](https://github.com/ericforai/bidding/pull/49)
+- [#48 Expense ledger multidimensional stats](https://github.com/ericforai/bidding/pull/48)
+- [#47 Template library 3D classification](https://github.com/ericforai/bidding/pull/47)
+- [#45 Deposit return auto follow-up](https://github.com/ericforai/bidding/pull/45)
+
 ## [1.0.3] - 2026-04-24
 
 ### Added
