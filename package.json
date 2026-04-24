@@ -1,6 +1,6 @@
 {
   "name": "xiyu-bid-poc",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "西域数智化投标管理平台POC",
   "type": "module",
   "scripts": {
