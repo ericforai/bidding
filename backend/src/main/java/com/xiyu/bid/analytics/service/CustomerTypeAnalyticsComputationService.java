@@ -22,9 +22,9 @@ class CustomerTypeAnalyticsComputationService {
         long totalProjects = rows.size();
         Map<String, MutableCustomerTypeAggregate> aggregates = new LinkedHashMap<>();
         for (CustomerTypeProjectRow row : rows) {
-            String customerType = normalizeCustomerType(row.customerType());
+            String cType = normalizeCustomerType(row.customerType());
             MutableCustomerTypeAggregate aggregate = aggregates.computeIfAbsent(
-                    customerType,
+                    cType,
                     MutableCustomerTypeAggregate::new
             );
             aggregate.projectCount++;
@@ -109,8 +109,8 @@ class CustomerTypeAnalyticsComputationService {
         private long wonCount;
         private BigDecimal totalAmount = BigDecimal.ZERO;
 
-        private MutableCustomerTypeAggregate(String customerType) {
-            this.customerType = customerType;
+        private MutableCustomerTypeAggregate(String pCustomerType) {
+            this.customerType = pCustomerType;
         }
 
         private CustomerTypeAggregate toImmutable(long totalProjects) {

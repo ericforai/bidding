@@ -35,13 +35,13 @@ class DashboardAnalyticsAssemblerService {
     private final DashboardAnalyticsDrillDownMetricAssemblerService metricAssembler;
 
     DashboardAnalyticsAssemblerService(
-            DashboardAnalyticsOverviewAssemblerService overviewAssembler,
-            DashboardAnalyticsDrillDownContentAssemblerService contentAssembler,
-            DashboardAnalyticsDrillDownMetricAssemblerService metricAssembler
+            DashboardAnalyticsOverviewAssemblerService pOverviewAssembler,
+            DashboardAnalyticsDrillDownContentAssemblerService pContentAssembler,
+            DashboardAnalyticsDrillDownMetricAssemblerService pMetricAssembler
     ) {
-        this.overviewAssembler = overviewAssembler;
-        this.contentAssembler = contentAssembler;
-        this.metricAssembler = metricAssembler;
+        this.overviewAssembler = pOverviewAssembler;
+        this.contentAssembler = pContentAssembler;
+        this.metricAssembler = pMetricAssembler;
     }
 
     DashboardOverviewDTO buildOverview(

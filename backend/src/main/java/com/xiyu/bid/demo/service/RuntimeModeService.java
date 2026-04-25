@@ -14,9 +14,9 @@ public class RuntimeModeService {
     private final Environment environment;
     private final DemoModeService demoModeService;
 
-    public RuntimeModeService(Environment environment, DemoModeService demoModeService) {
-        this.environment = environment;
-        this.demoModeService = demoModeService;
+    public RuntimeModeService(Environment pEnvironment, DemoModeService pDemoModeService) {
+        this.environment = pEnvironment;
+        this.demoModeService = pDemoModeService;
     }
 
     public RuntimeModeResponse getCurrentMode() {

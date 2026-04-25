@@ -10,8 +10,8 @@ public class DemoModeService {
 
     private final Environment environment;
 
-    public DemoModeService(Environment environment) {
-        this.environment = environment;
+    public DemoModeService(Environment env) {
+        this.environment = env;
     }
 
     public boolean isEnabled() {

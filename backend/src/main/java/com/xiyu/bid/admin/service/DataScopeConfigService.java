@@ -46,31 +46,31 @@ public class DataScopeConfigService {
     // so Spring only sees the thin application-service surface.
     @Autowired
     public DataScopeConfigService(
-            SystemSettingRepository systemSettingRepository,
-            UserRepository userRepository,
-            RoleProfileRepository roleProfileRepository,
-            RoleProfileBootstrap roleProfileBootstrap,
+            SystemSettingRepository pSystemSettingRepository,
+            UserRepository pUserRepository,
+            RoleProfileRepository pRoleProfileRepository,
+            RoleProfileBootstrap pRoleProfileBootstrap,
             ObjectMapper objectMapper
     ) {
-        this(new DataScopeConfigStore(systemSettingRepository, objectMapper),
+        this(new DataScopeConfigStore(pSystemSettingRepository, objectMapper),
                 new DataScopeConfigAssembler(),
-                userRepository,
-                roleProfileRepository,
-                roleProfileBootstrap);
+                pUserRepository,
+                pRoleProfileRepository,
+                pRoleProfileBootstrap);
     }
 
     DataScopeConfigService(
-            DataScopeConfigStore configStore,
-            DataScopeConfigAssembler assembler,
-            UserRepository userRepository,
-            RoleProfileRepository roleProfileRepository,
-            RoleProfileBootstrap roleProfileBootstrap
+            DataScopeConfigStore pConfigStore,
+            DataScopeConfigAssembler pAssembler,
+            UserRepository pUserRepository,
+            RoleProfileRepository pRoleProfileRepository,
+            RoleProfileBootstrap pRoleProfileBootstrap
     ) {
-        this.configStore = configStore;
-        this.assembler = assembler;
-        this.userRepository = userRepository;
-        this.roleProfileRepository = roleProfileRepository;
-        this.roleProfileBootstrap = roleProfileBootstrap;
+        this.configStore = pConfigStore;
+        this.assembler = pAssembler;
+        this.userRepository = pUserRepository;
+        this.roleProfileRepository = pRoleProfileRepository;
+        this.roleProfileBootstrap = pRoleProfileBootstrap;
     }
 
     public DataScopeConfigResponse getConfig() {

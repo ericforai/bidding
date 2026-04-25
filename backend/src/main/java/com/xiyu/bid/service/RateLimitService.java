@@ -25,15 +25,15 @@ public class RateLimitService {
 
     private static final String EXPORT_RATE_LIMIT_KEY_PREFIX = "export:rateLimit:user:";
 
-    public RateLimitService(@Value("${app.export.max-exports-per-hour:10}") int maxExportsPerHour) {
+    public RateLimitService(@Value("${app.export.max-exports-per-hour:10}") int pMaxExportsPerHour) {
         this.redisTemplate = null;
-        this.maxExportsPerHour = maxExportsPerHour;
+        this.maxExportsPerHour = pMaxExportsPerHour;
     }
 
     @Autowired(required = false)
-    public void setRedisTemplate(StringRedisTemplate redisTemplate) {
-        this.redisTemplate = redisTemplate;
-        if (redisTemplate != null) {
+    public void setRedisTemplate(StringRedisTemplate pRedisTemplate) {
+        this.redisTemplate = pRedisTemplate;
+        if (pRedisTemplate != null) {
             log.info("Rate limit service wired with Redis template");
         } else {
             log.info("Rate limit service running without Redis template");

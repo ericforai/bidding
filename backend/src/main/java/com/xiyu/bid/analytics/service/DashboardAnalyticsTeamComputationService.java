@@ -18,8 +18,8 @@ class DashboardAnalyticsTeamComputationService {
 
     private final DashboardAnalyticsTeamPerformanceService teamPerformanceService;
 
-    DashboardAnalyticsTeamComputationService(DashboardAnalyticsTeamPerformanceService teamPerformanceService) {
-        this.teamPerformanceService = teamPerformanceService;
+    DashboardAnalyticsTeamComputationService(DashboardAnalyticsTeamPerformanceService pTeamPerformanceService) {
+        this.teamPerformanceService = pTeamPerformanceService;
     }
 
     Map<Long, TeamTaskAggregate> summarizeTaskRows(

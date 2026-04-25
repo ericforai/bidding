@@ -17,8 +17,8 @@ class ExperienceComplianceEvaluator {
 
     private final CaseRepository caseRepository;
 
-    ExperienceComplianceEvaluator(CaseRepository caseRepository) {
-        this.caseRepository = caseRepository;
+    ExperienceComplianceEvaluator(CaseRepository pCaseRepository) {
+        this.caseRepository = pCaseRepository;
     }
 
     ComplianceIssue evaluate(ComplianceRule rule, Project project, ObjectMapper objectMapper) {

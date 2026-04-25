@@ -32,11 +32,11 @@ class DashboardAnalyticsDrillDownContentAssemblerService {
     private final DashboardAnalyticsDrillDownContentSupport contentSupport;
 
     DashboardAnalyticsDrillDownContentAssemblerService(
-            DashboardAnalyticsTeamPerformanceService teamPerformanceService,
-            DashboardAnalyticsDrillDownContentSupport contentSupport
+            DashboardAnalyticsTeamPerformanceService pTeamPerformanceService,
+            DashboardAnalyticsDrillDownContentSupport pContentSupport
     ) {
-        this.teamPerformanceService = teamPerformanceService;
-        this.contentSupport = contentSupport;
+        this.teamPerformanceService = pTeamPerformanceService;
+        this.contentSupport = pContentSupport;
     }
 
     List<AnalyticsDrillDownProjectDTO> buildProjectItems(

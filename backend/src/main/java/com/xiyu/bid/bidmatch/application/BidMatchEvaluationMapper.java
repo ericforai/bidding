@@ -13,8 +13,8 @@ public class BidMatchEvaluationMapper {
 
     private final BidMatchJsonCodec jsonCodec;
 
-    public BidMatchEvaluationMapper(BidMatchJsonCodec jsonCodec) {
-        this.jsonCodec = jsonCodec;
+    public BidMatchEvaluationMapper(BidMatchJsonCodec pJsonCodec) {
+        this.jsonCodec = pJsonCodec;
     }
 
     public BidMatchEvaluationResponse toResponse(
