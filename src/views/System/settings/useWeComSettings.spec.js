@@ -101,6 +101,7 @@ describe('useWeComSettings', () => {
       agentId: 1000001,
       ssoEnabled: true,
       messageEnabled: false,
+      notifyUserIds: '',
     })
     expect(elMessage.success).toHaveBeenCalledWith('企业微信配置已保存')
   })

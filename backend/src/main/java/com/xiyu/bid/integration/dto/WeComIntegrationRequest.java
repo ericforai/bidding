@@ -23,6 +23,8 @@ public record WeComIntegrationRequest(
 
         boolean ssoEnabled,
 
-        boolean messageEnabled
+        boolean messageEnabled,
+
+        String notifyUserIds
 ) {
 }

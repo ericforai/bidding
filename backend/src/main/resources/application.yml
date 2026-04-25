@@ -128,6 +128,15 @@ management:
       export:
         enabled: true
 
+wecom:
+  api:
+    base-url: https://qyapi.weixin.qq.com
+  http:
+    connect-timeout-ms: 3000
+    read-timeout-ms: 5000
+  probe:
+    mode: real
+
 logging:
   level:
     com.xiyu: INFO

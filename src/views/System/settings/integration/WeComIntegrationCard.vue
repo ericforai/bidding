@@ -1,5 +1,5 @@
-<!-- Input: form / secretConfigured / testResult / loading / saving / testing props; emits save / test-conn -->
-<!-- Output: 企业微信 configuration card with form fields, switches, and action buttons -->
+<!-- Input: form / secretConfigured / testResult / testSendResult / loading / saving / testing / sending props; emits save / test-conn / send-test -->
+<!-- Output: 企业微信 configuration card with form fields, switches, notifyUserIds, and action buttons -->
 <!-- Pos: src/views/System/settings/integration/ -->
 <!-- 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。 -->
 
@@ -16,6 +16,11 @@
           :disabled="!secretConfigured || loading || testing"
           @click="$emit('test-conn')"
         >测试连接</el-button>
+        <el-button
+          :loading="sending"
+          :disabled="!secretConfigured || sending"
+          @click="$emit('send-test')"
+        >发送测试消息</el-button>
         <el-button :loading="saving" type="primary" @click="$emit('save')">保存配置</el-button>
       </div>
     </div>
@@ -30,6 +35,24 @@
       </el-tag>
       <span class="test-message">{{ testResult.message }}</span>
       <span v-if="testResult.probedAt" class="test-time">{{ formatProbedAt(testResult.probedAt) }}</span>
+    </div>
+
+    <div v-if="testSendResult" class="test-send-result-row">
+      <el-tag
+        :type="testSendResult.success ? 'success' : 'danger'"
+        effect="plain"
+        size="small"
+      >
+        {{ testSendResult.success ? '发送成功' : '发送失败' }}
+      </el-tag>
+      <span v-if="testSendResult.success" class="test-message">
+        已发送至 {{ testSendResult.sentTo }}
+        <span v-if="testSendResult.sentAt" class="test-time">{{ formatProbedAt(testSendResult.sentAt) }}</span>
+      </span>
+      <span v-else class="test-message">
+        {{ testSendResult.errmsg }}
+        <span v-if="testSendResult.errcode" class="test-time">错误码 {{ testSendResult.errcode }}</span>
+      </span>
     </div>
 
     <el-form
@@ -75,6 +98,15 @@
           <span class="switch-label">启用应用消息推送</span>
         </div>
       </div>
+
+      <el-form-item label="通知接收人">
+        <el-input
+          v-model="form.notifyUserIds"
+          type="textarea"
+          :rows="2"
+          placeholder="企业微信 UserID，多个用半角逗号或换行分隔"
+        />
+      </el-form-item>
     </el-form>
   </div>
 </template>
@@ -84,12 +116,14 @@ defineProps({
   form: { type: Object, required: true },
   secretConfigured: { type: Boolean, default: false },
   testResult: { type: Object, default: null },
+  testSendResult: { type: Object, default: null },
   loading: { type: Boolean, default: false },
   saving: { type: Boolean, default: false },
   testing: { type: Boolean, default: false },
+  sending: { type: Boolean, default: false },
 })
 
-defineEmits(['save', 'test-conn'])
+defineEmits(['save', 'test-conn', 'send-test'])
 
 const formatProbedAt = (probedAt) => new Date(probedAt).toLocaleString('zh-CN')
 </script>
@@ -134,7 +168,8 @@ const formatProbedAt = (probedAt) => new Date(probedAt).toLocaleString('zh-CN')
   font-size: 18px;
 }
 
-.test-result-row {
+.test-result-row,
+.test-send-result-row {
   display: flex;
   align-items: center;
   gap: 10px;

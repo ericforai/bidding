@@ -58,7 +58,7 @@ class WeComIntegrationControllerTest {
     @DisplayName("GET returns 200 with ApiResponse envelope")
     void get_returns200() throws Exception {
         WeComIntegrationResponse response = WeComIntegrationResponse.configured(
-                "wwcorp", "1000001", false, false);
+                "wwcorp", "1000001", false, false, null);
         when(appService.getConfig()).thenReturn(response);
 
         mockMvc.perform(get("/api/admin/integrations/wecom"))
@@ -88,9 +88,9 @@ class WeComIntegrationControllerTest {
     @DisplayName("PUT with valid body returns 200")
     void put_validBody_returns200() throws Exception {
         WeComIntegrationRequest request = new WeComIntegrationRequest(
-                "wwcorp", "1000001", "secret", false, false);
+                "wwcorp", "1000001", "secret", false, false, null);
         WeComIntegrationResponse response = WeComIntegrationResponse.configured(
-                "wwcorp", "1000001", false, false);
+                "wwcorp", "1000001", false, false, null);
         when(appService.saveConfig(any(), anyString())).thenReturn(response);
 
         mockMvc.perform(put("/api/admin/integrations/wecom")
@@ -108,7 +108,7 @@ class WeComIntegrationControllerTest {
     @DisplayName("PUT with blank corpId returns 400")
     void put_blankCorpId_returns400() throws Exception {
         WeComIntegrationRequest request = new WeComIntegrationRequest(
-                "", "1000001", "secret", false, false);
+                "", "1000001", "secret", false, false, null);
 
         mockMvc.perform(put("/api/admin/integrations/wecom")
                         .with(csrf())
@@ -122,7 +122,7 @@ class WeComIntegrationControllerTest {
     @DisplayName("PUT with blank corpSecret returns 400")
     void put_blankCorpSecret_returns400() throws Exception {
         WeComIntegrationRequest request = new WeComIntegrationRequest(
-                "wwcorp", "1000001", "", false, false);
+                "wwcorp", "1000001", "", false, false, null);
 
         mockMvc.perform(put("/api/admin/integrations/wecom")
                         .with(csrf())
@@ -136,7 +136,7 @@ class WeComIntegrationControllerTest {
     @DisplayName("PUT service throws IllegalArgumentException returns 400")
     void put_serviceThrowsIAE_returns400() throws Exception {
         WeComIntegrationRequest request = new WeComIntegrationRequest(
-                "wwcorp", "1000001", "secret", false, false);
+                "wwcorp", "1000001", "secret", false, false, null);
         when(appService.saveConfig(any(), anyString()))
                 .thenThrow(new IllegalArgumentException("domain validation failed"));
 

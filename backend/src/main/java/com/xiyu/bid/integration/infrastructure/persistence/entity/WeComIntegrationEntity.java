@@ -41,6 +41,9 @@ public class WeComIntegrationEntity {
     @Column(name = "message_enabled", nullable = false)
     private boolean messageEnabled;
 
+    @Column(name = "notify_user_ids", length = 512)
+    private String notifyUserIds;
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

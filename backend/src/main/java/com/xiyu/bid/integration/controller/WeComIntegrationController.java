@@ -5,6 +5,8 @@ import com.xiyu.bid.integration.application.WeComIntegrationAppService;
 import com.xiyu.bid.integration.dto.WeComConnectivityResponse;
 import com.xiyu.bid.integration.dto.WeComIntegrationRequest;
 import com.xiyu.bid.integration.dto.WeComIntegrationResponse;
+import com.xiyu.bid.integration.dto.WeComSendTestRequest;
+import com.xiyu.bid.integration.dto.WeComSendTestResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -53,6 +55,14 @@ public class WeComIntegrationController {
     public ResponseEntity<ApiResponse<WeComConnectivityResponse>> testConnectivity() {
         WeComConnectivityResponse response = appService.testConnectivity();
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/send-test")
+    public ResponseEntity<ApiResponse<WeComSendTestResponse>> sendTest(
+            @RequestBody(required = false) WeComSendTestRequest body
+    ) {
+        WeComSendTestResponse response = appService.sendTestMessage(body == null ? null : body.content());
+        return ResponseEntity.ok(ApiResponse.success("测试消息已发送", response));
     }
 
     /** No global @ControllerAdvice maps IllegalArgumentException; handle locally to return 400. */

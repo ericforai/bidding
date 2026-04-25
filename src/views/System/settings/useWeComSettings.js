@@ -1,5 +1,5 @@
 // Input: weComIntegrationApi calls for WeChat Work config management
-// Output: reactive form state + load / save / testConn actions
+// Output: reactive form state + load / save / testConn / sendTest actions
 // Pos: src/views/System/settings/ - settings composable
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -13,6 +13,7 @@ const createDefaultForm = () => ({
   corpSecret: '',
   ssoEnabled: false,
   messageEnabled: false,
+  notifyUserIds: '',
 })
 
 const buildSavePayload = (form) => {
@@ -21,6 +22,7 @@ const buildSavePayload = (form) => {
     agentId: form.agentId,
     ssoEnabled: form.ssoEnabled,
     messageEnabled: form.messageEnabled,
+    notifyUserIds: (form.notifyUserIds ?? '').trim(),
   }
   if (form.corpSecret) {
     payload.corpSecret = form.corpSecret
@@ -34,15 +36,18 @@ const applyConfigToForm = (data) => ({
   corpSecret: '',
   ssoEnabled: Boolean(data.ssoEnabled),
   messageEnabled: Boolean(data.messageEnabled),
+  notifyUserIds: data.notifyUserIds ?? '',
 })
 
 export function useWeComSettings() {
   const loading = ref(false)
   const saving = ref(false)
   const testing = ref(false)
+  const sending = ref(false)
   const form = ref(createDefaultForm())
   const secretConfigured = ref(false)
   const testResult = ref(null)
+  const testSendResult = ref(null)
 
   const load = async () => {
     loading.value = true
@@ -86,15 +91,31 @@ export function useWeComSettings() {
     }
   }
 
+  const sendTest = async (payload = {}) => {
+    sending.value = true
+    try {
+      const data = await weComIntegrationApi.sendTestMessage(payload)
+      testSendResult.value = { ...data }
+    } catch (error) {
+      testSendResult.value = { success: false, errmsg: error?.message || '发送测试消息失败' }
+    } finally {
+      sending.value = false
+    }
+  }
+
   return {
     loading,
     saving,
     testing,
+    sending,
     form,
     secretConfigured,
     testResult,
+    testSendResult,
     load,
     save,
     testConn,
+    sendTest,
   }
 }
+

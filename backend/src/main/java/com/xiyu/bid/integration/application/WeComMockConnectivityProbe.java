@@ -1,16 +1,18 @@
 package com.xiyu.bid.integration.application;
 
 import com.xiyu.bid.integration.domain.WeComConnectivityResult;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
 /**
- * Default (mock) implementation of WeComConnectivityProbe.
+ * Mock implementation of WeComConnectivityProbe.
  * Returns a successful result without making any external network call.
- * Replace with a real implementation when WeCom SDK is integrated.
+ * Active only when wecom.probe.mode=mock is set explicitly.
  */
 @Component
+@ConditionalOnProperty(name = "wecom.probe.mode", havingValue = "mock")
 public class WeComMockConnectivityProbe implements WeComConnectivityProbe {
 
     @Override
