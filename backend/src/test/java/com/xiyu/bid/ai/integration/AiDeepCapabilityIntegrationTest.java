@@ -2,6 +2,9 @@ package com.xiyu.bid.ai.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiyu.bid.ai.client.AiProvider;
+import com.xiyu.bid.ai.dto.AiAnalysisResponse;
+import com.xiyu.bid.ai.dto.DimensionScore;
 import com.xiyu.bid.ai.dto.ProjectScorePreviewRequestDTO;
 import com.xiyu.bid.ai.repository.AiAnalysisResultRepository;
 import com.xiyu.bid.ai.repository.ProjectScorePreviewRepository;
@@ -15,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
@@ -28,6 +32,11 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -46,6 +55,9 @@ class AiDeepCapabilityIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @MockBean
+    private AiProvider aiProvider;
 
     @Autowired
     private TenderRepository tenderRepository;
@@ -68,6 +80,25 @@ class AiDeepCapabilityIntegrationTest {
         aiAnalysisResultRepository.deleteAll();
         projectRepository.deleteAll();
         tenderRepository.deleteAll();
+
+        // Setup common mock behavior
+        when(aiProvider.analyzeTender(anyString(), anyMap())).thenReturn(AiAnalysisResponse.builder()
+                .score(85)
+                .riskLevel(Tender.RiskLevel.LOW)
+                .strengths(List.of("Experience", "Team"))
+                .weaknesses(List.of("Budget limit"))
+                .recommendations(List.of("Highlight tech depth"))
+                .dimensionScores(List.of(DimensionScore.builder().dimension("Tech").score(90).details("Ok").build()))
+                .build());
+
+        when(aiProvider.analyzeProject(any(Long.class), anyMap())).thenReturn(AiAnalysisResponse.builder()
+                .score(78)
+                .riskLevel(Tender.RiskLevel.LOW)
+                .strengths(List.of("Resources"))
+                .weaknesses(List.of("Timeline"))
+                .recommendations(List.of("Add developers"))
+                .dimensionScores(List.of(DimensionScore.builder().dimension("Risk").score(80).details("Ok").build()))
+                .build());
 
         tender = tenderRepository.save(Tender.builder()
                 .title("智慧城市 IOC 项目")
