@@ -36,6 +36,7 @@ health_checked: 2026-04-25
 - [[deployment]] — 部署与上线
 - [[design-system]] — 设计系统基线
 - [[glossary]] — 术语表
+- [[integration-wecom]] — 系统集成中心 - 企业微信
 - [[modules]] — 模块目录
 - [[overview]] — 项目综述
 - [[requirements]] — 需求追溯
