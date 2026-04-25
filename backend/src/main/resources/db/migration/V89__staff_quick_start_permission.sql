@@ -4,4 +4,7 @@ SET menu_permissions = CASE
     ELSE CONCAT(menu_permissions, ',dashboard.quickStart')
 END
 WHERE LOWER(code) = 'staff'
-  AND (menu_permissions IS NULL OR FIND_IN_SET('dashboard.quickStart', menu_permissions) = 0);
+  AND (
+    menu_permissions IS NULL
+    OR CONCAT(',', menu_permissions, ',') NOT LIKE '%,dashboard.quickStart,%'
+  );

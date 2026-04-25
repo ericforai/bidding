@@ -111,6 +111,14 @@ if ! is_http_ready "$UAT_API_BASE_URL/actuator/health"; then
   cd "$BACKEND_DIR"
   nohup env \
   SPRING_PROFILES_ACTIVE="e2e" \
+  AI_PROVIDER="mock" \
+  OPENAI_API_KEY="" \
+  DEEPSEEK_API_KEY="" \
+  DASHSCOPE_API_KEY="" \
+  QWEN_API_KEY="" \
+  ARK_API_KEY="" \
+  DOUBAO_API_KEY="" \
+  VOLCENGINE_API_KEY="" \
   JWT_SECRET="$JWT_SECRET" \
   CORS_ALLOWED_ORIGINS="$CORS_ALLOWED_ORIGINS" \
   mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT} --spring.flyway.enabled=false --spring.jpa.hibernate.ddl-auto=update --management.health.redis.enabled=false" \
