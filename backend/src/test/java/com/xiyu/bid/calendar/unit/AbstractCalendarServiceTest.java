@@ -6,6 +6,7 @@ import com.xiyu.bid.calendar.entity.CalendarEvent;
 import com.xiyu.bid.calendar.entity.EventType;
 import com.xiyu.bid.calendar.repository.CalendarEventRepository;
 import com.xiyu.bid.calendar.service.CalendarService;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -13,11 +14,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 
+import static org.mockito.Mockito.lenient;
+
 @ExtendWith(MockitoExtension.class)
 abstract class AbstractCalendarServiceTest {
 
     @Mock
     protected CalendarEventRepository repository;
+    @Mock
+    protected ProjectAccessScopeService projectAccessScopeService;
 
     protected CalendarService calendarService;
     protected CalendarEvent testEvent;
@@ -26,7 +31,8 @@ abstract class AbstractCalendarServiceTest {
 
     @BeforeEach
     void setUpCalendarServiceFixture() {
-        calendarService = new CalendarService(repository);
+        lenient().when(projectAccessScopeService.currentUserHasAdminAccess()).thenReturn(true);
+        calendarService = new CalendarService(repository, projectAccessScopeService);
 
         testEvent = CalendarEvent.builder()
                 .id(1L)

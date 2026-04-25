@@ -1,9 +1,10 @@
-// Input: resources repositories, DTOs, and support services
-// Output: Bar Certificate business service operations
-// Pos: Service/业务层
+// Input: resources repositories, DTOs, project access scope, and visibility policy
+// Output: Bar Certificate business service operations with project-linked record access control
+// Pos: Service/业务编排层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.resources.service;
 
+import com.xiyu.bid.access.core.ProjectLinkedRecordVisibilityPolicy;
 import com.xiyu.bid.exception.ResourceNotFoundException;
 import com.xiyu.bid.resources.dto.BarCertificateBorrowRecordDTO;
 import com.xiyu.bid.resources.dto.BarCertificateBorrowRequest;
@@ -17,6 +18,7 @@ import com.xiyu.bid.resources.entity.BarCertificateBorrowRecord;
 import com.xiyu.bid.resources.repository.BarAssetRepository;
 import com.xiyu.bid.resources.repository.BarCertificateBorrowRecordRepository;
 import com.xiyu.bid.resources.repository.BarCertificateRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,7 @@ public class BarCertificateService {
     private final BarAssetRepository barAssetRepository;
     private final BarCertificateRepository barCertificateRepository;
     private final BarCertificateBorrowRecordRepository borrowRecordRepository;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     public List<BarCertificateResponseDTO> getCertificates(Long assetId) {
         ensureAssetExists(assetId);
@@ -41,7 +44,10 @@ public class BarCertificateService {
 
     public List<BarCertificateBorrowRecordDTO> getBorrowRecords(Long assetId, Long certificateId) {
         BarCertificate certificate = getCertificate(assetId, certificateId);
+        boolean admin = projectAccessScopeService.currentUserHasAdminAccess();
+        List<Long> allowedProjectIds = admin ? List.of() : projectAccessScopeService.getAllowedProjectIdsForCurrentUser();
         return borrowRecordRepository.findByCertificateIdOrderByBorrowedAtDesc(certificate.getId()).stream()
+                .filter(record -> ProjectLinkedRecordVisibilityPolicy.visible(admin, allowedProjectIds, record.getProjectId()))
                 .map(ResourceResponseMapper::toDto)
                 .toList();
     }
@@ -88,6 +94,7 @@ public class BarCertificateService {
     @Transactional
     public BarCertificateResponseDTO borrowCertificate(Long assetId, Long certificateId, BarCertificateBorrowRequest request) {
         BarCertificate certificate = getCertificate(assetId, certificateId);
+        assertCanAccessProject(request.getProjectId());
         certificate.borrow(
                 request.getBorrower(),
                 request.getProjectId(),
@@ -122,6 +129,7 @@ public class BarCertificateService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Borrow record not found"));
 
+        assertCanAccessProject(latestBorrow.getProjectId());
         latestBorrow.setStatus(BarCertificateBorrowRecord.BorrowStatus.RETURNED);
         latestBorrow.setReturnedAt(LocalDateTime.now());
         if (request.getRemark() != null && !request.getRemark().isBlank()) {
@@ -146,5 +154,11 @@ public class BarCertificateService {
             throw new IllegalArgumentException("Certificate does not belong to the specified asset");
         }
         return certificate;
+    }
+
+    private void assertCanAccessProject(Long projectId) {
+        if (projectId != null) {
+            projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
+        }
     }
 }

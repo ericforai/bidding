@@ -1,16 +1,18 @@
-// Input: Repository, DTOs, IAuditLogService
-// Output: CalendarEvent CRUD Service
+// Input: Repository, DTOs, current-user project access scope
+// Output: CalendarEvent CRUD/query service with project-linked visibility filtering
 // Pos: Service/业务层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 package com.xiyu.bid.calendar.service;
 
+import com.xiyu.bid.access.core.ProjectLinkedRecordVisibilityPolicy;
 import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.calendar.dto.CalendarEventCreateRequest;
 import com.xiyu.bid.calendar.dto.CalendarEventDTO;
 import com.xiyu.bid.calendar.dto.CalendarEventUpdateRequest;
 import com.xiyu.bid.calendar.entity.CalendarEvent;
 import com.xiyu.bid.calendar.repository.CalendarEventRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,8 @@ import java.util.stream.Collectors;
 public class CalendarService {
 
     private final CalendarEventRepository repository;
+    private final ProjectAccessScopeService projectAccessScopeService;
+
     /**
      * 创建日历事件
      * @param request 创建请求
@@ -39,6 +43,7 @@ public class CalendarService {
     @Transactional
     public CalendarEventDTO createEvent(CalendarEventCreateRequest request) {
         validateCreateRequest(request);
+        assertProjectAccessIfLinked(request.getProjectId());
 
         CalendarEvent event = CalendarEvent.builder()
                 .eventDate(request.getEventDate())
@@ -70,6 +75,10 @@ public class CalendarService {
 
         CalendarEvent event = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("CalendarEvent not found with id: " + id));
+        assertProjectAccessIfLinked(event.getProjectId());
+        if (request.getProjectId() != null) {
+            assertProjectAccessIfLinked(request.getProjectId());
+        }
 
         if (request.getEventDate() != null) {
             event.setEventDate(request.getEventDate());
@@ -108,6 +117,7 @@ public class CalendarService {
     public void deleteEvent(Long id) {
         CalendarEvent event = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("CalendarEvent not found with id: " + id));
+        assertProjectAccessIfLinked(event.getProjectId());
 
         repository.deleteById(id);
         log.info("Deleted calendar event: {}", id);
@@ -134,9 +144,7 @@ public class CalendarService {
         List<CalendarEvent> events = repository.findByEventDateBetween(start, end);
         log.info("Found {} events for {}/{}", events.size(), year, month);
 
-        return events.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return visibleDtos(events);
     }
 
     public List<CalendarEventDTO> getEventsByDateRange(LocalDate start, LocalDate end) {
@@ -147,9 +155,7 @@ public class CalendarService {
             throw new IllegalArgumentException("End date cannot be before start date");
         }
 
-        return repository.findByEventDateBetween(start, end).stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return visibleDtos(repository.findByEventDateBetween(start, end));
     }
 
     /**
@@ -158,6 +164,7 @@ public class CalendarService {
      * @return 事件DTO列表
      */
     public List<CalendarEventDTO> getEventsByProject(Long projectId) {
+        assertProjectAccessIfLinked(projectId);
         List<CalendarEvent> events = repository.findByProjectId(projectId);
         log.info("Found {} events for project {}", events.size(), projectId);
 
@@ -174,9 +181,7 @@ public class CalendarService {
         List<CalendarEvent> events = repository.findByIsUrgentTrue();
         log.info("Found {} urgent events", events.size());
 
-        return events.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+        return visibleDtos(events);
     }
 
     /**
@@ -188,7 +193,20 @@ public class CalendarService {
         List<CalendarEvent> events = repository.findUpcomingEvents(today);
         log.info("Found {} upcoming events", events.size());
 
+        return visibleDtos(events);
+    }
+
+    private void assertProjectAccessIfLinked(Long projectId) {
+        if (projectId != null) {
+            projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
+        }
+    }
+
+    private List<CalendarEventDTO> visibleDtos(List<CalendarEvent> events) {
+        boolean admin = projectAccessScopeService.currentUserHasAdminAccess();
+        List<Long> allowedProjectIds = admin ? List.of() : projectAccessScopeService.getAllowedProjectIdsForCurrentUser();
         return events.stream()
+                .filter(event -> ProjectLinkedRecordVisibilityPolicy.visible(admin, allowedProjectIds, event.getProjectId()))
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }

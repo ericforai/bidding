@@ -43,7 +43,7 @@
 | admin | `AdminProjectGroupController` `/api/admin/project-groups` | 5 | 项目组配置，管理员后台 | 不适用 | 低 |
 | admin | `AdminSettingsController` `/api/admin/settings` | 3 | 数据权限配置本身，管理员后台 | 不适用 | 低 |
 | ai | `ProjectAiController` `/api/projects` | 2 | 项目 AI 卡片/评分预览 | 未覆盖 | P1 |
-| alerts | `AlertHistoryController` `/api/alerts/history` | 7 | 告警历史可能引用项目或资质 | 部分覆盖 | P2 |
+| alerts | `AlertHistoryController` `/api/alerts/history` | 7 | 告警历史可能引用项目或资质 | 已收紧到管理角色 | P2 |
 | alerts | `AlertRuleController` `/api/alerts/rules` | 8 | 告警规则配置 | 不适用 | 低 |
 | analytics | `CustomerTypeAnalyticsController` `/api/analytics` | 2 | 聚合分析数据 | 未覆盖 | P1 |
 | analytics | `DashboardController` `/api/analytics` | 13 | 看板聚合项目、任务、费用等数据 | 未覆盖 | P1 |
@@ -59,12 +59,12 @@
 | bidresult | `BidResultQueryController` `/api/bid-results` | 5 | 投标结果列表、详情、聚合 | 未覆盖 | P1 |
 | bidresult | `BidResultReminderController` `/api/bid-results/reminders` | 3 | 投标结果提醒 | 未覆盖 | P1 |
 | bidresult | `CompetitorWinController` `/api/bid-results/competitor-wins` | 1 | 竞品胜率历史 | 不适用 | 低 |
-| calendar | `CalendarController` `/api/calendar` | 7 | 日历事件可能关联项目 | 部分覆盖 | P2 |
+| calendar | `CalendarController` `/api/calendar` | 7 | 日历事件可能关联项目 | 已覆盖 | 低 |
 | casework | `CaseController` `/api/knowledge/cases` | 14 | 案例库、项目转案例 | 部分覆盖 | P1 |
 | collaboration | `CollaborationController` `/api/collaboration` | 8 | 协作线程/评论可能关联项目 | 未覆盖 | P1 |
 | competitionintel | `CompetitionIntelController` `/api/ai/competition` | 6 | 项目竞情分析 | 未覆盖 | P1 |
 | compliance | `ComplianceController` `/api/compliance` | 5 | 合规检查可能关联项目/标书 | 未覆盖 | P1 |
-| contractborrow | `ContractBorrowController` `/api/contract-borrows` | 9 | 合同借阅可能关联项目 | 部分覆盖 | P2 |
+| contractborrow | `ContractBorrowController` `/api/contract-borrows` | 9 | 当前模型无 `projectId`，需另行建模后才能按项目隔离 | 不适用/待建模 | 低 |
 | controller | `AdminRoleController` `/api/admin/roles` | 6 | 角色后台配置 | 不适用 | 低 |
 | controller | `AdminUserController` `/api/admin/users` | 6 | 用户后台配置 | 不适用 | 低 |
 | controller | `AuthController` `/api/auth` | 12 | 登录、刷新、会话、本人信息 | 不适用 | 低 |
@@ -82,21 +82,21 @@
 | projectquality | `ProjectQualityController` `/api/projects/{projectId}/quality-checks` | 4 | 项目质量检查 | 未覆盖 | P1 |
 | projectworkflow | `ProjectDocumentController` `/api/projects/{projectId}/documents` | 3 | 项目文档 | 已覆盖 | 低 |
 | projectworkflow | `ProjectWorkflowController` `/api/projects/{projectId}` | 18 | 项目任务、提醒、分享、评分草稿 | 已覆盖 | 低 |
-| qualification | `QualificationController` `/api/knowledge/qualifications` | 14 | 资质借阅可关联项目 | 部分覆盖 | P2 |
+| qualification | `QualificationController` `/api/knowledge/qualifications` | 14 | 资质借阅可关联项目 | 已覆盖 | 低 |
 | resources | `AccountController` `/api/resources/accounts` | 11 | 资源账户主数据 | 不适用 | 低 |
 | resources | `BarAssetController` `/api/resources/bar-assets` | 12 | BAR 资产主数据 | 不适用 | 低 |
-| resources | `BarCertificateController` `/api/resources/bar-assets/{assetId}/certificates` | 7 | 证书借阅可关联项目 | 部分覆盖 | P2 |
+| resources | `BarCertificateController` `/api/resources/bar-assets/{assetId}/certificates` | 7 | 证书借阅可关联项目 | 已覆盖 | 低 |
 | resources | `BarSiteSubresourceController` `/api/resources/bar-assets/{assetId}` | 12 | BAR 子资源 | 不适用 | 低 |
 | resources | `ExpenseController` `/api/resources/expenses` | 18 | 费用台账/保证金可能关联项目 | 未覆盖 | P0 |
 | roi | `ROIAnalysisController` `/api/ai/roi` | 4 | 项目 ROI 分析 | 未覆盖 | P1 |
 | scoreanalysis | `ScoreAnalysisController` `/api/ai/score-analysis` | 4 | 项目评分分析 | 未覆盖 | P1 |
 | settings | `SettingsController` `/api/settings` | 4 | 系统设置、项目组权限配置 | 不适用 | 低 |
 | task | `TaskController` `/api/tasks` | 13 | 任务含 `projectId` | 部分覆盖 | P0 |
-| template | `TemplateController` `/api/knowledge/templates` | 11 | 模板库，使用记录可关联项目 | 部分覆盖 | P2 |
+| template | `TemplateController` `/api/knowledge/templates` | 11 | 模板库，使用记录可关联项目 | 已覆盖 | 低 |
 | tender | `TenderController` `/api/tenders` | 11 | 标讯主数据 | 未覆盖 | P0 |
 | tenderupload | `TenderUploadController` `/api/tenders`, `/v1/tenders` | 3 | 上传任务按本人文件隔离 | 不适用 | 低 |
 | versionhistory | `DocumentVersionController` `/api/documents/{projectId}/versions` | 6 | 项目标书版本 | 未覆盖 | P0 |
-| workbench | `WorkbenchScheduleController` `/api/workbench` | 1 | 工作台日程聚合 | 部分覆盖 | P2 |
+| workbench | `WorkbenchScheduleController` `/api/workbench` | 1 | 工作台日程聚合 | 已覆盖 | 低 |
 
 ## 高优先级缺口
 
@@ -127,11 +127,11 @@
 
 | 模块 | 风险说明 | 建议 |
 | --- | --- | --- |
-| 告警历史 | 告警可能引用项目、资质、费用等实体，当前按告警维度查询，缺少目标实体范围过滤证据。 | 为告警增加 related entity 到项目/部门的范围映射；无法映射时限制管理角色。 |
-| 日历 | 日历事件可能是个人事项，也可能来自项目；需要区分事件可见性来源。 | 个人事件按 owner 隔离，项目事件按项目范围过滤。 |
-| 资质/证书借阅 | 资质和证书是资源资产，但借阅记录含项目时可能泄露项目信息。 | 资产本身按资源权限，借阅记录中的项目字段按项目范围脱敏或过滤。 |
-| 模板 | 模板库可共享，但模板使用记录含 `projectId`。 | 模板内容按知识权限，使用记录按项目范围过滤。 |
-| 工作台 | 工作台日程聚合容易跨任务、项目、审批取数。 | 工作台所有聚合统一接入可见项目和本人任务范围。 |
+| 告警历史 | `relatedId` 尚无可靠实体到项目映射，无法证明普通员工查看全量历史是安全的。 | 已将历史列表、详情、未处理、确认、统计收紧到 `ADMIN/MANAGER`；后续如需员工可见，应先补 related entity 到项目/部门映射。 |
+| 日历 | 日历事件可能是个人事项，也可能来自项目。 | 已按 `projectId == null` 共享、非空项目按 `ProjectAccessScopeService` 过滤；创建、更新、项目查询、删除均做项目访问断言。 |
+| 资质/证书借阅 | 资质和证书是资源资产，但借阅记录含项目时可能泄露项目信息。 | 已对借阅/归还做项目访问断言，记录列表按可见项目和空项目过滤；资质借阅非空 `projectId` 必须为数字项目 ID。 |
+| 模板 | 模板库可共享，但模板使用记录含 `projectId`。 | 已对使用记录创建做项目访问断言，模板 useCount 仅统计当前用户可见项目和空项目记录；管理员仍全量。 |
+| 工作台 | 工作台日程聚合容易跨任务、项目、审批取数。 | 已复用 `CalendarService` 的日期范围过滤结果，工作台不再另建权限体系。 |
 
 ## 建议整改顺序
 
@@ -148,9 +148,16 @@
 | 静态盘点 Controller / Mapping / 权限收口点 | 识别 57 个 Controller、约 396 个映射入口；确认 `ProjectAccessScopeService` 仅在项目、项目工作流、标书生成 Agent、任务/批量少量链路使用。 |
 | `mvn test -Dtest=DataScopeConfigServiceTest,DataScopePolicyTest,ProjectAccessScopeServiceTest` | 通过：12 tests, 0 failures, 0 errors, 0 skipped。 |
 | `mvn test -Dtest=ProjectControllerAccessIntegrationTest` | 通过：5 tests, 0 failures, 0 errors, 0 skipped。 |
+| `mvn test -Dtest=ProjectLinkedRecordVisibilityPolicyTest,CalendarServiceProjectAccessTest,WorkbenchScheduleQueryServiceAccessTest,BarCertificateServiceAccessTest,QualificationServiceAccessTest,TemplateCatalogActivityAppServiceAccessTest,TemplateCatalogQueryAppServiceAccessTest,AlertHistoryControllerSecurityTest` | 通过：28 tests, 0 failures, 0 errors, 0 skipped。 |
+| `mvn test -Dtest=FPJavaArchitectureTest,MaintainabilityArchitectureTest` | 通过：10 tests, 0 failures, 0 errors, 0 skipped。 |
+| Java 质量门禁（本轮变更 Java 文件范围） | 通过：Checkstyle 未发现违规。 |
+| `npm run check:doc-governance` | 通过：Documentation governance check passed for 79 directories。 |
+| `git diff --check` | 通过：未发现空白符或补丁格式问题。 |
 
 ## 本轮未做事项
 
-- 未修改 API、DTO、数据库表、权限配置或业务代码。
+- P2 本轮未修改 API、DTO、数据库表或权限配置；仅补强已有项目字段链路和告警历史角色限制。
 - 未新增自动化门禁；本报告建议后续新增。
+- 合同借阅当前模型无 `projectId`，本轮按非项目关联处理；如客户要求按项目隔离，需要另做字段、迁移和接口契约设计。
+- 客户商机转项目未并入本轮 P2，按独立任务跟进。
 - 未声称全量满足客户安全条款；当前结论是“项目主链路已有基础，跨模块项目关联数据权限仍需整改”。
