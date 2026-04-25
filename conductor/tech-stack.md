@@ -21,4 +21,5 @@
 - **Migrations:** Flyway
 
 ## Architecture
-- **Type:** Monorepo (Frontend in root, Backend in `backend/` directory)
+- **Type:** Hybrid Monorepo (Frontend in root, Java Backend in `backend/`, Python Sidecar in `document-converter-sidecar/`)
+- **Sidecar:** Python 3.11+, FastAPI, MarkItDown (for document-to-markdown conversion)
