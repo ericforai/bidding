@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -44,6 +45,23 @@ class BatchOperationDeleteProjectsTest extends AbstractBatchOperationServiceTest
         when(projectRepository.findById(1L)).thenReturn(Optional.of(testProject1));
 
         var response = batchOperationService.batchDeleteProjects(projectIds, 100L, User.Role.MANAGER);
+
+        assertFalse(response.getSuccess());
+        assertEquals(0, response.getSuccessCount());
+        assertEquals(1, response.getFailureCount());
+        assertEquals("PERMISSION_DENIED", response.getErrors().get(0).getErrorCode());
+        verify(projectRepository, never()).deleteAll(anyList());
+    }
+
+    @Test
+    void batchDeleteProjects_rejectsProjectOutsideDataScope() {
+        List<Long> projectIds = Collections.singletonList(1L);
+
+        when(projectRepository.findById(1L)).thenReturn(Optional.of(testProject1));
+        doThrow(new org.springframework.security.access.AccessDeniedException("权限不足"))
+                .when(projectAccessScopeService).assertCurrentUserCanAccessProject(1L);
+
+        var response = batchOperationService.batchDeleteProjects(projectIds, 1L, User.Role.MANAGER);
 
         assertFalse(response.getSuccess());
         assertEquals(0, response.getSuccessCount());

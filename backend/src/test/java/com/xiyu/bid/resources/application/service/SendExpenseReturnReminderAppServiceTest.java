@@ -9,6 +9,7 @@ import com.xiyu.bid.bidresult.repository.BidResultFetchResultRepository;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.resources.entity.Expense;
 import com.xiyu.bid.resources.repository.ExpenseRepository;
+import com.xiyu.bid.resources.service.expense.ExpenseAccessGuard;
 import com.xiyu.bid.settings.dto.SettingsResponse;
 import com.xiyu.bid.settings.service.SettingsService;
 import org.junit.jupiter.api.DisplayName;
@@ -47,6 +48,8 @@ class SendExpenseReturnReminderAppServiceTest {
     private AlertHistoryService alertHistoryService;
     @Mock
     private SettingsService settingsService;
+    @Mock
+    private ExpenseAccessGuard accessGuard;
 
     @InjectMocks
     private SendExpenseReturnReminderAppService sendExpenseReturnReminderAppService;
@@ -90,6 +93,7 @@ class SendExpenseReturnReminderAppServiceTest {
 
         ArgumentCaptor<com.xiyu.bid.alerts.dto.AlertHistoryCreateRequest> captor =
                 ArgumentCaptor.forClass(com.xiyu.bid.alerts.dto.AlertHistoryCreateRequest.class);
+        verify(accessGuard).assertCanAccessProject(602L);
         verify(alertHistoryService).createAlertHistory(captor.capture());
         verify(expenseRepository).save(expense);
         assertThat(expense.getLastReturnReminderAt()).isNotNull();
@@ -115,6 +119,7 @@ class SendExpenseReturnReminderAppServiceTest {
         assertThatThrownBy(() -> sendExpenseReturnReminderAppService.send(503L, "finance-user", "备注"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Expense is not eligible for deposit return reminder");
+        verify(accessGuard).assertCanAccessProject(603L);
     }
 
     @Test
@@ -155,6 +160,7 @@ class SendExpenseReturnReminderAppServiceTest {
 
         sendExpenseReturnReminderAppService.send(504L, "finance-user", "配置缺失兜底");
 
+        verify(accessGuard).assertCanAccessProject(604L);
         verify(alertRuleRepository).save(argThat(rule ->
                 rule.getThreshold().compareTo(BigDecimal.valueOf(7)) == 0
                         && rule.getType() == AlertRule.AlertType.DEPOSIT_RETURN

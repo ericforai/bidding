@@ -32,8 +32,10 @@ public class DocumentExportCommandService {
     private final DocumentExportRepository exportRepository;
     private final DocumentExportFileRepository exportFileRepository;
     private final DocumentExportContentBuilder contentBuilder;
+    private final DocumentExportAccessGuard accessGuard;
 
     public DocumentExportDTO createExport(Long projectId, DocumentExportCreateRequest request) {
+        accessGuard.requireProjectAccess(projectId);
         Project project = getProject(projectId);
         DocumentStructure structure = getStructure(projectId);
 

@@ -1,5 +1,5 @@
-// Input: fees repositories, DTOs, and support services
-// Output: Fee business service operations
+// Input: fees repository, DTOs, audit service, and project access scope service
+// Output: Fee business service operations guarded by project data permissions
 // Pos: Service/业务层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.fees.service;
@@ -13,10 +13,13 @@ import com.xiyu.bid.fees.dto.FeeUpdateRequest;
 import com.xiyu.bid.fees.entity.Fee;
 import com.xiyu.bid.fees.repository.FeeRepository;
 import com.xiyu.bid.audit.service.IAuditLogService;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,19 +37,20 @@ import java.util.stream.Collectors;
 @Slf4j
 public class FeeService {
 
+    private static final String ADMIN_AUTHORITY = "ROLE_ADMIN";
+
     private final FeeRepository feeRepository;
     private final IAuditLogService auditLogService;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
-    /**
-     * 创建费用
-     */
     @Auditable(action = "CREATE", entityType = "Fee", description = "Create new fee")
     @Transactional
     public FeeDTO createFee(FeeCreateRequest request) {
         log.info("Creating fee for project: {}", request.getProjectId());
 
         // Validate input
-        validateFeeRequest(request);
+        FeeRequestValidator.validateCreateRequest(request);
+        projectAccessScopeService.assertCurrentUserCanAccessProject(request.getProjectId());
 
         Fee fee = Fee.builder()
                 .projectId(request.getProjectId())
@@ -60,28 +64,27 @@ public class FeeService {
         Fee savedFee = feeRepository.save(fee);
         log.info("Created fee with id: {}", savedFee.getId());
 
-        return convertToDTO(savedFee);
+        return FeeMapper.toDTO(savedFee);
     }
 
-    /**
-     * 根据ID获取费用
-     */
     @Transactional(readOnly = true)
     public FeeDTO getFeeById(Long id) {
         log.debug("Fetching fee by id: {}", id);
         Fee fee = feeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Fee not found with id: " + id));
-        return convertToDTO(fee);
+        assertCanAccessFeeProject(fee);
+        return FeeMapper.toDTO(fee);
     }
 
-    /**
-     * 获取所有费用（分页）
-     */
     @Transactional(readOnly = true)
     public Page<FeeDTO> getAllFees(Pageable pageable) {
         log.debug("Fetching all fees with pagination");
-        return feeRepository.findAll(pageable)
-                .map(this::convertToDTO);
+        List<Long> allowedProjectIds = projectAccessScopeService.getAllowedProjectIdsForCurrentUser();
+        Page<Fee> fees = allowedProjectIds.isEmpty()
+                ? findAllFeesForEmptyScope(pageable)
+                : feeRepository.findByProjectIdIn(allowedProjectIds, pageable);
+        return fees
+                .map(FeeMapper::toDTO);
     }
 
     /**
@@ -90,8 +93,9 @@ public class FeeService {
     @Transactional(readOnly = true)
     public List<FeeDTO> getFeesByProjectId(Long projectId) {
         log.debug("Fetching fees for project: {}", projectId);
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
         return feeRepository.findByProjectId(projectId).stream()
-                .map(this::convertToDTO)
+                .map(FeeMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
@@ -102,8 +106,12 @@ public class FeeService {
     public List<FeeDTO> getFeesByStatus(FeeDTO.Status status) {
         Fee.Status entityStatus = Fee.Status.valueOf(status.name());
         log.debug("Fetching fees with status: {}", entityStatus);
-        return feeRepository.findByStatus(entityStatus).stream()
-                .map(this::convertToDTO)
+        List<Long> allowedProjectIds = projectAccessScopeService.getAllowedProjectIdsForCurrentUser();
+        List<Fee> fees = allowedProjectIds.isEmpty()
+                ? findFeesByStatusForEmptyScope(entityStatus)
+                : feeRepository.findByStatusAndProjectIdIn(entityStatus, allowedProjectIds);
+        return fees.stream()
+                .map(FeeMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
@@ -117,6 +125,7 @@ public class FeeService {
 
         Fee fee = feeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Fee not found with id: " + id));
+        assertCanAccessFeeProject(fee);
 
         // Only allow updates to pending or cancelled fees
         if (fee.getStatus() == Fee.Status.PAID || fee.getStatus() == Fee.Status.RETURNED) {
@@ -141,7 +150,7 @@ public class FeeService {
         Fee updatedFee = feeRepository.save(fee);
         log.info("Updated fee with id: {}", updatedFee.getId());
 
-        return convertToDTO(updatedFee);
+        return FeeMapper.toDTO(updatedFee);
     }
 
     /**
@@ -154,6 +163,7 @@ public class FeeService {
 
         Fee fee = feeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Fee not found with id: " + id));
+        assertCanAccessFeeProject(fee);
 
         // Only allow deletion of pending or cancelled fees
         if (fee.getStatus() == Fee.Status.PAID || fee.getStatus() == Fee.Status.RETURNED) {
@@ -174,6 +184,7 @@ public class FeeService {
 
         Fee fee = feeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Fee not found with id: " + id));
+        assertCanAccessFeeProject(fee);
 
         if (fee.getStatus() != Fee.Status.PENDING) {
             throw new IllegalStateException("Only pending fees can be marked as paid. Current status: " + fee.getStatus());
@@ -186,7 +197,7 @@ public class FeeService {
         Fee updatedFee = feeRepository.save(fee);
         log.info("Marked fee {} as paid", id);
 
-        return convertToDTO(updatedFee);
+        return FeeMapper.toDTO(updatedFee);
     }
 
     /**
@@ -199,6 +210,7 @@ public class FeeService {
 
         Fee fee = feeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Fee not found with id: " + id));
+        assertCanAccessFeeProject(fee);
 
         if (fee.getStatus() != Fee.Status.PAID) {
             throw new IllegalStateException("Only paid fees can be marked as returned. Current status: " + fee.getStatus());
@@ -211,7 +223,7 @@ public class FeeService {
         Fee updatedFee = feeRepository.save(fee);
         log.info("Marked fee {} as returned", id);
 
-        return convertToDTO(updatedFee);
+        return FeeMapper.toDTO(updatedFee);
     }
 
     /**
@@ -224,6 +236,7 @@ public class FeeService {
 
         Fee fee = feeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Fee not found with id: " + id));
+        assertCanAccessFeeProject(fee);
 
         if (fee.getStatus() != Fee.Status.PENDING) {
             throw new IllegalStateException("Only pending fees can be cancelled. Current status: " + fee.getStatus());
@@ -234,7 +247,7 @@ public class FeeService {
         Fee updatedFee = feeRepository.save(fee);
         log.info("Cancelled fee with id: {}", id);
 
-        return convertToDTO(updatedFee);
+        return FeeMapper.toDTO(updatedFee);
     }
 
     /**
@@ -243,69 +256,39 @@ public class FeeService {
     @Transactional(readOnly = true)
     public FeeStatisticsDTO getStatistics(Long projectId) {
         log.debug("Fetching fee statistics for project: {}", projectId);
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
 
         BigDecimal totalPending = feeRepository.sumAmountByProjectIdAndStatus(projectId, Fee.Status.PENDING);
         BigDecimal totalPaid = feeRepository.sumAmountByProjectIdAndStatus(projectId, Fee.Status.PAID);
         BigDecimal totalReturned = feeRepository.sumAmountByProjectIdAndStatus(projectId, Fee.Status.RETURNED);
         BigDecimal totalCancelled = feeRepository.sumAmountByProjectIdAndStatus(projectId, Fee.Status.CANCELLED);
 
-        // Handle null values
-        totalPending = totalPending != null ? totalPending : BigDecimal.ZERO;
-        totalPaid = totalPaid != null ? totalPaid : BigDecimal.ZERO;
-        totalReturned = totalReturned != null ? totalReturned : BigDecimal.ZERO;
-        totalCancelled = totalCancelled != null ? totalCancelled : BigDecimal.ZERO;
-
-        BigDecimal grandTotal = totalPending.add(totalPaid).add(totalReturned).add(totalCancelled);
-
-        return FeeStatisticsDTO.builder()
-                .projectId(projectId)
-                .totalPending(totalPending)
-                .totalPaid(totalPaid)
-                .totalReturned(totalReturned)
-                .totalCancelled(totalCancelled)
-                .grandTotal(grandTotal)
-                .build();
+        return FeeStatisticsFactory.create(projectId, totalPending, totalPaid, totalReturned, totalCancelled);
     }
 
-    /**
-     * 验证费用请求
-     */
-    private void validateFeeRequest(FeeCreateRequest request) {
-        if (request.getProjectId() == null) {
-            throw new IllegalArgumentException("Project ID is required");
-        }
-
-        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Amount must be greater than zero");
-        }
-
-        if (request.getFeeType() == null) {
-            throw new IllegalArgumentException("Fee type is required");
-        }
-
-        if (request.getFeeDate() == null) {
-            throw new IllegalArgumentException("Fee date is required");
-        }
+    private void assertCanAccessFeeProject(Fee fee) {
+        projectAccessScopeService.assertCurrentUserCanAccessProject(fee.getProjectId());
     }
 
-    /**
-     * 转换实体为DTO
-     */
-    private FeeDTO convertToDTO(Fee fee) {
-        return FeeDTO.builder()
-                .id(fee.getId())
-                .projectId(fee.getProjectId())
-                .feeType(FeeDTO.FeeType.valueOf(fee.getFeeType().name()))
-                .amount(fee.getAmount())
-                .feeDate(fee.getFeeDate())
-                .status(FeeDTO.Status.valueOf(fee.getStatus().name()))
-                .paymentDate(fee.getPaymentDate())
-                .returnDate(fee.getReturnDate())
-                .paidBy(fee.getPaidBy())
-                .returnTo(fee.getReturnTo())
-                .remarks(fee.getRemarks())
-                .createdAt(fee.getCreatedAt())
-                .updatedAt(fee.getUpdatedAt())
-                .build();
+    private Page<Fee> findAllFeesForEmptyScope(Pageable pageable) {
+        if (currentUserHasAdminAccess()) {
+            return feeRepository.findAll(pageable);
+        }
+        return Page.empty(pageable);
+    }
+
+    private List<Fee> findFeesByStatusForEmptyScope(Fee.Status status) {
+        if (currentUserHasAdminAccess()) {
+            return feeRepository.findByStatus(status);
+        }
+        return List.of();
+    }
+
+    private boolean currentUserHasAdminAccess() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null
+                && authentication.isAuthenticated()
+                && authentication.getAuthorities().stream()
+                .anyMatch(authority -> ADMIN_AUTHORITY.equals(authority.getAuthority()));
     }
 }

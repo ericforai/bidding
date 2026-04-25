@@ -16,6 +16,7 @@ import com.xiyu.bid.resources.dto.ResourceResponseMapper;
 import com.xiyu.bid.resources.dto.ExpenseDTO;
 import com.xiyu.bid.resources.entity.Expense;
 import com.xiyu.bid.resources.repository.ExpenseRepository;
+import com.xiyu.bid.resources.service.expense.ExpenseAccessGuard;
 import com.xiyu.bid.settings.dto.SettingsResponse;
 import com.xiyu.bid.settings.service.SettingsService;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class SendExpenseReturnReminderAppService {
     private final AlertRuleRepository alertRuleRepository;
     private final AlertHistoryService alertHistoryService;
     private final SettingsService settingsService;
+    private final ExpenseAccessGuard accessGuard;
 
     private final DepositReturnReminderPolicy reminderPolicy = new DepositReturnReminderPolicy();
 
@@ -45,6 +47,7 @@ public class SendExpenseReturnReminderAppService {
     public ExpenseDTO send(Long expenseId, String actor, String comment) {
         Expense expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense", String.valueOf(expenseId)));
+        accessGuard.assertCanAccessProject(expense.getProjectId());
         if (!expense.isReturnable()) {
             throw new IllegalStateException("Only deposit-like expenses can be reminded");
         }

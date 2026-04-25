@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -26,6 +27,16 @@ public interface FeeRepository extends JpaRepository<Fee, Long> {
      * 根据状态查询费用列表
      */
     List<Fee> findByStatus(Fee.Status status);
+
+    /**
+     * 根据项目ID集合分页查询费用
+     */
+    Page<Fee> findByProjectIdIn(Collection<Long> projectIds, Pageable pageable);
+
+    /**
+     * 根据状态和项目ID集合查询费用列表
+     */
+    List<Fee> findByStatusAndProjectIdIn(Fee.Status status, Collection<Long> projectIds);
 
     /**
      * 根据项目ID和状态查询费用列表

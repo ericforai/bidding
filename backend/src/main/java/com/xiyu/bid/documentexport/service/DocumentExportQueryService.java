@@ -29,14 +29,17 @@ public class DocumentExportQueryService {
     private final DocumentArchiveRecordRepository archiveRecordRepository;
     private final ProjectRepository projectRepository;
     private final HistoricalProjectSnapshotAppService snapshotAppService;
+    private final DocumentExportAccessGuard accessGuard;
 
     public List<DocumentExportDTO> getExports(Long projectId) {
+        accessGuard.requireProjectAccess(projectId);
         return exportRepository.findByProjectIdOrderByExportedAtDesc(projectId).stream()
                 .map(this::toExportDTO)
                 .toList();
     }
 
     public List<DocumentArchiveRecordDTO> getArchiveRecords(Long projectId) {
+        accessGuard.requireProjectAccess(projectId);
         return archiveRecordRepository.findByProjectIdOrderByArchivedAtDesc(projectId).stream()
                 .map(record -> {
                     DocumentExport export = record.getExportId() == null
@@ -66,6 +69,7 @@ public class DocumentExportQueryService {
     }
 
     public DocumentCaseSnapshotDTO getCaseSnapshot(Long projectId) {
+        accessGuard.requireProjectAccess(projectId);
         return toCaseSnapshotDto(snapshotAppService.getLatestSnapshot(projectId));
     }
 

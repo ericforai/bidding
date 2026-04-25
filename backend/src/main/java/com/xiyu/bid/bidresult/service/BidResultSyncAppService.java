@@ -22,6 +22,7 @@ public class BidResultSyncAppService {
     private final BidResultFetchResultRepository fetchResultRepository;
     private final BidResultSyncLogRepository syncLogRepository;
     private final ProjectRepository projectRepository;
+    private final BidResultProjectAccessGuard accessGuard;
 
     @Transactional
     public BidResultSyncResponseDTO syncInternal(Long userId, String userName) {
@@ -58,7 +59,10 @@ public class BidResultSyncAppService {
     }
 
     private int seedMockResults(BidResultSyncLog.OperationType type, BidResultFetchResult.Status status) {
-        List<Project> projects = projectRepository.findAll().stream().limit(3).toList();
+        List<Project> projects = accessGuard.filterAccessible(projectRepository.findAll(), Project::getId)
+                .stream()
+                .limit(3)
+                .toList();
         int affected = 0;
         for (int i = 0; i < projects.size(); i++) {
             Project project = projects.get(i);
@@ -83,4 +87,3 @@ public class BidResultSyncAppService {
         return affected;
     }
 }
-

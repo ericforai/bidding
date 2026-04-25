@@ -20,10 +20,11 @@ public class TenderQueryService {
 
     private final TenderRepository tenderRepository;
     private final TenderMapper tenderMapper;
+    private final TenderProjectAccessGuard accessGuard;
 
     public List<TenderDTO> searchTenders(TenderSearchCriteria criteria) {
         log.debug("Searching tenders with criteria: {}", criteria);
-        return tenderRepository.findAll(TenderSpecification.byCriteria(criteria)).stream()
+        return accessGuard.filterVisibleTenders(tenderRepository.findAll(TenderSpecification.byCriteria(criteria))).stream()
                 .map(tenderMapper::toDTO)
                 .toList();
     }
@@ -32,30 +33,36 @@ public class TenderQueryService {
         log.debug("Fetching tender by id: {}", id);
         Tender tender = tenderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tender", id.toString()));
+        accessGuard.assertCanAccessTender(tender);
         return tenderMapper.toDTO(tender);
     }
 
     public List<TenderDTO> getTendersByStatus(Tender.Status status) {
         log.debug("Fetching tenders by status: {}", status);
-        return tenderRepository.findByStatus(status).stream()
+        return accessGuard.filterVisibleTenders(tenderRepository.findByStatus(status)).stream()
                 .map(tenderMapper::toDTO)
                 .toList();
     }
 
     public List<TenderDTO> getTendersBySource(String source) {
         log.debug("Fetching tenders by source: {}", source);
-        return tenderRepository.findBySource(source).stream()
+        return accessGuard.filterVisibleTenders(tenderRepository.findBySource(source)).stream()
                 .map(tenderMapper::toDTO)
                 .toList();
     }
 
     public Map<Tender.Status, Long> getTenderStatistics() {
         log.debug("Fetching tender statistics");
+        List<Tender> visibleTenders = accessGuard.filterVisibleTenders(tenderRepository.findAll());
         return Map.of(
-                Tender.Status.PENDING, tenderRepository.countByStatus(Tender.Status.PENDING),
-                Tender.Status.TRACKING, tenderRepository.countByStatus(Tender.Status.TRACKING),
-                Tender.Status.BIDDED, tenderRepository.countByStatus(Tender.Status.BIDDED),
-                Tender.Status.ABANDONED, tenderRepository.countByStatus(Tender.Status.ABANDONED)
+                Tender.Status.PENDING, countStatus(visibleTenders, Tender.Status.PENDING),
+                Tender.Status.TRACKING, countStatus(visibleTenders, Tender.Status.TRACKING),
+                Tender.Status.BIDDED, countStatus(visibleTenders, Tender.Status.BIDDED),
+                Tender.Status.ABANDONED, countStatus(visibleTenders, Tender.Status.ABANDONED)
         );
+    }
+
+    private long countStatus(List<Tender> tenders, Tender.Status status) {
+        return tenders.stream().filter(tender -> tender.getStatus() == status).count();
     }
 }

@@ -21,6 +21,7 @@ public class BidResultAttachmentAppService {
     private final BidResultFetchResultRepository fetchResultRepository;
     private final ProjectDocumentRepository projectDocumentRepository;
     private final BidResultReminderAppService reminderAppService;
+    private final BidResultProjectAccessGuard accessGuard;
 
     @Transactional
     public BidResultFetchResultDTO bindAttachment(Long resultId, BidResultAttachmentBindRequest request, Long operatorId, String operatorName) {
@@ -29,8 +30,13 @@ public class BidResultAttachmentAppService {
         }
         BidResultFetchResult result = fetchResultRepository.findById(resultId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bid result fetch record not found: " + resultId));
-        projectDocumentRepository.findById(request.getDocumentId())
+        accessGuard.assertCanAccess(result.getProjectId());
+        ProjectDocument document = projectDocumentRepository.findById(request.getDocumentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Project document not found: " + request.getDocumentId()));
+        accessGuard.assertCanAccess(document.getProjectId());
+        if (!result.getProjectId().equals(document.getProjectId())) {
+            throw new BusinessException("附件所属项目与投标结果不一致");
+        }
 
         if (request.getAttachmentType() == BidResultAttachmentRef.AttachmentType.NOTICE) {
             result.setNoticeDocumentId(request.getDocumentId());
@@ -53,6 +59,11 @@ public class BidResultAttachmentAppService {
         }
         BidResultFetchResult result = fetchResultRepository.findById(document.getLinkedEntityId())
                 .orElseThrow(() -> new ResourceNotFoundException("Bid result fetch record not found: " + document.getLinkedEntityId()));
+        accessGuard.assertCanAccess(result.getProjectId());
+        accessGuard.assertCanAccess(document.getProjectId());
+        if (!result.getProjectId().equals(document.getProjectId())) {
+            throw new BusinessException("附件所属项目与投标结果不一致");
+        }
         if (attachmentType == BidResultAttachmentRef.AttachmentType.NOTICE) {
             result.setNoticeDocumentId(document.getId());
         } else {
@@ -70,6 +81,7 @@ public class BidResultAttachmentAppService {
         fetchResultRepository.findAll().stream()
                 .filter(result -> documentId.equals(result.getNoticeDocumentId()) || documentId.equals(result.getAnalysisDocumentId()))
                 .forEach(result -> {
+                    accessGuard.assertCanAccess(result.getProjectId());
                     BidResultAttachmentRef.AttachmentType attachmentType;
                     if (documentId.equals(result.getNoticeDocumentId())) {
                         result.setNoticeDocumentId(null);

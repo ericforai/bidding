@@ -1,4 +1,4 @@
-// Input: tender repository, batch validation, and log service
+// Input: tender repository, linked project repository, data access guard, batch validation, and log service
 // Output: tender batch command orchestration
 // Pos: Service/业务层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
@@ -6,8 +6,11 @@ package com.xiyu.bid.batch.service;
 
 import com.xiyu.bid.batch.core.BatchValidationPolicy;
 import com.xiyu.bid.batch.dto.BatchOperationResponse;
+import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
+import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TenderRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,8 +28,10 @@ import java.util.List;
 public class BatchTenderCommandService {
 
     private final TenderRepository tenderRepository;
+    private final ProjectRepository projectRepository;
     private final BatchValidationPolicy validationPolicy;
     private final BatchOperationLogService logService;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     public BatchOperationResponse batchClaimTenders(List<Long> tenderIds, Long userId) {
         validationPolicy.validateBatchInput(tenderIds, "Tender IDs");
@@ -43,6 +48,7 @@ public class BatchTenderCommandService {
                     continue;
                 }
                 Tender tender = tenderOpt.get();
+                requireLinkedProjectAccess(tender);
                 if (tender.getStatus() == Tender.Status.TRACKING && !isOwnedBy(tender, userId)) {
                     response.addError(tenderId, "Tender already being tracked by another user", "ALREADY_TRACKING");
                     continue;
@@ -51,7 +57,7 @@ public class BatchTenderCommandService {
                 tendersToClaim.add(tender);
                 response.addSuccess(tenderId);
             } catch (RuntimeException exception) {
-                response.addError(tenderId, "Failed to claim tender: " + exception.getMessage(), "CLAIM_ERROR");
+                addRuntimeError(response, tenderId, exception, "CLAIM_ERROR");
             }
         }
         if (!tendersToClaim.isEmpty()) {
@@ -67,11 +73,12 @@ public class BatchTenderCommandService {
         for (Long tenderId : tenderIds) {
             try {
                 tenderRepository.findById(tenderId).ifPresent(tender -> {
+                    requireLinkedProjectAccess(tender);
                     toDelete.add(tender);
                     response.addSuccess(tenderId);
                 });
             } catch (RuntimeException exception) {
-                response.addError(tenderId, exception.getMessage(), "DELETE_ERROR");
+                addRuntimeError(response, tenderId, exception, "DELETE_ERROR");
             }
         }
         if (!toDelete.isEmpty()) {
@@ -97,5 +104,22 @@ public class BatchTenderCommandService {
 
     private boolean isOwnedBy(Tender tender, Long userId) {
         return true;
+    }
+
+    private void requireLinkedProjectAccess(Tender tender) {
+        List<Project> linkedProjects = projectRepository.findByTenderId(tender.getId());
+        for (Project project : linkedProjects) {
+            projectAccessScopeService.assertCurrentUserCanAccessProject(project.getId());
+        }
+    }
+
+    private void addRuntimeError(
+            BatchOperationResponse response,
+            Long itemId,
+            RuntimeException exception,
+            String fallbackCode
+    ) {
+        String code = BatchProjectAccessGuard.isAccessDenied(exception) ? "PERMISSION_DENIED" : fallbackCode;
+        response.addError(itemId, exception.getMessage(), code);
     }
 }

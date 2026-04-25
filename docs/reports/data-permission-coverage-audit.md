@@ -1,0 +1,156 @@
+# 数据权限覆盖审计报告
+
+审计日期：2026-04-25
+审计范围：真实后端 API 单一路径，不包含前端 demo 适配、本地 mock、历史演示残留。
+审计目标：确认项目关联业务接口是否全量经过数据权限控制，而不只覆盖 `/api/projects`。
+
+## 结论摘要
+
+当前系统已具备项目数据权限核心能力，但尚未达到“所有项目关联接口全量覆盖”的口径。
+
+- 已覆盖：项目主接口、项目工作流部分接口、标书生成 Agent、部分任务分配能力已经通过 `ProjectAccessScopeService` 或项目工作流守卫收口。
+- 部分覆盖：任务模块存在部门/用户候选范围控制，但任务列表、任务详情、项目任务查询仍缺少项目访问守卫证据。
+- 未覆盖或证据不足：标讯、费用、文档编辑器、文档版本、ROI/评分/竞情 AI 分析、投标结果、导出、审批统计/聚合等模块存在仅做角色限制或仅按 `projectId` 查询的风险。
+- 不适用：认证、运行模式、后台角色/用户/数据权限配置、审计日志查询等非项目业务数据，不按本次项目数据权限口径判为缺口。
+
+## 判定规则
+
+| 状态 | 判定口径 |
+| --- | --- |
+| 已覆盖 | 服务链路调用 `ProjectAccessScopeService`，或通过等价项目守卫先校验当前用户能访问项目，再读取、写入、导出或聚合项目数据。 |
+| 部分覆盖 | 只有部分入口受控；列表、统计、导出、聚合、详情或写操作中仍有绕过可能。 |
+| 未覆盖 | 仅有 `@PreAuthorize` 角色限制、认证要求或路径参数校验，没有项目/部门/显式项目授权过滤证据。 |
+| 不适用 | 认证、系统配置、管理员后台配置、审计查询、运行模式、非项目维度主数据，或已经明确按本人会话隔离。 |
+
+本报告的“覆盖”只代表代码链路中存在可确认的数据权限控制，不代表业务语义完全满足等保、客户组织规则或后续所有场景。
+
+## 已确认的权限收口点
+
+| 收口点 | 覆盖能力 | 证据 |
+| --- | --- | --- |
+| `ProjectAccessScopeService` | 统一计算当前用户可访问项目；支持管理员全量、本人项目、团队成员、显式项目、项目组、部门范围。 | `backend/src/main/java/com/xiyu/bid/service/ProjectAccessScopeService.java` |
+| `DataScopeConfigService` / `DataScopePolicy` | 角色、用户、部门维度的数据范围配置与纯核心计算。 | `backend/src/main/java/com/xiyu/bid/admin/service/DataScopeConfigService.java`；`backend/src/main/java/com/xiyu/bid/admin/settings/core/DataScopePolicy.java` |
+| `ProjectService` | 项目列表、详情、状态、团队、搜索、统计等项目主接口调用访问范围过滤或单项目断言。 | `backend/src/main/java/com/xiyu/bid/project/service/ProjectService.java` |
+| `ProjectWorkflowGuardService` | 项目工作流子资源先校验项目可访问性，再校验任务、文档、评分草稿归属。 | `backend/src/main/java/com/xiyu/bid/projectworkflow/service/ProjectWorkflowGuardService.java` |
+| 标书生成 Agent 应用服务 | 创建 run、读取 run、评审、应用、导入标书文档前断言项目访问。 | `backend/src/main/java/com/xiyu/bid/biddraftagent/application/BidDraftAgentAppService.java`；`BidTenderDocumentImportAppService.java` |
+
+## 接口盘点
+
+静态盘点识别到 57 个真实 Controller，约 396 个映射入口。下表按 Controller 聚合；每行覆盖该 Controller 下全部映射入口，风险以项目关联数据口径判定。
+
+| 模块 | Controller / 基础路径 | 接口数 | 项目关联判断 | 数据权限状态 | 风险 |
+| --- | --- | ---: | --- | --- | --- |
+| admin | `AdminProjectGroupController` `/api/admin/project-groups` | 5 | 项目组配置，管理员后台 | 不适用 | 低 |
+| admin | `AdminSettingsController` `/api/admin/settings` | 3 | 数据权限配置本身，管理员后台 | 不适用 | 低 |
+| ai | `ProjectAiController` `/api/projects` | 2 | 项目 AI 卡片/评分预览 | 未覆盖 | P1 |
+| alerts | `AlertHistoryController` `/api/alerts/history` | 7 | 告警历史可能引用项目或资质 | 部分覆盖 | P2 |
+| alerts | `AlertRuleController` `/api/alerts/rules` | 8 | 告警规则配置 | 不适用 | 低 |
+| analytics | `CustomerTypeAnalyticsController` `/api/analytics` | 2 | 聚合分析数据 | 未覆盖 | P1 |
+| analytics | `DashboardController` `/api/analytics` | 13 | 看板聚合项目、任务、费用等数据 | 未覆盖 | P1 |
+| approval | `ApprovalController` `/api/approvals` | 12 | 审批请求含 `project_id` | 部分覆盖 | P0 |
+| audit | `AuditLogController` `/api/audit` | 1 | 审计查询，管理员/经理可见 | 不适用 | 低 |
+| batch | `BatchOperationController` `/api/batch` | 10 | 批量项目、标讯、任务、费用操作 | 部分覆盖 | P0 |
+| batch | `TenderAssignmentQueryController` `/api/tenders` | 2 | 标讯分配查询 | 未覆盖 | P1 |
+| biddraftagent | `BidDraftAgentController` `/api/projects/{projectId}/bid-agent` | 6 | 项目标书生成 | 已覆盖 | 低 |
+| bidmatch | `BidMatchEvaluationController` `/api/bid-match/evaluations` | 1 | 评分评估详情，可能关联标讯/项目 | 未覆盖 | P1 |
+| bidmatch | `BidMatchModelController` `/api/bid-match/models` | 4 | 评分模型配置 | 不适用 | 低 |
+| bidmatch | `BidMatchTenderScoreController` `/api/tenders/{tenderId}/match-score` | 3 | 标讯匹配分 | 未覆盖 | P1 |
+| bidresult | `BidResultCommandController` `/api/bid-results` | 8 | 投标结果、项目闭环 | 未覆盖 | P0 |
+| bidresult | `BidResultQueryController` `/api/bid-results` | 5 | 投标结果列表、详情、聚合 | 未覆盖 | P1 |
+| bidresult | `BidResultReminderController` `/api/bid-results/reminders` | 3 | 投标结果提醒 | 未覆盖 | P1 |
+| bidresult | `CompetitorWinController` `/api/bid-results/competitor-wins` | 1 | 竞品胜率历史 | 不适用 | 低 |
+| calendar | `CalendarController` `/api/calendar` | 7 | 日历事件可能关联项目 | 部分覆盖 | P2 |
+| casework | `CaseController` `/api/knowledge/cases` | 14 | 案例库、项目转案例 | 部分覆盖 | P1 |
+| collaboration | `CollaborationController` `/api/collaboration` | 8 | 协作线程/评论可能关联项目 | 未覆盖 | P1 |
+| competitionintel | `CompetitionIntelController` `/api/ai/competition` | 6 | 项目竞情分析 | 未覆盖 | P1 |
+| compliance | `ComplianceController` `/api/compliance` | 5 | 合规检查可能关联项目/标书 | 未覆盖 | P1 |
+| contractborrow | `ContractBorrowController` `/api/contract-borrows` | 9 | 合同借阅可能关联项目 | 部分覆盖 | P2 |
+| controller | `AdminRoleController` `/api/admin/roles` | 6 | 角色后台配置 | 不适用 | 低 |
+| controller | `AdminUserController` `/api/admin/users` | 6 | 用户后台配置 | 不适用 | 低 |
+| controller | `AuthController` `/api/auth` | 12 | 登录、刷新、会话、本人信息 | 不适用 | 低 |
+| controller | `TestController` `/api` | 4 | 测试接口 | 不适用 | 低 |
+| demo | `RuntimeModeController` `/api/system` | 1 | 运行模式公开信息 | 不适用 | 低 |
+| documenteditor | `DocumentEditorController` `/api/documents/{projectId}/editor` | 11 | 项目标书文档编辑 | 未覆盖 | P0 |
+| documentexport | `DocumentExportController` `/api/documents/{projectId}` | 5 | 项目标书导出/下载 | 未覆盖 | P0 |
+| documents | `DocumentAssemblyController` `/api/documents/assembly` | 5 | 文档组装模板/结果 | 部分覆盖 | P1 |
+| export | `ExportController` `/api/export` | 4 | 导出项目、标讯、费用等数据 | 未覆盖 | P0 |
+| fees | `FeeController` `/api/fees` | 11 | 费用含 `projectId` | 未覆盖 | P0 |
+| marketinsight | `CustomerOpportunityController` `/api/customer-opportunities` | 6 | 客户商机，可转项目 | 部分覆盖 | P2 |
+| marketinsight | `MarketInsightController` `/api/market-insight` | 1 | 市场洞察聚合 | 不适用 | 低 |
+| platform | `PlatformAccountController` `/api/platform/accounts` | 10 | 平台账号资产 | 不适用 | 低 |
+| project | `ProjectController` `/api/projects` | 13 | 项目主数据 | 已覆盖 | 低 |
+| projectquality | `ProjectQualityController` `/api/projects/{projectId}/quality-checks` | 4 | 项目质量检查 | 未覆盖 | P1 |
+| projectworkflow | `ProjectDocumentController` `/api/projects/{projectId}/documents` | 3 | 项目文档 | 已覆盖 | 低 |
+| projectworkflow | `ProjectWorkflowController` `/api/projects/{projectId}` | 18 | 项目任务、提醒、分享、评分草稿 | 已覆盖 | 低 |
+| qualification | `QualificationController` `/api/knowledge/qualifications` | 14 | 资质借阅可关联项目 | 部分覆盖 | P2 |
+| resources | `AccountController` `/api/resources/accounts` | 11 | 资源账户主数据 | 不适用 | 低 |
+| resources | `BarAssetController` `/api/resources/bar-assets` | 12 | BAR 资产主数据 | 不适用 | 低 |
+| resources | `BarCertificateController` `/api/resources/bar-assets/{assetId}/certificates` | 7 | 证书借阅可关联项目 | 部分覆盖 | P2 |
+| resources | `BarSiteSubresourceController` `/api/resources/bar-assets/{assetId}` | 12 | BAR 子资源 | 不适用 | 低 |
+| resources | `ExpenseController` `/api/resources/expenses` | 18 | 费用台账/保证金可能关联项目 | 未覆盖 | P0 |
+| roi | `ROIAnalysisController` `/api/ai/roi` | 4 | 项目 ROI 分析 | 未覆盖 | P1 |
+| scoreanalysis | `ScoreAnalysisController` `/api/ai/score-analysis` | 4 | 项目评分分析 | 未覆盖 | P1 |
+| settings | `SettingsController` `/api/settings` | 4 | 系统设置、项目组权限配置 | 不适用 | 低 |
+| task | `TaskController` `/api/tasks` | 13 | 任务含 `projectId` | 部分覆盖 | P0 |
+| template | `TemplateController` `/api/knowledge/templates` | 11 | 模板库，使用记录可关联项目 | 部分覆盖 | P2 |
+| tender | `TenderController` `/api/tenders` | 11 | 标讯主数据 | 未覆盖 | P0 |
+| tenderupload | `TenderUploadController` `/api/tenders`, `/v1/tenders` | 3 | 上传任务按本人文件隔离 | 不适用 | 低 |
+| versionhistory | `DocumentVersionController` `/api/documents/{projectId}/versions` | 6 | 项目标书版本 | 未覆盖 | P0 |
+| workbench | `WorkbenchScheduleController` `/api/workbench` | 1 | 工作台日程聚合 | 部分覆盖 | P2 |
+
+## 高优先级缺口
+
+### P0：跨项目读写风险
+
+| 模块 | 风险说明 | 建议 |
+| --- | --- | --- |
+| 费用 `FeeController` | 费用详情、列表、项目费用、状态、支付、退回、取消、统计均未看到项目访问守卫；任意有角色权限的用户可能按 ID 或项目 ID 操作不可见费用。 | 在服务层引入统一费用访问守卫：读取费用后校验其 `projectId`，按项目查询/统计前校验 `projectId`，列表按可见项目过滤。 |
+| 资源费用台账 `ExpenseController` | 费用台账与保证金回款链路可能直接暴露跨项目费用、审批、付款记录。 | 将费用台账查询和统计统一接入可见项目集合；写操作先校验目标项目或目标费用所属项目。 |
+| 文档编辑/导出/版本 | 路径带 `projectId`，但 `DocumentEditorGuard` 只校验文档结构归属项目，未校验当前用户可访问该项目；导出和版本历史同类风险更高。 | 在文档编辑器、导出、版本服务入口统一调用 `ProjectAccessScopeService.assertCurrentUserCanAccessProject(projectId)`。 |
+| 投标结果 | 投标结果闭环、附件、忽略、竞品报告等会落到具体项目或客户投标数据，目前缺少项目范围过滤证据。 | 查询、命令、提醒统一按结果关联项目或可见项目集合过滤。 |
+| 标讯 `TenderController` | 标讯列表、详情、AI 分析、状态/来源/统计只有角色限制，未纳入数据权限。 | 明确标讯是否有部门/负责人/项目映射；有映射则按项目或负责人范围过滤，无映射则补标讯数据范围模型。 |
+| 批量操作 | 批量删除/更新/分配/费用审批涉及多个业务对象；部分子服务有项目访问依赖，但批量入口整体覆盖不均。 | 每个批量 item 执行前校验其项目归属；批量结果返回应避免暴露不可见 item 明细。 |
+| 任务 `TaskController` | 候选人、团队工作量有部门范围控制，但任务列表、详情、项目任务、状态、逾期接口未看到项目访问守卫。 | 以任务所属 `projectId` 为主校验；列表按可见项目集合过滤；本人任务可作为补充规则。 |
+
+### P1：统计、导出、AI/分析泄露风险
+
+| 模块 | 风险说明 | 建议 |
+| --- | --- | --- |
+| 分析看板 | `DashboardController`、客户类型分析聚合项目、任务、费用、投标数据，缺少可见项目范围输入。 | 所有聚合查询先取当前用户可见项目 ID；管理员可全量，其他角色按范围聚合。 |
+| ROI/评分/竞情/合规 | 多数接口按 `projectId` 读写项目分析结果，但未看到项目访问断言。 | 在每个项目分析入口统一前置项目访问断言。 |
+| 导出 `ExportController` | 导出项目、标讯、费用等批量数据，若直接 `findAll` 会绕过页面侧权限。 | 导出任务必须带当前用户上下文，按可见项目集合生成文件。 |
+| 审批 | 审批详情有参与者语义，但项目维度统计、待办和批量审批缺少与项目数据范围组合的证据。 | 参与者权限之外，再按审批请求 `projectId` 校验或过滤。 |
+| 项目质量检查 | 路径带 `projectId`，未看到项目访问守卫证据。 | 与项目工作流同样复用 `ProjectAccessScopeService`。 |
+| 知识库案例 | 普通案例库可按知识资产处理，但“项目转案例”、案例引用、分享记录需要项目访问校验。 | 项目转案例入口必须先校验源项目；引用/分享如含项目 ID 也需校验。 |
+
+### P2：证据不足或局部补强
+
+| 模块 | 风险说明 | 建议 |
+| --- | --- | --- |
+| 告警历史 | 告警可能引用项目、资质、费用等实体，当前按告警维度查询，缺少目标实体范围过滤证据。 | 为告警增加 related entity 到项目/部门的范围映射；无法映射时限制管理角色。 |
+| 日历 | 日历事件可能是个人事项，也可能来自项目；需要区分事件可见性来源。 | 个人事件按 owner 隔离，项目事件按项目范围过滤。 |
+| 资质/证书借阅 | 资质和证书是资源资产，但借阅记录含项目时可能泄露项目信息。 | 资产本身按资源权限，借阅记录中的项目字段按项目范围脱敏或过滤。 |
+| 模板 | 模板库可共享，但模板使用记录含 `projectId`。 | 模板内容按知识权限，使用记录按项目范围过滤。 |
+| 工作台 | 工作台日程聚合容易跨任务、项目、审批取数。 | 工作台所有聚合统一接入可见项目和本人任务范围。 |
+
+## 建议整改顺序
+
+1. 建立后端项目权限门禁测试：扫描所有带 `projectId` 路径、请求体或实体字段的 Controller/Service，要求命中统一项目访问守卫或显式豁免清单。
+2. 先补 P0 模块：费用、资源费用台账、文档编辑/导出/版本、投标结果、标讯、任务、批量操作。
+3. 再补 P1 聚合模块：分析看板、AI 分析、导出、审批、项目质量。
+4. 对 P2 模块做业务口径拆分：个人数据、资源主数据、共享知识资产、项目关联记录分别定义过滤策略。
+5. 所有修复优先复用 `ProjectAccessScopeService`；不要新建并行权限体系。
+
+## 验证记录
+
+| 命令 | 结果 |
+| --- | --- |
+| 静态盘点 Controller / Mapping / 权限收口点 | 识别 57 个 Controller、约 396 个映射入口；确认 `ProjectAccessScopeService` 仅在项目、项目工作流、标书生成 Agent、任务/批量少量链路使用。 |
+| `mvn test -Dtest=DataScopeConfigServiceTest,DataScopePolicyTest,ProjectAccessScopeServiceTest` | 通过：12 tests, 0 failures, 0 errors, 0 skipped。 |
+| `mvn test -Dtest=ProjectControllerAccessIntegrationTest` | 通过：5 tests, 0 failures, 0 errors, 0 skipped。 |
+
+## 本轮未做事项
+
+- 未修改 API、DTO、数据库表、权限配置或业务代码。
+- 未新增自动化门禁；本报告建议后续新增。
+- 未声称全量满足客户安全条款；当前结论是“项目主链路已有基础，跨模块项目关联数据权限仍需整改”。

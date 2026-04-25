@@ -12,6 +12,7 @@ import com.xiyu.bid.resources.expenseledger.dto.ExpenseLedgerItemDTO;
 import com.xiyu.bid.resources.expenseledger.dto.ExpenseLedgerQuery;
 import com.xiyu.bid.resources.expenseledger.dto.ExpenseLedgerResponse;
 import com.xiyu.bid.resources.repository.ExpenseRepository;
+import com.xiyu.bid.resources.service.expense.ExpenseAccessGuard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -31,11 +32,15 @@ public class ExpenseLedgerApplicationService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ExpenseLedgerStatisticsCalculator statisticsCalculator;
+    private final ExpenseAccessGuard accessGuard;
 
     public ExpenseLedgerResponse queryLedger(ExpenseLedgerQuery query) {
         validate(query);
 
-        List<Expense> expenses = expenseRepository.findAll(Sort.by(Sort.Direction.DESC, "date", "createdAt"));
+        if (query.getProjectId() != null) {
+            accessGuard.assertCanAccessProject(query.getProjectId());
+        }
+        List<Expense> expenses = loadVisibleExpenses();
         Map<Long, Project> projectsById = loadProjects(expenses);
         Map<Long, User> managersById = loadManagers(projectsById.values());
 
@@ -48,6 +53,18 @@ public class ExpenseLedgerApplicationService {
                 .items(items)
                 .summary(statisticsCalculator.summarize(items))
                 .build();
+    }
+
+    private List<Expense> loadVisibleExpenses() {
+        Sort sort = Sort.by(Sort.Direction.DESC, "date", "createdAt");
+        List<Long> visibleProjectIds = accessGuard.visibleProjectIdsForCurrentUser();
+        if (visibleProjectIds == null) {
+            return expenseRepository.findAll(sort);
+        }
+        if (visibleProjectIds.isEmpty()) {
+            return List.of();
+        }
+        return expenseRepository.findByProjectIdIn(visibleProjectIds, sort);
     }
 
     private Map<Long, Project> loadProjects(List<Expense> expenses) {

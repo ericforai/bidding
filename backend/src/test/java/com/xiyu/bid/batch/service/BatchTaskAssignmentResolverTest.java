@@ -1,9 +1,11 @@
 package com.xiyu.bid.batch.service;
 
+import com.xiyu.bid.batch.core.BatchAssignmentPolicy;
+import com.xiyu.bid.batch.core.BatchAssignmentSnapshot;
+import com.xiyu.bid.batch.dto.BatchAssignRequest;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.service.ProjectAccessScopeService;
-import com.xiyu.bid.task.dto.TaskAssignmentRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -25,7 +27,10 @@ class BatchTaskAssignmentResolverTest {
     void setUp() {
         userRepository = mock(UserRepository.class);
         projectAccessScopeService = mock(ProjectAccessScopeService.class);
-        batchTaskAssignmentResolver = new BatchTaskAssignmentResolver(userRepository, projectAccessScopeService);
+        batchTaskAssignmentResolver = new BatchTaskAssignmentResolver(
+                userRepository,
+                new BatchAssignmentPolicy(projectAccessScopeService)
+        );
     }
 
     @Test
@@ -39,8 +44,10 @@ class BatchTaskAssignmentResolverTest {
                 .build();
         when(userRepository.findById(20L)).thenReturn(Optional.of(assignee));
 
-        BatchTaskAssignmentResolver.AssignmentSnapshot snapshot = batchTaskAssignmentResolver.resolveAssignment(
-                TaskAssignmentRequest.builder().assigneeId(20L).build(),
+        BatchAssignRequest request = new BatchAssignRequest();
+        request.setAssigneeId(20L);
+        BatchAssignmentSnapshot snapshot = batchTaskAssignmentResolver.resolve(
+                request,
                 null
         );
 
@@ -53,8 +60,10 @@ class BatchTaskAssignmentResolverTest {
         User assignee = User.builder().id(20L).enabled(false).build();
         when(userRepository.findById(20L)).thenReturn(Optional.of(assignee));
 
-        assertThatThrownBy(() -> batchTaskAssignmentResolver.resolveAssignment(
-                TaskAssignmentRequest.builder().assigneeId(20L).build(),
+        BatchAssignRequest request = new BatchAssignRequest();
+        request.setAssigneeId(20L);
+        assertThatThrownBy(() -> batchTaskAssignmentResolver.resolve(
+                request,
                 null
         )).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("已停用");
@@ -69,8 +78,10 @@ class BatchTaskAssignmentResolverTest {
                 .build();
         when(projectAccessScopeService.getAllowedDepartmentCodes(currentUser)).thenReturn(List.of("D1"));
 
-        assertThatThrownBy(() -> batchTaskAssignmentResolver.resolveAssignment(
-                TaskAssignmentRequest.builder().assigneeDeptCode("D2").build(),
+        BatchAssignRequest request = new BatchAssignRequest();
+        request.setAssigneeDeptCode("D2");
+        assertThatThrownBy(() -> batchTaskAssignmentResolver.resolve(
+                request,
                 currentUser
         )).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("无权向该部门分配任务");

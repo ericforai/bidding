@@ -13,6 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -54,6 +56,25 @@ class BatchOperationClaimTendersTest extends AbstractBatchOperationServiceTest {
         assertFalse(response.getSuccess());
         assertEquals(2, response.getSuccessCount());
         assertEquals(1, response.getFailureCount());
+    }
+
+    @Test
+    void batchClaimTenders_rejectsTenderLinkedToProjectOutsideDataScope() {
+        List<Long> tenderIds = Collections.singletonList(1L);
+        Long userId = 100L;
+
+        when(tenderRepository.findById(1L)).thenReturn(Optional.of(testTender1));
+        when(projectRepository.findByTenderId(1L)).thenReturn(Collections.singletonList(testProject1));
+        doThrow(new org.springframework.security.access.AccessDeniedException("权限不足"))
+                .when(projectAccessScopeService).assertCurrentUserCanAccessProject(1L);
+
+        var response = batchOperationService.batchClaimTenders(tenderIds, userId);
+
+        assertFalse(response.getSuccess());
+        assertEquals(0, response.getSuccessCount());
+        assertEquals(1, response.getFailureCount());
+        assertEquals("PERMISSION_DENIED", response.getErrors().get(0).getErrorCode());
+        verify(tenderRepository, never()).saveAll(anyList());
     }
 
     @Test

@@ -25,6 +25,7 @@ public class BidResultFetchConfirmationAppService {
 
     private final BidResultFetchResultRepository fetchResultRepository;
     private final BidResultReminderAppService reminderAppService;
+    private final BidResultProjectAccessGuard accessGuard;
     private final BidResultRegistrationFactory registrationFactory = new BidResultRegistrationFactory();
 
     @Transactional
@@ -74,7 +75,9 @@ public class BidResultFetchConfirmationAppService {
     }
 
     private BidResultFetchResult getFetchResult(Long id) {
-        return fetchResultRepository.findById(id)
+        BidResultFetchResult result = fetchResultRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Bid result fetch record not found: " + id));
+        accessGuard.assertCanAccess(result.getProjectId());
+        return result;
     }
 }

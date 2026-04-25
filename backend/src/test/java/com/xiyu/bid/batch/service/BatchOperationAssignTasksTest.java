@@ -12,6 +12,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class BatchOperationAssignTasksTest extends AbstractBatchOperationServiceTest {
@@ -47,6 +50,24 @@ class BatchOperationAssignTasksTest extends AbstractBatchOperationServiceTest {
         assertFalse(response.getSuccess());
         assertEquals(1, response.getSuccessCount());
         assertEquals(1, response.getFailureCount());
+    }
+
+    @Test
+    void batchAssignTasks_rejectsTaskOutsideProjectDataScope() {
+        List<Long> taskIds = Collections.singletonList(1L);
+        Long assigneeId = 200L;
+
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(testTask1));
+        doThrow(new org.springframework.security.access.AccessDeniedException("权限不足"))
+                .when(projectAccessScopeService).assertCurrentUserCanAccessProject(100L);
+
+        var response = batchOperationService.batchAssignTasks(taskIds, assigneeId);
+
+        assertFalse(response.getSuccess());
+        assertEquals(0, response.getSuccessCount());
+        assertEquals(1, response.getFailureCount());
+        assertEquals("PERMISSION_DENIED", response.getErrors().get(0).getErrorCode());
+        verify(taskRepository, never()).saveAll(anyList());
     }
 
     @Test

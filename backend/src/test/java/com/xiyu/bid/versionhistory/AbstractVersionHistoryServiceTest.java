@@ -1,9 +1,11 @@
 package com.xiyu.bid.versionhistory;
 
 import com.xiyu.bid.audit.service.IAuditLogService;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import com.xiyu.bid.versionhistory.dto.VersionCreateRequest;
 import com.xiyu.bid.versionhistory.entity.DocumentVersion;
 import com.xiyu.bid.versionhistory.repository.DocumentVersionRepository;
+import com.xiyu.bid.versionhistory.service.VersionHistoryAccessGuard;
 import com.xiyu.bid.versionhistory.service.VersionHistoryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,6 +23,9 @@ abstract class AbstractVersionHistoryServiceTest {
     @Mock
     protected IAuditLogService auditLogService;
 
+    @Mock
+    protected ProjectAccessScopeService projectAccessScopeService;
+
     protected VersionHistoryService versionHistoryService;
     protected DocumentVersion testVersion;
     protected DocumentVersion testVersion2;
@@ -28,7 +33,11 @@ abstract class AbstractVersionHistoryServiceTest {
 
     @BeforeEach
     void setUpVersionHistoryFixture() {
-        versionHistoryService = new VersionHistoryService(repository, auditLogService);
+        versionHistoryService = new VersionHistoryService(
+                repository,
+                auditLogService,
+                new VersionHistoryAccessGuard(projectAccessScopeService)
+        );
 
         testVersion = DocumentVersion.builder()
                 .id(1L)

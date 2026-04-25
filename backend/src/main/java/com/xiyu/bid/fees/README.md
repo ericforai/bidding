@@ -9,7 +9,10 @@
 | 文件 | 地位 | 功能 |
 |------|------|------|
 | `controller/FeeController.java` | Controller | 费用接口 |
-| `service/FeeService.java` | Service | 费用流程编排 |
+| `service/FeeService.java` | Service | 费用流程编排、项目访问权限断言 |
+| `service/FeeRequestValidator.java` | Pure Helper | 创建费用请求纯校验 |
+| `service/FeeMapper.java` | Pure Helper | 费用实体到 DTO 的纯映射 |
+| `service/FeeStatisticsFactory.java` | Pure Helper | 费用统计 DTO 纯组装 |
 | `entity/Fee.java` | Entity | 费用实体 |
 | `repository/FeeRepository.java` | Repository | 费用数据访问 |
 | `dto/FeeDTO.java` | DTO | 费用视图对象 |

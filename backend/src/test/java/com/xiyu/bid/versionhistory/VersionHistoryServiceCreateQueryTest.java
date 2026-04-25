@@ -6,6 +6,7 @@ import com.xiyu.bid.versionhistory.dto.DocumentVersionDTO;
 import com.xiyu.bid.versionhistory.dto.VersionCreateRequest;
 import com.xiyu.bid.versionhistory.entity.DocumentVersion;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Arrays;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,6 +39,18 @@ class VersionHistoryServiceCreateQueryTest extends AbstractVersionHistoryService
 
         verify(repository).save(any(DocumentVersion.class));
         verify(auditLogService).log(any(AuditLogService.AuditLogEntry.class));
+    }
+
+    @Test
+    void createVersion_WhenProjectOutsideCurrentUserScope_ShouldThrowAccessDeniedBeforeSaving() {
+        doThrow(new AccessDeniedException("权限不足，无法访问该项目"))
+                .when(projectAccessScopeService).assertCurrentUserCanAccessProject(100L);
+
+        assertThatThrownBy(() -> versionHistoryService.createVersion(createRequest))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(projectAccessScopeService).assertCurrentUserCanAccessProject(100L);
+        verify(repository, never()).save(any(DocumentVersion.class));
     }
 
     @Test
@@ -187,6 +201,18 @@ class VersionHistoryServiceCreateQueryTest extends AbstractVersionHistoryService
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getVersionNumber()).isEqualTo(2);
         assertThat(result.get(1).getVersionNumber()).isEqualTo(1);
+    }
+
+    @Test
+    void getVersionsByProject_WhenProjectOutsideCurrentUserScope_ShouldThrowAccessDeniedBeforeQuery() {
+        doThrow(new AccessDeniedException("权限不足，无法访问该项目"))
+                .when(projectAccessScopeService).assertCurrentUserCanAccessProject(100L);
+
+        assertThatThrownBy(() -> versionHistoryService.getVersionsByProject(100L))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(projectAccessScopeService).assertCurrentUserCanAccessProject(100L);
+        verify(repository, never()).findByProjectIdOrderByCreatedAtDesc(any());
     }
 
     @Test

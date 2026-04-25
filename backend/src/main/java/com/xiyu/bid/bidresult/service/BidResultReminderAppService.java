@@ -31,6 +31,7 @@ public class BidResultReminderAppService {
     private final BidResultFetchResultRepository fetchResultRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final BidResultProjectAccessGuard accessGuard;
 
     @Transactional
     public BidResultReminder ensurePendingReminderForResult(BidResultFetchResult result, String comment, Long operatorId, String operatorName) {
@@ -47,6 +48,7 @@ public class BidResultReminderAppService {
     public BidResultReminderDTO sendReminder(Long resultId, String comment, Long operatorId, String operatorName) {
         BidResultFetchResult result = fetchResultRepository.findById(resultId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bid result fetch record not found: " + resultId));
+        accessGuard.assertCanAccess(result.getProjectId());
         BidResultReminder reminder = findOrCreate(result, operatorId, operatorName);
         ReminderStateTransition.ReminderSnapshot sent =
                 ReminderStateTransition.send(comment, LocalDateTime.now());
@@ -74,6 +76,7 @@ public class BidResultReminderAppService {
     public BidResultReminderDTO markUploaded(Long reminderId, Long documentId, Long operatorId) {
         BidResultReminder reminder = reminderRepository.findById(reminderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bid result reminder not found: " + reminderId));
+        accessGuard.assertCanAccess(reminder.getProjectId());
         applySnapshot(reminder, ReminderStateTransition.upload(documentId, operatorId, LocalDateTime.now()));
         return BidResultReminderAssembler.toDto(reminderRepository.save(reminder));
     }

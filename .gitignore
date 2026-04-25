@@ -29,6 +29,7 @@ npm-debug.log*
 # Generated reports
 docs/reports/*
 !docs/reports/.gitkeep
+!docs/reports/data-permission-coverage-audit.md
 backend/docs/reports/
 
 # Environment

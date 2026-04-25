@@ -17,10 +17,14 @@ import java.util.List;
 public class CompetitorReportQueryService {
 
     private final CompetitorWinRecordRepository competitorWinRecordRepository;
+    private final BidResultProjectAccessGuard accessGuard;
 
     public List<BidResultCompetitorReportRowDTO> getCompetitorReport() {
         return CompetitorReportComputation.aggregate(
-                        competitorWinRecordRepository.findAllByOrderByWonAtDesc().stream()
+                        accessGuard.filterAccessible(
+                                        competitorWinRecordRepository.findAllByOrderByWonAtDesc(),
+                                        competitorWin -> competitorWin.getProjectId()
+                                ).stream()
                                 .map(CompetitorWinAssembler::toRow)
                                 .toList()
                 ).stream()
@@ -28,4 +32,3 @@ public class CompetitorReportQueryService {
                 .toList();
     }
 }
-
