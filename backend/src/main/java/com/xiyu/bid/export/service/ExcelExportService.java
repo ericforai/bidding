@@ -1,5 +1,5 @@
 // Input: export repositories, DTOs, and support services
-// Output: Excel Export business service operations
+// Output: Excel Export business service operations and export metadata
 // Pos: Service/业务层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.export.service;
@@ -16,6 +16,7 @@ import com.xiyu.bid.repository.CaseRepository;
 import com.xiyu.bid.entity.Template;
 import com.xiyu.bid.repository.TemplateRepository;
 import com.xiyu.bid.audit.service.IAuditLogService;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.BorderStyle;
@@ -39,6 +40,8 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -46,6 +49,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 /**
  * Excel Export Service with size limits, audit logging, and pagination support.
@@ -62,6 +66,7 @@ public class ExcelExportService {
     private final TemplateRepository templateRepository;
     private final ExportConfig exportConfig;
     private final IAuditLogService auditLogService;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter DATE_ONLY_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -93,6 +98,21 @@ public class ExcelExportService {
      * @throws RuntimeException if export fails or times out
      */
     public long exportToExcel(String dataType, Path filePath, String paramsJson, Long userId) {
+        return exportToExcelWithResult(dataType, filePath, paramsJson, userId).fileSize();
+    }
+
+    /**
+     * Export data to Excel and return generated file metadata.
+     *
+     * @param dataType The type of data to export (tenders, projects, qualifications, cases, templates)
+     * @param filePath The path where the Excel file will be saved
+     * @param paramsJson Optional JSON parameters for filtering
+     * @param userId The ID of the user performing the export
+     * @return File size and visible record count for the exported data
+     * @throws IllegalArgumentException if data type is null or record count exceeds limit
+     * @throws RuntimeException if export fails or times out
+     */
+    public ExportFileResult exportToExcelWithResult(String dataType, Path filePath, String paramsJson, Long userId) {
         if (dataType == null) {
             throw new IllegalArgumentException("Export type cannot be null");
         }
@@ -153,7 +173,7 @@ public class ExcelExportService {
             logExport(userId, dataType, recordCount, fileSize, true, null,
                 System.currentTimeMillis() - startTime);
 
-            return fileSize;
+            return new ExportFileResult(fileSize, recordCount);
 
         } catch (TimeoutException e) {
             String errorMsg = String.format(
@@ -233,6 +253,7 @@ public class ExcelExportService {
             int recordCount = 0;
             int pageNumber = 0;
             boolean hasMoreData = true;
+            Set<Long> exportableTenderIds = exportableTenderIds();
 
             while (hasMoreData && recordCount < exportConfig.getMaxRecords()) {
                 Pageable pageable = PageRequest.of(pageNumber, DEFAULT_PAGE_SIZE);
@@ -241,6 +262,9 @@ public class ExcelExportService {
                 for (Tender tender : page.getContent()) {
                     if (recordCount >= exportConfig.getMaxRecords()) {
                         break;
+                    }
+                    if (!canExportTender(tender, exportableTenderIds)) {
+                        continue;
                     }
                     Row row = sheet.createRow(rowNum++);
                     row.createCell(0).setCellValue(tender.getId() != null ? tender.getId() : 0);
@@ -289,6 +313,7 @@ public class ExcelExportService {
             int recordCount = 0;
             int pageNumber = 0;
             boolean hasMoreData = true;
+            Set<Long> exportableProjectIds = exportableProjectIds();
 
             while (hasMoreData && recordCount < exportConfig.getMaxRecords()) {
                 Pageable pageable = PageRequest.of(pageNumber, DEFAULT_PAGE_SIZE);
@@ -297,6 +322,9 @@ public class ExcelExportService {
                 for (Project project : page.getContent()) {
                     if (recordCount >= exportConfig.getMaxRecords()) {
                         break;
+                    }
+                    if (!canExportProject(project, exportableProjectIds)) {
+                        continue;
                     }
                     Row row = sheet.createRow(rowNum++);
                     row.createCell(0).setCellValue(project.getId() != null ? project.getId() : 0);
@@ -538,8 +566,45 @@ public class ExcelExportService {
         return date != null ? date.format(DATE_ONLY_FORMATTER) : "";
     }
 
+    private Set<Long> exportableProjectIds() {
+        if (projectAccessScopeService.currentUserHasAdminAccess()) {
+            return null;
+        }
+        return projectAccessScopeService.filterAccessibleProjects(projectRepository.findAll()).stream()
+                .map(Project::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    private Set<Long> exportableTenderIds() {
+        Set<Long> projectIds = exportableProjectIds();
+        if (projectIds == null) {
+            return null;
+        }
+        return projectRepository.findAll().stream()
+                .filter(project -> project.getId() != null && projectIds.contains(project.getId()))
+                .map(Project::getTenderId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    private boolean canExportProject(Project project, Set<Long> exportableProjectIds) {
+        return exportableProjectIds == null
+                || project != null && project.getId() != null && exportableProjectIds.contains(project.getId());
+    }
+
+    private boolean canExportTender(Tender tender, Set<Long> exportableTenderIds) {
+        return exportableTenderIds == null
+                || tender != null && tender.getId() != null && exportableTenderIds.contains(tender.getId());
+    }
+
     /**
      * Record to hold export result with data and record count.
      */
     private record ExportResult(byte[] data, int recordCount) {}
+
+    /**
+     * Public export metadata returned to API callers.
+     */
+    public record ExportFileResult(long fileSize, int recordCount) {}
 }

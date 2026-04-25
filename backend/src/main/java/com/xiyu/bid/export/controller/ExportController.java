@@ -1,5 +1,5 @@
 // Input: export service and request DTOs
-// Output: Export REST API endpoints
+// Output: Export REST API endpoints and export metadata responses
 // Pos: Controller/控制器层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.export.controller;
@@ -95,17 +95,18 @@ public class ExportController {
 
             // Perform export - convert params to JSON string
             String paramsJson = request.getParams() != null ? objectMapper.writeValueAsString(request.getParams()) : null;
-            long fileSize = excelExportService.exportToExcel(dataType, filePath, paramsJson, userId);
+            ExcelExportService.ExportFileResult exportResult = excelExportService.exportToExcelWithResult(
+                    dataType, filePath, paramsJson, userId);
 
             // Prepare response
             ExportResponse response = ExportResponse.builder()
                     .filename(filename)
-                    .recordCount(extractRecordCountFromPath(filePath))
-                    .fileSize(fileSize)
+                    .recordCount(exportResult.recordCount())
+                    .fileSize(exportResult.fileSize())
                     .build();
 
             log.info("Export completed: user={}, type={}, size={}, filename={}",
-                    userId, dataType, fileSize, filename);
+                    userId, dataType, exportResult.fileSize(), filename);
 
             return ResponseEntity.ok(ApiResponse.success("Export completed successfully", response));
 
@@ -234,12 +235,6 @@ public class ExportController {
 
     private String sanitizeFilename(String filename) {
         return filename.replaceAll("[^a-zA-Z0-9._-]", "_");
-    }
-
-    private int extractRecordCountFromPath(Path filePath) {
-        // This is a simplified implementation
-        // In production, you might want to track record count separately
-        return 0;
     }
 
     @lombok.Data

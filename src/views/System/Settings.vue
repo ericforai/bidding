@@ -77,6 +77,9 @@
           :rule-type-options="ruleTypeOptions"
         />
       </el-tab-pane>
+      <el-tab-pane label="系统集成" name="integration">
+        <SystemIntegrationPanel />
+      </el-tab-pane>
       <el-tab-pane label="审计日志" name="audit">
         <AuditLogPanel />
       </el-tab-pane>
@@ -93,6 +96,7 @@ import DepartmentTreePanel from './settings/DepartmentTreePanel.vue'
 import RoleManagementPanel from './settings/RoleManagementPanel.vue'
 import UserOrganizationPanel from './settings/UserOrganizationPanel.vue'
 import AuditLogPanel from './settings/AuditLogPanel.vue'
+import SystemIntegrationPanel from './settings/SystemIntegrationPanel.vue'
 import { useOrganizationSettings } from './settings/useOrganizationSettings'
 import { useAiModelSettings } from './settings/useAiModelSettings'
 import {

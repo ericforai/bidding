@@ -1,3 +1,7 @@
+// Input: CalendarService-filtered schedule events and optional demo fixtures
+// Output: Workbench schedule overview DTO
+// Pos: Service/工作台聚合查询层
+// 维护声明: 工作台日程不另建项目权限体系，项目可见性继承 CalendarService 的真实 API 单一路径过滤。
 package com.xiyu.bid.workbench.service;
 
 import com.xiyu.bid.calendar.dto.CalendarEventDTO;

@@ -8,6 +8,7 @@ import com.xiyu.bid.repository.QualificationRepository;
 import com.xiyu.bid.repository.TenderRepository;
 import com.xiyu.bid.repository.TemplateRepository;
 import com.xiyu.bid.audit.service.IAuditLogService;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.lenient;
 
 /**
  * Security tests for ExcelExportService path validation.
@@ -43,6 +45,9 @@ class ExcelExportServiceSecurityTest {
     @Mock
     private IAuditLogService auditLogService;
 
+    @Mock
+    private ProjectAccessScopeService projectAccessScopeService;
+
     private ExcelExportService excelExportService;
 
     private ExportConfig exportConfig;
@@ -62,8 +67,10 @@ class ExcelExportServiceSecurityTest {
                 caseRepository,
                 templateRepository,
                 exportConfig,
-                auditLogService
+                auditLogService,
+                projectAccessScopeService
         );
+        lenient().when(projectAccessScopeService.currentUserHasAdminAccess()).thenReturn(true);
     }
 
     @Test

@@ -1,9 +1,10 @@
-// Input: compatibility DTOs, businessqualification application services, and DTO mapper
-// Output: legacy qualification API orchestration backed by the real businessqualification domain
+// Input: compatibility DTOs, businessqualification application services, DTO mapper, and project access scope
+// Output: legacy qualification API orchestration with project-linked borrow record access control
 // Pos: Service/业务编排层
 // 维护声明: 仅维护兼容入口编排；业务规则下沉到 businessqualification 子域。
 package com.xiyu.bid.qualification.service;
 
+import com.xiyu.bid.access.core.ProjectLinkedRecordVisibilityPolicy;
 import com.xiyu.bid.businessqualification.application.service.BorrowQualificationAppService;
 import com.xiyu.bid.businessqualification.application.service.CreateQualificationAppService;
 import com.xiyu.bid.businessqualification.application.service.DeleteQualificationAppService;
@@ -14,11 +15,13 @@ import com.xiyu.bid.businessqualification.application.service.ScanExpiringQualif
 import com.xiyu.bid.businessqualification.application.service.UpdateQualificationAppService;
 import com.xiyu.bid.businessqualification.domain.model.BusinessQualification;
 import com.xiyu.bid.businessqualification.domain.model.QualificationLoan;
+import com.xiyu.bid.businessqualification.domain.valueobject.LoanStatus;
 import com.xiyu.bid.qualification.dto.QualificationBorrowRecordDTO;
 import com.xiyu.bid.qualification.dto.QualificationBorrowRequest;
 import com.xiyu.bid.qualification.dto.QualificationDTO;
 import com.xiyu.bid.qualification.dto.QualificationOverviewDTO;
 import com.xiyu.bid.qualification.dto.QualificationReturnRequest;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +44,7 @@ public class QualificationService {
     private final ScanExpiringQualificationsAppService scanExpiringQualificationsAppService;
     private final DeleteQualificationAppService deleteQualificationAppService;
     private final QualificationDtoMapper mapper;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     public QualificationDTO createQualification(QualificationDTO dto) {
         return mapper.toDto(createQualificationAppService.create(mapper.toUpsertCommand(dto)));
@@ -89,16 +93,35 @@ public class QualificationService {
     }
 
     public QualificationBorrowRecordDTO borrowQualification(Long id, QualificationBorrowRequest request) {
+        Long projectId = parseBorrowProjectId(request == null ? null : request.getProjectId());
+        assertCanAccessProject(projectId);
+        if (request != null) {
+            request.setProjectId(projectId == null ? null : projectId.toString());
+        }
         QualificationLoan loan = borrowQualificationAppService.borrow(id, mapper.toBorrowCommand(request));
         return mapper.toBorrowRecordDto(loan, findQualification(id));
     }
 
     public QualificationBorrowRecordDTO returnQualification(Long id, QualificationReturnRequest request) {
+        QualificationLoan activeLoan = getQualificationBorrowRecordsAppService.getBorrowRecords(id).stream()
+                .filter(loan -> loan.getStatus() == LoanStatus.BORROWED)
+                .findFirst()
+                .orElse(null);
+        if (activeLoan != null) {
+            assertCanAccessProject(parseRecordProjectId(activeLoan.getProjectId()));
+        }
         QualificationLoan loan = returnQualificationAppService.returnLoan(id, mapper.toReturnCommand(request));
         return mapper.toBorrowRecordDto(loan, findQualification(id));
     }
 
     public QualificationBorrowRecordDTO returnQualificationByRecordId(Long recordId, QualificationReturnRequest request) {
+        QualificationLoan targetLoan = getQualificationBorrowRecordsAppService.getBorrowRecords().stream()
+                .filter(loan -> recordId.equals(loan.getId()))
+                .findFirst()
+                .orElse(null);
+        if (targetLoan != null) {
+            assertCanAccessProject(parseRecordProjectId(targetLoan.getProjectId()));
+        }
         QualificationLoan loan = returnQualificationAppService.returnLoanByRecordId(recordId, mapper.toReturnCommand(request));
         return mapper.toBorrowRecordDto(loan, findQualification(loan.getQualificationId()));
     }
@@ -110,7 +133,7 @@ public class QualificationService {
                     .stream()
                     .collect(Collectors.toMap(BusinessQualification::id, BusinessQualification::name, (left, right) -> left));
 
-            return getQualificationBorrowRecordsAppService.getBorrowRecords().stream()
+            return filterVisibleLoans(getQualificationBorrowRecordsAppService.getBorrowRecords()).stream()
                     .map(loan -> mapper.toBorrowRecordDto(
                             loan,
                             qualificationNameById.getOrDefault(loan.getQualificationId(), "资质文件")
@@ -119,7 +142,7 @@ public class QualificationService {
         }
 
         BusinessQualification qualification = findQualification(id);
-        return getQualificationBorrowRecordsAppService.getBorrowRecords(id).stream()
+        return filterVisibleLoans(getQualificationBorrowRecordsAppService.getBorrowRecords(id)).stream()
                 .map(item -> mapper.toBorrowRecordDto(item, qualification))
                 .toList();
     }
@@ -135,5 +158,38 @@ public class QualificationService {
 
     private BusinessQualification findQualification(Long id) {
         return listQualificationsAppService.get(id);
+    }
+
+    private List<QualificationLoan> filterVisibleLoans(List<QualificationLoan> loans) {
+        boolean admin = projectAccessScopeService.currentUserHasAdminAccess();
+        List<Long> allowedProjectIds = admin ? List.of() : projectAccessScopeService.getAllowedProjectIdsForCurrentUser();
+        return loans.stream()
+                .filter(loan -> ProjectLinkedRecordVisibilityPolicy.visible(admin, allowedProjectIds, parseRecordProjectId(loan.getProjectId())))
+                .toList();
+    }
+
+    private Long parseBorrowProjectId(String projectId) {
+        if (projectId == null || projectId.isBlank()) {
+            return null;
+        }
+        String normalized = projectId.trim();
+        if (!normalized.matches("\\d+")) {
+            throw new IllegalArgumentException("项目 ID 必须为数字");
+        }
+        return Long.valueOf(normalized);
+    }
+
+    private Long parseRecordProjectId(String projectId) {
+        if (projectId == null || projectId.isBlank()) {
+            return null;
+        }
+        String normalized = projectId.trim();
+        return normalized.matches("\\d+") ? Long.valueOf(normalized) : -1L;
+    }
+
+    private void assertCanAccessProject(Long projectId) {
+        if (projectId != null) {
+            projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
+        }
     }
 }

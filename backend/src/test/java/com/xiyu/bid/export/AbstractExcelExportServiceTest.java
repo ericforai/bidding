@@ -13,6 +13,7 @@ import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.QualificationRepository;
 import com.xiyu.bid.repository.TemplateRepository;
 import com.xiyu.bid.repository.TenderRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -23,6 +24,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 abstract class AbstractExcelExportServiceTest {
@@ -44,6 +47,9 @@ abstract class AbstractExcelExportServiceTest {
 
     @Mock
     protected IAuditLogService auditLogService;
+
+    @Mock
+    protected ProjectAccessScopeService projectAccessScopeService;
 
     protected ExcelExportService excelExportService;
     protected Tender testTender;
@@ -67,8 +73,10 @@ abstract class AbstractExcelExportServiceTest {
                 caseRepository,
                 templateRepository,
                 exportConfig,
-                auditLogService
+                auditLogService,
+                projectAccessScopeService
         );
+        lenient().when(projectAccessScopeService.currentUserHasAdminAccess()).thenReturn(true);
 
         testTender = Tender.builder()
                 .id(1L)

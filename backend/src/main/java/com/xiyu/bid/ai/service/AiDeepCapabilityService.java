@@ -33,8 +33,10 @@ import com.xiyu.bid.roi.dto.ROIAnalysisDTO;
 import com.xiyu.bid.roi.service.ROIAnalysisService;
 import com.xiyu.bid.scoreanalysis.dto.ScoreAnalysisDTO;
 import com.xiyu.bid.scoreanalysis.service.ScoreAnalysisService;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,9 +62,11 @@ public class AiDeepCapabilityService {
     private final ComplianceCheckService complianceCheckService;
     private final ROIAnalysisService roiAnalysisService;
     private final ObjectMapper objectMapper;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     @Transactional(readOnly = true)
     public Optional<TenderAiAnalysisDTO> getLatestTenderAnalysis(Long tenderId) {
+        assertCanAccessTender(tenderId);
         return aiAnalysisResultRepository
             .findFirstByTenderIdAndAnalysisTypeOrderByCreatedAtDesc(tenderId, AiAnalysisJob.AnalysisType.TENDER_ANALYSIS)
             .map(this::deserializeTenderAnalysis);
@@ -72,6 +76,7 @@ public class AiDeepCapabilityService {
     public TenderAiAnalysisDTO analyzeTender(Long tenderId, Long requestedBy) {
         Tender tender = tenderRepository.findById(tenderId)
             .orElseThrow(() -> new ResourceNotFoundException("Tender", tenderId.toString()));
+        assertCanAccessTender(tender);
         AiAnalysisJob job = createJob(AiAnalysisJob.AnalysisType.TENDER_ANALYSIS, AiAnalysisJob.TargetType.TENDER, tenderId, requestedBy);
 
         try {
@@ -101,6 +106,7 @@ public class AiDeepCapabilityService {
 
     @Transactional
     public ProjectScorePreviewDTO createScorePreview(ProjectScorePreviewRequestDTO request, Long requestedBy) {
+        assertCanAccessScorePreviewTarget(request);
         AiAnalysisJob job = createJob(
             AiAnalysisJob.AnalysisType.PROJECT_SCORE_PREVIEW,
             request.getProjectId() != null ? AiAnalysisJob.TargetType.PROJECT : AiAnalysisJob.TargetType.TENDER,
@@ -133,6 +139,7 @@ public class AiDeepCapabilityService {
 
     @Transactional(readOnly = true)
     public ProjectAiCardsDTO getProjectAiCards(Long projectId) {
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
         projectRepository.findById(projectId)
             .orElseThrow(() -> new ResourceNotFoundException("Project", projectId.toString()));
 
@@ -186,6 +193,32 @@ public class AiDeepCapabilityService {
             return objectMapper.readValue(result.getPayloadJson(), TenderAiAnalysisDTO.class);
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to read tender AI analysis result", e);
+        }
+    }
+
+    private void assertCanAccessScorePreviewTarget(ProjectScorePreviewRequestDTO request) {
+        if (request.getProjectId() != null) {
+            projectAccessScopeService.assertCurrentUserCanAccessProject(request.getProjectId());
+            return;
+        }
+        if (request.getTenderId() != null) {
+            assertCanAccessTender(request.getTenderId());
+        }
+    }
+
+    private void assertCanAccessTender(Long tenderId) {
+        Tender tender = tenderRepository.findById(tenderId)
+            .orElseThrow(() -> new ResourceNotFoundException("Tender", tenderId.toString()));
+        assertCanAccessTender(tender);
+    }
+
+    private void assertCanAccessTender(Tender tender) {
+        List<com.xiyu.bid.entity.Project> linkedProjects = projectRepository.findByTenderId(tender.getId());
+        if (linkedProjects.isEmpty() && !projectAccessScopeService.currentUserHasAdminAccess()) {
+            throw new AccessDeniedException("权限不足，无法访问未关联项目的标讯");
+        }
+        for (com.xiyu.bid.entity.Project project : linkedProjects) {
+            projectAccessScopeService.assertCurrentUserCanAccessProject(project.getId());
         }
     }
 }

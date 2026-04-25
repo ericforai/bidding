@@ -3,6 +3,7 @@
 # businessqualification
 
 商务资质库真实业务子域。
+资质借阅记录可能关联项目；项目数据权限不在本纯业务子域内另起体系，而由上层 `qualification` 兼容服务复用 `ProjectAccessScopeService` 和 `ProjectLinkedRecordVisibilityPolicy` 统一收口。按 recordId 归还时，应用服务必须直接校验并归还目标借阅记录，避免校验记录与实际写入记录错位。
 
 ## 文件清单
 

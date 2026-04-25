@@ -9,7 +9,7 @@
 | 文件 | 地位 | 功能 |
 |------|------|------|
 | `controller/ExportController.java` | Controller | 导出任务接口 |
-| `service/ExcelExportService.java` | Service | Excel 导出生成 |
+| `service/ExcelExportService.java` | Service | Excel 导出生成与记录数元数据返回 |
 | `entity/ExportTask.java` | Entity | 导出任务实体 |
 | `repository/ExportTaskRepository.java` | Repository | 导出任务数据访问 |
 | `dto/ExportRequest.java` | DTO | 导出请求对象 |

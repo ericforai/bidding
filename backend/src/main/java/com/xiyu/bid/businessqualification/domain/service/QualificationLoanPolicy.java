@@ -23,7 +23,9 @@ public class QualificationLoanPolicy {
             BusinessQualification qualification,
             QualificationLoan activeLoan
     ) {
-        if (qualification.currentBorrowStatus() != LoanStatus.BORROWED || activeLoan == null) {
+        if (qualification.currentBorrowStatus() != LoanStatus.BORROWED
+                || activeLoan == null
+                || activeLoan.status() != LoanStatus.BORROWED) {
             return QualificationValidationResult.invalid("该资质当前没有活动借阅记录");
         }
         return QualificationValidationResult.success();

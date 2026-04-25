@@ -1,3 +1,6 @@
+// Input: domain use-record port calls
+// Output: JPA-backed use-record persistence and project-scoped aggregate counts
+// Pos: Infrastructure Adapter/基础设施适配层
 package com.xiyu.bid.templatecatalog.infrastructure.persistence;
 
 import com.xiyu.bid.entity.TemplateUseRecord;
@@ -7,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -31,7 +35,30 @@ public class TemplateCatalogUseRecordRepositoryAdapter implements TemplateCatalo
         if (templateIds == null || templateIds.isEmpty()) {
             return Map.of();
         }
-        return templateUseRecordRepository.countGroupedByTemplateIds(templateIds).stream()
+        return toCountMap(templateUseRecordRepository.countGroupedByTemplateIds(templateIds));
+    }
+
+    @Override
+    public long countByTemplateIdVisibleToProjects(Long templateId, Collection<Long> projectIds) {
+        if (projectIds == null || projectIds.isEmpty()) {
+            return templateUseRecordRepository.countByTemplateIdAndProjectIdIsNull(templateId);
+        }
+        return templateUseRecordRepository.countByTemplateIdAndVisibleProjectIds(templateId, projectIds);
+    }
+
+    @Override
+    public Map<Long, Long> countByTemplateIdsVisibleToProjects(Collection<Long> templateIds, Collection<Long> projectIds) {
+        if (templateIds == null || templateIds.isEmpty()) {
+            return Map.of();
+        }
+        if (projectIds == null || projectIds.isEmpty()) {
+            return toCountMap(templateUseRecordRepository.countGroupedByTemplateIdsAndProjectIdIsNull(templateIds));
+        }
+        return toCountMap(templateUseRecordRepository.countGroupedByTemplateIdsAndVisibleProjectIds(templateIds, projectIds));
+    }
+
+    private Map<Long, Long> toCountMap(List<Object[]> rows) {
+        return rows.stream()
                 .collect(Collectors.toMap(
                         row -> ((Number) row[0]).longValue(),
                         row -> ((Number) row[1]).longValue(),

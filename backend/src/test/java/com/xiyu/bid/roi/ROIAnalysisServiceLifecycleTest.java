@@ -152,6 +152,7 @@ class ROIAnalysisServiceLifecycleTest extends AbstractROIAnalysisServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getProjectId()).isEqualTo(100L);
         assertThat(result.getEstimatedCost()).isEqualByComparingTo("500000.00");
+        verify(projectAccessScopeService).assertCurrentUserCanAccessProject(100L);
     }
 
     @Test
