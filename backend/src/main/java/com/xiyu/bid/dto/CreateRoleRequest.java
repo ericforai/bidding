@@ -10,15 +10,19 @@ import java.util.List;
 @Data
 public class CreateRoleRequest {
 
+    private static final int MAX_CODE_LENGTH = 64;
+    private static final int MAX_NAME_LENGTH = 100;
+    private static final int MAX_DESC_LENGTH = 255;
+
     @NotBlank(message = "Role code is required")
-    @Size(max = 64, message = "Role code must not exceed 64 characters")
+    @Size(max = MAX_CODE_LENGTH, message = "Role code must not exceed 64 characters")
     private String code;
 
     @NotBlank(message = "Role name is required")
-    @Size(max = 100, message = "Role name must not exceed 100 characters")
+    @Size(max = MAX_NAME_LENGTH, message = "Role name must not exceed 100 characters")
     private String name;
 
-    @Size(max = 255, message = "Role description must not exceed 255 characters")
+    @Size(max = MAX_DESC_LENGTH, message = "Role description must not exceed 255 characters")
     private String description;
 
     private String dataScope = "self";
