@@ -107,9 +107,9 @@ public class JwtUtil {
 
     private boolean isTokenExpired(String token) {
         try {
-            Date exp = extractAllClaims(token).getExpiration();
-            return exp.before(new Date());
-        } catch (Exception e) {
+            Date expirationDate = extractAllClaims(token).getExpiration();
+            return expirationDate == null || expirationDate.before(new Date());
+        } catch (JwtException | IllegalArgumentException e) {
             return true;
         }
     }
