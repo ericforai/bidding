@@ -8,9 +8,9 @@ import java.util.List;
 @Value
 @Builder
 public class RuntimeModeResponse {
-    String modeCode;
-    String modeLabel;
-    String database;
-    boolean demoFusionEnabled;
-    List<String> activeProfiles;
+    private final String modeCode;
+    private final String modeLabel;
+    private final String database;
+    private final boolean demoFusionEnabled;
+    private final List<String> activeProfiles;
 }
