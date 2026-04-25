@@ -6,6 +6,10 @@ public record TenderRequirementItemSnapshot(
         String content,
         boolean mandatory,
         String sourceExcerpt,
-        Integer confidence
+        Integer confidence,
+        String sectionPath
 ) {
+    public TenderRequirementItemSnapshot(String category, String title, String content, boolean mandatory, String sourceExcerpt, Integer confidence) {
+        this(category, title, content, mandatory, sourceExcerpt, confidence, null);
+    }
 }

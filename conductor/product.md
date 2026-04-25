@@ -13,7 +13,7 @@ To streamline and intelligentize the entire enterprise bidding lifecycle, reduci
 
 ## Core Value Proposition
 - **End-to-End Management:** Unifies the scattered bidding process into a single source of truth.
-- **AI-Powered Efficiency:** Leverages AI to parse tender documents, match opportunities, generate draft proposals, and perform compliance checks.
+- **AI-Powered Efficiency:** Leverages AI and structural parsing (MarkItDown) to parse tender documents with high fidelity, ensuring evidence-linked extraction and rigorous business validation (budget sanity, timeline conflicts, and qualification matching).
 - **Knowledge Reusability:** Centralized repository for qualifications, past cases, and templates to accelerate proposal creation.
 - **Data-Driven Decisions:** Provides actionable insights through comprehensive dashboards tracking win rates, ROI, and competitive intelligence.
 

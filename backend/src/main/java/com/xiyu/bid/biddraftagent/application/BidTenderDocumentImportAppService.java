@@ -64,7 +64,8 @@ public class BidTenderDocumentImportAppService {
                 projectId,
                 tender.getId(),
                 fileName,
-                extracted.text()
+                extracted.text(),
+                extracted.structuredMetadata()
         ));
 
         PersistedTenderDocument persistedDocument = persistParsedTenderDocument(

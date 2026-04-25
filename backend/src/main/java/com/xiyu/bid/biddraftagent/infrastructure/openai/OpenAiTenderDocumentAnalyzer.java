@@ -28,22 +28,21 @@ public class OpenAiTenderDocumentAnalyzer implements TenderDocumentAnalyzer {
 
     private final OpenAiBidAgentConfigurationResolver configurationResolver;
     private final OpenAiStructuredOutputService structuredOutputService;
+    private final StructuralDocumentChunker structuralChunker;
 
     public OpenAiTenderDocumentAnalyzer(
             OpenAiBidAgentConfigurationResolver pConfigurationResolver,
-            OpenAiStructuredOutputService pStructuredOutputService
+            OpenAiStructuredOutputService pStructuredOutputService,
+            StructuralDocumentChunker pStructuralChunker
     ) {
         this.configurationResolver = pConfigurationResolver;
         this.structuredOutputService = pStructuredOutputService;
+        this.structuralChunker = pStructuralChunker;
     }
 
     @Override
     public TenderRequirementProfile analyze(TenderDocumentAnalysisInput input) {
-        List<String> chunks = TenderDocumentTextChunker.split(
-                input.extractedText(),
-                MAX_CHUNK_CHARS,
-                CHUNK_OVERLAP_CHARS
-        );
+        List<String> chunks = structuralChunker.chunk(input.extractedText(), input.structuredMetadata());
         List<TenderRequirementProfile> profiles = new ArrayList<>();
         for (int index = 0; index < chunks.size(); index++) {
             TenderRequirementOutput output = requestAnalysis(buildPrompt(input, chunks.get(index), index + 1, chunks.size()));
@@ -71,7 +70,7 @@ public class OpenAiTenderDocumentAnalyzer implements TenderDocumentAnalyzer {
                 - category 只能使用 qualification、technical、commercial、pricing、legal、delivery、scoring、material、other。
                 - mandatory 表示是否为必须响应/必须提供。
                 - sourceExcerpt 保留能定位来源的短句，confidence 使用 0-100 整数。
-                - budget 表示项目预算，必须统一为人民币元数字字符串，例如 6800000 或 6800000.50；无法确认留空，不得根据“约”“预计”等表述推断。
+                - budget 表示项目预算，必须统一为人民币元数字字符串，例如 6800000 或 6800000.50；无法确认留空，不得根据“ 约”“预计”等表述推断。
                 - region 表示项目所属地区；industry 表示行业分类；无法从正文确认则留空，不得推断。
                 - publishDate 使用 yyyy-MM-dd；deadline 使用 yyyy-MM-dd'T'HH:mm:ss；如果正文只有截止日期没有时间，可输出 yyyy-MM-dd，系统会按 23:59:59 补齐；deadlineText 可保留原文截止时间描述。
                 - 所有字段只能来自本片正文，无法确认的字段留空，不得推断。
@@ -210,7 +209,8 @@ public class OpenAiTenderDocumentAnalyzer implements TenderDocumentAnalyzer {
                 item.content,
                 item.mandatory,
                 item.sourceExcerpt,
-                item.confidence
+                item.confidence,
+                item.sectionPath
         );
     }
 
@@ -246,5 +246,6 @@ public class OpenAiTenderDocumentAnalyzer implements TenderDocumentAnalyzer {
         public boolean mandatory;
         public String sourceExcerpt;
         public Integer confidence;
+        public String sectionPath;
     }
 }
