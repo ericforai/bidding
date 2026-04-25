@@ -182,13 +182,12 @@ const loginRules = {
 }
 
 const displayAccounts = computed(() => [
-  'admin（系统管理员）',
-  'lizong（李总）',
-  'zhangjingli（张经理）',
-  'xiaowang（小王）'
+  '普通员工: staff / Test@123',
+  '管理者: manager / Test@123',
+  '管理员: admin / XiyuAdmin2026!'
 ])
 
-const accountHint = computed(() => '默认管理员: admin/XiyuAdmin2026!（首次部署后请修改密码）')
+const accountHint = computed(() => '本地测试账号已按员工、经理、管理员权限划分')
 
 const handleLogin = async () => {
   if (!loginFormRef.value) return
