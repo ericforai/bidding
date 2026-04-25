@@ -5,6 +5,10 @@ public record ExtractedTenderDocument(
         String contentType,
         String text,
         int textLength,
-        String extractorKey
+        String extractorKey,
+        String structuredMetadata
 ) {
+    public ExtractedTenderDocument(String fileName, String contentType, String text, int textLength, String extractorKey) {
+        this(fileName, contentType, text, textLength, extractorKey, null);
+    }
 }
