@@ -1,7 +1,7 @@
 # Implementation Plan: Comprehensive Style Governance - Data Layer Priority
 
 ## Phase 1: Data Layer Triage
-- [ ] Task: List all Checkstyle violations specifically for `dto`, `entity`, `domain`, and `model` packages.
+- [~] Task: List all Checkstyle violations specifically for `dto`, `entity`, `domain`, and `model` packages.
 - [ ] Task: Categorize files by violation volume to identify "heavy offenders".
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Data Layer Triage' (Protocol in workflow.md)
 
