@@ -28,6 +28,7 @@ health_checked: 2026-04-25
 
 - [[_index]] — 西域投标管理平台知识库
 - [[ai-capabilities]] — AI 能力
+- [[api-openapi]] — OpenAPI/Swagger 接口规范
 - [[architecture]] — 架构合成
 - [[business-process]] — 业务流程
 - [[dashboard-gap-analysis]] — 工作台卡片 vs 标书要求对照

@@ -7,6 +7,25 @@
 - **Mock 模式**：使用本地 Mock 数据，无需启动后端，适合前端开发和演示
 - **API 模式**：调用真实后端接口，需要启动后端服务
 
+> **本指南聚焦"前后端联调"**。如果你是外部集成方（OA / CRM / 企业微信等）想要对接接口，请直接看下方 OpenAPI 入口。
+
+## OpenAPI 接口规范（外部集成方入口）
+
+后端集成 `springdoc-openapi` 2.3.0，自动生成机器可读的 OpenAPI 3.0 规范与可视化 Swagger UI 调试门户：
+
+| 入口 | URL（本地） | 说明 |
+|---|---|---|
+| Swagger UI 门户 | http://127.0.0.1:18080/swagger-ui.html | 浏览所有接口、在线调试（支持 JWT Authorize） |
+| OpenAPI JSON | http://127.0.0.1:18080/v3/api-docs | 给集成方导入 Postman / Apifox / 自动生成 SDK |
+| OpenAPI YAML | http://127.0.0.1:18080/v3/api-docs.yaml | 同上，YAML 格式 |
+
+调试受保护接口的步骤：
+1. `POST /api/auth/login` 拿到 JWT token
+2. Swagger UI 右上角点 **Authorize**，输入 `Bearer <token>`
+3. 任意点击端点的 **Try it out** 即可调试
+
+详细背景、配置、限制与后续规划见 [.wiki/pages/api-openapi.md](../.wiki/pages/api-openapi.md)。
+
 ## 目录结构
 
 ```

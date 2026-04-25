@@ -257,6 +257,18 @@ VITE_API_BASE_URL=http://127.0.0.1:18080
 }
 ```
 
+### 5.5 OpenAPI/Swagger 接口规范
+
+后端集成 `springdoc-openapi-starter-webmvc-ui` 2.3.0，自动从 `@RestController` 注解生成 OpenAPI 3.0 规范，对外提供机器可读的接口文档与 Swagger UI 调试门户：
+
+| 入口 | 用途 |
+|---|---|
+| `/swagger-ui.html` | 可视化门户，支持 JWT Bearer 在线调试 |
+| `/v3/api-docs` | OpenAPI JSON，给集成方代码生成 / Postman 导入 |
+| `/v3/api-docs.yaml` | OpenAPI YAML 同上 |
+
+主要满足客户「提供标准 API 接口、具备与 OA/CRM/企业微信集成能力」要求。详情见 [[api-openapi]]。
+
 ---
 
 ## 6. 部署架构
