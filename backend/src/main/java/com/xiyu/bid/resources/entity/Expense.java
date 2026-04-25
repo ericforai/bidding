@@ -101,37 +101,37 @@ public class Expense {
     }
 
     public void updateDetails(
-            ExpenseCategory category,
-            BigDecimal amount,
-            LocalDate date,
-            String expenseType,
-            String description
+            ExpenseCategory pCategory,
+            BigDecimal pAmount,
+            LocalDate pDate,
+            String pExpenseType,
+            String pDescription
     ) {
-        if (category != null) {
-            this.category = category;
+        if (pCategory != null) {
+            this.category = pCategory;
         }
-        if (amount != null) {
-            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+        if (pAmount != null) {
+            if (pAmount.compareTo(BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException("Amount must be positive");
             }
-            this.amount = amount;
+            this.amount = pAmount;
         }
-        if (date != null) {
-            if (date.isAfter(LocalDate.now())) {
+        if (pDate != null) {
+            if (pDate.isAfter(LocalDate.now())) {
                 throw new IllegalArgumentException("Date cannot be in the future");
             }
-            this.date = date;
+            this.date = pDate;
         }
-        if (expenseType != null) {
-            this.expenseType = expenseType;
+        if (pExpenseType != null) {
+            this.expenseType = pExpenseType;
         }
-        if (description != null) {
-            this.description = description;
+        if (pDescription != null) {
+            this.description = pDescription;
         }
     }
 
-    public void updateExpectedReturnDate(LocalDate expectedReturnDate) {
-        this.expectedReturnDate = expectedReturnDate;
+    public void updateExpectedReturnDate(LocalDate pExpectedReturnDate) {
+        this.expectedReturnDate = pExpectedReturnDate;
     }
 
     public void markApproved(String approver, String comment, ExpenseStatus nextStatus) {
@@ -145,7 +145,7 @@ public class Expense {
         this.approvedAt = LocalDateTime.now();
     }
 
-    public void requestReturn(String actor, String comment) {
+    public void requestReturn(String actor, String pComment) {
         if (!isReturnable()) {
             throw new IllegalStateException("Only deposit-like expenses can enter return flow");
         }
@@ -155,11 +155,11 @@ public class Expense {
 
         this.status = ExpenseStatus.RETURN_REQUESTED;
         this.approvedBy = actor;
-        this.returnComment = comment;
+        this.returnComment = pComment;
         this.returnRequestedAt = LocalDateTime.now();
     }
 
-    public void confirmReturn(String actor, String comment) {
+    public void confirmReturn(String actor, String pComment) {
         if (!isReturnable()) {
             throw new IllegalStateException("Only deposit-like expenses can enter return flow");
         }
@@ -170,7 +170,7 @@ public class Expense {
         }
 
         this.status = ExpenseStatus.RETURNED;
-        this.returnComment = comment;
+        this.returnComment = pComment;
         this.returnConfirmedAt = LocalDateTime.now();
         if (this.approvedBy == null || this.approvedBy.isBlank()) {
             this.approvedBy = actor;

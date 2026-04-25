@@ -88,29 +88,29 @@ public class PlatformAccount {
         updatedAt = LocalDateTime.now();
     }
 
-    public void updateProfile(String username, String password, String accountName, PlatformType platformType) {
-        if (username != null && !username.trim().isEmpty()) {
-            this.username = username;
+    public void updateProfile(String pUsername, String pPassword, String pAccountName, PlatformType pPlatformType) {
+        if (pUsername != null && !pUsername.trim().isEmpty()) {
+            this.username = pUsername;
         }
-        if (password != null && !password.trim().isEmpty()) {
-            this.password = password;
+        if (pPassword != null && !pPassword.trim().isEmpty()) {
+            this.password = pPassword;
         }
-        if (accountName != null && !accountName.trim().isEmpty()) {
-            this.accountName = accountName;
+        if (pAccountName != null && !pAccountName.trim().isEmpty()) {
+            this.accountName = pAccountName;
         }
-        if (platformType != null) {
-            this.platformType = platformType;
+        if (pPlatformType != null) {
+            this.platformType = pPlatformType;
         }
     }
 
-    public void borrow(Long borrowerId, LocalDateTime borrowedAt, LocalDateTime dueAt) {
+    public void borrow(Long borrowerId, LocalDateTime pBorrowedAt, LocalDateTime pDueAt) {
         if (status != AccountStatus.AVAILABLE) {
             throw new IllegalStateException("Account is not available for borrowing. Current status: " + status.getDescription());
         }
         this.status = AccountStatus.IN_USE;
         this.borrowedBy = borrowerId;
-        this.borrowedAt = borrowedAt;
-        this.dueAt = dueAt;
+        this.borrowedAt = pBorrowedAt;
+        this.dueAt = pDueAt;
     }
 
     public void returnToPool() {
@@ -135,8 +135,8 @@ public class PlatformAccount {
 
         private final String description;
 
-        PlatformType(String description) {
-            this.description = description;
+        PlatformType(String pDescription) {
+            this.description = pDescription;
         }
 
         public String getDescription() {
@@ -155,8 +155,8 @@ public class PlatformAccount {
 
         private final String description;
 
-        AccountStatus(String description) {
-            this.description = description;
+        AccountStatus(String pDescription) {
+            this.description = pDescription;
         }
 
         public String getDescription() {

@@ -15,8 +15,8 @@ public enum IndustryType {
 
     private final String label;
 
-    IndustryType(String label) {
-        this.label = label;
+    IndustryType(String pLabel) {
+        this.label = pLabel;
     }
 
     @JsonValue

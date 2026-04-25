@@ -78,20 +78,20 @@ public class BarCertificate {
         updatedAt = LocalDateTime.now();
     }
 
-    public void borrow(String borrower, Long projectId, String purpose, LocalDate expectedReturnDate, String remark) {
+    public void borrow(String borrowerName, Long projectId, String purpose, LocalDate returnDate, String pRemark) {
         if (status != CertificateStatus.AVAILABLE) {
             throw new IllegalStateException("Certificate is not available for borrowing");
         }
 
         this.status = CertificateStatus.BORROWED;
-        this.currentBorrower = borrower;
+        this.currentBorrower = borrowerName;
         this.currentProjectId = projectId;
         this.borrowPurpose = purpose;
-        this.expectedReturnDate = expectedReturnDate;
-        this.remark = remark;
+        this.expectedReturnDate = returnDate;
+        this.remark = pRemark;
     }
 
-    public void returnToPool(String remark) {
+    public void returnToPool(String pRemark) {
         if (status != CertificateStatus.BORROWED) {
             throw new IllegalStateException("Only borrowed certificates can be returned");
         }
@@ -101,8 +101,8 @@ public class BarCertificate {
         this.currentProjectId = null;
         this.borrowPurpose = null;
         this.expectedReturnDate = null;
-        if (remark != null && !remark.isBlank()) {
-            this.remark = remark;
+        if (pRemark != null && !pRemark.isBlank()) {
+            this.remark = pRemark;
         }
     }
 

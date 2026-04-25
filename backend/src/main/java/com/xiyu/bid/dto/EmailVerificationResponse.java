@@ -6,7 +6,9 @@ package com.xiyu.bid.dto;
 public record EmailVerificationResponse(
     String message
 ) {
-    public EmailVerificationResponse(String message) {
-        this.message = message != null ? message : "Verification email sent";
+    public EmailVerificationResponse {
+        if (message == null) {
+            message = "Verification email sent";
+        }
     }
 }

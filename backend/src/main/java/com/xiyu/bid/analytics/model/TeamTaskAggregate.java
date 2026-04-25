@@ -13,23 +13,23 @@ public class TeamTaskAggregate {
         return totalTaskCount;
     }
 
-    public void setTotalTaskCount(long totalTaskCount) {
-        this.totalTaskCount = totalTaskCount;
+    public void setTotalTaskCount(long pTotalTaskCount) {
+        this.totalTaskCount = pTotalTaskCount;
     }
 
     public long completedTaskCount() {
         return completedTaskCount;
     }
 
-    public void setCompletedTaskCount(long completedTaskCount) {
-        this.completedTaskCount = completedTaskCount;
+    public void setCompletedTaskCount(long pCompletedTaskCount) {
+        this.completedTaskCount = pCompletedTaskCount;
     }
 
     public long overdueTaskCount() {
         return overdueTaskCount;
     }
 
-    public void setOverdueTaskCount(long overdueTaskCount) {
-        this.overdueTaskCount = overdueTaskCount;
+    public void setOverdueTaskCount(long pOverdueTaskCount) {
+        this.overdueTaskCount = pOverdueTaskCount;
     }
 }

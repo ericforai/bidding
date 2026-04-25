@@ -29,10 +29,10 @@ public class TeamAggregate {
         }
     }
 
-    public void setTaskMetrics(long totalTaskCount, long completedTaskCount, long overdueTaskCount) {
-        this.totalTaskCount = totalTaskCount;
-        this.completedTaskCount = completedTaskCount;
-        this.overdueTaskCount = overdueTaskCount;
+    public void setTaskMetrics(long pTotalTaskCount, long pCompletedTaskCount, long pOverdueTaskCount) {
+        this.totalTaskCount = pTotalTaskCount;
+        this.completedTaskCount = pCompletedTaskCount;
+        this.overdueTaskCount = pOverdueTaskCount;
     }
 
     public long projectCount() {

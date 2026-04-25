@@ -13,8 +13,8 @@ public enum DocumentType {
 
     private final String label;
 
-    DocumentType(String label) {
-        this.label = label;
+    DocumentType(String pLabel) {
+        this.label = pLabel;
     }
 
     @JsonValue

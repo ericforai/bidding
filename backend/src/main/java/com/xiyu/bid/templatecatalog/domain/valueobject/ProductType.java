@@ -15,8 +15,8 @@ public enum ProductType {
 
     private final String label;
 
-    ProductType(String label) {
-        this.label = label;
+    ProductType(String pLabel) {
+        this.label = pLabel;
     }
 
     @JsonValue
