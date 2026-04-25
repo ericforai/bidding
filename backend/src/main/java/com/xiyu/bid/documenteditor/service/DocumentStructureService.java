@@ -4,6 +4,7 @@ import com.xiyu.bid.documenteditor.dto.DocumentStructureDTO;
 import com.xiyu.bid.documenteditor.dto.StructureCreateRequest;
 import com.xiyu.bid.documenteditor.entity.DocumentStructure;
 import com.xiyu.bid.documenteditor.repository.DocumentStructureRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 class DocumentStructureService {
 
     private final DocumentStructureRepository structureRepository;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     DocumentStructureDTO createStructure(StructureCreateRequest request) {
         if (request.getProjectId() == null) {
@@ -20,6 +22,7 @@ class DocumentStructureService {
         if (request.getName() == null || request.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("Name is required");
         }
+        projectAccessScopeService.assertCurrentUserCanAccessProject(request.getProjectId());
 
         DocumentStructure structure = DocumentStructure.builder()
                 .projectId(request.getProjectId())
@@ -32,6 +35,7 @@ class DocumentStructureService {
         if (projectId == null) {
             throw new IllegalArgumentException("Project ID is required");
         }
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
         return DocumentEditorMapper.toStructureDTO(
                 structureRepository.findByProjectId(projectId)
                         .orElseThrow(() -> new com.xiyu.bid.exception.ResourceNotFoundException(

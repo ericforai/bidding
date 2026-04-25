@@ -36,11 +36,24 @@ public class BidResultQueryService {
     private final BidResultReminderRepository reminderRepository;
     private final CompetitorWinRecordRepository competitorWinRecordRepository;
     private final ProjectDocumentRepository projectDocumentRepository;
+    private final BidResultProjectAccessGuard accessGuard;
 
     public BidResultOverviewDTO getOverview() {
-        long pendingFetch = fetchResultRepository.countByStatus(BidResultFetchResult.Status.PENDING);
-        long pendingReminder = reminderRepository.countByStatus(BidResultReminder.ReminderStatus.PENDING);
-        long competitorCount = competitorWinRecordRepository.countDistinctCompetitors();
+        List<BidResultFetchResult> fetchResults = accessibleFetchResults();
+        List<BidResultReminder> reminders = accessibleReminders();
+        long pendingFetch = fetchResults.stream()
+                .filter(result -> result.getStatus() == BidResultFetchResult.Status.PENDING)
+                .count();
+        long pendingReminder = reminders.stream()
+                .filter(reminder -> reminder.getStatus() == BidResultReminder.ReminderStatus.PENDING)
+                .count();
+        long competitorCount = accessGuard.filterAccessible(
+                        competitorWinRecordRepository.findAllByOrderByWonAtDesc(),
+                        competitorWin -> competitorWin.getProjectId()
+                ).stream()
+                .map(competitorWin -> competitorWin.getCompetitorId())
+                .distinct()
+                .count();
 
         return BidResultOverviewDTO.builder()
                 .pendingFetchCount(pendingFetch)
@@ -50,13 +63,13 @@ public class BidResultQueryService {
     }
 
     public List<BidResultFetchResultDTO> getFetchResults() {
-        return fetchResultRepository.findAllByOrderByFetchTimeDesc().stream()
+        return accessibleFetchResults().stream()
                 .map(BidResultFetchResultAssembler::toDto)
                 .toList();
     }
 
     public List<BidResultReminderDTO> getReminders() {
-        return reminderRepository.findAllByOrderByRemindTimeDesc().stream()
+        return accessibleReminders().stream()
                 .map(BidResultReminderAssembler::toDto)
                 .toList();
     }
@@ -64,6 +77,7 @@ public class BidResultQueryService {
     public BidResultDetailDTO getDetail(Long id) {
         BidResultFetchResult entity = fetchResultRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Bid result not found: " + id));
+        accessGuard.assertCanAccess(entity.getProjectId());
         Map<Long, ProjectDocument> documents = projectDocumentRepository.findByProjectIdOrderByCreatedAtDesc(entity.getProjectId())
                 .stream()
                 .collect(Collectors.toMap(ProjectDocument::getId, Function.identity(), (left, right) -> left));
@@ -95,6 +109,20 @@ public class BidResultQueryService {
                         .map(CompetitorWinAssembler::toDto)
                         .toList())
                 .build();
+    }
+
+    private List<BidResultFetchResult> accessibleFetchResults() {
+        return accessGuard.filterAccessible(
+                fetchResultRepository.findAllByOrderByFetchTimeDesc(),
+                BidResultFetchResult::getProjectId
+        );
+    }
+
+    private List<BidResultReminder> accessibleReminders() {
+        return accessGuard.filterAccessible(
+                reminderRepository.findAllByOrderByRemindTimeDesc(),
+                BidResultReminder::getProjectId
+        );
     }
 
     private com.xiyu.bid.bidresult.dto.BidResultAttachmentDTO resolveAttachment(

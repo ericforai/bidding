@@ -7,6 +7,7 @@ import com.xiyu.bid.competitionintel.entity.Competitor;
 import com.xiyu.bid.competitionintel.repository.CompetitionAnalysisRepository;
 import com.xiyu.bid.competitionintel.repository.CompetitorRepository;
 import com.xiyu.bid.competitionintel.service.CompetitionIntelService;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -24,6 +25,9 @@ abstract class AbstractCompetitionIntelServiceTest {
     @Mock
     protected CompetitionAnalysisRepository analysisRepository;
 
+    @Mock
+    protected ProjectAccessScopeService projectAccessScopeService;
+
     protected CompetitionIntelService service;
     protected Competitor testCompetitor;
     protected CompetitionAnalysis testAnalysis;
@@ -32,7 +36,7 @@ abstract class AbstractCompetitionIntelServiceTest {
 
     @BeforeEach
     void setUpCompetitionIntelFixture() {
-        service = new CompetitionIntelService(competitorRepository, analysisRepository);
+        service = new CompetitionIntelService(competitorRepository, analysisRepository, projectAccessScopeService);
 
         testCompetitor = Competitor.builder()
                 .id(1L)

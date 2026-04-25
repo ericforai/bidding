@@ -12,6 +12,7 @@ import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TenderRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,6 +35,9 @@ class ComplianceCheckServiceTest {
     private ProjectRepository projectRepository;
     private TenderRepository tenderRepository;
     private ExperienceComplianceEvaluator experienceComplianceEvaluator;
+    private ProjectAccessScopeService projectAccessScopeService;
+    private ComplianceProjectAccessGuard accessGuard;
+    private ComplianceTargetLoader targetLoader;
     private ComplianceCheckService service;
 
     @BeforeEach
@@ -43,12 +47,15 @@ class ComplianceCheckServiceTest {
         projectRepository = mock(ProjectRepository.class);
         tenderRepository = mock(TenderRepository.class);
         experienceComplianceEvaluator = mock(ExperienceComplianceEvaluator.class);
+        projectAccessScopeService = mock(ProjectAccessScopeService.class);
+        accessGuard = new ComplianceProjectAccessGuard(projectRepository, projectAccessScopeService);
+        targetLoader = new ComplianceTargetLoader(projectRepository, tenderRepository);
         service = new ComplianceCheckService(
                 complianceRuleRepository,
                 complianceCheckResultRepository,
-                projectRepository,
-                tenderRepository,
-                experienceComplianceEvaluator
+                experienceComplianceEvaluator,
+                accessGuard,
+                targetLoader
         );
     }
 
@@ -158,6 +165,7 @@ class ComplianceCheckServiceTest {
                 .build();
 
         when(tenderRepository.findById(12L)).thenReturn(Optional.of(tender));
+        when(projectAccessScopeService.currentUserHasAdminAccess()).thenReturn(true);
         when(complianceRuleRepository.findByEnabledTrue()).thenReturn(List.of(deadlineRule));
         when(complianceCheckResultRepository.save(any(ComplianceCheckResult.class)))
                 .thenAnswer(invocation -> {

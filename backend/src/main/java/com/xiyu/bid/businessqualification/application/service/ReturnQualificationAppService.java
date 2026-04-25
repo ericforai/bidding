@@ -28,19 +28,29 @@ public class ReturnQualificationAppService {
                 .orElseThrow(() -> new ResourceNotFoundException("BusinessQualification", String.valueOf(qualificationId)));
         QualificationLoan activeLoan = loanRecordRepository.findActiveByQualificationId(qualificationId)
                 .orElseThrow(() -> new ResourceNotFoundException("QualificationLoan", String.valueOf(qualificationId)));
-        requireValid(loanPolicy.validateReturn(qualification, activeLoan));
-
-        qualificationRepository.save(qualification.returnBack());
-
-        QualificationLoan returnedLoan = activeLoan.markReturned(LocalDateTime.now(), command.getReturnRemark());
-        return loanRecordRepository.save(returnedLoan);
+        return returnLoan(qualification, activeLoan, command);
     }
 
     @Transactional
     public QualificationLoan returnLoanByRecordId(Long recordId, QualificationReturnCommand command) {
         QualificationLoan loan = loanRecordRepository.findById(recordId)
                 .orElseThrow(() -> new ResourceNotFoundException("QualificationLoan", String.valueOf(recordId)));
-        return returnLoan(loan.getQualificationId(), command);
+        BusinessQualification qualification = qualificationRepository.findById(loan.getQualificationId())
+                .orElseThrow(() -> new ResourceNotFoundException("BusinessQualification", String.valueOf(loan.getQualificationId())));
+        return returnLoan(qualification, loan, command);
+    }
+
+    private QualificationLoan returnLoan(
+            BusinessQualification qualification,
+            QualificationLoan activeLoan,
+            QualificationReturnCommand command
+    ) {
+        requireValid(loanPolicy.validateReturn(qualification, activeLoan));
+
+        qualificationRepository.save(qualification.returnBack());
+
+        QualificationLoan returnedLoan = activeLoan.markReturned(LocalDateTime.now(), command.getReturnRemark());
+        return loanRecordRepository.save(returnedLoan);
     }
 
     private void requireValid(QualificationValidationResult validationResult) {

@@ -74,6 +74,10 @@ public class ProjectAccessScopeService {
         return getAllowedProjectIds(resolveCurrentUser(authentication));
     }
 
+    public boolean currentUserHasAdminAccess() {
+        return hasAdminAccess(SecurityContextHolder.getContext().getAuthentication());
+    }
+
     public List<Project> filterAccessibleProjects(List<Project> projects) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (hasAdminAccess(authentication)) {

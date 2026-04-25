@@ -13,6 +13,7 @@ import com.xiyu.bid.competitionintel.entity.CompetitionAnalysis;
 import com.xiyu.bid.competitionintel.entity.Competitor;
 import com.xiyu.bid.competitionintel.repository.CompetitionAnalysisRepository;
 import com.xiyu.bid.competitionintel.repository.CompetitorRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,7 @@ public class CompetitionIntelService {
 
     private final CompetitorRepository competitorRepository;
     private final CompetitionAnalysisRepository analysisRepository;
+    private final ProjectAccessScopeService projectAccessScopeService;
     /**
      * 创建竞争对手
      */
@@ -82,6 +84,7 @@ public class CompetitionIntelService {
 
         // Validate input
         validateAnalysisRequest(request);
+        projectAccessScopeService.assertCurrentUserCanAccessProject(request.getProjectId());
 
         CompetitionAnalysis analysis = CompetitionAnalysis.builder()
                 .projectId(request.getProjectId())
@@ -109,6 +112,7 @@ public class CompetitionIntelService {
         if (projectId == null) {
             throw new IllegalArgumentException("Project ID is required");
         }
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
 
         return analysisRepository.findByProjectId(projectId).stream()
                 .map(this::convertToDTO)
@@ -127,6 +131,7 @@ public class CompetitionIntelService {
         }
 
         return analysisRepository.findByCompetitorIdOrderByAnalysisDateDesc(competitorId).stream()
+                .filter(this::canAccessAnalysisProject)
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -142,6 +147,7 @@ public class CompetitionIntelService {
         if (projectId == null) {
             throw new IllegalArgumentException("Project ID is required");
         }
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
 
         // In a real implementation, this would use AI to analyze the competition
         // For now, we create a basic analysis with default values
@@ -239,5 +245,17 @@ public class CompetitionIntelService {
                 .recommendedStrategy(analysis.getRecommendedStrategy())
                 .riskFactors(analysis.getRiskFactors())
                 .build();
+    }
+
+    private boolean canAccessAnalysisProject(CompetitionAnalysis analysis) {
+        if (analysis == null || analysis.getProjectId() == null) {
+            return false;
+        }
+        try {
+            projectAccessScopeService.assertCurrentUserCanAccessProject(analysis.getProjectId());
+            return true;
+        } catch (org.springframework.security.access.AccessDeniedException exception) {
+            return false;
+        }
     }
 }

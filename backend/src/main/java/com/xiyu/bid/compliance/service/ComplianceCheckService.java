@@ -15,8 +15,6 @@ import com.xiyu.bid.compliance.repository.ComplianceCheckResultRepository;
 import com.xiyu.bid.compliance.repository.ComplianceRuleRepository;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
-import com.xiyu.bid.repository.ProjectRepository;
-import com.xiyu.bid.repository.TenderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,14 +36,15 @@ public class ComplianceCheckService {
 
     private final ComplianceRuleRepository complianceRuleRepository;
     private final ComplianceCheckResultRepository complianceCheckResultRepository;
-    private final ProjectRepository projectRepository;
-    private final TenderRepository tenderRepository;
     private final ExperienceComplianceEvaluator experienceComplianceEvaluator;
+    private final ComplianceProjectAccessGuard accessGuard;
+    private final ComplianceTargetLoader targetLoader;
 
     @Transactional
     public ComplianceCheckResultDTO checkProjectCompliance(Long projectId) {
         requireId(projectId, "Project ID");
-        Project project = requireProject(projectId);
+        accessGuard.assertCanAccessProject(projectId);
+        Project project = targetLoader.requireProject(projectId);
         log.info("Starting compliance check for project: {}", projectId);
 
         ComplianceRun run = evaluateRules(
@@ -72,7 +71,8 @@ public class ComplianceCheckService {
     @Transactional
     public ComplianceCheckResultDTO checkTenderCompliance(Long tenderId) {
         requireId(tenderId, "Tender ID");
-        Tender tender = requireTender(tenderId);
+        Tender tender = targetLoader.requireTender(tenderId);
+        accessGuard.assertCanAccessTender(tender);
         log.info("Starting compliance check for tender: {}", tenderId);
 
         ComplianceRun run = evaluateRules(
@@ -98,7 +98,8 @@ public class ComplianceCheckService {
 
     public RiskAssessmentDTO assessRisk(Long projectId) {
         requireId(projectId, "Project ID");
-        Project project = requireProject(projectId);
+        accessGuard.assertCanAccessProject(projectId);
+        Project project = targetLoader.requireProject(projectId);
         ComplianceCheckResult latestResult = complianceCheckResultRepository
                 .findTopByProjectIdOrderByCheckedAtDesc(projectId)
                 .orElse(null);
@@ -120,12 +121,15 @@ public class ComplianceCheckService {
 
     public ComplianceCheckResult getCheckResultById(Long resultId) {
         requireId(resultId, "Result ID");
-        return complianceCheckResultRepository.findById(resultId)
+        ComplianceCheckResult result = complianceCheckResultRepository.findById(resultId)
                 .orElseThrow(() -> new RuntimeException("Compliance check result not found with id: " + resultId));
+        accessGuard.assertCanAccessResult(result, targetLoader::requireTender);
+        return result;
     }
 
     public List<ComplianceCheckResult> getCheckResultsByProjectId(Long projectId) {
         requireId(projectId, "Project ID");
+        accessGuard.assertCanAccessProject(projectId);
         return complianceCheckResultRepository.findByProjectId(projectId);
     }
 
@@ -176,16 +180,6 @@ public class ComplianceCheckService {
                 .checkedAt(result.getCheckedAt())
                 .checkedBy(result.getCheckedBy())
                 .build();
-    }
-
-    private Project requireProject(Long projectId) {
-        return projectRepository.findById(projectId)
-                .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
-    }
-
-    private Tender requireTender(Long tenderId) {
-        return tenderRepository.findById(tenderId)
-                .orElseThrow(() -> new RuntimeException("Tender not found with id: " + tenderId));
     }
 
     private void requireId(Long id, String label) {

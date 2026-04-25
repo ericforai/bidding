@@ -72,17 +72,19 @@ class BatchOperationServiceTest {
         BatchValidationPolicy validationPolicy = new BatchValidationPolicy();
         BatchAssignmentPolicy assignmentPolicy = new BatchAssignmentPolicy(projectAccessScopeService);
         BatchOperationLogService logService = new BatchOperationLogService(auditLogService);
+        BatchProjectAccessGuard projectAccessGuard = new BatchProjectAccessGuard(projectAccessScopeService, projectRepository);
+        BatchTaskAssignmentResolver taskAssignmentResolver = new BatchTaskAssignmentResolver(userRepository, assignmentPolicy);
         BatchTenderCommandService tenderCommandService = new BatchTenderCommandService(
-                tenderRepository, validationPolicy, logService
+                tenderRepository, projectRepository, validationPolicy, logService, projectAccessScopeService
         );
         BatchTaskCommandService taskCommandService = new BatchTaskCommandService(
-                taskRepository, userRepository, validationPolicy, assignmentPolicy, logService
+                taskRepository, validationPolicy, taskAssignmentResolver, logService, projectAccessGuard
         );
         BatchProjectCommandService projectCommandService = new BatchProjectCommandService(
-                projectRepository, validationPolicy, logService
+                projectRepository, validationPolicy, logService, projectAccessScopeService
         );
         BatchFeeCommandService feeCommandService = new BatchFeeCommandService(
-                feeRepository, validationPolicy, logService
+                feeRepository, validationPolicy, logService, projectAccessScopeService
         );
         batchOperationService = new BatchOperationService(
                 tenderCommandService,

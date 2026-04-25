@@ -1,5 +1,5 @@
 // Input: alerts service and request DTOs
-// Output: Alert History REST API endpoints
+// Output: Alert History REST API endpoints with admin/manager-only history reads and actions
 // Pos: Controller/控制器层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.alerts.controller;
@@ -52,7 +52,7 @@ public class AlertHistoryController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<Page<AlertHistoryResponse>>> getAllAlertHistories(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -74,13 +74,13 @@ public class AlertHistoryController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<AlertHistoryResponse>> getAlertHistoryById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(alertHistoryQueryService.getAlertHistoryResponseById(id)));
     }
 
     @GetMapping("/unresolved")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<Page<AlertHistoryResponse>>> getUnresolvedAlertHistories(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -89,7 +89,7 @@ public class AlertHistoryController {
     }
 
     @PatchMapping("/{id}/acknowledge")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<AlertHistoryResponse>> acknowledgeAlertHistory(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success("Alert history acknowledged successfully", alertHistoryCommandService.acknowledgeAlertHistory(id)));
     }
@@ -102,7 +102,7 @@ public class AlertHistoryController {
     }
 
     @GetMapping("/statistics")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<AlertStatisticsResponse>> getAlertStatistics() {
         return ResponseEntity.ok(ApiResponse.success(alertHistoryQueryService.getAlertStatistics()));
     }

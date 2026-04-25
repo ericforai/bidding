@@ -26,6 +26,7 @@ public class CompetitorWinCommandService {
     private final CompetitorWinRecordRepository competitorWinRecordRepository;
     private final CompetitorRepository competitorRepository;
     private final ProjectRepository projectRepository;
+    private final BidResultProjectAccessGuard accessGuard;
 
     @Transactional
     public CompetitorWinDTO register(CompetitorWinRequest request, Long operatorId, String operatorName) {
@@ -45,6 +46,7 @@ public class CompetitorWinCommandService {
         if (!validation.valid()) {
             throw new BusinessException(String.join("; ", validation.errors()));
         }
+        accessGuard.assertCanAccess(request.getProjectId());
         Competitor competitor = resolveCompetitor(request);
         Optional<String> projectName = Optional.ofNullable(request.getProjectId())
                 .flatMap(projectRepository::findById)

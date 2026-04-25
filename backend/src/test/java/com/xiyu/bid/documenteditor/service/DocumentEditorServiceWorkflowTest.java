@@ -19,11 +19,14 @@ import com.xiyu.bid.documenteditor.repository.DocumentSectionRepository;
 import com.xiyu.bid.documenteditor.repository.DocumentStructureRepository;
 import com.xiyu.bid.documenteditor.dto.SectionCreateRequest;
 import com.xiyu.bid.documenteditor.dto.SectionReorderRequest;
+import com.xiyu.bid.documenteditor.dto.SectionUpdateRequest;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -49,6 +52,8 @@ class DocumentEditorServiceWorkflowTest {
     private DocumentReminderRepository reminderRepository;
     @Mock
     private DocumentDraftTreeImportService draftTreeImportService;
+    @Mock
+    private ProjectAccessScopeService projectAccessScopeService;
     private DocumentEditorService documentEditorService;
 
     private DocumentStructure structure;
@@ -56,8 +61,15 @@ class DocumentEditorServiceWorkflowTest {
 
     @BeforeEach
     void setUp() {
-        DocumentEditorGuard guard = new DocumentEditorGuard(structureRepository, sectionRepository);
-        DocumentStructureService structureService = new DocumentStructureService(structureRepository);
+        DocumentEditorGuard guard = new DocumentEditorGuard(
+                structureRepository,
+                sectionRepository,
+                projectAccessScopeService
+        );
+        DocumentStructureService structureService = new DocumentStructureService(
+                structureRepository,
+                projectAccessScopeService
+        );
         DocumentSectionCommandService sectionCommandService = new DocumentSectionCommandService(
                 guard,
                 sectionRepository,
@@ -128,6 +140,23 @@ class DocumentEditorServiceWorkflowTest {
         assertEquals(1L, result.getAssignedBy());
         assertFalse(Boolean.TRUE.equals(result.getLocked()));
         verify(assignmentRepository).save(any(DocumentSectionAssignment.class));
+    }
+
+    @Test
+    void updateSection_shouldRejectProjectOutsideCurrentUserScopeBeforeReadingSection() {
+        SectionUpdateRequest request = SectionUpdateRequest.builder()
+                .content("Forbidden edit")
+                .build();
+        doThrow(new AccessDeniedException("权限不足，无法访问该项目"))
+                .when(projectAccessScopeService).assertCurrentUserCanAccessProject(100L);
+
+        assertThrows(
+                AccessDeniedException.class,
+                () -> documentEditorService.updateSection(100L, 20L, request)
+        );
+
+        verify(projectAccessScopeService).assertCurrentUserCanAccessProject(100L);
+        verify(sectionRepository, never()).findById(any());
     }
 
     @Test

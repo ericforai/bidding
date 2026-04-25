@@ -7,6 +7,7 @@ import com.xiyu.bid.scoreanalysis.entity.ScoreAnalysis;
 import com.xiyu.bid.scoreanalysis.repository.DimensionScoreRepository;
 import com.xiyu.bid.scoreanalysis.repository.ScoreAnalysisRepository;
 import com.xiyu.bid.scoreanalysis.service.ScoreAnalysisService;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -26,6 +27,9 @@ abstract class AbstractScoreAnalysisServiceTest {
     @Mock
     protected DimensionScoreRepository dimensionScoreRepository;
 
+    @Mock
+    protected ProjectAccessScopeService projectAccessScopeService;
+
     protected ScoreAnalysisService scoreAnalysisService;
     protected ScoreAnalysis testAnalysis;
     protected DimensionScore testDimension;
@@ -33,7 +37,11 @@ abstract class AbstractScoreAnalysisServiceTest {
 
     @BeforeEach
     void setUpScoreAnalysisFixture() {
-        scoreAnalysisService = new ScoreAnalysisService(scoreAnalysisRepository, dimensionScoreRepository);
+        scoreAnalysisService = new ScoreAnalysisService(
+                scoreAnalysisRepository,
+                dimensionScoreRepository,
+                projectAccessScopeService
+        );
 
         testDimension = DimensionScore.builder()
                 .id(1L)

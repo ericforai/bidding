@@ -22,7 +22,7 @@ class DocumentVersionControllerCompareRollbackTest extends AbstractDocumentVersi
 
     @Test
     void compareVersions_WithValidVersionIds_ShouldReturn200() throws Exception {
-        when(versionHistoryService.compareVersions(1L, 2L)).thenReturn(versionDiffDTO);
+        when(versionHistoryService.compareVersions(100L, 1L, 2L)).thenReturn(versionDiffDTO);
 
         mockMvc.perform(get("/api/documents/{projectId}/versions/{v1}/compare/{v2}", 100L, 1L, 2L))
                 .andExpect(status().isOk())
@@ -33,7 +33,7 @@ class DocumentVersionControllerCompareRollbackTest extends AbstractDocumentVersi
                 .andExpect(jsonPath("$.data.version2Number").value(2))
                 .andExpect(jsonPath("$.data.differences").isArray());
 
-        verify(versionHistoryService).compareVersions(1L, 2L);
+        verify(versionHistoryService).compareVersions(100L, 1L, 2L);
     }
 
     @Test
@@ -47,7 +47,7 @@ class DocumentVersionControllerCompareRollbackTest extends AbstractDocumentVersi
                 .content2("Same content")
                 .differences(Collections.emptyList())
                 .build();
-        when(versionHistoryService.compareVersions(1L, 1L)).thenReturn(sameDiff);
+        when(versionHistoryService.compareVersions(100L, 1L, 1L)).thenReturn(sameDiff);
 
         mockMvc.perform(get("/api/documents/{projectId}/versions/{v1}/compare/{v2}", 100L, 1L, 1L))
                 .andExpect(status().isOk())
@@ -55,18 +55,18 @@ class DocumentVersionControllerCompareRollbackTest extends AbstractDocumentVersi
                 .andExpect(jsonPath("$.data.differences").isArray())
                 .andExpect(jsonPath("$.data.differences.length()").value(0));
 
-        verify(versionHistoryService).compareVersions(1L, 1L);
+        verify(versionHistoryService).compareVersions(100L, 1L, 1L);
     }
 
     @Test
     void compareVersions_WithNonExistentVersion1_ShouldReturn404() throws Exception {
-        when(versionHistoryService.compareVersions(999L, 2L))
+        when(versionHistoryService.compareVersions(100L, 999L, 2L))
                 .thenThrow(new ResourceNotFoundException("Version not found with id: 999"));
 
         mockMvc.perform(get("/api/documents/{projectId}/versions/{v1}/compare/{v2}", 100L, 999L, 2L))
                 .andExpect(status().isNotFound());
 
-        verify(versionHistoryService).compareVersions(999L, 2L);
+        verify(versionHistoryService).compareVersions(100L, 999L, 2L);
     }
 
     @Test
@@ -76,7 +76,7 @@ class DocumentVersionControllerCompareRollbackTest extends AbstractDocumentVersi
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Invalid version IDs"));
 
-        verify(versionHistoryService, never()).compareVersions(any(), any());
+        verify(versionHistoryService, never()).compareVersions(any(), any(), any());
     }
 
     @Test
@@ -86,7 +86,7 @@ class DocumentVersionControllerCompareRollbackTest extends AbstractDocumentVersi
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Invalid version IDs"));
 
-        verify(versionHistoryService, never()).compareVersions(any(), any());
+        verify(versionHistoryService, never()).compareVersions(any(), any(), any());
     }
 
     @Test
@@ -101,7 +101,7 @@ class DocumentVersionControllerCompareRollbackTest extends AbstractDocumentVersi
                 .differences(List.of("Content changed"))
                 .build();
 
-        when(versionHistoryService.compareVersions(2L, 1L)).thenReturn(reversedDiff);
+        when(versionHistoryService.compareVersions(100L, 2L, 1L)).thenReturn(reversedDiff);
 
         mockMvc.perform(get("/api/documents/{projectId}/versions/{v1}/compare/{v2}", 100L, 2L, 1L))
                 .andExpect(status().isOk())
@@ -109,7 +109,7 @@ class DocumentVersionControllerCompareRollbackTest extends AbstractDocumentVersi
                 .andExpect(jsonPath("$.data.version1Id").value(2))
                 .andExpect(jsonPath("$.data.version2Id").value(1));
 
-        verify(versionHistoryService).compareVersions(2L, 1L);
+        verify(versionHistoryService).compareVersions(100L, 2L, 1L);
     }
 
     @Test

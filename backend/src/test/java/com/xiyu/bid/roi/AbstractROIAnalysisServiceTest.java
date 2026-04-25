@@ -5,6 +5,7 @@ import com.xiyu.bid.roi.dto.SensitivityAnalysisRequest;
 import com.xiyu.bid.roi.entity.ROIAnalysis;
 import com.xiyu.bid.roi.repository.ROIAnalysisRepository;
 import com.xiyu.bid.roi.service.ROIAnalysisService;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -20,6 +21,9 @@ abstract class AbstractROIAnalysisServiceTest {
     @Mock
     protected ROIAnalysisRepository roiAnalysisRepository;
 
+    @Mock
+    protected ProjectAccessScopeService projectAccessScopeService;
+
     protected ROIAnalysisService roiAnalysisService;
     protected ROIAnalysis testROIAnalysis;
     protected ROIAnalysisCreateRequest createRequest;
@@ -27,7 +31,7 @@ abstract class AbstractROIAnalysisServiceTest {
 
     @BeforeEach
     void setUpROIAnalysisFixture() {
-        roiAnalysisService = new ROIAnalysisService(roiAnalysisRepository);
+        roiAnalysisService = new ROIAnalysisService(roiAnalysisRepository, projectAccessScopeService);
 
         testROIAnalysis = ROIAnalysis.builder()
                 .id(1L)

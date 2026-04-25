@@ -29,8 +29,10 @@ public class DocumentArchiveCommandService {
     private final DocumentExportRepository exportRepository;
     private final DocumentExportFileRepository exportFileRepository;
     private final HistoricalProjectSnapshotAppService snapshotAppService;
+    private final DocumentExportAccessGuard accessGuard;
 
     public DocumentArchiveRecordDTO createArchiveRecord(Long projectId, DocumentArchiveRecordCreateRequest request) {
+        accessGuard.requireProjectAccess(projectId);
         Project project = exportCommandService.getProject(projectId);
         DocumentExportDTO latestExport = exportCommandService.createExport(projectId, buildAutoExportRequest(request));
 

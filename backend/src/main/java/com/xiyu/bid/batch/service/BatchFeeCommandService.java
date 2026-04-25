@@ -8,6 +8,7 @@ import com.xiyu.bid.batch.core.BatchValidationPolicy;
 import com.xiyu.bid.batch.dto.BatchApproveFeesRequest;
 import com.xiyu.bid.batch.dto.BatchOperationResponse;
 import com.xiyu.bid.fees.entity.Fee;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import com.xiyu.bid.util.InputSanitizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ public class BatchFeeCommandService {
     private final com.xiyu.bid.fees.repository.FeeRepository feeRepository;
     private final BatchValidationPolicy validationPolicy;
     private final BatchOperationLogService logService;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     public BatchOperationResponse batchApproveFees(BatchApproveFeesRequest request, Long userId) {
         validationPolicy.requireNonNull(request, "Batch approve fees request cannot be null");
@@ -47,6 +49,7 @@ public class BatchFeeCommandService {
                     continue;
                 }
                 Fee fee = feeOpt.get();
+                projectAccessScopeService.assertCurrentUserCanAccessProject(fee.getProjectId());
                 if (fee.getStatus() != Fee.Status.PENDING) {
                     response.addError(
                             feeId,
@@ -61,7 +64,7 @@ public class BatchFeeCommandService {
                 feesToUpdate.add(fee);
                 response.addSuccess(feeId);
             } catch (RuntimeException exception) {
-                response.addError(feeId, "Failed to approve fee: " + exception.getMessage(), "PAY_ERROR");
+                addRuntimeError(response, feeId, exception);
             }
         }
         if (!feesToUpdate.isEmpty()) {
@@ -83,5 +86,13 @@ public class BatchFeeCommandService {
     private void complete(BatchOperationResponse response, String itemType, String operationType, Long userId) {
         logService.record(response, itemType, operationType, userId);
         response.setSuccess(response.getFailureCount() == 0);
+    }
+
+    private void addRuntimeError(BatchOperationResponse response, Long feeId, RuntimeException exception) {
+        if (BatchProjectAccessGuard.isAccessDenied(exception)) {
+            response.addError(feeId, "Permission denied: fee is outside current data scope", "PERMISSION_DENIED");
+            return;
+        }
+        response.addError(feeId, "Failed to approve fee: " + exception.getMessage(), "PAY_ERROR");
     }
 }

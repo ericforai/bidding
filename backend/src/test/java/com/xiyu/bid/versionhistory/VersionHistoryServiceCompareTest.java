@@ -18,7 +18,7 @@ class VersionHistoryServiceCompareTest extends AbstractVersionHistoryServiceTest
         when(repository.findById(1L)).thenReturn(Optional.of(testVersion));
         when(repository.findById(2L)).thenReturn(Optional.of(testVersion2));
 
-        VersionDiffDTO result = versionHistoryService.compareVersions(1L, 2L);
+        VersionDiffDTO result = versionHistoryService.compareVersions(100L, 1L, 2L);
 
         assertThat(result).isNotNull();
         assertThat(result.getVersion1Id()).isEqualTo(1L);
@@ -34,11 +34,13 @@ class VersionHistoryServiceCompareTest extends AbstractVersionHistoryServiceTest
     void compareVersions_WithSameContent_ShouldReturnEmptyDifferences() {
         DocumentVersion version1 = DocumentVersion.builder()
                 .id(1L)
+                .projectId(100L)
                 .versionNumber(1)
                 .content("Same content")
                 .build();
         DocumentVersion version2 = DocumentVersion.builder()
                 .id(2L)
+                .projectId(100L)
                 .versionNumber(2)
                 .content("Same content")
                 .build();
@@ -46,21 +48,21 @@ class VersionHistoryServiceCompareTest extends AbstractVersionHistoryServiceTest
         when(repository.findById(1L)).thenReturn(Optional.of(version1));
         when(repository.findById(2L)).thenReturn(Optional.of(version2));
 
-        VersionDiffDTO result = versionHistoryService.compareVersions(1L, 2L);
+        VersionDiffDTO result = versionHistoryService.compareVersions(100L, 1L, 2L);
 
         assertThat(result.getDifferences()).isEmpty();
     }
 
     @Test
     void compareVersions_WithNullFirstVersionId_ShouldThrowException() {
-        assertThatThrownBy(() -> versionHistoryService.compareVersions(null, 2L))
+        assertThatThrownBy(() -> versionHistoryService.compareVersions(100L, null, 2L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Both version IDs are required");
     }
 
     @Test
     void compareVersions_WithNullSecondVersionId_ShouldThrowException() {
-        assertThatThrownBy(() -> versionHistoryService.compareVersions(1L, null))
+        assertThatThrownBy(() -> versionHistoryService.compareVersions(100L, 1L, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Both version IDs are required");
     }
@@ -69,7 +71,7 @@ class VersionHistoryServiceCompareTest extends AbstractVersionHistoryServiceTest
     void compareVersions_WithInvalidFirstVersionId_ShouldThrowException() {
         when(repository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> versionHistoryService.compareVersions(999L, 2L))
+        assertThatThrownBy(() -> versionHistoryService.compareVersions(100L, 999L, 2L))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Version not found with id: 999");
     }
@@ -79,7 +81,7 @@ class VersionHistoryServiceCompareTest extends AbstractVersionHistoryServiceTest
         when(repository.findById(1L)).thenReturn(Optional.of(testVersion));
         when(repository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> versionHistoryService.compareVersions(1L, 999L))
+        assertThatThrownBy(() -> versionHistoryService.compareVersions(100L, 1L, 999L))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Version not found with id: 999");
     }
@@ -88,13 +90,14 @@ class VersionHistoryServiceCompareTest extends AbstractVersionHistoryServiceTest
     void compareVersions_WithNullContentInVersion1_ShouldHandleCorrectly() {
         DocumentVersion version1 = DocumentVersion.builder()
                 .id(1L)
+                .projectId(100L)
                 .versionNumber(1)
                 .content(null)
                 .build();
         when(repository.findById(1L)).thenReturn(Optional.of(version1));
         when(repository.findById(2L)).thenReturn(Optional.of(testVersion2));
 
-        VersionDiffDTO result = versionHistoryService.compareVersions(1L, 2L);
+        VersionDiffDTO result = versionHistoryService.compareVersions(100L, 1L, 2L);
 
         assertThat(result.getDifferences()).isNotEmpty();
         assertThat(result.getDifferences().get(0)).contains("Content added");
@@ -104,13 +107,14 @@ class VersionHistoryServiceCompareTest extends AbstractVersionHistoryServiceTest
     void compareVersions_WithNullContentInVersion2_ShouldHandleCorrectly() {
         DocumentVersion version2 = DocumentVersion.builder()
                 .id(2L)
+                .projectId(100L)
                 .versionNumber(2)
                 .content(null)
                 .build();
         when(repository.findById(1L)).thenReturn(Optional.of(testVersion));
         when(repository.findById(2L)).thenReturn(Optional.of(version2));
 
-        VersionDiffDTO result = versionHistoryService.compareVersions(1L, 2L);
+        VersionDiffDTO result = versionHistoryService.compareVersions(100L, 1L, 2L);
 
         assertThat(result.getDifferences()).isNotEmpty();
         assertThat(result.getDifferences().get(0)).contains("Content removed");
@@ -120,11 +124,13 @@ class VersionHistoryServiceCompareTest extends AbstractVersionHistoryServiceTest
     void compareVersions_WithMultilineContent_ShouldDetectLineChanges() {
         DocumentVersion version1 = DocumentVersion.builder()
                 .id(1L)
+                .projectId(100L)
                 .versionNumber(1)
                 .content("Line 1\nLine 2\nLine 3")
                 .build();
         DocumentVersion version2 = DocumentVersion.builder()
                 .id(2L)
+                .projectId(100L)
                 .versionNumber(2)
                 .content("Line 1\nModified Line 2\nLine 3")
                 .build();
@@ -132,7 +138,7 @@ class VersionHistoryServiceCompareTest extends AbstractVersionHistoryServiceTest
         when(repository.findById(1L)).thenReturn(Optional.of(version1));
         when(repository.findById(2L)).thenReturn(Optional.of(version2));
 
-        VersionDiffDTO result = versionHistoryService.compareVersions(1L, 2L);
+        VersionDiffDTO result = versionHistoryService.compareVersions(100L, 1L, 2L);
 
         assertThat(result.getDifferences()).hasSize(1);
         assertThat(result.getDifferences().get(0)).contains("Line 2");
@@ -142,11 +148,13 @@ class VersionHistoryServiceCompareTest extends AbstractVersionHistoryServiceTest
     void compareVersions_WithEmptyStrings_ShouldReturnEmptyDifferences() {
         DocumentVersion version1 = DocumentVersion.builder()
                 .id(1L)
+                .projectId(100L)
                 .versionNumber(1)
                 .content("")
                 .build();
         DocumentVersion version2 = DocumentVersion.builder()
                 .id(2L)
+                .projectId(100L)
                 .versionNumber(2)
                 .content("")
                 .build();
@@ -154,7 +162,7 @@ class VersionHistoryServiceCompareTest extends AbstractVersionHistoryServiceTest
         when(repository.findById(1L)).thenReturn(Optional.of(version1));
         when(repository.findById(2L)).thenReturn(Optional.of(version2));
 
-        VersionDiffDTO result = versionHistoryService.compareVersions(1L, 2L);
+        VersionDiffDTO result = versionHistoryService.compareVersions(100L, 1L, 2L);
 
         assertThat(result.getDifferences()).isEmpty();
     }

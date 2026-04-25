@@ -5,6 +5,7 @@ import com.xiyu.bid.documenteditor.entity.DocumentStructure;
 import com.xiyu.bid.documenteditor.repository.DocumentSectionRepository;
 import com.xiyu.bid.documenteditor.repository.DocumentStructureRepository;
 import com.xiyu.bid.exception.ResourceNotFoundException;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,11 +17,13 @@ class DocumentEditorGuard {
 
     private final DocumentStructureRepository structureRepository;
     private final DocumentSectionRepository sectionRepository;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     DocumentStructure requireStructureForProject(Long projectId) {
         if (projectId == null) {
             throw new IllegalArgumentException("Project ID is required");
         }
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
         return structureRepository.findByProjectId(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Document structure not found for project: " + projectId));
     }

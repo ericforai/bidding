@@ -11,7 +11,6 @@ import com.xiyu.bid.documenteditor.entity.DocumentStructure;
 import com.xiyu.bid.documenteditor.imports.DocumentDraftTreeImportState;
 import com.xiyu.bid.documenteditor.repository.DocumentSectionLockRepository;
 import com.xiyu.bid.documenteditor.repository.DocumentSectionRepository;
-import com.xiyu.bid.documenteditor.repository.DocumentStructureRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -26,12 +25,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 class DocumentDraftTreeImportService {
 
-    private static final String DEFAULT_STRUCTURE_NAME = "Draft Tree";
-
-    private final DocumentStructureRepository structureRepository;
     private final DocumentSectionRepository sectionRepository;
     private final DocumentSectionLockRepository lockRepository;
     private final DocumentDraftTreeNodeUpsertService nodeUpsertService;
+    private final DocumentDraftTreeStructureService structureService;
     private final ObjectMapper objectMapper;
 
     DraftTreeUpsertResultDTO upsertDraftTree(Long projectId, DraftTreeUpsertRequest request) {
@@ -44,16 +41,8 @@ class DocumentDraftTreeImportService {
         if (request.getSections() == null || request.getSections().isEmpty()) {
             throw new IllegalArgumentException("Draft sections are required");
         }
-
-        DocumentStructure structure = structureRepository.findByProjectId(projectId).orElse(null);
-        boolean structureCreated = false;
-        if (structure == null) {
-            structureCreated = true;
-            structure = structureRepository.save(DocumentStructure.builder()
-                    .projectId(projectId)
-                    .name(resolveStructureName(request))
-                    .build());
-        }
+        boolean structureCreated = !structureService.exists(projectId);
+        DocumentStructure structure = structureService.resolveStructure(projectId, request);
 
         List<DocumentSection> existingSections = sectionRepository.findByStructureId(structure.getId());
         Map<String, DocumentSection> sectionsByStableKey = new LinkedHashMap<>();
@@ -102,11 +91,6 @@ class DocumentDraftTreeImportService {
         return lockRepository.findBySectionIdIn(sectionIds).stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toMap(DocumentSectionLock::getSectionId, lock -> lock, (left, right) -> left, LinkedHashMap::new));
-    }
-
-    private String resolveStructureName(DraftTreeUpsertRequest request) {
-        String structureName = trimToNull(request.getStructureName());
-        return structureName != null ? structureName : DEFAULT_STRUCTURE_NAME;
     }
 
     private String extractSectionKey(String metadata, String fallbackTitle) {

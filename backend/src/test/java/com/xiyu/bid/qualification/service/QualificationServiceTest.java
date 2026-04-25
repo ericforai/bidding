@@ -19,6 +19,7 @@ import com.xiyu.bid.businessqualification.domain.valueobject.ValidityPeriod;
 import com.xiyu.bid.qualification.dto.QualificationBorrowRequest;
 import com.xiyu.bid.qualification.dto.QualificationDTO;
 import com.xiyu.bid.qualification.dto.QualificationReturnRequest;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +49,7 @@ class QualificationServiceTest {
     @Mock private GetQualificationBorrowRecordsAppService getQualificationBorrowRecordsAppService;
     @Mock private ScanExpiringQualificationsAppService scanExpiringQualificationsAppService;
     @Mock private DeleteQualificationAppService deleteQualificationAppService;
+    @Mock private ProjectAccessScopeService projectAccessScopeService;
     @Spy private QualificationDtoMapper mapper = new QualificationDtoMapper();
 
     @InjectMocks

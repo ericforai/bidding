@@ -58,19 +58,22 @@ abstract class AbstractBatchOperationServiceTest {
         BatchValidationPolicy validationPolicy = new BatchValidationPolicy();
         BatchOperationLogService batchOperationLogService = new BatchOperationLogService(auditLogService);
         BatchAssignmentPolicy batchAssignmentPolicy = new BatchAssignmentPolicy(projectAccessScopeService);
+        BatchProjectAccessGuard projectAccessGuard = new BatchProjectAccessGuard(projectAccessScopeService, projectRepository);
+        BatchTaskAssignmentResolver taskAssignmentResolver =
+                new BatchTaskAssignmentResolver(userRepository, batchAssignmentPolicy);
         BatchTenderCommandService tenderCommandService =
-                new BatchTenderCommandService(tenderRepository, validationPolicy, batchOperationLogService);
+                new BatchTenderCommandService(tenderRepository, projectRepository, validationPolicy, batchOperationLogService, projectAccessScopeService);
         BatchTaskCommandService taskCommandService = new BatchTaskCommandService(
                 taskRepository,
-                userRepository,
                 validationPolicy,
-                batchAssignmentPolicy,
-                batchOperationLogService
+                taskAssignmentResolver,
+                batchOperationLogService,
+                projectAccessGuard
         );
         BatchProjectCommandService projectCommandService =
-                new BatchProjectCommandService(projectRepository, validationPolicy, batchOperationLogService);
+                new BatchProjectCommandService(projectRepository, validationPolicy, batchOperationLogService, projectAccessScopeService);
         BatchFeeCommandService feeCommandService =
-                new BatchFeeCommandService(feeRepository, validationPolicy, batchOperationLogService);
+                new BatchFeeCommandService(feeRepository, validationPolicy, batchOperationLogService, projectAccessScopeService);
         batchOperationService = new BatchOperationService(
                 tenderCommandService,
                 taskCommandService,

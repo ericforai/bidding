@@ -5,12 +5,14 @@ import com.xiyu.bid.exception.ResourceNotFoundException;
 import com.xiyu.bid.versionhistory.dto.DocumentVersionDTO;
 import com.xiyu.bid.versionhistory.entity.DocumentVersion;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
@@ -41,6 +43,18 @@ class VersionHistoryServiceRollbackCurrentTest extends AbstractVersionHistorySer
 
         verify(repository, atLeastOnce()).save(any(DocumentVersion.class));
         verify(auditLogService).log(any(AuditLogService.AuditLogEntry.class));
+    }
+
+    @Test
+    void rollbackToVersion_WhenProjectOutsideCurrentUserScope_ShouldThrowAccessDeniedBeforeReadingVersion() {
+        doThrow(new AccessDeniedException("权限不足，无法访问该项目"))
+                .when(projectAccessScopeService).assertCurrentUserCanAccessProject(100L);
+
+        assertThatThrownBy(() -> versionHistoryService.rollbackToVersion(100L, 1L, 1L))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(projectAccessScopeService).assertCurrentUserCanAccessProject(100L);
+        verify(repository, org.mockito.Mockito.never()).findById(any());
     }
 
     @Test

@@ -20,6 +20,7 @@ import java.util.List;
 public class BatchTenderStatusAppService {
 
     private final TenderRepository tenderRepository;
+    private final BatchProjectAccessGuard projectAccessGuard;
     private final BatchOperationLogService batchOperationLogService;
     private final BatchValidationPolicy validationPolicy;
     private final TenderStatusTransitionPolicy transitionPolicy;
@@ -59,6 +60,7 @@ public class BatchTenderStatusAppService {
             BatchOperationResponse response
     ) {
         try {
+            projectAccessGuard.requireTender(tender.getId());
             transitionPolicy.assertTransition(tender.getStatus(), targetStatus);
             if (tender.getStatus() != targetStatus) {
                 tender.setStatus(targetStatus);
@@ -67,6 +69,13 @@ public class BatchTenderStatusAppService {
             response.addSuccess(tender.getId());
         } catch (IllegalArgumentException exception) {
             response.addError(tender.getId(), exception.getMessage(), "INVALID_STATUS_TRANSITION");
+        } catch (RuntimeException exception) {
+            addRuntimeError(response, tender.getId(), exception);
         }
+    }
+
+    private void addRuntimeError(BatchOperationResponse response, Long itemId, RuntimeException exception) {
+        String code = BatchProjectAccessGuard.isAccessDenied(exception) ? "PERMISSION_DENIED" : "STATUS_UPDATE_ERROR";
+        response.addError(itemId, exception.getMessage(), code);
     }
 }

@@ -4,6 +4,7 @@
 
 ## 职责
 模板模块负责模板列表、复制、下载与版本信息，是前端模板库与知识复用能力的后端支撑入口。
+模板使用记录通过 `templatecatalog` 应用层落库，项目关联记录遵循当前用户项目可见范围；模板视图中的 `useCount` 不向普通用户泄露不可见项目记录数量。
 
 ## 当前分层
 - `template/` 保留控制器、外部 DTO 和门面 service，继续承接 `/api/knowledge/templates` 协议。
@@ -26,4 +27,5 @@
 | `../templatecatalog/application/service/*.java` | Application Service | 模板创建/更新/查询/活动编排 |
 | `../templatecatalog/domain/valueobject/*.java` | Domain VO | 产品类型、行业、文档类型 |
 | `../templatecatalog/domain/service/*.java` | Domain Service | 分类完整性与版本策略 |
-| `../templatecatalog/infrastructure/persistence/*.java` | Infrastructure | 模板仓储适配与组合筛选 |
+| `../templatecatalog/domain/port/TemplateCatalogUseRecordRepository.java` | Domain Port | 使用记录保存与按项目可见范围统计 |
+| `../templatecatalog/infrastructure/persistence/*.java` | Infrastructure | 模板仓储适配、组合筛选与使用记录聚合 |

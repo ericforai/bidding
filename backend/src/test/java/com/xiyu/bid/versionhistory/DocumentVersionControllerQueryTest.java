@@ -114,7 +114,7 @@ class DocumentVersionControllerQueryTest extends AbstractDocumentVersionControll
 
     @Test
     void getVersion_WithValidIds_ShouldReturn200() throws Exception {
-        when(versionHistoryService.getVersion(1L)).thenReturn(testVersionDTO);
+        when(versionHistoryService.getVersion(100L, 1L)).thenReturn(testVersionDTO);
 
         mockMvc.perform(get("/api/documents/{projectId}/versions/{versionId}", 100L, 1L))
                 .andExpect(status().isOk())
@@ -122,18 +122,18 @@ class DocumentVersionControllerQueryTest extends AbstractDocumentVersionControll
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.versionNumber").value(1));
 
-        verify(versionHistoryService).getVersion(1L);
+        verify(versionHistoryService).getVersion(100L, 1L);
     }
 
     @Test
     void getVersion_WithNonExistentVersion_ShouldReturn404() throws Exception {
-        when(versionHistoryService.getVersion(999L))
+        when(versionHistoryService.getVersion(100L, 999L))
                 .thenThrow(new ResourceNotFoundException("Version not found with id: 999"));
 
         mockMvc.perform(get("/api/documents/{projectId}/versions/{versionId}", 100L, 999L))
                 .andExpect(status().isNotFound());
 
-        verify(versionHistoryService).getVersion(999L);
+        verify(versionHistoryService).getVersion(100L, 999L);
     }
 
     @Test

@@ -4,11 +4,9 @@ import com.xiyu.bid.batch.core.TenderStatusTransitionPolicy;
 import com.xiyu.bid.batch.dto.BatchOperationResponse;
 import com.xiyu.bid.batch.dto.BatchTenderAssignRequest;
 import com.xiyu.bid.batch.entity.TenderAssignmentRecord;
-import com.xiyu.bid.batch.repository.TenderAssignmentRecordRepository;
 import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.TenderRepository;
-import com.xiyu.bid.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,8 +20,8 @@ import java.util.List;
 public class BatchTenderAssignAppService {
 
     private final TenderRepository tenderRepository;
-    private final UserRepository userRepository;
-    private final TenderAssignmentRecordRepository tenderAssignmentRecordRepository;
+    private final BatchProjectAccessGuard projectAccessGuard;
+    private final BatchTenderAssignmentSupport assignmentSupport;
     private final BatchOperationLogService batchOperationLogService;
     private final TenderStatusTransitionPolicy transitionPolicy;
 
@@ -31,8 +29,7 @@ public class BatchTenderAssignAppService {
     public BatchOperationResponse batchAssign(BatchTenderAssignRequest request, User currentUser) {
         validateRequest(request);
 
-        User assignee = userRepository.findById(request.getAssigneeId())
-                .orElseThrow(() -> new IllegalArgumentException("Assignee not found: " + request.getAssigneeId()));
+        User assignee = assignmentSupport.resolveAssignee(request.getAssigneeId());
 
         BatchOperationResponse response = BatchOperationResponse.builder()
                 .operationType("TENDER_ASSIGN")
@@ -52,9 +49,7 @@ public class BatchTenderAssignAppService {
         if (!changedTenders.isEmpty()) {
             tenderRepository.saveAll(changedTenders);
         }
-        if (!records.isEmpty()) {
-            tenderAssignmentRecordRepository.saveAll(records);
-        }
+        assignmentSupport.saveRecords(records);
         response.setSuccess(response.getFailureCount() == 0);
         batchOperationLogService.record(response, "TENDER", "ASSIGN", currentUser == null ? null : currentUser.getId());
         return response;
@@ -70,27 +65,19 @@ public class BatchTenderAssignAppService {
             BatchOperationResponse response
     ) {
         try {
+            projectAccessGuard.requireTender(tender.getId());
             transitionPolicy.assertTransition(tender.getStatus(), Tender.Status.TRACKING);
             if (tender.getStatus() != Tender.Status.TRACKING) {
                 tender.setStatus(Tender.Status.TRACKING);
                 changedTenders.add(tender);
             }
-            records.add(buildRecord(tender.getId(), assignee, request.getRemark(), currentUser));
+            records.add(assignmentSupport.buildRecord(tender.getId(), assignee, request, currentUser));
             response.addSuccess(tender.getId());
         } catch (IllegalArgumentException exception) {
             response.addError(tender.getId(), exception.getMessage(), "INVALID_STATUS_TRANSITION");
+        } catch (RuntimeException exception) {
+            addRuntimeError(response, tender.getId(), exception);
         }
-    }
-
-    private TenderAssignmentRecord buildRecord(Long tenderId, User assignee, String remark, User currentUser) {
-        return TenderAssignmentRecord.builder()
-                .tenderId(tenderId)
-                .assigneeId(assignee.getId())
-                .assigneeName(assignee.getFullName())
-                .assignedById(currentUser == null ? null : currentUser.getId())
-                .assignedByName(currentUser == null ? "system" : currentUser.getFullName())
-                .remark(remark)
-                .build();
     }
 
     private void validateRequest(BatchTenderAssignRequest request) {
@@ -107,5 +94,10 @@ public class BatchTenderAssignAppService {
         if (request.getAssigneeId() == null || request.getAssigneeId() <= 0) {
             throw new IllegalArgumentException("Assignee ID must be a positive number");
         }
+    }
+
+    private void addRuntimeError(BatchOperationResponse response, Long itemId, RuntimeException exception) {
+        String code = BatchProjectAccessGuard.isAccessDenied(exception) ? "PERMISSION_DENIED" : "ASSIGN_ERROR";
+        response.addError(itemId, exception.getMessage(), code);
     }
 }

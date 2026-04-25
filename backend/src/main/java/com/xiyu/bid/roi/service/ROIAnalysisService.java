@@ -12,6 +12,7 @@ import com.xiyu.bid.roi.dto.SensitivityAnalysisRequest;
 import com.xiyu.bid.roi.dto.SensitivityAnalysisResult;
 import com.xiyu.bid.roi.entity.ROIAnalysis;
 import com.xiyu.bid.roi.repository.ROIAnalysisRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,7 @@ import java.util.List;
 public class ROIAnalysisService {
 
     private final ROIAnalysisRepository roiAnalysisRepository;
+    private final ProjectAccessScopeService projectAccessScopeService;
     private static final int SCALE = 2;
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private static final int MAX_TEXT_FIELD_LENGTH = 5000;
@@ -53,6 +55,7 @@ public class ROIAnalysisService {
 
         // 验证输入
         validateRequest(request);
+        projectAccessScopeService.assertCurrentUserCanAccessProject(request.getProjectId());
 
         // 构建并保存分析实体
         ROIAnalysis analysis = buildAnalysisEntity(request.getProjectId(), request);
@@ -75,6 +78,7 @@ public class ROIAnalysisService {
         if (projectId == null) {
             throw new IllegalArgumentException("Project ID cannot be null");
         }
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
 
         ROIAnalysis analysis = roiAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -104,6 +108,7 @@ public class ROIAnalysisService {
         if (request == null) {
             throw new IllegalArgumentException("Request cannot be null");
         }
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
 
         // 验证输入
         validateRequest(request);
@@ -148,6 +153,7 @@ public class ROIAnalysisService {
             request.getRevenueVariations() == null || request.getRevenueVariations().isEmpty()) {
             throw new IllegalArgumentException("Cost and revenue variations cannot be empty");
         }
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
 
         // 获取基础ROI分析
         ROIAnalysis baseAnalysis = roiAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(projectId)

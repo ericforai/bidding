@@ -1,9 +1,12 @@
 package com.xiyu.bid.tender.service;
 
 import com.xiyu.bid.ai.service.AiService;
+import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.exception.ResourceNotFoundException;
+import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TenderRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import com.xiyu.bid.tender.dto.TenderDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,6 +27,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,6 +38,12 @@ class TenderCommandServiceTest {
 
     @Mock
     private TenderRepository tenderRepository;
+
+    @Mock
+    private ProjectRepository projectRepository;
+
+    @Mock
+    private ProjectAccessScopeService projectAccessScopeService;
 
     @Mock
     private AiService aiService;
@@ -45,8 +56,9 @@ class TenderCommandServiceTest {
     @BeforeEach
     void setUp() {
         TenderMapper tenderMapper = new TenderMapper();
-        tenderCommandService = new TenderCommandService(tenderRepository, aiService, tenderMapper);
-        tenderQueryService = new TenderQueryService(tenderRepository, tenderMapper);
+        TenderProjectAccessGuard accessGuard = new TenderProjectAccessGuard(projectRepository, projectAccessScopeService);
+        tenderCommandService = new TenderCommandService(tenderRepository, aiService, tenderMapper, accessGuard);
+        tenderQueryService = new TenderQueryService(tenderRepository, tenderMapper, accessGuard);
 
         tender = Tender.builder()
                 .id(1L)
@@ -114,6 +126,18 @@ class TenderCommandServiceTest {
     }
 
     @Test
+    @DisplayName("根据ID查询标讯 - 关联项目不可见时拒绝")
+    void getTenderById_ShouldRejectTenderLinkedToInvisibleProject() {
+        Project project = Project.builder().id(100L).tenderId(1L).build();
+        when(tenderRepository.findById(1L)).thenReturn(Optional.of(tender));
+        when(projectRepository.findByTenderId(1L)).thenReturn(java.util.List.of(project));
+        doThrow(new org.springframework.security.access.AccessDeniedException("权限不足"))
+                .when(projectAccessScopeService).assertCurrentUserCanAccessProject(100L);
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> tenderQueryService.getTenderById(1L));
+    }
+
+    @Test
     @DisplayName("根据ID查询标讯 - 未找到抛出异常")
     void getTenderById_NotFound_ShouldThrowException() {
         when(tenderRepository.findById(anyLong())).thenReturn(Optional.empty());
@@ -140,6 +164,22 @@ class TenderCommandServiceTest {
         assertThat(result.getStatus()).isEqualTo(Tender.Status.TRACKING);
         assertThat(result.getRegion()).isEqualTo("北京");
         assertThat(result.getTags()).containsExactly("更新", "重点");
+    }
+
+    @Test
+    @DisplayName("更新标讯 - 关联项目不可见时不保存")
+    void updateTender_ShouldRejectTenderLinkedToInvisibleProject() {
+        Project project = Project.builder().id(100L).tenderId(1L).build();
+        when(tenderRepository.findById(1L)).thenReturn(Optional.of(tender));
+        when(projectRepository.findByTenderId(1L)).thenReturn(java.util.List.of(project));
+        doThrow(new org.springframework.security.access.AccessDeniedException("权限不足"))
+                .when(projectAccessScopeService).assertCurrentUserCanAccessProject(100L);
+
+        TenderDTO updateDto = TenderDTO.builder().title("更新后的项目名称").build();
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> tenderCommandService.updateTender(1L, updateDto));
+        verify(tenderRepository, never()).save(any(Tender.class));
     }
 
     @Test

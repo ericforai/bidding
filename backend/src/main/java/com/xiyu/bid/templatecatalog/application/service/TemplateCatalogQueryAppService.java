@@ -1,7 +1,12 @@
+// Input: template query criteria/id and current-user project scope
+// Output: template catalog views with access-scoped use counts
+// Pos: Application Service/应用编排层
+// 维护声明: useCount 必须按 ProjectAccessScopeService 可见项目和 null 项目记录统计；管理员保留全量统计。
 package com.xiyu.bid.templatecatalog.application.service;
 
 import com.xiyu.bid.entity.Template;
 import com.xiyu.bid.exception.ResourceNotFoundException;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import com.xiyu.bid.templatecatalog.application.command.TemplateQueryCriteria;
 import com.xiyu.bid.templatecatalog.application.mapper.TemplateDtoMapper;
 import com.xiyu.bid.templatecatalog.application.view.TemplateCatalogView;
@@ -23,12 +28,13 @@ public class TemplateCatalogQueryAppService {
     private final TemplateCatalogUseRecordRepository templateCatalogUseRecordRepository;
     private final TemplateCatalogDownloadRecordRepository templateCatalogDownloadRecordRepository;
     private final TemplateDtoMapper templateDtoMapper;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     @Transactional(readOnly = true)
     public List<TemplateCatalogView> list(TemplateQueryCriteria criteria) {
         List<Template> templates = templateCatalogRepository.findAll(criteria);
         Map<Long, Long> downloads = templateCatalogDownloadRecordRepository.countByTemplateIds(extractIds(templates));
-        Map<Long, Long> useCounts = templateCatalogUseRecordRepository.countByTemplateIds(extractIds(templates));
+        Map<Long, Long> useCounts = countVisibleUseRecords(extractIds(templates));
         return templates.stream()
                 .map(template -> toDto(template, downloads, useCounts))
                 .toList();
@@ -59,7 +65,7 @@ public class TemplateCatalogQueryAppService {
         return templateDtoMapper.toDto(
                 template,
                 templateCatalogDownloadRecordRepository.countByTemplateId(template.getId()),
-                templateCatalogUseRecordRepository.countByTemplateId(template.getId())
+                countVisibleUseRecords(template.getId())
         );
     }
 
@@ -68,6 +74,26 @@ public class TemplateCatalogQueryAppService {
                 template,
                 downloads.getOrDefault(template.getId(), 0L),
                 useCounts.getOrDefault(template.getId(), 0L)
+        );
+    }
+
+    private Map<Long, Long> countVisibleUseRecords(List<Long> templateIds) {
+        if (projectAccessScopeService.currentUserHasAdminAccess()) {
+            return templateCatalogUseRecordRepository.countByTemplateIds(templateIds);
+        }
+        return templateCatalogUseRecordRepository.countByTemplateIdsVisibleToProjects(
+                templateIds,
+                projectAccessScopeService.getAllowedProjectIdsForCurrentUser()
+        );
+    }
+
+    private long countVisibleUseRecords(Long templateId) {
+        if (projectAccessScopeService.currentUserHasAdminAccess()) {
+            return templateCatalogUseRecordRepository.countByTemplateId(templateId);
+        }
+        return templateCatalogUseRecordRepository.countByTemplateIdVisibleToProjects(
+                templateId,
+                projectAccessScopeService.getAllowedProjectIdsForCurrentUser()
         );
     }
 }

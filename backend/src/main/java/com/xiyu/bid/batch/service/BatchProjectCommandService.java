@@ -10,6 +10,7 @@ import com.xiyu.bid.batch.dto.BatchProjectUpdateRequest;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.ProjectRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class BatchProjectCommandService {
     private final ProjectRepository projectRepository;
     private final BatchValidationPolicy validationPolicy;
     private final BatchOperationLogService logService;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     public BatchOperationResponse batchDeleteProjects(List<Long> projectIds, Long userId, User.Role userRole) {
         validationPolicy.validateBatchInput(projectIds, "Project IDs");
@@ -46,6 +48,7 @@ public class BatchProjectCommandService {
                     continue;
                 }
                 Project project = projectOpt.get();
+                projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
                 if (!hasManagerPermission(project, userId, userRole)) {
                     response.addError(projectId, "Permission denied: you must be the project manager or admin", "PERMISSION_DENIED");
                     continue;
@@ -53,7 +56,7 @@ public class BatchProjectCommandService {
                 projectsToDelete.add(project);
                 response.addSuccess(projectId);
             } catch (RuntimeException exception) {
-                response.addError(projectId, "Failed to delete project: " + exception.getMessage(), "DELETE_ERROR");
+                addRuntimeError(response, projectId, exception, "DELETE_ERROR");
             }
         }
         if (!projectsToDelete.isEmpty()) {
@@ -84,6 +87,7 @@ public class BatchProjectCommandService {
                     continue;
                 }
                 Project project = projectOpt.get();
+                projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
                 if (!hasManagerPermission(project, userId, userRole)) {
                     response.addError(projectId, "Permission denied: you must be the project manager or admin", "PERMISSION_DENIED");
                     continue;
@@ -97,7 +101,7 @@ public class BatchProjectCommandService {
                 projectsToUpdate.add(project);
                 response.addSuccess(projectId);
             } catch (RuntimeException exception) {
-                response.addError(projectId, "Failed to update project: " + exception.getMessage(), "UPDATE_ERROR");
+                addRuntimeError(response, projectId, exception, "UPDATE_ERROR");
             }
         }
         if (!projectsToUpdate.isEmpty()) {
@@ -109,6 +113,14 @@ public class BatchProjectCommandService {
 
     private boolean hasManagerPermission(Project project, Long userId, User.Role userRole) {
         return userRole == User.Role.ADMIN || project.getManagerId().equals(userId);
+    }
+
+    private void addRuntimeError(BatchOperationResponse response, Long projectId, RuntimeException exception, String fallbackCode) {
+        if (BatchProjectAccessGuard.isAccessDenied(exception)) {
+            response.addError(projectId, "Permission denied: project is outside current data scope", "PERMISSION_DENIED");
+            return;
+        }
+        response.addError(projectId, exception.getMessage(), fallbackCode);
     }
 
     private BatchOperationResponse newResponse(String operationType, int totalCount) {

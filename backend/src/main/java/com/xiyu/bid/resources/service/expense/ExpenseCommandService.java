@@ -25,10 +25,12 @@ public class ExpenseCommandService {
 
     private final ExpenseRepository expenseRepository;
     private final ExpenseApprovalRecordRepository expenseApprovalRecordRepository;
+    private final ExpenseAccessGuard accessGuard;
 
     @Transactional
     public ExpenseDTO createExpense(ExpenseCreateRequest request) {
         validateCreateRequest(request);
+        accessGuard.assertCanAccessProject(request.getProjectId());
 
         Expense expense = Expense.builder()
                 .projectId(request.getProjectId())
@@ -58,10 +60,8 @@ public class ExpenseCommandService {
 
     @Transactional
     public void deleteExpense(Long id) {
-        if (!expenseRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Expense", String.valueOf(id));
-        }
-        expenseRepository.deleteById(id);
+        Expense expense = getExpenseEntityById(id);
+        expenseRepository.delete(expense);
     }
 
     @Transactional
@@ -101,8 +101,10 @@ public class ExpenseCommandService {
     }
 
     public Expense getExpenseEntityById(Long id) {
-        return expenseRepository.findById(id)
+        Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense", String.valueOf(id)));
+        accessGuard.assertCanAccessProject(expense.getProjectId());
+        return expense;
     }
 
     private void validateCreateRequest(ExpenseCreateRequest request) {

@@ -3,10 +3,11 @@ package com.xiyu.bid.documentexport.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.documenteditor.dto.SectionCreateRequest;
 import com.xiyu.bid.documenteditor.dto.StructureCreateRequest;
+import com.xiyu.bid.documenteditor.entity.DocumentSection;
+import com.xiyu.bid.documenteditor.entity.DocumentStructure;
 import com.xiyu.bid.documenteditor.entity.SectionType;
 import com.xiyu.bid.documenteditor.repository.DocumentSectionRepository;
 import com.xiyu.bid.documenteditor.repository.DocumentStructureRepository;
-import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.ProjectRepository;
@@ -60,6 +61,7 @@ class DocumentExportIntegrationTest {
 
     private Project project;
     private User adminUser;
+    private User outsiderUser;
 
     @BeforeEach
     void setUp() {
@@ -74,6 +76,15 @@ class DocumentExportIntegrationTest {
                 .email("export-admin@example.com")
                 .fullName("导出管理员")
                 .role(User.Role.ADMIN)
+                .enabled(true)
+                .build());
+
+        outsiderUser = userRepository.save(User.builder()
+                .username("export-outsider")
+                .password("XiyuDemo!2026")
+                .email("export-outsider@example.com")
+                .fullName("无权用户")
+                .role(User.Role.STAFF)
                 .enabled(true)
                 .build());
 
@@ -173,5 +184,46 @@ class DocumentExportIntegrationTest {
 
         assertThat(projectRepository.findById(project.getId())).isPresent();
         assertThat(projectRepository.findById(project.getId()).orElseThrow().getStatus()).isEqualTo(Project.Status.ARCHIVED);
+    }
+
+    @Test
+    @WithMockUser(username = "export-outsider", roles = {"STAFF"})
+    void exportAndArchiveEndpoints_WhenProjectOutsideCurrentUserScope_ShouldReturnForbidden() throws Exception {
+        DocumentStructure structure = structureRepository.save(DocumentStructure.builder()
+                .projectId(project.getId())
+                .name("投标文件结构")
+                .build());
+        sectionRepository.save(DocumentSection.builder()
+                .structureId(structure.getId())
+                .sectionType(SectionType.SECTION)
+                .title("技术方案")
+                .content("这是技术方案正文")
+                .orderIndex(1)
+                .build());
+
+        mockMvc.perform(get("/api/documents/{projectId}/exports", project.getId()))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/documents/{projectId}/exports", project.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "format": "json",
+                                  "exportedBy": %d,
+                                  "exportedByName": "无权用户"
+                                }
+                                """.formatted(outsiderUser.getId())))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/documents/{projectId}/archive", project.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "archivedBy": %d,
+                                  "archivedByName": "无权用户",
+                                  "archiveReason": "越权归档"
+                                }
+                                """.formatted(outsiderUser.getId())))
+                .andExpect(status().isForbidden());
     }
 }

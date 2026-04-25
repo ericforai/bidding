@@ -15,9 +15,17 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     Page<Expense> findByProjectId(Long projectId, Pageable pageable);
 
+    Page<Expense> findByProjectIdIn(List<Long> projectIds, Pageable pageable);
+
+    List<Expense> findByProjectIdIn(List<Long> projectIds, org.springframework.data.domain.Sort sort);
+
     Page<Expense> findByCategory(Expense.ExpenseCategory category, Pageable pageable);
 
+    Page<Expense> findByProjectIdInAndCategory(List<Long> projectIds, Expense.ExpenseCategory category, Pageable pageable);
+
     Page<Expense> findByDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable);
+
+    Page<Expense> findByProjectIdInAndDateBetween(List<Long> projectIds, LocalDate startDate, LocalDate endDate, Pageable pageable);
 
     @org.springframework.data.jpa.repository.Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.projectId = :projectId")
     BigDecimal sumAmountByProjectId(@org.springframework.data.repository.query.Param("projectId") Long projectId);
@@ -33,6 +41,8 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     Page<Expense> findByProjectIdAndDateBetween(Long projectId, LocalDate startDate, LocalDate endDate, Pageable pageable);
 
     List<Expense> findByProjectIdOrderByCreatedAtDesc(Long projectId);
+
+    List<Expense> findByProjectIdInOrderByCreatedAtDesc(List<Long> projectIds);
 
     List<Expense> findByExpenseTypeAndExpectedReturnDateIsNotNullAndStatusNotOrderByExpectedReturnDateAsc(
             String expenseType,

@@ -27,6 +27,7 @@
 - **架构约束**：详细解释见 `RULES.md`；后端纯核心门禁由 `FPJavaArchitectureTest` 执行。
 - **架构门禁口径**：纯核心仍禁止显式依赖 `System` 等隐式输入；Java 枚举 `values()` 编译器生成的 `System.arraycopy` 属于合成字节码误报，由门禁排除。
 - **可维护性约束**：受保护模块的防上帝类门禁由 `MaintainabilityArchitectureTest` 执行。
+- **项目权限门禁口径**：`ProjectAccessGuardCoverageTest` 扫描所有带 `projectId` 或引用项目关联 DTO/实体的 Controller/Service，必须命中 `ProjectAccessScopeService` 等统一守卫证据，或进入 `project-access-guard-baseline.txt` 显式基线并写明原因。
 - **标书生成 Agent**：`com.xiyu.bid.biddraftagent.domain` 是纯核心，`application` 只做 run 编排和写入计划，`infrastructure/documenteditor` 负责实际写入章节树。
 
 ## Mock 政策（统一决策）
@@ -87,6 +88,7 @@ VITE_API_MODE=api VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --host
 - **后端改动**：运行 `mvn test -Dtest=<相关测试类>`；如涉及架构边界，再运行 `mvn test -Dtest=ArchitectureTest`，并把结果作为常规门禁如实汇报。
 - **纯核心改动**：如新增或修改 `..core..` / `..domain..` 非 Entity 代码，必须运行 `mvn test -Dtest=FPJavaArchitectureTest`。
 - **结构性后端改动**：如新增或扩展受保护模块的 Service，必须运行 `mvn test -Dtest=MaintainabilityArchitectureTest`。
+- **项目权限边界改动**：如新增或修改带 `projectId` 的 Controller、Service、DTO、命令或实体，必须运行 `mvn test -Dtest=ProjectAccessGuardCoverageTest`。
 - **核心链路改动**：运行 `npm run test:e2e`。
 - **禁止取巧**：不得通过删除测试、弱化断言、改写验收口径来掩盖问题。
 

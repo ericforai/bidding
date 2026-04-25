@@ -14,6 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -80,6 +82,26 @@ class BatchOperationApproveFeesTest extends AbstractBatchOperationServiceTest {
         assertEquals(1, response.getSuccessCount());
         assertEquals(1, response.getFailureCount());
         assertEquals("NOT_FOUND", response.getErrors().get(0).getErrorCode());
+    }
+
+    @Test
+    void batchApproveFees_rejectsFeeOutsideProjectDataScope() {
+        var request = BatchApproveFeesRequest.builder()
+                .feeIds(Collections.singletonList(1L))
+                .paidBy("Finance Department")
+                .build();
+
+        when(feeRepository.findById(1L)).thenReturn(Optional.of(testFee1));
+        doThrow(new org.springframework.security.access.AccessDeniedException("权限不足"))
+                .when(projectAccessScopeService).assertCurrentUserCanAccessProject(100L);
+
+        var response = batchOperationService.batchApproveFees(request, 1L);
+
+        assertFalse(response.getSuccess());
+        assertEquals(0, response.getSuccessCount());
+        assertEquals(1, response.getFailureCount());
+        assertEquals("PERMISSION_DENIED", response.getErrors().get(0).getErrorCode());
+        verify(feeRepository, never()).saveAll(anyList());
     }
 
     @Test

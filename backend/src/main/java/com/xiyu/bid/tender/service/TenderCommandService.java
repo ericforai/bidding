@@ -32,6 +32,7 @@ public class TenderCommandService {
     private final TenderRepository tenderRepository;
     private final AiService aiService;
     private final TenderMapper tenderMapper;
+    private final TenderProjectAccessGuard accessGuard;
 
     public TenderDTO createTender(TenderDTO tenderDTO) {
         log.debug("Creating new tender: {}", tenderDTO.getTitle());
@@ -45,6 +46,7 @@ public class TenderCommandService {
         log.debug("Updating tender with id: {}", id);
         Tender existingTender = tenderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tender", id.toString()));
+        accessGuard.assertCanAccessTender(existingTender);
         tenderMapper.updateEntity(existingTender, tenderDTO);
         ensurePurchaserHash(existingTender);
         Tender updatedTender = tenderRepository.save(existingTender);
@@ -56,6 +58,7 @@ public class TenderCommandService {
         log.debug("Deleting tender with id: {}", id);
         Tender tender = tenderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tender", id.toString()));
+        accessGuard.assertCanAccessTender(tender);
         tenderRepository.delete(tender);
         log.info("Deleted tender with id: {}", id);
     }
@@ -65,6 +68,7 @@ public class TenderCommandService {
         log.debug("Analyzing tender with id: {}", id);
         Tender tender = tenderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tender", id.toString()));
+        accessGuard.assertCanAccessTender(tender);
         CompletableFuture<Void> analysisFuture = aiService.analyzeTender(id, buildAiContext(tender));
         try {
             analysisFuture.get(30, TimeUnit.SECONDS);
