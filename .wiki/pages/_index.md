@@ -33,6 +33,7 @@ health_checked: 2026-04-25
 - [[business-process]] — 业务流程
 - [[dashboard-gap-analysis]] — 工作台卡片 vs 标书要求对照
 - [[data-model]] — 数据模型
+- [[data-permission-hardening]] — 项目数据权限修复收口
 - [[deployment]] — 部署与上线
 - [[design-system]] — 设计系统基线
 - [[glossary]] — 术语表
@@ -59,4 +60,3 @@ health_checked: 2026-04-25
 1. `npm run wiki:ingest`
 2. `npm run wiki:build`
 3. `npm run wiki:check`
-

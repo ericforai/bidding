@@ -6,12 +6,24 @@
 
 ## 结论摘要
 
-当前系统已具备项目数据权限核心能力，但尚未达到“所有项目关联接口全量覆盖”的口径。
+当前系统已具备项目数据权限核心能力，并已完成 P0、P1、P2 三轮数据权限修复收口。结论口径调整为：真实 API 单一路径下，已识别的项目关联高风险接口已经补入项目访问断言、可见项目过滤、管理角色收紧或明确豁免；后续新增带 `projectId` 的 Controller/Service 必须通过项目权限门禁测试或写入显式豁免清单。
 
-- 已覆盖：项目主接口、项目工作流部分接口、标书生成 Agent、部分任务分配能力已经通过 `ProjectAccessScopeService` 或项目工作流守卫收口。
-- 部分覆盖：任务模块存在部门/用户候选范围控制，但任务列表、任务详情、项目任务查询仍缺少项目访问守卫证据。
-- 未覆盖或证据不足：标讯、费用、文档编辑器、文档版本、ROI/评分/竞情 AI 分析、投标结果、导出、审批统计/聚合等模块存在仅做角色限制或仅按 `projectId` 查询的风险。
+- 已覆盖：项目主接口、项目工作流、标书生成 Agent、任务/批量、费用、文档编辑/导出/版本、投标结果、导出、统计看板、AI/分析、日历/工作台、资质/证书借阅、模板使用记录等已通过 `ProjectAccessScopeService`、统一访问守卫或可见项目集合过滤收口。
+- 已收紧：告警历史因 `relatedId` 尚无可靠项目映射，列表、详情、未处理、确认、统计入口已从普通员工可读收紧为管理角色可读。
+- 已建门禁：新增 `ProjectAccessGuardCoverageTest`，扫描带 `projectId` 或引用项目关联 DTO/实体的 Controller/Service；未命中统一守卫的存量入口必须在 `project-access-guard-baseline.txt` 写明豁免原因。
+- 待持续治理：存量豁免清单仍需随后续模块整改逐步缩小；合同借阅等当前无 `projectId` 的模型，如客户要求按项目隔离，需要另做字段、迁移和接口契约设计。
 - 不适用：认证、运行模式、后台角色/用户/数据权限配置、审计日志查询等非项目业务数据，不按本次项目数据权限口径判为缺口。
+
+## 2026-04-25 修复收口记录
+
+| 优先级 | 模块范围 | 修复状态 | 关键证据 |
+| --- | --- | --- | --- |
+| P0 | 费用、资源费用台账、文档编辑/导出/版本、投标结果、标讯、任务、批量操作 | 已完成高风险读写收口 | 写操作按目标项目或目标记录所属项目断言；列表、详情、统计、导出按当前用户可见项目过滤；批量 item 执行前逐项校验。 |
+| P1 | 统计看板、导出、AI/分析、审批/聚合、项目质量等泄露风险 | 已完成聚合与导出收口 | 聚合查询接入当前用户可见项目集合；导出生成和响应 `recordCount` 使用过滤后的真实记录数；AI/分析入口复用项目访问断言。 |
+| P2 | 日历、工作台、证书借阅、资质借阅、模板使用记录、告警历史 | 已完成证据补强 | `ProjectLinkedRecordVisibilityPolicy` 只消费 `ProjectAccessScopeService` 给出的可见范围；空 `projectId` 按共享记录保留；告警历史收紧到 `ADMIN/MANAGER`。 |
+| 门禁 | 所有后续带 `projectId` 的 Controller/Service | 已建立自动化守卫 | `ProjectAccessGuardCoverageTest` + `project-access-guard-baseline.txt`，要求命中统一项目访问守卫或显式豁免。 |
+
+本轮修复遵守 FP-Java Profile：纯核心只做可见性判定，应用服务只做编排、取数、断言、过滤和保存；没有新建并行权限体系，项目访问来源统一复用 `ProjectAccessScopeService`。
 
 ## 判定规则
 
@@ -100,28 +112,28 @@
 
 ## 高优先级缺口
 
-### P0：跨项目读写风险
+### P0：跨项目读写风险（已完成修复）
 
 | 模块 | 风险说明 | 建议 |
 | --- | --- | --- |
-| 费用 `FeeController` | 费用详情、列表、项目费用、状态、支付、退回、取消、统计均未看到项目访问守卫；任意有角色权限的用户可能按 ID 或项目 ID 操作不可见费用。 | 在服务层引入统一费用访问守卫：读取费用后校验其 `projectId`，按项目查询/统计前校验 `projectId`，列表按可见项目过滤。 |
-| 资源费用台账 `ExpenseController` | 费用台账与保证金回款链路可能直接暴露跨项目费用、审批、付款记录。 | 将费用台账查询和统计统一接入可见项目集合；写操作先校验目标项目或目标费用所属项目。 |
-| 文档编辑/导出/版本 | 路径带 `projectId`，但 `DocumentEditorGuard` 只校验文档结构归属项目，未校验当前用户可访问该项目；导出和版本历史同类风险更高。 | 在文档编辑器、导出、版本服务入口统一调用 `ProjectAccessScopeService.assertCurrentUserCanAccessProject(projectId)`。 |
-| 投标结果 | 投标结果闭环、附件、忽略、竞品报告等会落到具体项目或客户投标数据，目前缺少项目范围过滤证据。 | 查询、命令、提醒统一按结果关联项目或可见项目集合过滤。 |
-| 标讯 `TenderController` | 标讯列表、详情、AI 分析、状态/来源/统计只有角色限制，未纳入数据权限。 | 明确标讯是否有部门/负责人/项目映射；有映射则按项目或负责人范围过滤，无映射则补标讯数据范围模型。 |
-| 批量操作 | 批量删除/更新/分配/费用审批涉及多个业务对象；部分子服务有项目访问依赖，但批量入口整体覆盖不均。 | 每个批量 item 执行前校验其项目归属；批量结果返回应避免暴露不可见 item 明细。 |
-| 任务 `TaskController` | 候选人、团队工作量有部门范围控制，但任务列表、详情、项目任务、状态、逾期接口未看到项目访问守卫。 | 以任务所属 `projectId` 为主校验；列表按可见项目集合过滤；本人任务可作为补充规则。 |
+| 费用 `FeeController` | 费用详情、列表、项目费用、状态、支付、退回、取消、统计存在跨项目风险。 | 已在服务层引入费用访问守卫：读取费用后校验其 `projectId`，按项目查询/统计前校验 `projectId`，列表按可见项目过滤。 |
+| 资源费用台账 `ExpenseController` | 费用台账与保证金回款链路可能暴露跨项目费用、审批、付款记录。 | 已将费用台账查询和统计接入可见项目集合；写操作校验目标项目或目标费用所属项目。 |
+| 文档编辑/导出/版本 | 路径带 `projectId`，导出和版本历史同类风险高。 | 已在文档编辑器、导出、版本服务入口统一调用项目访问断言。 |
+| 投标结果 | 投标结果闭环、附件、忽略、竞品报告等落到具体项目或客户投标数据。 | 已按结果关联项目或可见项目集合过滤查询、命令、提醒。 |
+| 标讯 `TenderController` | 标讯列表、详情、AI 分析、状态/来源/统计可能绕过项目/负责人范围。 | 已按标讯到项目/负责人范围补入访问约束；无法映射项目的场景保留显式口径。 |
+| 批量操作 | 批量删除/更新/分配/费用审批涉及多个业务对象。 | 已按 item 逐项校验项目归属；批量结果避免泄露不可见 item 明细。 |
+| 任务 `TaskController` | 任务列表、详情、项目任务、状态、逾期接口需按任务所属项目校验。 | 已以任务所属 `projectId` 为主校验；列表按可见项目集合过滤，本人任务作为补充规则。 |
 
-### P1：统计、导出、AI/分析泄露风险
+### P1：统计、导出、AI/分析泄露风险（已完成修复）
 
 | 模块 | 风险说明 | 建议 |
 | --- | --- | --- |
-| 分析看板 | `DashboardController`、客户类型分析聚合项目、任务、费用、投标数据，缺少可见项目范围输入。 | 所有聚合查询先取当前用户可见项目 ID；管理员可全量，其他角色按范围聚合。 |
-| ROI/评分/竞情/合规 | 多数接口按 `projectId` 读写项目分析结果，但未看到项目访问断言。 | 在每个项目分析入口统一前置项目访问断言。 |
-| 导出 `ExportController` | 导出项目、标讯、费用等批量数据，若直接 `findAll` 会绕过页面侧权限。 | 导出任务必须带当前用户上下文，按可见项目集合生成文件。 |
-| 审批 | 审批详情有参与者语义，但项目维度统计、待办和批量审批缺少与项目数据范围组合的证据。 | 参与者权限之外，再按审批请求 `projectId` 校验或过滤。 |
-| 项目质量检查 | 路径带 `projectId`，未看到项目访问守卫证据。 | 与项目工作流同样复用 `ProjectAccessScopeService`。 |
-| 知识库案例 | 普通案例库可按知识资产处理，但“项目转案例”、案例引用、分享记录需要项目访问校验。 | 项目转案例入口必须先校验源项目；引用/分享如含项目 ID 也需校验。 |
+| 分析看板 | `DashboardController`、客户类型分析聚合项目、任务、费用、投标数据。 | 已在聚合查询前取当前用户可见项目 ID；管理员全量，其他角色按范围聚合。 |
+| ROI/评分/竞情/合规 | 多数接口按 `projectId` 读写项目分析结果。 | 已在项目分析入口统一前置项目访问断言。 |
+| 导出 `ExportController` | 导出项目、标讯、费用等批量数据，直接 `findAll` 会绕过页面侧权限。 | 已让导出任务带当前用户上下文，按可见项目集合生成文件；响应 `recordCount` 使用过滤后的真实记录数。 |
+| 审批 | 审批详情有参与者语义，统计、待办和批量审批需叠加项目范围。 | 已在参与者权限之外，按审批请求 `projectId` 校验或过滤。 |
+| 项目质量检查 | 路径带 `projectId`。 | 已与项目工作流同样复用 `ProjectAccessScopeService`。 |
+| 知识库案例 | 普通案例库可按知识资产处理，“项目转案例”、案例引用、分享记录需要项目访问校验。 | 已对项目转案例入口校验源项目；含项目 ID 的引用/分享按项目访问校验。 |
 
 ### P2：证据不足或局部补强
 
@@ -135,11 +147,11 @@
 
 ## 建议整改顺序
 
-1. 建立后端项目权限门禁测试：扫描所有带 `projectId` 路径、请求体或实体字段的 Controller/Service，要求命中统一项目访问守卫或显式豁免清单。
-2. 先补 P0 模块：费用、资源费用台账、文档编辑/导出/版本、投标结果、标讯、任务、批量操作。
-3. 再补 P1 聚合模块：分析看板、AI 分析、导出、审批、项目质量。
-4. 对 P2 模块做业务口径拆分：个人数据、资源主数据、共享知识资产、项目关联记录分别定义过滤策略。
-5. 所有修复优先复用 `ProjectAccessScopeService`；不要新建并行权限体系。
+1. 已完成后端项目权限门禁测试：扫描所有带 `projectId` 路径、请求体或实体字段的 Controller/Service，要求命中统一项目访问守卫或显式豁免清单。
+2. 已完成 P0 模块收口：费用、资源费用台账、文档编辑/导出/版本、投标结果、标讯、任务、批量操作。
+3. 已完成 P1 聚合模块收口：分析看板、AI 分析、导出、审批、项目质量。
+4. 已完成 P2 证据补强：个人/共享记录、资源主数据、共享知识资产、项目关联记录分别定义过滤策略。
+5. 后续新增或重构继续复用 `ProjectAccessScopeService`；不要新建并行权限体系。
 
 ## 验证记录
 
@@ -153,6 +165,9 @@
 | `mvn test -Dtest=ProjectLinkedRecordVisibilityPolicyTest,CalendarServiceProjectAccessTest,WorkbenchScheduleQueryServiceAccessTest,BarCertificateServiceAccessTest,QualificationServiceAccessTest,TemplateCatalogActivityAppServiceAccessTest,TemplateCatalogQueryAppServiceAccessTest,AlertHistoryControllerSecurityTest,ReturnQualificationAppServiceTest` | 通过：31 tests, 0 failures, 0 errors, 0 skipped。 |
 | `mvn test -Dtest=ProjectAccessGuardCoverageTest` | 通过：新增项目权限覆盖门禁，扫描带 `projectId` 或引用项目关联 DTO/实体的 Controller/Service；未命中统一守卫的存量入口必须在 `project-access-guard-baseline.txt` 写明原因。 |
 | `mvn test -Dtest=FPJavaArchitectureTest,MaintainabilityArchitectureTest` | 通过：10 tests, 0 failures, 0 errors, 0 skipped。 |
+| 合并收口门禁：`ProjectAccessGuardCoverageTest,FPJavaArchitectureTest,MaintainabilityArchitectureTest` | 通过：11 tests, 0 failures, 0 errors, 0 skipped。 |
+| 合并收口门禁：相关后端测试集合 | 通过：55 tests, 0 failures, 0 errors, 0 skipped。 |
+| 前端/文档门禁：Vitest、`check:front-data-boundaries`、`check:doc-governance`、`check:line-budgets` | 通过：前端测试 73 files / 420 tests passed / 1 skipped；前端数据边界、文档治理、行预算检查通过。 |
 | Java 质量门禁（本轮变更 Java 文件范围） | 通过：Checkstyle 未发现违规。 |
 | `npm run check:doc-governance` | 通过：Documentation governance check passed for 79 directories。 |
 | `git diff --check` | 通过：未发现空白符或补丁格式问题。 |
