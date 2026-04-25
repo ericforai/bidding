@@ -22,11 +22,11 @@ public class OpenAiBidDraftTextGenerator implements BidDraftTextGenerator {
     private final OpenAiStructuredOutputService structuredOutputService;
 
     public OpenAiBidDraftTextGenerator(
-            OpenAiBidAgentConfigurationResolver configurationResolver,
-            OpenAiStructuredOutputService structuredOutputService
+            OpenAiBidAgentConfigurationResolver pConfigurationResolver,
+            OpenAiStructuredOutputService pStructuredOutputService
     ) {
-        this.configurationResolver = configurationResolver;
-        this.structuredOutputService = structuredOutputService;
+        this.configurationResolver = pConfigurationResolver;
+        this.structuredOutputService = pStructuredOutputService;
     }
 
     @Override

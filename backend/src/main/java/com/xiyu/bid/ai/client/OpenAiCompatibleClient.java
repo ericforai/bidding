@@ -33,12 +33,12 @@ public class OpenAiCompatibleClient {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    public OpenAiCompatibleClient(RestTemplateBuilder restTemplateBuilder, ObjectMapper objectMapper) {
+    public OpenAiCompatibleClient(RestTemplateBuilder restTemplateBuilder, ObjectMapper pObjectMapper) {
         this.restTemplate = restTemplateBuilder
                 .setConnectTimeout(TIMEOUT)
                 .setReadTimeout(TIMEOUT)
                 .build();
-        this.objectMapper = objectMapper;
+        this.objectMapper = pObjectMapper;
     }
 
     public AiAnalysisResponse analyzeTender(

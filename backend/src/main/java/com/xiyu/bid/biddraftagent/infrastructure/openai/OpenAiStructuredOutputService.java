@@ -7,8 +7,8 @@ class OpenAiStructuredOutputService {
 
     private final OpenAiStructuredOutputTransport transport;
 
-    OpenAiStructuredOutputService(OpenAiStructuredOutputTransport transport) {
-        this.transport = transport;
+    OpenAiStructuredOutputService(OpenAiStructuredOutputTransport pTransport) {
+        this.transport = pTransport;
     }
 
     <T> T request(

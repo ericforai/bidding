@@ -28,11 +28,11 @@ class OpenAiSdkStructuredOutputTransport implements OpenAiStructuredOutputTransp
     private final OpenAiJsonObjectPayloadReader jsonObjectPayloadReader;
 
     OpenAiSdkStructuredOutputTransport(
-            ObjectMapper objectMapper,
-            OpenAiJsonObjectPayloadReader jsonObjectPayloadReader
+            ObjectMapper pObjectMapper,
+            OpenAiJsonObjectPayloadReader pJsonObjectPayloadReader
     ) {
-        this.objectMapper = objectMapper;
-        this.jsonObjectPayloadReader = jsonObjectPayloadReader;
+        this.objectMapper = pObjectMapper;
+        this.jsonObjectPayloadReader = pJsonObjectPayloadReader;
     }
 
     @Override

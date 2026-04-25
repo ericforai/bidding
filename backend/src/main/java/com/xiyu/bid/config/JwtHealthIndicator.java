@@ -43,8 +43,8 @@ public class JwtHealthIndicator implements HealthIndicator {
      * Constructor with JWT secret injection.
      * Uses a default empty string if no secret is configured.
      */
-    public JwtHealthIndicator(@org.springframework.beans.factory.annotation.Value("${jwt.secret:}") String jwtSecret) {
-        this.jwtSecret = jwtSecret;
+    public JwtHealthIndicator(@org.springframework.beans.factory.annotation.Value("${jwt.secret:}") String pJwtSecret) {
+        this.jwtSecret = pJwtSecret;
     }
 
     /**

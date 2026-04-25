@@ -46,8 +46,8 @@ public class RateLimitConfig {
         private final StringRedisTemplate redisTemplate;
         private final ConcurrentHashMap<String, RateLimitInfo> localCache = new ConcurrentHashMap<>();
 
-        public RateLimiter(StringRedisTemplate redisTemplate) {
-            this.redisTemplate = redisTemplate;
+        public RateLimiter(StringRedisTemplate pRedisTemplate) {
+            this.redisTemplate = pRedisTemplate;
         }
 
         /**
@@ -94,9 +94,9 @@ public class RateLimitConfig {
             final long count;
             final long expiryTime;
 
-            RateLimitInfo(long count, long expiryTime) {
-                this.count = count;
-                this.expiryTime = expiryTime;
+            RateLimitInfo(long pCount, long pExpiryTime) {
+                this.count = pCount;
+                this.expiryTime = pExpiryTime;
             }
         }
     }

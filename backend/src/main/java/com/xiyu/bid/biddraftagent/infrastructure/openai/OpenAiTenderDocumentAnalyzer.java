@@ -30,11 +30,11 @@ public class OpenAiTenderDocumentAnalyzer implements TenderDocumentAnalyzer {
     private final OpenAiStructuredOutputService structuredOutputService;
 
     public OpenAiTenderDocumentAnalyzer(
-            OpenAiBidAgentConfigurationResolver configurationResolver,
-            OpenAiStructuredOutputService structuredOutputService
+            OpenAiBidAgentConfigurationResolver pConfigurationResolver,
+            OpenAiStructuredOutputService pStructuredOutputService
     ) {
-        this.configurationResolver = configurationResolver;
-        this.structuredOutputService = structuredOutputService;
+        this.configurationResolver = pConfigurationResolver;
+        this.structuredOutputService = pStructuredOutputService;
     }
 
     @Override

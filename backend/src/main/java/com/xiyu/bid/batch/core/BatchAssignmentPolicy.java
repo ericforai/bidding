@@ -16,8 +16,8 @@ public class BatchAssignmentPolicy {
 
     private final ProjectAccessScopeService projectAccessScopeService;
 
-    public BatchAssignmentPolicy(ProjectAccessScopeService projectAccessScopeService) {
-        this.projectAccessScopeService = projectAccessScopeService;
+    public BatchAssignmentPolicy(ProjectAccessScopeService pProjectAccessScopeService) {
+        this.projectAccessScopeService = pProjectAccessScopeService;
     }
 
     public BatchAssignmentSnapshot resolveDepartmentAssignment(TaskAssignmentRequest request, User currentUser) {

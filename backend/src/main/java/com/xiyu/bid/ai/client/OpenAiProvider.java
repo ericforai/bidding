@@ -30,7 +30,7 @@ public class OpenAiProvider implements AiProvider {
     public OpenAiProvider(
         @Value("${ai.openai.api-key:}") String apiKey,
         @Value("${ai.openai.base-url:https://api.openai.com/v1}") String baseUrl,
-        @Value("${ai.openai.model:gpt-5.2}") String model,
+        @Value("${ai.openai.model:gpt-5.2}") String pModel,
         @Value("${ai.openai.timeout:PT30S}") Duration timeout
     ) {
         if (apiKey == null || apiKey.isBlank()) {
@@ -41,7 +41,7 @@ public class OpenAiProvider implements AiProvider {
             .baseUrl(baseUrl)
             .timeout(timeout)
             .build();
-        this.model = model;
+        this.model = pModel;
     }
 
     @Override

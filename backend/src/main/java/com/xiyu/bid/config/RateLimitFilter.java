@@ -32,8 +32,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private int loginWindowMinutes;
 
     @Autowired
-    public RateLimitFilter(RateLimitConfig.RateLimiter rateLimiter) {
-        this.rateLimiter = rateLimiter;
+    public RateLimitFilter(RateLimitConfig.RateLimiter pRateLimiter) {
+        this.rateLimiter = pRateLimiter;
     }
 
     @Override

@@ -28,21 +28,21 @@ public class OpenAiBidAgentConfigurationResolver {
     private final Duration timeout;
 
     public OpenAiBidAgentConfigurationResolver(
-            SettingsService settingsService,
-            AiProviderCatalog aiProviderCatalog,
-            Environment environment,
-            @Value("${ai.openai.api-key:}") String configuredApiKey,
-            @Value("${ai.openai.base-url:https://api.openai.com/v1}") String baseUrl,
-            @Value("${ai.openai.model:gpt-5.2}") String model,
-            @Value("${ai.openai.timeout:PT30S}") Duration timeout
+            SettingsService pSettingsService,
+            AiProviderCatalog pAiProviderCatalog,
+            Environment pEnvironment,
+            @Value("${ai.openai.api-key:}") String pConfiguredApiKey,
+            @Value("${ai.openai.base-url:https://api.openai.com/v1}") String pBaseUrl,
+            @Value("${ai.openai.model:gpt-5.2}") String pModel,
+            @Value("${ai.openai.timeout:PT30S}") Duration pTimeout
     ) {
-        this.settingsService = settingsService;
-        this.aiProviderCatalog = aiProviderCatalog;
-        this.environment = environment;
-        this.configuredApiKey = configuredApiKey;
-        this.baseUrl = baseUrl;
-        this.model = model;
-        this.timeout = timeout;
+        this.settingsService = pSettingsService;
+        this.aiProviderCatalog = pAiProviderCatalog;
+        this.environment = pEnvironment;
+        this.configuredApiKey = pConfiguredApiKey;
+        this.baseUrl = pBaseUrl;
+        this.model = pModel;
+        this.timeout = pTimeout;
     }
 
     OpenAiBidAgentRequestConfig resolve(String useCase) {

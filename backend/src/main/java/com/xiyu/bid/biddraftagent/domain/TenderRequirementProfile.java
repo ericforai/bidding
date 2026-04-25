@@ -54,39 +54,39 @@ public record TenderRequirementProfile(
     }
 
     public TenderRequirementProfile(
-            String projectName,
-            String tenderTitle,
-            String tenderScope,
-            String purchaserName,
-            List<String> qualificationRequirements,
-            List<String> technicalRequirements,
-            List<String> commercialRequirements,
-            List<String> scoringCriteria,
-            String deadlineText,
-            List<String> requiredMaterials,
-            List<String> riskPoints,
-            List<String> tags,
-            List<TenderRequirementItemSnapshot> items
+            String pProjectName,
+            String pTenderTitle,
+            String pTenderScope,
+            String pPurchaserName,
+            List<String> pQualificationRequirements,
+            List<String> pTechnicalRequirements,
+            List<String> pCommercialRequirements,
+            List<String> pScoringCriteria,
+            String pDeadlineText,
+            List<String> pRequiredMaterials,
+            List<String> pRiskPoints,
+            List<String> pTags,
+            List<TenderRequirementItemSnapshot> pItems
     ) {
         this(
-                projectName,
-                tenderTitle,
-                tenderScope,
-                purchaserName,
+                pProjectName,
+                pTenderTitle,
+                pTenderScope,
+                pPurchaserName,
                 null,
                 null,
                 null,
                 null,
                 null,
-                qualificationRequirements,
-                technicalRequirements,
-                commercialRequirements,
-                scoringCriteria,
-                deadlineText,
-                requiredMaterials,
-                riskPoints,
-                tags,
-                items
+                pQualificationRequirements,
+                pTechnicalRequirements,
+                pCommercialRequirements,
+                pScoringCriteria,
+                pDeadlineText,
+                pRequiredMaterials,
+                pRiskPoints,
+                pTags,
+                pItems
         );
     }
 

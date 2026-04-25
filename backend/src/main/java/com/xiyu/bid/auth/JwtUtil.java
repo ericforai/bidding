@@ -24,7 +24,7 @@ public class JwtUtil {
     private final SecretKey secretKey;
     private final long expiration;
 
-    public JwtUtil(String secret, long expiration) {
+    public JwtUtil(String secret, long pExpiration) {
         // 验证密钥长度
         if (secret == null || secret.length() < MIN_SECRET_LENGTH) {
             throw new IllegalArgumentException(
@@ -34,10 +34,10 @@ public class JwtUtil {
             );
         }
 
-        this.expiration = expiration;
+        this.expiration = pExpiration;
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
 
-        log.info("JWT initialized with expiration: {} ms", expiration);
+        log.info("JWT initialized with expiration: {} ms", pExpiration);
     }
 
     public String generateAccessToken(String username) {
@@ -102,8 +102,8 @@ public class JwtUtil {
 
     private boolean isTokenExpired(String token) {
         try {
-            Date expiration = extractAllClaims(token).getExpiration();
-            return expiration.before(new Date());
+            Date exp = extractAllClaims(token).getExpiration();
+            return exp.before(new Date());
         } catch (Exception e) {
             return true;
         }

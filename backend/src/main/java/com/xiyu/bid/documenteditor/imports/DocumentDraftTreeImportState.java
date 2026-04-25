@@ -20,19 +20,19 @@ public final class DocumentDraftTreeImportState {
     public final ImportStats stats = new ImportStats();
 
     public DocumentDraftTreeImportState(
-            Long projectId,
-            Long structureId,
-            boolean structureCreated,
-            Map<String, DocumentSection> sectionsByStableKey,
-            Map<String, DocumentSection> sectionsByTitle,
-            Map<Long, DocumentSectionLock> locksBySectionId
+            Long pProjectId,
+            Long pStructureId,
+            boolean pStructureCreated,
+            Map<String, DocumentSection> pSectionsByStableKey,
+            Map<String, DocumentSection> pSectionsByTitle,
+            Map<Long, DocumentSectionLock> pLocksBySectionId
     ) {
-        this.projectId = projectId;
-        this.structureId = structureId;
-        this.structureCreated = structureCreated;
-        this.sectionsByStableKey = sectionsByStableKey;
-        this.sectionsByTitle = sectionsByTitle;
-        this.locksBySectionId = locksBySectionId;
+        this.projectId = pProjectId;
+        this.structureId = pStructureId;
+        this.structureCreated = pStructureCreated;
+        this.sectionsByStableKey = pSectionsByStableKey;
+        this.sectionsByTitle = pSectionsByTitle;
+        this.locksBySectionId = pLocksBySectionId;
     }
 
     public DraftTreeUpsertResultDTO toResult() {
