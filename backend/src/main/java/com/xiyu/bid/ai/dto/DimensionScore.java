@@ -6,8 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Dimension Score DTO
- * Represents a score for a specific dimension (e.g., Technical, Financial, Team)
+ * Dimension Score DTO.
+ * Represents a score for a specific dimension
+ * (e.g., Technical, Financial, Team).
  */
 @Data
 @Builder
@@ -16,17 +17,17 @@ import lombok.NoArgsConstructor;
 public class DimensionScore {
 
     /**
-     * Dimension name (e.g., "Technical", "Financial", "Team")
+     * Dimension name (e.g., "Technical", "Financial", "Team").
      */
     private String dimension;
 
     /**
-     * Score for this dimension (0-100)
+     * Score for this dimension (0-100).
      */
     private Integer score;
 
     /**
-     * Detailed explanation of the score
+     * Detailed explanation of the score.
      */
     private String details;
 }

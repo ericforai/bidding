@@ -1,7 +1,18 @@
 package com.xiyu.bid.approval.entity;
 
 import com.xiyu.bid.approval.enums.ApprovalStatus;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -144,6 +155,7 @@ public class ApprovalRequest {
      * 关联的操作记录 - 通过查询获取，不作为持久化字段
      */
     @Transient
+    @Builder.Default
     private List<ApprovalAction> actions = new ArrayList<>();
 
     /**
@@ -210,7 +222,9 @@ public class ApprovalRequest {
      * 检查是否已超期
      */
     public boolean isOverdue() {
-        return dueDate != null && LocalDateTime.now().isAfter(dueDate) && status == ApprovalStatus.PENDING;
+        return dueDate != null 
+            && LocalDateTime.now().isAfter(dueDate) 
+            && status == ApprovalStatus.PENDING;
     }
 
     /**
