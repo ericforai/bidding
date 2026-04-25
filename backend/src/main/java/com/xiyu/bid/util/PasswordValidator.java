@@ -134,9 +134,9 @@ public class PasswordValidator {
         private final boolean valid;
         private final String message;
 
-        private ValidationResult(boolean valid, String message) {
-            this.valid = valid;
-            this.message = message;
+        private ValidationResult(boolean pValid, String pMessage) {
+            this.valid = pValid;
+            this.message = pMessage;
         }
 
         public static ValidationResult success() {

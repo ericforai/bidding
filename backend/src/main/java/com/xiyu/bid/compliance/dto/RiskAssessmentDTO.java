@@ -58,10 +58,10 @@ public class RiskAssessmentDTO {
         private final int maxScore;
         private final String description;
 
-        RiskLevel(int minScore, int maxScore, String description) {
-            this.minScore = minScore;
-            this.maxScore = maxScore;
-            this.description = description;
+        RiskLevel(int pMinScore, int pMaxScore, String pDescription) {
+            this.minScore = pMinScore;
+            this.maxScore = pMaxScore;
+            this.description = pDescription;
         }
 
         public static RiskLevel fromScore(int score) {

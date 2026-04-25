@@ -33,20 +33,20 @@ public class SettingsService {
     private final AiProviderCatalog aiProviderCatalog;
 
     public SettingsService(
-            SystemSettingRepository systemSettingRepository,
-            UserRepository userRepository,
+            SystemSettingRepository pSystemSettingRepository,
+            UserRepository pUserRepository,
             ObjectMapper objectMapper,
-            SettingsPayloadMapper payloadMapper,
-            PasswordEncryptionUtil passwordEncryptionUtil,
-            AiProviderCatalog aiProviderCatalog
+            SettingsPayloadMapper pPayloadMapper,
+            PasswordEncryptionUtil pPasswordEncryptionUtil,
+            AiProviderCatalog pAiProviderCatalog
     ) {
-        this.systemSettingRepository = systemSettingRepository;
-        this.userRepository = userRepository;
-        this.payloadMapper = payloadMapper;
+        this.systemSettingRepository = pSystemSettingRepository;
+        this.userRepository = pUserRepository;
+        this.payloadMapper = pPayloadMapper;
         this.settingsReader = objectMapper.readerFor(SettingsResponse.class);
         this.settingsWriter = objectMapper.writerFor(SettingsResponse.class);
-        this.passwordEncryptionUtil = passwordEncryptionUtil;
-        this.aiProviderCatalog = aiProviderCatalog;
+        this.passwordEncryptionUtil = pPasswordEncryptionUtil;
+        this.aiProviderCatalog = pAiProviderCatalog;
     }
 
     @Transactional

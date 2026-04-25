@@ -30,8 +30,8 @@ public enum ApprovalStatus {
 
     private final String description;
 
-    ApprovalStatus(String description) {
-        this.description = description;
+    ApprovalStatus(String pDescription) {
+        this.description = pDescription;
     }
 
     /**

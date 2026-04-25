@@ -30,7 +30,7 @@ public enum ApprovalActionType {
 
     private final String description;
 
-    ApprovalActionType(String description) {
-        this.description = description;
+    ApprovalActionType(String pDescription) {
+        this.description = pDescription;
     }
 }
