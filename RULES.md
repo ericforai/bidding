@@ -334,8 +334,30 @@ mvn test
   - 若触及架构边界，运行 `ArchitectureTest`
   - 若新增或修改 `..core..` / `..domain..` 非 Entity 纯核心代码，运行 `FPJavaArchitectureTest`
   - 若新增或扩展受保护模块的 `Service`，运行 `MaintainabilityArchitectureTest`
+  - 若新增或修改带 `projectId` 的 Controller、Service、DTO、命令或实体，运行 `ProjectAccessGuardCoverageTest`
   - 如出现失败，按新引入问题处理
   - 不得再把当前仓库写成“存在已知存量失败”
+
+### 4.3 项目权限覆盖门禁
+
+后端使用 `ProjectAccessGuardCoverageTest` 建立项目关联接口的棘轮式权限门禁。
+
+门禁口径：
+
+- 扫描真实后端 `Controller`、`Service`、`Guard` 源文件。
+- 文件中直接出现 `projectId`，或引用了带 `projectId` 字段的 DTO、命令、实体、模型、视图类型，即视为项目关联入口。
+- 项目关联入口必须出现统一项目权限守卫证据，例如 `ProjectAccessScopeService`、`ProjectLinkedRecordVisibilityPolicy`、`assertCurrentUserCanAccessProject`、`requireProjectAccess`、`ExpenseAccessGuard` 等。
+- 未命中守卫证据的存量文件必须进入 `src/test/resources/project-access-guard-baseline.txt`，并写明“委托到受保护服务”“非用户请求路径”“仍是权限债”等具体理由。
+- 基线条目会做陈旧校验：文件不再是扫描候选时，必须从基线移除。
+
+执行命令：
+
+```bash
+cd backend
+mvn test -Dtest=ProjectAccessGuardCoverageTest
+```
+
+该门禁是棘轮，不声称全仓所有存量项目关联接口都已完成收口；它防止新增或改动的项目关联入口在没有统一守卫或显式豁免说明的情况下进入代码库。
 
 ---
 

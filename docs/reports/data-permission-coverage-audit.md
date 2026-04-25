@@ -151,6 +151,7 @@
 | `mvn test -Dtest=ProjectLinkedRecordVisibilityPolicyTest,CalendarServiceProjectAccessTest,WorkbenchScheduleQueryServiceAccessTest,BarCertificateServiceAccessTest,QualificationServiceAccessTest,TemplateCatalogActivityAppServiceAccessTest,TemplateCatalogQueryAppServiceAccessTest,AlertHistoryControllerSecurityTest` | 通过：28 tests, 0 failures, 0 errors, 0 skipped。 |
 | Review 补强：模板下载响应 useCount 范围、资质按 recordId 归还目标记录 | 已修复：模板下载响应复用项目可见使用次数；资质 recordId 归还直接校验并写入目标记录，已补回归用例。 |
 | `mvn test -Dtest=ProjectLinkedRecordVisibilityPolicyTest,CalendarServiceProjectAccessTest,WorkbenchScheduleQueryServiceAccessTest,BarCertificateServiceAccessTest,QualificationServiceAccessTest,TemplateCatalogActivityAppServiceAccessTest,TemplateCatalogQueryAppServiceAccessTest,AlertHistoryControllerSecurityTest,ReturnQualificationAppServiceTest` | 通过：31 tests, 0 failures, 0 errors, 0 skipped。 |
+| `mvn test -Dtest=ProjectAccessGuardCoverageTest` | 通过：新增项目权限覆盖门禁，扫描带 `projectId` 或引用项目关联 DTO/实体的 Controller/Service；未命中统一守卫的存量入口必须在 `project-access-guard-baseline.txt` 写明原因。 |
 | `mvn test -Dtest=FPJavaArchitectureTest,MaintainabilityArchitectureTest` | 通过：10 tests, 0 failures, 0 errors, 0 skipped。 |
 | Java 质量门禁（本轮变更 Java 文件范围） | 通过：Checkstyle 未发现违规。 |
 | `npm run check:doc-governance` | 通过：Documentation governance check passed for 79 directories。 |
@@ -159,7 +160,7 @@
 ## 本轮未做事项
 
 - P2 本轮未修改 API、DTO、数据库表或权限配置；仅补强已有项目字段链路和告警历史角色限制。
-- 未新增自动化门禁；本报告建议后续新增。
+- 已新增项目权限覆盖自动化门禁；本轮未清空所有存量基线，后续修复模块时应同步移除对应基线条目。
 - 合同借阅当前模型无 `projectId`，本轮按非项目关联处理；如客户要求按项目隔离，需要另做字段、迁移和接口契约设计。
 - 客户商机转项目未并入本轮 P2，按独立任务跟进。
 - 未声称全量满足客户安全条款；当前结论是“项目主链路已有基础，跨模块项目关联数据权限仍需整改”。

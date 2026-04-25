@@ -1,0 +1,88 @@
+# Explicit baseline for ProjectAccessGuardCoverageTest.
+# Format: backend/src/main/java/.../Class.java | reason
+src/main/java/com/xiyu/bid/ai/controller/ProjectAiController.java | Controller delegates to AI services; project access is tracked as P1/P2 analysis guard evidence and must move into ProjectAccessScopeService before removing this baseline.
+src/main/java/com/xiyu/bid/ai/service/AiService.java | Legacy AI service carries projectId but does not yet own a unified project guard; tracked as project analysis permission debt.
+src/main/java/com/xiyu/bid/alerts/service/AlertRuleExecutionService.java | Scheduler-side alert rule evaluation uses related project ids, not user request data; user-facing alert history is role-restricted separately.
+src/main/java/com/xiyu/bid/analytics/controller/CustomerTypeAnalyticsController.java | Controller delegates to analytics query services; scoped project filtering is implemented downstream and this controller-level baseline prevents silent new unguarded endpoints.
+src/main/java/com/xiyu/bid/analytics/service/CustomerTypeAnalyticsAssemblerService.java | Pure assembler for already scoped analytics rows; no repository/user-boundary decision here.
+src/main/java/com/xiyu/bid/analytics/service/CustomerTypeAnalyticsComputationService.java | Computation helper consumes already scoped projects from query service; no independent request entry point.
+src/main/java/com/xiyu/bid/analytics/service/DashboardAnalyticsAssemblerService.java | Assembler for already scoped dashboard data; no direct data access boundary.
+src/main/java/com/xiyu/bid/analytics/service/DashboardAnalyticsComputationService.java | Computation helper consumes scoped project collections; no user request boundary.
+src/main/java/com/xiyu/bid/analytics/service/DashboardAnalyticsDrillDownContentAssemblerService.java | Drill-down content assembler consumes scoped inputs; no independent project lookup.
+src/main/java/com/xiyu/bid/analytics/service/DashboardAnalyticsMetricDrillDownService.java | Drill-down service is part of P1 scoped analytics chain; keep baseline until direct guard token is introduced here.
+src/main/java/com/xiyu/bid/analytics/service/DashboardAnalyticsOutcomeComputationService.java | Computation helper consumes scoped project collections; no user request boundary.
+src/main/java/com/xiyu/bid/analytics/service/DashboardAnalyticsService.java | Legacy dashboard facade remains in baseline while scoped query services carry the data-range filtering.
+src/main/java/com/xiyu/bid/analytics/service/DashboardAnalyticsTeamComputationService.java | Computation helper consumes scoped project collections; no user request boundary.
+src/main/java/com/xiyu/bid/approval/controller/ApprovalController.java | Controller delegates to approval services; project-scoped approval filtering remains tracked as P1/P2 permission debt.
+src/main/java/com/xiyu/bid/approval/service/ApprovalCommandService.java | Approval command path has participant semantics but lacks direct ProjectAccessScopeService evidence; tracked permission debt.
+src/main/java/com/xiyu/bid/approval/service/ApprovalQueryService.java | Approval query path has participant semantics but lacks direct ProjectAccessScopeService evidence; tracked permission debt.
+src/main/java/com/xiyu/bid/approval/service/ApprovalWorkflowService.java | Workflow helper manipulates project-linked approval DTOs but is not yet guarded directly; tracked permission debt.
+src/main/java/com/xiyu/bid/batch/controller/BatchOperationController.java | Controller delegates to batch service; project authorization is handled in service tests and should eventually expose direct guard evidence.
+src/main/java/com/xiyu/bid/batch/service/BatchTaskCommandService.java | Batch task command helper is covered by batch service access tests but lacks direct guard token in this class.
+src/main/java/com/xiyu/bid/biddraftagent/controller/BidDraftAgentController.java | Controller delegates to bid draft agent application service where project access is asserted; baseline documents delegation.
+src/main/java/com/xiyu/bid/bidresult/controller/BidResultCommandController.java | Bid result access scope was fixed with integration tests; controller-level token is absent because service layer owns guard.
+src/main/java/com/xiyu/bid/bidresult/controller/BidResultQueryController.java | Bid result query access scope was fixed with integration tests; controller-level token is absent because service layer owns guard.
+src/main/java/com/xiyu/bid/bidresult/controller/BidResultReminderController.java | Bid result reminder access scope was fixed with integration tests; controller-level token is absent because service layer owns guard.
+src/main/java/com/xiyu/bid/bidresult/controller/CompetitorWinController.java | Competitor win access scope was fixed with integration tests; controller-level token is absent because service layer owns guard.
+src/main/java/com/xiyu/bid/businessqualification/application/service/BorrowQualificationAppService.java | Pure businessqualification app service is shielded by legacy QualificationService, which performs project access checks before delegation.
+src/main/java/com/xiyu/bid/businessqualification/application/service/CreateQualificationAppService.java | Pure businessqualification app service is reached through legacy QualificationService; resource master data is not project-scoped here.
+src/main/java/com/xiyu/bid/businessqualification/application/service/DeleteQualificationAppService.java | Pure businessqualification app service is reached through legacy QualificationService; resource master data is not project-scoped here.
+src/main/java/com/xiyu/bid/businessqualification/application/service/GetQualificationBorrowRecordsAppService.java | Borrow record reads are filtered by QualificationService after this repository-facing app service returns domain records.
+src/main/java/com/xiyu/bid/businessqualification/application/service/ListQualificationsAppService.java | Qualification master-data listing is not project-scoped; borrow-record project filtering happens in QualificationService.
+src/main/java/com/xiyu/bid/businessqualification/application/service/ReturnQualificationAppService.java | Return command is shielded by QualificationService project guard; app service now ensures recordId writes target the guarded record.
+src/main/java/com/xiyu/bid/businessqualification/application/service/ScanExpiringQualificationsAppService.java | Background expiry scanner is system-side, not a user project data read path.
+src/main/java/com/xiyu/bid/businessqualification/application/service/UpdateQualificationAppService.java | Qualification master-data update is resource administration, not project-linked borrowing data.
+src/main/java/com/xiyu/bid/calendar/controller/CalendarController.java | Controller delegates to CalendarService, which asserts and filters project-linked events.
+src/main/java/com/xiyu/bid/casework/application/service/CasePromotionAppService.java | Case promotion from project is intentionally deferred from P2 and must add project guard before removing this baseline.
+src/main/java/com/xiyu/bid/casework/controller/CaseController.java | Case knowledge base contains project snapshots but remains shared knowledge; project promotion path tracked separately.
+src/main/java/com/xiyu/bid/collaboration/controller/CollaborationController.java | Collaboration project semantics remain audit debt; no unified project guard evidence in current controller/service chain.
+src/main/java/com/xiyu/bid/collaboration/service/CollaborationService.java | Collaboration service carries projectId but is not yet integrated with ProjectAccessScopeService; tracked permission debt.
+src/main/java/com/xiyu/bid/competitionintel/controller/CompetitionIntelController.java | Competition intel project analysis remains P1/P2 permission debt until service-level project guard is added.
+src/main/java/com/xiyu/bid/compliance/controller/ComplianceController.java | Compliance project analysis remains P1/P2 permission debt until service-level project guard is added.
+src/main/java/com/xiyu/bid/documenteditor/controller/DocumentEditorController.java | Controller delegates to document editor services/guard; baseline documents controller-level delegation.
+src/main/java/com/xiyu/bid/documenteditor/service/DocumentDraftTreeImportService.java | Import helper is called from guarded document editor flows; no standalone user entry point.
+src/main/java/com/xiyu/bid/documenteditor/service/DocumentDraftTreeNodeUpsertService.java | Tree node upsert helper is called from guarded document editor flows; no standalone user entry point.
+src/main/java/com/xiyu/bid/documenteditor/service/DocumentEditorService.java | Document editor service currently relies on DocumentEditorGuard; keep baseline until direct unified guard token exists.
+src/main/java/com/xiyu/bid/documenteditor/service/DocumentSectionCollaborationService.java | Section collaboration helper is called from document editor flow; project access is owned by surrounding editor guard.
+src/main/java/com/xiyu/bid/documenteditor/service/DocumentSectionCommandService.java | Section command helper is called from document editor flow; project access is owned by surrounding editor guard.
+src/main/java/com/xiyu/bid/documenteditor/service/DocumentSectionTreeService.java | Section tree helper is called from document editor flow; project access is owned by surrounding editor guard.
+src/main/java/com/xiyu/bid/documentexport/controller/DocumentExportController.java | Controller delegates to document export service where project access is expected; baseline tracks controller-level delegation.
+src/main/java/com/xiyu/bid/documentexport/service/DocumentExportService.java | Document export service is P0/P1 tracked debt unless direct ProjectAccessScopeService evidence is added.
+src/main/java/com/xiyu/bid/documents/controller/DocumentAssemblyController.java | Document assembly controller delegates to assembly service; project guard still needs explicit evidence.
+src/main/java/com/xiyu/bid/documents/service/DocumentAssemblyService.java | Document assembly service carries projectId but lacks direct ProjectAccessScopeService evidence; tracked permission debt.
+src/main/java/com/xiyu/bid/fees/controller/FeeController.java | Fee controller delegates to fee/resource services; P0 fee guard coverage is tracked in service-layer access tests.
+src/main/java/com/xiyu/bid/historyproject/application/HistoricalProjectSnapshotAppService.java | Historical snapshot service is consumed by case/reference workflows; project guard evidence is tracked at callers.
+src/main/java/com/xiyu/bid/marketinsight/application/CustomerOpportunityAppService.java | Customer opportunity to project flow is explicitly deferred from P2 and needs separate project guard design.
+src/main/java/com/xiyu/bid/marketinsight/controller/CustomerOpportunityController.java | Customer opportunity to project flow is explicitly deferred from P2 and needs separate project guard design.
+src/main/java/com/xiyu/bid/marketinsight/lifecycle/CustomerOpportunityLifecycleService.java | Customer opportunity lifecycle can create project-linked data but is deferred from P2.
+src/main/java/com/xiyu/bid/marketinsight/service/CustomerOpportunityService.java | Customer opportunity service can surface project-linked data but is deferred from P2.
+src/main/java/com/xiyu/bid/projectquality/controller/ProjectQualityController.java | Project quality endpoints are known P1 project guard debt from the audit report.
+src/main/java/com/xiyu/bid/projectquality/service/ProjectQualityService.java | Project quality service is known P1 project guard debt from the audit report.
+src/main/java/com/xiyu/bid/projectworkflow/controller/ProjectDocumentController.java | Controller delegates to project workflow services; access guard evidence lives in surrounding workflow chain.
+src/main/java/com/xiyu/bid/projectworkflow/controller/ProjectWorkflowController.java | Controller delegates to project workflow services; access guard evidence lives in surrounding workflow chain.
+src/main/java/com/xiyu/bid/projectworkflow/service/ProjectDocumentWorkflowService.java | Project workflow subservice is invoked through project workflow facade; guard evidence is not local to this helper.
+src/main/java/com/xiyu/bid/projectworkflow/service/ProjectReminderWorkflowService.java | Project workflow subservice is invoked through project workflow facade; guard evidence is not local to this helper.
+src/main/java/com/xiyu/bid/projectworkflow/service/ProjectScoreDraftWorkflowService.java | Project workflow subservice is invoked through project workflow facade; guard evidence is not local to this helper.
+src/main/java/com/xiyu/bid/projectworkflow/service/ProjectShareLinkWorkflowService.java | Project workflow subservice is invoked through project workflow facade; guard evidence is not local to this helper.
+src/main/java/com/xiyu/bid/projectworkflow/service/ProjectTaskWorkflowService.java | Project workflow subservice is invoked through project workflow facade; guard evidence is not local to this helper.
+src/main/java/com/xiyu/bid/projectworkflow/service/ProjectWorkflowService.java | Workflow facade remains baseline until direct ProjectAccessScopeService evidence is made visible to the scanner.
+src/main/java/com/xiyu/bid/projectworkflow/service/ScoreDraftParserService.java | Score draft parser handles DTO projectId but has no data access side effect.
+src/main/java/com/xiyu/bid/qualification/controller/QualificationController.java | Controller delegates to QualificationService, which guards project-linked borrow records.
+src/main/java/com/xiyu/bid/resources/application/service/ScanDepositReturnTrackingAppService.java | Deposit tracking scanner is background/system-side and not a user project data read path.
+src/main/java/com/xiyu/bid/resources/controller/BarCertificateController.java | Controller delegates to BarCertificateService, which guards project-linked borrow records.
+src/main/java/com/xiyu/bid/resources/controller/ExpenseController.java | Controller delegates to resource expense services; P0 expense guard coverage is service-layer.
+src/main/java/com/xiyu/bid/resources/service/AccountService.java | Account master data is not project-scoped; scanner matches DTO/entity projectId references through shared resource types.
+src/main/java/com/xiyu/bid/resources/service/BarAssetService.java | BAR asset master data is not project-scoped; project-linked borrow records are guarded in BarCertificateService.
+src/main/java/com/xiyu/bid/resources/service/BarSiteSubresourceService.java | BAR site subresources are asset-scoped master data, not project-linked borrow records.
+src/main/java/com/xiyu/bid/resources/service/ExpenseService.java | Legacy expense facade delegates to guarded expense subservices; baseline documents delegation.
+src/main/java/com/xiyu/bid/resources/service/expense/ExpensePaymentService.java | Expense payment guard coverage exists in focused access tests; keep baseline until scanner sees direct guard token.
+src/main/java/com/xiyu/bid/roi/controller/ROIAnalysisController.java | ROI project analysis remains P1/P2 permission debt until service-level project guard is added.
+src/main/java/com/xiyu/bid/scoreanalysis/controller/ScoreAnalysisController.java | Score analysis project endpoint remains P1/P2 permission debt until service-level project guard is added.
+src/main/java/com/xiyu/bid/task/controller/TaskController.java | Controller delegates to TaskService; project visibility is covered in TaskServiceProjectAccessTest.
+src/main/java/com/xiyu/bid/task/service/BidProcessService.java | Bid process helper carries project task data but is not the project visibility boundary.
+src/main/java/com/xiyu/bid/task/service/TaskDeliverableService.java | Task deliverable helper is reached from task flows; project visibility boundary lives in TaskService.
+src/main/java/com/xiyu/bid/template/controller/TemplateController.java | Controller delegates to TemplateService/templatecatalog services where project-linked use records are guarded.
+src/main/java/com/xiyu/bid/template/service/TemplateService.java | Template facade delegates to templatecatalog services; project-linked use records are guarded there.
+src/main/java/com/xiyu/bid/tenderupload/controller/TenderUploadController.java | Tender upload promotion to project remains project-linked integration debt unless direct guard is added.
+src/main/java/com/xiyu/bid/versionhistory/controller/DocumentVersionController.java | Controller delegates to VersionHistoryService, which uses VersionHistoryAccessGuard for project access.
+src/main/java/com/xiyu/bid/workbench/service/WorkbenchScheduleQueryService.java | Workbench schedule delegates to CalendarService, which applies project-linked event filtering.
