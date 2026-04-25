@@ -6,6 +6,7 @@ import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Qualification;
 import com.xiyu.bid.entity.Template;
 import com.xiyu.bid.entity.Tender;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -51,6 +52,68 @@ class ExcelExportServiceExecutionTest extends AbstractExcelExportServiceTest {
 
         assertThat(fileSize).isGreaterThan(0);
         verify(projectRepository, atLeastOnce()).findAll(any(org.springframework.data.domain.Pageable.class));
+        deleteIfExists(outputPath);
+    }
+
+    @Test
+    void exportToExcel_WithProjectsType_ShouldOnlyExportAccessibleProjects() throws Exception {
+        Project hiddenProject = Project.builder()
+                .id(2L)
+                .name("隐藏项目")
+                .status(Project.Status.PREPARING)
+                .managerId(2L)
+                .build();
+        Page<Project> page = new PageImpl<>(List.of(testProject, hiddenProject), PageRequest.of(0, 1000), 2);
+        when(projectAccessScopeService.currentUserHasAdminAccess()).thenReturn(false);
+        when(projectAccessScopeService.filterAccessibleProjects(List.of(testProject, hiddenProject)))
+                .thenReturn(List.of(testProject));
+        when(projectRepository.findAll()).thenReturn(List.of(testProject, hiddenProject));
+        when(projectRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(page)
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(1, 1000), 2));
+        Path outputPath = Path.of("/tmp/test_visible_projects.xlsx");
+
+        excelExportService.exportToExcel("projects", outputPath, null, 1L);
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(java.nio.file.Files.newInputStream(outputPath))) {
+            assertThat(workbook.getSheetAt(0).getLastRowNum()).isEqualTo(1);
+            assertThat(workbook.getSheetAt(0).getRow(1).getCell(1).getStringCellValue())
+                    .isEqualTo(testProject.getName());
+        }
+        deleteIfExists(outputPath);
+    }
+
+    @Test
+    void exportToExcel_WithTendersType_ShouldOnlyExportAccessibleLinkedTenders() throws Exception {
+        Tender hiddenTender = Tender.builder()
+                .id(2L)
+                .title("隐藏标讯")
+                .status(Tender.Status.TRACKING)
+                .build();
+        Project hiddenProject = Project.builder()
+                .id(2L)
+                .name("隐藏项目")
+                .tenderId(hiddenTender.getId())
+                .status(Project.Status.PREPARING)
+                .managerId(2L)
+                .build();
+        Page<Tender> page = new PageImpl<>(List.of(testTender, hiddenTender), PageRequest.of(0, 1000), 2);
+        when(projectAccessScopeService.currentUserHasAdminAccess()).thenReturn(false);
+        when(projectAccessScopeService.filterAccessibleProjects(List.of(testProject, hiddenProject)))
+                .thenReturn(List.of(testProject));
+        when(projectRepository.findAll()).thenReturn(List.of(testProject, hiddenProject));
+        when(tenderRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(page)
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(1, 1000), 2));
+        Path outputPath = Path.of("/tmp/test_visible_tenders.xlsx");
+
+        excelExportService.exportToExcel("tenders", outputPath, null, 1L);
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(java.nio.file.Files.newInputStream(outputPath))) {
+            assertThat(workbook.getSheetAt(0).getLastRowNum()).isEqualTo(1);
+            assertThat(workbook.getSheetAt(0).getRow(1).getCell(1).getStringCellValue())
+                    .isEqualTo(testTender.getTitle());
+        }
         deleteIfExists(outputPath);
     }
 

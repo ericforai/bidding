@@ -14,6 +14,7 @@ import com.xiyu.bid.scoreanalysis.entity.DimensionScore;
 import com.xiyu.bid.scoreanalysis.entity.ScoreAnalysis;
 import com.xiyu.bid.scoreanalysis.repository.DimensionScoreRepository;
 import com.xiyu.bid.scoreanalysis.repository.ScoreAnalysisRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,7 @@ public class ScoreAnalysisService {
 
     private final ScoreAnalysisRepository scoreAnalysisRepository;
     private final DimensionScoreRepository dimensionScoreRepository;
+    private final ProjectAccessScopeService projectAccessScopeService;
     /**
      * 创建评分分析
      * @param request 创建请求
@@ -50,6 +52,7 @@ public class ScoreAnalysisService {
     @Transactional
     public ApiResponse<ScoreAnalysisDTO> createAnalysis(ScoreAnalysisCreateRequest request) {
         try {
+            projectAccessScopeService.assertCurrentUserCanAccessProject(request.getProjectId());
             // 创建评分分析主记录
             ScoreAnalysis analysis = ScoreAnalysis.builder()
                     .projectId(request.getProjectId())
@@ -86,7 +89,7 @@ public class ScoreAnalysisService {
             ScoreAnalysisDTO responseDTO = convertToDTO(savedAnalysis);
             return ApiResponse.success("评分分析创建成功", responseDTO);
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("创建评分分析失败: {}", e.getMessage(), e);
             return ApiResponse.error("创建评分分析失败: " + e.getMessage());
         }
@@ -99,6 +102,7 @@ public class ScoreAnalysisService {
      */
     public ApiResponse<Integer> calculateOverallScore(Long projectId) {
         try {
+            projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
             Optional<ScoreAnalysis> analysisOpt =
                     scoreAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(projectId);
 
@@ -122,7 +126,7 @@ public class ScoreAnalysisService {
 
             return ApiResponse.success(totalScore.intValue());
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("计算综合评分失败: {}", e.getMessage(), e);
             return ApiResponse.error("计算综合评分失败: " + e.getMessage());
         }
@@ -135,6 +139,7 @@ public class ScoreAnalysisService {
      */
     public ApiResponse<ScoreAnalysisDTO> getAnalysisByProject(Long projectId) {
         try {
+            projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
             Optional<ScoreAnalysis> analysisOpt =
                     scoreAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(projectId);
 
@@ -147,7 +152,7 @@ public class ScoreAnalysisService {
 
             return ApiResponse.success("获取评分分析成功", dto);
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("获取评分分析失败: {}", e.getMessage(), e);
             return ApiResponse.error("获取评分分析失败: " + e.getMessage());
         }
@@ -160,6 +165,7 @@ public class ScoreAnalysisService {
      */
     public ApiResponse<List<ScoreAnalysisDTO>> getAnalysisHistory(Long projectId) {
         try {
+            projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
             List<ScoreAnalysis> analyses =
                     scoreAnalysisRepository.findByProjectIdOrderByAnalysisDateDesc(projectId);
 
@@ -169,7 +175,7 @@ public class ScoreAnalysisService {
 
             return ApiResponse.success("历史分析记录", dtos);
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("获取历史分析失败: {}", e.getMessage(), e);
             return ApiResponse.error("获取历史分析失败: " + e.getMessage());
         }
@@ -182,6 +188,7 @@ public class ScoreAnalysisService {
      */
     public ApiResponse<ScoreAnalysisDTO> getLatestAnalysis(Long projectId) {
         try {
+            projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
             Optional<ScoreAnalysis> analysisOpt =
                     scoreAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(projectId);
 
@@ -194,7 +201,7 @@ public class ScoreAnalysisService {
 
             return ApiResponse.success("获取最新分析成功", dto);
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("获取最新分析失败: {}", e.getMessage(), e);
             return ApiResponse.error("获取最新分析失败: " + e.getMessage());
         }
@@ -208,6 +215,8 @@ public class ScoreAnalysisService {
      */
     public ApiResponse<List<ScoreAnalysisDTO>> compareProjects(Long projectId1, Long projectId2) {
         try {
+            projectAccessScopeService.assertCurrentUserCanAccessProject(projectId1);
+            projectAccessScopeService.assertCurrentUserCanAccessProject(projectId2);
             Optional<ScoreAnalysis> analysis1Opt =
                     scoreAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(projectId1);
             Optional<ScoreAnalysis> analysis2Opt =
@@ -225,7 +234,7 @@ public class ScoreAnalysisService {
 
             return ApiResponse.success("项目比较结果", List.of(dto1, dto2));
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("比较项目失败: {}", e.getMessage(), e);
             return ApiResponse.error("比较项目失败: " + e.getMessage());
         }

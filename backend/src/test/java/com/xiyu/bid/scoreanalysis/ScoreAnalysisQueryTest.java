@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 @DisplayName("ScoreAnalysis query tests")
 class ScoreAnalysisQueryTest extends AbstractScoreAnalysisServiceTest {
@@ -34,6 +35,7 @@ class ScoreAnalysisQueryTest extends AbstractScoreAnalysisServiceTest {
         assertEquals(100L, response.getData().getProjectId());
         assertEquals(85, response.getData().getOverallScore());
         assertFalse(response.getData().getDimensions().isEmpty());
+        verify(projectAccessScopeService).assertCurrentUserCanAccessProject(100L);
     }
 
     @Test
@@ -69,6 +71,7 @@ class ScoreAnalysisQueryTest extends AbstractScoreAnalysisServiceTest {
         assertEquals(2, response.getData().size());
         assertEquals(85, response.getData().get(0).getOverallScore());
         assertEquals(75, response.getData().get(1).getOverallScore());
+        verify(projectAccessScopeService).assertCurrentUserCanAccessProject(100L);
     }
 
     @Test
@@ -95,5 +98,7 @@ class ScoreAnalysisQueryTest extends AbstractScoreAnalysisServiceTest {
         assertEquals(2, response.getData().size());
         assertEquals(85, response.getData().get(0).getOverallScore());
         assertEquals(72, response.getData().get(1).getOverallScore());
+        verify(projectAccessScopeService).assertCurrentUserCanAccessProject(100L);
+        verify(projectAccessScopeService).assertCurrentUserCanAccessProject(200L);
     }
 }

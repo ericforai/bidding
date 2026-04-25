@@ -3,6 +3,7 @@ package com.xiyu.bid.analytics.integration;
 import com.xiyu.bid.support.NoOpPasswordEncryptionTestConfig;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
+import com.xiyu.bid.entity.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -118,6 +119,58 @@ class AuditOperationalAnalyticsIntegrationTest extends AbstractAuditOperationalA
                 .andExpect(jsonPath("$.data.items[0].managedProjectCount").value(1))
                 .andExpect(jsonPath("$.data.summary.totalCompletedTasks").value(0));
         assertQueryCountAtMost(5);
+    }
+
+    @Test
+    @WithMockUser(username = "analytics-staff", roles = {"STAFF"})
+    void analyticsEndpoints_ForStaff_ShouldOnlyReturnAccessibleProjectData() throws Exception {
+        User staffUser = userRepository.save(User.builder()
+                .username("analytics-staff")
+                .password("XiyuDemo!2026")
+                .email("analytics-staff@example.com")
+                .fullName("统计普通用户")
+                .role(User.Role.STAFF)
+                .roleProfile(roleProfileRepository.save(com.xiyu.bid.entity.RoleProfile.builder()
+                        .code("staff")
+                        .name("普通员工")
+                        .dataScope("self")
+                        .build()))
+                .enabled(true)
+                .build());
+        Tender visibleTender = tenderRepository.save(Tender.builder()
+                .title("普通用户可见标讯")
+                .source("员工平台")
+                .budget(new java.math.BigDecimal("200000"))
+                .status(Tender.Status.TRACKING)
+                .aiScore(70)
+                .riskLevel(Tender.RiskLevel.MEDIUM)
+                .build());
+        projectRepository.save(Project.builder()
+                .name("普通用户可见项目")
+                .tenderId(visibleTender.getId())
+                .status(Project.Status.PREPARING)
+                .managerId(staffUser.getId())
+                .teamMembers(List.of(staffUser.getId()))
+                .startDate(java.time.LocalDateTime.now().minusDays(1))
+                .endDate(java.time.LocalDateTime.now().plusDays(8))
+                .build());
+
+        mockMvc.perform(get("/api/analytics/overview"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.summaryStats.totalTenders").value(1))
+                .andExpect(jsonPath("$.data.summaryStats.activeProjects").value(1));
+
+        mockMvc.perform(get("/api/analytics/product-lines"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[*].name", hasItem("综合解决方案")))
+                .andExpect(jsonPath("$.data[*].name", not(hasItem("智慧办公平台采购"))));
+
+        mockMvc.perform(get("/api/analytics/drilldown/projects"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[*].title", hasItem("普通用户可见项目")))
+                .andExpect(jsonPath("$.data.items[*].title", not(hasItem("智慧办公实施项目"))));
     }
 
     @Test

@@ -2,8 +2,12 @@ package com.xiyu.bid.analytics.service;
 
 import com.xiyu.bid.analytics.model.ProjectSnapshotAggregate;
 import com.xiyu.bid.analytics.repository.DashboardAnalyticsRepository;
+import com.xiyu.bid.analytics.repository.DashboardAnalyticsReadRepository;
+import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.User;
+import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,72 +24,82 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 class DashboardAnalyticsQueryService {
 
-    private final DashboardAnalyticsRepository repository;
+    private final DashboardAnalyticsReadRepository readRepository;
     private final UserRepository userRepository;
+    private final ProjectRepository projectRepository;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     DashboardAnalyticsRepository.OverviewSnapshot fetchOverviewSnapshot() {
-        return repository.fetchOverviewSnapshot();
+        Set<Long> projectIds = scopedProjectIds();
+        return readRepository.fetchOverviewSnapshot(projectIds);
     }
 
     List<DashboardAnalyticsRepository.MonthlyTrendRow> fetchTenderTrendRows() {
-        return repository.fetchTenderTrends();
+        return readRepository.fetchTenderTrendRows(scopedProjectIds());
     }
 
     List<DashboardAnalyticsRepository.MonthlyTrendRow> fetchProjectTrendRows() {
-        return repository.fetchProjectTrends();
+        return readRepository.fetchProjectTrendRows(scopedProjectIds());
     }
 
     List<DashboardAnalyticsRepository.StatusCountRow> fetchStatusCounts() {
-        return repository.fetchStatusDistribution();
+        return readRepository.fetchStatusCounts(scopedProjectIds());
     }
 
     List<DashboardAnalyticsRepository.SourceAggregateRow> fetchSourceAggregateRows(int limit) {
-        return repository.fetchSourceAggregates(limit);
+        return readRepository.fetchSourceAggregateRows(scopedProjectIds(), limit);
     }
 
     List<DashboardAnalyticsRepository.ProductLineCandidateRow> fetchProductLineCandidateRows() {
-        return repository.fetchProductLineCandidateRows();
+        return readRepository.fetchProductLineCandidateRows(scopedProjectIds());
     }
 
     List<DashboardAnalyticsRepository.TenderSummaryRow> fetchTenderSummaryRows() {
-        return repository.fetchTenderSummaryRows();
+        return readRepository.fetchTenderSummaryRows(scopedProjectIds());
     }
 
     List<ProjectSnapshotAggregate> fetchProjectSnapshotsByTenderIds(Collection<Long> tenderIds) {
-        return aggregateProjectSnapshots(repository.fetchProjectSnapshotRowsByTenderIds(tenderIds));
+        return aggregateProjectSnapshots(readRepository.fetchProjectSnapshotRowsByTenderIds(
+                scopedProjectIds(),
+                tenderIds
+        ));
     }
 
     List<ProjectSnapshotAggregate> fetchProjectSnapshotsByDateRange(
             java.time.LocalDate startDate,
             java.time.LocalDate endDate
     ) {
-        return aggregateProjectSnapshots(repository.fetchProjectSnapshotRowsByDateRange(startDate, endDate));
+        return aggregateProjectSnapshots(readRepository.fetchProjectSnapshotRowsByDateRange(
+                scopedProjectIds(),
+                startDate,
+                endDate
+        ));
     }
 
     List<DashboardAnalyticsRepository.TaskSnapshotRow> fetchTaskSnapshots(Set<Long> projectIds) {
-        return repository.fetchTaskSnapshotRows(projectIds);
+        return readRepository.fetchTaskSnapshotRows(projectIds);
     }
 
     List<DashboardAnalyticsRepository.ProjectDocumentRow> fetchProjectDocuments(Set<Long> projectIds) {
-        return repository.fetchProjectDocumentRows(projectIds);
+        return readRepository.fetchProjectDocumentRows(projectIds);
     }
 
     List<DashboardAnalyticsRepository.DocumentExportRow> fetchDocumentExports(Set<Long> projectIds) {
-        return repository.fetchDocumentExportRows(projectIds);
+        return readRepository.fetchDocumentExportRows(projectIds);
     }
 
     List<DashboardAnalyticsRepository.RevenueDrillDownRow> fetchRevenueDrillDownRows(
             java.time.LocalDate startDate,
             java.time.LocalDate endDate
     ) {
-        return repository.fetchRevenueDrillDownRows(startDate, endDate);
+        return readRepository.fetchRevenueDrillDownRows(scopedProjectIds(), startDate, endDate);
     }
 
     List<DashboardAnalyticsRepository.ProjectDrillDownRow> fetchProjectDrillDownRows(
             java.time.LocalDate startDate,
             java.time.LocalDate endDate
     ) {
-        return repository.fetchProjectDrillDownRows(startDate, endDate);
+        return readRepository.fetchProjectDrillDownRows(scopedProjectIds(), startDate, endDate);
     }
 
     Map<Long, User> fetchUsersByIds(Collection<Long> userIds) {
@@ -137,5 +151,15 @@ class DashboardAnalyticsQueryService {
             }
         }
         return aggregates.values().stream().toList();
+    }
+
+    private Set<Long> scopedProjectIds() {
+        if (projectAccessScopeService.currentUserHasAdminAccess()) {
+            return null;
+        }
+        return projectAccessScopeService.filterAccessibleProjects(projectRepository.findAll()).stream()
+                .map(Project::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 }

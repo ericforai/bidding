@@ -9,6 +9,7 @@ import com.xiyu.bid.scoreanalysis.entity.DimensionScore;
 import com.xiyu.bid.scoreanalysis.repository.ScoreAnalysisRepository;
 import com.xiyu.bid.scoreanalysis.repository.DimensionScoreRepository;
 import com.xiyu.bid.scoreanalysis.service.ScoreAnalysisService;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -41,6 +42,9 @@ class ScoreAnalysisServiceTest {
 
     @Mock
     private DimensionScoreRepository dimensionScoreRepository;
+
+    @Mock
+    private ProjectAccessScopeService projectAccessScopeService;
 
     @InjectMocks
     private ScoreAnalysisService scoreAnalysisService;
