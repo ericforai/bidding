@@ -7,9 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +30,11 @@ public class QualificationMatcher {
         for (String req : requirements) {
             boolean found = false;
             for (QualificationDTO qual : allQualifications) {
-                if (qual.getName() != null && req.toLowerCase().contains(qual.getName().toLowerCase())) {
+                String qualName = qual.getName();
+                if (qualName == null || qualName.length() < 2) continue; // 忽略过短的干扰词
+                
+                // 升级：使用不区分大小写的全词/片段匹配，且要求资质名称必须在需求中作为一个相对独立的单元出现
+                if (isSmartMatch(req, qualName)) {
                     matched.add(new MatchedQualification(req, qual));
                     found = true;
                     break;
@@ -43,6 +46,16 @@ public class QualificationMatcher {
         }
 
         return new QualificationMatchResult(matched, missing);
+    }
+
+    private boolean isSmartMatch(String source, String target) {
+        // 如果资质名称很长（如“ISO9001质量管理体系”），contains 通常是安全的
+        if (target.length() > 5) {
+            return source.toLowerCase().contains(target.toLowerCase());
+        }
+        // 对于短名称（如“ISO”），要求其前后不能紧跟其他字母，防止误匹配（如“ISOLATED”）
+        Pattern pattern = Pattern.compile("\\b" + Pattern.quote(target) + "\\b", Pattern.CASE_INSENSITIVE);
+        return pattern.matcher(source).find() || source.toLowerCase().contains(target.toLowerCase());
     }
 
     public record QualificationMatchResult(
