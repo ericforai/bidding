@@ -128,6 +128,7 @@ function buildBorrowPayload(data = {}) {
   return {
     borrower: data.borrower || '',
     department: data.department || '',
+    projectId: data.projectId || '',
     purpose: data.purpose || '',
     expectedReturnDate: data.returnDate || '',
     remark: data.remark || ''

@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   approvalStatusToProcessStatus,
+  buildContractBorrowPayload,
+  buildQualificationBorrowPayload,
+  buildQuickExpensePayload,
   buildSupportRequestPayload,
   createDefaultSupportRequestForm,
+  createDefaultQuickExpenseForm,
   filterProjectsByRole,
   formatCount,
   formatCurrency,
@@ -17,11 +21,14 @@ import {
   getProgressColor,
   getProjectStatusType,
   getRoleMetrics,
+  hasQuickStartPermission,
   mergePriorityTodos,
   normalizeApiTodo,
   normalizePendingApproval,
   normalizeProcess,
   normalizeSupportProjects,
+  validateBorrowRequest,
+  validateQuickExpense,
   validateSupportRequest,
 } from '@/views/Dashboard/workbench-core.js'
 
@@ -173,6 +180,65 @@ describe('workbench approval and support core', () => {
       description: '需要技术方案支持',
       dueDate: '2026-04-24T18:00:00',
       priority: 1,
+    })
+  })
+
+  it('checks quick-start permission from configured role menu permissions', () => {
+    expect(hasQuickStartPermission({ menuPermissions: ['dashboard.quickStart'] })).toBe(true)
+    expect(hasQuickStartPermission({ menuPermissions: ['all'] })).toBe(true)
+    expect(hasQuickStartPermission({ menuPermissions: ['dashboard'] })).toBe(false)
+  })
+
+  it('builds borrow and quick expense payloads for real API submission', () => {
+    const qualificationForm = {
+      mode: 'qualification',
+      projectId: 9,
+      qualificationId: 12,
+      borrowerName: '小王',
+      borrowerDept: '销售部',
+      purpose: '投标使用',
+      expectedReturnDate: '2026-05-01',
+      remark: '原件',
+    }
+    expect(validateBorrowRequest(qualificationForm)).toEqual({ valid: true, message: '' })
+    expect(buildQualificationBorrowPayload(qualificationForm)).toEqual({
+      borrower: '小王',
+      department: '销售部',
+      projectId: '9',
+      purpose: '投标使用',
+      returnDate: '2026-05-01',
+      remark: '原件',
+    })
+
+    const contractForm = {
+      mode: 'contract',
+      contractNo: 'HT-01',
+      contractName: '框架合同',
+      sourceName: '合同库',
+      borrowerName: '小王',
+      borrowerDept: '销售部',
+      customerName: '客户A',
+      purpose: '投标证明',
+      borrowType: '复印件',
+      expectedReturnDate: '2026-05-02',
+    }
+    expect(buildContractBorrowPayload(contractForm)).toMatchObject({
+      contractNo: 'HT-01',
+      contractName: '框架合同',
+      expectedReturnDate: '2026-05-02',
+    })
+
+    const expenseForm = { ...createDefaultQuickExpenseForm([{ id: 9 }]), amount: 1000, type: '标书购买费' }
+    expect(validateQuickExpense(expenseForm)).toEqual({ valid: true, message: '' })
+    expect(buildQuickExpensePayload(expenseForm, { today: '2026-04-25', createdBy: '小王' })).toEqual({
+      projectId: 9,
+      category: 'OTHER',
+      amount: 1000,
+      date: '2026-04-25',
+      expenseType: '标书购买费',
+      expectedReturnDate: null,
+      description: '',
+      createdBy: '小王',
     })
   })
 })

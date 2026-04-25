@@ -6,3 +6,4 @@
 export * from '@/views/Dashboard/workbench-formatters.js'
 export * from '@/views/Dashboard/workbench-role-core.js'
 export * from '@/views/Dashboard/workbench-data-core.js'
+export * from '@/views/Dashboard/workbench-quick-start-core.js'

@@ -4,7 +4,7 @@
       <el-form-item label="费用类型">
         <el-select v-model="form.type">
           <el-option label="保证金" value="保证金" />
-          <el-option label="标书费" value="标书费" />
+          <el-option label="标书购买费" value="标书购买费" />
           <el-option label="差旅费" value="差旅费" />
           <el-option label="其他" value="其他" />
         </el-select>

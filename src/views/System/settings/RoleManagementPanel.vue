@@ -93,6 +93,7 @@ const form = ref(emptyForm())
 
 const menuOptions = [
   { value: 'dashboard', label: '工作台' },
+  { value: 'dashboard.quickStart', label: '工作台快速发起' },
   { value: 'bidding', label: '标讯中心' },
   { value: 'project', label: '投标项目' },
   { value: 'knowledge', label: '知识库' },

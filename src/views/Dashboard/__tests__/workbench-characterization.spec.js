@@ -47,6 +47,20 @@ describe('Dashboard Workbench characterization', () => {
     admin.unmount()
   })
 
+  it('shows quick start only when the role permission snapshot grants it', async () => {
+    const allowed = await mountWorkbench({ ...users.sales, menuPermissions: ['dashboard.quickStart'] })
+    expect(allowed.text()).toContain('快速发起')
+    allowed.unmount()
+
+    const all = await mountWorkbench({ ...users.manager, menuPermissions: ['all'] })
+    expect(all.text()).toContain('快速发起')
+    all.unmount()
+
+    const denied = await mountWorkbench({ ...users.staff, menuPermissions: ['dashboard'] })
+    expect(denied.text()).not.toContain('快速发起')
+    denied.unmount()
+  })
+
   it('renders API-loaded summary, todos, approvals, process and calendar data on the page', async () => {
     const wrapper = await mountWorkbench(users.admin)
 
@@ -78,44 +92,44 @@ describe('Dashboard Workbench characterization', () => {
     })
   })
 
-  it('keeps quick actions wired to support dialog and resource routes', async () => {
+  it('keeps quick actions wired to in-page real API request dialogs', async () => {
     const wrapper = await mountWorkbench(users.sales)
+    const quickStart = wrapper.findComponent({ name: 'WorkbenchQuickStart' }).vm.quickStart
 
     await findByText(wrapper, '.quick-action-item', '标书支持申请').trigger('click')
     await refreshWorkbench(wrapper)
-    expect(wrapper.vm.supportRequestDialogVisible).toBe(true)
-    expect(wrapper.vm.supportRequestProjects).toContainEqual(expect.objectContaining({ name: '数字政府项目' }))
+    expect(quickStart.supportRequestDialogVisible.value).toBe(true)
+    expect(mocks.projectsGetList).toHaveBeenCalled()
 
-    await findByText(wrapper, '.quick-action-item', '资质/合同借阅').trigger('click')
-    expect(mocks.routerPush).toHaveBeenCalledWith('/resource/contract-borrow')
+    await quickStart.openBorrowDialog()
+    expect(quickStart.borrowDialogVisible.value).toBe(true)
+    expect(mocks.qualificationsGetList).toHaveBeenCalled()
 
-    await findByText(wrapper, '.quick-action-item', '投标费用申请').trigger('click')
-    expect(mocks.routerPush).toHaveBeenCalledWith('/resource/expense')
+    await quickStart.openExpenseDialog()
+    expect(quickStart.expenseDialogVisible.value).toBe(true)
   })
 
   it('validates support requests and submits the current payload shape', async () => {
     const wrapper = await mountWorkbench(users.sales)
+    const quickStart = wrapper.findComponent({ name: 'WorkbenchQuickStart' }).vm.quickStart
 
-    await findByText(wrapper, '.quick-action-item', '标书支持申请').trigger('click')
-    await refreshWorkbench(wrapper)
-    await wrapper.vm.submitSupportRequest()
+    await quickStart.openSupportDialog()
+    await quickStart.submitSupportRequest()
 
     expect(mocks.messageWarning).toHaveBeenCalledWith('请填写需求说明')
     expect(mocks.approvalSubmitApproval).not.toHaveBeenCalled()
 
-    wrapper.vm.supportRequestForm.description = '  需要技术标评审和商务响应支持  '
-    wrapper.vm.supportRequestForm.dueDate = '2026-04-25T18:00:00'
-    await wrapper.vm.submitSupportRequest()
+    quickStart.supportRequestForm.value.description = '  需要技术标评审和商务响应支持  '
+    await quickStart.submitSupportRequest()
 
-    expect(mocks.approvalSubmitApproval).toHaveBeenCalledWith({
+    expect(mocks.approvalSubmitApproval).toHaveBeenCalledWith(expect.objectContaining({
       projectId: 101,
       projectName: '数字政府项目',
       approvalType: 'bid_support',
       title: '数字政府项目 - 标书支持申请',
       description: '需要技术标评审和商务响应支持',
-      dueDate: '2026-04-25T18:00:00',
       priority: 1,
-    })
+    }))
     expect(mocks.messageSuccess).toHaveBeenCalledWith('标书支持申请已提交')
   })
 

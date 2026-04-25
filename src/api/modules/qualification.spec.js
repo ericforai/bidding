@@ -62,12 +62,14 @@ describe('qualificationsApi', () => {
 
     const result = await qualificationsApi.createBorrow(12, {
       borrower: '小王',
+      projectId: '9',
       purpose: 'bidding'
     })
 
     expect(httpClient.post).toHaveBeenCalledWith('/api/knowledge/qualifications/12/borrow', {
       borrower: '小王',
       department: '',
+      projectId: '9',
       purpose: 'bidding',
       expectedReturnDate: '',
       remark: ''
@@ -76,6 +78,25 @@ describe('qualificationsApi', () => {
       success: false,
       code: 'FEATURE_UNAVAILABLE',
       feature: 'qualificationBorrow'
+    })
+  })
+
+  it('createBorrow(): includes projectId so backend project access guard can validate scope', async () => {
+    httpClient.post.mockResolvedValue({ success: true, data: { id: 88 } })
+
+    await qualificationsApi.createBorrow(12, {
+      borrower: '小王',
+      projectId: 9,
+      purpose: 'bidding'
+    })
+
+    expect(httpClient.post).toHaveBeenCalledWith('/api/knowledge/qualifications/12/borrow', {
+      borrower: '小王',
+      department: '',
+      projectId: 9,
+      purpose: 'bidding',
+      expectedReturnDate: '',
+      remark: ''
     })
   })
 })

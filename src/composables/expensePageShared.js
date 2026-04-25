@@ -1,6 +1,7 @@
 const EXPENSE_CATEGORY_MAP = {
   保证金: 'OTHER',
   标书费: 'OTHER',
+  标书购买费: 'OTHER',
   差旅费: 'TRANSPORTATION',
   其他: 'OTHER'
 }

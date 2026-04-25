@@ -31,6 +31,16 @@ const elementComponentStubs = vi.hoisted(() => {
       emits: ['update:modelValue', 'change'],
       template: '<input type="checkbox" class="el-checkbox-stub" :checked="modelValue" @change="$emit(\'update:modelValue\', $event.target.checked); $emit(\'change\', $event.target.checked)" />',
     },
+    'el-segmented': {
+      props: ['modelValue', 'options'],
+      emits: ['update:modelValue'],
+      template: '<select class="el-segmented-stub" :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="item in options" :key="item.value" :value="item.value">{{ item.label }}</option></select>',
+    },
+    'el-input-number': {
+      props: ['modelValue', 'min', 'precision'],
+      emits: ['update:modelValue'],
+      template: '<input class="el-input-number-stub" type="number" :value="modelValue" @input="$emit(\'update:modelValue\', Number($event.target.value))" />',
+    },
     'el-dialog': {
       props: ['modelValue', 'title', 'width', 'destroyOnClose'],
       emits: ['update:modelValue'],
@@ -69,6 +79,10 @@ const mockState = vi.hoisted(() => ({
   approvalGetMyApprovals: vi.fn(),
   approvalSubmitApproval: vi.fn(),
   projectsGetList: vi.fn(),
+  qualificationsGetList: vi.fn(),
+  qualificationsCreateBorrow: vi.fn(),
+  contractBorrowCreate: vi.fn(),
+  expenseCreate: vi.fn(),
   scheduleGetOverview: vi.fn(),
   messageSuccess: vi.fn(),
   messageWarning: vi.fn(),
@@ -88,10 +102,18 @@ vi.mock('@/api', () => ({
     submitApproval: mockState.approvalSubmitApproval,
   },
   projectsApi: { getList: mockState.projectsGetList },
+  qualificationsApi: {
+    getList: mockState.qualificationsGetList,
+    createBorrow: mockState.qualificationsCreateBorrow,
+  },
+  resourcesApi: {
+    expenses: { create: mockState.expenseCreate },
+  },
 }))
 vi.mock('@/api/modules/dashboard.js', () => ({ tasksApi: { getMine: mockState.tasksGetMine, complete: mockState.tasksComplete } }))
 vi.mock('@/api/modules/alerts.js', () => ({ alertHistoryApi: { getUnresolved: mockState.alertGetUnresolved, acknowledge: mockState.alertAcknowledge } }))
 vi.mock('@/api/modules/workbench.js', () => ({ workbenchApi: { getScheduleOverview: mockState.scheduleGetOverview } }))
+vi.mock('@/api/modules/contractBorrow.js', () => ({ contractBorrowApi: { create: mockState.contractBorrowCreate } }))
 vi.mock('element-plus', () => ({
   ElMessage: {
     success: mockState.messageSuccess,
@@ -110,10 +132,10 @@ const globalMountOptions = {
 }
 
 export const users = {
-  sales: { id: 7, name: '小王', role: 'staff' },
+  sales: { id: 7, name: '小王', role: 'staff', dept: '销售一部', menuPermissions: ['dashboard', 'dashboard.quickStart'] },
   manager: { id: 8, name: '张经理', role: 'manager' },
   staff: { id: 9, name: '李工', role: 'staff' },
-  admin: { id: 1, name: '管理员', role: 'admin' },
+  admin: { id: 1, name: '管理员', role: 'admin', menuPermissions: ['all'] },
 }
 
 export function resetApiMocks() {
@@ -137,12 +159,22 @@ export function resetApiMocks() {
     success: true,
     data: [{ id: '101', name: '数字政府项目' }, { id: '102', projectName: '智慧园区项目' }],
   })
+  mockState.qualificationsGetList.mockResolvedValue({
+    success: true,
+    data: [{ id: 201, name: '高新技术企业证书' }],
+  })
+  mockState.qualificationsCreateBorrow.mockResolvedValue({ success: true, data: { id: 301 } })
+  mockState.contractBorrowCreate.mockResolvedValue({ success: true, data: { id: 401 } })
+  mockState.expenseCreate.mockResolvedValue({ success: true, data: { id: 501 } })
   mockState.scheduleGetOverview.mockResolvedValue({
     data: { events: [{ id: 301, eventDate: '2026-04-23', eventType: 'DEADLINE', title: '数字政府项目截标', projectId: 101, isUrgent: true }] },
   })
 }
 
 export async function mountWorkbench(user = users.sales) {
+  Object.keys(mockState.currentUser).forEach((key) => {
+    delete mockState.currentUser[key]
+  })
   Object.assign(mockState.currentUser, user)
   const wrapper = mount(Workbench, { global: globalMountOptions })
   await flushPromises()

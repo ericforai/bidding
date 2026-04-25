@@ -45,8 +45,8 @@
           @event-action="handleCalendarAction"
           @retry="reloadSchedule"
         />
+        <WorkbenchQuickStart v-if="canUseQuickStart" @submitted="handleApprovalSuccess" />
         <template v-if="currentUserName === '小王'">
-          <QuickActions :actions="mappedQuickActions" @action-click="handleQuickAction" />
           <TenderList :tenders="hotTenders" @view-all="router.push('/bidding')" @tender-click="handleTenderClick" />
           <CustomerFollowUpList :customers="followUpCustomers" />
         </template>
@@ -121,15 +121,6 @@
       :approval-info="currentApprovalItem"
       @success="handleApprovalSuccess"
     />
-    <SupportRequestDialog
-      v-model="supportRequestDialogVisible"
-      v-model:form="supportRequestForm"
-      :projects="supportRequestProjects"
-      :projects-error="supportProjectsError"
-      :submitting="supportRequestSubmitting"
-      @submit="submitSupportRequest"
-      @retry-projects="reloadSupportProjects"
-    />
   </div>
 </template>
 
@@ -144,11 +135,10 @@ import { useWorkbenchSchedule } from '@/views/Dashboard/useWorkbenchSchedule.js'
 import { useWorkbenchMetrics } from '@/views/Dashboard/useWorkbenchMetrics.js'
 import { useWorkbenchTodos } from '@/views/Dashboard/useWorkbenchTodos.js'
 import { useWorkbenchApprovals } from '@/views/Dashboard/useWorkbenchApprovals.js'
-import { useSupportRequest } from '@/views/Dashboard/useSupportRequest.js'
 import {
   filterProjectsByRole, formatCurrentDate, formatRelativeTime, getBannerActionConfig,
   getBannerSubtitle, getBannerTitle, getPriorityLabel, getPriorityType, getProgressColor,
-  getProjectStatusType,
+  getProjectStatusType, hasQuickStartPermission,
 } from '@/views/Dashboard/workbench-core.js'
 import { extractCustomersFromProjects, normalizeProjectForWorkbench } from '@/views/Dashboard/workbench-utils.js'
 import ApprovalDialog from '@/components/common/ApprovalDialog.vue'
@@ -159,21 +149,20 @@ import MetricCards from '@/views/Dashboard/components/MetricCards.vue'
 import PriorityTodos from '@/views/Dashboard/components/PriorityTodos.vue'
 import ProcessTimeline from '@/views/Dashboard/components/ProcessTimeline.vue'
 import ProjectList from '@/views/Dashboard/components/ProjectList.vue'
-import QuickActions from '@/views/Dashboard/components/QuickActions.vue'
 import ReviewList from '@/views/Dashboard/components/ReviewList.vue'
-import SupportRequestDialog from '@/views/Dashboard/components/SupportRequestDialog.vue'
 import TeamPerformance from '@/views/Dashboard/components/TeamPerformance.vue'
 import TeamTaskList from '@/views/Dashboard/components/TeamTaskList.vue'
 import TechnicalTaskList from '@/views/Dashboard/components/TechnicalTaskList.vue'
 import TenderList from '@/views/Dashboard/components/TenderList.vue'
 import WelcomeBanner from '@/views/Dashboard/components/WelcomeBanner.vue'
+import WorkbenchQuickStart from '@/views/Dashboard/components/WorkbenchQuickStart.vue'
 import WorkCalendar from '@/views/Dashboard/components/WorkCalendar.vue'
 import {
-  Briefcase, Calendar, Check, DataAnalysis, Document, Flag, FolderOpened, TrendCharts, User, Wallet,
+  Briefcase, Calendar, Check, DataAnalysis, Document, Flag, TrendCharts, User,
 } from '@element-plus/icons-vue'
 import '@/views/Dashboard/styles/workbench-styles.js'
 
-const Icons = markRaw({ Briefcase, Calendar, Check, DataAnalysis, Document, Flag, FolderOpened, TrendCharts, User, Wallet })
+const Icons = markRaw({ Briefcase, Calendar, Check, DataAnalysis, Document, Flag, TrendCharts, User })
 const router = useRouter()
 const userStore = useUserStore()
 const biddingStore = useBiddingStore()
@@ -186,12 +175,6 @@ const workbenchProjects = ref([])
 const hotTenders = ref([])
 const runtimeMode = ref(null)
 
-const quickActions = [
-  { key: 'support', title: '标书支持申请', desc: '申请技术/商务支持', icon: 'Document', iconStyle: 'background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%); color: #1E40AF;' },
-  { key: 'borrow', title: '资质/合同借阅', desc: '申请借阅相关文件', icon: 'FolderOpened', iconStyle: 'background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); color: #059669;' },
-  { key: 'expense', title: '投标费用申请', desc: '保证金/标书费', icon: 'Wallet', iconStyle: 'background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); color: #D97706;' },
-]
-
 const {
   pendingApprovals, pendingApprovalsTotalCount, approvalDialogVisible, approvalMode,
   currentApprovalItem, myProcesses, approvalsError, processesError,
@@ -200,15 +183,15 @@ const {
 } = useWorkbenchApprovals()
 
 const {
-  supportRequestDialogVisible, supportRequestSubmitting, supportRequestProjects,
-  supportRequestForm, supportProjectsError, myProjectCount, loadSupportRequestProjects, resetSupportRequestForm,
-  openSupportRequestDialog, submitSupportRequest,
-} = useSupportRequest({ message: ElMessage, onSubmitted: handleApprovalSuccess })
-
-const {
   priorityTodos, pendingCount, completedTodoCount, todosError, loadTodos,
   handleTaskComplete,
 } = useWorkbenchTodos({ assigneeIdRef: currentUserId, message: ElMessage })
+
+const myProjectCount = computed(() => filterProjectsByRole(workbenchProjects.value, {
+  role: currentUserRole.value,
+  userName: currentUserName.value,
+  limit: Number.POSITIVE_INFINITY,
+}).length)
 
 const {
   summaryStats, metricsLoading, metricsError, metrics, loadWorkbenchSummary, handleMetricClick,
@@ -234,7 +217,7 @@ const bannerSubtitle = computed(() => getBannerSubtitle(currentUserRole.value, {
 const bannerActions = computed(() => getBannerActionConfig(currentUserRole.value).map(iconizeAction))
 const runtimeModeLabel = computed(() => runtimeMode.value?.modeLabel || '')
 const runtimeModeTagType = computed(() => (runtimeMode.value?.demoFusionEnabled ? 'warning' : 'success'))
-const mappedQuickActions = computed(() => quickActions.map(iconizeAction))
+const canUseQuickStart = computed(() => hasQuickStartPermission(userStore.currentUser))
 const activeProjects = computed(() => filterProjectsByRole(workbenchProjects.value, {
   role: currentUserRole.value,
   userName: currentUserName.value,
@@ -333,11 +316,6 @@ function iconizeAction(action) {
 function handleBannerAction(action) {
   if (action?.target) router.push(action.target)
 }
-function handleQuickAction(action) {
-  if (action.key === 'support') openSupportRequestDialog()
-  if (action.key === 'borrow') router.push('/resource/contract-borrow')
-  if (action.key === 'expense') router.push('/resource/expense')
-}
 function handleTenderClick(tender) {
   if (String(tender.id || '').startsWith('-')) {
     router.push('/bidding')
@@ -413,11 +391,6 @@ async function loadRuntimeMode() {
   }
 }
 
-async function reloadSupportProjects() {
-  await loadSupportRequestProjects()
-  resetSupportRequestForm()
-}
-
 onMounted(async () => {
   metricsLoading.value = true
   await Promise.allSettled([
@@ -425,10 +398,9 @@ onMounted(async () => {
     loadWorkbenchProjects(),
     loadWorkbenchTenders(),
     loadScheduleOverview(), loadTodos(), loadPendingApprovals(), loadMyProcesses(),
-    loadSupportRequestProjects(), loadWorkbenchSummary(),
+    loadWorkbenchSummary(),
   ])
   metricsLoading.value = false
-  resetSupportRequestForm()
   syncSelectedDate()
 })
 
