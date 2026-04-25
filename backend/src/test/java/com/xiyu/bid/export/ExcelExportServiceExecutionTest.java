@@ -136,6 +136,33 @@ class ExcelExportServiceExecutionTest extends AbstractExcelExportServiceTest {
     }
 
     @Test
+    void exportToExcel_WithTendersType_ShouldNotExportUnlinkedTendersForNonAdmin() throws Exception {
+        Tender unlinkedTender = Tender.builder()
+                .id(3L)
+                .title("未关联项目标讯")
+                .status(Tender.Status.PENDING)
+                .build();
+        Page<Tender> page = new PageImpl<>(List.of(testTender, unlinkedTender), PageRequest.of(0, 1000), 2);
+        when(projectAccessScopeService.currentUserHasAdminAccess()).thenReturn(false);
+        when(projectAccessScopeService.filterAccessibleProjects(List.of(testProject)))
+                .thenReturn(List.of(testProject));
+        when(projectRepository.findAll()).thenReturn(List.of(testProject));
+        when(tenderRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(page)
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(1, 1000), 2));
+        Path outputPath = Path.of("/tmp/test_no_unlinked_tenders.xlsx");
+
+        excelExportService.exportToExcel("tenders", outputPath, null, 1L);
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(java.nio.file.Files.newInputStream(outputPath))) {
+            assertThat(workbook.getSheetAt(0).getLastRowNum()).isEqualTo(1);
+            assertThat(workbook.getSheetAt(0).getRow(1).getCell(1).getStringCellValue())
+                    .isEqualTo(testTender.getTitle());
+        }
+        deleteIfExists(outputPath);
+    }
+
+    @Test
     void exportToExcel_WithQualificationsType_ShouldExportQualifications() throws Exception {
         Page<Qualification> page = new PageImpl<>(List.of(testQualification), PageRequest.of(0, 1000), 1);
         when(qualificationRepository.findAll(any(org.springframework.data.domain.Pageable.class)))

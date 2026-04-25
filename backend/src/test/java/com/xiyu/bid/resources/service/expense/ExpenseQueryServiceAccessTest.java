@@ -68,6 +68,38 @@ class ExpenseQueryServiceAccessTest {
     }
 
     @Test
+    void getExpensesByCategory_ShouldFilterByVisibleProjectsForNonAdmin() {
+        ExpenseQueryService service = newService();
+        PageRequest pageable = PageRequest.of(0, 10);
+        when(accessGuard.visibleProjectIdsForCurrentUser()).thenReturn(List.of(10L));
+        when(expenseRepository.findByProjectIdInAndCategory(List.of(10L), Expense.ExpenseCategory.OTHER, pageable))
+                .thenReturn(new PageImpl<>(List.of(expense(2L, 10L)), pageable, 1));
+
+        assertThat(service.getExpensesByCategory("OTHER", pageable).getContent())
+                .extracting("projectId")
+                .containsExactly(10L);
+
+        verify(expenseRepository, never()).findByCategory(Expense.ExpenseCategory.OTHER, pageable);
+    }
+
+    @Test
+    void getExpensesByDateRange_ShouldFilterByVisibleProjectsForNonAdmin() {
+        ExpenseQueryService service = newService();
+        PageRequest pageable = PageRequest.of(0, 10);
+        LocalDate startDate = LocalDate.now().minusDays(7);
+        LocalDate endDate = LocalDate.now();
+        when(accessGuard.visibleProjectIdsForCurrentUser()).thenReturn(List.of(10L));
+        when(expenseRepository.findByProjectIdInAndDateBetween(List.of(10L), startDate, endDate, pageable))
+                .thenReturn(new PageImpl<>(List.of(expense(2L, 10L)), pageable, 1));
+
+        assertThat(service.getExpensesByDateRange(startDate, endDate, pageable).getContent())
+                .extracting("projectId")
+                .containsExactly(10L);
+
+        verify(expenseRepository, never()).findByDateBetween(startDate, endDate, pageable);
+    }
+
+    @Test
     void getApprovalRecords_ShouldFilterAllHistoryByVisibleProjectsForNonAdmin() {
         ExpenseQueryService service = newService();
         Expense visibleExpense = expense(3L, 10L);
@@ -80,6 +112,28 @@ class ExpenseQueryServiceAccessTest {
         assertThat(service.getApprovalRecords(null))
                 .extracting("expenseId")
                 .containsExactly(3L);
+    }
+
+    @Test
+    void getApprovalRecords_ShouldRejectInvisibleProjectBeforeLoadingHistory() {
+        ExpenseQueryService service = newService();
+        org.mockito.Mockito.doThrow(new AccessDeniedException("权限不足"))
+                .when(accessGuard).assertCanAccessProject(99L);
+
+        assertThatThrownBy(() -> service.getApprovalRecords(99L))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(expenseRepository, never()).findByProjectIdOrderByCreatedAtDesc(99L);
+    }
+
+    @Test
+    void getApprovalRecords_ShouldReturnEmptyWhenUserHasNoVisibleProjects() {
+        ExpenseQueryService service = newService();
+        when(accessGuard.visibleProjectIdsForCurrentUser()).thenReturn(List.of());
+
+        assertThat(service.getApprovalRecords(null)).isEmpty();
+
+        verify(approvalRecordRepository, never()).findAll();
     }
 
     @Test
