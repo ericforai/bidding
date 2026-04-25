@@ -90,6 +90,7 @@ public class ProjectAccessScopeService {
                 .toList();
     }
 
+    @Transactional(readOnly = true, noRollbackFor = AccessDeniedException.class)
     public void assertCurrentUserCanAccessProject(Long projectId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (hasAdminAccess(authentication)) {
