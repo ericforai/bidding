@@ -6,7 +6,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Data Layer Triage' (Protocol in workflow.md)
 
 ## Phase 2: Automated Import & Magic Number Remediation
-- [ ] Task: Write Tests (Ensure DTO serialization/deserialization is covered).
+- [~] Task: Write Tests (Ensure DTO serialization/deserialization is covered).
 - [ ] Task: Implement: Surgically expand remaining star imports in the Data Layer.
 - [ ] Task: Implement: Use scripts to extract MagicNumbers to private constants in Data Layer classes.
 - [ ] Task: Verify progress via Checkstyle (target: 0 MagicNumbers in Data Layer).
