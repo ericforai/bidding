@@ -1,5 +1,5 @@
 // Input: template id, activity command, current-user project scope
-// Output: template use/download activity views
+// Output: template use/download activity views with project-scoped use counts
 // Pos: Application Service/应用编排层
 // 维护声明: 使用记录写入前必须复用 ProjectAccessScopeService 做项目访问断言。
 package com.xiyu.bid.templatecatalog.application.service;
@@ -67,7 +67,7 @@ public class TemplateCatalogActivityAppService {
         return templateDtoMapper.toDto(
                 template,
                 templateCatalogDownloadRecordRepository.countByTemplateId(template.getId()),
-                templateCatalogUseRecordRepository.countByTemplateId(template.getId())
+                countVisibleUseRecords(template.getId())
         );
     }
 
@@ -79,5 +79,15 @@ public class TemplateCatalogActivityAppService {
         if (projectId != null) {
             projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
         }
+    }
+
+    private long countVisibleUseRecords(Long templateId) {
+        if (projectAccessScopeService.currentUserHasAdminAccess()) {
+            return templateCatalogUseRecordRepository.countByTemplateId(templateId);
+        }
+        return templateCatalogUseRecordRepository.countByTemplateIdVisibleToProjects(
+                templateId,
+                projectAccessScopeService.getAllowedProjectIdsForCurrentUser()
+        );
     }
 }

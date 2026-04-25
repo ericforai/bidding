@@ -149,6 +149,8 @@
 | `mvn test -Dtest=DataScopeConfigServiceTest,DataScopePolicyTest,ProjectAccessScopeServiceTest` | 通过：12 tests, 0 failures, 0 errors, 0 skipped。 |
 | `mvn test -Dtest=ProjectControllerAccessIntegrationTest` | 通过：5 tests, 0 failures, 0 errors, 0 skipped。 |
 | `mvn test -Dtest=ProjectLinkedRecordVisibilityPolicyTest,CalendarServiceProjectAccessTest,WorkbenchScheduleQueryServiceAccessTest,BarCertificateServiceAccessTest,QualificationServiceAccessTest,TemplateCatalogActivityAppServiceAccessTest,TemplateCatalogQueryAppServiceAccessTest,AlertHistoryControllerSecurityTest` | 通过：28 tests, 0 failures, 0 errors, 0 skipped。 |
+| Review 补强：模板下载响应 useCount 范围、资质按 recordId 归还目标记录 | 已修复：模板下载响应复用项目可见使用次数；资质 recordId 归还直接校验并写入目标记录，已补回归用例。 |
+| `mvn test -Dtest=ProjectLinkedRecordVisibilityPolicyTest,CalendarServiceProjectAccessTest,WorkbenchScheduleQueryServiceAccessTest,BarCertificateServiceAccessTest,QualificationServiceAccessTest,TemplateCatalogActivityAppServiceAccessTest,TemplateCatalogQueryAppServiceAccessTest,AlertHistoryControllerSecurityTest,ReturnQualificationAppServiceTest` | 通过：31 tests, 0 failures, 0 errors, 0 skipped。 |
 | `mvn test -Dtest=FPJavaArchitectureTest,MaintainabilityArchitectureTest` | 通过：10 tests, 0 failures, 0 errors, 0 skipped。 |
 | Java 质量门禁（本轮变更 Java 文件范围） | 通过：Checkstyle 未发现违规。 |
 | `npm run check:doc-governance` | 通过：Documentation governance check passed for 79 directories。 |
