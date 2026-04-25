@@ -11,7 +11,6 @@ import com.xiyu.bid.platform.dto.PlatformAccountDTO;
 import com.xiyu.bid.platform.dto.PlatformAccountStatisticsDTO;
 import com.xiyu.bid.platform.entity.PlatformAccount;
 import com.xiyu.bid.platform.entity.PlatformAccount.AccountStatus;
-import com.xiyu.bid.platform.entity.PlatformAccount.PlatformType;
 import com.xiyu.bid.platform.repository.PlatformAccountRepository;
 import com.xiyu.bid.platform.util.PasswordEncryptionUtil;
 import com.xiyu.bid.audit.service.AuditLogService;

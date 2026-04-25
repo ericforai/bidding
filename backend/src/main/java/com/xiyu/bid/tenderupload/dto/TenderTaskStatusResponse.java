@@ -9,15 +9,15 @@ import java.time.LocalDateTime;
 @Value
 @Builder
 public class TenderTaskStatusResponse {
-    Long taskId;
-    Long fileId;
-    TenderTaskStatus status;
-    Integer attempts;
-    Integer priority;
-    Long queuePosition;
-    LocalDateTime estimatedStartAt;
-    String errorCode;
-    String errorMessage;
-    LocalDateTime createdAt;
-    LocalDateTime updatedAt;
+    private final Long taskId;
+    private final Long fileId;
+    private final TenderTaskStatus status;
+    private final Integer attempts;
+    private final Integer priority;
+    private final Long queuePosition;
+    private final LocalDateTime estimatedStartAt;
+    private final String errorCode;
+    private final String errorMessage;
+    private final LocalDateTime createdAt;
+    private final LocalDateTime updatedAt;
 }

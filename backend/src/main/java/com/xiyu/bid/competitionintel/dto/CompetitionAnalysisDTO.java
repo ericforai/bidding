@@ -1,6 +1,5 @@
 package com.xiyu.bid.competitionintel.dto;
 
-import com.xiyu.bid.competitionintel.entity.CompetitionAnalysis;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

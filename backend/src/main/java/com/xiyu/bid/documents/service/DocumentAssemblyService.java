@@ -8,7 +8,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.annotation.Auditable;
-import com.xiyu.bid.documents.dto.AssemblyRequest;
 import com.xiyu.bid.documents.dto.AssemblyTemplateDTO;
 import com.xiyu.bid.documents.dto.DocumentAssemblyDTO;
 import com.xiyu.bid.documents.dto.TemplateCreateRequest;

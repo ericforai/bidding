@@ -1,7 +1,6 @@
 package com.xiyu.bid.ai.dto;
 
 import com.xiyu.bid.entity.Project;
-import com.xiyu.bid.entity.Tender;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

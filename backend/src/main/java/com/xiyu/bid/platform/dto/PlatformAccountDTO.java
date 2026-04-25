@@ -1,6 +1,5 @@
 package com.xiyu.bid.platform.dto;
 
-import com.xiyu.bid.platform.entity.PlatformAccount;
 import com.xiyu.bid.platform.entity.PlatformAccount.PlatformType;
 import com.xiyu.bid.platform.entity.PlatformAccount.AccountStatus;
 import lombok.AllArgsConstructor;

@@ -6,7 +6,7 @@ import lombok.Value;
 @Value
 @Builder
 public class TenderUploadInitResponse {
-    String uploadId;
-    String relativePath;
-    String uploadMode;
+    private final String uploadId;
+    private final String relativePath;
+    private final String uploadMode;
 }

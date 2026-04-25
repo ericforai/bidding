@@ -7,8 +7,8 @@ import lombok.Value;
 @Value
 @Builder
 public class TenderUploadCompleteResponse {
-    Long fileId;
-    Long taskId;
-    TenderTaskStatus status;
-    boolean deduplicated;
+    private final Long fileId;
+    private final Long taskId;
+    private final TenderTaskStatus status;
+    private final boolean deduplicated;
 }

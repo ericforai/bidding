@@ -5,7 +5,6 @@
 package com.xiyu.bid.controller;
 
 import com.xiyu.bid.dto.ApiResponse;
-import com.xiyu.bid.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

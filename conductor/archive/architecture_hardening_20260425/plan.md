@@ -13,10 +13,17 @@
 
 ## Phase 3: Encapsulation Hardening (P0)
 - [x] Task: Write Tests (Ensure high-coverage for entities and DTOs being modified).
+<<<<<<< Updated upstream
 - [x] Task: Implement: Convert package-private or public fields to `private` in Entities and DTOs (VisibilityModifier).
 - [x] Task: Implement: Refactor affected call sites or ensure Lombok coverage for the new private fields.
 - [x] Task: Verify 0 VisibilityModifier violations via Checkstyle.
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Encapsulation Hardening' (Protocol in workflow.md)
+=======
+- [~] Task: Implement: Convert package-private or public fields to `private` in Entities and DTOs (VisibilityModifier).
+- [ ] Task: Implement: Refactor affected call sites or ensure Lombok coverage for the new private fields.
+- [ ] Task: Verify 0 VisibilityModifier violations via Checkstyle.
+- [ ] Task: Conductor - User Manual Verification 'Phase 3: Encapsulation Hardening' (Protocol in workflow.md)
+>>>>>>> Stashed changes
 
 ## Phase 4: Extension Design Reduction (P2)
 - [x] Task: Write Tests (Verify architecture tests for final classes).

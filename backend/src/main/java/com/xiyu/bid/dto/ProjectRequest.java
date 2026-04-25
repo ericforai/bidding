@@ -1,7 +1,12 @@
 package com.xiyu.bid.dto;
 
 import com.xiyu.bid.entity.Project;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,7 +40,8 @@ public class ProjectRequest {
     private Long managerId;
 
     @NotEmpty(message = "团队成员不能为空")
-    private List<@NotNull(message = "成员ID不能为null") Long> teamMembers;
+    private List<@NotNull(
+            message = "成员ID不能为null") Long> teamMembers;
 
     @NotNull(message = "开始日期不能为空")
     private LocalDateTime startDate;
@@ -43,19 +49,24 @@ public class ProjectRequest {
     @NotNull(message = "结束日期不能为空")
     private LocalDateTime endDate;
 
-    @Size(max = 100, message = "来源模块长度不能超过100个字符")
+    @Size(max = 100,
+            message = "来源模块长度不能超过100个字符")
     private String sourceModule;
 
-    @Size(max = 100, message = "来源客户ID长度不能超过100个字符")
+    @Size(max = 100,
+            message = "来源客户ID长度不能超过100个字符")
     private String sourceCustomerId;
 
-    @Size(max = 255, message = "来源客户名称长度不能超过255个字符")
+    @Size(max = 255,
+            message = "来源客户名称长度不能超过255个字符")
     private String sourceCustomer;
 
-    @Size(max = 100, message = "来源机会ID长度不能超过100个字符")
+    @Size(max = 100,
+            message = "来源机会ID长度不能超过100个字符")
     private String sourceOpportunityId;
 
-    @Size(max = 2000, message = "来源推理摘要长度不能超过2000个字符")
+    @Size(max = 2000,
+            message = "来源推理摘要长度不能超过2000个字符")
     private String sourceReasoningSummary;
 
     @AssertTrue(message = "结束日期必须晚于开始日期")

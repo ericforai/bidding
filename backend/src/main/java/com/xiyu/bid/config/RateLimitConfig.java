@@ -82,21 +82,29 @@ public class RateLimitConfig {
         private boolean allowRequestLocal(String key, int maxRequests, Duration duration) {
             RateLimitInfo info = localCache.compute(key, (k, existing) -> {
                 long now = System.currentTimeMillis();
-                if (existing == null || now > existing.expiryTime) {
+                if (existing == null || now > existing.getExpiryTime()) {
                     return new RateLimitInfo(1, now + duration.toMillis());
                 }
-                return new RateLimitInfo(existing.count + 1, existing.expiryTime);
+                return new RateLimitInfo(existing.getCount() + 1, existing.getExpiryTime());
             });
-            return info.count <= maxRequests;
+            return info.getCount() <= maxRequests;
         }
 
         private static class RateLimitInfo {
-            final long count;
-            final long expiryTime;
+            private final long count;
+            private final long expiryTime;
 
             RateLimitInfo(long pCount, long pExpiryTime) {
                 this.count = pCount;
                 this.expiryTime = pExpiryTime;
+            }
+
+            public long getCount() {
+                return count;
+            }
+
+            public long getExpiryTime() {
+                return expiryTime;
             }
         }
     }

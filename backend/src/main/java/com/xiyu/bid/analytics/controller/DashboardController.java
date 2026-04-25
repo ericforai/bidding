@@ -5,12 +5,23 @@
 
 package com.xiyu.bid.analytics.controller;
 
-import com.xiyu.bid.analytics.dto.*;
+import com.xiyu.bid.analytics.dto.DashboardOverviewDTO;
+import com.xiyu.bid.analytics.dto.AnalyticsDrillDownResponse;
+import com.xiyu.bid.analytics.dto.RegionalData;
+import com.xiyu.bid.analytics.dto.SummaryStats;
+import com.xiyu.bid.analytics.dto.TrendData;
+import com.xiyu.bid.analytics.dto.CompetitorData;
+import com.xiyu.bid.analytics.dto.ProductLineData;
+import com.xiyu.bid.analytics.dto.AnalyticsDrillDownResponseDTO;
 import com.xiyu.bid.analytics.service.DashboardAnalyticsService;
 import com.xiyu.bid.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -50,8 +61,10 @@ public class DashboardController {
      */
     @GetMapping("/trends")
     public ResponseEntity<ApiResponse<Map<String, List<TrendData>>>> getTrends() {
-        List<TrendData> tenderTrends = dashboardAnalyticsService.getTenderTrends();
-        List<TrendData> projectTrends = dashboardAnalyticsService.getProjectTrends();
+        List<TrendData> tenderTrends =
+                dashboardAnalyticsService.getTenderTrends();
+        List<TrendData> projectTrends =
+                dashboardAnalyticsService.getProjectTrends();
 
         Map<String, List<TrendData>> trends = Map.of(
                 "tenders", tenderTrends,
@@ -68,7 +81,8 @@ public class DashboardController {
     public ResponseEntity<ApiResponse<List<CompetitorData>>> getTopCompetitors(
             @RequestParam(required = false, defaultValue = "5") Integer limit
     ) {
-        List<CompetitorData> competitors = dashboardAnalyticsService.getTopCompetitors(limit);
+        List<CompetitorData> competitors =
+                dashboardAnalyticsService.getTopCompetitors(limit);
         return ResponseEntity.ok(ApiResponse.success(competitors));
     }
 
@@ -76,28 +90,34 @@ public class DashboardController {
      * Get regional analysis
      */
     @GetMapping("/regions")
-    public ResponseEntity<ApiResponse<List<RegionalData>>> getRegionalDistribution() {
-        List<RegionalData> regions = dashboardAnalyticsService.getRegionalDistribution();
+    public ResponseEntity<ApiResponse<List<RegionalData>>>
+            getRegionalDistribution() {
+        List<RegionalData> regions =
+                dashboardAnalyticsService.getRegionalDistribution();
         return ResponseEntity.ok(ApiResponse.success(regions));
     }
 
     @GetMapping("/product-lines")
     public ResponseEntity<ApiResponse<List<ProductLineData>>> getProductLines() {
-        List<ProductLineData> productLines = dashboardAnalyticsService.getProductLinePerformance();
+        List<ProductLineData> productLines =
+                dashboardAnalyticsService.getProductLinePerformance();
         return ResponseEntity.ok(ApiResponse.success(productLines));
     }
 
     @GetMapping("/drill-down")
-    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponse>> getDrillDown(
+    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponse>>
+            getDrillDown(
             @RequestParam String type,
             @RequestParam String key
     ) {
-        AnalyticsDrillDownResponse response = dashboardAnalyticsService.getDrillDown(type, key);
+        AnalyticsDrillDownResponse response =
+                dashboardAnalyticsService.getDrillDown(type, key);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/drilldown/revenue")
-    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponseDTO>> getRevenueDrillDown(
+    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponseDTO>>
+            getRevenueDrillDown(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
@@ -105,12 +125,14 @@ public class DashboardController {
             @RequestParam(required = false, defaultValue = "10") Integer size
     ) {
         AnalyticsDrillDownResponseDTO response =
-                dashboardAnalyticsService.getRevenueDrillDown(status, startDate, endDate, page, size);
+                dashboardAnalyticsService.getRevenueDrillDown(
+                        status, startDate, endDate, page, size);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/drilldown/win-rate")
-    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponseDTO>> getWinRateDrillDown(
+    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponseDTO>>
+            getWinRateDrillDown(
             @RequestParam(required = false) String outcome,
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
@@ -118,12 +140,14 @@ public class DashboardController {
             @RequestParam(required = false, defaultValue = "10") Integer size
     ) {
         AnalyticsDrillDownResponseDTO response =
-                dashboardAnalyticsService.getWinRateDrillDown(outcome, startDate, endDate, page, size);
+                dashboardAnalyticsService.getWinRateDrillDown(
+                        outcome, startDate, endDate, page, size);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/drilldown/team")
-    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponseDTO>> getTeamDrillDown(
+    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponseDTO>>
+            getTeamDrillDown(
             @RequestParam(required = false) String role,
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
@@ -131,12 +155,14 @@ public class DashboardController {
             @RequestParam(required = false, defaultValue = "10") Integer size
     ) {
         AnalyticsDrillDownResponseDTO response =
-                dashboardAnalyticsService.getTeamDrillDown(role, startDate, endDate, page, size);
+                dashboardAnalyticsService.getTeamDrillDown(
+                        role, startDate, endDate, page, size);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/drilldown/projects")
-    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponseDTO>> getProjectDrillDown(
+    public ResponseEntity<ApiResponse<AnalyticsDrillDownResponseDTO>>
+            getProjectDrillDown(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
@@ -144,7 +170,8 @@ public class DashboardController {
             @RequestParam(required = false, defaultValue = "10") Integer size
     ) {
         AnalyticsDrillDownResponseDTO response =
-                dashboardAnalyticsService.getProjectDrillDown(status, startDate, endDate, page, size);
+                dashboardAnalyticsService.getProjectDrillDown(
+                        status, startDate, endDate, page, size);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -152,8 +179,10 @@ public class DashboardController {
      * Get status distribution
      */
     @GetMapping("/status-distribution")
-    public ResponseEntity<ApiResponse<Map<String, Long>>> getStatusDistribution() {
-        Map<String, Long> distribution = dashboardAnalyticsService.getStatusDistribution();
+    public ResponseEntity<ApiResponse<Map<String, Long>>>
+            getStatusDistribution() {
+        Map<String, Long> distribution =
+                dashboardAnalyticsService.getStatusDistribution();
         return ResponseEntity.ok(ApiResponse.success(distribution));
     }
 
@@ -163,6 +192,7 @@ public class DashboardController {
     @PostMapping("/cache/clear")
     public ResponseEntity<ApiResponse<String>> clearCache() {
         dashboardAnalyticsService.clearOverviewCache();
-        return ResponseEntity.ok(ApiResponse.success("Cache cleared successfully", null));
+        return ResponseEntity.ok(
+                ApiResponse.success("Cache cleared successfully", null));
     }
 }

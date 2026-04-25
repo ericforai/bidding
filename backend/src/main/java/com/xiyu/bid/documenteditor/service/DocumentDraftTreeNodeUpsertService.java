@@ -29,14 +29,14 @@ class DocumentDraftTreeNodeUpsertService {
     private final ObjectMapper objectMapper;
 
     void upsertNode(DocumentDraftTreeImportState state, Long parentId, int orderIndex, DraftTreeUpsertNodeRequest request) {
-        state.stats.total++;
+        state.getStats().incrementTotal();
 
         String requestedTitle = trimToNull(request.getTitle());
         String requestedKey = trimToNull(request.getSectionKey());
-        DocumentSection existing = findExistingSection(requestedKey, requestedTitle, state.sectionsByStableKey, state.sectionsByTitle);
-        if (existing != null && isLocked(state.locksBySectionId.get(existing.getId()))) {
-            state.stats.skipped++;
-            registerSkipped(existing, state.stats);
+        DocumentSection existing = findExistingSection(requestedKey, requestedTitle, state.getSectionsByStableKey(), state.getSectionsByTitle());
+        if (existing != null && isLocked(state.getLocksBySectionId().get(existing.getId()))) {
+            state.getStats().incrementSkipped();
+            registerSkipped(existing, state.getStats());
             upsertChildren(state, existing.getId(), request.getChildren());
             return;
         }
@@ -53,7 +53,7 @@ class DocumentDraftTreeNodeUpsertService {
 
         DocumentSection section = existing == null
                 ? DocumentSection.builder()
-                .structureId(state.structureId)
+                .structureId(state.getStructureId())
                 .parentId(parentId)
                 .sectionType(sectionType)
                 .title(requestedTitle)
@@ -67,14 +67,14 @@ class DocumentDraftTreeNodeUpsertService {
             boolean changed = applyUpdates(section, parentId, orderIndex, sectionType, requestedTitle, request.getContent(), mergedMetadata);
             if (changed) {
                 section = sectionRepository.save(section);
-                state.stats.updated++;
+                state.getStats().incrementUpdated();
             }
         } else {
             section = sectionRepository.save(section);
-            state.stats.created++;
+            state.getStats().incrementCreated();
         }
 
-        registerSection(section, previousStableKey, previousTitle, stableKey, state.sectionsByStableKey, state.sectionsByTitle);
+        registerSection(section, previousStableKey, previousTitle, stableKey, state.getSectionsByStableKey(), state.getSectionsByTitle());
         upsertChildren(state, section.getId(), request.getChildren());
     }
 
@@ -158,7 +158,7 @@ class DocumentDraftTreeNodeUpsertService {
     }
 
     private void registerSkipped(DocumentSection section, DocumentDraftTreeImportState.ImportStats stats) {
-        stats.skippedSections.add(DraftTreeSkippedSectionDTO.builder()
+        stats.getSkippedSections().add(DraftTreeSkippedSectionDTO.builder()
                 .sectionId(section.getId())
                 .sectionKey(extractSectionKey(section.getMetadata()))
                 .title(section.getTitle())

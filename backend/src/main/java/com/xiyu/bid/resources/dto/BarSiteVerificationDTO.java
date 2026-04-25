@@ -8,10 +8,10 @@ import java.time.LocalDateTime;
 @Value
 @Builder
 public class BarSiteVerificationDTO {
-    Long id;
-    Long barAssetId;
-    String verifiedBy;
-    LocalDateTime verifiedAt;
-    String status;
-    String message;
+    private final Long id;
+    private final Long barAssetId;
+    private final String verifiedBy;
+    private final LocalDateTime verifiedAt;
+    private final String status;
+    private final String message;
 }

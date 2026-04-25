@@ -4,7 +4,10 @@
 // 维护声明: 仅维护 JWT 编解码能力；密钥策略变更请同步配置与登录流程.
 package com.xiyu.bid.auth;
 
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SecurityException;
 import org.slf4j.Logger;

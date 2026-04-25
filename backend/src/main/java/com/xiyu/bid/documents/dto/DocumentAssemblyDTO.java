@@ -1,6 +1,5 @@
 package com.xiyu.bid.documents.dto;
 
-import com.xiyu.bid.documents.entity.DocumentAssembly;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

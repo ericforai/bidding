@@ -55,9 +55,11 @@ public class CollaborationController {
                     .body(ApiResponse.error("Project ID is required"));
         }
 
-        log.info("GET /api/collaboration/threads - Fetching threads for project: {}", projectId);
-        List<CollaborationThreadDTO> threads = collaborationService.getThreadsByProject(projectId);
-        return ResponseEntity.ok(ApiResponse.success("Successfully retrieved threads", threads));
+        log.info("GET /api/collaboration/threads - project: {}", projectId);
+        List<CollaborationThreadDTO> threads =
+                collaborationService.getThreadsByProject(projectId);
+        return ResponseEntity.ok(
+                ApiResponse.success("Successfully retrieved threads", threads));
     }
 
     /**
@@ -65,10 +67,12 @@ public class CollaborationController {
      */
     @GetMapping("/threads/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<CollaborationThreadDTO>> getThreadById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<CollaborationThreadDTO>> getThreadById(
+            @PathVariable Long id) {
         log.info("GET /api/collaboration/threads/{} - Fetching thread", id);
         CollaborationThreadDTO thread = collaborationService.getThreadById(id);
-        return ResponseEntity.ok(ApiResponse.success("Successfully retrieved thread", thread));
+        return ResponseEntity.ok(
+                ApiResponse.success("Successfully retrieved thread", thread));
     }
 
     /**
@@ -79,10 +83,13 @@ public class CollaborationController {
     public ResponseEntity<ApiResponse<CollaborationThreadDTO>> createThread(
             @Valid @RequestBody ThreadCreateRequest request) {
 
-        log.info("POST /api/collaboration/threads - Creating thread for project: {}", request.getProjectId());
-        CollaborationThreadDTO createdThread = collaborationService.createThread(request);
+        log.info("POST /api/collaboration/threads - project: {}",
+                request.getProjectId());
+        CollaborationThreadDTO createdThread =
+                collaborationService.createThread(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Thread created successfully", createdThread));
+                .body(ApiResponse.success("Thread created successfully",
+                        createdThread));
     }
 
     /**
@@ -94,9 +101,13 @@ public class CollaborationController {
             @PathVariable Long id,
             @RequestParam ThreadStatus status) {
 
-        log.info("PUT /api/collaboration/threads/{}/status - Updating status to: {}", id, status);
-        CollaborationThreadDTO updatedThread = collaborationService.updateThreadStatus(id, status);
-        return ResponseEntity.ok(ApiResponse.success("Thread status updated successfully", updatedThread));
+        log.info("PUT /api/collaboration/threads/{}/status - status: {}",
+                id, status);
+        CollaborationThreadDTO updatedThread =
+                collaborationService.updateThreadStatus(id, status);
+        return ResponseEntity.ok(
+                ApiResponse.success("Thread status updated successfully",
+                        updatedThread));
     }
 
     /**
@@ -108,10 +119,13 @@ public class CollaborationController {
             @PathVariable Long id,
             @Valid @RequestBody CommentCreateRequest request) {
 
-        log.info("POST /api/collaboration/threads/{}/comments - Adding comment", id);
-        CommentDTO createdComment = collaborationService.addComment(id, request);
+        log.info("POST /api/collaboration/threads/{}/comments - Adding comment",
+                id);
+        CommentDTO createdComment =
+                collaborationService.addComment(id, request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Comment added successfully", createdComment));
+                .body(ApiResponse.success("Comment added successfully",
+                        createdComment));
     }
 
     /**
@@ -124,8 +138,11 @@ public class CollaborationController {
             @Valid @RequestBody CommentUpdateRequest request) {
 
         log.info("PUT /api/collaboration/comments/{} - Updating comment", id);
-        CommentDTO updatedComment = collaborationService.updateComment(id, request);
-        return ResponseEntity.ok(ApiResponse.success("Comment updated successfully", updatedComment));
+        CommentDTO updatedComment =
+                collaborationService.updateComment(id, request);
+        return ResponseEntity.ok(
+                ApiResponse.success("Comment updated successfully",
+                        updatedComment));
     }
 
     /**
@@ -133,10 +150,12 @@ public class CollaborationController {
      */
     @DeleteMapping("/comments/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<Void>> deleteComment(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteComment(
+            @PathVariable Long id) {
         log.info("DELETE /api/collaboration/comments/{} - Deleting comment", id);
         collaborationService.deleteComment(id);
-        return ResponseEntity.ok(ApiResponse.success("Comment deleted successfully", null));
+        return ResponseEntity.ok(
+                ApiResponse.success("Comment deleted successfully", null));
     }
 
     /**
@@ -152,8 +171,11 @@ public class CollaborationController {
                     .body(ApiResponse.error("User ID is required"));
         }
 
-        log.info("GET /api/collaboration/mentions - Fetching mentions for user: {}", userId);
-        List<CommentDTO> mentions = collaborationService.getMentionsForUser(userId);
-        return ResponseEntity.ok(ApiResponse.success("Successfully retrieved mentions", mentions));
+        log.info("GET /api/collaboration/mentions - user: {}", userId);
+        List<CommentDTO> mentions =
+                collaborationService.getMentionsForUser(userId);
+        return ResponseEntity.ok(
+                ApiResponse.success("Successfully retrieved mentions",
+                        mentions));
     }
 }
