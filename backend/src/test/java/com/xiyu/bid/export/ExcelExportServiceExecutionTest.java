@@ -6,6 +6,7 @@ import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Qualification;
 import com.xiyu.bid.entity.Template;
 import com.xiyu.bid.entity.Tender;
+import com.xiyu.bid.export.service.ExcelExportService;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
@@ -37,6 +38,23 @@ class ExcelExportServiceExecutionTest extends AbstractExcelExportServiceTest {
 
         assertThat(fileSize).isGreaterThan(0);
         verify(tenderRepository, atLeastOnce()).findAll(any(org.springframework.data.domain.Pageable.class));
+        deleteIfExists(outputPath);
+    }
+
+    @Test
+    void exportToExcelWithResult_ShouldReturnGeneratedFileSizeAndRecordCount() throws Exception {
+        Page<Tender> page = new PageImpl<>(List.of(testTender), PageRequest.of(0, 1000), 1);
+        when(tenderRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(page)
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(1, 1000), 1));
+        Path outputPath = Path.of("/tmp/test_tenders_result.xlsx");
+
+        ExcelExportService.ExportFileResult result = excelExportService.exportToExcelWithResult(
+                "tenders", outputPath, null, 1L);
+
+        assertThat(result.fileSize()).isGreaterThan(0);
+        assertThat(result.recordCount()).isEqualTo(1);
+        assertThat(java.nio.file.Files.exists(outputPath)).isTrue();
         deleteIfExists(outputPath);
     }
 

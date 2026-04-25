@@ -1,5 +1,5 @@
 // Input: export repositories, DTOs, and support services
-// Output: Excel Export business service operations
+// Output: Excel Export business service operations and export metadata
 // Pos: Service/业务层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.export.service;
@@ -98,6 +98,21 @@ public class ExcelExportService {
      * @throws RuntimeException if export fails or times out
      */
     public long exportToExcel(String dataType, Path filePath, String paramsJson, Long userId) {
+        return exportToExcelWithResult(dataType, filePath, paramsJson, userId).fileSize();
+    }
+
+    /**
+     * Export data to Excel and return generated file metadata.
+     *
+     * @param dataType The type of data to export (tenders, projects, qualifications, cases, templates)
+     * @param filePath The path where the Excel file will be saved
+     * @param paramsJson Optional JSON parameters for filtering
+     * @param userId The ID of the user performing the export
+     * @return File size and visible record count for the exported data
+     * @throws IllegalArgumentException if data type is null or record count exceeds limit
+     * @throws RuntimeException if export fails or times out
+     */
+    public ExportFileResult exportToExcelWithResult(String dataType, Path filePath, String paramsJson, Long userId) {
         if (dataType == null) {
             throw new IllegalArgumentException("Export type cannot be null");
         }
@@ -158,7 +173,7 @@ public class ExcelExportService {
             logExport(userId, dataType, recordCount, fileSize, true, null,
                 System.currentTimeMillis() - startTime);
 
-            return fileSize;
+            return new ExportFileResult(fileSize, recordCount);
 
         } catch (TimeoutException e) {
             String errorMsg = String.format(
@@ -587,4 +602,9 @@ public class ExcelExportService {
      * Record to hold export result with data and record count.
      */
     private record ExportResult(byte[] data, int recordCount) {}
+
+    /**
+     * Public export metadata returned to API callers.
+     */
+    public record ExportFileResult(long fileSize, int recordCount) {}
 }

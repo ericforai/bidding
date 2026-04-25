@@ -23,6 +23,7 @@
 - **Severity**: Low
 - **Category**: Functional
 - **Found by**: `/qa` on `codex/p1-stats-export-ai-access`, 2026-04-25
+- **Status**: Fixed in branch by returning structured export metadata from `ExcelExportService` and wiring `ExportController` to use it.
 - **Repro**: 管理员调用 `POST /api/export/excel`，请求 `{"dataType":"tenders","async":false,"params":{}}` 返回 200 且生成 xlsx，但响应 `data.recordCount` 为 0；同环境 `/api/tenders` 返回 116 条。
 - **Impact**: 导出文件生成成功，但前端或调用方若展示导出记录数会得到误导性结果。
 - **Suggested fix**: 让导出服务返回文件大小与真实记录数的结构化结果，或在控制器层从服务返回值中读取真实记录数，避免继续使用占位的 `extractRecordCountFromPath()`。
