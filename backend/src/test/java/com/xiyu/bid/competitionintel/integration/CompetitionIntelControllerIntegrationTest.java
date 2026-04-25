@@ -149,7 +149,7 @@ class CompetitionIntelControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"STAFF"})
+    @WithMockUser(roles = {"ADMIN"})
     void getAnalysisByProject_ShouldReturnAnalysisList() throws Exception {
         mockMvc.perform(get("/api/ai/competition/project/100"))
                 .andExpect(status().isOk())
@@ -223,7 +223,7 @@ class CompetitionIntelControllerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = {"STAFF"})
+    @WithMockUser(roles = {"ADMIN"})
     void getHistoricalPerformance_ShouldReturnAnalysisList() throws Exception {
         mockMvc.perform(get("/api/ai/competition/competitor/{id}/history", testCompetitor.getId()))
                 .andExpect(status().isOk())
