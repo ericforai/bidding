@@ -31,6 +31,7 @@
 ## Color
 - **Approach:** balanced（品牌主色 + 中性色阶 + 语义状态色）
 - **Primary:** `#0066CC` — 主要操作、链接、核心高亮
+- **Xiyu Logo Green:** `#2E7659` / RGB `46, 118, 89` — 西域 Logo 标准色。用于品牌识别、主操作按钮、分页当前页、侧栏菜单选中态和工作台关键强调。
 - **Secondary:** `#0052A3` — 主色按下态与深层级强调
 - **Neutrals:** `#F5F7FA` / `#E8E8E8` / `#D0D0D0` / `#999999` / `#666666` / `#1A1A1A`
 - **Semantic:** success `#00AA44`, warning `#FF8800`, error `#DD2200`, info `#0066CC`
@@ -89,3 +90,4 @@
 |------|----------|-----------|
 | 2026-04-22 | Initial design system created | Created by /design-consultation based on current product context and existing page baseline |
 | 2026-04-22 | Set industrial utilitarian direction | Fits data-dense bid-management workflows and reduces visual drift across modules |
+| 2026-04-26 | Added Xiyu Logo Green `#2E7659` | Aligns platform primary actions and navigation with 西域 Logo color while preserving semantic status colors |

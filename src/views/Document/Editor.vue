@@ -1144,15 +1144,15 @@ watch(() => route.params.id, () => {
 }
 
 .header-actions .el-button--primary {
-  background: linear-gradient(135deg, #0369a1, #0284c7);
+  background: linear-gradient(135deg, var(--brand-xiyu-logo, #2E7659), var(--brand-xiyu-logo-hover, #27674E));
   border: none;
-  box-shadow: 0 2px 8px rgba(3, 105, 161, 0.2);
+  box-shadow: 0 2px 8px var(--brand-xiyu-logo-shadow, rgba(46, 118, 89, 0.24));
 }
 
 .header-actions .el-button--primary:hover {
-  background: linear-gradient(135deg, #0284c7, #0369a1);
+  background: linear-gradient(135deg, #367F61, var(--brand-xiyu-logo-active, #1F553F));
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+  box-shadow: 0 4px 12px rgba(46, 118, 89, 0.3);
 }
 
 .header-actions .el-button--primary:active {

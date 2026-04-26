@@ -7,6 +7,20 @@
   --brand-primary: #0066CC;
   --brand-primary-light: #3388DD;
   --brand-primary-dark: #0052A3;
+  --brand-xiyu-logo: #2E7659;
+  --brand-xiyu-logo-rgb: 46, 118, 89;
+  --brand-xiyu-logo-hover: #27674E;
+  --brand-xiyu-logo-active: #1F553F;
+  --brand-xiyu-logo-light: #E7F2ED;
+  --brand-xiyu-logo-soft: rgba(46, 118, 89, 0.12);
+  --brand-xiyu-logo-focus: rgba(46, 118, 89, 0.32);
+  --brand-xiyu-logo-shadow: rgba(46, 118, 89, 0.24);
+  --el-color-primary: var(--brand-xiyu-logo);
+  --el-color-primary-light-3: #5B9479;
+  --el-color-primary-light-5: #8AB6A2;
+  --el-color-primary-light-7: #B9D7C9;
+  --el-color-primary-light-9: var(--brand-xiyu-logo-light);
+  --el-color-primary-dark-2: var(--brand-xiyu-logo-active);
 
   /* 功能色 */
   --color-success: #00AA44;
@@ -41,11 +55,12 @@
   --text-link: var(--brand-primary);
 
   /* 侧边栏专用颜色 */
-  --sidebar-bg: #1A1A1A;
-  --sidebar-text: rgba(255, 255, 255, 0.85);
-  --sidebar-text-hover: #FFFFFF;
-  --sidebar-text-active: #FFFFFF;
-  --sidebar-active-bg: rgba(255, 255, 255, 0.12);
+  --sidebar-bg: #FFFFFF;
+  --sidebar-bg-elevated: #F8FBF9;
+  --sidebar-text: #334155;
+  --sidebar-text-hover: var(--brand-xiyu-logo);
+  --sidebar-text-active: var(--brand-xiyu-logo);
+  --sidebar-active-bg: rgba(46, 118, 89, 0.12);
 
   /* 焦点状态颜色 */
   --focus-primary: rgba(0, 102, 204, 0.4);

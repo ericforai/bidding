@@ -132,13 +132,19 @@ body, .text-body, .el-main, .el-card__body {
 
 /* Primary button */
 .el-button--primary {
-  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%);
+  background: linear-gradient(135deg, var(--brand-xiyu-logo, #2E7659) 0%, var(--brand-xiyu-logo-hover, #27674E) 100%);
   border: none;
-  box-shadow: var(--elevation-1);
+  box-shadow: 0 4px 12px var(--brand-xiyu-logo-shadow, rgba(46, 118, 89, 0.24));
+}
+
+.el-button--primary:not(.is-link):not(.is-text),
+.el-button--primary:not(.is-link):not(.is-text) span {
+  color: #FFFFFF !important;
 }
 
 .el-button--primary:hover {
-  background: linear-gradient(135deg, #0479b8 0%, #09a8c9 100%);
+  background: linear-gradient(135deg, #367F61 0%, var(--brand-xiyu-logo-active, #1F553F) 100%);
+  color: #FFFFFF;
   box-shadow: var(--elevation-2);
   transform: translateY(-1px);
 }
@@ -591,12 +597,15 @@ button[class*="icon"]:not(.el-button),
 
 .el-pagination .el-pager li:hover {
   background: #F1F5F9;
+  color: var(--brand-xiyu-logo, #2E7659);
   transform: translateY(-1px);
 }
 
-.el-pagination .el-pager li.active {
-  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%);
+.el-pagination .el-pager li.active,
+.el-pagination .el-pager li.is-active {
+  background: linear-gradient(135deg, var(--brand-xiyu-logo, #2E7659) 0%, var(--brand-xiyu-logo-hover, #27674E) 100%);
   color: #fff;
+  box-shadow: 0 4px 10px var(--brand-xiyu-logo-shadow, rgba(46, 118, 89, 0.24));
 }
 
 /* ==================== Tooltip ==================== */

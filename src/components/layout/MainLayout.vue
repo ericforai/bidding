@@ -84,7 +84,7 @@ onUnmounted(() => {
 }
 
 .layout-aside {
-  background: #001529;
+  background: var(--sidebar-bg, #FFFFFF);
   transition: width 0.28s ease;
   overflow: hidden;
 }

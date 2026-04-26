@@ -18,9 +18,9 @@
         :default-active="activeMenu"
         :collapse="false"
         class="sidebar-menu"
-        background-color="#001529"
-        text-color="rgba(255, 255, 255, 0.85)"
-        active-text-color="#FFFFFF"
+        background-color="var(--sidebar-bg)"
+        text-color="var(--sidebar-text)"
+        active-text-color="var(--brand-xiyu-logo)"
         router
         @select="handleMenuSelect"
       >
@@ -67,9 +67,9 @@
       :collapse="collapse"
       :collapse-transition="false"
       class="sidebar-menu"
-      background-color="#001529"
-      text-color="rgba(255, 255, 255, 0.85)"
-      active-text-color="#FFFFFF"
+      background-color="var(--sidebar-bg)"
+      text-color="var(--sidebar-text)"
+      active-text-color="var(--brand-xiyu-logo)"
       router
       @select="handleMenuSelect"
     >
@@ -371,7 +371,7 @@ const filteredMenus = computed(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #001529;
+  background: var(--sidebar-bg, #FFFFFF);
 }
 
 /* ========== Logo 区域 ========== */
@@ -381,13 +381,13 @@ const filteredMenus = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: #FFFFFF; border-bottom: 1px solid rgba(46, 118, 89, 0.12);
 }
 
 .logo-icon {
   font-size: 20px;
   font-weight: 700;
-  color: #409EFF;
+  color: var(--brand-xiyu-logo, #2E7659);
   letter-spacing: 2px;
   white-space: nowrap;
 }
@@ -395,7 +395,7 @@ const filteredMenus = computed(() => {
 .logo-icon-small {
   font-size: 18px;
   font-weight: 700;
-  color: #409EFF;
+  color: var(--brand-xiyu-logo, #2E7659);
   white-space: nowrap;
 }
 
@@ -417,12 +417,12 @@ const filteredMenus = computed(() => {
 }
 
 .sidebar-menu::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(46, 118, 89, 0.18);
   border-radius: 3px;
 }
 
 .sidebar-menu::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(46, 118, 89, 0.3);
 }
 
 /* ========== 菜单项对齐优化 ========== */
@@ -472,7 +472,7 @@ const filteredMenus = computed(() => {
 
 :deep(.el-menu-item:hover),
 :deep(.el-sub-menu__title:hover) {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(46, 118, 89, 0.08) !important;
 }
 
 :deep(.el-menu-item:hover)::before {
@@ -483,20 +483,20 @@ const filteredMenus = computed(() => {
   transform: translateY(-50%);
   width: 3px;
   height: 20px;
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--brand-xiyu-logo, #2E7659);
   border-radius: 0 2px 2px 0;
 }
 
 :deep(.el-menu-item:focus-visible) {
-  outline: 2px solid rgba(64, 158, 255, 0.5);
+  outline: 2px solid var(--brand-xiyu-logo-focus, rgba(46, 118, 89, 0.32));
   outline-offset: -2px;
 }
 
 :deep(.el-menu-item.is-active) {
-  background: linear-gradient(90deg, var(--brand-primary) 0%, rgba(64, 158, 255, 0.8) 100%) !important;
-  border-right: 3px solid var(--brand-primary-hover);
-  color: #FFFFFF !important;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  background: rgba(46, 118, 89, 0.12) !important;
+  border-right: 3px solid var(--brand-xiyu-logo, #2E7659);
+  color: var(--brand-xiyu-logo, #2E7659) !important;
+  box-shadow: none;
 }
 
 :deep(.el-menu-item.is-active)::before {
@@ -507,14 +507,14 @@ const filteredMenus = computed(() => {
   transform: translateY(-50%);
   width: 3px;
   height: 24px;
-  background: #fff;
+  background: var(--brand-xiyu-logo, #2E7659);
   border-radius: 0 2px 2px 0;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 8px rgba(46, 118, 89, 0.2);
 }
 
 :deep(.el-sub-menu .el-menu-item.is-active) {
-  background: rgba(64, 158, 255, 0.2) !important;
-  color: #fff !important;
+  background: rgba(46, 118, 89, 0.1) !important;
+  color: var(--brand-xiyu-logo, #2E7659) !important;
 }
 
 :deep(.el-sub-menu .el-menu-item.is-active)::before {
@@ -525,7 +525,7 @@ const filteredMenus = computed(() => {
   transform: translateY(-50%);
   width: 2px;
   height: 16px;
-  background: #fff;
+  background: var(--brand-xiyu-logo, #2E7659);
   border-radius: 0 2px 2px 0;
 }
 
@@ -589,14 +589,14 @@ const filteredMenus = computed(() => {
 /* ========== 移动端抽屉 ========== */
 .mobile-drawer :deep(.el-drawer__body) {
   padding: 0;
-  background: #001529;
+  background: var(--sidebar-bg, #FFFFFF);
 }
 
 .drawer-sidebar {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #001529;
+  background: var(--sidebar-bg, #FFFFFF);
 }
 
 .drawer-sidebar .sidebar-logo {
@@ -608,7 +608,7 @@ const filteredMenus = computed(() => {
 
 .close-icon {
   font-size: 20px;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--brand-xiyu-logo, #2E7659);
   cursor: pointer;
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
@@ -620,8 +620,8 @@ const filteredMenus = computed(() => {
 }
 
 .close-icon:hover {
-  color: #409EFF;
-  background: rgba(64, 158, 255, 0.15);
+  color: var(--brand-xiyu-logo-active, #1F553F);
+  background: rgba(46, 118, 89, 0.08);
 }
 
 .close-icon:active {
@@ -649,7 +649,7 @@ const filteredMenus = computed(() => {
 /* 移动端菜单项触摸反馈 */
 .mobile-drawer :deep(.el-menu-item):active,
 .mobile-drawer :deep(.el-sub-menu__title):active {
-  background: rgba(64, 158, 255, 0.2) !important;
+  background: rgba(46, 118, 89, 0.28) !important;
   transition: background-color 0.1s ease;
 }
 
