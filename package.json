@@ -45,6 +45,7 @@
     "test:e2e:commercial": "npx playwright test commercial-main-flow --config playwright.config.js",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
+    "perf:sales200": "k6 run scripts/performance/sales-200.k6.js",
     "check-docs": "bash scripts/check-doc-consistency.sh"
   },
   "dependencies": {

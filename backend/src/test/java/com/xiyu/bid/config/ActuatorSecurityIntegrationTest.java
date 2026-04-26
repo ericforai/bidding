@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(properties = "management.health.redis.enabled=false")
@@ -28,6 +29,17 @@ class ActuatorSecurityIntegrationTest {
 
         mockMvc.perform(get("/actuator/info"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void publicResponsesCarrySecurityHeaders() throws Exception {
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Security-Policy",
+                        org.hamcrest.Matchers.containsString("default-src 'self'")))
+                .andExpect(header().string("Referrer-Policy", "strict-origin-when-cross-origin"))
+                .andExpect(header().string("Permissions-Policy",
+                        org.hamcrest.Matchers.containsString("camera=()")));
     }
 
     @Test

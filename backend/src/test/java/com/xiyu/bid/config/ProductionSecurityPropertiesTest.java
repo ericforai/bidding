@@ -23,6 +23,19 @@ class ProductionSecurityPropertiesTest {
     }
 
     @Test
+    void productionKeepsSensitiveSettingsExternalized() {
+        YamlPropertiesFactoryBean factoryBean = new YamlPropertiesFactoryBean();
+        factoryBean.setResources(new ClassPathResource("application-prod.yml"));
+        Properties properties = factoryBean.getObject();
+
+        assertThat(properties).isNotNull();
+        assertThat(properties.getProperty("jwt.secret")).isEqualTo("${JWT_SECRET}");
+        assertThat(properties.getProperty("spring.datasource.password")).isEqualTo("${DB_PASSWORD}");
+        assertThat(properties.getProperty("app.bootstrap.admin.password")).isEqualTo("${ADMIN_PASSWORD}");
+        assertThat(properties.getProperty("cors.allowed-origins")).isEqualTo("${CORS_ALLOWED_ORIGINS}");
+    }
+
+    @Test
     void productionDatasourceDefaultsToMysql8() {
         YamlPropertiesFactoryBean factoryBean = new YamlPropertiesFactoryBean();
         factoryBean.setResources(new ClassPathResource("application-prod.yml"));
