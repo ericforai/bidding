@@ -170,6 +170,12 @@ npm run test:e2e
 
 ## 多 Agent 执行手册 (SOP 落地)
 
+### 🚨 核心指令：进入工作区后的“早操” (必做)
+**在进行任何代码修改前，你必须确保你的代码库是最新的：**
+```bash
+git fetch origin && git rebase origin/main && ./scripts/sync-env.sh .
+```
+
 ### 1. 快速进入开发状态
 1. **确认路径**：确保你位于 `/Users/user/xiyu/worktrees/[Agent名称]`。
 2. **同步环境**：在 Worktree 根目录下执行 `./scripts/sync-env.sh .`。

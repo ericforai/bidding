@@ -469,3 +469,20 @@ Controller → Service → Repository → Entity
 - 公共组件重构、路由大改、权限模型调整。
 - `package.json` 或 lock 文件的大规模更新。
 
+---
+
+## 11. 强同步规则 (Sync First Rule)
+
+为确保所有 Agent 都在最新的代码基准上工作，避免“在旧代码上修 Bug”或“制造已修复的冲突”：
+
+### 11.1 开启任务前
+任何 Agent 在开始编写代码前，**必须**执行以下同步操作：
+1. `git fetch origin`：更新本地仓库对远端分支的感知。
+2. `git checkout -b agent/task-name origin/main`：确保新任务是从最新的 `main` 检出的。
+3. `scripts/sync-env.sh .`：同步最新的环境变量模板。
+
+### 11.2 开发过程中
+若主目录的 `main` 分支发生了合并更新，正在开发中的 Agent **必须**择机执行：
+- `git rebase origin/main`：将当前任务分支移至最新基准之上，并立即运行验证脚本（TDD）。
+
+
