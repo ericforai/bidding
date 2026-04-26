@@ -6,7 +6,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [Testing Infrastructure & TDD Workflow Governance](./tracks/testing-governance/plan.md)
 
-- [ ] **Track: Document Intelligence Engine (DocInsight)**
+- [x] **Track: Document Intelligence Engine (DocInsight)**
   *Link: [./tracks/document_intelligence_engine_20260425/](./tracks/document_intelligence_engine_20260425/)*
 
 ---
