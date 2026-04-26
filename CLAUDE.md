@@ -201,3 +201,39 @@ Agent 必须使用包装脚本启动，以自动适配上述隔离端口：
 2. `cd backend && mvn test` (后端全量/受影响测试验证)
 3. `git status` 确认只修改了授权文件。
 
+### 5. 任务启动协议 (Lease + Auto-Detect)
+不画静态目录所有权表 — 任务推进就过时。改用**双层动态机制**：任务级意图声明 + 文件级真实证据。
+
+**开新任务前必跑两步检查**：
+
+1. **看任务级声明**（其他 agent 写在 plan.md 里的 lease）：
+   ```bash
+   grep -h "\[~\]" conductor/tracks/*/plan.md
+   ```
+   列出所有 in-progress 任务的 `@agent + scope` 声明。
+
+2. **看 git 真实事实**（不依赖别人主动声明）：
+   ```bash
+   ./scripts/who-touches.sh <你打算改的路径>
+   ```
+   列出有未合 commit 的 `agent/*` 分支（origin + local 去重，跳过自己）。
+   退出码 0 = 干净；1 = 有冲突，照输出列表处置。
+
+3. **撞了就处置**：等对方任务关闭、换一个任务、或在 PR 描述里 @ 对方说明协调结果。
+4. **不撞**：把 plan.md 任务从 `[ ]` 置 `[~]`，行尾加 `(@<你>, scope: <path-or-glob>)`：
+   ```
+   - [~] 任务 1.2 引入 5 份 fixture (@claude, scope: backend/src/test/resources/docinsight/)
+   ```
+   任务关闭（`[x]`）→ lease 自动失效，scope 行可以留作历史。
+
+> 验证脚本：`./scripts/who-touches.sh --self-test` 应该看到 4 个 `[PASS]`。
+
+### 6. 纪律：每日 push WIP 分支
+`who-touches.sh` 准确性靠所有 agent 至少每日 push 自己 `agent/*` 分支：
+- **本地 commit 不算数** — 别的 agent / session 看不到，lease 检测会漏。
+- 每个工作 session 结束前推一次（即使没开 PR、即使是半成品）：
+  ```bash
+  git push origin HEAD:$(git rev-parse --abbrev-ref HEAD)
+  ```
+- push 是给 lease 检测看的，**不是为了 merge**；半成品 WIP 分支允许、欢迎、必须存在。
+
