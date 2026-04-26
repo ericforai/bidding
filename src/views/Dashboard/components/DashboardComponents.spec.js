@@ -90,6 +90,7 @@ describe('dashboard presentation components', () => {
     await wrapper.find('button').trigger('click')
 
     expect(wrapper.text()).toContain('上午好')
+    expect(wrapper.find('.banner-action-label').text()).toBe('业绩报表')
     expect(wrapper.emitted('action-click')[0]).toEqual([action])
   })
 

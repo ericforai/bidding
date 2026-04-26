@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Input: Git branch refs and a pathspec supplied by the caller
+# Output: agent branches with unmerged commits touching that pathspec
+# Pos: scripts/ - Repository maintenance guardrail
+# 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 # who-touches.sh — list agent/* branches with unmerged changes touching <pathspec>.
 #
 # Used as the file-level half of the multi-agent lease protocol (see CLAUDE.md
