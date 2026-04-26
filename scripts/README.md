@@ -21,8 +21,12 @@
 | `install-java-standards-hook.sh` | 安装脚本 | 将仓库 `.githooks/pre-commit` 安装到本地 `.git/hooks/pre-commit` |
 | `local-ci.sh` | 门禁脚本 | GitHub Actions 账单受限期间的本地验收入口；提供 `quick`、`full`、`release` 三档真实 API 模式门禁，后端门禁前会清理构建输出，不替代、不修改远端 Actions 定义 |
 | `clean-local-artifacts.sh` | 清理脚本 | 删除本地产生的测试、报告和演练产物 |
+| `dev-env.sh` | 环境识别脚本 | 按当前 main checkout 或多 Agent worktree 导出专属前端端口、后端端口、数据库名和 Redis DB |
 | `dev-frontend.sh` | 启动脚本 | 统一前端本地启动入口，强制 Vite 使用真实 API 模式和默认后端地址 |
 | `dev-frontend-health.sh` | 健康检查脚本 | 校验 `1314` 前端服务是否来自当前仓库，并确认运行时 API 模式和后端地址正确 |
+| `start-backend.sh` | 启动脚本 | 多 Agent worktree 后端启动入口，注入独立端口、数据库和 Redis DB 后转调后端启动脚本 |
+| `start-frontend.sh` | 启动脚本 | 多 Agent worktree 前端启动入口，按 `dev-env.sh` 分配端口启动 Vite |
+| `sync-env.sh` | 环境同步脚本 | 将根目录环境模板同步到指定 worktree，辅助多 Agent 环境初始化 |
 | `sync-version.mjs` | 维护脚本 | 以根目录 `VERSION` 为单一版本源，同步前端 `package.json` 和后端 `backend/pom.xml` |
 | `release/` | 发布脚本目录 | 管理发布演练、后端预编译与启动诊断、复用演练栈的 E2E 门禁、产物打包、远端激活、备份恢复和生产 smoke 验活；默认数据库口径为 MySQL 8.0，历史 PostgreSQL 仅保留显式兼容路径 |
 | `test/` | 测试基线目录 | Playwright 与 API 联调测试的启动、停止和说明脚本 |

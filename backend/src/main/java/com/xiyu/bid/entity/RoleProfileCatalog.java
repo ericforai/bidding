@@ -10,13 +10,14 @@ public final class RoleProfileCatalog {
     public static final String MANAGER_CODE = "manager";
     public static final String STAFF_CODE = "staff";
     public static final String QUICK_START_PERMISSION = "dashboard.quickStart";
+    public static final String AI_CENTER_PERMISSION = "ai-center";
 
     private static final Map<String, SeedDefinition> DEFINITIONS = Map.of(
             ADMIN_CODE, new SeedDefinition(ADMIN_CODE, "管理员", "系统管理员，拥有所有权限", true, "all", List.of("all")),
             MANAGER_CODE, new SeedDefinition(MANAGER_CODE, "经理", "部门经理，可查看项目、知识库、资源与分析数据", true, "dept",
-                    List.of("dashboard", "bidding", "project", "knowledge", "resource", "analytics", "settings")),
+                    List.of("dashboard", "bidding", "project", "knowledge", "resource", AI_CENTER_PERMISSION, "analytics", "settings")),
             STAFF_CODE, new SeedDefinition(STAFF_CODE, "员工", "业务人员，可查看工作台、标讯、项目、知识库与资源", true, "self",
-                    List.of("dashboard", QUICK_START_PERMISSION, "bidding", "project", "knowledge", "resource"))
+                    List.of("dashboard", QUICK_START_PERMISSION, "bidding", "project", "knowledge", "resource", AI_CENTER_PERMISSION))
     );
 
     private RoleProfileCatalog() {

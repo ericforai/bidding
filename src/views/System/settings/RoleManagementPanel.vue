@@ -78,6 +78,7 @@
 <script setup>
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { roleMenuOptions } from '@/config/sidebar-menu'
 
 const props = defineProps({
   roles: { type: Array, default: () => [] },
@@ -91,16 +92,7 @@ const dialogVisible = ref(false)
 const saving = ref(false)
 const form = ref(emptyForm())
 
-const menuOptions = [
-  { value: 'dashboard', label: '工作台' },
-  { value: 'dashboard.quickStart', label: '工作台快速发起' },
-  { value: 'bidding', label: '标讯中心' },
-  { value: 'project', label: '投标项目' },
-  { value: 'knowledge', label: '知识库' },
-  { value: 'resource', label: '资源管理' },
-  { value: 'analytics', label: '数据分析' },
-  { value: 'settings', label: '系统设置' }
-]
+const menuOptions = roleMenuOptions
 
 function emptyForm() {
   return {

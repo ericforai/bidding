@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Input: current working directory inside a main checkout or agent worktree
+# Output: exported frontend, backend, database, and Redis isolation variables
+# Pos: scripts/多 Agent 本地环境识别脚本
+# 维护声明: 仅维护本地协作环境端口与资源映射；调整 worktree 分配时请同步 SOP 与脚本目录说明。
 # Do not use set -e because this is meant to be sourced
 
 CURRENT_DIR="$(pwd)"

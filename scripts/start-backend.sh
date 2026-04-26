@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Input: detected agent worktree environment from scripts/dev-env.sh
+# Output: starts the backend service on the assigned isolated port and database
+# Pos: scripts/多 Agent 后端启动脚本
+# 维护声明: 仅维护本地后端启动环境注入；端口、数据库或 Redis 口径变化时请同步协作 SOP。
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
