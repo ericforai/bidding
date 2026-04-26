@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Input: target worktree directory and root environment template files
+# Output: copied environment files for the target worktree
+# Pos: scripts/多 Agent 环境文件同步脚本
+# 维护声明: 仅维护本地 worktree 环境文件同步；新增环境模板时请同步脚本目录说明。
 set -e
 
 # ROOT_DIR is the directory where the script is located (xiyu-bid-poc/scripts/..)

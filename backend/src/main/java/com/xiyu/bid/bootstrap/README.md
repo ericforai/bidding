@@ -9,4 +9,5 @@
 | 文件 | 地位 | 功能 |
 |------|------|------|
 | `DefaultAdminInitializer.java` | Bootstrap | 检测零用户状态，种子化默认管理员账户（dev/prod） |
+| `LocalDevAccountInitializer.java` | Bootstrap | 在 dev profile 下补齐登录页提示的本地员工/经理账号 |
 | `package-info.java` | Bootstrap | 包文档 |
