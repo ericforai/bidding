@@ -446,3 +446,26 @@ Controller → Service → Repository → Entity
 - 前端生产构建：可通过
 - 后端 ArchitectureTest：已修复并恢复为全绿基线
 - Mock 政策：已统一决策为“彻底删除双模式”，但代码层面仍有遗留待清理
+
+---
+
+## 10. 多 Agent 工程化红线
+
+### 10.1 强制隔离规则
+- **严禁目录跨越**：禁止 Agent 进入 `/Users/user/xiyu/xiyu-bid-poc/` (主目录/基准区) 进行任何代码修改或任务分支开发。
+- **任务分支隔离**：一个任务对应一个独立分支，命名格式为 `agent/[agent-name]-[task-description]`。严禁多个 Agent 共享同一个分支。
+- **配置隔离**：禁止 Agent 修改公共 `.env` 模板文件，除非任务本身要求调整全局环境变量。
+
+### 10.2 强制 SOP 阶段执行
+所有任务必须严格闭环：
+1. **Plan**：在 Track 中明确允许修改的文件范围，禁止超纲修改。
+2. **TDD**：代码变更必须伴随测试用例（或更新现有测试）。
+3. **Review**：检查是否引入了跨模块依赖。
+4. **Clean**：完成任务后必须执行 `git fetch origin` + `git rebase origin/main`。
+
+### 10.3 并行开发禁忌
+以下场景严禁多个 Agent 同时并行执行，必须串行处理：
+- 数据库表结构变更 (Flyway Migration)。
+- 公共组件重构、路由大改、权限模型调整。
+- `package.json` 或 lock 文件的大规模更新。
+

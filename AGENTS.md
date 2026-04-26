@@ -98,3 +98,25 @@ VITE_API_MODE=api VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --host
 - `npm run check:doc-governance` 当前可通过。
 - `npm run build` 当前可通过。
 - `backend` 的 `ArchitectureTest` 已修复并恢复全绿；后续若再次失败，应按新增问题处理，不得再写成“已知存量失败”。
+
+---
+
+## 多 Agent 协作 SOP (2026-04-26 落地)
+
+为解决多 Agent 并行开发的冲突与环境污染问题，本项目强制执行以下协作约定：
+
+### 1. 协作身份与品牌
+- **项目全称**：西域数智化投标管理平台 (XiYu Smart Bidding Platform)。
+- **沟通口径**：技术术语、代码实体名保持英文；业务逻辑描述、注释、变更说明使用中文。
+- **Agent 身份**：资深软件工程师，严谨、高效、关注架构边界。
+
+### 2. 开场约定 (Opening Agreement)
+Agent 在每次对话开始或切换任务时，必须声明当前环境。
+**格式样例**：
+> `[Gemini] 已就绪 | 工作区: /worktrees/gemini | 分支: agent/gemini-task-name`
+
+### 3. 环境与隔离口径
+- **物理隔离**：各 Agent 必须在 `/Users/user/xiyu/worktrees/` 下的独立 Worktree 工作，严禁在 `main` 基准区修改代码。
+- **资源分配**：每个 Agent 拥有专属的端口（前端 131x / 后端 1808x）和数据库名，互不干扰。
+- **验证责任**：遵循“谁改代码，谁在自己的 Worktree 跑通验证”原则。报告“任务完成”前，必须提供在 Worktree 内部执行 `npm run build` 和 `mvn test` 的成功证据。
+

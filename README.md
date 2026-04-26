@@ -302,3 +302,15 @@ xiyu-bid-poc/
 - 前端构建与文档治理基线稳定
 - 后端架构测试已修复，可作为常规门禁执行
 - 仓库命名中的 `POC` 属于历史遗留，后续需要逐步完成命名去 POC 化
+
+---
+
+## 多 Agent 协作工作区
+
+为支持多 Agent (Claude, Codex, Gemini, Cursor) 并行开发，本项目采用 Git Worktree 物理隔离方案：
+- **基准区 (Main)**: `/Users/user/xiyu/xiyu-bid-poc/` (只同步，不开发)
+- **Agent 工作区 (Worktrees)**: `/Users/user/xiyu/worktrees/`
+- **隔离机制**: 每个 Agent 拥有独立的端口映射与数据库实例。
+
+详见 `CLAUDE.md` 获取各 Agent 的端口分配表及启动指令。
+

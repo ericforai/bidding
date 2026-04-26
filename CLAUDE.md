@@ -166,8 +166,32 @@ npm run test:e2e
 - 文档要反映“当前事实 + 待清理事项”，不要再把目标状态写成现状。
 - 发现架构测试、Mock 遗留或安全配置与文档不一致时，应优先修正文档口径，或在同次任务中同步收口代码，而不是继续掩盖。 
 
-## Design System
-Always read DESIGN.md before making any visual or UI decisions.
-All font choices, colors, spacing, and aesthetic direction are defined there.
-Do not deviate without explicit user approval.
-In QA mode, flag any code that doesn't match DESIGN.md.
+---
+
+## 多 Agent 执行手册 (SOP 落地)
+
+### 1. 快速进入开发状态
+1. **确认路径**：确保你位于 `/Users/user/xiyu/worktrees/[Agent名称]`。
+2. **同步环境**：在 Worktree 根目录下执行 `./scripts/sync-env.sh .`。
+3. **环境检测**：执行 `source scripts/dev-env.sh`。
+
+### 2. 专属资源映射表
+| Agent | 前端端口 | 后端端口 | 数据库名 | Redis DB |
+| :--- | :--- | :--- | :--- | :--- |
+| **Claude** | 1315 | 18081 | xiyu_bid_claude | 1 |
+| **Codex** | 1316 | 18082 | xiyu_bid_codex | 2 |
+| **Gemini** | 1317 | 18083 | xiyu_bid_gemini | 3 |
+| **Cursor** | 1318 | 18084 | xiyu_bid_cursor | 4 |
+| **Integrator** | 1319 | 18085 | xiyu_bid_integrator | 5 |
+
+### 3. 协作启动命令
+Agent 必须使用包装脚本启动，以自动适配上述隔离端口：
+- **启动前端**：`./scripts/start-frontend.sh`
+- **启动后端**：`./scripts/start-backend.sh`
+
+### 4. 任务完成门禁
+在报告完成前，必须在 **当前 Worktree** 运行：
+1. `npm run build` (前端构建验证)
+2. `cd backend && mvn test` (后端全量/受影响测试验证)
+3. `git status` 确认只修改了授权文件。
+
