@@ -1,7 +1,14 @@
+// Input: DocumentStorage, DocumentTextExtractor, StructuralDocumentChunker, List<DocumentAnalyzer>, ProjectAccessScopeService
+// Output: DocumentAnalysisResult — 协调存储、提取、分块、分析各层；执行项目访问范围校验
+// Pos: docinsight/application — 文档智能分析主服务实现
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.docinsight.application;
 
+import com.xiyu.bid.docinsight.application.exception.DocumentNotFoundException;
+import com.xiyu.bid.docinsight.application.exception.UnsupportedProfileException;
 import com.xiyu.bid.docinsight.domain.DocumentChunk;
 import com.xiyu.bid.docinsight.domain.StructuralDocumentChunker;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -10,19 +17,25 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class DocumentIntelligenceServiceImpl implements DocumentIntelligenceService {
 
+    /** profileCode 值匹配此集合时，entityId 视为项目 ID，需校验访问范围。 */
+    private static final Set<String> PROJECT_BOUND_PROFILES = Set.of("TENDER");
+
     private final DocumentStorage storage;
     private final DocumentTextExtractor extractor;
     private final StructuralDocumentChunker chunker;
     private final List<DocumentAnalyzer> analyzers;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     @Override
     public DocumentAnalysisResult process(String profileCode, String entityId, MultipartFile file) {
+        checkProjectAccess(profileCode, entityId);
         try {
             byte[] content = file.getBytes();
             StoredDocument stored = storage.store(profileCode, entityId, file.getOriginalFilename(), file.getContentType(), content);
@@ -34,10 +47,16 @@ public class DocumentIntelligenceServiceImpl implements DocumentIntelligenceServ
 
     @Override
     public DocumentAnalysisResult processExisting(String profileCode, String entityId, String storagePath, String fileName, String contentType) {
+        checkProjectAccess(profileCode, entityId);
+
         byte[] content = storage.load(storagePath)
-                .orElseThrow(() -> new IllegalArgumentException("File not found at: " + storagePath));
-        
-        StoredDocument stored = new StoredDocument("doc-insight://existing", storagePath, "unknown-hash");
+                .orElseThrow(() -> new DocumentNotFoundException(storagePath));
+
+        // lookup re-reads to derive real fileUrl and contentHash; known double-read,
+        // pending metadata persistence layer introduction.
+        StoredDocument stored = storage.lookup(storagePath)
+                .orElseThrow(() -> new DocumentNotFoundException(storagePath));
+
         return parse(profileCode, stored, fileName, contentType, content);
     }
 
@@ -48,7 +67,7 @@ public class DocumentIntelligenceServiceImpl implements DocumentIntelligenceServ
         DocumentAnalyzer analyzer = analyzers.stream()
                 .filter(a -> a.supports(profileCode))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("No analyzer supported for profile: " + profileCode));
+                .orElseThrow(() -> new UnsupportedProfileException(profileCode));
 
         DocumentAnalysisInput input = new DocumentAnalysisInput(
                 stored.fileUrl(),
@@ -61,5 +80,22 @@ public class DocumentIntelligenceServiceImpl implements DocumentIntelligenceServ
         );
 
         return analyzer.analyze(input);
+    }
+
+    /**
+     * 当 profileCode 属于项目绑定类型时，校验当前用户是否有权访问对应项目。
+     * 抛出 AccessDeniedException 时由 GlobalExceptionHandler 映射到 HTTP 403。
+     */
+    private void checkProjectAccess(String profileCode, String entityId) {
+        if (!PROJECT_BOUND_PROFILES.contains(profileCode.toUpperCase())) {
+            return;
+        }
+        long projectId;
+        try {
+            projectId = Long.parseLong(entityId);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("项目型配置的 entityId 必须为有效的项目 ID 数字: " + entityId);
+        }
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
     }
 }

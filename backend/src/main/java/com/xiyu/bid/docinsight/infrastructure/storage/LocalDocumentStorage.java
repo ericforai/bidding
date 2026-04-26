@@ -58,6 +58,29 @@ public class LocalDocumentStorage implements DocumentStorage {
         return Optional.empty();
     }
 
+    /**
+     * 根据绝对存储路径推导 StoredDocument 元数据。
+     * fileUrl 与 store() 保持一致（doc-insight://{uploadRoot 的相对路径}）。
+     * contentHash 通过读取文件内容实时计算。
+     * 注意：此方法会重新读取文件，如已调用 load() 则存在双读，待元数据持久化后可优化。
+     */
+    @Override
+    public Optional<StoredDocument> lookup(String storagePath) {
+        try {
+            Path path = Path.of(storagePath);
+            if (!Files.exists(path)) {
+                return Optional.empty();
+            }
+            byte[] content = Files.readAllBytes(path);
+            String hash = sha256(content);
+            Path relative = uploadRoot.toAbsolutePath().relativize(path.toAbsolutePath());
+            String fileUrl = "doc-insight://" + relative.toString().replace('\\', '/');
+            return Optional.of(new StoredDocument(fileUrl, storagePath, hash));
+        } catch (IOException e) {
+            return Optional.empty();
+        }
+    }
+
     private String safeFileName(String fileName) {
         String candidate = fileName == null || fileName.isBlank() ? "document" : fileName.trim();
         return candidate.replaceAll("[\\\\/:*?\"<>|]+", "_");

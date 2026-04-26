@@ -13,6 +13,11 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Locale;
 
+/**
+ * @deprecated 已由 {@link com.xiyu.bid.docinsight.infrastructure.extractor.MarkItDownSidecarExtractor}
+ *             及其降级路径取代。新代码请使用 docinsight 模块的提取器。将在 next-release 移除。
+ */
+@Deprecated(since = "next-release", forRemoval = true)
 @Component
 @RequiredArgsConstructor
 public class PoiPdfTenderDocumentTextExtractor implements TenderDocumentTextExtractor {

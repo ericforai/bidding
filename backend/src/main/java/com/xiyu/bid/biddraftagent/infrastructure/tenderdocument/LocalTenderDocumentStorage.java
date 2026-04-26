@@ -12,6 +12,11 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
+/**
+ * @deprecated 已由 {@link com.xiyu.bid.docinsight.infrastructure.storage.LocalDocumentStorage} 取代。
+ *             新代码请使用 docinsight 模块的存储实现。将在 next-release 移除。
+ */
+@Deprecated(since = "next-release", forRemoval = true)
 @Component
 public class LocalTenderDocumentStorage implements TenderDocumentStorage {
 

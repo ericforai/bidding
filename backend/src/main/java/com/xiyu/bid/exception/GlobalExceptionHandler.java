@@ -5,6 +5,8 @@
 package com.xiyu.bid.exception;
 
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.docinsight.application.exception.DocumentNotFoundException;
+import com.xiyu.bid.docinsight.application.exception.UnsupportedProfileException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -186,6 +188,32 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(404, "请求的资源不存在"));
+    }
+
+    /**
+     * 处理 DocInsight 文档不存在异常 → HTTP 404
+     */
+    @ExceptionHandler(DocumentNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDocumentNotFoundException(
+            DocumentNotFoundException ex,
+            HttpServletRequest request) {
+        log.warn("DocInsight 文档不存在 - URI: {}, Path: {}", request.getRequestURI(), ex.getStoragePath());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(404, ex.getMessage()));
+    }
+
+    /**
+     * 处理 DocInsight 不支持的分析配置异常 → HTTP 400
+     */
+    @ExceptionHandler(UnsupportedProfileException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUnsupportedProfileException(
+            UnsupportedProfileException ex,
+            HttpServletRequest request) {
+        log.warn("DocInsight 不支持的分析配置 - URI: {}, Profile: {}", request.getRequestURI(), ex.getProfileCode());
+        return ResponseEntity
+                .badRequest()
+                .body(ApiResponse.error(400, ex.getMessage()));
     }
 
     /**

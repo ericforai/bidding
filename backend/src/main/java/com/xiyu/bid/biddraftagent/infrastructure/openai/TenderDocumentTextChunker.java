@@ -3,6 +3,11 @@ package com.xiyu.bid.biddraftagent.infrastructure.openai;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @deprecated 已由 {@link com.xiyu.bid.docinsight.domain.StructuralDocumentChunker} 取代。
+ *             新代码请使用 docinsight 领域层的分块器。将在 next-release 移除。
+ */
+@Deprecated(since = "next-release", forRemoval = true)
 final class TenderDocumentTextChunker {
 
     private TenderDocumentTextChunker() {
