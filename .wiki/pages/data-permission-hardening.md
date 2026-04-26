@@ -9,11 +9,12 @@ sources:
   - backend/src/test/java/com/xiyu/bid/ProjectAccessGuardCoverageTest.java
 backlinks:
   - _index
-  - architecture
+  - implementation/attachment4-gap-matrix
+  - implementation/attachment6-function-list-trace
   - roles-and-permissions
 created: 2026-04-25
 updated: 2026-04-25
-health_checked: 2026-04-25
+health_checked: 2026-04-26
 ---
 # 项目数据权限修复收口
 

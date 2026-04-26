@@ -8,14 +8,13 @@ sources:
   - src/views/System/settings/SystemIntegrationPanel.vue
   - src/views/System/settings/integration/
 backlinks:
-  - api-openapi
-  - architecture
-  - requirements
+  - _index
+  - implementation/attachment4-gap-matrix
+  - implementation/attachment6-function-list-trace
 created: 2026-04-25
 updated: 2026-04-25
-health_checked: 2026-04-25
+health_checked: 2026-04-26
 ---
-
 # 系统集成中心 - 企业微信
 
 > 满足客户「集成性」需求条款的统一配置入口，落地企业微信首支持，CRM/OA/组织架构占位待实施。

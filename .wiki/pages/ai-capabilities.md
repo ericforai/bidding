@@ -17,12 +17,14 @@ backlinks:
   - _index
   - business-process
   - contract-constraints
+  - implementation/attachment4-gap-matrix
   - implementation/attachment4-requirement-task-book
+  - implementation/attachment6-function-list-trace
   - modules
   - requirements
 created: 2026-04-15
 updated: 2026-04-24
-health_checked: 2026-04-25
+health_checked: 2026-04-26
 ---
 # AI 能力
 

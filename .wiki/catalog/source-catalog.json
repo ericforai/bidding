@@ -8,7 +8,18 @@
     "status": "extracted",
     "extract_path": ".wiki/extracts/bidding__附件5：西域数智化投标管理平台建设项目需求任务书.docx.md",
     "confidence": 0.85,
-    "ingested_at": "2026-04-24T06:11:26.017Z"
+    "ingested_at": "2026-04-26T13:57:51.527Z"
+  },
+  {
+    "id": "bf1294d092f63579",
+    "path": ".wiki/sources/bidding/附件6：需求功能清单.md",
+    "type": "markdown",
+    "topic": "bidding",
+    "hash": "bf1294d092f6357912ff5ed9cbb83f987d6874dfb7cafafec6e4355f150b5cdf",
+    "status": "extracted",
+    "extract_path": ".wiki/extracts/bidding__附件6：需求功能清单.md.md",
+    "confidence": 1,
+    "ingested_at": "2026-04-26T13:57:51.546Z"
   },
   {
     "id": "ae594bd338028a36",
@@ -19,7 +30,7 @@
     "status": "extracted",
     "extract_path": ".wiki/extracts/bidding__附件6：需求功能清单.xlsx.md",
     "confidence": 0.75,
-    "ingested_at": "2026-04-24T06:11:26.032Z"
+    "ingested_at": "2026-04-26T13:57:51.547Z"
   },
   {
     "id": "7214c18393c19d8a",
@@ -30,7 +41,7 @@
     "status": "extracted",
     "extract_path": ".wiki/extracts/contract__西域数智化投标管理平台建设项目合同-V1_0420.docx.md",
     "confidence": 0.85,
-    "ingested_at": "2026-04-24T06:11:26.061Z"
+    "ingested_at": "2026-04-26T13:57:51.581Z"
   },
   {
     "id": "3dd8dee6dce7f5a0",
@@ -41,7 +52,7 @@
     "status": "extracted",
     "extract_path": ".wiki/extracts/contract__附件3-合同报价清单人工摘录.md.md",
     "confidence": 1,
-    "ingested_at": "2026-04-24T06:11:26.077Z"
+    "ingested_at": "2026-04-26T13:57:51.600Z"
   },
   {
     "id": "f05a34b855849f3c",
@@ -52,7 +63,7 @@
     "status": "manual_review",
     "extract_path": ".wiki/extracts/contract__附件3：西域数智化投标管理平台建设项目合同报价清单.pdf.md",
     "confidence": 0.2,
-    "ingested_at": "2026-04-24T06:11:26.078Z"
+    "ingested_at": "2026-04-26T13:57:51.603Z"
   },
   {
     "id": "bd76b85a21b0568f",
@@ -63,7 +74,7 @@
     "status": "extracted",
     "extract_path": ".wiki/extracts/contract__附件4：西域数智化投标管理平台建设项目需求任务书.docx.md",
     "confidence": 0.85,
-    "ingested_at": "2026-04-24T06:11:26.234Z"
+    "ingested_at": "2026-04-26T13:57:51.755Z"
   },
   {
     "id": "0c61664242899d57",
@@ -74,6 +85,6 @@
     "status": "extracted",
     "extract_path": ".wiki/extracts/implementation__西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx.md",
     "confidence": 0.85,
-    "ingested_at": "2026-04-24T06:11:26.245Z"
+    "ingested_at": "2026-04-26T13:57:51.766Z"
   }
 ]

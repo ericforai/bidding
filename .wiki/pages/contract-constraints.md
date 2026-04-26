@@ -13,6 +13,7 @@ backlinks:
   - _index
   - deployment
   - implementation/acceptance-and-closure
+  - implementation/attachment4-gap-matrix
   - implementation/attachment4-requirement-task-book
   - implementation/milestones
   - implementation/risk-register
@@ -21,8 +22,8 @@ backlinks:
   - requirements
   - team-and-timeline
 created: 2026-04-23
-updated: 2026-04-25
-health_checked: 2026-04-25
+updated: 2026-04-26
+health_checked: 2026-04-26
 ---
 # 合同约束
 

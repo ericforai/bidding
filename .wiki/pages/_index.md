@@ -8,9 +8,9 @@ sources:
   - .wiki/INDEX.md
   - .wiki/PAGE_INDEX.md
 backlinks:
-created: 2026-04-25
-updated: 2026-04-25
-health_checked: 2026-04-25
+created: 2026-04-26
+updated: 2026-04-26
+health_checked: 2026-04-26
 ---
 # 西域投标管理平台知识库
 
@@ -37,6 +37,7 @@ health_checked: 2026-04-25
 - [[data-permission-hardening]] — 项目数据权限修复收口
 - [[deployment]] — 部署与上线
 - [[design-system]] — 设计系统基线
+- [[docinsight-engine]] — DocInsight 文档智能引擎
 - [[glossary]] — 术语表
 - [[integration-wecom]] — 系统集成中心 - 企业微信
 - [[modules]] — 模块目录
@@ -49,8 +50,11 @@ health_checked: 2026-04-25
 
 - [[contract-constraints]] — 合同约束
 - [[implementation/acceptance-and-closure]] — 实施验收与问题闭环
+- [[implementation/attachment4-gap-matrix]] — 附件4客户要求差距矩阵
 - [[implementation/attachment4-requirement-task-book]] — 附件4需求任务书交付基线
+- [[implementation/attachment6-function-list-trace]] — 附件6需求功能清单追溯
 - [[implementation/delivery-playbook]] — 实施交付作战包总览
+- [[implementation/document-delivery-ledger]] — 文档交付台账
 - [[implementation/milestones]] — 实施里程碑与依赖
 - [[implementation/risk-register]] — 实施风险台账
 - [[implementation/sow-2026-v1-4]] — SOW 2026 V1.4 执行基准
