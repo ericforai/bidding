@@ -594,8 +594,6 @@ import { aiApi, tendersApi } from '@/api'
 import customerOpportunityApi from '@/api/modules/customerOpportunity'
 import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 import { useProjectConversion } from '@/composables/projectDetail/useProjectConversion.js'
-...
-const barStore = useBarStore()
 const conversion = useProjectConversion()
 
 const tenderSchema = {

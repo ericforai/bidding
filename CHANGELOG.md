@@ -5,15 +5,23 @@
 ## [未发布]
 
 ### Added
-- 本周交付了投标编写 Agent 闭环，覆盖草稿生成、parse-run-apply 工作流和文档编辑器批量导入能力。
-- 本周新增可配置 AI Provider 路由、投标匹配评分模型，以及 MySQL 8 部署支持，补齐关键交付路径。
+- **DocInsight 文档智能引擎**: 实现了全系统通用的底层文档解析基础设施 (`com.xiyu.bid.docinsight`)。
+  - 支持 .doc/.docx/.pdf 到高保真 Markdown 的高保真转换（物理层）。
+  - 实现了基于标题层级的“结构化切片”逻辑，保留完整的章节上下文路径（结构层）。
+  - 建立了通用 AI 提取流水线，强制要求字段携带原文摘录证据与章节定位（认知层）。
+  - 新增 `/api/doc-insight/parse` 通用 API，支持多业务 Profile 驱动的结构化提取。
+- **证据驱动立项工作台**: 新增通用的 `DocVerificationWorkbench.vue` 前端组件。
+  - 支持 Schema 驱动的表单动态渲染，实现“点击数据项，自动跳转原文高亮证据”的交互闭环。
+  - 深度集成至项目创建流程（Project Create）与投标助手抽屉（Bid Agent Drawer）。
 
 ### Changed
-- 本周持续推进 Dashboard、Bidding、合规规则和评分策略的 Split-First / pure core 拆分，收敛编排层职责并补齐测试门禁。
-- 发布与开发链路补齐主线发布流水线、生产 smoke checks、dev service/watchdog 以及 E2E 诊断与复用策略稳定化。
+- **解析逻辑去业务化**: 将原有的标书解析逻辑解耦，迁移为 DocInsight 引擎的首个 TENDER Profile。
+- **性能与鲁棒性优化**: 前后端接口超时时间分别延长至 120s/90s，支持 80+ 页超长文档的稳健解析。
+- **立项流程重构**: 优化立项业务逻辑，实现基于已有标讯附件的自动驱动解析，消除了用户的重复上传操作。
 
 ### Fixed
-- 修复标讯上传迁移与 schema 校验、E2E rehearsal 栈复用、移动端投标管理布局，以及匹配评分证据范围等回归问题。
+- 修复了前端模板标签未闭合导致的编译错误及后端非 ASCII 字符导致的 Maven 编译失败。
+- 修正了 `BidTenderDocumentImportAppService` 对物理文件存储路径的识别逻辑。
 
 ### Key PRs
 - [#55 MySQL 8 main sync](https://github.com/ericforai/bidding/pull/55)

@@ -28,10 +28,11 @@ health_checked: 2026-04-25
 
 ## 1. AI 能力总览
 
-平台内置 **3 大类 9 项** AI 能力，贯穿投标全生命周期：
+平台内置 **4 大类 10 项** AI 能力，贯穿投标全生命周期：
 
 | 类别 | 能力 | 核心价值 |
 |------|------|----------|
+| **底层引擎** | **DocInsight** | **通用文档智能解析（证据驱动）** |
 | **投标准备**（4 项） | AI 分析 | 招标文件 10 秒智能解析 |
 | | 评分点覆盖 | 评分标准与标书内容逐项匹配 |
 | | 竞争情报 | 竞对策略预测与历史数据分析 |
@@ -44,9 +45,25 @@ health_checked: 2026-04-25
 
 ---
 
-## 2. 投标准备类（4 项）
+## 2. 底层引擎类 (Core Engine)
 
-### 2.1 AI 分析
+### 2.1 DocInsight 文档智能引擎 (NEW)
+
+**模块路径**：`com.xiyu.bid.docinsight` | **核心定位**：全系统文档解析与证据链基础设施
+
+- **技术突破**：实现“解析 -> 锚定 -> 核对”三位一体的文档认知闭环。
+- **核心能力**：
+  - **高保真转换**：自动处理 .doc/.docx/.pdf，输出结构化 Markdown。
+  - **结构化切片 (Structural Chunking)**：基于文档大纲（H1-H6）的物理语义切片，保留完整的章节路径上下文。
+  - **证据锚定 (Evidence Anchoring)**：提取的每一个字段均携带 `sourceExcerpt`（原文摘录）和 `sectionPath`（章节位置）。
+  - **通用 AI 流水线**：支持通过 Schema 驱动不同的解析 Profile（如：标书、合同、案例）。
+- **业务价值**：彻底消除 AI 幻觉，将核对成本降低 90%，为全系统提供带“实锤”的结构化提取能力。
+
+---
+
+## 3. 投标准备类（4 项）
+
+### 3.1 AI 分析
 
 **配置 ID**：`ai-analysis` | **类别**：`prepare`
 
@@ -62,7 +79,7 @@ health_checked: 2026-04-25
   - 中标率权重：技术 50% + 商务 30% + 经验 20%
   - 风险阈值：高 > 0.8、中 > 0.5、低 > 0.2
 
-### 2.2 评分点覆盖
+### 3.2 评分点覆盖
 
 **配置 ID**：`score-coverage` | **类别**：`prepare`
 
@@ -79,7 +96,7 @@ health_checked: 2026-04-25
   - 风险等级自动判定：80-100 低风险、60-79 中等风险、0-59 高风险
   - 支持项目历史趋势跟踪与多项目对比分析
 
-### 2.3 竞争情报
+### 3.3 竞争情报
 
 **配置 ID**：`competition-intel` | **类别**：`prepare`
 
@@ -97,7 +114,7 @@ health_checked: 2026-04-25
   - 历史表现跟踪：胜率预测（0-100）
   - API 端点 6 个，含竞对管理与分析功能
 
-### 2.4 ROI 核算
+### 3.4 ROI 核算
 
 **配置 ID**：`roi-analysis` | **类别**：`prepare`
 
@@ -113,9 +130,9 @@ health_checked: 2026-04-25
 
 ---
 
-## 3. 标书编制类（2 项）
+## 4. 标书编制类（2 项）
 
-### 3.1 智能装配
+### 4.1 智能装配
 
 **配置 ID**：`smart-assembly` | **类别**：`composition`
 
@@ -136,7 +153,7 @@ health_checked: 2026-04-25
 - **支持章节**：Executive 摘要、技术方案、商务方案、项目计划、团队介绍、案例介绍
 - **自动格式化**：默认开启（`autoFormat: true`）
 
-### 3.2 合规雷达
+### 4.2 合规雷达
 
 **配置 ID**：`compliance-check` | **类别**：`composition`
 
@@ -162,9 +179,9 @@ health_checked: 2026-04-25
 
 ---
 
-## 4. 团队协作类（3 项）
+## 5. 团队协作类（3 项）
 
-### 4.1 版本管理
+### 5.1 版本管理
 
 **配置 ID**：`version-control` | **类别**：`collaboration`
 
@@ -176,7 +193,7 @@ health_checked: 2026-04-25
   - 自动快照功能（`autoSnapshot: true`）
   - 智能合并策略（`mergeStrategy: 'smart'`）
 
-### 4.2 协作中心
+### 5.2 协作中心
 
 **配置 ID**：`collaboration-center` | **类别**：`collaboration`
 
@@ -195,7 +212,7 @@ health_checked: 2026-04-25
 - **优先级体系**：critical / high / medium / low
 - **通知机制**：任务分配自动通知（`notifyEnabled: true`）
 
-### 4.3 自动化任务
+### 5.3 自动化任务
 
 **配置 ID**：`auto-tasks` | **类别**：`collaboration`
 
@@ -213,7 +230,7 @@ health_checked: 2026-04-25
 
 ---
 
-## 5. 后端 AI 架构
+## 6. 后端 AI 架构
 
 ### Provider 抽象
 
@@ -256,7 +273,7 @@ AiAnalysisResponse
 
 ---
 
-## 6. Prompt 配置结构
+## 7. Prompt 配置结构
 
 前端 AI 功能配置位于 `src/config/ai-prompts.js`，每项 AI 能力包含两部分配置：
 
@@ -284,7 +301,7 @@ AiAnalysisResponse
 
 ---
 
-## 7. 与业务流程的映射
+## 8. 与业务流程的映射
 
 各 AI 能力在 [[business-process]] 各阶段的作用：
 

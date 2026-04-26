@@ -218,6 +218,7 @@ health_checked: 2026-04-25
 
 | 模块 | 包路径 | 说明 |
 |------|--------|------|
+| docinsight | `com.xiyu.bid.docinsight` | **文档智能引擎**（通用解析、结构化切片、证据锚定） |
 | ai | `com.xiyu.bid.ai` | AI 核心服务（Provider 抽象、异步分析） |
 | compliance | `com.xiyu.bid.compliance` | 合规检查（6 维度检测、风险评估） |
 | competitionintel | `com.xiyu.bid.competitionintel` | 竞争情报（竞对管理、竞争分析） |

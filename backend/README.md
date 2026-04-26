@@ -30,6 +30,7 @@ src/main/java/com/xiyu/bid/
 ├── service/           # 业务逻辑层
 ├── util/              # 工具类
 ├── ai/                # AI Provider 与可测试的 AI 规则核心
+├── docinsight/        # 文档智能引擎：通用解析、结构化切片、证据锚定
 ├── biddraftagent/     # 标书生成 Agent：run 编排、OpenAI 生成、审查与文档写入计划
 ├── documenteditor/    # 文档编辑器与草稿树批量写入
 ├── alerts/            # 智能预警模块
