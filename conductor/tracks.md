@@ -14,5 +14,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: Evidence-Driven Tender-to-Project Conversion Engine**
   *Link: [./tracks/evidence_driven_conversion_20260425/](./tracks/evidence_driven_conversion_20260425/)*
 
-- [ ] **Track: SOP Infrastructure Initialization**
+- [x] **Track: SOP 基础设施初始化**
   *Link: [./tracks/infrastructure_sop_setup_20260426/](./tracks/infrastructure_sop_setup_20260426/)*
