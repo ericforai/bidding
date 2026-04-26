@@ -27,6 +27,7 @@ health_checked: 2026-04-25
 ## Engineering Space
 
 - [[_index]] — 西域投标管理平台知识库
+- [[agent-sop-quickref]] — Agent 开发 SOP 快速参考
 - [[ai-capabilities]] — AI 能力
 - [[api-openapi]] — OpenAPI/Swagger 接口规范
 - [[architecture]] — 架构合成
