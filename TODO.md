@@ -12,7 +12,7 @@
 - [ ] 继续增强 OpenAI structured output 清洗，对列表字段做更细的语义去噪和分段规整
 - [ ] 支持基于解析快照的多版本管理与人工激活，允许选择“哪个招标版本”参与后续生成
 - [ ] 补全文档编辑器里的来源追踪展示，让章节可直接查看引用的招标条款与知识库来源
-- [ ] 增加生成阶段的异步任务化与进度持久化，支持长文档生成的可靠重试和状态恢复
+- [ ] 增加生成阶段的异步任务化与进度持久化，支持长文档生成的可靠重试 and 状态恢复
 
 ## 系统集成中心
 
@@ -57,9 +57,20 @@
 - [ ] Webhook 出站事件回调框架：`webhook_subscription` 表 + 事件总线 + 重试机制
 - [ ] 在每个 Controller 上补齐 `@Operation` / `@Tag` / `@Schema` 注解，让 Swagger UI 文档更友好
 
-### 工程质量
+## 架构与性能优化
 
-- [ ] `ManualTenderDialog.spec.js` 中临时 `.skip` 的 `emits file changes to the parent workflow` 用例需要原维护者重写（`shallowMount` + el-upload 自定义 stub 方案下 findComponent 无法定位，应改为 `mount` 后直接触发 DOM change 事件）
-- [ ] 评估把 `integration/domain/ValidationResult.java` 与 `bidmatch/domain/ValidationResult.java` 抽取到 `common/domain/` 共享，避免重复
+### 后端数据权限范围查询下推
+- [ ] **Goal**: 将统计与导出的可见项目范围计算从 `projectRepository.findAll()` 后内存过滤，下推为数据库层的当前用户可见项目 ID 查询。
+- [ ] **Impact**: 降低非管理员统计和导出的查询成本，避免大租户/大项目量下出现慢接口。
+- [ ] **Next Step**: 把 `filterAccessibleProjects(projectRepository.findAll())` 替换为 `currentUserAccessibleProjectIds()`。
+
+## QA 遗留事项 (QA Deferred)
+
+- [ ] **非管理员演示账号不可登录**: 登录页展示 `lizong` 等演示账号但密码 401。需明确移除提示或在本地 profile 中种子化。 (Found: 2026-04-25)
+- [ ] **导出响应 recordCount 始终为 0**: 已在分支修复，需确认 `ExportController` 已使用 `ExcelExportService` 返回的结构化元数据。 (Found: 2026-04-25)
+
+## 工程质量
+
+- [ ] `ManualTenderDialog.spec.js` 中临时 `.skip` 的 `emits file changes to the parent workflow` 用例需要原维护者重写
+- [ ] 评估把 `integration/domain/ValidationResult.java` 与 `bidmatch/domain/ValidationResult.java` 抽取到 `common/domain/` 共享
 - [ ] 补一个 `@SpringBootTest` 级别的 integration 测试，验证 `WeComIntegrationController` 真实路径 + Flyway 迁移端到端
-
