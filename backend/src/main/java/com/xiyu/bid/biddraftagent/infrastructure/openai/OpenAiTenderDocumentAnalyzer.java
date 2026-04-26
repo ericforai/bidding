@@ -1,3 +1,8 @@
+// Input: TenderDocumentAnalysisInput（文件名 + 正文 + 结构化元数据）
+// Output: TenderRequirementProfile — 通过 OpenAI 结构化输出合并所有 chunk 的字段
+// Pos: biddraftagent/infrastructure/openai — LLM 分析适配器（prompt 围栏 + 合并）
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 package com.xiyu.bid.biddraftagent.infrastructure.openai;
 
 import com.xiyu.bid.biddraftagent.application.TenderDocumentAnalysisInput;
@@ -237,6 +242,12 @@ public class OpenAiTenderDocumentAnalyzer implements TenderDocumentAnalyzer {
         return values == null ? List.of() : values;
     }
 
+    /**
+     * OpenAI 结构化输出 DTO — 只作为 SDK 反射填充目标。
+     * 不转成 record 的原因：openai-java SDK 通过 jsonschema-generator 生成 JSON Schema 时，
+     * record 的 canonical constructor 签名会强制所有字段为必填，无法表达"可选字段"，
+     * 对于 LLM 有能力但不一定全部返回的字段会破坏解析。字段到此为止不外泄、只被本类使用。
+     */
     public static class TenderRequirementOutput {
         public String projectName;
         public String tenderTitle;
