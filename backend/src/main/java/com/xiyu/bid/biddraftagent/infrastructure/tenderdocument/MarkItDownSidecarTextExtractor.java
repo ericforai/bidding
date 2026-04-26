@@ -1,10 +1,17 @@
+// Input: 原始文件字节 + 文件名；通过 HTTP 调用 MarkItDown sidecar 做 doc→markdown 转换
+// Output: ExtractedTenderDocument（含 markdown 正文 + 结构化元数据）；sidecar 不可用时降级到 PoiPdf 提取器
+// Pos: biddraftagent/infrastructure/tenderdocument — 带降级的 sidecar HTTP 适配器
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 package com.xiyu.bid.biddraftagent.infrastructure.tenderdocument;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.biddraftagent.application.ExtractedTenderDocument;
 import com.xiyu.bid.biddraftagent.application.TenderDocumentTextExtractor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.ByteArrayResource;
@@ -14,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 @Component
@@ -27,7 +35,7 @@ public class MarkItDownSidecarTextExtractor implements TenderDocumentTextExtract
     private final PoiPdfTenderDocumentTextExtractor fallbackExtractor;
 
     public MarkItDownSidecarTextExtractor(
-            RestTemplate restTemplate,
+            @Qualifier("markItDownSidecarRestTemplate") RestTemplate restTemplate,
             ObjectMapper objectMapper,
             @Value("${app.converter.sidecar-url:http://localhost:8000}") String sidecarUrl,
             PoiPdfTenderDocumentTextExtractor fallbackExtractor) {
@@ -54,12 +62,14 @@ public class MarkItDownSidecarTextExtractor implements TenderDocumentTextExtract
 
             HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
             String responseStr = restTemplate.postForObject(sidecarUrl + "/convert", requestEntity, String.class);
+            if (responseStr == null || responseStr.isBlank()) {
+                return fallbackOnFailure(fileName, contentType, content, "sidecar returned empty body");
+            }
 
             JsonNode root = objectMapper.readTree(responseStr);
             String markdown = root.path("markdown").asText("");
-            
             if (markdown.isBlank()) {
-                throw new IllegalStateException("Sidecar returned empty markdown");
+                return fallbackOnFailure(fileName, contentType, content, "sidecar returned empty markdown");
             }
 
             return new ExtractedTenderDocument(
@@ -70,9 +80,15 @@ public class MarkItDownSidecarTextExtractor implements TenderDocumentTextExtract
                     "markitdown-sidecar",
                     responseStr
             );
-        } catch (Exception e) {
-            log.error("Failed to extract text using Sidecar, falling back to legacy extractor: {}", e.getMessage());
-            return fallbackExtractor.extract(fileName, contentType, content);
+        } catch (RestClientException httpFailure) {
+            return fallbackOnFailure(fileName, contentType, content, "sidecar HTTP failure: " + httpFailure.getMessage());
+        } catch (JsonProcessingException parseFailure) {
+            return fallbackOnFailure(fileName, contentType, content, "sidecar response not parseable: " + parseFailure.getMessage());
         }
+    }
+
+    private ExtractedTenderDocument fallbackOnFailure(String fileName, String contentType, byte[] content, String reason) {
+        log.error("Falling back to legacy extractor for {}: {}", fileName, reason);
+        return fallbackExtractor.extract(fileName, contentType, content);
     }
 }
