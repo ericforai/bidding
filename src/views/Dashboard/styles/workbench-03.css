@@ -54,10 +54,28 @@
   background: linear-gradient(135deg, #2E7659 0%, #18563E 100%);
 }
 
+.banner-actions .el-button {
+  min-width: 112px;
+  height: 40px;
+  justify-content: center;
+}
+
+.banner-actions .el-button .banner-action-label {
+  color: inherit;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .banner-admin .banner-actions .el-button--primary {
   background: #FFFFFF;
   color: var(--brand-xiyu-logo, #2E7659);
   border-color: #FFFFFF;
+}
+
+.welcome-banner .banner-actions .el-button--primary .banner-action-label,
+.welcome-banner .banner-actions .el-button--primary .el-icon {
+  color: var(--brand-xiyu-logo-active, #18563E) !important;
 }
 
 /* ==================== 团队绩效卡片 ==================== */

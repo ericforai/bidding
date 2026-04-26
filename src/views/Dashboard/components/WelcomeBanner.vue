@@ -1,5 +1,5 @@
 <!-- Input: Workbench WelcomeBanner props and user actions
-Output: presentational Workbench WelcomeBanner section
+Output: presentational Workbench WelcomeBanner section with readable action labels
 Pos: src/views/Dashboard/components/ - Dashboard display components
 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。 -->
 <template>
@@ -17,7 +17,7 @@ Pos: src/views/Dashboard/components/ - Dashboard display components
           :icon="action.icon"
           @click="emit('action-click', action)"
         >
-          {{ action.label }}
+          <span class="banner-action-label">{{ action.label }}</span>
         </el-button>
       </div>
     </div>
