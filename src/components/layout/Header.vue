@@ -11,6 +11,7 @@
         <Menu />
       </el-icon>
       <div class="logo">
+        <img class="logo-mark" src="/favicon.ico" alt="" aria-hidden="true">
         <span class="logo-icon">西域MRO</span>
         <span class="logo-text">投标管理平台</span>
       </div>
@@ -290,12 +291,9 @@ const handleCommand = async (command) => {
   transform: scale(0.95);
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  white-space: nowrap;
-}
+.logo { display: flex; align-items: center; gap: var(--space-sm); white-space: nowrap; }
+
+.logo-mark { width: 22px; height: 22px; object-fit: contain; flex-shrink: 0; }
 
 .logo-icon {
   font-size: 18px;

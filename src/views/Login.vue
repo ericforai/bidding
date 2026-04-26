@@ -6,11 +6,7 @@
         <!-- Logo -->
         <div class="brand-logo">
           <div class="logo-icon">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <img src="/favicon.ico" alt="西域 Logo">
           </div>
           <span class="logo-text">西域数智化投标管理平台</span>
         </div>
@@ -269,17 +265,18 @@ const handleLogin = async () => {
 .logo-icon {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%);
+  background: rgba(255, 255, 255, 0.96);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
 }
 
-.logo-icon svg {
-  width: 28px;
-  height: 28px;
+.logo-icon img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
 }
 
 .logo-text {

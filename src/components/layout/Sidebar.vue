@@ -10,7 +10,7 @@
   >
     <div class="drawer-sidebar">
       <div class="sidebar-logo">
-        <span class="logo-icon">西域MRO</span>
+        <span class="logo-icon"><img src="/favicon.ico" alt="" aria-hidden="true">西域MRO</span>
         <CommonIcon name="close" class="close-icon" @click="drawerVisible = false" />
       </div>
 
@@ -58,8 +58,8 @@
   <!-- PC端侧边栏 -->
   <div class="sidebar-container" v-else>
     <div class="sidebar-logo">
-      <span class="logo-icon" v-if="!collapse">西域MRO</span>
-      <span class="logo-icon-small" v-else>西域</span>
+      <span class="logo-icon" v-if="!collapse"><img src="/favicon.ico" alt="" aria-hidden="true">西域MRO</span>
+      <span class="logo-icon-small" v-else><img src="/favicon.ico" alt="西域"></span>
     </div>
 
     <el-menu
@@ -384,20 +384,12 @@ const filteredMenus = computed(() => {
   background: #FFFFFF; border-bottom: 1px solid rgba(46, 118, 89, 0.12);
 }
 
-.logo-icon {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--brand-xiyu-logo, #2E7659);
-  letter-spacing: 2px;
-  white-space: nowrap;
-}
+.logo-icon { font-size: 20px; font-weight: 700; color: var(--brand-xiyu-logo, #2E7659); letter-spacing: 2px; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; }
 
-.logo-icon-small {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--brand-xiyu-logo, #2E7659);
-  white-space: nowrap;
-}
+.logo-icon-small { display: inline-flex; align-items: center; justify-content: center; }
+
+.logo-icon img,
+.logo-icon-small img { width: 24px; height: 24px; object-fit: contain; flex-shrink: 0; }
 
 /* ========== 菜单区域 ========== */
 .sidebar-menu {
