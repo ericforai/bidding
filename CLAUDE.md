@@ -202,38 +202,44 @@ Agent 必须使用包装脚本启动，以自动适配上述隔离端口：
 3. `git status` 确认只修改了授权文件。
 
 ### 5. 任务启动协议 (Lease + Auto-Detect)
-不画静态目录所有权表 — 任务推进就过时。改用**双层动态机制**：任务级意图声明 + 文件级真实证据。
+不画静态目录所有权表 — 任务推进就过时。改用 **git 事实** 当主信号，Gemini 的 conductor 任务声明当辅助。
 
-**开新任务前必跑两步检查**：
+#### 5.1 主信号：git 事实（**所有 agent 通用，必跑**）
+开新任务前对你打算改的路径跑：
+```bash
+./scripts/who-touches.sh <path-or-glob>
+```
+列出有未合 commit 的 `agent/*` 分支（origin + local 去重，跳过自己）。
+- 退出码 `0` + 无输出 → 干净，可以开工
+- 退出码 `1` + 有输出 → 别的 agent 在动这块，看清楚再决定
 
-1. **看任务级声明**（其他 agent 写在 plan.md 里的 lease）：
-   ```bash
-   grep -h "\[~\]" conductor/tracks/*/plan.md
-   ```
-   列出所有 in-progress 任务的 `@agent + scope` 声明。
+#### 5.2 辅助信号：Gemini 的任务声明（**仅当撞到 `agent/gemini-init` 时有用**）
+Gemini 在 `conductor/tracks/` 系统里执行任务，会把 in-progress 任务标 `[~]` 并附 `(@gemini, scope: ...)`。如果 5.1 显示 `agent/gemini-init` 在你的目标路径有未合改动，可以查一眼具体任务上下文：
+```bash
+grep -h "\[~\]" conductor/tracks/*/plan.md | grep gemini
+```
 
-2. **看 git 真实事实**（不依赖别人主动声明）：
-   ```bash
-   ./scripts/who-touches.sh <你打算改的路径>
-   ```
-   列出有未合 commit 的 `agent/*` 分支（origin + local 去重，跳过自己）。
-   退出码 0 = 干净；1 = 有冲突，照输出列表处置。
+> **重要**：Claude / Codex / Cursor **没有等价的任务声明机制**。撞到这几个 agent 的分支时，**不要假设可以从 plan.md 查到他们的意图** — 直接看 `git log <branch>` 的 commit message，或在 PR 描述里 @ 对方协调。其他 agent 的"意图声明"靠 §6 的 commit message + push 频率自然沉淀。
 
-3. **撞了就处置**：等对方任务关闭、换一个任务、或在 PR 描述里 @ 对方说明协调结果。
-4. **不撞**：把 plan.md 任务从 `[ ]` 置 `[~]`，行尾加 `(@<你>, scope: <path-or-glob>)`：
-   ```
-   - [~] 任务 1.2 引入 5 份 fixture (@claude, scope: backend/src/test/resources/docinsight/)
-   ```
-   任务关闭（`[x]`）→ lease 自动失效，scope 行可以留作历史。
+#### 5.3 撞了的处置
+- 等对方 push 完一个原子 commit / PR merge / Gemini 任务标 `[x]`
+- 换一个不撞的任务先做
+- 在 PR 描述里 @ 对方说明协调结果（"我接着你的 X 改 Y，rebase 你的 PR 后再合"）
+
+#### 5.4 没撞 → 开工
+- 你是 Gemini：在 plan.md 把任务从 `[ ]` 改成 `[~] (@gemini, scope: ...)` 让别人看见你的意图
+- 你是其他 agent：**push commit 时就是你的意图声明** — commit message 写清楚 scope，下个 §6
 
 > 验证脚本：`./scripts/who-touches.sh --self-test` 应该看到 4 个 `[PASS]`。
 
 ### 6. 纪律：每日 push WIP 分支
-`who-touches.sh` 准确性靠所有 agent 至少每日 push 自己 `agent/*` 分支：
+`who-touches.sh` 是所有 agent 共用的协调机制，准确性靠每天至少 push 一次自己 `agent/*` 分支：
 - **本地 commit 不算数** — 别的 agent / session 看不到，lease 检测会漏。
 - 每个工作 session 结束前推一次（即使没开 PR、即使是半成品）：
   ```bash
   git push origin HEAD:$(git rev-parse --abbrev-ref HEAD)
   ```
-- push 是给 lease 检测看的，**不是为了 merge**；半成品 WIP 分支允许、欢迎、必须存在。
+- push 是给 lease 检测看的，**不是为了 merge** — 半成品 WIP 分支允许、欢迎、必须存在。
+
+> 对非 Gemini 的 agent 而言，**commit message + 改动文件就是你的"我在做这事"声明**。所以 commit message 要明确，例如 `wip: add CONTRACT profile (scope: docinsight/contract*)`，即使没 PR 别人也能从 `who-touches.sh` 输出 + `git log <branch> --oneline -5` 推断你在干什么。
 
