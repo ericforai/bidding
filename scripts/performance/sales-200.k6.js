@@ -9,7 +9,9 @@ import { Counter, Rate, Trend } from 'k6/metrics'
 const apiBaseUrl = (__ENV.API_BASE_URL || 'http://127.0.0.1:18080').replace(/\/$/, '')
 const defaultUsername = __ENV.K6_USERNAME || '小王'
 const defaultPassword = __ENV.K6_PASSWORD || 'XiyuDemo!2026'
+const skipExport = String(__ENV.K6_SKIP_EXPORT || 'false').toLowerCase() === 'true'
 const completeUpload = String(__ENV.K6_COMPLETE_UPLOAD || 'false').toLowerCase() === 'true'
+const skipTenderUpload = String(__ENV.K6_SKIP_TENDER_UPLOAD || 'false').toLowerCase() === 'true'
 const syncBidAgentParse = String(__ENV.K6_BID_AGENT_SYNC_PARSE || 'false').toLowerCase() === 'true'
 const tenderFilePath = __ENV.TENDER_FILE_PATH || ''
 const tenderFileName = __ENV.TENDER_FILE_NAME || 'performance-tender.docx'
@@ -65,7 +67,9 @@ export default function () {
 
   get('/api/analytics/overview', authHeaders, 'dashboard overview')
   get('/api/analytics/product-lines', authHeaders, 'dashboard product lines')
-  post('/api/export/excel', JSON.stringify({ dataType: 'projects', params: {} }), authHeaders, 'export projects')
+  if (!skipExport) {
+    post('/api/export/excel', JSON.stringify({ dataType: 'projects', params: {}, async: false }), authHeaders, 'export projects')
+  }
   exerciseTenderUpload(authHeaders)
 
   if (syncBidAgentParse && projectId && tenderFileBytes) {
@@ -114,6 +118,10 @@ function loadProjects(authHeaders) {
 }
 
 function exerciseTenderUpload(authHeaders) {
+  if (skipTenderUpload) {
+    return
+  }
+
   const payload = {
     fileName: tenderFileName,
     expectedFileSize: Number(__ENV.K6_TENDER_EXPECTED_SIZE || 10485760),
