@@ -204,6 +204,25 @@ Agent 必须使用包装脚本启动，以自动适配上述隔离端口：
 ### 5. 任务启动协议 (Lease + Auto-Detect)
 不画静态目录所有权表 — 任务推进就过时。改用 **git 事实** 当主信号，Gemini 的 conductor 任务声明当辅助。
 
+#### 5.0 同步基线（**每次开新任务都要跑**，不只是 session 开头）
+"早操"只覆盖 session 开头。**任务之间也必须重新同步** — 否则 5.1 的 `who-touches.sh` 看到的是旧 main 的 diff，可能漏掉别的 agent 中途合的改动，你照样会在过期 base 上累工作。
+
+开新任务前必跑：
+```bash
+git fetch origin && git rebase origin/main
+```
+- 没改动 → no-op（2-3 秒）
+- 有改动 → 早暴露 conflict，不留给 merge 时再处理
+- **uncommitted 工作中途要 sync** → 先 `git stash` 保护现场，rebase 后再 `git stash pop`
+
+5.1 / 5.2 必须在 5.0 之后跑（否则 git 数据是旧的）。可以用 alias 把两步合一：
+```bash
+alias agent-start='git fetch origin && git rebase origin/main'
+# 然后日常：agent-start && ./scripts/who-touches.sh <path>
+```
+
+> **同步频率 mental model**：sync **不是"每天一次的事"**，是 **"开始做新工作之前的最后一道清醒动作"**。session 开头 / 任务起点 / 推 PR 前 — 这三个节点必跑；其它时刻原则上不要在 uncommitted 工作中途 rebase。
+
 #### 5.1 主信号：git 事实（**所有 agent 通用，必跑**）
 开新任务前对你打算改的路径跑：
 ```bash
