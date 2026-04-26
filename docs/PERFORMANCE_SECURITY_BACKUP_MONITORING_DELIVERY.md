@@ -36,8 +36,8 @@
 
 ```bash
 API_BASE_URL=http://127.0.0.1:18080 \
-K6_USERNAME=小王 \
-K6_PASSWORD='XiyuDemo!2026' \
+K6_USERNAME=staff \
+K6_PASSWORD='Test@123' \
 k6 run scripts/performance/sales-200.k6.js
 ```
 
