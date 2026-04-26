@@ -69,7 +69,7 @@ class OpenAiJsonObjectPayloadReaderTest {
 
     @Test
     void read_shouldNormalizeObjectListsAndItemsAliasForTenderRequirements() throws Exception {
-        OpenAiTenderDocumentAnalyzer.TenderRequirementOutput payload = reader.read("""
+        TenderRequirementOutput payload = reader.read("""
                 {
                   "projectName":"项目A",
                   "requiredMaterials":{"primary":"营业执照","secondary":"授权书"},
@@ -77,7 +77,7 @@ class OpenAiJsonObjectPayloadReaderTest {
                     "first":{"category":"qualification","title":"资质","content":"提供营业执照","mandatory":true,"sourceExcerpt":"营业执照","confidence":95}
                   }
                 }
-                """, OpenAiTenderDocumentAnalyzer.TenderRequirementOutput.class);
+                """, TenderRequirementOutput.class);
 
         assertThat(payload.requiredMaterials).containsExactly("营业执照", "授权书");
         assertThat(payload.requirementItems).hasSize(1);
@@ -86,7 +86,7 @@ class OpenAiJsonObjectPayloadReaderTest {
 
     @Test
     void read_shouldFlattenObjectArraysIntoStringLists() throws Exception {
-        OpenAiTenderDocumentAnalyzer.TenderRequirementOutput payload = reader.read("""
+        TenderRequirementOutput payload = reader.read("""
                 {
                   "projectName":"项目A",
                   "qualificationRequirements":[
@@ -94,14 +94,14 @@ class OpenAiJsonObjectPayloadReaderTest {
                     {"title":"授权书","description":"加盖公章"}
                   ]
                 }
-                """, OpenAiTenderDocumentAnalyzer.TenderRequirementOutput.class);
+                """, TenderRequirementOutput.class);
 
         assertThat(payload.qualificationRequirements).containsExactly("营业执照", "授权书 / 加盖公章");
     }
 
     @Test
     void read_shouldIgnoreMetadataOnlyObjectsWhenNormalizingReadableLists() throws Exception {
-        OpenAiTenderDocumentAnalyzer.TenderRequirementOutput payload = reader.read("""
+        TenderRequirementOutput payload = reader.read("""
                 {
                   "projectName":"项目A",
                   "qualificationRequirements":[
@@ -125,7 +125,7 @@ class OpenAiJsonObjectPayloadReaderTest {
                     }
                   ]
                 }
-                """, OpenAiTenderDocumentAnalyzer.TenderRequirementOutput.class);
+                """, TenderRequirementOutput.class);
 
         assertThat(payload.qualificationRequirements)
                 .containsExactly("供应商须为在中华人民共和国境内注册的企业法人。");

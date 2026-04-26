@@ -171,7 +171,7 @@ class OpenAiJsonObjectPayloadReader {
     }
 
     private void normalizeAliases(ObjectNode objectNode, Class<?> responseType) {
-        if (!responseType.equals(OpenAiTenderDocumentAnalyzer.TenderRequirementOutput.class)) {
+        if (!responseType.equals(TenderRequirementOutput.class)) {
             return;
         }
         if (!objectNode.has("requirementItems") && objectNode.has("items")) {
