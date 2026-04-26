@@ -51,38 +51,36 @@ describe('useProjectDetailBidAgent', () => {
     expect(context.message.success).toHaveBeenCalledWith('AI 初稿生成任务已启动')
   })
 
-  it('imports a tender document, then creates a run from the parsed snapshot and applies it', async () => {
+  it('imports a tender document and triggers workbench instead of auto-running', async () => {
     apiMocks.importTenderDocument.mockResolvedValue({
       success: true,
       data: {
-        message: '招标文件已解析，已更新招标要求快照',
+        message: '招标文件已解析',
         document: { id: 55, snapshotId: 601 },
       },
     })
-    apiMocks.createRun.mockResolvedValue({ success: true, data: { runId: 'run-upload', status: 'DRAFTED' } })
-    apiMocks.applyRun.mockResolvedValue({ success: true, data: { projectId: 12, structureId: 88 } })
     const context = createContext()
     const agent = useProjectDetailBidAgent(context)
     const file = new File(['招标正文'], '招标文件.docx')
 
     agent.selectTenderFile(file)
-    const result = await agent.importTenderDocument({ applyToEditor: true })
-    agent.goToEditor()
+    const result = await agent.importTenderDocument()
 
     expect(apiMocks.importTenderDocument).toHaveBeenCalledWith(12, expect.any(FormData))
+    expect(agent.showWorkbench.value).toBe(true)
+    expect(agent.importResult.value.document.snapshotId).toBe(601)
+    expect(apiMocks.createRun).not.toHaveBeenCalled()
+  })
+
+  it('confirming workbench creates a run', async () => {
+    apiMocks.createRun.mockResolvedValue({ success: true, data: { runId: 'run-after-confirm' } })
+    const agent = useProjectDetailBidAgent(createContext())
+    agent.importResult.value = { document: { snapshotId: 601 } }
+    
+    await agent.confirmWorkbench({ some: 'profile' })
+    
+    expect(agent.showWorkbench.value).toBe(false)
     expect(apiMocks.createRun).toHaveBeenCalledWith(12, { snapshotId: 601 })
-    expect(apiMocks.applyRun).toHaveBeenCalledWith(12, 'run-upload', {})
-    expect(result.run.runId).toBe('run-upload')
-    expect(agent.currentRunId.value).toBe('run-upload')
-    expect(agent.applyResult.value.structureId).toBe(88)
-    expect(context.router.push).toHaveBeenCalledWith({
-      name: 'DocumentEditor',
-      params: { id: '12' },
-      query: {
-        bidAgentRunId: 'run-upload',
-        structureId: '88',
-      },
-    })
   })
 
   it('requires a tender file before importing', async () => {

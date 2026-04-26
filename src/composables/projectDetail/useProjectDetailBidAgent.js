@@ -49,6 +49,7 @@ export function useProjectDetailBidAgent(context) {
   const { route, router, project, message, bidAgentApi = defaultBidAgentApi } = context
 
   const drawerVisible = ref(false)
+  const showWorkbench = ref(false)
   const currentRun = ref(null)
   const applyResult = ref(null)
   const reviewResult = ref(null)
@@ -95,7 +96,7 @@ export function useProjectDetailBidAgent(context) {
     tenderFile.value = null
   }
 
-  const importTenderDocument = async ({ applyToEditor = true } = {}) => {
+  const importTenderDocument = async () => {
     if (!tenderFile.value) {
       const text = '请先选择招标文件'
       error.value = text
@@ -103,7 +104,6 @@ export function useProjectDetailBidAgent(context) {
       return null
     }
 
-    drawerVisible.value = true
     importing.value = true
     error.value = ''
     applyResult.value = null
@@ -118,42 +118,27 @@ export function useProjectDetailBidAgent(context) {
       if (isFailedResponse(response)) throw new Error(response.message || '解析招标文件失败')
       const parsedResult = getResponseData(response)
       importResult.value = parsedResult
-
-      const snapshotId = parsedResult?.document?.snapshotId
-      let run = null
-      let applied = null
-
-      if (snapshotId) {
-        run = await createRun({ snapshotId }, { silentSuccess: true })
-        if (run && applyToEditor) {
-          applied = await applyBidAgentResult({ silentSuccess: true })
-        }
-      }
-
-      const combinedResult = {
-        ...parsedResult,
-        run,
-        applyResult: applied,
-        appliedToEditor: Boolean(applied),
-      }
-      importResult.value = combinedResult
-
-      if (!error.value) {
-        if (applied) {
-          message?.success?.('招标文件已解析，标书初稿已写入文档编辑器')
-        } else if (run) {
-          message?.success?.('招标文件已解析并生成标书初稿')
-        } else {
-          message?.success?.(parsedResult?.message || '招标文件已解析，已更新招标要求快照')
-        }
-      }
-      return combinedResult
+      
+      // Instead of auto-running AI, we show the workbench for human verification
+      showWorkbench.value = true
+      
+      return parsedResult
     } catch (err) {
       reportError(err, '解析招标文件失败')
       return null
     } finally {
       importing.value = false
     }
+  }
+
+  const confirmWorkbench = async (confirmedProfile) => {
+    showWorkbench.value = false
+    drawerVisible.value = true
+    
+    const snapshotId = importResult.value?.document?.snapshotId
+    if (!snapshotId) return
+    
+    await createRun({ snapshotId })
   }
 
   const createRun = async (payload = {}, options = {}) => {
@@ -254,6 +239,7 @@ export function useProjectDetailBidAgent(context) {
 
   return {
     drawerVisible,
+    showWorkbench,
     currentRun,
     applyResult,
     reviewResult,
@@ -273,6 +259,7 @@ export function useProjectDetailBidAgent(context) {
     selectTenderFile,
     clearTenderFile,
     importTenderDocument,
+    confirmWorkbench,
     createRun,
     fetchRun,
     applyBidAgentResult,

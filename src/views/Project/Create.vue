@@ -455,6 +455,42 @@
       </div>
     </el-card>
 
+    <!-- 立项深度解析与核对 (通用 DocInsight) -->
+    <el-dialog
+      v-model="conversion.showWorkbench.value"
+      title="项目立项深度核对"
+      fullscreen
+      destroy-on-close
+      append-to-body
+    >
+      <DocVerificationWorkbench
+        v-if="conversion.parseResult.value"
+        title="项目立项核对 (AI 证据驱动)"
+        :schema="tenderSchema"
+        :data="conversion.parseResult.value.requirementProfile"
+        :requirements="conversion.parseResult.value.requirementProfile?.items"
+        :markdown="conversion.parseResult.value.document?.extractedText"
+        @cancel="handleWorkbenchCancel"
+        @confirm="handleWorkbenchConfirm"
+      />
+    </el-dialog>
+
+    <!-- 解析等待层 -->
+    <el-dialog
+      v-model="conversion.isParsing.value"
+      title="证据驱动解析中"
+      width="400px"
+      :close-on-click-modal="false"
+      :show-close="false"
+      center
+    >
+      <div style="text-align: center; padding: 20px;">
+        <el-icon class="is-loading" :size="40" color="#409eff"><Loading /></el-icon>
+        <p style="margin-top: 20px; font-weight: 600;">正在从文档提取证据链...</p>
+        <p style="color: #909399; font-size: 13px;">这可能需要 30-60 秒，系统正在确保每一项提取都有据可查</p>
+      </div>
+    </el-dialog>
+
     <!-- 资产检查弹窗 -->
     <el-dialog
       v-model="showAssetCheckDialog"
@@ -553,11 +589,37 @@ import {
 import { ElMessage, ElMessageBox } from 'element-plus'
 import ScoreCoverage from '@/components/ai/ScoreCoverage.vue'
 import FeaturePlaceholder from '@/components/common/FeaturePlaceholder.vue'
+import DocVerificationWorkbench from '../../components/common/doc-insight/DocVerificationWorkbench.vue'
 import { aiApi, tendersApi } from '@/api'
 import customerOpportunityApi from '@/api/modules/customerOpportunity'
 import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
+import { useProjectConversion } from '@/composables/projectDetail/useProjectConversion.js'
+...
+const barStore = useBarStore()
+const conversion = useProjectConversion()
 
-const router = useRouter()
+const tenderSchema = {
+  groups: [
+    {
+      id: 'basic',
+      title: '基本信息',
+      fields: [
+        { key: 'projectName', label: '项目名称', type: 'string' },
+        { key: 'purchaserName', label: '采购人', type: 'string' },
+        { key: 'budget', label: '项目预算', type: 'number' }
+      ]
+    },
+    {
+      id: 'timeline',
+      title: '关键节点',
+      fields: [
+        { key: 'publishDate', label: '发布日期', type: 'date' },
+        { key: 'deadline', label: '投标截止', type: 'datetime' }
+      ]
+    }
+  ]
+}
+
 const route = useRoute()
 const projectStore = useProjectStore()
 const userStore = useUserStore()
@@ -915,39 +977,7 @@ const getPriorityText = (priority) => {
 const handleSubmit = async () => {
   submitting.value = true
   try {
-    // 合并用户任务和AI生成的任务
-    const userTasks = taskForm.tasks.filter(t => t.name)
-    const aiTasks = hasAiStep
-      ? aiGeneratedTasks.value
-          .filter(t => t.selected)
-          .map(t => ({
-            name: t.name,
-            priority: t.priority,
-            status: 'todo',
-            owner: basicForm.manager
-          }))
-      : []
-
-    const projectData = false
-      ? {
-          ...basicForm,
-          ...detailForm,
-          sourceModule: sourceInfo.module || '',
-          sourceCustomerId: sourceInfo.customerId || '',
-          sourceCustomer: sourceInfo.customerName || '',
-          sourceOpportunityId: sourceInfo.opportunityId || '',
-          sourceReasoningSummary: sourceInfo.reasoningSummary || '',
-          tasks: [...userTasks, ...aiTasks],
-          competitorAnalysis: competitorAnalysis.value,
-          aiAnalysis: hasAiStep
-            ? {
-                ...aiSummary.value,
-                scoreCoverage: scoreAnalysis.value
-              }
-            : null
-        }
-      : buildApiProjectPayload()
-
+    const projectData = buildApiProjectPayload()
     const createdProject = await projectStore.createProject(projectData)
 
     if (createdProject?.id && sourceInfo.opportunityId) {
@@ -958,6 +988,17 @@ const handleSubmit = async () => {
       }
     }
 
+    // --- 业务重构：创建后立即尝试通过 DocInsight 提取证据链 ---
+    const tenderId = resolveApiTenderId()
+    if (tenderId && createdProject?.id) {
+      ElMessage.success('基础信息已保存，正在为您提取标书证据链...')
+      const parseResult = await conversion.parseTender(createdProject.id, tenderId)
+      if (parseResult) {
+        // 等待用户在通用 Workbench 中确认
+        return
+      }
+    }
+
     ElMessage.success('项目创建成功')
     if (createdProject?.id) {
       router.push(`/project/${createdProject.id}`)
@@ -965,9 +1006,30 @@ const handleSubmit = async () => {
     }
     router.push('/project')
   } catch (error) {
-    ElMessage.error('项目创建失败')
+    ElMessage.error(error?.message || '项目创建失败')
   } finally {
     submitting.value = false
+  }
+}
+
+const handleWorkbenchCancel = () => {
+  conversion.showWorkbench.value = false
+  const projectId = projectStore.currentProject?.id
+  if (projectId) {
+    router.push(`/project/${projectId}`)
+  } else {
+    router.push('/project')
+  }
+}
+
+const handleWorkbenchConfirm = async () => {
+  conversion.showWorkbench.value = false
+  ElMessage.success('深度核对完成，证据链已同步至项目')
+  const projectId = projectStore.currentProject?.id
+  if (projectId) {
+    router.push(`/project/${projectId}`)
+  } else {
+    router.push('/project')
   }
 }
 

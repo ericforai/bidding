@@ -14,6 +14,26 @@
 
       <ProjectDetailBidAgentTenderUpload />
 
+      <el-dialog
+        v-model="agent.showWorkbench.value"
+        title="项目立项核对"
+        fullscreen
+        destroy-on-close
+        :append-to-body="true"
+        custom-class="workbench-dialog"
+      >
+        <DocVerificationWorkbench 
+          v-if="agent.importResult.value"
+          title="项目要求深度核对 (AI 证据驱动)"
+          :schema="tenderSchema"
+          :data="agent.importResult.value.requirementProfile"
+          :requirements="agent.importResult.value.requirementProfile?.items"
+          :markdown="agent.importResult.value.document?.extractedText || agent.importResult.value.requirementProfile?.rawMarkdown"
+          @cancel="agent.showWorkbench.value = false"
+          @confirm="agent.confirmWorkbench"
+        />
+      </el-dialog>
+
       <div class="agent-actions">
         <el-button type="primary" plain :loading="agent.creating.value" @click="agent.createRun()">使用已有项目资料生成</el-button>
         <el-button :disabled="!agent.currentRunId.value" :loading="agent.fetching.value" @click="agent.fetchRun()">刷新状态</el-button>
@@ -75,9 +95,32 @@ import { computed } from 'vue'
 import { useProjectDetailContext } from '@/composables/projectDetail/context.js'
 import { useBidAgentDrawerView } from '@/composables/projectDetail/useBidAgentDrawerView.js'
 import ProjectDetailBidAgentTenderUpload from './ProjectDetailBidAgentTenderUpload.vue'
+import DocVerificationWorkbench from '../../common/doc-insight/DocVerificationWorkbench.vue'
 
 const detail = useProjectDetailContext()
 const agent = detail.bidAgent
+
+const tenderSchema = {
+  groups: [
+    {
+      id: 'basic',
+      title: '基本信息',
+      fields: [
+        { key: 'projectName', label: '项目名称', type: 'string' },
+        { key: 'purchaserName', label: '采购人', type: 'string' },
+        { key: 'budget', label: '项目预算', type: 'number' }
+      ]
+    },
+    {
+      id: 'timeline',
+      title: '关键节点',
+      fields: [
+        { key: 'publishDate', label: '发布日期', type: 'date' },
+        { key: 'deadline', label: '投标截止', type: 'datetime' }
+      ]
+    }
+  ]
+}
 
 const visible = computed({
   get: () => agent.drawerVisible.value,

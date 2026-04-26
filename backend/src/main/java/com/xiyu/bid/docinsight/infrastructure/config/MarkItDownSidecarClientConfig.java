@@ -3,7 +3,7 @@
 // Pos: biddraftagent/infrastructure/tenderdocument — Sidecar HTTP 客户端配置，不依赖任何 Service
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
-package com.xiyu.bid.biddraftagent.infrastructure.tenderdocument;
+package com.xiyu.bid.docinsight.infrastructure.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;

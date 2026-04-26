@@ -17,8 +17,8 @@
     </el-upload>
 
     <div class="upload-actions">
-      <el-button type="primary" :loading="agent.importing.value" @click="agent.importTenderDocument({ applyToEditor: true })">
-        上传招标文件并生成初稿
+      <el-button type="primary" :loading="agent.importing.value" @click="agent.importTenderDocument()">
+        上传招标文件并核对要求
       </el-button>
       <el-button :disabled="!agent.selectedTenderFileName.value || agent.importing.value" @click="agent.clearTenderFile">
         清空
