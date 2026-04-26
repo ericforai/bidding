@@ -4,7 +4,7 @@
 .tender-card:focus-visible,
 .calendar-day-cell:focus-visible,
 .upcoming-event-item:focus-visible {
-  outline: 3px solid rgba(37, 99, 235, 0.45);
+  outline: 3px solid var(--brand-xiyu-logo-focus, rgba(46, 118, 89, 0.32));
   outline-offset: 3px;
 }
 
@@ -37,10 +37,32 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: #E0ECFF;
-  color: #1E40AF;
+  background: var(--brand-xiyu-logo-soft, rgba(46, 118, 89, 0.12));
+  color: var(--brand-xiyu-logo, #2E7659);
   font-size: 13px;
   font-weight: 700;
+}
+
+.workbench-empty-state .el-button.el-button--primary.is-text {
+  min-width: 64px;
+  min-height: 30px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.24);
+  background: rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.1);
+  color: var(--brand-xiyu-logo, #2E7659);
+  box-shadow: none;
+  font-weight: 600;
+  transform: none;
+}
+
+.workbench-empty-state .el-button.el-button--primary.is-text:hover,
+.workbench-empty-state .el-button.el-button--primary.is-text:focus {
+  border-color: rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.36);
+  background: rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.16);
+  color: var(--brand-xiyu-logo, #2E7659);
+  box-shadow: none;
+  transform: none;
 }
 
 .state-error .empty-state-icon {

@@ -1,5 +1,5 @@
 <!-- Input: Workbench WorkCalendar props and user actions
-Output: presentational Workbench WorkCalendar section
+Output: presentational Workbench WorkCalendar section with simplified empty states
 Pos: src/views/Dashboard/components/ - Dashboard display components
 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。 -->
 <template>
@@ -125,7 +125,7 @@ Pos: src/views/Dashboard/components/ - Dashboard display components
           <EmptyState
             v-else
             class="calendar-empty-state"
-            icon="日"
+            icon=""
             title="这一天没有投标节点"
             description="当前筛选条件下没有事项，可以切换筛选或查看未来 7 天。"
           />
@@ -174,7 +174,7 @@ Pos: src/views/Dashboard/components/ - Dashboard display components
           <EmptyState
             v-if="upcomingEvents.length === 0"
             class="calendar-empty-state compact"
-            icon="7"
+            icon=""
             title="未来 7 天没有待执行节点"
             description="当前筛选下没有临近节点，可以清除筛选查看全部日程。"
             action-label="清除筛选"

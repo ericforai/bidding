@@ -126,13 +126,13 @@
 
 .calendar-filter-chip:hover,
 .calendar-filter-chip.active {
-  color: #1D4ED8;
-  border-color: #BFDBFE;
-  background: #EFF6FF;
+  color: var(--brand-xiyu-logo, #2E7659);
+  border-color: rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.28);
+  background: rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.1);
 }
 
 .dot-all {
-  background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+  background: var(--brand-xiyu-logo, #2E7659);
 }
 
 .dot-urgent {
@@ -149,7 +149,7 @@
 }
 
 .calendar-wrapper .el-calendar-table .el-calendar-day {
-  height: 54px;
+  height: 46px;
   border-radius: 10px;
 }
 
@@ -157,9 +157,16 @@
   background: #F8FAFC;
 }
 
+.calendar-wrapper .el-calendar-table td.is-selected {
+  background: transparent !important;
+}
+
+.calendar-wrapper .el-calendar-table td.is-selected .el-calendar-day,
+.calendar-wrapper .el-calendar-table td.is-selected:hover .el-calendar-day,
 .calendar-wrapper .el-calendar-table .el-calendar-day.is-selected {
-  background: linear-gradient(135deg, #E0ECFF 0%, #DBEAFE 100%);
-  color: #1D4ED8;
+  background: transparent !important;
+  color: #0F172A;
+  border-radius: 10px;
 }
 
 .calendar-wrapper .el-calendar-table .el-calendar-day.is-today {
@@ -168,10 +175,16 @@
 }
 
 .calendar-day-cell {
-  min-height: 44px;
+  min-height: 38px;
   align-items: center;
   padding: 5px 4px;
   border-radius: 10px;
+}
+
+.calendar-wrapper .el-calendar-table td.is-selected .calendar-day-cell {
+  background: transparent !important;
+  border: 0;
+  box-shadow: none;
 }
 
 .calendar-day-cell.calendar-day-urgent {
@@ -186,6 +199,17 @@
 
 .calendar-day-number {
   color: #0F172A;
+}
+
+.calendar-wrapper .el-calendar-table td.is-selected .calendar-day-number {
+  width: 22px; height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--brand-xiyu-logo, #2E7659);
+  color: #FFFFFF;
+  font-weight: 700;
 }
 
 .calendar-day-marker {
@@ -216,7 +240,7 @@
 .calendar-event-dot.event-bid,
 .legend-dot.event-bid,
 .chip-dot.dot-bid {
-  background: #3B82F6;
+  background: var(--brand-xiyu-logo, #2E7659);
 }
 
 .calendar-event-dot.event-opening,

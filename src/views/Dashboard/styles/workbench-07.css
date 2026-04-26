@@ -104,7 +104,7 @@
 
   /* 日历响应式 */
   .calendar-wrapper .el-calendar-table .el-calendar-day {
-    height: 40px;
+    height: 38px;
   }
 
   .calendar-day-number {
@@ -122,8 +122,13 @@
   }
 
   .calendar-day-cell {
-    min-height: 40px;
+    min-height: 34px;
     padding: 4px 2px;
+  }
+
+  .calendar-wrapper .el-calendar-table td.is-selected .calendar-day-number {
+    width: 20px;
+    height: 20px;
   }
 
   .selected-event-card,

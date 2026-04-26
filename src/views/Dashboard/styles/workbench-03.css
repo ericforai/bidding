@@ -30,7 +30,7 @@
 }
 
 .activity-dot.type-info {
-  background: #3B82F6;
+  background: var(--brand-xiyu-logo, #2E7659);
 }
 
 .activity-content {
@@ -51,13 +51,13 @@
 
 /* ==================== 角色化横幅样式 ==================== */
 .banner-admin {
-  background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%);
+  background: linear-gradient(135deg, #2E7659 0%, #18563E 100%);
 }
 
 .banner-admin .banner-actions .el-button--primary {
-  background: #F5F3FF;
-  color: #7C3AED;
-  border-color: #F5F3FF;
+  background: #FFFFFF;
+  color: var(--brand-xiyu-logo, #2E7659);
+  border-color: #FFFFFF;
 }
 
 /* ==================== 团队绩效卡片 ==================== */
@@ -108,6 +108,7 @@
 
 .team-progress .progress-fill {
   height: 100%;
+  background: var(--brand-xiyu-logo, #2E7659);
   transition: width 0.3s ease;
 }
 
@@ -239,4 +240,3 @@
   font-size: 12px;
   color: #6B7280;
 }
-

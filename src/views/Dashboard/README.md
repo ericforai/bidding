@@ -10,7 +10,8 @@ This folder keeps the Workbench page split by responsibility.
 - `components/WorkbenchQuickStart.vue` is the Workbench quick-start surface for bid support, qualification/contract borrow, and bid expense requests. Its side effects stay in `useWorkbenchQuickStart.js`.
 - `styles/` contains Workbench CSS split into small files and imported by `styles/workbench-styles.js` so Vite can bundle them without CSS `@import` waterfalls.
 - `MetricCards.vue` renders responsive KPI cards; the grid must adapt to the sidebar-constrained dashboard width without wrapping labels, values, or comparison text into vertical fragments.
-- Empty/error states stay presentational; API composables expose state and the page shell wires retry actions.
+- Empty/error states stay presentational; API composables expose state and the page shell wires retry actions. Icons are optional and should be omitted in dense calendar panels when the copy is already clear.
+- Workbench brand accents should use the Xiyu Logo Green token from `DESIGN.md` for primary visual emphasis, including banner accents, selected navigation, and compact progress bars.
 - Clickable cards must be keyboard reachable with visible focus states before shipping new interactions.
 
 Keep every new source file under 300 lines. If a file approaches that limit, split by behavior before adding more code.

@@ -281,7 +281,7 @@ const handleCommand = async (command) => {
 
 .collapse-icon:hover,
 .mobile-menu-icon:hover {
-  color: var(--brand-primary);
+  color: var(--brand-xiyu-logo, #2E7659);
   background: var(--surface-hover, #f1f5f9);
 }
 
@@ -300,7 +300,7 @@ const handleCommand = async (command) => {
 .logo-icon {
   font-size: 18px;
   font-weight: 700;
-  color: var(--brand-primary);
+  color: var(--brand-xiyu-logo, #2E7659);
   letter-spacing: 1px;
 }
 
@@ -381,7 +381,7 @@ const handleCommand = async (command) => {
 }
 
 .header-icon:hover {
-  color: var(--brand-primary);
+  color: var(--brand-xiyu-logo, #2E7659);
   background: var(--surface-hover, #f1f5f9);
 }
 
@@ -432,15 +432,15 @@ const handleCommand = async (command) => {
   font-size: 14px;
   font-weight: 600;
   color: #ffffff;
-  background: linear-gradient(135deg, #0369a1, #0ea5e9);
+  background: linear-gradient(135deg, #2E7659, #3C8B68);
   border-radius: var(--radius-full, 9999px);
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(3, 105, 161, 0.2);
+  box-shadow: 0 2px 8px rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.2);
   transition: all 200ms ease;
 }
 
 .user-info:hover .user-avatar {
-  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.3);
   transform: scale(1.05);
 }
 
@@ -489,7 +489,7 @@ const handleCommand = async (command) => {
 
 :deep(.el-dropdown-menu__item:hover) {
   background: var(--surface-hover, #f1f5f9);
-  color: var(--brand-primary, #0369a1);
+  color: var(--brand-xiyu-logo, #2E7659);
 }
 
 :deep(.el-dropdown-menu__item.is-disabled) {
@@ -529,7 +529,7 @@ const handleCommand = async (command) => {
   font-size: 18px;
   font-weight: 600;
   color: #ffffff;
-  background: linear-gradient(135deg, #0066CC, #3388DD);
+  background: linear-gradient(135deg, #2E7659, #3C8B68);
   border-radius: var(--radius-full);
   flex-shrink: 0;
 }
