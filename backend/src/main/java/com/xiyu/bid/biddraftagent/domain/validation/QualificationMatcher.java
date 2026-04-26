@@ -1,4 +1,9 @@
-package com.xiyu.bid.projectworkflow.validation;
+// Input: TenderRequirementProfile（资质要求列表）、QualificationService（企业已持有资质）
+// Output: QualificationMatchResult（已匹配资质列表 + 缺失资质列表）
+// Pos: biddraftagent/domain/validation — 资质比对纯核心逻辑
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
+package com.xiyu.bid.biddraftagent.domain.validation;
 
 import com.xiyu.bid.biddraftagent.domain.TenderRequirementProfile;
 import com.xiyu.bid.qualification.dto.QualificationDTO;
@@ -8,6 +13,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 @Service
@@ -16,10 +23,16 @@ public class QualificationMatcher {
 
     private final QualificationService qualificationService;
 
+    /**
+     * 每个资质名称对应一个预编译的词边界 Pattern（仅用于 length <= 5 的短名称），避免在循环内重复编译。
+     * ConcurrentHashMap 以应对可能的并发调用场景。
+     */
+    private final Map<String, Pattern> shortNamePatternCache = new ConcurrentHashMap<>();
+
     public QualificationMatchResult match(TenderRequirementProfile profile) {
         List<QualificationDTO> allQualifications = qualificationService.getValidQualifications();
         List<String> requirements = profile.qualificationRequirements();
-        
+
         List<MatchedQualification> matched = new ArrayList<>();
         List<String> missing = new ArrayList<>();
 
@@ -32,8 +45,7 @@ public class QualificationMatcher {
             for (QualificationDTO qual : allQualifications) {
                 String qualName = qual.getName();
                 if (qualName == null || qualName.length() < 2) continue; // 忽略过短的干扰词
-                
-                // 升级：使用不区分大小写的全词/片段匹配，且要求资质名称必须在需求中作为一个相对独立的单元出现
+
                 if (isSmartMatch(req, qualName)) {
                     matched.add(new MatchedQualification(req, qual));
                     found = true;
@@ -48,14 +60,22 @@ public class QualificationMatcher {
         return new QualificationMatchResult(matched, missing);
     }
 
-    private boolean isSmartMatch(String source, String target) {
-        // 如果资质名称很长（如“ISO9001质量管理体系”），contains 通常是安全的
+    /**
+     * 智能匹配：
+     * - 长名称（length > 5，如"ISO9001质量管理体系"）：使用不区分大小写的子串匹配，误匹配风险低。
+     * - 短名称（length <= 5，如"ISO"）：仅使用词边界正则匹配，防止"ISO"匹配"ISOLATED"。
+     *   此处不回退到 contains，以消除误匹配漏洞。
+     */
+    boolean isSmartMatch(String source, String target) {
         if (target.length() > 5) {
             return source.toLowerCase().contains(target.toLowerCase());
         }
-        // 对于短名称（如“ISO”），要求其前后不能紧跟其他字母，防止误匹配（如“ISOLATED”）
-        Pattern pattern = Pattern.compile("\\b" + Pattern.quote(target) + "\\b", Pattern.CASE_INSENSITIVE);
-        return pattern.matcher(source).find() || source.toLowerCase().contains(target.toLowerCase());
+        // Short name: word boundary match only
+        Pattern pattern = shortNamePatternCache.computeIfAbsent(
+                target,
+                t -> Pattern.compile("\\b" + Pattern.quote(t) + "\\b", Pattern.CASE_INSENSITIVE)
+        );
+        return pattern.matcher(source).find();
     }
 
     public record QualificationMatchResult(
