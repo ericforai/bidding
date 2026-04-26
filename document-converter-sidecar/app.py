@@ -1,104 +1,171 @@
-import os
+"""Sidecar HTTP shell that delegates document-to-markdown conversion to markitdown.
+
+Input:  Multipart HTTP upload of an office/PDF document via POST /convert.
+Output: JSON with the converted markdown plus structural metadata (sections, hash, warnings).
+Position: Standalone FastAPI process; consumed by the Java backend MarkItDownSidecarTextExtractor.
+          The Java caller must pass the shared secret in header X-Sidecar-Key when
+          SIDECAR_SHARED_KEY is configured on the sidecar side.
+"""
+from __future__ import annotations
+
 import hashlib
+import logging
+import os
+import secrets
+import subprocess
 import tempfile
-import re
-from fastapi import FastAPI, UploadFile, HTTPException
+from typing import Any
+
+from fastapi import FastAPI, Header, HTTPException, UploadFile
 from markitdown import MarkItDown
-from typing import List, Dict, Any
+
+from converter import extract_headings
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Configuration (env-var driven)
+# ---------------------------------------------------------------------------
+
+_MAX_UPLOAD_MB: int = int(os.environ.get("SIDECAR_MAX_UPLOAD_MB", "30"))
+MAX_UPLOAD_SIZE_BYTES: int = _MAX_UPLOAD_MB * 1024 * 1024
+
+SIDECAR_HOST: str = os.environ.get("SIDECAR_HOST", "127.0.0.1")
+SIDECAR_PORT: int = int(os.environ.get("SIDECAR_PORT", "8000"))
+
+_SHARED_KEY: str | None = os.environ.get("SIDECAR_SHARED_KEY")
+if not _SHARED_KEY:
+    logger.warning(
+        "SIDECAR_SHARED_KEY is not set — authentication is disabled. "
+        "Set this env var in production to protect the /convert endpoint."
+    )
+
+# ---------------------------------------------------------------------------
+# App + markitdown instance
+# ---------------------------------------------------------------------------
 
 app = FastAPI(title="Document Converter Sidecar")
 md = MarkItDown()
 
-def extract_headings(markdown_text: str) -> List[Dict[str, Any]]:
-    sections = []
-    # Match markdown headings (e.g. "## Heading", "# Heading")
-    heading_pattern = re.compile(r'^(#{1,6})\s+(.*)$', re.MULTILINE)
-    
-    for match in heading_pattern.finditer(markdown_text):
-        level = len(match.group(1))
-        heading_text = match.group(2).strip()
-        offset = match.start()
-        
-        sections.append({
-            "heading": heading_text,
-            "level": level,
-            "charStart": offset
-        })
-        
-    # Calculate end offsets by looking at the next heading
-    for i in range(len(sections)):
-        if i + 1 < len(sections):
-            sections[i]["charEnd"] = sections[i+1]["charStart"]
-        else:
-            sections[i]["charEnd"] = len(markdown_text)
-            
-    # Reconstruct path based on levels
-    current_path = []
-    for section in sections:
-        level = section["level"]
-        # truncate path up to current level
-        current_path = current_path[:level-1]
-        # pad path with empty strings if level jumps (rare but possible)
-        while len(current_path) < level - 1:
-            current_path.append("")
-        current_path.append(section["heading"])
-        section["path"] = list(current_path)
-        
-    return sections
+
+# ---------------------------------------------------------------------------
+# Auth dependency (inline — single use, no abstraction needed)
+# ---------------------------------------------------------------------------
+
+async def _check_auth(x_sidecar_key: str | None = Header(default=None)) -> None:
+    """Reject requests with wrong/missing key when SIDECAR_SHARED_KEY is configured."""
+    if _SHARED_KEY is None:
+        return  # auth disabled in dev mode
+    if x_sidecar_key is None or not secrets.compare_digest(x_sidecar_key, _SHARED_KEY):
+        raise HTTPException(status_code=401, detail="认证失败")
+
+
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
 
 @app.post("/convert")
-async def convert_document(file: UploadFile):
+async def convert_document(
+    file: UploadFile,
+    x_sidecar_key: str | None = Header(default=None),
+) -> dict[str, Any]:
+    """Convert an uploaded document to markdown and return structured metadata."""
+    # Auth check
+    await _check_auth(x_sidecar_key)
+
     if not file.filename:
-        raise HTTPException(status_code=400, detail="No filename provided")
-        
-    # Read file content
-    content = await file.read()
-    
-    # Calculate sha256 hash
-    content_hash = hashlib.sha256(content).hexdigest()
-    
-    # Save to temporary file for markitdown to process
-    suffix = os.path.splitext(file.filename)[1]
-    if not suffix:
-        suffix = ".bin"
-        
+        raise HTTPException(status_code=400, detail="未提供文件名")
+
+    # --- Stream-read with size guard (CRITICAL-2) ---
+    chunks: list[bytes] = []
+    total_read: int = 0
+    chunk_size: int = 64 * 1024  # 64 KB
+
+    while True:
+        chunk = await file.read(chunk_size)
+        if not chunk:
+            break
+        total_read += len(chunk)
+        if total_read > MAX_UPLOAD_SIZE_BYTES:
+            raise HTTPException(status_code=413, detail="请求体过大")
+        chunks.append(chunk)
+
+    content: bytes = b"".join(chunks)
+
+    # SHA-256 for deduplication / cache key on the Java side
+    content_hash: str = hashlib.sha256(content).hexdigest()
+
+    original_suffix: str = os.path.splitext(file.filename)[1].lower() or ".bin"
+
+    tmp_path: str | None = None
+    converted_path: str | None = None
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=original_suffix) as tmp:
             tmp.write(content)
             tmp_path = tmp.name
-            
-        # Convert using MarkItDown
-        result = md.convert(tmp_path)
-        markdown_text = result.text_content
-        
-        # Extract sections from markdown
+
+        processing_path: str = tmp_path
+
+        # Legacy .doc → .docx conversion via textutil (macOS only, best-effort)
+        if original_suffix == ".doc":
+            converted_path = tmp_path + "x"
+            try:
+                subprocess.run(
+                    ["textutil", "-convert", "docx", tmp_path, "-output", converted_path],
+                    check=True,
+                    capture_output=True,
+                )
+                processing_path = converted_path
+            except Exception:
+                logger.warning("textutil .doc→.docx conversion failed; falling back to original")
+
+        result = md.convert(processing_path)
+        markdown_text: str = result.text_content
+
         sections = extract_headings(markdown_text)
-        
-        warnings = []
-        # Basic warning detection
+
+        warnings: list[str] = []
         if len(markdown_text.strip()) < 100:
             warnings.append("low_text_density")
-            
+
         return {
             "documentId": file.filename,
             "markdown": markdown_text,
             "sections": sections,
-            "tables": [], # Table extraction is complex, leaving for Java side or future enhancement
+            "tables": [],
             "warnings": warnings,
             "converter": "markitdown",
-            "contentHash": content_hash
+            "contentHash": content_hash,
         }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Document conversion failed for file %s", file.filename)
+        raise HTTPException(status_code=500, detail="文档转换失败") from exc
     finally:
-        if 'tmp_path' in locals() and os.path.exists(tmp_path):
+        if tmp_path and os.path.exists(tmp_path):
             os.remove(tmp_path)
+        if converted_path and os.path.exists(converted_path):
+            os.remove(converted_path)
+
 
 @app.get("/health")
-def health_check():
+def health_check() -> dict[str, str]:
+    """Liveness probe."""
     return {"status": "up"}
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+    uvicorn.run(app, host=SIDECAR_HOST, port=SIDECAR_PORT)
