@@ -1,5 +1,6 @@
 package com.xiyu.bid.biddraftagent.infrastructure.openai;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -39,25 +40,25 @@ public class StructuralDocumentChunker {
             for (JsonNode section : sectionsNode) {
                 int start = section.path("charStart").asInt(0);
                 int end = section.path("charEnd").asInt(text.length());
-                
+
                 start = Math.max(0, Math.min(start, text.length()));
                 end = Math.max(0, Math.min(end, text.length()));
-                
+
                 if (start >= end) continue;
 
                 String sectionText = text.substring(start, end);
 
                 if (currentChunk.length() + sectionText.length() > MAX_CHARS) {
-                    if (!currentChunk.isEmpty()) {
-                        chunks.add(currentChunk.toString());
-                        currentChunk.setLength(0);
-                    }
-                    
+                    String tail = flushWithOverlap(chunks, currentChunk);
+
                     if (sectionText.length() > MAX_CHARS) {
-                        List<String> subChunks = TenderDocumentTextChunker.split(sectionText, MAX_CHARS, OVERLAP_CHARS);
+                        // Prepend the overlap tail so context at the boundary is preserved
+                        // before handing off to the sub-chunker for the oversized section.
+                        String withContext = tail + sectionText;
+                        List<String> subChunks = TenderDocumentTextChunker.split(withContext, MAX_CHARS, OVERLAP_CHARS);
                         chunks.addAll(subChunks);
                     } else {
-                        currentChunk.append(sectionText);
+                        currentChunk.append(tail).append(sectionText);
                     }
                 } else {
                     currentChunk.append(sectionText);
@@ -70,9 +71,26 @@ public class StructuralDocumentChunker {
 
             return chunks;
 
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             log.warn("Failed to parse structured metadata for chunking, falling back to legacy chunker: {}", e.getMessage());
             return TenderDocumentTextChunker.split(text, MAX_CHARS, OVERLAP_CHARS);
         }
+    }
+
+    /**
+     * Flushes the in-progress chunk into {@code chunks} and returns its trailing
+     * {@link #OVERLAP_CHARS} characters so the caller can prepend them to the next
+     * chunk, keeping context continuous across section boundaries.
+     */
+    private static String flushWithOverlap(List<String> chunks, StringBuilder currentChunk) {
+        if (currentChunk.isEmpty()) {
+            return "";
+        }
+        String flushed = currentChunk.toString();
+        chunks.add(flushed);
+        currentChunk.setLength(0);
+        return flushed.length() > OVERLAP_CHARS
+                ? flushed.substring(flushed.length() - OVERLAP_CHARS)
+                : flushed;
     }
 }
