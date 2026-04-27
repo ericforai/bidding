@@ -1,6 +1,6 @@
 // Input: TenderDocumentAnalysisInput (legacy path) or DocumentAnalysisInput (generic doc-insight path)
 // Output: TenderRequirementProfile (legacy) or DocumentAnalysisResult (generic)
-// Pos: biddraftagent/infrastructure/openai (Spring @Service – orchestration shell only)
+// Pos: biddraftagent/infrastructure/openai (Spring @Service – tender extraction orchestration shell)
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.biddraftagent.infrastructure.openai;
 
@@ -9,6 +9,7 @@ import com.xiyu.bid.biddraftagent.application.TenderDocumentAnalyzer;
 import com.xiyu.bid.biddraftagent.domain.TenderRequirementProfile;
 import com.xiyu.bid.docinsight.application.DocumentAnalysisInput;
 import com.xiyu.bid.docinsight.application.DocumentAnalysisResult;
+import com.xiyu.bid.docinsight.domain.DocInsightProfiles;
 import com.xiyu.bid.docinsight.domain.DocumentChunk;
 import com.xiyu.bid.docinsight.domain.StructuralDocumentChunker;
 import com.xiyu.bid.docinsight.infrastructure.openai.BaseOpenAiDocumentAnalyzer;
@@ -24,7 +25,6 @@ public class OpenAiTenderDocumentAnalyzer
         extends BaseOpenAiDocumentAnalyzer<TenderRequirementOutput>
         implements TenderDocumentAnalyzer {
 
-    private static final String PROFILE_CODE = "TENDER";
     private static final String USE_CASE = "tender document analysis";
 
     private final OpenAiBidAgentConfigurationResolver configurationResolver;
@@ -42,7 +42,7 @@ public class OpenAiTenderDocumentAnalyzer
 
     @Override
     public boolean supports(String profileCode) {
-        return PROFILE_CODE.equalsIgnoreCase(profileCode);
+        return DocInsightProfiles.supportsTenderExtraction(profileCode);
     }
 
     /**
@@ -56,7 +56,7 @@ public class OpenAiTenderDocumentAnalyzer
         DocumentAnalysisInput genericInput = new DocumentAnalysisInput(
                 String.valueOf(input.tenderId()), input.fileName(),
                 input.extractedText(), input.structuredMetadata(),
-                chunks, PROFILE_CODE, Map.of("projectId", input.projectId())
+                chunks, DocInsightProfiles.TENDER, Map.of("projectId", input.projectId())
         );
         List<TenderRequirementProfile> profiles = new ArrayList<>();
         for (int i = 0; i < chunks.size(); i++) {
@@ -70,9 +70,21 @@ public class OpenAiTenderDocumentAnalyzer
     @Override
     protected TenderRequirementOutput requestAi(String prompt) {
         OpenAiBidAgentRequestConfig config = configurationResolver.resolve(USE_CASE);
+        return requestAi(prompt, config);
+    }
+
+    @Override
+    protected TenderRequirementOutput requestAi(String prompt, DocumentAnalysisInput input) {
+        OpenAiBidAgentRequestConfig config = DocInsightProfiles.isTenderIntake(input.profileCode())
+                ? configurationResolver.resolveTenderIntake()
+                : configurationResolver.resolve(USE_CASE);
+        return requestAi(prompt, config);
+    }
+
+    private TenderRequirementOutput requestAi(String prompt, OpenAiBidAgentRequestConfig config) {
         return structuredOutputService.request(
                 prompt, TenderRequirementOutput.class, config,
-                "OpenAI structured response did not include tender requirements"
+                "AI structured response did not include tender requirements"
         );
     }
 

@@ -25,7 +25,7 @@
 | `projects.js` | API 模块 | 项目列表、详情、任务、评分、结果录入调用 |
 | `resources.js` | API 模块 | 平台账号、BAR、证书、资源能力调用 |
 | `settings.js` | API 模块 | 系统设置页的数据权限与组织树读写 |
-| `tenders.js` | API 模块 | 标讯列表、详情、入项和关联调用 |
+| `tenders.js` | API 模块 | 标讯列表、详情、入项、上传任务和人工录入文档识别调用 |
 
 `auth.js` 返回的用户快照会保留会话级权限字段，例如 `allowedProjectIds` 和 `allowedDepts`，供 store 和路由恢复使用。
 
@@ -34,3 +34,4 @@
 - 2026-04-22: 新增 `bidAgent.js`，通过真实项目 API 接入标书写作 Agent 的 run/status/apply/review 生命周期。
 - 2026-04-24: 新增 `bidMatchScoring.js`，接入自定义投标匹配评分模型和标讯评分结果真实 API。
 - 2026-04-27: 新增 `permissionMatrix.js`，接入管理员只读接口入口权限矩阵，帮助核对菜单权限与后端接口入口层授权。
+- 2026-04-27: `tenders.js` 新增人工录入标讯附件的 `/api/doc-insight/parse` 真实 API 调用，使用 `TENDER_INTAKE` profile。

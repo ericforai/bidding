@@ -16,7 +16,7 @@
 | `domain/` | 纯核心 | 招标要求归类、材料匹配打分、缺漏检查、人工确认和写作覆盖决策 |
 | `application/` | Application Service / Port / Planner | 编排招标文件导入、run 生命周期、生成写入计划、定义文档写入端口 |
 | `infrastructure/documenteditor/` | Adapter | 把写入计划转换为 `documenteditor` 批量章节树写入请求 |
-| `infrastructure/openai/` | Adapter | 通过 OpenAI Java SDK + Responses API structured outputs 拆解招标要求、生成草稿、审阅摘要和交接清单 |
+| `infrastructure/openai/` | Adapter | 通过 AI SDK 拆解招标要求、生成草稿、审阅摘要和交接清单；`TENDER_INTAKE` 强制走 DeepSeek Chat Completions |
 | `infrastructure/tenderdocument/` | Adapter | 保存上传文件，使用 POI/PDFBox 提取 Word 和文本型 PDF 正文 |
 | `controller/` | API 边界 | 暴露项目级 tender document import、run/review/apply 接口 |
 | `repository/` | JPA Repository | 读写 run、artifact、招标文件解析快照与 requirement items |
@@ -29,7 +29,7 @@
 - `domain/*` 不依赖 Spring、Repository、JPA、日志、IO、异常业务流、时间或随机数。
 - 应用层只负责编排：取快照、调用纯核心、生成 artifact、写 run 状态、调用文档写入端口。
 - `documenteditor` 写入只发生在基础设施适配器中，且必须尊重锁定章节和来源 metadata。
-- 招标文件结构化拆解和草稿正文生成只有 OpenAI 真实调用路径；API key 优先读取 `ai.openai.api-key`，缺省时读取系统设置 `integrationConfig.apiKey`。baseUrl/model 同理可通过 `ai.openai.*` 或系统设置 `integrationConfig.aiBaseUrl`、`integrationConfig.aiModel` 配置；未配置有效 key 时应显式失败，不回落到模板或 mock 生成。
+- 招标文件结构化拆解和草稿正文生成只有真实 AI 调用路径；项目绑定 `TENDER` / 标书草稿生成沿用 `ai.openai.*`、系统设置 provider 或 `integrationConfig` 配置。入库前 `TENDER_INTAKE` 固定使用 DeepSeek Chat Completions，key 优先读取系统设置 DeepSeek provider，再读 `DEEPSEEK_API_KEY`，默认模型为 `deepseek-chat`。
 
 ## 招标文件到标书初稿链路
 
