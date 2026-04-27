@@ -1,4 +1,5 @@
 import { onMounted } from 'vue'
+import { buildProjectBaselineActivities } from './useProjectDetailActivities.js'
 
 export function useProjectDetailInit(context) {
   const { route, projectStore, knowledgeApi, barStore, approvalApi, projectsApi } = context
@@ -23,6 +24,7 @@ export function useProjectDetailInit(context) {
     context.loading.value = true
     const projectId = route.params.id
     await projectStore.getProjectById(projectId)
+    context.activities.value = buildProjectBaselineActivities(projectStore.currentProject, context.userStore?.userName)
     const templateResult = await knowledgeApi.templates.getList()
     context.templates.value = templateResult?.success && Array.isArray(templateResult.data) ? templateResult.data : []
     if (!projectStore.currentProject) projectStore.currentProject = null
