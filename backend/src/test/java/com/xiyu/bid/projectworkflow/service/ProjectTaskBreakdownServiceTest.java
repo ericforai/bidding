@@ -1,8 +1,7 @@
 package com.xiyu.bid.projectworkflow.service;
 
 import com.xiyu.bid.biddraftagent.entity.BidRequirementItem;
-import com.xiyu.bid.biddraftagent.repository.BidRequirementItemRepository;
-import com.xiyu.bid.biddraftagent.repository.BidTenderDocumentSnapshotRepository;
+import com.xiyu.bid.biddraftagent.application.BidRequirementSnapshotReader;
 import com.xiyu.bid.documenteditor.entity.DocumentSection;
 import com.xiyu.bid.documenteditor.entity.DocumentStructure;
 import com.xiyu.bid.documenteditor.repository.DocumentSectionRepository;
@@ -38,7 +37,7 @@ import static org.mockito.Mockito.when;
 
 class ProjectTaskBreakdownServiceTest {
 
-    private BidRequirementItemRepository bidRequirementItemRepository;
+    private BidRequirementSnapshotReader requirementSnapshotReader;
     private DocumentStructureRepository documentStructureRepository;
     private DocumentSectionRepository documentSectionRepository;
     private TaskRepository taskRepository;
@@ -48,8 +47,7 @@ class ProjectTaskBreakdownServiceTest {
     void setUp() {
         ProjectRepository projectRepository = mock(ProjectRepository.class);
         taskRepository = mock(TaskRepository.class);
-        bidRequirementItemRepository = mock(BidRequirementItemRepository.class);
-        BidTenderDocumentSnapshotRepository snapshotRepository = mock(BidTenderDocumentSnapshotRepository.class);
+        requirementSnapshotReader = mock(BidRequirementSnapshotReader.class);
         documentStructureRepository = mock(DocumentStructureRepository.class);
         documentSectionRepository = mock(DocumentSectionRepository.class);
         UserRepository userRepository = mock(UserRepository.class);
@@ -67,8 +65,7 @@ class ProjectTaskBreakdownServiceTest {
                 userRepository
         );
         ProjectTaskBreakdownSourceReader sourceReader = new ProjectTaskBreakdownSourceReader(
-                bidRequirementItemRepository,
-                snapshotRepository,
+                requirementSnapshotReader,
                 documentStructureRepository,
                 documentSectionRepository
         );
@@ -86,7 +83,7 @@ class ProjectTaskBreakdownServiceTest {
 
     @Test
     void decomposeProjectTasks_ShouldCreateTasksFromTenderRequirementItems() {
-        when(bidRequirementItemRepository.findByProjectIdOrderByCreatedAtDesc(1001L)).thenReturn(List.of(
+        when(requirementSnapshotReader.latestRequirementsForProject(1001L)).thenReturn(List.of(
                 requirement("commercial", "商务条款响应", "按招标文件完成商务偏离表"),
                 requirement("technical", "技术实施方案", "提交平台对接和实施计划")
         ));
@@ -103,7 +100,7 @@ class ProjectTaskBreakdownServiceTest {
 
     @Test
     void decomposeProjectTasks_ShouldFallbackToDocumentSectionsWhenRequirementsAreMissing() {
-        when(bidRequirementItemRepository.findByProjectIdOrderByCreatedAtDesc(1001L)).thenReturn(List.of());
+        when(requirementSnapshotReader.latestRequirementsForProject(1001L)).thenReturn(List.of());
         when(documentStructureRepository.findByProjectId(1001L)).thenReturn(Optional.of(DocumentStructure.builder()
                 .id(3001L)
                 .projectId(1001L)
@@ -136,7 +133,7 @@ class ProjectTaskBreakdownServiceTest {
                 .status(Task.Status.TODO)
                 .priority(Task.Priority.MEDIUM)
                 .build();
-        when(bidRequirementItemRepository.findByProjectIdOrderByCreatedAtDesc(1001L)).thenReturn(List.of(
+        when(requirementSnapshotReader.latestRequirementsForProject(1001L)).thenReturn(List.of(
                 requirement("commercial", "商务条款响应", "按招标文件完成商务偏离表")
         ));
         when(taskRepository.findByProjectId(1001L)).thenReturn(List.of(existingTask));
@@ -150,7 +147,7 @@ class ProjectTaskBreakdownServiceTest {
 
     @Test
     void decomposeProjectTasks_ShouldBeIdempotentAcrossRepeatedRequests() {
-        when(bidRequirementItemRepository.findByProjectIdOrderByCreatedAtDesc(1001L)).thenReturn(List.of(
+        when(requirementSnapshotReader.latestRequirementsForProject(1001L)).thenReturn(List.of(
                 requirement("commercial", "商务条款响应", "按招标文件完成商务偏离表")
         ));
         List<Task> persistedTasks = new ArrayList<>();
@@ -176,7 +173,7 @@ class ProjectTaskBreakdownServiceTest {
 
     @Test
     void decomposeProjectTasks_ShouldRejectWhenNoBreakdownSourcesExist() {
-        when(bidRequirementItemRepository.findByProjectIdOrderByCreatedAtDesc(1001L)).thenReturn(List.of());
+        when(requirementSnapshotReader.latestRequirementsForProject(1001L)).thenReturn(List.of());
         when(documentStructureRepository.findByProjectId(1001L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.decomposeProjectTasks(1001L))

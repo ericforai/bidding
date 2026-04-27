@@ -1,9 +1,7 @@
 package com.xiyu.bid.projectworkflow.service;
 
+import com.xiyu.bid.biddraftagent.application.BidRequirementSnapshotReader;
 import com.xiyu.bid.biddraftagent.entity.BidRequirementItem;
-import com.xiyu.bid.biddraftagent.entity.BidTenderDocumentSnapshot;
-import com.xiyu.bid.biddraftagent.repository.BidRequirementItemRepository;
-import com.xiyu.bid.biddraftagent.repository.BidTenderDocumentSnapshotRepository;
 import com.xiyu.bid.documenteditor.entity.DocumentSection;
 import com.xiyu.bid.documenteditor.repository.DocumentSectionRepository;
 import com.xiyu.bid.documenteditor.repository.DocumentStructureRepository;
@@ -20,22 +18,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 class ProjectTaskBreakdownSourceReader {
 
-    private final BidRequirementItemRepository requirementItemRepository;
-    private final BidTenderDocumentSnapshotRepository documentSnapshotRepository;
+    private final BidRequirementSnapshotReader requirementSnapshotReader;
     private final DocumentStructureRepository documentStructureRepository;
     private final DocumentSectionRepository documentSectionRepository;
 
     List<TaskBreakdownPolicy.SourceSnapshot> collectRequirementSources(Long projectId) {
-        List<BidRequirementItem> requirementItems = documentSnapshotRepository
-                .findTopByProjectIdOrderByCreatedAtDescIdDesc(projectId)
-                .map(BidTenderDocumentSnapshot::getProjectDocumentId)
-                .map(documentId -> requirementItemRepository.findByProjectIdAndProjectDocumentIdOrderByCreatedAtDesc(
-                        projectId,
-                        documentId
-                ))
-                .filter(items -> !items.isEmpty())
-                .orElseGet(() -> requirementItemRepository.findByProjectIdOrderByCreatedAtDesc(projectId));
-        return requirementItems.stream()
+        return requirementSnapshotReader.latestRequirementsForProject(projectId).stream()
                 .map(item -> new TaskBreakdownPolicy.SourceSnapshot(
                         item.getCategory(),
                         item.getTitle(),

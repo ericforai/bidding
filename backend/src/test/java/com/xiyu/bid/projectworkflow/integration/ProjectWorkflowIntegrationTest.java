@@ -1,7 +1,8 @@
 package com.xiyu.bid.projectworkflow.integration;
 
-import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.biddraftagent.entity.BidRequirementItem;
+import com.xiyu.bid.biddraftagent.entity.BidTenderDocumentSnapshot;
+import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.projectworkflow.dto.ProjectReminderCreateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectShareLinkCreateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectTaskCreateRequest;
@@ -135,6 +136,16 @@ class ProjectWorkflowIntegrationTest extends AbstractProjectWorkflowIntegrationT
     @Test
     @WithMockUser(roles = {"ADMIN"})
     void decomposeProjectTasks_ShouldCreateTasksFromParsedTenderRequirements() throws Exception {
+        bidTenderDocumentSnapshotRepository.save(BidTenderDocumentSnapshot.builder()
+                .projectId(project.getId())
+                .tenderId(project.getTenderId())
+                .projectDocumentId(7001L)
+                .fileName("招标文件.docx")
+                .extractedText("技术实施方案要求")
+                .profileJson("{}")
+                .extractorKey("test")
+                .analyzerKey("test")
+                .build());
         bidRequirementItemRepository.save(BidRequirementItem.builder()
                 .projectId(project.getId())
                 .tenderId(project.getTenderId())

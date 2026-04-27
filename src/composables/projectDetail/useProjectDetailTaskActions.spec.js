@@ -55,6 +55,43 @@ describe('useProjectDetailTaskActions', () => {
     expect(error).not.toHaveBeenCalled()
   })
 
+  it('API 项目拆解无来源时只展示一次后端业务错误', async () => {
+    const success = vi.fn()
+    const error = vi.fn()
+    const decomposeTasks = vi.fn().mockRejectedValue({
+      message: 'Request failed with status code 400',
+      response: {
+        data: {
+          message: '未找到可用于拆解任务的标书拆解结果',
+        },
+      },
+    })
+    const state = {
+      project: ref({ id: 12, name: '测试项目', tasks: [] }),
+      activities: ref([]),
+      scoreDraftDialogVisible: ref(false),
+      currentTask: ref(null),
+      taskDialogVisible: ref(false),
+    }
+
+    const { handleGenerateTasks } = useProjectDetailTaskActions({
+      route: { params: { id: '12' } },
+      userStore: { userName: '测试用户', currentUser: { id: 9 } },
+      projectStore: {},
+      projectsApi: { decomposeTasks },
+      isApiProject: ref(true),
+      message: { success, error, warning: vi.fn() },
+      state,
+      workflow: {},
+    })
+
+    await handleGenerateTasks()
+
+    expect(error).toHaveBeenCalledTimes(1)
+    expect(error).toHaveBeenCalledWith('未找到可用于拆解任务的标书拆解结果')
+    expect(success).not.toHaveBeenCalled()
+  })
+
   it('legacy detail task composable reuses real API task decomposition', async () => {
     const success = vi.fn()
     const error = vi.fn()

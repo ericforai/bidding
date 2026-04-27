@@ -18,6 +18,7 @@ export function useProjectDetailTaskActions(context) {
     deliverables: Array.isArray(task.deliverables) ? task.deliverables : [],
     hasDeliverable: Boolean(task.hasDeliverable),
   }))
+  const resolveErrorMessage = (error, fallback) => error?.response?.data?.message || error?.message || fallback
 
   const getTaskTemplateByProject = (project) => {
     const industry = project?.industry?.toLowerCase() || ''
@@ -38,7 +39,7 @@ export function useProjectDetailTaskActions(context) {
         pushActivity(`自动拆解生成了 ${state.project.value.tasks.length} 个任务`)
         message.success(`已拆解生成 ${state.project.value.tasks.length} 个任务`)
       } catch (error) {
-        message.error(error.message || '任务拆解失败')
+        message.error(resolveErrorMessage(error, '任务拆解失败'))
       }
       return
     }

@@ -37,7 +37,7 @@
 2. `infrastructure/tenderdocument` 保存文件并提取正文；扫描件 PDF 会显式提示需要 OCR/人工处理。
 3. `infrastructure/openai` 使用 structured outputs 拆解项目名称、预算、地区、行业、发布日期、截止时间、招标范围、资格要求、技术要求、商务要求、评分标准、必须材料和风险点；无法从正文确认的结构化字段保持为空。
 4. 解析结果写入 `bid_tender_document_snapshots`、`bid_requirement_items`，并在 Tender 对应字段为空时补充标题、采购人、预算、地区、行业、发布日期、截止时间、描述和标签。
-5. `BidDraftSnapshotAssembler` 把结构化 requirement items 纳入生成快照；Project 的预算、地区、行业、截止日期为空时，会从 Tender 的结构化字段 fallback 后再生成 run。
+5. `BidRequirementSnapshotReader` 统一读取最新招标文件快照对应的 requirement items，`BidDraftSnapshotAssembler` 和项目任务拆解都复用这条读模型，避免历史需求项漂移；Project 的预算、地区、行业、截止日期为空时，会从 Tender 的结构化字段 fallback 后再生成 run。
 6. 默认 `applyToEditor=true`，生成后立即写入 `documenteditor` 章节树；锁定章节仍由 `documenteditor` 跳过。
 
 ## 关键 API
