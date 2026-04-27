@@ -9,7 +9,9 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -27,6 +29,34 @@ class ProjectControllerAccessIntegrationTest extends AbstractProjectControllerIn
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].name").value("真实项目列表回归"));
+    }
+
+    @Test
+    @WithMockUser(username = "staff-user", roles = {"STAFF"})
+    void createProject_ShouldAllowStaffOwnerWithoutBudget() throws Exception {
+        mockMvc.perform(post("/api/projects")
+                        .contentType(APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "销售创建框架协议项目",
+                                  "tenderId": 140,
+                                  "status": "INITIATED",
+                                  "managerId": %d,
+                                  "teamMembers": [%d],
+                                  "startDate": "2026-04-01T09:00:00",
+                                  "endDate": "2026-05-15T18:00:00",
+                                  "customer": "兵工集团MRO商城",
+                                  "industry": "电商",
+                                  "region": "北京",
+                                  "deadline": "2026-05-10",
+                                  "description": "框架协议可无明确预算"
+                                }
+                                """.formatted(staffUser.getId(), staffUser.getId())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.name").value("销售创建框架协议项目"))
+                .andExpect(jsonPath("$.data.budget").doesNotExist())
+                .andExpect(jsonPath("$.data.managerId").value(staffUser.getId()));
     }
 
     @Test
