@@ -21,13 +21,13 @@ function mountHeader(props = {}) {
 }
 
 describe('BiddingPageHeader permissions', () => {
-  it('keeps source sync hidden for staff users', () => {
-    const wrapper = mountHeader()
+  it('shows manual create but keeps source sync hidden for staff users', () => {
+    const wrapper = mountHeader({ canCreateTender: true })
 
     expect(wrapper.text()).toContain('客户商机中心')
     expect(wrapper.text()).not.toContain('标讯源配置')
     expect(wrapper.text()).not.toContain('一键获取标讯')
-    expect(wrapper.text()).not.toContain('人工录入')
+    expect(wrapper.text()).toContain('人工录入')
   })
 
   it('shows manual create but not source sync for managers', () => {
