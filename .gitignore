@@ -42,6 +42,7 @@ test-login.html
 
 # Git worktrees
 .worktrees/
+.agent-task-context
 .gstack/
 .context/
 .runtime/
