@@ -198,7 +198,7 @@ export const projectsApi = {
       return demoReadonlyFailure()
     }
 
-    return httpClient.post(`/api/projects/${projectId}/tasks/decompose`, payload)
+    return httpClient.post(`/api/projects/${projectId}/tasks/decompose`, payload, { silentError: true })
   },
 
   async updateTaskStatus(projectId, taskId, status) {

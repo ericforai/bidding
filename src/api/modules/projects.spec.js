@@ -32,7 +32,7 @@ describe('projectsApi', () => {
 
     await projectsApi.decomposeTasks(12, payload)
 
-    expect(httpClient.post).toHaveBeenCalledWith('/api/projects/12/tasks/decompose', payload)
+    expect(httpClient.post).toHaveBeenCalledWith('/api/projects/12/tasks/decompose', payload, { silentError: true })
   })
 
   it('decomposeTasks(): rejects non-numeric project IDs before request', async () => {

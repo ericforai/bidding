@@ -59,8 +59,7 @@ class BidDraftSnapshotAssemblerTest {
                 qualificationRepository,
                 templateRepository,
                 caseRepository,
-                requirementItemRepository,
-                documentSnapshotRepository
+                new BidRequirementSnapshotReader(requirementItemRepository, documentSnapshotRepository)
         );
     }
 
