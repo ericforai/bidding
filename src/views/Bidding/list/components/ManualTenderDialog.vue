@@ -14,8 +14,15 @@
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="预算金额" prop="budget">
-            <el-input-number v-model="form.budget" :min="0" :precision="2" class="full-width" />
+          <el-form-item label="预算金额（元）" prop="budget">
+            <el-input-number
+              v-model="form.budget"
+              :min="0"
+              :precision="2"
+              placeholder="采购预算/最高限价，单位元；框架协议可留空"
+              class="full-width"
+            />
+            <div class="field-tip">采购预算/最高限价，单位元；框架协议可留空</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -115,6 +122,14 @@ defineExpose({
 .manual-tender-upload {
   width: 100%;
   min-width: 0;
+}
+
+.field-tip {
+  width: 100%;
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .manual-tender-upload :deep(.el-upload) {

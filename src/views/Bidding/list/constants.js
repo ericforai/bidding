@@ -128,7 +128,6 @@ export function createManualTenderForm() {
 
 export const MANUAL_FORM_RULES = {
   title: [{ required: true, message: '请输入标讯标题', trigger: 'blur' }],
-  budget: [{ required: true, message: '请输入预算金额', trigger: 'blur' }],
   region: [{ required: true, message: '请选择地区', trigger: 'change' }],
   industry: [{ required: true, message: '请选择行业', trigger: 'change' }],
   deadline: [{ required: true, message: '请选择截止日期', trigger: 'change' }],
