@@ -13,6 +13,11 @@ export function useProjectDetailTaskActions(context) {
     }
     return state.project.value.tasks
   }
+  const normalizeTaskList = (tasks = []) => tasks.map((task) => ({
+    ...task,
+    deliverables: Array.isArray(task.deliverables) ? task.deliverables : [],
+    hasDeliverable: Boolean(task.hasDeliverable),
+  }))
 
   const getTaskTemplateByProject = (project) => {
     const industry = project?.industry?.toLowerCase() || ''
@@ -22,10 +27,19 @@ export function useProjectDetailTaskActions(context) {
     return taskTemplates.default
   }
 
-  const handleGenerateTasks = () => {
+  const handleGenerateTasks = async () => {
     if (!state.project.value) return message.warning('项目信息未加载')
     if (isApiProject.value) {
-      state.scoreDraftDialogVisible.value = true
+      try {
+        const result = await projectsApi.decomposeTasks(route.params.id)
+        const tasks = Array.isArray(result?.data) ? result.data : result?.data?.tasks
+        if (!result?.success || !Array.isArray(tasks)) throw new Error(result?.message || '任务拆解失败')
+        state.project.value.tasks = normalizeTaskList(tasks)
+        pushActivity(`自动拆解生成了 ${state.project.value.tasks.length} 个任务`)
+        message.success(`已拆解生成 ${state.project.value.tasks.length} 个任务`)
+      } catch (error) {
+        message.error(error.message || '任务拆解失败')
+      }
       return
     }
     const deadline = new Date(state.project.value.deadline)
@@ -40,8 +54,12 @@ export function useProjectDetailTaskActions(context) {
 
   const handleScoreDraftGenerated = (tasks) => {
     if (!state.project.value) return
-    state.project.value.tasks = tasks.map((task) => ({ ...task, deliverables: Array.isArray(task.deliverables) ? task.deliverables : [], hasDeliverable: Boolean(task.hasDeliverable) }))
+    state.project.value.tasks = normalizeTaskList(tasks)
     pushActivity(`根据评分标准生成了 ${tasks.length} 个正式任务`)
+  }
+
+  const handleOpenScoreDraftDecompose = () => {
+    state.scoreDraftDialogVisible.value = true
   }
 
   const handleAddTask = () => {
@@ -75,6 +93,25 @@ export function useProjectDetailTaskActions(context) {
   }
 
   const handleTaskClick = (task) => { state.currentTask.value = task; state.taskDialogVisible.value = true }
+  const handleTaskStatusChange = async (task, newStatus) => {
+    if (task) {
+      task.status = newStatus
+      pushActivity(`将任务"${task.name}"状态更新为${({ todo: '待办', doing: '进行中', review: '待审核', done: '已完成' }[newStatus] || newStatus)}`)
+    }
+    if (!isApiProject.value) {
+      await projectStore.updateTaskStatus(route.params.id, task?.id, newStatus)
+      message.success('任务状态已更新')
+      return
+    }
+    try {
+      const result = await projectsApi.updateTaskStatus(route.params.id, task?.id, ({ todo: 'TODO', doing: 'IN_PROGRESS', review: 'REVIEW', done: 'COMPLETED' }[newStatus] || 'TODO'))
+      if (!result?.success || !result?.data) throw new Error(result?.message || '任务状态更新失败')
+      Object.assign(task, result.data)
+      message.success('任务状态已更新')
+    } catch (error) {
+      message.error(error.message || '任务状态更新失败')
+    }
+  }
   const handleAddDeliverable = (taskId, deliverable) => {
     const task = state.project.value?.tasks?.find((item) => item.id === taskId)
     if (!task) return
@@ -128,5 +165,5 @@ export function useProjectDetailTaskActions(context) {
     }
   }
 
-  return { handleGenerateTasks, handleScoreDraftGenerated, handleAddTask, handleResetTasks, handleTaskClick, handleAddDeliverable, handleRemoveDeliverable, handleSubmitToDocument }
+  return { handleGenerateTasks, handleScoreDraftGenerated, handleOpenScoreDraftDecompose, handleAddTask, handleResetTasks, handleTaskClick, handleTaskStatusChange, handleAddDeliverable, handleRemoveDeliverable, handleSubmitToDocument }
 }

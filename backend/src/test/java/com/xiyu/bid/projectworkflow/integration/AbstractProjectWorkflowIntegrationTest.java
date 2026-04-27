@@ -1,6 +1,8 @@
 package com.xiyu.bid.projectworkflow.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiyu.bid.biddraftagent.repository.BidRequirementItemRepository;
+import com.xiyu.bid.biddraftagent.repository.BidTenderDocumentSnapshotRepository;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.projectworkflow.repository.ProjectDocumentRepository;
@@ -42,6 +44,12 @@ abstract class AbstractProjectWorkflowIntegrationTest {
     @Autowired
     protected ProjectShareLinkRepository projectShareLinkRepository;
 
+    @Autowired
+    protected BidRequirementItemRepository bidRequirementItemRepository;
+
+    @Autowired
+    protected BidTenderDocumentSnapshotRepository bidTenderDocumentSnapshotRepository;
+
     protected Project project;
     protected User ownerUser;
     protected ProjectDocumentApiTestSupport documentApiSupport;
@@ -57,6 +65,8 @@ abstract class AbstractProjectWorkflowIntegrationTest {
                 userRepository
         );
         cleanup.reset();
+        bidRequirementItemRepository.deleteAll();
+        bidTenderDocumentSnapshotRepository.deleteAll();
 
         IntegrationUserSupport users = new IntegrationUserSupport(userRepository);
         ownerUser = users.createAdminUser("lizong-test", "lizong-test@example.com", "李总");
