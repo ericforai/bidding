@@ -78,7 +78,7 @@ public class TenderController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<TenderDTO>> createTender(@Valid @RequestBody TenderRequest tenderRequest) {
         log.info("POST /api/tenders - Creating new tender: {}", tenderRequest.getTitle());
         sanitizeTenderRequest(tenderRequest);

@@ -52,6 +52,7 @@ describe('bidding list helpers', () => {
 
   it('matches frontend permission flags to backend role boundary', () => {
     expect(buildPermissionFlags('staff')).toMatchObject({
+      canCreateTender: true,
       canManageTenders: false,
       canDeleteTenders: false,
       canSyncExternalSource: false,
