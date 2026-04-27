@@ -25,7 +25,7 @@
 | `dev-env.sh` | 环境识别脚本 | 按当前 main checkout 或多 Agent worktree 导出专属前端端口、后端端口、数据库名和 Redis DB |
 | `dev-frontend.sh` | 启动脚本 | 统一前端本地启动入口，强制 Vite 使用真实 API 模式和默认后端地址 |
 | `dev-frontend-health.sh` | 健康检查脚本 | 校验 `1314` 前端服务是否来自当前仓库，并确认运行时 API 模式和后端地址正确 |
-| `start-backend.sh` | 启动脚本 | 多 Agent worktree 后端启动入口，注入独立端口、数据库和 Redis DB 后转调后端启动脚本 |
+| `start-backend.sh` | 启动脚本 | 多 Agent worktree 后端启动入口，注入独立端口、数据库和 Redis DB；自动在本机 Redis `6379/16379` 之间选择可用端口后转调后端启动脚本 |
 | `start-frontend.sh` | 启动脚本 | 多 Agent worktree 前端启动入口，按 `dev-env.sh` 分配端口启动 Vite |
 | `sync-env.sh` | 环境同步脚本 | 将根目录环境模板同步到指定 worktree，辅助多 Agent 环境初始化 |
 | `sync-version.mjs` | 维护脚本 | 以根目录 `VERSION` 为单一版本源，同步前端 `package.json` 和后端 `backend/pom.xml` |
