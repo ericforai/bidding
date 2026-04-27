@@ -33,6 +33,10 @@ function applyParsedFields(form, parsedFields) {
   }
 }
 
+function hasGlobalHttpErrorMessage(error) {
+  return Boolean(error?.isAxiosError || error?.response || error?.code === 'ECONNABORTED')
+}
+
 export function useManualTenderCreate({ tendersApi, refreshTenderList, canCreateTender }) {
   const showManualAdd = ref(false)
   const manualFormRef = ref(null)
@@ -86,7 +90,7 @@ export function useManualTenderCreate({ tendersApi, refreshTenderList, canCreate
       await refreshTenderList()
       return true
     } catch (error) {
-      if (error) {
+      if (error && !hasGlobalHttpErrorMessage(error)) {
         ElMessage.error(error.message || '标讯入库失败')
       }
       return false

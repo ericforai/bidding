@@ -130,4 +130,22 @@ describe('useManualTenderCreate', () => {
     )
     expect(refreshTenderList).toHaveBeenCalled()
   })
+
+  it('does not duplicate backend validation messages already shown by the HTTP client', async () => {
+    const { workflow, tendersApi } = createWorkflow()
+    const httpValidationError = {
+      isAxiosError: true,
+      response: {
+        status: 400,
+        data: { message: '参数校验失败: 截止日期必须是未来的时间' },
+      },
+      message: 'Request failed with status code 400',
+    }
+    tendersApi.create.mockRejectedValue(httpValidationError)
+    workflow.manualFormRef.value = { validate: vi.fn().mockResolvedValue(true) }
+
+    await expect(workflow.saveManualTender()).resolves.toBe(false)
+
+    expect(ElMessage.error).not.toHaveBeenCalledWith('Request failed with status code 400')
+  })
 })
