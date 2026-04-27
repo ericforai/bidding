@@ -54,6 +54,21 @@ describe('useWorkbenchTodos', () => {
     expect(tasksApi.getMine).not.toHaveBeenCalled()
   })
 
+  it('skips alert todos when current role cannot read alert history', async () => {
+    const alertHistoryApi = { getUnresolved: vi.fn() }
+    const todos = useWorkbenchTodos({
+      alertHistoryApi,
+      canLoadAlertTodosRef: ref(false),
+      normalizeAlertTodo,
+    })
+
+    const result = await todos.loadAlertTodos()
+
+    expect(result).toEqual([])
+    expect(todos.alertTodoItems.value).toEqual([])
+    expect(alertHistoryApi.getUnresolved).not.toHaveBeenCalled()
+  })
+
   it('falls back to empty arrays when load APIs reject', async () => {
     const todos = useWorkbenchTodos({
       tasksApi: { getMine: vi.fn().mockRejectedValue(new Error('tasks down')) },

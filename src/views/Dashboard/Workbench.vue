@@ -185,7 +185,7 @@ const {
 const {
   priorityTodos, pendingCount, completedTodoCount, todosError, loadTodos,
   handleTaskComplete,
-} = useWorkbenchTodos({ assigneeIdRef: currentUserId, message: ElMessage })
+} = useWorkbenchTodos({ assigneeIdRef: currentUserId, canLoadAlertTodosRef: computed(() => ['admin', 'manager'].includes(currentUserRole.value)), message: ElMessage })
 
 const myProjectCount = computed(() => filterProjectsByRole(workbenchProjects.value, {
   role: currentUserRole.value,
