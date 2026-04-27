@@ -30,6 +30,7 @@ public class OpenAiBidAgentConfigurationResolver {
     private final String baseUrl;
     private final String model;
     private final Duration timeout;
+    private final Duration tenderIntakeTimeout;
 
     public OpenAiBidAgentConfigurationResolver(
             SettingsService pSettingsService,
@@ -38,7 +39,8 @@ public class OpenAiBidAgentConfigurationResolver {
             @Value("${ai.openai.api-key:}") String pConfiguredApiKey,
             @Value("${ai.openai.base-url:https://api.openai.com/v1}") String pBaseUrl,
             @Value("${ai.openai.model:gpt-5.2}") String pModel,
-            @Value("${ai.openai.timeout:PT30S}") Duration pTimeout
+            @Value("${ai.openai.timeout:PT30S}") Duration pTimeout,
+            @Value("${ai.deepseek.tender-intake-timeout:PT45S}") Duration pTenderIntakeTimeout
     ) {
         this.settingsService = pSettingsService;
         this.aiProviderCatalog = pAiProviderCatalog;
@@ -47,6 +49,7 @@ public class OpenAiBidAgentConfigurationResolver {
         this.baseUrl = pBaseUrl;
         this.model = pModel;
         this.timeout = pTimeout;
+        this.tenderIntakeTimeout = pTenderIntakeTimeout;
     }
 
     OpenAiBidAgentRequestConfig resolve(String useCase) {
@@ -134,7 +137,7 @@ public class OpenAiBidAgentConfigurationResolver {
                 apiKey,
                 normalizedBaseUrl(rawBaseUrl),
                 firstNonBlank(rawModel, DEEPSEEK_DEFAULT_MODEL),
-                effectiveTimeout(OpenAiBidAgentApiStyle.CHAT_COMPLETIONS),
+                tenderIntakeTimeout,
                 OpenAiBidAgentApiStyle.CHAT_COMPLETIONS
         );
     }

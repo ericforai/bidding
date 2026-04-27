@@ -84,6 +84,19 @@ describe('useManualTenderCreate', () => {
     expect(ElMessage.warning).toHaveBeenCalledWith('自动识别失败，可继续手动填写')
   })
 
+  it('clears parsing state and shows timeout hint when AI parsing times out', async () => {
+    const { workflow, tendersApi } = createWorkflow()
+    const file = new File(['slow'], '慢文件.docx', {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    })
+    tendersApi.parseTenderIntakeDocument.mockRejectedValue({ code: 'ECONNABORTED' })
+
+    await workflow.handleFileChange({ name: file.name, raw: file }, [{ name: file.name, raw: file }])
+
+    expect(workflow.parsingManualDocument.value).toBe(false)
+    expect(ElMessage.warning).toHaveBeenCalledWith('AI 解析超时，可继续手动填写')
+  })
+
   it('submits reviewed manual form values when framework agreement has no budget', async () => {
     const refreshTenderList = vi.fn()
     const { workflow, tendersApi } = createWorkflow({ refreshTenderList })
