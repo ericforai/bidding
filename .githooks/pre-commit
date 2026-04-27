@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(git rev-parse --show-toplevel)"
+"$ROOT_DIR/scripts/agent-worktree-guard.sh"
 "$ROOT_DIR/scripts/check-java-coding-standards.sh"
 node "$ROOT_DIR/scripts/check-line-budgets.mjs" --staged
 "$ROOT_DIR/scripts/check-testing-standards.sh"
