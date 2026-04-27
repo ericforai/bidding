@@ -1,6 +1,7 @@
 package com.xiyu.bid.projectworkflow.integration;
 
 import com.xiyu.bid.entity.Task;
+import com.xiyu.bid.biddraftagent.entity.BidRequirementItem;
 import com.xiyu.bid.projectworkflow.dto.ProjectReminderCreateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectShareLinkCreateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectTaskCreateRequest;
@@ -129,5 +130,30 @@ class ProjectWorkflowIntegrationTest extends AbstractProjectWorkflowIntegrationT
         assertThat(projectDocumentRepository.findByProjectIdOrderByCreatedAtDesc(project.getId())).isEmpty();
         assertThat(projectReminderRepository.findByProjectIdOrderByRemindAtDesc(project.getId())).hasSize(1);
         assertThat(projectShareLinkRepository.findByProjectIdOrderByCreatedAtDesc(project.getId())).hasSize(1);
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void decomposeProjectTasks_ShouldCreateTasksFromParsedTenderRequirements() throws Exception {
+        bidRequirementItemRepository.save(BidRequirementItem.builder()
+                .projectId(project.getId())
+                .tenderId(project.getTenderId())
+                .projectDocumentId(7001L)
+                .category("technical")
+                .title("技术实施方案")
+                .content("提交平台对接和实施计划")
+                .mandatory(true)
+                .confidence(90)
+                .build());
+
+        mockMvc.perform(post("/api/projects/{projectId}/tasks/decompose", project.getId()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].name").value("技术标：技术实施方案"))
+                .andExpect(jsonPath("$.data[0].status").value("todo"));
+
+        assertThat(taskRepository.findByProjectId(project.getId()))
+                .extracting(Task::getTitle)
+                .containsExactly("技术标：技术实施方案");
     }
 }
