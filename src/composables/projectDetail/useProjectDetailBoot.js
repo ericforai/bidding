@@ -1,8 +1,9 @@
 import { onMounted } from 'vue'
 import { approvalApi, knowledgeApi } from '@/api'
+import { buildProjectBaselineActivities } from './useProjectDetailActivities.js'
 
 export function useProjectDetailBoot(context) {
-  const { route, projectStore, barStore, state, workflow, expenseAggregation, loadProjectWorkflowData } = context
+  const { route, userStore, projectStore, barStore, state, workflow, expenseAggregation, loadProjectWorkflowData } = context
 
   const ensureProjectCollections = () => {
     const currentProject = projectStore.currentProject
@@ -53,12 +54,18 @@ export function useProjectDetailBoot(context) {
     await Promise.all([templatePromise, expensePromise, workflowPromise])
   }
 
+  const initializeProjectActivities = () => {
+    const currentProject = ensureProjectCollections()
+    state.activities.value = buildProjectBaselineActivities(currentProject, userStore?.userName)
+  }
+
   onMounted(async () => {
     state.loading.value = true
     const projectId = route.params.id
     try {
       await projectStore.getProjectById(projectId)
       ensureProjectCollections()
+      initializeProjectActivities()
       await loadProjectDetailDependencies(projectId)
       ensureProjectCollections()
 

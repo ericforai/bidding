@@ -1,6 +1,5 @@
 import { computed, ref } from 'vue'
 import { getAccessToken } from '@/api/session.js'
-import { initialActivities } from './constants.js'
 
 export function useProjectDetailState(context) {
   const { route, userStore, projectStore, isDemoMode, isApiProject } = context
@@ -58,7 +57,7 @@ export function useProjectDetailState(context) {
     payment: '',
   })
 
-  const activities = ref([...initialActivities])
+  const activities = ref([])
 
   const project = computed(() => {
     if (projectStore.currentProject) return projectStore.currentProject
