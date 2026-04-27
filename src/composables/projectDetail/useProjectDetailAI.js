@@ -30,6 +30,44 @@ function buildScorePanel(analysis = {}) {
   }
 }
 
+function parseProjectTags(project = {}) {
+  if (Array.isArray(project.tags)) return project.tags
+  if (typeof project.tagsJson === 'string' && project.tagsJson.trim()) {
+    try {
+      const parsed = JSON.parse(project.tagsJson)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
+function buildPreviewScorePanel(preview = {}) {
+  const categories = preview.scoreAnalysis?.scoreCategories || []
+  const findCategory = (name) => Number(categories.find((item) => item?.name?.includes(name))?.percentage || 0)
+  return {
+    total: Number(preview.aiSummary?.winScore || 0),
+    tech: findCategory('技术'),
+    business: findCategory('商务'),
+    price: findCategory('价格'),
+    qualification: findCategory('资质'),
+    comment: preview.aiSummary?.suggestions?.join('；') || '',
+    suggestions: preview.aiSummary?.suggestions || [],
+  }
+}
+
+function buildScorePreviewContext(project = {}, projectId) {
+  return {
+    projectId,
+    tenderId: project.tenderId || null,
+    projectName: project.name || '',
+    industry: project.industry || '',
+    budget: project.budget || 0,
+    tags: parseProjectTags(project),
+  }
+}
+
 export function useProjectDetailAI(context) {
   const { route, isDemoMode, isApiProject, project, message, state } = context
   const aiChecking = ref(false)
@@ -75,14 +113,16 @@ export function useProjectDetailAI(context) {
     }
 
     try {
-      const [complianceResponse, scoreResponse] = await Promise.all([
-        complianceApi.getCheckResult(route.params.id),
-        scoreAnalysisApi.getAnalysis(route.params.id),
-      ])
+      const projectId = route.params.id
+      const complianceResponse = await complianceApi.getCheckResult(projectId)
+      let scoreResponse = await scoreAnalysisApi.getAnalysis(projectId)
+      if (scoreResponse?.success === false) {
+        scoreResponse = await scoreAnalysisApi.generatePreview(buildScorePreviewContext(project.value, projectId))
+      }
       const complianceRecord = Array.isArray(complianceResponse?.data) ? complianceResponse.data[0] : complianceResponse?.data
       aiResult.value = {
         compliance: complianceRecord ? { score: Number(complianceRecord.overallScore || complianceRecord.riskScore || 0), issues: mapComplianceIssues(complianceRecord.issues || []) } : null,
-        score: scoreResponse?.data ? buildScorePanel(scoreResponse.data) : null,
+        score: scoreResponse?.data?.scoreAnalysis ? buildPreviewScorePanel(scoreResponse.data) : buildScorePanel(scoreResponse?.data),
       }
       message.success('AI检查完成')
     } catch (error) {
