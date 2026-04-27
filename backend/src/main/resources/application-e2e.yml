@@ -50,7 +50,7 @@ jwt:
   refresh-expiration: 7200000
 
 cors:
-  allowed-origins: http://127.0.0.1:14173,http://127.0.0.1:14175,http://127.0.0.1:14176,http://127.0.0.1:14177,http://127.0.0.1:14178,http://127.0.0.1:14179,http://localhost:14173,http://localhost:14175,http://localhost:14176,http://localhost:14177,http://localhost:14178,http://localhost:14179,http://localhost:1314,http://127.0.0.1:1314,http://localhost:1818,http://127.0.0.1:1818
+  allowed-origins: http://127.0.0.1:14173,http://127.0.0.1:14175,http://127.0.0.1:14176,http://127.0.0.1:14177,http://127.0.0.1:14178,http://127.0.0.1:14179,http://localhost:14173,http://localhost:14175,http://localhost:14176,http://localhost:14177,http://localhost:14178,http://localhost:14179,http://localhost:1314,http://127.0.0.1:1314,http://localhost:1316,http://127.0.0.1:1316,http://localhost:1818,http://127.0.0.1:1818
 
 rate:
   limit:
