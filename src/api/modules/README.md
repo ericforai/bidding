@@ -19,6 +19,7 @@
 | `export.js` | API 模块 | 导出任务、导出状态和格式枚举 |
 | `fees.js` | API 模块 | 费用申请、审批、退还等调用 |
 | `knowledge.js` | API 模块 | 资质、案例、模板等知识资产调用 |
+| `permissionMatrix.js` | API 模块 | 管理员只读接口权限矩阵调用和响应标准化 |
 | `qualification.js` | API 模块 | 资质 CRUD 与借阅记录/借阅申请接线，供知识页和 store 复用 |
 | `projectGroups.js` | API 模块 | 项目组正式领域模型的管理、删除与项目绑定配置 |
 | `projects.js` | API 模块 | 项目列表、详情、任务、评分、结果录入调用 |
@@ -32,3 +33,4 @@
 - 2026-04-19: `knowledge.js` 的案例列表改为携带查询参数请求真实接口，并在模块内统一做分页/筛选整形，供案例页和详情页复用。
 - 2026-04-22: 新增 `bidAgent.js`，通过真实项目 API 接入标书写作 Agent 的 run/status/apply/review 生命周期。
 - 2026-04-24: 新增 `bidMatchScoring.js`，接入自定义投标匹配评分模型和标讯评分结果真实 API。
+- 2026-04-27: 新增 `permissionMatrix.js`，接入管理员只读接口入口权限矩阵，帮助核对菜单权限与后端接口入口层授权。
