@@ -597,7 +597,7 @@ import { useProjectConversion } from '@/composables/projectDetail/useProjectConv
 import { applyTenderDetailPrefill, buildProjectPrefillFromTender, hasGlobalHttpErrorMessage, tenderSchema } from './createTenderPrefill.js'
 const conversion = useProjectConversion()
 
-const route = useRoute()
+const router = useRouter(), route = useRoute()
 const projectStore = useProjectStore()
 const userStore = useUserStore()
 const barStore = useBarStore()
