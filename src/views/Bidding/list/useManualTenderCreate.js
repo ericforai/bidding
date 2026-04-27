@@ -58,8 +58,9 @@ export function useManualTenderCreate({ tendersApi, refreshTenderList, canCreate
       }
       applyParsedFields(manualForm.value, normalizeManualTenderParseResult(response.data))
       ElMessage.success('DeepSeek/AI 已识别附件内容，可继续编辑后保存')
-    } catch {
-      ElMessage.warning('自动识别失败，可继续手动填写')
+    } catch (error) {
+      const timedOut = error?.code === 'ECONNABORTED'
+      ElMessage.warning(timedOut ? 'AI 解析超时，可继续手动填写' : '自动识别失败，可继续手动填写')
     } finally {
       parsingManualDocument.value = false
     }

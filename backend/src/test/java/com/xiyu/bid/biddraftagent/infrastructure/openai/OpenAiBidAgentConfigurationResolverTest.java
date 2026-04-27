@@ -75,7 +75,8 @@ class OpenAiBidAgentConfigurationResolverTest {
                 "",
                 "https://api.openai.com/v1",
                 "gpt-5.2",
-                Duration.ofSeconds(30)
+                Duration.ofSeconds(30),
+                Duration.ofSeconds(45)
         );
 
         OpenAiBidAgentRequestConfig config = resolver.resolve("tender document analysis");
@@ -130,7 +131,8 @@ class OpenAiBidAgentConfigurationResolverTest {
                 "",
                 "https://api.openai.com/v1",
                 "gpt-5.2",
-                Duration.ofSeconds(90)
+                Duration.ofSeconds(90),
+                Duration.ofSeconds(45)
         );
 
         OpenAiBidAgentRequestConfig config = resolver.resolve("tender document analysis");
@@ -170,7 +172,7 @@ class OpenAiBidAgentConfigurationResolverTest {
         assertThat(config.apiKey()).isEqualTo("sk-deepseek-settings");
         assertThat(config.baseUrl()).isEqualTo("https://api.deepseek.com");
         assertThat(config.model()).isEqualTo("deepseek-reasoner");
-        assertThat(config.timeout()).isEqualTo(Duration.ofSeconds(90));
+        assertThat(config.timeout()).isEqualTo(Duration.ofSeconds(45));
         assertThat(config.apiStyle()).isEqualTo(OpenAiBidAgentApiStyle.CHAT_COMPLETIONS);
         verify(settingsService, never()).resolveAiApiKey("openai");
         verify(settingsService, never()).getSettings();
@@ -214,7 +216,8 @@ class OpenAiBidAgentConfigurationResolverTest {
                 "",
                 "https://api.example.test/v1",
                 "gpt-test",
-                Duration.ofSeconds(90)
+                Duration.ofSeconds(90),
+                Duration.ofSeconds(45)
         );
 
         assertThatThrownBy(resolver::resolveTenderIntake)
@@ -237,7 +240,8 @@ class OpenAiBidAgentConfigurationResolverTest {
                 configuredApiKey,
                 "https://api.example.test/v1",
                 "gpt-test",
-                Duration.ofSeconds(90)
+                Duration.ofSeconds(90),
+                Duration.ofSeconds(45)
         );
     }
 

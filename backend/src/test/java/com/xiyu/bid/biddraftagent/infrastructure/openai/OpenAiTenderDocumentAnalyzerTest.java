@@ -7,6 +7,9 @@ package com.xiyu.bid.biddraftagent.infrastructure.openai;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.biddraftagent.application.TenderDocumentAnalysisInput;
 import com.xiyu.bid.biddraftagent.domain.TenderRequirementProfile;
+import com.xiyu.bid.docinsight.application.DocumentAnalysisInput;
+import com.xiyu.bid.docinsight.domain.DocInsightProfiles;
+import com.xiyu.bid.docinsight.domain.DocumentChunk;
 import com.xiyu.bid.docinsight.domain.StructuralDocumentChunker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +53,10 @@ class OpenAiTenderDocumentAnalyzerTest {
 
         lenient().when(configurationResolver.resolve(anyString())).thenReturn(new OpenAiBidAgentRequestConfig(
                 "key", "http://api.openai.com", "gpt-4", java.time.Duration.ofSeconds(30), OpenAiBidAgentApiStyle.CHAT_COMPLETIONS
+        ));
+        lenient().when(configurationResolver.resolveTenderIntake()).thenReturn(new OpenAiBidAgentRequestConfig(
+                "deepseek-key", "https://api.deepseek.com", "deepseek-chat",
+                java.time.Duration.ofSeconds(45), OpenAiBidAgentApiStyle.CHAT_COMPLETIONS
         ));
     }
 
@@ -235,5 +242,47 @@ class OpenAiTenderDocumentAnalyzerTest {
         // Document fence still present
         assertThat(prompt).contains("<document>");
         assertThat(prompt).contains("</document>");
+    }
+
+    @Test
+    void analyzeTenderIntake_shouldUseFocusedPromptForManualFormFieldsOnly() {
+        String text = """
+                目录
+                第一章 招标公告
+                项目名称：西域MRO测试项目
+                最高限价：1200000元
+                采购单位：西域采购中心
+                资格要求：供应商须具备资质
+                第二章 评分办法
+                技术分60分，商务分40分
+                """;
+        DocumentAnalysisInput input = new DocumentAnalysisInput(
+                "doc-insight://manual",
+                "manual.docx",
+                text,
+                "",
+                List.of(new DocumentChunk(text, List.of())),
+                DocInsightProfiles.TENDER_INTAKE,
+                java.util.Map.of()
+        );
+        TenderRequirementOutput output = new TenderRequirementOutput();
+        output.tenderTitle = "西域MRO测试项目";
+        output.budget = "1200000";
+        when(structuredOutputService.request(anyString(), eq(TenderRequirementOutput.class), any(), anyString()))
+                .thenReturn(output);
+
+        analyzer.analyze(input);
+
+        ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+        verify(structuredOutputService).request(promptCaptor.capture(), any(), any(), anyString());
+        String prompt = promptCaptor.getValue();
+
+        assertThat(prompt).contains("人工录入标讯表单");
+        assertThat(prompt).contains("只抽取这些字段");
+        assertThat(prompt).contains("标讯标题").contains("预算金额").contains("采购单位");
+        assertThat(prompt).doesNotContain("requirementItems 必须逐条列出");
+        assertThat(prompt.substring(prompt.indexOf("<candidate_text>")))
+                .doesNotContain("评分办法");
+        verify(configurationResolver).resolveTenderIntake();
     }
 }
