@@ -47,6 +47,7 @@ class DocumentIntelligenceServiceImplTest {
 
     private static final String PROFILE_NON_BOUND = "REPORT";
     private static final String PROFILE_TENDER = "TENDER";
+    private static final String PROFILE_TENDER_INTAKE = "TENDER_INTAKE";
     private static final String ENTITY_ID = "42";
     private static final String STORAGE_PATH = "/tmp/uploads/doc.pdf";
     private static final byte[] CONTENT = "pdf-bytes".getBytes();
@@ -64,6 +65,7 @@ class DocumentIntelligenceServiceImplTest {
         when(file.getContentType()).thenReturn("application/pdf");
         when(analyzer.supports(PROFILE_NON_BOUND)).thenReturn(true);
         when(analyzer.supports(PROFILE_TENDER)).thenReturn(true);
+        when(analyzer.supports(PROFILE_TENDER_INTAKE)).thenReturn(true);
 
         ExtractedDocument extracted = new ExtractedDocument("full text", 9, null, "test", Map.of());
         when(extractor.extract(anyString(), anyString(), any())).thenReturn(extracted);
@@ -178,5 +180,17 @@ class DocumentIntelligenceServiceImplTest {
         service.process(PROFILE_NON_BOUND, ENTITY_ID, file);
 
         verify(projectAccessScopeService, never()).assertCurrentUserCanAccessProject(any());
+    }
+
+    @Test
+    @DisplayName("process() TENDER_INTAKE 是入库前解析，不校验项目访问范围")
+    void process_tenderIntakeProfile_skipsAccessScopeCheckAndAllowsNonProjectEntityId() {
+        StoredDocument stored = new StoredDocument(FILE_URL, STORAGE_PATH, "hash");
+        when(storage.store(any(), any(), any(), any(), any())).thenReturn(stored);
+
+        service.process(PROFILE_TENDER_INTAKE, "intake-task-001", file);
+
+        verify(projectAccessScopeService, never()).assertCurrentUserCanAccessProject(any());
+        verify(storage).store(eq(PROFILE_TENDER_INTAKE), eq("intake-task-001"), any(), any(), eq(CONTENT));
     }
 }

@@ -1,5 +1,5 @@
 // Input: tenders API module with mocked HTTP client
-// Output: tender search parameter passthrough and backend-sourced list coverage
+// Output: tender search, manual create, upload, and doc-insight parse API coverage
 // Pos: src/api/modules/ - API module unit tests
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -79,6 +79,30 @@ describe('tendersApi', () => {
     await tendersApi.create(payload)
 
     expect(httpClient.post).toHaveBeenCalledWith('/api/tenders', payload)
+  })
+
+  it('parseTenderIntakeDocument(): uploads manual intake documents through doc-insight', async () => {
+    const file = new File(['tender'], '招标公告.pdf', { type: 'application/pdf' })
+    httpClient.post.mockResolvedValue({
+      success: true,
+      data: { documentId: 'doc-insight://TENDER_INTAKE/manual-tender/招标公告.pdf' }
+    })
+
+    await tendersApi.parseTenderIntakeDocument(file, { entityId: 'manual-tender' })
+
+    expect(httpClient.post).toHaveBeenCalledWith(
+      '/api/doc-insight/parse',
+      expect.any(FormData),
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000
+      }
+    )
+    const formData = httpClient.post.mock.calls[0][1]
+    expect(formData.get('profile')).toBe('TENDER_INTAKE')
+    expect(formData.get('entityId')).toBe('manual-tender')
+    expect(formData.get('file').name).toBe('招标公告.pdf')
+    expect(formData.get('file').type).toBe('application/pdf')
   })
 
   it('initUploadSession(): creates async upload session for large tender files', async () => {

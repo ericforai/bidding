@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   buildPermissionFlags,
   formatBudgetWan,
+  normalizeManualTenderParseResult,
   restoreSourceConfig,
   safeTenderUrl,
   sanitizeSourceConfigForStorage,
@@ -88,5 +89,44 @@ describe('bidding list helpers', () => {
       skipped: 1,
       message: 'done',
     })
+  })
+
+  it('normalizes doc-insight tender intake fields for the manual form', () => {
+    const normalized = normalizeManualTenderParseResult({
+      extractedData: {
+        tenderTitle: '西域仓储数字化升级采购项目',
+        budget: '6800000.50',
+        region: '上海',
+        industry: '数据中心',
+        deadline: '2026-05-20T18:30:00',
+        purchaserName: '上海西域采购中心',
+        contactName: '王经理',
+        tenderScope: '升级仓储系统与配套设备',
+        tags: '公开招标, 数字化'
+      }
+    })
+
+    expect(normalized).toEqual({
+      title: '西域仓储数字化升级采购项目',
+      budget: 6800000.5,
+      region: '上海',
+      industry: '数据中心',
+      deadline: new Date('2026-05-20T18:30:00'),
+      purchaser: '上海西域采购中心',
+      contact: '王经理',
+      description: '升级仓储系统与配套设备',
+      tags: ['公开招标', '数字化'],
+    })
+  })
+
+  it('converts parsed 万元 budgets to yuan before manual form backfill', () => {
+    const normalized = normalizeManualTenderParseResult({
+      extractedData: {
+        title: '限价项目',
+        budget: '最高限价 328.6 万元'
+      }
+    })
+
+    expect(normalized.budget).toBe(3286000)
   })
 })

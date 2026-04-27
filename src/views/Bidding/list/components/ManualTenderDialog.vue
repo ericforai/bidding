@@ -80,7 +80,9 @@
               drag
             >
               <el-icon class="el-icon--upload"><Upload /></el-icon>
-              <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+              <div class="el-upload__text">
+                {{ parsingDocument ? 'DeepSeek/AI 解析中...' : '将文件拖到此处，或点击选择附件' }}
+              </div>
             </el-upload>
           </el-form-item>
         </el-col>
@@ -103,6 +105,7 @@ const props = defineProps({
   form: { type: Object, required: true },
   rules: { type: Object, default: () => MANUAL_FORM_RULES },
   saving: { type: Boolean, default: false },
+  parsingDocument: { type: Boolean, default: false },
   regions: { type: Array, default: () => REGION_OPTIONS },
   industries: { type: Array, default: () => INDUSTRY_OPTIONS },
 })

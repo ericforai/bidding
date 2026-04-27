@@ -1,5 +1,5 @@
-// Input: httpClient and tender endpoints
-// Output: tendersApi - tender list, detail, and conversion accessors
+// Input: httpClient, tender endpoints, and doc-insight parse endpoint
+// Output: tendersApi - tender list, detail, upload, and manual intake parse accessors
 // Pos: src/api/modules/ - Frontend API module layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -56,6 +56,18 @@ export const tendersApi = {
 
   async create(data) {
     return httpClient.post('/api/tenders', data)
+  },
+
+  async parseTenderIntakeDocument(file, { entityId = 'manual-tender' } = {}) {
+    const formData = new FormData()
+    formData.set('profile', 'TENDER_INTAKE')
+    formData.set('entityId', entityId)
+    formData.set('file', file, file?.name || 'manual-tender-document')
+
+    return httpClient.post('/api/doc-insight/parse', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000
+    })
   },
 
   async update(id, data) {

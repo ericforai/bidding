@@ -8,6 +8,10 @@ import {
   formatBudgetWan as formatBudgetWanValue,
   safeTenderUrl as safeTenderUrlValue,
 } from '../bidding-utils.js'
+export {
+  normalizeBudgetYuan,
+  normalizeManualTenderParseResult,
+} from './manualTenderParseHelpers.js'
 
 export function normalizeRole(value) {
   return String(value || '').trim().toLowerCase().replace(/^role_/, '')

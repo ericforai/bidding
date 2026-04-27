@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -47,9 +48,16 @@ class OpenAiTenderDocumentAnalyzerTest {
         StructuralDocumentChunker chunker = new StructuralDocumentChunker(objectMapper);
         analyzer = new OpenAiTenderDocumentAnalyzer(configurationResolver, structuredOutputService, chunker);
 
-        when(configurationResolver.resolve(anyString())).thenReturn(new OpenAiBidAgentRequestConfig(
+        lenient().when(configurationResolver.resolve(anyString())).thenReturn(new OpenAiBidAgentRequestConfig(
                 "key", "http://api.openai.com", "gpt-4", java.time.Duration.ofSeconds(30), OpenAiBidAgentApiStyle.CHAT_COMPLETIONS
         ));
+    }
+
+    @Test
+    void supports_shouldAcceptTenderAndTenderIntakeProfiles() {
+        assertThat(analyzer.supports("TENDER")).isTrue();
+        assertThat(analyzer.supports("tender_intake")).isTrue();
+        assertThat(analyzer.supports("REPORT")).isFalse();
     }
 
     @Test

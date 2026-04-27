@@ -155,6 +155,7 @@
       :ref="(instance) => { manualCreate.manualFormRef.value = instance }"
       :form="manualCreate.manualForm.value"
       :saving="manualCreate.savingManual.value"
+      :parsing-document="manualCreate.parsingManualDocument.value"
       @reset="manualCreate.resetManualForm"
       @file-change="manualCreate.handleFileChange"
       @submit="manualCreate.saveManualTender"
