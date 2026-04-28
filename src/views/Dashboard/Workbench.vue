@@ -65,7 +65,7 @@
         <TeamTaskList v-if="canViewTeamTask" :members="teamMembers" />
 
         <ProjectList
-          v-if="currentUserRole === 'admin'"
+          v-if="userStore.hasPermission('dashboard:view_global_projects')"
           title="全院重点项目"
           :projects="activeProjects"
           :meta-fields="['manager', 'deadline']"
