@@ -17,6 +17,8 @@ import com.xiyu.bid.notification.entity.Notification;
 import com.xiyu.bid.notification.entity.UserNotification;
 import com.xiyu.bid.notification.repository.NotificationRepository;
 import com.xiyu.bid.notification.repository.UserNotificationRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -39,6 +41,8 @@ import java.util.Optional;
 @Service
 @Transactional(readOnly = true)
 public class NotificationApplicationService {
+
+    private static final Logger log = LoggerFactory.getLogger(NotificationApplicationService.class);
 
     private final NotificationRepository notificationRepository;
     private final UserNotificationRepository userNotificationRepository;
@@ -97,9 +101,10 @@ public class NotificationApplicationService {
                 "Notification type must be one of NotificationType");
         }
 
+        int payloadKeyCount = request.payload() == null ? 0 : request.payload().size();
         for (Long recipientId : request.recipientUserIds()) {
             DispatchResult validation = NotificationDispatchPolicy.validateDispatch(
-                type, recipientId, request.title(), request.body());
+                type, recipientId, request.title(), request.body(), payloadKeyCount);
             if (!validation.isValid()) {
                 return validation;
             }
@@ -135,6 +140,7 @@ public class NotificationApplicationService {
         try {
             return objectMapper.writeValueAsString(payload);
         } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize notification payload: {}", e.getMessage());
             return null;
         }
     }

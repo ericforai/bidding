@@ -13,6 +13,7 @@
       </el-button>
     </div>
 
+    <!-- Tabs are a curated subset of NOTIFICATION_TYPE_LABELS; other types fall under "全部". -->
     <el-tabs v-model="activeTab" @tab-change="handleTabChange">
       <el-tab-pane label="全部" name="all" />
       <el-tab-pane label="系统通知" name="SYSTEM" />
@@ -28,18 +29,23 @@
       <el-empty description="暂无通知" />
     </div>
 
-    <div v-else class="inbox-list">
+    <div v-else class="inbox-list" role="list">
       <div
         v-for="item in store.notifications"
         :key="item.id"
         class="inbox-item"
         :class="{ 'inbox-item--unread': !item.read }"
+        role="button"
+        tabindex="0"
+        :aria-label="`${item.read ? '' : '未读 '}${getNotificationTypeLabel(item.type)}：${item.title}`"
         @click="handleClick(item)"
+        @keyup.enter="handleClick(item)"
+        @keyup.space="handleClick(item)"
       >
         <div class="inbox-item-left">
-          <div class="inbox-item-icon">
+          <div class="inbox-item-icon" aria-hidden="true">
             <el-icon :size="18">
-              <component :is="getIconByType(item.type)" />
+              <component :is="getNotificationIcon(item.type)" />
             </el-icon>
           </div>
         </div>
@@ -47,12 +53,12 @@
           <div class="inbox-item-title">{{ item.title }}</div>
           <div v-if="item.body" class="inbox-item-desc">{{ item.body }}</div>
           <div class="inbox-item-meta">
-            <el-tag v-if="item.type" size="small" type="info">{{ typeLabel(item.type) }}</el-tag>
-            <span class="inbox-item-time">{{ formatTime(item.createdAt) }}</span>
+            <el-tag v-if="item.type" size="small" type="info">{{ getNotificationTypeLabel(item.type) }}</el-tag>
+            <span class="inbox-item-time">{{ formatNotificationTime(item.createdAt) }}</span>
           </div>
         </div>
         <div class="inbox-item-right">
-          <div v-if="!item.read" class="inbox-item-dot" />
+          <div v-if="!item.read" class="inbox-item-dot" aria-label="未读" />
         </div>
       </div>
     </div>
@@ -72,14 +78,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  Bell,
-  Warning,
-  Document,
-  ChatDotRound,
-  InfoFilled
-} from '@element-plus/icons-vue'
 import { useNotificationStore } from '@/stores/notifications'
+import {
+  getNotificationIcon,
+  getNotificationTypeLabel,
+  formatNotificationTime,
+  resolveNotificationRoute
+} from '@/utils/notificationHelpers'
 
 const router = useRouter()
 const store = useNotificationStore()
@@ -87,50 +92,6 @@ const store = useNotificationStore()
 const activeTab = ref('all')
 const currentPage = ref(1)
 const pageSize = 20
-
-const TYPE_LABELS = {
-  INFO: '通知',
-  SYSTEM: '系统',
-  MENTION: '提及',
-  APPROVAL: '审批',
-  DEADLINE: '截止',
-  TASK_UPDATE: '任务',
-  DOCUMENT_CHANGE: '文档'
-}
-
-const ICON_BY_TYPE = {
-  DEADLINE: Warning,
-  DOCUMENT_CHANGE: Document,
-  MENTION: ChatDotRound,
-  SYSTEM: InfoFilled,
-  DEFAULT: Bell
-}
-
-const ENTITY_ROUTE_MAP = {
-  PROJECT: '/project/',
-  BIDDING: '/bidding/',
-  TENDER: '/bidding/',
-  DOCUMENT: '/document/editor/'
-}
-
-const typeLabel = (type) => TYPE_LABELS[type] || type
-const getIconByType = (type) => ICON_BY_TYPE[type] || ICON_BY_TYPE.DEFAULT
-
-const formatTime = (dateStr) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  if (Number.isNaN(date.getTime())) return ''
-  const diffMs = Date.now() - date.getTime()
-  const diffMin = Math.floor(diffMs / 60000)
-  if (diffMin < 1) return '刚刚'
-  if (diffMin < 60) return `${diffMin}分钟前`
-  const diffHour = Math.floor(diffMin / 60)
-  if (diffHour < 24) return `${diffHour}小时前`
-  const diffDay = Math.floor(diffHour / 24)
-  if (diffDay === 1) return '昨天'
-  if (diffDay < 7) return `${diffDay}天前`
-  return date.toLocaleDateString('zh-CN')
-}
 
 const fetchData = () => {
   const params = { page: currentPage.value - 1, size: pageSize }
@@ -153,9 +114,9 @@ const handleClick = async (item) => {
   if (!item.read) {
     await store.markAsRead({ userNotificationId: item.id, notificationId: item.notificationId })
   }
-  const prefix = ENTITY_ROUTE_MAP[item.sourceEntityType]
-  if (prefix && item.sourceEntityId) {
-    router.push(`${prefix}${item.sourceEntityId}`)
+  const target = resolveNotificationRoute(item)
+  if (target) {
+    router.push(target)
   }
 }
 

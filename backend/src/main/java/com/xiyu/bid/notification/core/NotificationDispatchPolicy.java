@@ -11,11 +11,18 @@ package com.xiyu.bid.notification.core;
 public final class NotificationDispatchPolicy {
 
     private static final int MAX_TITLE_LENGTH = 200;
+    private static final int MAX_BODY_LENGTH = 10_000;
+    private static final int MAX_PAYLOAD_KEYS = 50;
 
     private NotificationDispatchPolicy() {
     }
 
     public static DispatchResult validateDispatch(NotificationType type, Long userId, String title, String body) {
+        return validateDispatch(type, userId, title, body, 0);
+    }
+
+    public static DispatchResult validateDispatch(
+        NotificationType type, Long userId, String title, String body, int payloadKeyCount) {
         if (type == null) {
             return DispatchResult.invalid("INVALID_TYPE", "Notification type must not be null");
         }
@@ -28,6 +35,14 @@ public final class NotificationDispatchPolicy {
         if (title.length() > MAX_TITLE_LENGTH) {
             return DispatchResult.invalid("TITLE_TOO_LONG",
                 "Notification title must be at most " + MAX_TITLE_LENGTH + " characters");
+        }
+        if (body != null && body.length() > MAX_BODY_LENGTH) {
+            return DispatchResult.invalid("BODY_TOO_LONG",
+                "Notification body must be at most " + MAX_BODY_LENGTH + " characters");
+        }
+        if (payloadKeyCount > MAX_PAYLOAD_KEYS) {
+            return DispatchResult.invalid("PAYLOAD_TOO_LARGE",
+                "Notification payload must have at most " + MAX_PAYLOAD_KEYS + " keys");
         }
         return DispatchResult.valid();
     }
