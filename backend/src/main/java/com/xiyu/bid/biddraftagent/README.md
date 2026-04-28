@@ -18,6 +18,7 @@
 | `infrastructure/documenteditor/` | Adapter | 把写入计划转换为 `documenteditor` 批量章节树写入请求 |
 | `infrastructure/openai/` | Adapter | 通过 AI SDK 拆解招标要求、生成草稿、审阅摘要和交接清单；`TENDER_INTAKE` 强制走 DeepSeek Chat Completions |
 | `infrastructure/tenderdocument/` | Adapter | 保存上传文件，使用 POI/PDFBox 提取 Word 和文本型 PDF 正文 |
+| `infrastructure/e2e/` | Adapter | 仅 `e2e` profile 生效的固定文本提取、配置就绪和招标要求解析替身，用于 Playwright 端到端回归，不参与生产路径 |
 | `controller/` | API 边界 | 暴露项目级 tender document import、run/review/apply 接口 |
 | `repository/` | JPA Repository | 读写 run、artifact、招标文件解析快照与 requirement items |
 | `entity/` | JPA Entity | `bid_agent_runs`、`bid_agent_artifacts`、`bid_tender_document_snapshots`、`bid_requirement_items` |
