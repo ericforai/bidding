@@ -14,7 +14,8 @@
 | `core/TaskBreakdownPolicy.java` | Core | 根据招标需求项或标书章节快照生成任务拆解决策，不访问数据库或框架 |
 | `service/ProjectWorkflowService.java` | Service | 项目流程门面；转调任务、评分草稿、文档、提醒和分享链接子服务 |
 | `service/ProjectTaskBreakdownService.java` | Service | 任务拆解编排；读取真实标书拆解结果、调用纯核心、保存项目任务 |
-| `service/ProjectTaskBreakdownSourceReader.java` | Reader | 读取任务拆解来源；招标需求项复用 `biddraftagent` 的最新快照读模型，章节只兜底读取顶层/二级章节 |
+| `service/ProjectTaskBreakdownSourceReader.java` | Reader | 读取任务拆解来源；通过端口读取招标需求项，章节只兜底读取顶层/二级章节 |
+| `service/ProjectTaskRequirementSourceGateway.java` | Port | 任务拆解读取招标需求来源的端口，由招标文件解析能力侧提供实现，避免流程模块反向依赖解析模块实体 |
 | `service/ProjectDocumentWorkflowService.java` | Service | 项目文档查询/创建/删除编排，调用文档绑定边界 |
 | `service/ProjectDocumentViewAssembler.java` | Assembler | 项目文档实体到 DTO 的装配 |
 | `service/ProjectDocumentBindingGateway.java` | Port | 项目文档与外部附件业务的可替换集成边界 |
