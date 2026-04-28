@@ -17,7 +17,7 @@
       </div>
     </div>
 
-    <div class="header-center" v-if="!isMobile && !isApiDeliveryMode">
+    <div class="header-center" v-if="!isMobile && globalSearchEnabled">
       <el-input
         v-model="searchKeyword"
         placeholder="搜索标讯、项目、知识..."
@@ -29,20 +29,30 @@
     </div>
 
     <!-- 移动端搜索按钮 -->
-    <div class="header-center-mobile" v-else-if="!isApiDeliveryMode">
+    <div class="header-center-mobile" v-else-if="globalSearchEnabled">
       <el-icon class="mobile-search-icon" @click="showMobileSearch = true">
         <Search />
       </el-icon>
     </div>
 
     <div class="header-right">
-      <el-tooltip v-if="!isApiDeliveryMode" content="通知" placement="bottom">
-        <el-badge :value="unreadCount" :hidden="unreadCount === 0" class="notification-badge">
-          <el-icon class="header-icon" @click="handleNotification">
-            <Bell />
-          </el-icon>
-        </el-badge>
-      </el-tooltip>
+      <el-popover
+        :visible="showNotificationPanel"
+        placement="bottom-end"
+        :width="360"
+        trigger="click"
+        :show-arrow="false"
+        @update:visible="showNotificationPanel = $event"
+      >
+        <template #reference>
+          <el-badge :value="notificationStore.unreadCount" :hidden="notificationStore.unreadCount === 0" class="notification-badge">
+            <el-icon class="header-icon" @click="showNotificationPanel = !showNotificationPanel">
+              <Bell />
+            </el-icon>
+          </el-badge>
+        </template>
+        <NotificationPanel @close="showNotificationPanel = false" />
+      </el-popover>
 
       <el-dropdown @command="handleCommand">
         <div class="user-info">
@@ -63,7 +73,7 @@
                 </div>
               </div>
             </el-dropdown-item>
-            <el-dropdown-item v-if="!isApiDeliveryMode" command="profile">
+            <el-dropdown-item v-if="globalSearchEnabled" command="profile">
               <el-icon><User /></el-icon>
               个人中心
             </el-dropdown-item>
@@ -81,10 +91,7 @@
     </div>
 
     <!-- 移动端搜索弹窗 -->
-    <el-dialog
-      v-if="!isApiDeliveryMode"
-      v-model="showMobileSearch"
-      title="搜索"
+    <el-dialog v-if="globalSearchEnabled" v-model="showMobileSearch" title="搜索"
       :width="isMobile ? '90%' : '500px'"
       class="mobile-search-dialog"
     >
@@ -108,7 +115,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
@@ -116,6 +123,9 @@ import {
   SwitchButton, Expand, Fold, Menu
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import { useNotificationStore } from '@/stores/notifications'
+import { useNotifications } from '@/composables/useNotifications'
+import NotificationPanel from '@/components/common/NotificationPanel.vue'
 import { hasMenuAccessForRole } from '@/api/modules/settings'
 
 const props = defineProps({
@@ -129,11 +139,13 @@ const emit = defineEmits(['toggleCollapse', 'mobileMenuClick'])
 
 const router = useRouter()
 const userStore = useUserStore()
-const isApiDeliveryMode = computed(() => true)
+const notificationStore = useNotificationStore()
+useNotifications()
 
 const searchKeyword = ref('')
-const unreadCount = ref(isApiDeliveryMode.value ? 0 : 3)
+const showNotificationPanel = ref(false)
 const showMobileSearch = ref(false)
+const globalSearchEnabled = false
 
 // 移动端检测
 const isMobile = ref(false)
@@ -195,34 +207,19 @@ const handleMobileMenuClick = () => {
 }
 
 const handleSearch = () => {
-  if (isApiDeliveryMode.value) return
-  if (searchKeyword.value.trim()) {
-    ElMessage.info(`搜索: ${searchKeyword.value}`)
-    // TODO: 实现全局搜索功能
-  }
+  if (searchKeyword.value.trim()) ElMessage.info(`搜索: ${searchKeyword.value}`)
 }
 
 const handleMobileSearch = () => {
-  if (isApiDeliveryMode.value) return
   if (searchKeyword.value.trim()) {
     ElMessage.info(`搜索: ${searchKeyword.value}`)
     showMobileSearch.value = false
-    // TODO: 实现全局搜索功能
   }
-}
-
-const handleNotification = () => {
-  if (isApiDeliveryMode.value) return
-  ElMessage.info('通知中心')
-  unreadCount.value = 0
 }
 
 const handleCommand = async (command) => {
   switch (command) {
     case 'profile':
-      if (!isApiDeliveryMode.value) {
-        ElMessage.info('个人中心')
-      }
       break
     case 'settings':
       if (canAccessSettings.value) {
