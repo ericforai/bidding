@@ -19,7 +19,3 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: SOP 基础设施初始化**
   *Link: [./tracks/infrastructure_sop_setup_20260426/](./tracks/infrastructure_sop_setup_20260426/)*
-
-- [x] **Track: 动态工作台配置体系与数据域权限**
-  *Link: [./tracks/dynamic_workbench_20260428/](./tracks/dynamic_workbench_20260428/)*
-
