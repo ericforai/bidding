@@ -1,7 +1,5 @@
 package com.xiyu.bid.projectworkflow.service;
 
-import com.xiyu.bid.biddraftagent.application.BidRequirementSnapshotReader;
-import com.xiyu.bid.biddraftagent.entity.BidRequirementItem;
 import com.xiyu.bid.documenteditor.entity.DocumentSection;
 import com.xiyu.bid.documenteditor.repository.DocumentSectionRepository;
 import com.xiyu.bid.documenteditor.repository.DocumentStructureRepository;
@@ -18,18 +16,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 class ProjectTaskBreakdownSourceReader {
 
-    private final BidRequirementSnapshotReader requirementSnapshotReader;
+    private final ProjectTaskRequirementSourceGateway requirementSourceGateway;
     private final DocumentStructureRepository documentStructureRepository;
     private final DocumentSectionRepository documentSectionRepository;
 
     List<TaskBreakdownPolicy.SourceSnapshot> collectRequirementSources(Long projectId) {
-        return requirementSnapshotReader.latestRequirementsForProject(projectId).stream()
-                .map(item -> new TaskBreakdownPolicy.SourceSnapshot(
-                        item.getCategory(),
-                        item.getTitle(),
-                        selectRequirementContent(item)
-                ))
-                .toList();
+        return requirementSourceGateway.latestRequirementSourcesForProject(projectId);
     }
 
     List<TaskBreakdownPolicy.SourceSnapshot> collectSectionSources(Long projectId) {
@@ -63,12 +55,5 @@ class ProjectTaskBreakdownSourceReader {
             return true;
         }
         return topLevelIds.contains(section.getParentId());
-    }
-
-    private String selectRequirementContent(BidRequirementItem item) {
-        if (item.getContent() != null && !item.getContent().isBlank()) {
-            return item.getContent();
-        }
-        return item.getSourceExcerpt();
     }
 }
