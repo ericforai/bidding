@@ -24,6 +24,11 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -31,6 +36,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -87,6 +93,7 @@ class ProjectTaskBreakdownServiceTest {
                 requirement("commercial", "商务条款响应", "按招标文件完成商务偏离表"),
                 requirement("technical", "技术实施方案", "提交平台对接和实施计划")
         ));
+        when(documentStructureRepository.findByProjectId(1001L)).thenThrow(new AssertionError("有需求项时不应回退章节来源"));
         List<Task> persistedTasks = new ArrayList<>();
         when(taskRepository.findByProjectId(1001L)).thenAnswer(invocation -> List.copyOf(persistedTasks));
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> saveTo(persistedTasks, invocation.getArgument(0)));
@@ -165,6 +172,46 @@ class ProjectTaskBreakdownServiceTest {
     }
 
     @Test
+    void decomposeProjectTasks_ShouldNotDuplicateTasksWhenRequestsRunConcurrently() throws Exception {
+        when(requirementSnapshotReader.latestRequirementsForProject(1001L)).thenReturn(List.of(
+                requirement("commercial", "商务条款响应", "按招标文件完成商务偏离表")
+        ));
+        List<Task> persistedTasks = new ArrayList<>();
+        CountDownLatch firstReadStarted = new CountDownLatch(1);
+        CountDownLatch releaseFirstRead = new CountDownLatch(1);
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        when(taskRepository.findByProjectId(1001L)).thenAnswer(invocation -> {
+            firstReadStarted.countDown();
+            releaseFirstRead.await(2, TimeUnit.SECONDS);
+            synchronized (persistedTasks) {
+                return List.copyOf(persistedTasks);
+            }
+        });
+        when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> {
+            synchronized (persistedTasks) {
+                return saveTo(persistedTasks, invocation.getArgument(0));
+            }
+        });
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            executor.submit(() -> runAndCaptureFailure(failure));
+            assertThat(firstReadStarted.await(1, TimeUnit.SECONDS)).isTrue();
+            executor.submit(() -> runAndCaptureFailure(failure));
+            releaseFirstRead.countDown();
+            executor.shutdown();
+            assertThat(executor.awaitTermination(3, TimeUnit.SECONDS)).isTrue();
+        } finally {
+            executor.shutdownNow();
+        }
+
+        assertThat(failure.get()).isNull();
+        assertThat(persistedTasks).extracting(Task::getTitle)
+                .containsExactly("商务标：商务条款响应");
+        verify(taskRepository, timeout(1000).times(1)).save(any(Task.class));
+    }
+
+    @Test
     void decomposeProjectTasks_ShouldRunInsideTransaction() throws NoSuchMethodException {
         Method method = ProjectTaskBreakdownService.class.getMethod("decomposeProjectTasks", Long.class);
 
@@ -193,5 +240,13 @@ class ProjectTaskBreakdownServiceTest {
         task.setId(task.getTitle().startsWith("商务") ? 9101L : 9102L);
         persistedTasks.add(task);
         return task;
+    }
+
+    private void runAndCaptureFailure(AtomicReference<Throwable> failure) {
+        try {
+            service.decomposeProjectTasks(1001L);
+        } catch (Throwable throwable) {
+            failure.compareAndSet(null, throwable);
+        }
     }
 }
