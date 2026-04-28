@@ -208,6 +208,12 @@ const routes = [
         meta: { title: '告警历史', roles: ['admin', 'manager', 'staff'] }
       },
       {
+        path: 'inbox',
+        name: 'Inbox',
+        component: () => import('@/views/NotificationInbox.vue'),
+        meta: { title: '通知中心', roles: ['admin', 'manager', 'staff'] }
+      },
+      {
         path: 'document/editor/:id',
         name: 'DocumentEditor',
         component: () => import('@/views/Document/Editor.vue'),

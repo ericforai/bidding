@@ -41,7 +41,8 @@ class FPJavaArchitectureTest {
         "com.xiyu.bid.bidresult.core",
         "com.xiyu.bid.projectworkflow.core",
         "com.xiyu.bid.ai.core",
-        "com.xiyu.bid.biddraftagent.domain"
+        "com.xiyu.bid.biddraftagent.domain",
+        "com.xiyu.bid.notification.core"
         // TODO(bidprocess): add "com.xiyu.bid.bidprocess.core" here as soon as
         // the first non-entity class lands under that package. Until then, the
         // non-empty assertion would red-light on an empty directory.
