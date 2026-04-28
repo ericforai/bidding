@@ -1,5 +1,5 @@
 <template>
-  <div class="notification-panel">
+  <div class="notification-panel" role="region" aria-label="通知中心">
     <div class="notification-panel-header">
       <span class="notification-panel-title">通知</span>
       <el-button
@@ -20,24 +20,29 @@
       <div v-else-if="store.notifications.length === 0" class="notification-panel-empty">
         <el-empty description="暂无通知" :image-size="60" />
       </div>
-      <div v-else class="notification-list">
+      <div v-else class="notification-list" role="list">
         <div
           v-for="item in store.notifications"
           :key="item.id"
           class="notification-item"
           :class="{ 'notification-item--unread': !item.read }"
+          role="button"
+          tabindex="0"
+          :aria-label="`${item.read ? '' : '未读 '}通知：${item.title}`"
           @click="handleClick(item)"
+          @keyup.enter="handleClick(item)"
+          @keyup.space="handleClick(item)"
         >
-          <div class="notification-item-icon">
+          <div class="notification-item-icon" aria-hidden="true">
             <el-icon :size="16">
-              <component :is="getIconByType(item.type)" />
+              <component :is="getNotificationIcon(item.type)" />
             </el-icon>
           </div>
           <div class="notification-item-content">
             <div class="notification-item-title">{{ item.title }}</div>
-            <div class="notification-item-time">{{ formatTime(item.createdAt) }}</div>
+            <div class="notification-item-time">{{ formatNotificationTime(item.createdAt) }}</div>
           </div>
-          <div v-if="!item.read" class="notification-item-dot" />
+          <div v-if="!item.read" class="notification-item-dot" aria-label="未读" />
         </div>
       </div>
     </div>
@@ -51,66 +56,25 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  Bell,
-  Warning,
-  Document,
-  ChatDotRound,
-  InfoFilled
-} from '@element-plus/icons-vue'
 import { useNotificationStore } from '@/stores/notifications'
+import {
+  getNotificationIcon,
+  formatNotificationTime,
+  resolveNotificationRoute
+} from '@/utils/notificationHelpers'
 
 const emit = defineEmits(['close'])
 const router = useRouter()
 const store = useNotificationStore()
 
-const ENTITY_ROUTE_MAP = {
-  PROJECT: '/project/',
-  BIDDING: '/bidding/',
-  TENDER: '/bidding/',
-  DOCUMENT: '/document/editor/'
-}
-
-const ICON_BY_TYPE = {
-  DEADLINE: Warning,
-  DOCUMENT_CHANGE: Document,
-  MENTION: ChatDotRound,
-  SYSTEM: InfoFilled,
-  DEFAULT: Bell
-}
-
-const getIconByType = (type) => ICON_BY_TYPE[type] || ICON_BY_TYPE.DEFAULT
-
-const formatTime = (dateStr) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  if (Number.isNaN(date.getTime())) return ''
-  const diffMs = Date.now() - date.getTime()
-  const diffMin = Math.floor(diffMs / 60000)
-  if (diffMin < 1) return '刚刚'
-  if (diffMin < 60) return `${diffMin}分钟前`
-  const diffHour = Math.floor(diffMin / 60)
-  if (diffHour < 24) return `${diffHour}小时前`
-  const diffDay = Math.floor(diffHour / 24)
-  if (diffDay === 1) return '昨天'
-  if (diffDay < 7) return `${diffDay}天前`
-  return date.toLocaleDateString('zh-CN')
-}
-
-const navigateToSource = (item) => {
-  const prefix = ENTITY_ROUTE_MAP[item.sourceEntityType]
-  if (prefix && item.sourceEntityId) {
-    router.push(`${prefix}${item.sourceEntityId}`)
-    emit('close')
-  }
-}
-
 const handleClick = async (item) => {
   if (!item.read) {
     await store.markAsRead({ userNotificationId: item.id, notificationId: item.notificationId })
   }
-  if (item.sourceEntityType) {
-    navigateToSource(item)
+  const target = resolveNotificationRoute(item)
+  if (target) {
+    router.push(target)
+    emit('close')
   }
 }
 

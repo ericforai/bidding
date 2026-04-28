@@ -12,8 +12,8 @@ public record CreateNotificationRequest(
     String sourceEntityType,
     Long sourceEntityId,
     @NotBlank @Size(max = 200) String title,
-    String body,
+    @Size(max = 10000) String body,
     Map<String, Object> payload,
-    @NotEmpty List<Long> recipientUserIds
+    @NotEmpty @Size(max = 1000) List<Long> recipientUserIds
 ) {
 }
