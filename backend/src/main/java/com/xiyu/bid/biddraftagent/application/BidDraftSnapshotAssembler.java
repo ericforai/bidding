@@ -2,9 +2,6 @@ package com.xiyu.bid.biddraftagent.application;
 
 import com.xiyu.bid.biddraftagent.domain.BidDraftSnapshot;
 import com.xiyu.bid.biddraftagent.entity.BidRequirementItem;
-import com.xiyu.bid.biddraftagent.entity.BidTenderDocumentSnapshot;
-import com.xiyu.bid.biddraftagent.repository.BidRequirementItemRepository;
-import com.xiyu.bid.biddraftagent.repository.BidTenderDocumentSnapshotRepository;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.exception.ResourceNotFoundException;
@@ -31,8 +28,7 @@ public class BidDraftSnapshotAssembler {
     private final QualificationRepository qualificationRepository;
     private final TemplateRepository templateRepository;
     private final CaseRepository caseRepository;
-    private final BidRequirementItemRepository requirementItemRepository;
-    private final BidTenderDocumentSnapshotRepository documentSnapshotRepository;
+    private final BidRequirementSnapshotReader requirementSnapshotReader;
 
     public BidDraftSnapshot assemble(Long projectId) {
         return assemble(projectId, null);
@@ -103,15 +99,9 @@ public class BidDraftSnapshotAssembler {
 
     private List<BidRequirementItem> collectRequirementItems(Long projectId, Long snapshotId) {
         if (snapshotId != null) {
-            return documentSnapshotRepository.findByIdAndProjectId(snapshotId, projectId)
-                    .map(BidTenderDocumentSnapshot::getProjectDocumentId)
-                    .map(documentId -> requirementItemRepository.findByProjectIdAndProjectDocumentIdOrderByCreatedAtDesc(projectId, documentId))
-                    .orElseThrow(() -> new ResourceNotFoundException("BidTenderDocumentSnapshot", String.valueOf(snapshotId)));
+            return requirementSnapshotReader.requirementsForSnapshot(projectId, snapshotId);
         }
-        return documentSnapshotRepository.findTopByProjectIdOrderByCreatedAtDescIdDesc(projectId)
-                .map(BidTenderDocumentSnapshot::getProjectDocumentId)
-                .map(documentId -> requirementItemRepository.findByProjectIdAndProjectDocumentIdOrderByCreatedAtDesc(projectId, documentId))
-                .orElse(List.of());
+        return requirementSnapshotReader.latestRequirementsForProject(projectId);
     }
 
     private List<String> collectRequirementSignals(List<BidRequirementItem> requirementItems) {

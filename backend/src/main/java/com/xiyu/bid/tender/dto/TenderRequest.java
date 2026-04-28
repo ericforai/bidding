@@ -36,7 +36,6 @@ public class TenderRequest {
     @Size(max = 200, message = "来源长度不能超过200个字符")
     private String source;
 
-    @NotNull(message = "预算金额不能为空")
     @DecimalMin(value = "0.00", message = "预算金额不能为负数")
     @Digits(integer = 15, fraction = 2, message = "预算金额格式不正确")
     private BigDecimal budget;

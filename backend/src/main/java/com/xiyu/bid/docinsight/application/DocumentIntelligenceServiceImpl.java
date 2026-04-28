@@ -1,11 +1,12 @@
 // Input: DocumentStorage, DocumentTextExtractor, StructuralDocumentChunker, List<DocumentAnalyzer>, ProjectAccessScopeService
-// Output: DocumentAnalysisResult — 协调存储、提取、分块、分析各层；执行项目访问范围校验
+// Output: DocumentAnalysisResult — 协调存储、提取、分块、分析各层；仅项目绑定 profile 执行访问范围校验
 // Pos: docinsight/application — 文档智能分析主服务实现
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.docinsight.application;
 
 import com.xiyu.bid.docinsight.application.exception.DocumentNotFoundException;
 import com.xiyu.bid.docinsight.application.exception.UnsupportedProfileException;
+import com.xiyu.bid.docinsight.domain.DocInsightProfiles;
 import com.xiyu.bid.docinsight.domain.DocumentChunk;
 import com.xiyu.bid.docinsight.domain.StructuralDocumentChunker;
 import com.xiyu.bid.service.ProjectAccessScopeService;
@@ -17,15 +18,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class DocumentIntelligenceServiceImpl implements DocumentIntelligenceService {
-
-    /** profileCode 值匹配此集合时，entityId 视为项目 ID，需校验访问范围。 */
-    private static final Set<String> PROJECT_BOUND_PROFILES = Set.of("TENDER");
 
     private final DocumentStorage storage;
     private final DocumentTextExtractor extractor;
@@ -87,7 +84,7 @@ public class DocumentIntelligenceServiceImpl implements DocumentIntelligenceServ
      * 抛出 AccessDeniedException 时由 GlobalExceptionHandler 映射到 HTTP 403。
      */
     private void checkProjectAccess(String profileCode, String entityId) {
-        if (!PROJECT_BOUND_PROFILES.contains(profileCode.toUpperCase())) {
+        if (!DocInsightProfiles.requiresProjectAccess(profileCode)) {
             return;
         }
         long projectId;

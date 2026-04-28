@@ -14,8 +14,15 @@
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="预算金额" prop="budget">
-            <el-input-number v-model="form.budget" :min="0" :precision="2" class="full-width" />
+          <el-form-item label="预算金额（元）" prop="budget">
+            <el-input-number
+              v-model="form.budget"
+              :min="0"
+              :precision="2"
+              placeholder="采购预算/最高限价，单位元；框架协议可留空"
+              class="full-width"
+            />
+            <div class="field-tip">采购预算/最高限价，单位元；框架协议可留空</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -73,7 +80,9 @@
               drag
             >
               <el-icon class="el-icon--upload"><Upload /></el-icon>
-              <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+              <div class="el-upload__text">
+                {{ parsingDocument ? 'DeepSeek/AI 解析中...' : '将文件拖到此处，或点击选择附件' }}
+              </div>
             </el-upload>
           </el-form-item>
         </el-col>
@@ -96,6 +105,7 @@ const props = defineProps({
   form: { type: Object, required: true },
   rules: { type: Object, default: () => MANUAL_FORM_RULES },
   saving: { type: Boolean, default: false },
+  parsingDocument: { type: Boolean, default: false },
   regions: { type: Array, default: () => REGION_OPTIONS },
   industries: { type: Array, default: () => INDUSTRY_OPTIONS },
 })
@@ -115,6 +125,14 @@ defineExpose({
 .manual-tender-upload {
   width: 100%;
   min-width: 0;
+}
+
+.field-tip {
+  width: 100%;
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .manual-tender-upload :deep(.el-upload) {

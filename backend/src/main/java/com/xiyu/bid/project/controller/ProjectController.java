@@ -53,7 +53,7 @@ public class ProjectController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<ProjectDTO>> createProject(@Valid @RequestBody ProjectRequest projectRequest) {
         log.info("POST /api/projects - Creating new project: {}", projectRequest.getName());
         sanitizeProjectRequest(projectRequest);

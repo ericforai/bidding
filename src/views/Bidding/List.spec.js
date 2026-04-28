@@ -54,6 +54,7 @@ vi.mock('./list/useTenderListPage.js', () => ({
       manualFormRef: ref(null),
       manualForm: ref({}),
       savingManual: ref(false),
+      parsingManualDocument: ref(false),
       resetManualForm: vi.fn(),
       handleFileChange: vi.fn(),
       saveManualTender: vi.fn(),

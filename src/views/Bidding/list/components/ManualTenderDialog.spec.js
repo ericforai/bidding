@@ -38,7 +38,7 @@ function mountDialog(props = {}) {
         'el-date-picker': { template: '<input />' },
         'el-dialog': { template: '<section><slot /><slot name="footer" /></section>' },
         'el-form': { template: '<form><slot /></form>' },
-        'el-form-item': { template: '<label><slot /></label>' },
+        'el-form-item': { props: ['label'], template: '<label>{{ label }}<slot /></label>' },
         'el-icon': { template: '<span><slot /></span>' },
         'el-input': { template: '<input />' },
         'el-input-number': { template: '<input />' },
@@ -53,6 +53,13 @@ function mountDialog(props = {}) {
 }
 
 describe('ManualTenderDialog', () => {
+  it('describes the manual budget field in yuan with procurement budget guidance', () => {
+    const wrapper = mountDialog()
+
+    expect(wrapper.text()).toContain('预算金额（元）')
+    expect(wrapper.text()).toContain('采购预算/最高限价，单位元；框架协议可留空')
+  })
+
   it('keeps the attachment upload area under the form width after files are selected', () => {
     const wrapper = mountDialog({
       form: createForm({

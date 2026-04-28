@@ -12,13 +12,15 @@
 | `check-front-data-boundaries.mjs` | 门禁脚本 | 检查业务层是否发生遗留 Demo 回退代码污染 |
 | `check-line-budgets.mjs` | 门禁脚本 | 对核心源码目录执行 300 行棘轮门禁：默认检查当前工作区；pre-commit 走 staged，CI 走显式 diff 范围 |
 | `check-version-sync.mjs` | 门禁脚本 | 校验根目录 `VERSION`、`package.json` 与 `backend/pom.xml` 是否保持一致 |
+| `agent-start-task.sh` | 工作区初始化脚本 | 为指定 Agent 创建独立 worktree、任务分支和本地 `.agent-task-context`，避免在默认工作区开发 |
+| `agent-worktree-guard.sh` | 提交门禁脚本 | 阻止在 `main`、`agent/*-init`、共享 Agent bootstrap worktree 或缺少任务上下文的 worktree 中提交 |
 | `line-budget.config.json` | 配置文件 | 声明 300 行门禁的纳入目录、文件类型与排除规则，供 pre-commit 与 CI 共用 |
 | `wiki-common.mjs` | 基础库脚本 | 提供 Wiki ingest/build/check 共用的 frontmatter、目录、索引与链接处理能力 |
 | `wiki-ingest.mjs` | 摄入脚本 | 扫描 `.wiki/sources/` 原始资料（含 `bidding/`、`contract/` 等分类），抽取到 `.wiki/extracts/`，并更新 Source Catalog |
 | `wiki-build.mjs` | 编译脚本 | 规范化 `.wiki/pages/`，补齐实施空间页面，生成 Page Catalog 与 backlinks |
 | `wiki-check.mjs` | 门禁脚本 | 校验 frontmatter、链接完整性、双索引一致性、抽取产物与时效健康度 |
 | `check-java-coding-standards.sh` | 门禁脚本 | 检查暂存区 Java 代码规范（如 `catch(Exception)`、`Optional.get()`、原始泛型），并执行 changed-code 质量门禁：Checkstyle 默认全启；PMD 支持 `off|report|on` 分阶段只检查目标服务包；SpotBugs 支持 `auto|off|report|on`，并通过 `quality.includes` / `quality.onlyAnalyze` 缩圈到目标改动类 |
-| `install-java-standards-hook.sh` | 安装脚本 | 将仓库 `.githooks/pre-commit` 安装到本地 `.git/hooks/pre-commit` |
+| `install-java-standards-hook.sh` | 安装脚本 | 将仓库 `.githooks/pre-commit` 安装到当前 Git hooksPath 或 common hooks 目录，支持多 worktree 共用门禁 |
 | `local-ci.sh` | 门禁脚本 | GitHub Actions 账单受限期间的本地验收入口；提供 `quick`、`full`、`release` 三档真实 API 模式门禁，后端门禁前会清理构建输出，不替代、不修改远端 Actions 定义 |
 | `performance/` | 压测脚本目录 | 存放真实 API 性能压测脚本，当前包含 200 销售并发 k6 主链路 |
 | `clean-local-artifacts.sh` | 清理脚本 | 删除本地产生的测试、报告和演练产物 |

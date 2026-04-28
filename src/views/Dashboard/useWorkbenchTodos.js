@@ -18,6 +18,7 @@ export function useWorkbenchTodos({
   tasksApi = defaultTasksApi,
   alertHistoryApi = defaultAlertHistoryApi,
   assigneeIdRef,
+  canLoadAlertTodosRef = ref(true),
   message = noopMessage,
   normalizeTaskTodo = normalizeApiTodo,
   normalizeAlertTodo = normalizeAlertForTodo,
@@ -50,6 +51,11 @@ export function useWorkbenchTodos({
   }
 
   const loadAlertTodos = async () => {
+    if (!canLoadAlertTodosRef.value) {
+      alertTodoItems.value = []
+      return []
+    }
+
     try {
       const result = await alertHistoryApi.getUnresolved({ page: 0, size: 8 })
       alertTodoItems.value = Array.isArray(result?.data)
@@ -80,6 +86,8 @@ export function useWorkbenchTodos({
   }
 
   const completeWarningTodo = async (task) => {
+    if (!canLoadAlertTodosRef.value) return
+
     try {
       const result = await alertHistoryApi.acknowledge(task.sourceId)
       if (!result?.success) {

@@ -8,10 +8,11 @@ sources:
 backlinks:
   - _index
   - contract-constraints
+  - implementation/attachment4-gap-matrix
   - requirements
 created: 2026-04-25
 updated: 2026-04-25
-health_checked: 2026-04-25
+health_checked: 2026-04-26
 ---
 # 附件4需求任务书交付基线
 
@@ -161,5 +162,6 @@ health_checked: 2026-04-25
 
 - [[requirements]]
 - [[contract-constraints]]
+- [[implementation/attachment4-gap-matrix]]
 - [[implementation/sow-2026-v1-4]]
 - [[implementation/acceptance-and-closure]]

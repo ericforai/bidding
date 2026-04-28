@@ -12,8 +12,8 @@ backlinks:
   - implementation/acceptance-and-closure
   - implementation/sow-2026-v1-4
 created: 2026-04-21
-updated: 2026-04-25
-health_checked: 2026-04-25
+updated: 2026-04-26
+health_checked: 2026-04-26
 ---
 # 实施交付作战包总览
 
@@ -26,6 +26,8 @@ health_checked: 2026-04-25
 ## 核心工作包
 
 - [[implementation/sow-2026-v1-4]]
+- [[implementation/document-delivery-ledger]]
+- [[implementation/attachment6-function-list-trace]]
 - [[implementation/milestones]]
 - [[implementation/risk-register]]
 - [[implementation/weekly-status]]

@@ -1,6 +1,5 @@
 import { computed, ref } from 'vue'
 import { getAccessToken } from '@/api/session.js'
-import { initialActivities } from './constants.js'
 
 export function useProjectDetailState(context) {
   const { route, userStore, projectStore, isDemoMode, isApiProject } = context
@@ -15,6 +14,8 @@ export function useProjectDetailState(context) {
   const processDialogVisible = ref(false)
   const reviewerDialogVisible = ref(false)
   const scoreDraftDialogVisible = ref(false)
+  const tenderBreakdownDialogVisible = ref(false)
+  const tenderBreakdownParsing = ref(false)
   const approvalDialogVisible = ref(false)
   const currentTask = ref(null)
   const currentApprovalItem = ref({})
@@ -58,7 +59,7 @@ export function useProjectDetailState(context) {
     payment: '',
   })
 
-  const activities = ref([...initialActivities])
+  const activities = ref([])
 
   const project = computed(() => {
     if (projectStore.currentProject) return projectStore.currentProject
@@ -86,6 +87,8 @@ export function useProjectDetailState(context) {
     processDialogVisible,
     reviewerDialogVisible,
     scoreDraftDialogVisible,
+    tenderBreakdownDialogVisible,
+    tenderBreakdownParsing,
     approvalDialogVisible,
     currentTask,
     currentApprovalItem,

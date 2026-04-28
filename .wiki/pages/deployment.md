@@ -16,10 +16,13 @@ sources:
   - .wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx
 backlinks:
   - _index
+  - api-openapi
   - architecture
   - contract-constraints
   - implementation/acceptance-and-closure
+  - implementation/attachment4-gap-matrix
   - implementation/attachment4-requirement-task-book
+  - implementation/attachment6-function-list-trace
   - implementation/delivery-playbook
   - implementation/milestones
   - implementation/risk-register
@@ -28,8 +31,8 @@ backlinks:
   - requirements
   - team-and-timeline
 created: 2026-04-15
-updated: 2026-04-25
-health_checked: 2026-04-25
+updated: 2026-04-26
+health_checked: 2026-04-26
 ---
 # 部署与上线
 

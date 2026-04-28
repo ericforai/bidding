@@ -8,6 +8,10 @@ import {
   formatBudgetWan as formatBudgetWanValue,
   safeTenderUrl as safeTenderUrlValue,
 } from '../bidding-utils.js'
+export {
+  normalizeBudgetYuan,
+  normalizeManualTenderParseResult,
+} from './manualTenderParseHelpers.js'
 
 export function normalizeRole(value) {
   return String(value || '').trim().toLowerCase().replace(/^role_/, '')
@@ -25,9 +29,10 @@ export function resolveUserRole(userStore) {
 export function buildPermissionFlags(role) {
   const normalized = normalizeRole(role)
   const canManageTenders = normalized === 'admin' || normalized === 'manager'
+  const canCreateTender = canManageTenders || normalized === 'staff'
   return {
     canManageTenders,
-    canCreateTender: canManageTenders,
+    canCreateTender,
     canDeleteTenders: normalized === 'admin',
     canSyncExternalSource: normalized === 'admin',
   }

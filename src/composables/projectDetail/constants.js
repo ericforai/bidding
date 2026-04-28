@@ -45,9 +45,3 @@ export const deliverableTypeMap = {
   quotation: '报价单',
   other: '其他',
 }
-
-export const initialActivities = [
-  { id: 1, user: '小王', action: '创建了项目', time: '2025-02-20 10:00' },
-  { id: 2, user: '李工', action: '上传了技术方案', time: '2025-02-25 14:30' },
-  { id: 3, user: '王经理', action: '上传了商务应答', time: '2025-02-25 16:00' },
-]

@@ -167,6 +167,10 @@ httpClient.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    if (config?.silentError || config?.skipGlobalErrorMessage) {
+      return Promise.reject(error)
+    }
+
     if (response) {
       // 服务器返回错误状态码
       switch (response.status) {

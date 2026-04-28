@@ -7,13 +7,14 @@ sources:
   - docs/业务流程图.md
   - docs/讲标文件-功能响应与亮点.md
   - README.md
-  - 演示脚本.md
 backlinks:
   - _index
   - ai-capabilities
   - contract-constraints
   - dashboard-gap-analysis
+  - implementation/attachment4-gap-matrix
   - implementation/attachment4-requirement-task-book
+  - implementation/attachment6-function-list-trace
   - implementation/milestones
   - modules
   - requirements
@@ -21,7 +22,7 @@ backlinks:
   - team-and-timeline
 created: 2026-04-15
 updated: 2026-04-15
-health_checked: 2026-04-25
+health_checked: 2026-04-26
 ---
 # 业务流程
 

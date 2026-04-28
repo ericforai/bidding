@@ -22,7 +22,9 @@ backlinks:
   - contract-constraints
   - dashboard-gap-analysis
   - design-system
+  - implementation/attachment4-gap-matrix
   - implementation/attachment4-requirement-task-book
+  - implementation/attachment6-function-list-trace
   - implementation/delivery-playbook
   - implementation/weekly-status
   - overview
@@ -30,7 +32,7 @@ backlinks:
   - team-and-timeline
 created: 2026-04-15
 updated: 2026-04-24
-health_checked: 2026-04-25
+health_checked: 2026-04-26
 ---
 # 模块目录
 

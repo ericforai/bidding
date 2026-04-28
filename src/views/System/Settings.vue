@@ -39,6 +39,9 @@
           :reset-handler="resetRole"
         />
       </el-tab-pane>
+      <el-tab-pane label="接口权限矩阵" name="interface-permissions">
+        <InterfacePermissionMatrixPanel />
+      </el-tab-pane>
       <el-tab-pane label="用户组织归属" name="users">
         <UserOrganizationPanel
           v-loading="loading"
@@ -93,6 +96,7 @@ import { useRoute } from 'vue-router'
 import AiModelSettingsPanel from './settings/AiModelSettingsPanel.vue'
 import BidMatchScoringSettingsPanel from './settings/BidMatchScoringSettingsPanel.vue'
 import DepartmentTreePanel from './settings/DepartmentTreePanel.vue'
+import InterfacePermissionMatrixPanel from './settings/InterfacePermissionMatrixPanel.vue'
 import RoleManagementPanel from './settings/RoleManagementPanel.vue'
 import UserOrganizationPanel from './settings/UserOrganizationPanel.vue'
 import AuditLogPanel from './settings/AuditLogPanel.vue'

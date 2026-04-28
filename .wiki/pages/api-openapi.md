@@ -8,13 +8,15 @@ sources:
   - backend/src/main/java/com/xiyu/bid/config/SecurityConfig.java
   - backend/pom.xml
 backlinks:
+  - _index
   - architecture
-  - deployment
+  - implementation/attachment4-gap-matrix
+  - implementation/attachment6-function-list-trace
+  - integration-wecom
 created: 2026-04-25
 updated: 2026-04-25
-health_checked: 2026-04-25
+health_checked: 2026-04-26
 ---
-
 # OpenAPI/Swagger 接口规范
 
 > 用于满足客户「提供标准 API 接口」要求，输出机器可读的接口规范，供 OA、CRM、企业微信等外部系统集成方使用。
