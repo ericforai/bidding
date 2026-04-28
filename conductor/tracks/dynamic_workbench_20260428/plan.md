@@ -12,7 +12,7 @@
 - [x] **Task 2.2**: 开发基于切面（AOP）或 MyBatis Plus 的 SQL 拦截/重写机制。 [checkpoint: 4118d43]
 - [x] **Task 2.3**: 为 `ProjectController` 和 `TenderController` 等提供列表数据的接口接入数据权限过滤逻辑。 [checkpoint: a9f5ea4]
 
-## 阶段三：后端动态布局 API
+## 阶段三：后端动态布局 API [checkpoint: 974873f]
 
 - [x] **Task 3.1**: 设计 `sys_dashboard_widget` 和 `sys_dashboard_layout` 数据库表结构。 [checkpoint: 0491be6]
 - [x] **Task 3.2**: 开发工作台布局方案的创建、配置、查询接口。 [checkpoint: 7b11e42]
