@@ -1,0 +1,97 @@
+package com.xiyu.bid.biddraftagent.controller;
+
+import com.xiyu.bid.biddraftagent.application.BidTenderDocumentImportAppService;
+import com.xiyu.bid.biddraftagent.domain.TenderRequirementProfile;
+import com.xiyu.bid.biddraftagent.dto.BidTenderDocumentDTO;
+import com.xiyu.bid.biddraftagent.dto.BidTenderDocumentParseDTO;
+import com.xiyu.bid.auth.JwtAuthenticationFilter;
+import com.xiyu.bid.config.RateLimitFilter;
+import com.xiyu.bid.config.SecurityConfig;
+import com.xiyu.bid.service.ProjectAccessScopeService;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@WebMvcTest(controllers = ProjectTenderBreakdownController.class,
+        excludeFilters = @ComponentScan.Filter(
+                type = FilterType.ASSIGNABLE_TYPE,
+                classes = {SecurityConfig.class, JwtAuthenticationFilter.class, RateLimitFilter.class}
+        ))
+@AutoConfigureMockMvc(addFilters = false)
+class ProjectTenderBreakdownControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private BidTenderDocumentImportAppService importAppService;
+
+    @MockBean
+    private ProjectAccessScopeService projectAccessScopeService;
+
+    @Test
+    @WithMockUser(roles = "STAFF")
+    void parseTenderBreakdown_shouldPersistProjectRequirementSnapshotWithoutStartingDraftRun() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "招标文件.docx",
+                MediaType.APPLICATION_OCTET_STREAM_VALUE,
+                "招标正文".getBytes()
+        );
+        BidTenderDocumentParseDTO result = BidTenderDocumentParseDTO.builder()
+                .message("招标文件已解析，已更新招标要求快照")
+                .document(BidTenderDocumentDTO.builder()
+                        .id(501L)
+                        .projectId(12L)
+                        .tenderId(22L)
+                        .name("招标文件.docx")
+                        .snapshotId(601L)
+                        .extractedTextLength(128)
+                        .build())
+                .requirementProfile(new TenderRequirementProfile(
+                        "项目名称",
+                        null,
+                        null,
+                        null,
+                        List.of("资格要求"),
+                        List.of("技术要求"),
+                        List.of("商务要求"),
+                        List.of("评分标准"),
+                        null,
+                        List.of("投标材料"),
+                        List.of("风险提示"),
+                        List.of(),
+                        List.of()
+                ))
+                .build();
+        when(importAppService.parseTenderDocument(eq(12L), any())).thenReturn(result);
+
+        mockMvc.perform(multipart("/api/projects/{projectId}/tender-breakdown", 12L)
+                        .file(file))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.document.snapshotId").value(601))
+                .andExpect(jsonPath("$.data.requirementProfile.technicalRequirements[0]").value("技术要求"));
+
+        verify(projectAccessScopeService).assertCurrentUserCanAccessProject(12L);
+        verify(importAppService).parseTenderDocument(eq(12L), any());
+    }
+}

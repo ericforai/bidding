@@ -55,6 +55,67 @@ describe('useProjectDetailTaskActions', () => {
     expect(error).not.toHaveBeenCalled()
   })
 
+  it('API 项目上传标书拆解文件后调用独立拆解接口，不启动 AI 初稿', async () => {
+    const file = new File(['招标正文'], '招标文件.docx')
+    const success = vi.fn()
+    const projectsApi = {
+      parseTenderBreakdown: vi.fn().mockResolvedValue({
+        success: true,
+        data: { document: { snapshotId: 601 } },
+      }),
+    }
+    const { handleTenderBreakdownUpload } = useProjectDetailTaskActions({
+      route: { params: { id: 12 } },
+      userStore: { userName: '小王' },
+      projectStore: {},
+      projectsApi,
+      isApiProject: { value: true },
+      message: { success, error: vi.fn(), warning: vi.fn() },
+      state: {
+        project: { value: { id: 12, tasks: [] } },
+        activities: { value: [] },
+        tenderBreakdownDialogVisible: { value: true },
+        tenderBreakdownParsing: { value: false },
+      },
+      workflow: {},
+    })
+
+    const result = await handleTenderBreakdownUpload(file)
+
+    expect(result).toBe(false)
+    expect(projectsApi.parseTenderBreakdown).toHaveBeenCalledWith(12, file)
+    expect(success).toHaveBeenCalledWith('招标文件已拆解，可继续生成任务或标书初稿')
+  })
+
+  it('API 项目解析中重复上传标书文件时不再次调用后端', async () => {
+    const file = new File(['招标正文'], '招标文件.docx')
+    const warning = vi.fn()
+    const projectsApi = {
+      parseTenderBreakdown: vi.fn(),
+    }
+    const { handleTenderBreakdownUpload } = useProjectDetailTaskActions({
+      route: { params: { id: 12 } },
+      userStore: { userName: '小王' },
+      projectStore: {},
+      projectsApi,
+      isApiProject: { value: true },
+      message: { success: vi.fn(), error: vi.fn(), warning },
+      state: {
+        project: { value: { id: 12, tasks: [] } },
+        activities: { value: [] },
+        tenderBreakdownDialogVisible: { value: true },
+        tenderBreakdownParsing: { value: true },
+      },
+      workflow: {},
+    })
+
+    const result = await handleTenderBreakdownUpload(file)
+
+    expect(result).toBe(false)
+    expect(projectsApi.parseTenderBreakdown).not.toHaveBeenCalled()
+    expect(warning).toHaveBeenCalledWith('正在解析招标文件，请稍候')
+  })
+
   it('API 项目拆解无来源时只展示一次后端业务错误', async () => {
     const success = vi.fn()
     const error = vi.fn()

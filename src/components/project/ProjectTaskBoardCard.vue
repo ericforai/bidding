@@ -12,6 +12,17 @@
             link
             type="success"
             :icon="DocumentChecked"
+            data-test="tender-breakdown-button"
+            @click="$emit('tender-breakdown')"
+          >
+            解析招标文件
+          </el-button>
+          <el-button
+            v-if="canManageProjectTasks"
+            link
+            type="success"
+            :icon="DocumentChecked"
+            data-test="score-draft-button"
             @click="$emit('score-draft-decompose')"
           >
             评分标准拆解
@@ -61,6 +72,7 @@ defineEmits([
   'reset-tasks',
   'task-click',
   'status-change',
+  'tender-breakdown',
   'score-draft-decompose',
   'generate-tasks',
   'add-deliverable',

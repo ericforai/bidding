@@ -63,6 +63,45 @@ export function useProjectDetailTaskActions(context) {
     state.scoreDraftDialogVisible.value = true
   }
 
+  const handleOpenTenderBreakdown = () => {
+    state.tenderBreakdownDialogVisible.value = true
+  }
+
+  const handleTenderBreakdownUpload = async (file) => {
+    if (!state.project.value) {
+      message.warning('项目信息未加载')
+      return false
+    }
+    if (!file) {
+      message.warning('请先选择招标文件')
+      return false
+    }
+    if (!isApiProject.value) {
+      message.warning('当前项目不支持解析招标文件')
+      return false
+    }
+    if (state.tenderBreakdownParsing.value) {
+      message.warning('正在解析招标文件，请稍候')
+      return false
+    }
+
+    state.tenderBreakdownParsing.value = true
+    try {
+      const result = await projectsApi.parseTenderBreakdown(route.params.id, file)
+      if (!result?.success || !result?.data?.document?.snapshotId) {
+        throw new Error(result?.message || '招标文件解析失败')
+      }
+      state.tenderBreakdownDialogVisible.value = false
+      pushActivity(`解析了招标文件「${file.name || '招标文件'}」`)
+      message.success('招标文件已拆解，可继续生成任务或标书初稿')
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '招标文件解析失败'))
+    } finally {
+      state.tenderBreakdownParsing.value = false
+    }
+    return false
+  }
+
   const handleAddTask = () => {
     if (!state.project.value) return
     const nextIndex = (state.project.value.tasks?.length || 0) + 1
@@ -166,5 +205,5 @@ export function useProjectDetailTaskActions(context) {
     }
   }
 
-  return { handleGenerateTasks, handleScoreDraftGenerated, handleOpenScoreDraftDecompose, handleAddTask, handleResetTasks, handleTaskClick, handleTaskStatusChange, handleAddDeliverable, handleRemoveDeliverable, handleSubmitToDocument }
+  return { handleGenerateTasks, handleScoreDraftGenerated, handleOpenScoreDraftDecompose, handleOpenTenderBreakdown, handleTenderBreakdownUpload, handleAddTask, handleResetTasks, handleTaskClick, handleTaskStatusChange, handleAddDeliverable, handleRemoveDeliverable, handleSubmitToDocument }
 }

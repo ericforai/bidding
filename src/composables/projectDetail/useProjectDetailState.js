@@ -14,6 +14,8 @@ export function useProjectDetailState(context) {
   const processDialogVisible = ref(false)
   const reviewerDialogVisible = ref(false)
   const scoreDraftDialogVisible = ref(false)
+  const tenderBreakdownDialogVisible = ref(false)
+  const tenderBreakdownParsing = ref(false)
   const approvalDialogVisible = ref(false)
   const currentTask = ref(null)
   const currentApprovalItem = ref({})
@@ -85,6 +87,8 @@ export function useProjectDetailState(context) {
     processDialogVisible,
     reviewerDialogVisible,
     scoreDraftDialogVisible,
+    tenderBreakdownDialogVisible,
+    tenderBreakdownParsing,
     approvalDialogVisible,
     currentTask,
     currentApprovalItem,
