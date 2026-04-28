@@ -33,7 +33,13 @@ export const useUserStore = defineStore('user', {
     userRole: (state) => state.currentUser?.role || 'staff',
     userName: (state) => state.currentUser?.name || '用户',
     allowedProjectIds: (state) => state.currentUser?.allowedProjectIds || [],
-    allowedDepts: (state) => state.currentUser?.allowedDepts || []
+    allowedDepts: (state) => state.currentUser?.allowedDepts || [],
+    menuPermissions: (state) => Array.isArray(state.currentUser?.menuPermissions) ? state.currentUser.menuPermissions : [],
+    hasPermission: (state) => (permissionKey) => {
+      const perms = Array.isArray(state.currentUser?.menuPermissions) ? state.currentUser.menuPermissions : []
+      if (perms.includes('all')) return true
+      return perms.includes(permissionKey)
+    }
   },
 
   actions: {

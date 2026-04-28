@@ -46,28 +46,27 @@
           @retry="reloadSchedule"
         />
         <WorkbenchQuickStart v-if="canUseQuickStart" @submitted="handleApprovalSuccess" />
-        <template v-if="currentUserName === '小王'">
-          <TenderList :tenders="hotTenders" @view-all="router.push('/bidding')" @tender-click="handleTenderClick" />
-          <CustomerFollowUpList :customers="followUpCustomers" />
-        </template>
-        <template v-if="currentUserName === '张经理'">
-          <ProjectList
-            title="我的项目"
-            :projects="activeProjects"
-            :progress-color-resolver="getProgressColor"
-            :status-type-resolver="getProjectStatusType"
-            @view-all="router.push('/project')"
-            @project-click="handleProjectClick"
-          />
-          <TeamTaskList :members="teamMembers" />
-        </template>
-        <template v-if="currentUserName === '李工'">
-          <TechnicalTaskList :tasks="myTechnicalTasks" @task-change="handleTaskComplete" />
-          <ReviewList :reviews="pendingReviews" @review="handleReview" />
-        </template>
+        
+        <!-- 核心业务组件：根据权限动态展示 -->
+        <TenderList v-if="canViewTenderList" :tenders="hotTenders" @view-all="router.push('/bidding')" @tender-click="handleTenderClick" />
+        <TechnicalTaskList v-if="canViewTechnicalTask" :tasks="myTechnicalTasks" @task-change="handleTaskComplete" />
+        <ReviewList v-if="canViewReviewList" :reviews="pendingReviews" @review="handleReview" />
+        <CustomerFollowUpList v-if="canViewTenderList" :customers="followUpCustomers" />
+
+        <ProjectList
+          v-if="canViewProjectList"
+          title="负责项目"
+          :projects="activeProjects"
+          :progress-color-resolver="getProgressColor"
+          :status-type-resolver="getProjectStatusType"
+          @view-all="router.push('/project')"
+          @project-click="handleProjectClick"
+        />
+        <TeamTaskList v-if="canViewTeamTask" :members="teamMembers" />
+
         <ProjectList
           v-if="currentUserRole === 'admin'"
-          title="重点项目"
+          title="全院重点项目"
           :projects="activeProjects"
           :meta-fields="['manager', 'deadline']"
           :progress-color-resolver="getProgressColor"
@@ -218,6 +217,13 @@ const bannerActions = computed(() => getBannerActionConfig(currentUserRole.value
 const runtimeModeLabel = computed(() => runtimeMode.value?.modeLabel || '')
 const runtimeModeTagType = computed(() => (runtimeMode.value?.demoFusionEnabled ? 'warning' : 'success'))
 const canUseQuickStart = computed(() => hasQuickStartPermission(userStore.currentUser))
+
+const canViewTenderList = computed(() => userStore.hasPermission('dashboard:view_tender_list') || currentUserRole.value === 'staff')
+const canViewTechnicalTask = computed(() => userStore.hasPermission('dashboard:view_technical_task') || currentUserRole.value === 'staff')
+const canViewReviewList = computed(() => userStore.hasPermission('dashboard:view_review_list') || ['staff', 'manager'].includes(currentUserRole.value))
+const canViewProjectList = computed(() => userStore.hasPermission('dashboard:view_project_list') || currentUserRole.value === 'manager')
+const canViewTeamTask = computed(() => userStore.hasPermission('dashboard:view_team_task') || currentUserRole.value === 'manager')
+
 const activeProjects = computed(() => filterProjectsByRole(workbenchProjects.value, {
   role: currentUserRole.value,
   userName: currentUserName.value,
