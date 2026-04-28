@@ -7,7 +7,6 @@ sources:
   - docs/业务流程图.md
   - docs/讲标文件-功能响应与亮点.md
   - README.md
-  - 演示脚本.md
 backlinks:
   - _index
   - ai-capabilities
@@ -21,7 +20,7 @@ backlinks:
   - team-and-timeline
 created: 2026-04-15
 updated: 2026-04-15
-health_checked: 2026-04-25
+health_checked: 2026-04-28
 ---
 # 业务流程
 

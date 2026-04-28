@@ -8,14 +8,11 @@ sources:
   - src/views/System/settings/SystemIntegrationPanel.vue
   - src/views/System/settings/integration/
 backlinks:
-  - api-openapi
-  - architecture
-  - requirements
+  - _index
 created: 2026-04-25
 updated: 2026-04-25
-health_checked: 2026-04-25
+health_checked: 2026-04-28
 ---
-
 # 系统集成中心 - 企业微信
 
 > 满足客户「集成性」需求条款的统一配置入口，落地企业微信首支持，CRM/OA/组织架构占位待实施。
@@ -37,7 +34,7 @@ health_checked: 2026-04-25
 | **企业微信** | ✅ 配置入口 + 连通性测试（Mock） | SSO 与消息推送的实际收发逻辑下一期 |
 | **CRM 系统** | ⚪ 占位「即将支持」 | 待客户提供 CRM 接口规范 |
 | **OA / 审批流** | ⚪ 占位「即将支持」 | 待选定 OA 厂商 |
-| **组织架构系统** | ⚪ 占位「即将支持」 | 待客户内部架构系统接口 |
+| **组织架构系统** | 🟡 接入方案已沉淀 | 基于客户事件库 SDK/HTTP 中转方案，详见 [[integration-organization-event-sdk]] |
 
 ## 入口路径
 

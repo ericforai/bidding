@@ -12,8 +12,8 @@
     "backlinks": [
       "_index"
     ],
-    "updated": "2026-04-25",
-    "health_checked": "2026-04-25",
+    "updated": "2026-04-28",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/_index.md"
   },
   {
@@ -41,8 +41,27 @@
       "requirements"
     ],
     "updated": "2026-04-24",
-    "health_checked": "2026-04-25",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/ai-capabilities.md"
+  },
+  {
+    "slug": "api-openapi",
+    "title": "OpenAPI/Swagger 接口规范",
+    "space": "engineering",
+    "category": "integration",
+    "sources": [
+      "backend/src/main/java/com/xiyu/bid/config/OpenApiConfig.java",
+      "backend/src/main/java/com/xiyu/bid/config/SecurityConfig.java",
+      "backend/pom.xml"
+    ],
+    "backlinks": [
+      "_index",
+      "architecture",
+      "integration-wecom"
+    ],
+    "updated": "2026-04-25",
+    "health_checked": "2026-04-28",
+    "path": ".wiki/pages/api-openapi.md"
   },
   {
     "slug": "architecture",
@@ -63,6 +82,7 @@
     ],
     "backlinks": [
       "_index",
+      "api-openapi",
       "contract-constraints",
       "implementation/attachment4-requirement-task-book",
       "implementation/delivery-playbook",
@@ -72,8 +92,8 @@
       "roles-and-permissions",
       "team-and-timeline"
     ],
-    "updated": "2026-04-25",
-    "health_checked": "2026-04-25",
+    "updated": "2026-04-28",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/architecture.md"
   },
   {
@@ -84,8 +104,7 @@
     "sources": [
       "docs/业务流程图.md",
       "docs/讲标文件-功能响应与亮点.md",
-      "README.md",
-      "演示脚本.md"
+      "README.md"
     ],
     "backlinks": [
       "_index",
@@ -100,7 +119,7 @@
       "team-and-timeline"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-25",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/business-process.md"
   },
   {
@@ -127,8 +146,8 @@
       "requirements",
       "team-and-timeline"
     ],
-    "updated": "2026-04-25",
-    "health_checked": "2026-04-25",
+    "updated": "2026-04-28",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/contract-constraints.md"
   },
   {
@@ -146,7 +165,7 @@
       "design-system"
     ],
     "updated": "2026-04-16",
-    "health_checked": "2026-04-25",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/dashboard-gap-analysis.md"
   },
   {
@@ -165,9 +184,27 @@
       "architecture",
       "implementation/attachment4-requirement-task-book"
     ],
-    "updated": "2026-04-25",
-    "health_checked": "2026-04-25",
+    "updated": "2026-04-28",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/data-model.md"
+  },
+  {
+    "slug": "data-permission-hardening",
+    "title": "项目数据权限修复收口",
+    "space": "engineering",
+    "category": "reference",
+    "sources": [
+      "docs/reports/data-permission-coverage-audit.md",
+      "backend/src/main/java/com/xiyu/bid/service/ProjectAccessScopeService.java",
+      "backend/src/test/java/com/xiyu/bid/ProjectAccessGuardCoverageTest.java"
+    ],
+    "backlinks": [
+      "_index",
+      "roles-and-permissions"
+    ],
+    "updated": "2026-04-25",
+    "health_checked": "2026-04-28",
+    "path": ".wiki/pages/data-permission-hardening.md"
   },
   {
     "slug": "deployment",
@@ -188,6 +225,7 @@
     ],
     "backlinks": [
       "_index",
+      "api-openapi",
       "architecture",
       "contract-constraints",
       "implementation/acceptance-and-closure",
@@ -200,8 +238,8 @@
       "requirements",
       "team-and-timeline"
     ],
-    "updated": "2026-04-25",
-    "health_checked": "2026-04-25",
+    "updated": "2026-04-28",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/deployment.md"
   },
   {
@@ -220,8 +258,26 @@
       "overview"
     ],
     "updated": "2026-04-22",
-    "health_checked": "2026-04-25",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/design-system.md"
+  },
+  {
+    "slug": "docinsight-engine",
+    "title": "DocInsight 文档智能引擎",
+    "space": "engineering",
+    "category": "module",
+    "sources": [
+      "backend/src/main/java/com/xiyu/bid/docinsight/README.md",
+      "backend/src/main/java/com/xiyu/bid/docinsight/application/DocumentIntelligenceService.java",
+      "backend/src/main/java/com/xiyu/bid/docinsight/infrastructure/openai/BaseOpenAiDocumentAnalyzer.java",
+      "src/components/common/doc-insight/DocVerificationWorkbench.vue"
+    ],
+    "backlinks": [
+      "_index"
+    ],
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-28",
+    "path": ".wiki/pages/docinsight-engine.md"
   },
   {
     "slug": "glossary",
@@ -239,7 +295,7 @@
       "data-model"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-25",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/glossary.md"
   },
   {
@@ -264,8 +320,8 @@
       "implementation/risk-register",
       "implementation/sow-2026-v1-4"
     ],
-    "updated": "2026-04-25",
-    "health_checked": "2026-04-25",
+    "updated": "2026-04-28",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/implementation/acceptance-and-closure.md"
   },
   {
@@ -282,7 +338,7 @@
       "requirements"
     ],
     "updated": "2026-04-25",
-    "health_checked": "2026-04-25",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/implementation/attachment4-requirement-task-book.md"
   },
   {
@@ -300,8 +356,8 @@
       "implementation/acceptance-and-closure",
       "implementation/sow-2026-v1-4"
     ],
-    "updated": "2026-04-25",
-    "health_checked": "2026-04-25",
+    "updated": "2026-04-28",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/implementation/delivery-playbook.md"
   },
   {
@@ -321,8 +377,8 @@
       "implementation/delivery-playbook",
       "implementation/sow-2026-v1-4"
     ],
-    "updated": "2026-04-25",
-    "health_checked": "2026-04-25",
+    "updated": "2026-04-28",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/implementation/milestones.md"
   },
   {
@@ -344,8 +400,8 @@
       "implementation/sow-2026-v1-4",
       "implementation/weekly-status"
     ],
-    "updated": "2026-04-25",
-    "health_checked": "2026-04-25",
+    "updated": "2026-04-28",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/implementation/risk-register.md"
   },
   {
@@ -370,8 +426,8 @@
       "requirements",
       "team-and-timeline"
     ],
-    "updated": "2026-04-25",
-    "health_checked": "2026-04-25",
+    "updated": "2026-04-28",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/implementation/sow-2026-v1-4.md"
   },
   {
@@ -389,9 +445,46 @@
       "implementation/delivery-playbook",
       "implementation/risk-register"
     ],
-    "updated": "2026-04-25",
-    "health_checked": "2026-04-25",
+    "updated": "2026-04-28",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/implementation/weekly-status.md"
+  },
+  {
+    "slug": "integration-organization-event-sdk",
+    "title": "组织架构对接 - 客户事件库 SDK 方案",
+    "space": "engineering",
+    "category": "integration",
+    "sources": [
+      ".wiki/sources/customer/事件库SDK接入说明方案.doc",
+      ".wiki/extracts/customer__事件库SDK接入说明方案.doc.md",
+      "backend/src/main/java/com/xiyu/bid/entity/User.java",
+      "backend/src/main/java/com/xiyu/bid/dto/DataScopeConfigPayload.java"
+    ],
+    "backlinks": [
+      "_index",
+      "integration-wecom",
+      "roles-and-permissions"
+    ],
+    "updated": "2026-04-28",
+    "health_checked": "2026-04-28",
+    "path": ".wiki/pages/integration-organization-event-sdk.md"
+  },
+  {
+    "slug": "integration-wecom",
+    "title": "系统集成中心 - 企业微信",
+    "space": "engineering",
+    "category": "integration",
+    "sources": [
+      "backend/src/main/java/com/xiyu/bid/integration/",
+      "src/views/System/settings/SystemIntegrationPanel.vue",
+      "src/views/System/settings/integration/"
+    ],
+    "backlinks": [
+      "_index"
+    ],
+    "updated": "2026-04-25",
+    "health_checked": "2026-04-28",
+    "path": ".wiki/pages/integration-wecom.md"
   },
   {
     "slug": "modules",
@@ -426,7 +519,7 @@
       "team-and-timeline"
     ],
     "updated": "2026-04-24",
-    "health_checked": "2026-04-25",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/modules.md"
   },
   {
@@ -449,8 +542,8 @@
       "implementation/sow-2026-v1-4",
       "team-and-timeline"
     ],
-    "updated": "2026-04-25",
-    "health_checked": "2026-04-25",
+    "updated": "2026-04-28",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/overview.md"
   },
   {
@@ -478,8 +571,8 @@
       "implementation/risk-register",
       "implementation/sow-2026-v1-4"
     ],
-    "updated": "2026-04-25",
-    "health_checked": "2026-04-25",
+    "updated": "2026-04-28",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/requirements.md"
   },
   {
@@ -500,8 +593,8 @@
       "implementation/attachment4-requirement-task-book",
       "overview"
     ],
-    "updated": "2026-04-25",
-    "health_checked": "2026-04-25",
+    "updated": "2026-04-28",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/roles-and-permissions.md"
   },
   {
@@ -525,8 +618,8 @@
       "overview",
       "requirements"
     ],
-    "updated": "2026-04-25",
-    "health_checked": "2026-04-25",
+    "updated": "2026-04-28",
+    "health_checked": "2026-04-28",
     "path": ".wiki/pages/team-and-timeline.md"
   }
 ]

@@ -9,11 +9,10 @@ sources:
   - backend/src/main/java/com/xiyu/bid/docinsight/infrastructure/openai/BaseOpenAiDocumentAnalyzer.java
   - src/components/common/doc-insight/DocVerificationWorkbench.vue
 backlinks:
-  - ai-capabilities
-  - modules
-  - business-process
+  - _index
 created: 2026-04-26
 updated: 2026-04-26
+health_checked: 2026-04-28
 ---
 # DocInsight 文档智能引擎
 
