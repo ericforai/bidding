@@ -19,6 +19,10 @@ export function useProjectDetailTaskActions(context) {
     hasDeliverable: Boolean(task.hasDeliverable),
   }))
   const resolveErrorMessage = (error, fallback) => error?.response?.data?.message || error?.message || fallback
+  const resolveTenderBreakdownReadinessMessage = (readiness = {}) => (
+    readiness.message
+    || 'DeepSeek API Key 未配置。请管理员到系统设置 → AI 模型配置中填写 DeepSeek provider key，或在服务端设置 DEEPSEEK_API_KEY 后重启。'
+  )
 
   const getTaskTemplateByProject = (project) => {
     const industry = project?.industry?.toLowerCase() || ''
@@ -85,8 +89,18 @@ export function useProjectDetailTaskActions(context) {
       return false
     }
 
-    state.tenderBreakdownParsing.value = true
     try {
+      const readinessResult = await projectsApi.getTenderBreakdownReadiness(route.params.id)
+      const readiness = readinessResult?.data || {}
+      if (!readinessResult?.success) {
+        throw new Error(readinessResult?.message || '无法检查 DeepSeek 配置状态')
+      }
+      if (readiness.ready === false) {
+        message.warning(resolveTenderBreakdownReadinessMessage(readiness))
+        return false
+      }
+
+      state.tenderBreakdownParsing.value = true
       const result = await projectsApi.parseTenderBreakdown(route.params.id, file)
       if (!result?.success || !result?.data?.document?.snapshotId) {
         throw new Error(result?.message || '招标文件解析失败')

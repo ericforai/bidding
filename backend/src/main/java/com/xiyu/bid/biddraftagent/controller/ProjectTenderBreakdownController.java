@@ -1,6 +1,8 @@
 package com.xiyu.bid.biddraftagent.controller;
 
 import com.xiyu.bid.biddraftagent.application.BidTenderDocumentImportAppService;
+import com.xiyu.bid.biddraftagent.application.ProjectTenderBreakdownReadinessService;
+import com.xiyu.bid.biddraftagent.application.TenderBreakdownReadiness;
 import com.xiyu.bid.biddraftagent.dto.BidTenderDocumentParseDTO;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.service.ProjectAccessScopeService;
@@ -9,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +26,13 @@ public class ProjectTenderBreakdownController {
 
     private final ProjectAccessScopeService projectAccessScopeService;
     private final BidTenderDocumentImportAppService importAppService;
+    private final ProjectTenderBreakdownReadinessService readinessService;
+
+    @GetMapping("/readiness")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<TenderBreakdownReadiness>> readiness(@PathVariable Long projectId) {
+        return ResponseEntity.ok(ApiResponse.success(readinessService.readiness(projectId)));
+    }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")

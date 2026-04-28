@@ -9,7 +9,7 @@
  */
 import httpClient from '../client.js'
 import { apiModeFailure, demoReadonlyFailure, isDemoEntityId, isNumericId } from './projectApiGuards.js'
-import { parseTenderBreakdown } from './projectTenderBreakdown.js'
+import * as tenderBreakdownApi from './projectTenderBreakdown.js'
 
 function matchesProjectStatus(projectStatus, filterStatus) {
   return String(projectStatus || '').toLowerCase() === String(filterStatus || '').toLowerCase()
@@ -181,7 +181,7 @@ export const projectsApi = {
     return httpClient.post(`/api/projects/${projectId}/tasks/decompose`, payload, { silentError: true })
   },
 
-  parseTenderBreakdown,
+  ...tenderBreakdownApi,
 
   async updateTaskStatus(projectId, taskId, status) {
     if (!isNumericId(projectId) || !isNumericId(taskId)) {

@@ -1,6 +1,8 @@
 package com.xiyu.bid.biddraftagent.controller;
 
 import com.xiyu.bid.biddraftagent.application.BidTenderDocumentImportAppService;
+import com.xiyu.bid.biddraftagent.application.ProjectTenderBreakdownReadinessService;
+import com.xiyu.bid.biddraftagent.application.TenderBreakdownReadiness;
 import com.xiyu.bid.biddraftagent.domain.TenderRequirementProfile;
 import com.xiyu.bid.biddraftagent.dto.BidTenderDocumentDTO;
 import com.xiyu.bid.biddraftagent.dto.BidTenderDocumentParseDTO;
@@ -26,6 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -46,6 +49,9 @@ class ProjectTenderBreakdownControllerTest {
 
     @MockBean
     private ProjectAccessScopeService projectAccessScopeService;
+
+    @MockBean
+    private ProjectTenderBreakdownReadinessService readinessService;
 
     @Test
     @WithMockUser(roles = "STAFF")
@@ -93,5 +99,22 @@ class ProjectTenderBreakdownControllerTest {
 
         verify(projectAccessScopeService).assertCurrentUserCanAccessProject(12L);
         verify(importAppService).parseTenderDocument(eq(12L), any());
+    }
+
+    @Test
+    @WithMockUser(roles = "STAFF")
+    void getReadiness_missingDeepSeekKey_shouldReturnActionableGuidance() throws Exception {
+        when(readinessService.readiness(12L)).thenReturn(TenderBreakdownReadiness.missingDeepSeekKey());
+
+        mockMvc.perform(get("/api/projects/{projectId}/tender-breakdown/readiness", 12L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.ready").value(false))
+                .andExpect(jsonPath("$.data.providerName").value("DeepSeek"))
+                .andExpect(jsonPath("$.data.envKey").value("DEEPSEEK_API_KEY"))
+                .andExpect(jsonPath("$.data.settingsPath").value("/settings"))
+                .andExpect(jsonPath("$.data.message").value("DeepSeek API Key 未配置。请管理员到系统设置 → AI 模型配置中填写 DeepSeek provider key，或在服务端设置 DEEPSEEK_API_KEY 后重启。"));
+
+        verify(readinessService).readiness(12L);
     }
 }
