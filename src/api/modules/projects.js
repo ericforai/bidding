@@ -8,6 +8,8 @@
  * 真实 API 项目访问层
  */
 import httpClient from '../client.js'
+import { apiModeFailure, demoReadonlyFailure, isDemoEntityId, isNumericId } from './projectApiGuards.js'
+import { parseTenderBreakdown } from './projectTenderBreakdown.js'
 
 function matchesProjectStatus(projectStatus, filterStatus) {
   return String(projectStatus || '').toLowerCase() === String(filterStatus || '').toLowerCase()
@@ -36,28 +38,6 @@ function applyProjectFilters(projects, params = {}) {
 
     return true
   })
-}
-
-function isNumericId(id) {
-  return /^-?\d+$/.test(String(id))
-}
-
-function isDemoEntityId(id) {
-  return Number(id) < 0
-}
-
-function apiModeFailure(entityName) {
-  return {
-    success: false,
-    message: `Current backend only supports numeric ${entityName} IDs in API mode`
-  }
-}
-
-function demoReadonlyFailure() {
-  return {
-    success: false,
-    message: 'Demo records are read-only in e2e mode'
-  }
 }
 
 function normalizeScoreDraft(draft = {}) {
@@ -200,6 +180,8 @@ export const projectsApi = {
 
     return httpClient.post(`/api/projects/${projectId}/tasks/decompose`, payload, { silentError: true })
   },
+
+  parseTenderBreakdown,
 
   async updateTaskStatus(projectId, taskId, status) {
     if (!isNumericId(projectId) || !isNumericId(taskId)) {
