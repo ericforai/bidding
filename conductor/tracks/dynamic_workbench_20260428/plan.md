@@ -16,4 +16,4 @@
 
 - [x] **Task 3.1**: 设计 `sys_dashboard_widget` 和 `sys_dashboard_layout` 数据库表结构。 [checkpoint: 0491be6]
 - [x] **Task 3.2**: 开发工作台布局方案的创建、配置、查询接口。 [checkpoint: 7b11e42]
-- [~] **Task 3.3**: 前端重构 `Workbench.vue`，实现基于 JSON 树结构的组件动态注册与动态渲染。
+- [x] **Task 3.3**: 前端重构 `Workbench.vue`，实现基于 JSON 树结构的组件动态注册与动态渲染。 [checkpoint: f1f26ee]
