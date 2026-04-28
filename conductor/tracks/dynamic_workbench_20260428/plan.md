@@ -1,6 +1,6 @@
 # Implementation Plan: 动态工作台配置体系与数据域权限
 
-## 阶段一：前端功能权限改造
+## 阶段一：前端功能权限改造 [checkpoint: 8e5a6a5]
 
 - [x] **Task 1.1**: 与后端对齐组件权限标识（如 `dashboard:view_project_list`, `dashboard:view_tender_list` 等）。 [checkpoint: a1b2c3d]
 - [x] **Task 1.2**: 修改 `src/stores/user.js` 或权限工具类，暴露便捷的权限检查方法。 [checkpoint: f4e5d6c]
