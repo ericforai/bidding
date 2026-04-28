@@ -59,6 +59,10 @@ describe('useProjectDetailTaskActions', () => {
     const file = new File(['招标正文'], '招标文件.docx')
     const success = vi.fn()
     const projectsApi = {
+      getTenderBreakdownReadiness: vi.fn().mockResolvedValue({
+        success: true,
+        data: { ready: true },
+      }),
       parseTenderBreakdown: vi.fn().mockResolvedValue({
         success: true,
         data: { document: { snapshotId: 601 } },
@@ -83,8 +87,47 @@ describe('useProjectDetailTaskActions', () => {
     const result = await handleTenderBreakdownUpload(file)
 
     expect(result).toBe(false)
+    expect(projectsApi.getTenderBreakdownReadiness).toHaveBeenCalledWith(12)
     expect(projectsApi.parseTenderBreakdown).toHaveBeenCalledWith(12, file)
     expect(success).toHaveBeenCalledWith('招标文件已拆解，可继续生成任务或标书初稿')
+  })
+
+  it('API 项目缺少 DeepSeek 配置时上传前提示配置指引且不解析文件', async () => {
+    const file = new File(['招标正文'], '招标文件.docx')
+    const warning = vi.fn()
+    const projectsApi = {
+      getTenderBreakdownReadiness: vi.fn().mockResolvedValue({
+        success: true,
+        data: {
+          ready: false,
+          message: 'DeepSeek API Key 未配置。请管理员到系统设置 → AI 模型配置中填写 DeepSeek provider key，或在服务端设置 DEEPSEEK_API_KEY 后重启。',
+          settingsPath: '/settings',
+        },
+      }),
+      parseTenderBreakdown: vi.fn(),
+    }
+    const { handleTenderBreakdownUpload } = useProjectDetailTaskActions({
+      route: { params: { id: 12 } },
+      userStore: { userName: '小王' },
+      projectStore: {},
+      projectsApi,
+      isApiProject: { value: true },
+      message: { success: vi.fn(), error: vi.fn(), warning },
+      state: {
+        project: { value: { id: 12, tasks: [] } },
+        activities: { value: [] },
+        tenderBreakdownDialogVisible: { value: true },
+        tenderBreakdownParsing: { value: false },
+      },
+      workflow: {},
+    })
+
+    const result = await handleTenderBreakdownUpload(file)
+
+    expect(result).toBe(false)
+    expect(projectsApi.getTenderBreakdownReadiness).toHaveBeenCalledWith(12)
+    expect(projectsApi.parseTenderBreakdown).not.toHaveBeenCalled()
+    expect(warning).toHaveBeenCalledWith('DeepSeek API Key 未配置。请管理员到系统设置 → AI 模型配置中填写 DeepSeek provider key，或在服务端设置 DEEPSEEK_API_KEY 后重启。')
   })
 
   it('API 项目解析中重复上传标书文件时不再次调用后端', async () => {

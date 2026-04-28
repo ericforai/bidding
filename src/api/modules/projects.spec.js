@@ -55,6 +55,17 @@ describe('projectsApi', () => {
     expect(formData.get('file').name).toBe('招标文件.docx')
   })
 
+  it('getTenderBreakdownReadiness(): checks project tender parsing configuration before upload', async () => {
+    httpClient.get.mockResolvedValue({
+      success: true,
+      data: { ready: false, providerName: 'DeepSeek' },
+    })
+
+    await projectsApi.getTenderBreakdownReadiness(12)
+
+    expect(httpClient.get).toHaveBeenCalledWith('/api/projects/12/tender-breakdown/readiness', { silentError: true })
+  })
+
   it('decomposeTasks(): rejects non-numeric project IDs before request', async () => {
     const result = await projectsApi.decomposeTasks('PROJECT_12')
 

@@ -71,6 +71,12 @@ public class OpenAiBidAgentConfigurationResolver {
                 ));
     }
 
+    boolean hasTenderIntakeConfiguration() {
+        return deepSeekProviderRequest()
+                .or(this::deepSeekDefaultRequest)
+                .isPresent();
+    }
+
     private Optional<OpenAiBidAgentRequestConfig> springConfiguredRequest() {
         OpenAiBidAgentApiStyle apiStyle = resolveApiStyle("openai", configuredBaseUrl().orElse(DEFAULT_BASE_URL));
         return usableKey(configuredApiKey)

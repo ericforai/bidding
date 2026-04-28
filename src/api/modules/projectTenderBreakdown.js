@@ -23,3 +23,15 @@ export async function parseTenderBreakdown(projectId, file) {
     silentError: true,
   })
 }
+
+export async function getTenderBreakdownReadiness(projectId) {
+  if (!isNumericId(projectId)) {
+    return apiModeFailure('project')
+  }
+
+  if (isDemoEntityId(projectId)) {
+    return demoReadonlyFailure()
+  }
+
+  return httpClient.get(`/api/projects/${projectId}/tender-breakdown/readiness`, { silentError: true })
+}
