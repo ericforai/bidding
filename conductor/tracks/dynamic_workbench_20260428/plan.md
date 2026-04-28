@@ -6,7 +6,7 @@
 - [x] **Task 1.2**: 修改 `src/stores/user.js` 或权限工具类，暴露便捷的权限检查方法。 [checkpoint: f4e5d6c]
 - [x] **Task 1.3**: 重构 `Workbench.vue`，将基于角色 (`currentUserRole === 'manager'`) 的判断，替换为精确的权限点检查。 [checkpoint: 6113275]
 
-## 阶段二：后端数据权限拦截引入
+## 阶段二：后端数据权限拦截引入 [checkpoint: 6c70112]
 
 - [x] **Task 2.1**: 在后端设计 `DataScope` 注解和相关枚举规则（SELF, DEPT, ALL 等）。 [checkpoint: 6af88ce]
 - [x] **Task 2.2**: 开发基于切面（AOP）或 MyBatis Plus 的 SQL 拦截/重写机制。 [checkpoint: 4118d43]
