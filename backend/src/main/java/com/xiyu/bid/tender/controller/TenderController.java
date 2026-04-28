@@ -17,6 +17,7 @@ import com.xiyu.bid.tender.service.TenderMapper;
 import com.xiyu.bid.tender.service.TenderQueryService;
 import com.xiyu.bid.tender.service.TenderSearchCriteria;
 import com.xiyu.bid.util.InputSanitizer;
+import com.xiyu.bid.annotation.DataScope;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +54,7 @@ public class TenderController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @DataScope
     public ResponseEntity<ApiResponse<List<TenderDTO>>> getAllTenders(@ModelAttribute TenderSearchCriteria criteria) {
         log.info("GET /api/tenders - Searching tenders");
         sanitizeTenderSearchCriteria(criteria);
