@@ -9,8 +9,8 @@
 ## 阶段二：后端数据权限拦截引入
 
 - [x] **Task 2.1**: 在后端设计 `DataScope` 注解和相关枚举规则（SELF, DEPT, ALL 等）。 [checkpoint: 6af88ce]
-- [ ] **Task 2.2**: 开发基于切面（AOP）或 MyBatis Plus 的 SQL 拦截/重写机制。
-- [ ] **Task 2.3**: 为 `ProjectController` 和 `TenderController` 等提供列表数据的接口接入数据权限过滤逻辑。
+- [x] **Task 2.2**: 开发基于切面（AOP）或 MyBatis Plus 的 SQL 拦截/重写机制。 [checkpoint: 4118d43]
+- [~] **Task 2.3**: 为 `ProjectController` 和 `TenderController` 等提供列表数据的接口接入数据权限过滤逻辑。
 
 ## 阶段三：后端动态布局 API
 
