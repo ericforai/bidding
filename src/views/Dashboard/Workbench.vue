@@ -25,7 +25,7 @@
       @metric-click="handleMetricClick"
       @retry="reloadMetrics"
     />
-    <div class="content-grid">
+    <div class="content-grid" v-if="!dynamicLayout">
       <div class="main-column">
         <WorkCalendar
           v-model="calendarDate"
@@ -114,6 +114,14 @@
         />
       </div>
     </div>
+    
+    <DynamicLayoutRenderer
+      v-else
+      :layout="dynamicLayout"
+      :registry="widgetRegistry"
+      :widget-props="widgetProps"
+      :widget-listeners="widgetListeners"
+    />
     <ApprovalDialog
       v-model:visible="approvalDialogVisible"
       :mode="approvalMode"
@@ -156,6 +164,7 @@ import TenderList from '@/views/Dashboard/components/TenderList.vue'
 import WelcomeBanner from '@/views/Dashboard/components/WelcomeBanner.vue'
 import WorkbenchQuickStart from '@/views/Dashboard/components/WorkbenchQuickStart.vue'
 import WorkCalendar from '@/views/Dashboard/components/WorkCalendar.vue'
+import DynamicLayoutRenderer from '@/views/Dashboard/components/DynamicLayoutRenderer.vue'
 import {
   Briefcase, Calendar, Check, DataAnalysis, Document, Flag, TrendCharts, User,
 } from '@element-plus/icons-vue'
@@ -173,6 +182,21 @@ const currentDate = computed(() => formatCurrentDate())
 const workbenchProjects = ref([])
 const hotTenders = ref([])
 const runtimeMode = ref(null)
+const dynamicLayout = ref(null)
+
+onMounted(async () => {
+  const modeRes = await dashboardApi.getRuntimeMode()
+  runtimeMode.value = modeRes.data
+  
+  try {
+    const layoutRes = await dashboardApi.getLayout()
+    if (layoutRes?.success && layoutRes.data?.layoutJson && layoutRes.data?.layoutJson !== '[]') {
+      dynamicLayout.value = JSON.parse(layoutRes.data.layoutJson)
+    }
+  } catch (err) {
+    console.warn('Failed to load dynamic layout, falling back to static layout', err)
+  }
+})
 
 const {
   pendingApprovals, pendingApprovalsTotalCount, approvalDialogVisible, approvalMode,
@@ -286,6 +310,76 @@ const teamPerformance = computed(() => teamMembers.value.map((member) => {
     color: '#3B82F6',
     wins,
     active,
+  }
+}))
+
+const widgetRegistry = {
+  ActivityList,
+  ApprovalList,
+  CustomerFollowUpList,
+  MetricCards,
+  PriorityTodos,
+  ProcessTimeline,
+  ProjectList,
+  ReviewList,
+  TeamPerformance,
+  TeamTaskList,
+  TechnicalTaskList,
+  TenderList,
+  WorkbenchQuickStart,
+  WorkCalendar
+}
+
+const widgetProps = computed(() => ({
+  TenderList: { tenders: hotTenders.value },
+  TechnicalTaskList: { tasks: myTechnicalTasks.value },
+  ReviewList: { reviews: pendingReviews.value },
+  CustomerFollowUpList: { customers: followUpCustomers.value },
+  ProjectList: { 
+    projects: activeProjects.value, 
+    progressColorResolver: getProgressColor, 
+    statusTypeResolver: getProjectStatusType,
+    metaFields: currentUserRole.value === 'admin' ? ['manager', 'deadline'] : ['deadline', 'manager']
+  },
+  TeamTaskList: { members: teamMembers.value },
+  TeamPerformance: { teams: teamPerformance.value },
+  ApprovalList: { approvals: pendingApprovals.value, count: pendingApprovals.value.length, error: approvalsError.value },
+  ProcessTimeline: { processes: myProcesses.value, timeFormatter: formatRelativeTime, error: processesError.value },
+  ActivityList: { activities: activities.value },
+  PriorityTodos: { todos: priorityTodos.value, error: todosError.value, priorityTypeResolver: getPriorityType, priorityLabelResolver: getPriorityLabel },
+  WorkbenchQuickStart: { },
+  WorkCalendar: { 
+    modelValue: calendarDate.value, 
+    activeFilter: activeCalendarFilter.value,
+    filters: calendarFilters.value,
+    visibleEvents: visibleCalendarEvents.value,
+    selectedDateEvents: selectedDateEvents.value,
+    selectedDateLabel: selectedDateLabel.value,
+    monthSummary: monthCalendarSummary.value,
+    upcomingEvents: upcomingCalendarEvents.value,
+    getEventsForDate,
+    calendarCellClass,
+    getEventTypeTag,
+    error: calendarError.value
+  }
+}))
+
+const widgetListeners = computed(() => ({
+  TenderList: { 'view-all': () => router.push('/bidding'), 'tender-click': handleTenderClick },
+  TechnicalTaskList: { 'task-change': handleTaskComplete },
+  ReviewList: { 'review': handleReview },
+  ProjectList: { 'view-all': () => router.push('/project'), 'project-click': handleProjectClick },
+  ApprovalList: { 'approve': handleApprove, 'reject': handleReject, 'retry': loadPendingApprovals },
+  ProcessTimeline: { 'retry': loadMyProcesses },
+  PriorityTodos: { 'todo-toggle': handleTaskComplete, 'retry': loadTodos },
+  WorkbenchQuickStart: { 'submitted': handleApprovalSuccess },
+  WorkCalendar: { 
+    'update:modelValue': (v) => calendarDate.value = v,
+    'update:activeFilter': (v) => activeCalendarFilter.value = v,
+    'date-click': handleDateClick,
+    'event-date-select': selectCalendarEventDate,
+    'event-action': handleCalendarAction,
+    'retry': reloadSchedule
   }
 }))
 const activities = computed(() => {
