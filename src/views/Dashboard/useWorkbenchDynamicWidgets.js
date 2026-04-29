@@ -97,6 +97,10 @@ export function useWorkbenchDynamicWidgets({ state, actions }) {
       retry: actions.loadPendingApprovals,
     },
     ProcessTimeline: { retry: actions.loadMyProcesses },
+    MetricCards: {
+      'metric-click': actions.handleMetricClick,
+      retry: actions.reloadMetrics,
+    },
     PriorityTodos: { 'todo-toggle': actions.handleTaskComplete, retry: actions.loadTodos },
     WorkbenchQuickStart: { submitted: actions.handleApprovalSuccess },
     WorkCalendar: {
@@ -110,4 +114,6 @@ export function useWorkbenchDynamicWidgets({ state, actions }) {
   }))
 
   return { widgetRegistry, widgetProps, widgetListeners }
+}
+widgetProps, widgetListeners }
 }

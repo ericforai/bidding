@@ -17,8 +17,14 @@ const stubs = vi.hoisted(() => ({
   ElOption: { template: '<option><slot /></option>' },
   ElSelect: { template: '<select @change="$emit(\'update:modelValue\', $event.target.value)"><slot /></select>' },
   ElTag: { template: '<span><slot /></span>' },
+  ElDivider: { template: '<hr /><slot />' },
+  ElTable: { template: '<div><slot /></div>' },
+  ElTableColumn: { template: '<div><slot :row="{}" /></div>' },
   ElCheckbox: { template: '<input type="checkbox" @change="$emit(\'change\', $event.target.checked)">' },
   'el-button': { template: '<button><slot /></button>' },
+  'el-divider': { template: '<hr /><slot />' },
+  'el-table': { template: '<div><slot /></div>' },
+  'el-table-column': { template: '<div><slot :row="{}" /></div>' },
   'el-calendar': {
     props: ['modelValue'],
     template: '<div class="el-calendar"><slot name="date-cell" :data="{ date: modelValue || new Date(), day: \'2026-04-22\', viewType: \'month\' }" /></div>',
@@ -45,15 +51,16 @@ vi.mock('vue', async (importOriginal) => {
   }
 })
 
-import { h, nextTick } from 'vue'
+import { h, nextTick, markRaw } from 'vue'
 import WelcomeBanner from './WelcomeBanner.vue'
 import MetricCards from './MetricCards.vue'
 import ProjectList from './ProjectList.vue'
+import ProjectCollaboratorsDialog from './ProjectCollaboratorsDialog.vue'
 import PriorityTodos from './PriorityTodos.vue'
 import SupportRequestDialog from './SupportRequestDialog.vue'
 import WorkCalendar from './WorkCalendar.vue'
 
-const DummyIcon = { render: () => h('span', 'icon') }
+const DummyIcon = markRaw({ render: () => h('span', 'icon') })
 
 const mountWithStubs = async (component, options = {}) => {
   const global = options.global || {}
@@ -238,5 +245,16 @@ describe('dashboard presentation components', () => {
 
     expect(wrapper.emitted('event-date-select')[0]).toEqual([event])
     expect(wrapper.find('.upcoming-event-item').attributes('role')).toBe('button')
+  })
+
+  it('ProjectCollaboratorsDialog renders member list and emits changes', async () => {
+    const project = { id: 1, name: '智慧办公平台' }
+    const wrapper = await mountWithStubs(ProjectCollaboratorsDialog, {
+      props: { modelValue: true, project },
+    })
+
+    expect(wrapper.text()).toContain('添加')
+    expect(wrapper.text()).toContain('项目组成员')
+    expect(wrapper.text()).toContain('关闭')
   })
 })

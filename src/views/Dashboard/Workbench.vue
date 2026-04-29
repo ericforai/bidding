@@ -19,6 +19,7 @@
       @action-click="handleBannerAction"
     />
     <MetricCards
+      v-if="!dynamicLayout"
       :metrics="metrics"
       :loading="metricsLoading"
       :error="metricsError"
@@ -112,7 +113,6 @@
 import { computed, markRaw, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { dashboardApi, projectsApi, tendersApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { useBiddingStore } from '@/stores/bidding'
 import { useWorkbenchSchedule } from '@/views/Dashboard/useWorkbenchSchedule.js'
@@ -121,12 +121,14 @@ import { useWorkbenchTodos } from '@/views/Dashboard/useWorkbenchTodos.js'
 import { useWorkbenchApprovals } from '@/views/Dashboard/useWorkbenchApprovals.js'
 import { useWorkbenchDerivedLists } from '@/views/Dashboard/useWorkbenchDerivedLists.js'
 import { useWorkbenchDynamicWidgets } from '@/views/Dashboard/useWorkbenchDynamicWidgets.js'
+import { useWorkbenchInitialData } from '@/views/Dashboard/useWorkbenchInitialData.js'
+import { useWorkbenchPermissions } from '@/views/Dashboard/useWorkbenchPermissions.js'
+import { useWorkbenchActions } from '@/views/Dashboard/useWorkbenchActions.js'
 import {
   formatCurrentDate, formatRelativeTime, getBannerActionConfig,
   getBannerSubtitle, getBannerTitle, getPriorityLabel, getPriorityType, getProgressColor,
-  getProjectStatusType, hasQuickStartPermission,
+  getProjectStatusType,
 } from '@/views/Dashboard/workbench-core.js'
-import { normalizeProjectForWorkbench } from '@/views/Dashboard/workbench-utils.js'
 import ApprovalDialog from '@/components/common/ApprovalDialog.vue'
 import MetricCards from '@/views/Dashboard/components/MetricCards.vue'
 import ProjectCollaboratorsDialog from '@/views/Dashboard/components/ProjectCollaboratorsDialog.vue'
@@ -147,10 +149,12 @@ const currentUserRole = computed(() => userStore.currentUser?.role || 'staff')
 const currentUserName = computed(() => userStore.currentUser?.name || '用户')
 const currentUserId = computed(() => userStore.currentUser?.id || null)
 const currentDate = computed(() => formatCurrentDate())
-const workbenchProjects = ref([])
-const hotTenders = ref([])
-const runtimeMode = ref(null)
-const dynamicLayout = ref(null)
+
+const {
+  workbenchProjects, hotTenders, runtimeMode, dynamicLayout,
+  loadWorkbenchProjects, loadWorkbenchTenders, loadRuntimeMode, loadDynamicLayout,
+} = useWorkbenchInitialData()
+
 const collabDialogVisible = ref(false)
 const selectedProjectForCollab = ref(null)
 
@@ -192,14 +196,11 @@ const bannerSubtitle = computed(() => getBannerSubtitle(currentUserRole.value, {
 const bannerActions = computed(() => getBannerActionConfig(currentUserRole.value).map(iconizeAction))
 const runtimeModeLabel = computed(() => runtimeMode.value?.modeLabel || '')
 const runtimeModeTagType = computed(() => (runtimeMode.value?.demoFusionEnabled ? 'warning' : 'success'))
-const canUseQuickStart = computed(() => hasQuickStartPermission(userStore.currentUser))
 
-const canViewTenderList = computed(() => userStore.hasPermission('dashboard:view_tender_list') || currentUserRole.value === 'staff')
-const canViewTechnicalTask = computed(() => userStore.hasPermission('dashboard:view_technical_task') || currentUserRole.value === 'staff')
-const canViewReviewList = computed(() => userStore.hasPermission('dashboard:view_review_list') || ['staff', 'manager'].includes(currentUserRole.value))
-const canViewProjectList = computed(() => userStore.hasPermission('dashboard:view_project_list') || currentUserRole.value === 'manager')
-const canViewTeamTask = computed(() => userStore.hasPermission('dashboard:view_team_task') || currentUserRole.value === 'manager')
-const canViewGlobalProjects = computed(() => userStore.hasPermission('dashboard:view_global_projects'))
+const {
+  canUseQuickStart, canViewTenderList, canViewTechnicalTask, canViewReviewList,
+  canViewProjectList, canViewTeamTask, canViewGlobalProjects,
+} = useWorkbenchPermissions({ userStore, currentUserRole })
 
 const {
   activeProjects, followUpCustomers, teamMembers, myTechnicalTasks,
@@ -224,191 +225,39 @@ const {
   onEventsLoaded: (events) => biddingStore.setCalendar(events),
 })
 
+const {
+  activities, iconizeAction, handleBannerAction, handleTenderClick, handleProjectClick,
+  handleShareClick, handleProjectMemberChanged, handleReview, reloadMetrics, reloadSchedule,
+} = useWorkbenchActions({
+  router, ElMessage, myProcesses, priorityTodos,
+  loadWorkbenchSummary, loadScheduleOverview, syncSelectedDate,
+  loadWorkbenchProjects, metricsLoading, selectedProjectForCollab, collabDialogVisible,
+  Icons,
+})
+
 const { widgetRegistry, widgetProps, widgetListeners } = useWorkbenchDynamicWidgets({
   state: {
-    hotTenders,
-    myTechnicalTasks,
-    pendingReviews,
-    followUpCustomers,
-    activeProjects,
-    currentUserRole,
-    teamMembers,
-    teamPerformance,
-    pendingApprovals,
-    approvalsError,
-    myProcesses,
-    processesError,
-    activities: computed(() => activities.value),
-    priorityTodos,
-    todosError,
-    calendarDate,
-    activeCalendarFilter,
-    calendarFilters,
-    visibleCalendarEvents,
-    selectedDateEvents,
-    selectedDateLabel,
-    monthCalendarSummary,
-    upcomingCalendarEvents,
-    calendarError,
-    canUseQuickStart,
-    canViewTenderList,
-    canViewTechnicalTask,
-    canViewReviewList,
-    canViewProjectList,
-    canViewTeamTask,
-    canViewGlobalProjects
+    hotTenders, myTechnicalTasks, pendingReviews, followUpCustomers, activeProjects,
+    currentUserRole, teamMembers, teamPerformance, pendingApprovals, approvalsError,
+    myProcesses, processesError, activities, priorityTodos, todosError,
+    calendarDate, activeCalendarFilter, calendarFilters, visibleCalendarEvents,
+    selectedDateEvents, selectedDateLabel, monthCalendarSummary, upcomingCalendarEvents,
+    calendarError, canUseQuickStart, canViewTenderList, canViewTechnicalTask,
+    canViewReviewList, canViewProjectList, canViewTeamTask, canViewGlobalProjects,
+    metrics, metricsLoading, metricsError,
   },
   actions: {
-    getProgressColor,
-    getProjectStatusType,
-    formatRelativeTime,
-    getEventsForDate,
-    calendarCellClass,
-    getEventTypeTag,
-    getPriorityType,
-    getPriorityLabel,
-    viewBidding: () => router.push('/bidding'),
-    viewProject: () => router.push('/project'),
-    handleTenderClick,
-    handleTaskComplete,
-    handleReview,
-    handleProjectClick,
-    handleShareClick,
-    handleApprove,
-    handleReject,
-    loadPendingApprovals,
-    loadMyProcesses,
-    loadTodos,
-    handleApprovalSuccess,
+    getProgressColor, getProjectStatusType, formatRelativeTime, getEventsForDate,
+    calendarCellClass, getEventTypeTag, getPriorityType, getPriorityLabel,
+    handleMetricClick, reloadMetrics, viewBidding: () => router.push('/bidding'),
+    viewProject: () => router.push('/project'), handleTenderClick, handleTaskComplete,
+    handleReview, handleProjectClick, handleShareClick, handleApprove, handleReject,
+    loadPendingApprovals, loadMyProcesses, loadTodos, handleApprovalSuccess,
     updateCalendarDate: (value) => { calendarDate.value = value },
     updateActiveCalendarFilter: (value) => { activeCalendarFilter.value = value },
-    handleDateClick,
-    selectCalendarEventDate,
-    handleCalendarAction,
-    reloadSchedule,
+    handleDateClick, selectCalendarEventDate, handleCalendarAction, reloadSchedule,
   },
 })
-
-const activities = computed(() => {
-  const processActivities = myProcesses.value.slice(0, 4).map((process) => ({
-    id: `process-${process.id}`,
-    type: process.status === 'urgent' ? 'warning' : process.status === 'in-progress' ? 'success' : 'info',
-    text: process.title,
-    time: process.time || '刚刚',
-  }))
-  if (processActivities.length > 0) {
-    return processActivities
-  }
-  return priorityTodos.value.slice(0, 4).map((todo) => ({
-    id: `todo-${todo.id}`,
-    type: todo.done ? 'success' : 'warning',
-    text: todo.title,
-    time: todo.deadline || '待处理',
-  }))
-})
-
-function iconizeAction(action) {
-  return { ...action, icon: Icons[action.icon] || action.icon }
-}
-function handleBannerAction(action) {
-  if (action?.target) router.push(action.target)
-}
-function handleTenderClick(tender) {
-  if (String(tender.id || '').startsWith('-')) {
-    router.push('/bidding')
-    return
-  }
-  router.push(`/bidding/${tender.id}`)
-}
-
-function handleProjectClick(project) {
-  const projectId = String(project?.id || '')
-  if (/^\d+$/.test(projectId)) {
-    router.push(`/project/${projectId}`)
-    return
-  }
-  router.push({ path: '/project', query: { demoProjectId: projectId } })
-}
-
-function handleShareClick(project) {
-  selectedProjectForCollab.value = project
-  collabDialogVisible.value = true
-}
-
-function handleProjectMemberChanged() {
-  loadWorkbenchProjects()
-}
-
-function handleReview(review) {
-  ElMessage.info(`打开评审: ${review.title}`)
-}
-
-async function reloadMetrics() {
-  metricsLoading.value = true
-  await loadWorkbenchSummary()
-  metricsLoading.value = false
-}
-
-async function loadWorkbenchProjects() {
-  try {
-    const response = await projectsApi.getList()
-    workbenchProjects.value = Array.isArray(response?.data)
-      ? response.data.map(normalizeProjectForWorkbench)
-      : []
-  } catch {
-    workbenchProjects.value = []
-  }
-}
-
-async function loadWorkbenchTenders() {
-  try {
-    const response = await tendersApi.getList()
-    const tenders = Array.isArray(response?.data) ? response.data : []
-    hotTenders.value = tenders.slice(0, 6).map((item) => {
-      const score = Number(item.aiScore || 0)
-      const probability = score >= 85 ? 'high' : 'medium'
-      return {
-        id: item.id,
-        title: item.title || '未命名标讯',
-        budget: Number(item.budget || 0),
-        region: item.region || '-',
-        aiScore: score,
-        scoreLevel: score >= 85 ? 'high' : score >= 70 ? 'medium' : 'low',
-        probability,
-        probibilityText: probability === 'high' ? '高概率' : '中等概率',
-      }
-    })
-  } catch {
-    hotTenders.value = []
-  }
-}
-
-async function reloadSchedule() {
-  await loadScheduleOverview()
-  syncSelectedDate()
-}
-
-async function loadRuntimeMode() {
-  try {
-    const response = await dashboardApi.getRuntimeMode()
-    runtimeMode.value = response?.success ? response.data : null
-  } catch {
-    runtimeMode.value = null
-  }
-}
-
-async function loadDynamicLayout() {
-  try {
-    const response = await dashboardApi.getLayout()
-    const layoutJson = response?.data?.layoutJson
-    dynamicLayout.value = response?.success && layoutJson && layoutJson !== '[]'
-      ? JSON.parse(layoutJson)
-      : null
-  } catch (error) {
-    console.warn('Failed to load dynamic layout, falling back to static layout', error)
-    dynamicLayout.value = null
-  }
-}
 
 onMounted(async () => {
   metricsLoading.value = true
