@@ -4,6 +4,8 @@
 
 ## 职责说明
 统一通知收件箱模块 — 提供 per-user 通知的创建、查询、已读标记能力。
+控制器层接收 Spring Security `UserDetails`，再通过 `AuthService` 解析为项目 `User` 实体，
+确保通知查询和已读操作使用真实用户 ID。
 
 ## 边界清单
 

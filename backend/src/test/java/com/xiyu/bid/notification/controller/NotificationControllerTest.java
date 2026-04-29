@@ -7,6 +7,7 @@ import com.xiyu.bid.notification.core.NotificationReadPolicy.ReadResult;
 import com.xiyu.bid.notification.dto.CreateNotificationRequest;
 import com.xiyu.bid.notification.dto.NotificationSummary;
 import com.xiyu.bid.notification.service.NotificationApplicationService;
+import com.xiyu.bid.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -49,15 +51,24 @@ class NotificationControllerTest {
     @Mock
     private NotificationApplicationService service;
 
+    @Mock
+    private AuthService authService;
+
     @InjectMocks
     private NotificationController controller;
 
     private static final User TEST_USER = User.builder()
         .id(7L).username("alice").email("a@x.com").fullName("Alice").password("p")
         .role(User.Role.STAFF).build();
+    private static final UserDetails TEST_DETAILS = org.springframework.security.core.userdetails.User
+        .withUsername("alice")
+        .password("p")
+        .authorities("ROLE_STAFF")
+        .build();
 
     @BeforeEach
     void setUp() {
+        when(authService.resolveUserByUsername("alice")).thenReturn(TEST_USER);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
             .setCustomArgumentResolvers(new HandlerMethodArgumentResolver() {
                 @Override
@@ -69,7 +80,7 @@ class NotificationControllerTest {
                 public Object resolveArgument(MethodParameter parameter,
                     ModelAndViewContainer mavContainer, NativeWebRequest webRequest,
                     WebDataBinderFactory binderFactory) {
-                    return TEST_USER;
+                    return TEST_DETAILS;
                 }
             })
             .build();
