@@ -374,6 +374,32 @@ export const projectsApi = {
     }
 
     return httpClient.get(`/api/projects/${projectId}/bid-process-status`)
+  },
+
+  // --- Collaboration / Member management ---
+
+  async getMembers(projectId) {
+    if (!isNumericId(projectId)) {
+      return apiModeFailure('project')
+    }
+
+    return httpClient.get(`/api/projects/${projectId}/members`)
+  },
+
+  async addMember(projectId, data) {
+    if (!isNumericId(projectId)) {
+      return apiModeFailure('project')
+    }
+
+    return httpClient.post(`/api/projects/${projectId}/members`, data)
+  },
+
+  async removeMember(projectId, userId) {
+    if (!isNumericId(projectId) || !isNumericId(userId)) {
+      return apiModeFailure('project member')
+    }
+
+    return httpClient.delete(`/api/projects/${projectId}/members/${userId}`)
   }
 }
 
