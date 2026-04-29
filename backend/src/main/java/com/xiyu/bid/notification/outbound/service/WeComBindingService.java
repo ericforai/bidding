@@ -5,6 +5,7 @@ package com.xiyu.bid.notification.outbound.service;
 
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.UserRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +25,11 @@ public class WeComBindingService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new NoSuchElementException("用户不存在: " + userId));
         user.setWecomUserId(wecomUserId);
-        userRepository.save(user);
+        try {
+            userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalArgumentException("该企微 userid 已绑定其他用户", e);
+        }
     }
 
     @Transactional
@@ -37,8 +42,8 @@ public class WeComBindingService {
 
     @Transactional(readOnly = true)
     public String currentBinding(Long userId) {
-        return userRepository.findById(userId)
-            .map(User::getWecomUserId)
+        User user = userRepository.findById(userId)
             .orElseThrow(() -> new NoSuchElementException("用户不存在: " + userId));
+        return user.getWecomUserId();
     }
 }
