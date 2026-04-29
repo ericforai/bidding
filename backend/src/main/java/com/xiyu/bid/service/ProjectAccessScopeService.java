@@ -3,10 +3,14 @@
 // Pos: Service/权限支撑层
 // 维护声明: 维护项目访问范围判断；显式项目、部门范围和管理员绕过统一在这里收口。
 package com.xiyu.bid.service;
-import com.xiyu.bid.entity.RoleProfileCatalog;
 
+import com.xiyu.bid.entity.RoleProfileCatalog;
+import com.xiyu.bid.entity.CrmCustomerPermission;
 import com.xiyu.bid.entity.Project;
+import com.xiyu.bid.entity.ProjectMember;
 import com.xiyu.bid.entity.User;
+import com.xiyu.bid.repository.CrmCustomerPermissionRepository;
+import com.xiyu.bid.repository.ProjectMemberRepository;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.admin.service.DataScopeConfigService;
 import com.xiyu.bid.admin.service.ProjectGroupService;
@@ -22,6 +26,7 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +39,8 @@ public class ProjectAccessScopeService {
     private final ProjectRepository projectRepository;
     private final DataScopeConfigService dataScopeConfigService;
     private final ProjectGroupService projectGroupService;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final CrmCustomerPermissionRepository crmCustomerPermissionRepository;
 
     public List<Long> getAllowedProjectIds(User user) {
         if (user == null || RoleProfileCatalog.ADMIN_CODE.equalsIgnoreCase(user.getRoleCode())) {
@@ -50,6 +57,22 @@ public class ProjectAccessScopeService {
         Set<Long> allowedIds = new LinkedHashSet<>(projectRepository.findAccessibleProjectIdsByUserId(user.getId()));
         allowedIds.addAll(accessProfile.getExplicitProjectIds());
         allowedIds.addAll(projectGroupService.getGrantedProjectIds(user));
+        
+        // Add collaborated projects
+        allowedIds.addAll(projectMemberRepository.findByUserId(user.getId()).stream()
+                .map(ProjectMember::getProjectId)
+                .collect(Collectors.toList()));
+
+        // Add projects from CRM-authorized customers
+        List<String> crmCustomerIds = crmCustomerPermissionRepository.findByUserId(user.getId()).stream()
+                .map(CrmCustomerPermission::getCustomerId)
+                .collect(Collectors.toList());
+        if (!crmCustomerIds.isEmpty()) {
+            allowedIds.addAll(projectRepository.findBySourceCustomerIdIn(crmCustomerIds).stream()
+                    .map(Project::getId)
+                    .collect(Collectors.toList()));
+        }
+
         if (!accessProfile.getAllowedDepartmentCodes().isEmpty()) {
             allowedIds.addAll(projectRepository.findAccessibleProjectIdsByDepartmentCodes(accessProfile.getAllowedDepartmentCodes()));
         }

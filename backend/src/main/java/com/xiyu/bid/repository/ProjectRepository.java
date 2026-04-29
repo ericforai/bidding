@@ -79,6 +79,11 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     long countAccessibleProjectByIdAndUserId(Long projectId, Long userId);
 
     /**
+     * 根据客户ID列表查询项目
+     */
+    List<Project> findBySourceCustomerIdIn(Collection<String> customerIds);
+
+    /**
      * 根据项目名称模糊查询
      */
     List<Project> findByNameContainingIgnoreCase(String name);

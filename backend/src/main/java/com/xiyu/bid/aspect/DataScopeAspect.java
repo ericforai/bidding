@@ -2,8 +2,12 @@ package com.xiyu.bid.aspect;
 
 import com.xiyu.bid.admin.service.DataScopeConfigService;
 import com.xiyu.bid.annotation.DataScope;
+import com.xiyu.bid.entity.CrmCustomerPermission;
+import com.xiyu.bid.entity.ProjectMember;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.enums.DataScopeType;
+import com.xiyu.bid.repository.CrmCustomerPermissionRepository;
+import com.xiyu.bid.repository.ProjectMemberRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.security.DataScopeContext;
 import com.xiyu.bid.security.DataScopeContextHolder;
@@ -21,6 +25,7 @@ import org.springframework.stereotype.Component;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Aspect
 @Component
@@ -30,6 +35,8 @@ public class DataScopeAspect {
 
     private final UserRepository userRepository;
     private final DataScopeConfigService dataScopeConfigService;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final CrmCustomerPermissionRepository crmCustomerPermissionRepository;
 
     @Before("@annotation(com.xiyu.bid.annotation.DataScope)")
     public void doBefore(JoinPoint point) {
@@ -61,6 +68,14 @@ public class DataScopeAspect {
         DataScopeConfigService.AccessProfile profile = dataScopeConfigService.getAccessProfile(user);
         DataScopeType scopeType = parseScopeType(profile.getDataScope());
 
+        List<Long> collaboratedProjectIds = projectMemberRepository.findByUserId(user.getId()).stream()
+                .map(ProjectMember::getProjectId)
+                .collect(Collectors.toList());
+
+        List<String> crmAuthorizedCustomerIds = crmCustomerPermissionRepository.findByUserId(user.getId()).stream()
+                .map(CrmCustomerPermission::getCustomerId)
+                .collect(Collectors.toList());
+
         DataScopeContext context = DataScopeContext.builder()
                 .scopeType(scopeType)
                 .userAlias(dataScope.userAlias())
@@ -69,6 +84,8 @@ public class DataScopeAspect {
                 .allowedDeptCodes(profile.getAllowedDepartmentCodes())
                 .explicitProjectIds(profile.getExplicitProjectIds() != null ?
                         new ArrayList<>(profile.getExplicitProjectIds()) : List.of())
+                .collaboratedProjectIds(collaboratedProjectIds)
+                .crmAuthorizedCustomerIds(crmAuthorizedCustomerIds)
                 .build();
 
         DataScopeContextHolder.setContext(context);
