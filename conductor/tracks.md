@@ -22,5 +22,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: 立体矩阵式协作权限体系**
+- [~] **Track: 立体矩阵式协作权限体系**
   *Link: [./tracks/matrix_collaboration_20260428/](./tracks/matrix_collaboration_20260428/)*
