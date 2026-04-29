@@ -5,7 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -34,8 +33,7 @@ public class OaProcessEventEntity {
     @Column(name = "event_type", nullable = false, length = 64)
     private String eventType;
 
-    @Lob
-    @Column(name = "raw_payload")
+    @Column(name = "raw_payload", columnDefinition = "TEXT")
     private String rawPayload;
 
     @Column(name = "created_at", nullable = false, updatable = false)
