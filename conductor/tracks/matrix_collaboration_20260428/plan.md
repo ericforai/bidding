@@ -18,11 +18,11 @@
 
 - [x] **Task: 升级 `DataScopeContext` 载体** 263d98c
     - [x] 扩展上下文对象，使其能承载协作成员 ID 集合和 CRM 客户权限镜像。
-- [ ] **Task: 重构 `DataScopeAspect` 切面逻辑**
-    - [ ] 注入协作表与 CRM 镜像表的 SQL 关联判断。
-    - [ ] 实现“穿透式”只读权限判定（项目 -> 标讯）。
-- [ ] **Task: TDD - 矩阵权限并集测试**
-    - [ ] 编写复杂权限测试：验证用户 A 即使不在部门，作为项目成员也能查到数据。
+- [x] **Task: 重构 `DataScopeAspect` 切面逻辑** 85085f5
+    - [x] 注入协作表与 CRM 镜像表的 SQL 关联判断。
+    - [x] 实现“穿透式”只读权限判定（项目 -> 标讯）。
+- [x] **Task: TDD - 矩阵权限并集测试** 61c9439
+    - [x] 编写复杂权限测试：验证用户 A 即使不在部门，作为项目成员也能查到数据。
 - [ ] **Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)**
 
 ## Phase 3: 前端协作交互与工作台补强
