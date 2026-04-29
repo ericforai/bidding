@@ -5,6 +5,13 @@ package com.xiyu.bid.notification.outbound.event;
 
 import java.util.List;
 
+/**
+ * Immutable domain event published AFTER_COMMIT of notification creation.
+ *
+ * <p>The canonical constructor defensively copies {@code recipientUserIds}
+ * into an immutable list so downstream consumers cannot mutate the event and
+ * so callers need not remember to copy before publishing.
+ */
 public record NotificationCreatedEvent(
     Long notificationId,
     List<Long> recipientUserIds,
@@ -13,4 +20,7 @@ public record NotificationCreatedEvent(
     String sourceEntityType,
     Long sourceEntityId
 ) {
+    public NotificationCreatedEvent {
+        recipientUserIds = recipientUserIds == null ? List.of() : List.copyOf(recipientUserIds);
+    }
 }
