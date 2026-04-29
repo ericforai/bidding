@@ -15,4 +15,6 @@ public class DataScopeContext {
     private Long currentUserId;
     private List<String> allowedDeptCodes;
     private List<Long> explicitProjectIds;
+    private List<Long> collaboratedProjectIds;
+    private List<String> crmAuthorizedCustomerIds;
 }
