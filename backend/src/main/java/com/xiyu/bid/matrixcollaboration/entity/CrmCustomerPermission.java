@@ -1,4 +1,4 @@
-package com.xiyu.bid.entity;
+package com.xiyu.bid.matrixcollaboration.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

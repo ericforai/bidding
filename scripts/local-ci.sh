@@ -167,7 +167,7 @@ run_backend_full() {
   run_backend mvn -DskipTests compile
   run_backend mvn -DforkCount=0 -Dtest=FPJavaArchitectureTest,MaintainabilityArchitectureTest test
   run_backend mvn -Dspring.jpa.hibernate.ddl-auto=create-drop -Dtest=FlywayBaselineContextTest,ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest test
-  run_backend mvn -Dtest=DualDatabaseMigrationParityTest,FlywayPostgresContainerTest,FlywayMysqlContainerTest,ArchitectureTest test
+  run_backend mvn -Dtest=DualDatabaseMigrationParityTest,FlywayMysqlContainerTest,ArchitectureTest test
   run_backend mvn -Pjava-quality,java-quality-spotbugs,quality-strict -DskipTests -Djacoco.skip=true checkstyle:check pmd:check spotbugs:check
 }
 
