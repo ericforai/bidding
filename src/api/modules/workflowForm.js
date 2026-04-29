@@ -1,5 +1,5 @@
-// Input: httpClient for workflow-form requests
-// Output: workflowFormApi - dynamic workflow form schema and submission accessors
+// Input: httpClient for workflow-form requests and attachment files
+// Output: workflowFormApi - dynamic workflow form schema, attachment upload and submission accessors
 // Pos: src/api/modules/ - Frontend API module layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -65,10 +65,22 @@ async function testSubmitTemplate(templateCode, payload = {}) {
   return httpClient.post(`/api/admin/workflow-forms/templates/${templateCode}/oa/test-submit`, payload)
 }
 
+async function uploadWorkflowFormAttachment(templateCode, fieldKey, file, options = {}) {
+  const formData = new FormData()
+  formData.append('templateCode', normalizeWorkflowType(templateCode))
+  formData.append('fieldKey', fieldKey)
+  if (options.projectId !== undefined && options.projectId !== null && options.projectId !== '') {
+    formData.append('projectId', String(options.projectId))
+  }
+  formData.append('file', file)
+  return httpClient.post('/api/workflow-forms/attachments', formData)
+}
+
 export const workflowFormApi = {
   getFormDefinition,
   submitWorkflowForm,
   getWorkflowInstance,
+  uploadWorkflowFormAttachment,
   listAdminTemplates,
   listTemplateVersions,
   listBusinessTypes,

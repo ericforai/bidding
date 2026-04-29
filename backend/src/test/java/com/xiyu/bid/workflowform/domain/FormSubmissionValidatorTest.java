@@ -2,6 +2,7 @@ package com.xiyu.bid.workflowform.domain;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,5 +43,81 @@ class FormSubmissionValidatorTest {
 
         assertThat(result.valid()).isTrue();
         assertThat(result.errors()).isEmpty();
+    }
+
+    @Test
+    void accepts_attachment_field_values_as_list_of_maps_or_array() {
+        FormSchema schema = schemaWithRequiredAttachment();
+
+        ValidationResult listResult = FormSubmissionValidator.validate(schema, Map.of(
+                "attachments", List.of(
+                        Map.of(
+                                "fileName", "授权书.pdf",
+                                "storagePath", "workflow/2026/auth.pdf",
+                                "contentType", "application/pdf",
+                                "size", 1024L
+                        )
+                )
+        ));
+        ValidationResult arrayResult = FormSubmissionValidator.validate(schema, Map.of(
+                "attachments", new Map[]{
+                        Map.of(
+                                "fileName", "报价单.xlsx",
+                                "fileUrl", "https://files.example.com/quote.xlsx"
+                        )
+                }
+        ));
+
+        assertThat(listResult.valid()).isTrue();
+        assertThat(listResult.errors()).isEmpty();
+        assertThat(arrayResult.valid()).isTrue();
+        assertThat(arrayResult.errors()).isEmpty();
+    }
+
+    @Test
+    void rejects_required_attachment_field_without_files() {
+        ValidationResult result = FormSubmissionValidator.validate(schemaWithRequiredAttachment(), Map.of(
+                "attachments", List.of()
+        ));
+
+        assertThat(result.valid()).isFalse();
+        assertThat(result.errors()).contains("请上传附件");
+    }
+
+    @Test
+    void rejects_attachment_item_without_file_name_or_storage_location() {
+        ValidationResult result = FormSubmissionValidator.validate(schemaWithRequiredAttachment(), Map.of(
+                "attachments", List.of(Map.of("contentType", "application/pdf"))
+        ));
+
+        assertThat(result.valid()).isFalse();
+        assertThat(result.errors()).contains(
+                "附件第 1 项缺少文件名",
+                "附件第 1 项缺少存储路径或文件地址"
+        );
+    }
+
+    @Test
+    void does_not_mutate_attachment_input_values() {
+        Map<String, Object> attachment = Map.of(
+                "fileName", "授权书.pdf",
+                "storagePath", "workflow/2026/auth.pdf"
+        );
+        List<Map<String, Object>> attachments = List.of(attachment);
+
+        ValidationResult result = FormSubmissionValidator.validate(schemaWithRequiredAttachment(), Map.of(
+                "attachments", attachments
+        ));
+
+        assertThat(result.valid()).isTrue();
+        assertThat(attachments).containsExactly(attachment);
+    }
+
+    private static FormSchema schemaWithRequiredAttachment() {
+        return new FormSchema(
+                "qualification-borrow",
+                FormBusinessType.QUALIFICATION_BORROW,
+                List.of(new FormFieldDefinition("attachments", "附件", FormFieldType.ATTACHMENT, true))
+        );
     }
 }

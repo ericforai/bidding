@@ -33,8 +33,17 @@
         <el-select v-else-if="field.type === 'select'" v-model="localValue[field.key]" style="width: 100%">
           <el-option v-for="option in field.options || []" :key="option.value" :label="option.label" :value="option.value" />
         </el-select>
-        <el-upload v-else-if="field.type === 'attachment'" disabled>
-          <el-button>选择附件</el-button>
+        <el-upload
+          v-else-if="field.type === 'attachment'"
+          :auto-upload="false"
+          :file-list="getAttachmentFileList(field)"
+          :http-request="(request) => uploadAttachment(field, request)"
+          :limit="field.limit"
+          :accept="field.accept"
+          @change="(file) => handleAttachmentChange(field, file)"
+          @remove="(file) => handleAttachmentRemove(field, file)"
+        >
+          <el-button type="primary" plain>选择文件</el-button>
         </el-upload>
         <el-alert v-else-if="field.type === 'info'" type="info" :closable="false" :title="field.content || field.label" />
         <el-input v-else v-model="localValue[field.key]" :placeholder="field.placeholder || `请输入${field.label}`" />
@@ -46,6 +55,8 @@
 
 <script setup>
 import { computed, reactive, watch } from 'vue'
+
+import { workflowFormApi } from '@/api/modules/workflowForm.js'
 
 const props = defineProps({
   schema: {
@@ -75,6 +86,69 @@ watch(
 )
 
 watch(localValue, () => emit('update:modelValue', { ...localValue }), { deep: true })
+
+function getTemplateCode() {
+  return props.schema?.templateCode || props.schema?.code || props.schema?.workflowType || props.schema?.businessType || 'QUALIFICATION_BORROW'
+}
+
+function getProjectId() {
+  return props.schema?.projectId ?? localValue.projectId ?? null
+}
+
+function getAttachmentValue(field) {
+  const value = localValue[field.key]
+  return Array.isArray(value) ? value : []
+}
+
+function toStructuredAttachment(uploadResult = {}, fallbackFile = {}) {
+  const data = uploadResult?.data || uploadResult || {}
+  return {
+    fileName: data.fileName || data.name || fallbackFile.name || '',
+    fileUrl: data.fileUrl || data.url || '',
+    storagePath: data.storagePath || '',
+    contentType: data.contentType || fallbackFile.type || '',
+    size: data.size ?? fallbackFile.size ?? 0
+  }
+}
+
+function getAttachmentFileList(field) {
+  return getAttachmentValue(field).map((file, index) => ({
+    uid: file.storagePath || file.fileUrl || `${field.key}-${index}`,
+    name: file.fileName,
+    url: file.fileUrl,
+    status: 'success',
+    response: file
+  }))
+}
+
+async function uploadAttachment(field, request) {
+  const file = request?.file?.raw || request?.file
+  if (!file) return null
+  const response = await workflowFormApi.uploadWorkflowFormAttachment(getTemplateCode(), field.key, file, {
+    projectId: getProjectId()
+  })
+  const attachment = toStructuredAttachment(response, file)
+  localValue[field.key] = [...getAttachmentValue(field), attachment]
+  request?.onSuccess?.(attachment)
+  return attachment
+}
+
+async function handleAttachmentChange(field, file) {
+  const rawFile = file?.raw
+  if (!rawFile || file?.status === 'success') return
+  await uploadAttachment(field, { file: rawFile })
+}
+
+function handleAttachmentRemove(field, file = {}) {
+  const name = file.name || file.fileName
+  const url = file.url || file.fileUrl
+  const storagePath = file.response?.storagePath || file.storagePath
+  localValue[field.key] = getAttachmentValue(field).filter((item) => (
+    (storagePath && item.storagePath !== storagePath) ||
+    (!storagePath && url && item.fileUrl !== url) ||
+    (!storagePath && !url && name && item.fileName !== name)
+  ))
+}
 
 function validate() {
   const missing = visibleFields.value.find((field) => field.required && field.type !== 'info' && isEmptyValue(localValue[field.key]))

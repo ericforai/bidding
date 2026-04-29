@@ -1,5 +1,5 @@
-// Input: workflow form API module with mocked HTTP client
-// Output: workflow form endpoint contract coverage
+// Input: workflow form API module with mocked HTTP client and FormData attachment payloads
+// Output: workflow form schema, submission and attachment endpoint contract coverage
 // Pos: src/api/modules/ - API module unit tests
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -69,5 +69,31 @@ describe('workflowFormApi', () => {
     expect(httpClient.post).toHaveBeenCalledWith('/api/admin/workflow-forms/templates/SEAL_APPLY/publish')
     expect(httpClient.post).toHaveBeenCalledWith('/api/admin/workflow-forms/templates/SEAL_APPLY/versions/1/rollback')
     expect(httpClient.post).toHaveBeenCalledWith('/api/admin/workflow-forms/templates/SEAL_APPLY/oa/test-submit', { formData: { title: '测试' } })
+  })
+
+  it('uploadWorkflowFormAttachment(): posts multipart attachment payload to the workflow form attachment API', async () => {
+    httpClient.post.mockResolvedValue({
+      success: true,
+      data: {
+        fileName: '授权书.pdf',
+        fileUrl: '/files/auth.pdf',
+        storagePath: 'workflow/QUALIFICATION_BORROW/auth.pdf',
+        contentType: 'application/pdf',
+        size: 128
+      }
+    })
+    const file = new File(['pdf'], '授权书.pdf', { type: 'application/pdf' })
+
+    const result = await workflowFormApi.uploadWorkflowFormAttachment('qualification_borrow', 'authorization', file, { projectId: 10 })
+
+    expect(httpClient.post).toHaveBeenCalledTimes(1)
+    const [url, body] = httpClient.post.mock.calls[0]
+    expect(url).toBe('/api/workflow-forms/attachments')
+    expect(body).toBeInstanceOf(FormData)
+    expect(body.get('templateCode')).toBe('QUALIFICATION_BORROW')
+    expect(body.get('fieldKey')).toBe('authorization')
+    expect(body.get('projectId')).toBe('10')
+    expect(body.get('file')).toBe(file)
+    expect(result.data.storagePath).toBe('workflow/QUALIFICATION_BORROW/auth.pdf')
   })
 })
