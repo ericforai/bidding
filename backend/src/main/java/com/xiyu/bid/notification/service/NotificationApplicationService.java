@@ -15,10 +15,12 @@ import com.xiyu.bid.notification.dto.NotificationAssembler;
 import com.xiyu.bid.notification.dto.NotificationSummary;
 import com.xiyu.bid.notification.entity.Notification;
 import com.xiyu.bid.notification.entity.UserNotification;
+import com.xiyu.bid.notification.outbound.event.NotificationCreatedEvent;
 import com.xiyu.bid.notification.repository.NotificationRepository;
 import com.xiyu.bid.notification.repository.UserNotificationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -47,15 +49,18 @@ public class NotificationApplicationService {
     private final NotificationRepository notificationRepository;
     private final UserNotificationRepository userNotificationRepository;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     public NotificationApplicationService(
         NotificationRepository notificationRepository,
         UserNotificationRepository userNotificationRepository,
-        ObjectMapper objectMapper
+        ObjectMapper objectMapper,
+        ApplicationEventPublisher eventPublisher
     ) {
         this.notificationRepository = notificationRepository;
         this.userNotificationRepository = userNotificationRepository;
         this.objectMapper = objectMapper;
+        this.eventPublisher = eventPublisher;
     }
 
     public Page<NotificationSummary> getNotifications(Long userId, Pageable pageable) {
@@ -129,6 +134,15 @@ public class NotificationApplicationService {
                 .build());
         }
         userNotificationRepository.saveAll(userRows);
+
+        eventPublisher.publishEvent(new NotificationCreatedEvent(
+            saved.getId(),
+            List.copyOf(request.recipientUserIds()),
+            saved.getType(),
+            saved.getTitle(),
+            saved.getSourceEntityType(),
+            saved.getSourceEntityId()
+        ));
 
         return DispatchResult.validWithId(saved.getId());
     }

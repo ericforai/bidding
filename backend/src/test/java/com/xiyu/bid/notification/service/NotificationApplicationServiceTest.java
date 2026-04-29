@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -41,11 +42,14 @@ class NotificationApplicationServiceTest {
     @Mock
     private UserNotificationRepository userNotificationRepository;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private NotificationApplicationService service;
 
     private NotificationApplicationService buildService() {
         return new NotificationApplicationService(
-            notificationRepository, userNotificationRepository, new ObjectMapper());
+            notificationRepository, userNotificationRepository, new ObjectMapper(), eventPublisher);
     }
 
     @org.junit.jupiter.api.BeforeEach
