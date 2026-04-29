@@ -23,13 +23,13 @@
     - [x] 实现“穿透式”只读权限判定（项目 -> 标讯）。
 - [x] **Task: TDD - 矩阵权限并集测试** 61c9439
     - [x] 编写复杂权限测试：验证用户 A 即使不在部门，作为项目成员也能查到数据。
-- [ ] **Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)**
+- [x] **Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)**
 
 ## Phase 3: 前端协作交互与工作台补强
 本阶段交付用户操作入口。
 
-- [ ] **Task: 协作成员管理 API 交付**
-    - [ ] 提供项目的成员添加、删除、列表查询接口。
+- [x] **Task: 协作成员管理 API 交付** 69935aa
+    - [x] 提供项目的成员添加、删除、列表查询接口。
 - [ ] **Task: 项目卡片“分享/协作”UI 开发**
     - [ ] 在项目组件中增加“协作”按钮，实现人员搜索与权限分配弹窗。
 - [ ] **Task: 全流程手动验收**
