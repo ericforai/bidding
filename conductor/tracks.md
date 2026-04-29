@@ -19,3 +19,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: SOP 基础设施初始化**
   *Link: [./tracks/infrastructure_sop_setup_20260426/](./tracks/infrastructure_sop_setup_20260426/)*
+
+---
+
+- [ ] **Track: 立体矩阵式协作权限体系**
+  *Link: [./tracks/matrix_collaboration_20260428/](./tracks/matrix_collaboration_20260428/)*
