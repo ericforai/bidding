@@ -40,6 +40,8 @@ class WorkflowFormSubmissionServiceTest {
         assertThat(store.findById(1L).orElseThrow().businessApplied()).isFalse();
         assertThat(gateway.lastCommand.workflowCode()).isEqualTo("WF_QUALIFICATION_BORROW");
         assertThat(gateway.lastCommand.templateCode()).isEqualTo("QUALIFICATION_BORROW");
+        assertThat(gateway.lastCommand.trial()).isFalse();
+        assertThat(gateway.lastCommand.mappedPayload()).containsEntry("trial", false);
         assertThat((Map<String, Object>) gateway.lastCommand.mappedPayload().get("mainFields"))
                 .containsEntry("field_qualification", "1001");
         assertThat((Map<String, Object>) store.findById(1L).orElseThrow().oaPayload().get("mainFields"))

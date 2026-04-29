@@ -11,6 +11,7 @@ public record WorkflowFormTemplateAdminRecord(
         Integer version,
         boolean enabled,
         String status,
-        Map<String, Object> schema
+        Map<String, Object> schema,
+        OaProcessBindingRecord oaBinding
 ) {
 }

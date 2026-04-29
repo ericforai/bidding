@@ -8,6 +8,7 @@ import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -62,7 +63,7 @@ public class ProjectMemberController {
             return;
         }
         if (!projectAccessScopeService.getAllowedProjectIdsForCurrentUser().contains(projectId)) {
-            throw new SecurityException("无权访问该项目");
+            throw new AccessDeniedException("无权访问该项目");
         }
     }
 }

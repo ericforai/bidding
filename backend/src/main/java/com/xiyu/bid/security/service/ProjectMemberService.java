@@ -9,6 +9,7 @@ import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,7 +64,7 @@ public class ProjectMemberService {
             return;
         }
         if (!projectAccessScopeService.getAllowedProjectIdsForCurrentUser().contains(projectId)) {
-            throw new SecurityException("无权访问该项目");
+            throw new AccessDeniedException("无权访问该项目");
         }
     }
 

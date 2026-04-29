@@ -3,7 +3,6 @@ package com.xiyu.bid.workflowform.application.port;
 import com.xiyu.bid.workflowform.application.command.WorkflowFormOaBindingCommand;
 import com.xiyu.bid.workflowform.application.command.WorkflowFormTemplateDraftCommand;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +16,11 @@ public class InMemoryWorkflowFormAdminStore implements WorkflowFormAdminStore {
 
     @Override
     public List<WorkflowFormTemplateAdminRecord> listTemplates() {
-        return new ArrayList<>(drafts.values());
+        return drafts.values().stream()
+                .map(record -> new WorkflowFormTemplateAdminRecord(record.templateCode(), record.name(),
+                        record.businessType(), record.version(), record.enabled(), record.status(), record.schema(),
+                        bindings.get(record.templateCode())))
+                .toList();
     }
 
     @Override
@@ -39,7 +42,7 @@ public class InMemoryWorkflowFormAdminStore implements WorkflowFormAdminStore {
     public WorkflowFormTemplateAdminRecord saveDraft(WorkflowFormTemplateDraftCommand command) {
         WorkflowFormTemplateAdminRecord record = new WorkflowFormTemplateAdminRecord(command.templateCode(),
                 command.name(), command.businessType(), versions.getOrDefault(command.templateCode(), 0),
-                command.enabled(), "DRAFT", command.schema());
+                command.enabled(), "DRAFT", command.schema(), bindings.get(command.templateCode()));
         drafts.put(command.templateCode(), record);
         return record;
     }
@@ -59,7 +62,7 @@ public class InMemoryWorkflowFormAdminStore implements WorkflowFormAdminStore {
         versions.put(templateCode, next);
         active.put(templateCode, new WorkflowFormTemplateRecord(templateCode, draft.businessType(), next, draft.schema()));
         WorkflowFormTemplateAdminRecord published = new WorkflowFormTemplateAdminRecord(templateCode, draft.name(),
-                draft.businessType(), next, draft.enabled(), "PUBLISHED", draft.schema());
+                draft.businessType(), next, draft.enabled(), "PUBLISHED", draft.schema(), bindings.get(templateCode));
         drafts.put(templateCode, published);
         return published;
     }
