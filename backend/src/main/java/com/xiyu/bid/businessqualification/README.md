@@ -23,6 +23,7 @@
 ## 兼容说明
 
 - 现有页面路由与 `/api/knowledge/qualifications` 地址保持不变
+- 新 UI 的借阅申请入口已改为先提交 `workflowform` 的 `QUALIFICATION_BORROW` 表单实例，经 OA 通过后才调用本模块借阅应用服务
 - 兼容借还两套入口：
   - `POST /api/knowledge/qualifications/{id}/return`
   - `POST /api/knowledge/qualifications/borrow-records/{id}/return`

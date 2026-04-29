@@ -71,6 +71,7 @@ public class SecurityConfig {
             "/api/auth/verify-email/**",
             "/api/public/**",
             "/api/system/runtime-mode",
+            "/api/integrations/oa/weaver/callback",
             "/actuator/health",
             "/actuator/health/**",
             "/actuator/info",

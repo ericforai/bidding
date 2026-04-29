@@ -25,6 +25,7 @@
 | `resources.js` | API 模块 | 平台账号、BAR、证书、资源能力调用 |
 | `settings.js` | API 模块 | 系统设置页的数据权限与组织树读写 |
 | `tenders.js` | API 模块 | 标讯列表、详情、入项和关联调用 |
+| `workflowForm.js` | API 模块 | 流程表单模板读取和表单实例提交，供 OA 审批类业务入口复用 |
 
 `auth.js` 返回的用户快照会保留会话级权限字段，例如 `allowedProjectIds` 和 `allowedDepts`，供 store 和路由恢复使用。
 
@@ -32,3 +33,4 @@
 - 2026-04-19: `knowledge.js` 的案例列表改为携带查询参数请求真实接口，并在模块内统一做分页/筛选整形，供案例页和详情页复用。
 - 2026-04-22: 新增 `bidAgent.js`，通过真实项目 API 接入标书写作 Agent 的 run/status/apply/review 生命周期。
 - 2026-04-24: 新增 `bidMatchScoring.js`，接入自定义投标匹配评分模型和标讯评分结果真实 API。
+- 2026-04-29: 新增 `workflowForm.js`，资质借阅申请改为通过流程表单中心提交并触发 OA。

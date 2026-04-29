@@ -39,6 +39,7 @@ import { bidResultsApi } from './modules/bidResults.js'
 import { workbenchApi } from './modules/workbench.js'
 import { bidAgentApi } from './modules/bidAgent.js'
 import { bidMatchScoringApi } from './modules/bidMatchScoring.js'
+import { workflowFormApi } from './modules/workflowForm.js'
 
 export {
   httpClient,
@@ -65,7 +66,8 @@ export {
   bidResultsApi,
   workbenchApi,
   bidAgentApi,
-  bidMatchScoringApi
+  bidMatchScoringApi,
+  workflowFormApi
 }
 
 export default {
@@ -87,5 +89,6 @@ export default {
   projectGroups: () => Promise.resolve(projectGroupsApi),
   workbench: () => Promise.resolve(workbenchApi),
   bidAgent: () => Promise.resolve(bidAgentApi),
-  bidMatchScoring: () => Promise.resolve(bidMatchScoringApi)
+  bidMatchScoring: () => Promise.resolve(bidMatchScoringApi),
+  workflowForm: () => Promise.resolve(workflowFormApi)
 }
