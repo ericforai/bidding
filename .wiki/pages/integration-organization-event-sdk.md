@@ -9,6 +9,7 @@ sources:
   - backend/src/main/java/com/xiyu/bid/entity/User.java
   - backend/src/main/java/com/xiyu/bid/dto/DataScopeConfigPayload.java
 backlinks:
+  - _index
 created: 2026-04-28
 updated: 2026-04-28
 health_checked: 2026-04-29

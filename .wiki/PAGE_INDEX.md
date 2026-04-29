@@ -28,7 +28,7 @@
 
 | slug | title | sources | updated | backlinks |
 |---|---|---:|---|---:|
-| [_index](pages/_index.md) | 西域投标管理平台知识库 | 3 | 2026-04-26 | 1 |
+| [_index](pages/_index.md) | 西域投标管理平台知识库 | 3 | 2026-04-29 | 1 |
 | [agent-sop-quickref](pages/agent-sop-quickref.md) | Agent 开发 SOP 快速参考 | 3 | 2026-04-26 | 1 |
 | [deployment](pages/deployment.md) | 部署与上线 | 10 | 2026-04-26 | 15 |
 | [overview](pages/overview.md) | 项目综述 | 7 | 2026-04-26 | 4 |
@@ -39,17 +39,17 @@
 | slug | title | sources | updated | backlinks |
 |---|---|---:|---|---:|
 | [api-openapi](pages/api-openapi.md) | OpenAPI/Swagger 接口规范 | 3 | 2026-04-25 | 6 |
-| [integration-organization-event-sdk](pages/integration-organization-event-sdk.md) | 组织架构对接 - 客户事件库 SDK 方案 | 4 | 2026-04-28 | 0 |
+| [integration-organization-event-sdk](pages/integration-organization-event-sdk.md) | 组织架构对接 - 客户事件库 SDK 方案 | 4 | 2026-04-28 | 1 |
 | [integration-wecom](pages/integration-wecom.md) | 系统集成中心 - 企业微信 | 4 | 2026-04-25 | 4 |
-| [workflow-form-center](pages/workflow-form-center.md) | 流程表单中心与泛微 OA | 5 | 2026-04-29 | 2 |
+| [workflow-form-center](pages/workflow-form-center.md) | 流程表单中心与泛微 OA | 5 | 2026-04-29 | 3 |
 
 ### module
 
 | slug | title | sources | updated | backlinks |
 |---|---|---:|---|---:|
-| [ai-capabilities](pages/ai-capabilities.md) | AI 能力 | 9 | 2026-04-24 | 8 |
-| [docinsight-engine](pages/docinsight-engine.md) | DocInsight 文档智能引擎 | 4 | 2026-04-26 | 1 |
-| [modules](pages/modules.md) | 模块目录 | 11 | 2026-04-24 | 15 |
+| [ai-capabilities](pages/ai-capabilities.md) | AI 能力 | 9 | 2026-04-29 | 8 |
+| [docinsight-engine](pages/docinsight-engine.md) | DocInsight 文档智能引擎 | 4 | 2026-04-29 | 1 |
+| [modules](pages/modules.md) | 模块目录 | 11 | 2026-04-29 | 15 |
 
 ### reference
 
