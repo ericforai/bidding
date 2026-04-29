@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Input: release environment variables, MySQL-first database engine selection, admin bootstrap credentials, and optional rehearsal overrides
-# Output: shared MySQL 8.0 defaults plus explicit legacy PostgreSQL rehearsal compatibility for release scripts
+# Input: release environment variables, MySQL 8.0 rehearsal configuration, admin bootstrap credentials, and optional rehearsal overrides
+# Output: shared MySQL 8.0 defaults for release scripts
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -28,10 +28,8 @@ REPORT_DIR="$(resolve_path "${REPORT_DIR:-$ROOT_DIR/docs/reports}")"
 STATE_DIR="$(resolve_path "${STATE_DIR:-$ROOT_DIR/.rehearsal}")"
 
 DB_ENGINE="${DB_ENGINE:-mysql}"
-POSTGRES_CONTAINER_NAME="${POSTGRES_CONTAINER_NAME:-xiyu-bid-rehearsal-postgres}"
 MYSQL_CONTAINER_NAME="${MYSQL_CONTAINER_NAME:-xiyu-bid-rehearsal-mysql}"
 REDIS_CONTAINER_NAME="${REDIS_CONTAINER_NAME:-xiyu-bid-rehearsal-redis}"
-POSTGRES_PORT="${POSTGRES_PORT:-55432}"
 MYSQL_PORT="${MYSQL_PORT:-53306}"
 REDIS_PORT="${REDIS_PORT:-56379}"
 BACKEND_PORT="${BACKEND_PORT:-18080}"
@@ -55,18 +53,13 @@ UAT_WEB_BASE_URL="${UAT_WEB_BASE_URL:-http://127.0.0.1:${FRONTEND_PORT}}"
 PLAYWRIGHT_API_BASE_URL="${PLAYWRIGHT_API_BASE_URL:-$UAT_API_BASE_URL}"
 
 case "$DB_ENGINE" in
-  postgres)
-    DB_PORT="${DB_PORT:-$POSTGRES_PORT}"
-    DEFAULT_SPRING_PROFILES_ACTIVE="prod"
-    DEFAULT_DB_URL="jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}"
-    ;;
   mysql)
     DB_PORT="${DB_PORT:-$MYSQL_PORT}"
     DEFAULT_SPRING_PROFILES_ACTIVE="prod,mysql"
     DEFAULT_DB_URL="jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai"
     ;;
   *)
-    printf 'Unsupported DB_ENGINE: %s. Use postgres or mysql.\n' "$DB_ENGINE" >&2
+    printf 'Unsupported DB_ENGINE: %s. Use mysql.\n' "$DB_ENGINE" >&2
     exit 1
     ;;
 esac
@@ -74,7 +67,6 @@ esac
 SPRING_PROFILES_ACTIVE="${SPRING_PROFILES_ACTIVE:-$DEFAULT_SPRING_PROFILES_ACTIVE}"
 DB_URL="${DB_URL:-$DEFAULT_DB_URL}"
 
-validate_port "POSTGRES_PORT" "$POSTGRES_PORT"
 validate_port "MYSQL_PORT" "$MYSQL_PORT"
 validate_port "REDIS_PORT" "$REDIS_PORT"
 validate_port "BACKEND_PORT" "$BACKEND_PORT"
@@ -82,7 +74,7 @@ validate_port "FRONTEND_PORT" "$FRONTEND_PORT"
 validate_port "DB_PORT" "$DB_PORT"
 
 export ROOT_DIR BACKEND_DIR REPORT_DIR STATE_DIR
-export DB_ENGINE POSTGRES_CONTAINER_NAME MYSQL_CONTAINER_NAME REDIS_CONTAINER_NAME POSTGRES_PORT MYSQL_PORT REDIS_PORT BACKEND_PORT FRONTEND_PORT
+export DB_ENGINE MYSQL_CONTAINER_NAME REDIS_CONTAINER_NAME MYSQL_PORT REDIS_PORT BACKEND_PORT FRONTEND_PORT
 export DB_HOST DB_PORT DB_NAME DB_USER DB_USERNAME DB_PASSWORD MYSQL_ROOT_PASSWORD DB_URL JWT_SECRET SPRING_PROFILES_ACTIVE REDIS_HOST
 export CORS_ALLOWED_ORIGINS
 export PLATFORM_ENCRYPTION_KEY UAT_TEST_PASSWORD ADMIN_PASSWORD UAT_API_BASE_URL UAT_WEB_BASE_URL PLAYWRIGHT_API_BASE_URL

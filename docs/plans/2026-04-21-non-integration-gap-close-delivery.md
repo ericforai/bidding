@@ -169,8 +169,8 @@ API：
 
 数据迁移：
 
-- [V72__non_integration_gap_closure_schema.sql](/Users/user/xiyu/xiyu-bid-poc/.worktrees/integration/backend/src/main/resources/db/migration/V72__non_integration_gap_closure_schema.sql)
-- [V73__create_project_quality_tables.sql](/Users/user/xiyu/xiyu-bid-poc/.worktrees/integration/backend/src/main/resources/db/migration/V73__create_project_quality_tables.sql)
+- [V72__non_integration_gap_closure_schema.sql](/Users/user/xiyu/xiyu-bid-poc/.worktrees/integration/backend/src/main/resources/db/migration-mysql/V72__non_integration_gap_closure_schema.sql)
+- [V73__create_project_quality_tables.sql](/Users/user/xiyu/xiyu-bid-poc/.worktrees/integration/backend/src/main/resources/db/migration-mysql/V73__create_project_quality_tables.sql)
 
 ## 4. 关键测试与验证
 

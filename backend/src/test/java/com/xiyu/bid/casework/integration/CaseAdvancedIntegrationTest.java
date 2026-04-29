@@ -176,7 +176,7 @@ class CaseAdvancedIntegrationTest {
                 .visibility("INTERNAL")
                 .tags(List.of("智慧园区", "政务"))
                 .highlights(List.of("联动审批"))
-                .technologies(List.of("Vue", "Spring Boot", "PostgreSQL"))
+                .technologies(List.of("Vue", "Spring Boot", "MySQL"))
                 .viewCount(9L)
                 .useCount(1L)
                 .build());
@@ -208,7 +208,7 @@ class CaseAdvancedIntegrationTest {
                 .visibility("INTERNAL")
                 .tags(List.of("智慧园区", "政务"))
                 .highlights(List.of("统一门户", "一网统管", "跨部门联动"))
-                .technologies(List.of("Vue", "Spring Boot", "PostgreSQL"))
+                .technologies(List.of("Vue", "Spring Boot", "MySQL"))
                 .viewCount(66L)
                 .useCount(3L)
                 .build();

@@ -1,6 +1,6 @@
 -- V94 WeCom push notification adaptation (MySQL variant)
 --
--- PostgreSQL, MySQL/InnoDB, and H2 all allow multiple NULL values in a UNIQUE
+-- MySQL/InnoDB and H2 allow multiple NULL values in a UNIQUE
 -- index here, while enforcing uniqueness for non-null wecom_user_id values.
 
 ALTER TABLE users ADD COLUMN wecom_user_id VARCHAR(64);

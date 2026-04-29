@@ -229,14 +229,14 @@ if (keyFromEnv == null || keyFromEnv.trim().isEmpty()) {
 - [ ] 配置生产环境变量
   ```bash
   export JWT_SECRET="your-jwt-secret-at-least-32-chars"
-  export DATABASE_URL="postgresql://prod-db:5432/xiyubid"
+  export DB_URL="jdbc:mysql://prod-db:3306/xiyu_bid?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai"
   export REDIS_URL="redis://prod-redis:6379"
   export PLATFORM_ACCOUNT_ENCRYPTION_KEY="prod-encryption-key"
   export CORS_ALLOWED_ORIGINS="https://yourdomain.com"
   ```
 
 - [ ] 配置生产数据库
-  - PostgreSQL 15+
+  - MySQL 8.0+
   - 连接池配置
   - 备份策略
 

@@ -33,9 +33,9 @@ class TenderTaskClaimLockTest {
     }
 
     @Test
-    void tryAcquire_shouldSkipMysqlAdvisoryLockForPostgres() {
+    void tryAcquire_shouldSkipMysqlAdvisoryLockForNonMysql() {
         when(jdbcTemplate.execute(ArgumentMatchers.<ConnectionCallback<String>>any()))
-                .thenReturn("PostgreSQL");
+                .thenReturn("H2");
 
         assertTrue(claimLock.tryAcquire());
         claimLock.release();

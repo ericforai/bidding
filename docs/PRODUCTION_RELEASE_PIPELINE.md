@@ -113,7 +113,7 @@ Go / No-Go 口径：
 - 发布脚本兼容历史变量 `DB_USER`；未设置时会从 `DB_USERNAME` 读取
 - 可选 `DB_URL`，用于覆盖完整 JDBC URL
 
-当前 baseline 为 `B73__full_schema_baseline.sql`。历史 PostgreSQL 路径仅保留兼容，不再作为默认发布口径。
+当前 baseline 为 `B73__full_schema_baseline.sql`。旧数据库路径已退出发布支持范围，生产、演练、备份和恢复只按 MySQL 8.0 口径执行。
 
 本地发布演练可用：
 

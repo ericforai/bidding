@@ -39,7 +39,7 @@
 ### Task 2: Create SQL migration for resource contracts
 
 **Files:**
-- Create: `backend/src/main/resources/db/migration/V1__resources_contracts.sql`
+- Create: `backend/src/main/resources/db/migration-mysql/V1__resources_contracts.sql`
 - Read for alignment: `backend/src/main/java/com/xiyu/bid/resources/entity/Expense.java`
 - Read for alignment: `backend/src/main/java/com/xiyu/bid/resources/entity/ExpenseApprovalRecord.java`
 - Read for alignment: `backend/src/main/java/com/xiyu/bid/resources/entity/BarCertificate.java`
@@ -67,7 +67,7 @@
 - Create `bar_certificates` with columns matching the entity and index on `bar_asset_id`.
 - Create `bar_certificate_borrow_records` with columns matching the entity and indexes on `certificate_id` and `status`.
 
-**Step 4: Keep SQL PostgreSQL-safe and idempotent enough for rolling upgrades**
+**Step 4: Keep SQL MySQL-safe and idempotent enough for rolling upgrades**
 - Use `IF NOT EXISTS` for additive operations where possible.
 - Avoid dropping or rewriting existing tables.
 - Do not attempt to create legacy tables unrelated to this feature.

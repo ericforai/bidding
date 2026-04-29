@@ -4,7 +4,7 @@
 
 MySQL 8.0 是当前生产主线数据库部署路径。
 
-历史 PostgreSQL 数据迁移不在本文档范围内，按专项迁移方案执行。
+旧数据库路径已退出部署支持范围；如仍有历史库，按一次性专项迁移或归档处理，不再作为应用运行路径维护。
 
 ## 运行配置
 
@@ -26,7 +26,7 @@ DB_PASSWORD=<mysql-password>
 
 - MySQL 使用 `classpath:db/migration-mysql`。
 - 当前 MySQL baseline 为 `B73__full_schema_baseline.sql`。
-- 历史 PostgreSQL 路径仅作兼容保留，不再作为默认发布路径。
+- 旧迁移路径不再维护；新增迁移只允许进入 `db/migration-mysql`。
 
 ## 本地演练
 

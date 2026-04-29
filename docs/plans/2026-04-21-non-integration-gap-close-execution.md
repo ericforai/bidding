@@ -94,7 +94,7 @@
 - `src/api/modules/ai/**`
 - `src/components/project/detail/**`
 - `backend/src/main/java/com/xiyu/bid/projectquality/**`
-- `backend/src/main/resources/db/migration/**`
+- `backend/src/main/resources/db/migration-mysql/**`
 
 ## 架构约束
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Input: release environment variables, MySQL 8.0 rehearsal configuration, optional legacy PostgreSQL selection, UAT/report paths, and Playwright bootstrap controls
+# Input: release environment variables, MySQL 8.0 rehearsal configuration, UAT/report paths, and Playwright bootstrap controls
 # Output: rehearsal lifecycle using the release stack, UAT execution, backup, restore verification, and startup diagnostics
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
@@ -63,18 +63,10 @@ printf '\n==> Running browser E2E gate\n'
 PLAYWRIGHT_DISABLE_API_BOOTSTRAP=1 npm run test:e2e:commercial
 
 printf '\n==> Creating rehearsal backup\n'
-if [[ "$DB_ENGINE" == "mysql" ]]; then
-  export MYSQL_CONTAINER_NAME
-else
-  export PG_CONTAINER_NAME="$POSTGRES_CONTAINER_NAME"
-fi
+export MYSQL_CONTAINER_NAME
 export BACKUP_DIR="$STATE_DIR/backups"
 bash "$ROOT_DIR/scripts/release/backup-db.sh"
-if [[ "$DB_ENGINE" == "mysql" ]]; then
-  BACKUP_FILE="$(ls -1t "$BACKUP_DIR"/*.sql | head -n 1)"
-else
-  BACKUP_FILE="$(ls -1t "$BACKUP_DIR"/*.dump | head -n 1)"
-fi
+BACKUP_FILE="$(ls -1t "$BACKUP_DIR"/*.sql | head -n 1)"
 printf 'Backup file: %s\n' "$BACKUP_FILE"
 
 printf '\n==> Creating post-backup mutation marker\n'

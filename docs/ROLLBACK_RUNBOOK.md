@@ -36,7 +36,7 @@ MySQL 8.0 环境恢复也必须显式声明数据库引擎：
 CONFIRM_RESTORE=YES DB_ENGINE=mysql bash scripts/release/restore-db.sh <backup-file.sql>
 ```
 
-如果本机没有 `mysqldump/mysql`，可设置 `MYSQL_CONTAINER_NAME=<mysql-container>` 使用 docker exec 回退路径。历史 PostgreSQL 环境如需恢复，请按专项迁移回退手册执行。
+如果本机没有 `mysqldump/mysql`，可设置 `MYSQL_CONTAINER_NAME=<mysql-container>` 使用 docker exec 回退路径。
 
 ## Verification After Rollback
 - `GET /actuator/health` 返回 `UP`
