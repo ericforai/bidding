@@ -9,7 +9,7 @@
 ## Phase 2: Structural Chunking & Evidence Anchoring
 - [x] Task: Implement Java "Structural Chunker" using Sidecar headings and character offsets.
 - [x] Task: Update AI Extraction Logic to save "Source Excerpts" and "Section Paths" for every field.
-- [~] Task: Write Tests (Evaluate extraction quality improvements via Markdown structure).
+- [ ] Task: Write Tests (Evaluate extraction quality improvements via Markdown structure).
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Evidence capture' (Protocol in workflow.md)
 
 ## Phase 3: Pure-Java Business Guardrails
