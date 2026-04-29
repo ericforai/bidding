@@ -128,6 +128,11 @@ management:
       export:
         enabled: true
 
+webhook:
+  crm:
+    # 共享密钥；fail-closed —— 未设置或 header 不匹配时 /api/webhooks/crm/** 一律 401
+    token: ${WEBHOOK_CRM_TOKEN:}
+
 wecom:
   api:
     base-url: https://qyapi.weixin.qq.com

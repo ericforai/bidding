@@ -1,9 +1,10 @@
-// Input: REST requests from authenticated users
+// Input: REST requests from authenticated users (UserDetails principal)
 // Output: JSON responses with {success,data} envelope for subscribe flows
 // Pos: Controller/订阅 REST 控制器
 package com.xiyu.bid.subscription.controller;
 
 import com.xiyu.bid.entity.User;
+import com.xiyu.bid.service.AuthService;
 import com.xiyu.bid.subscription.core.SubscriptionPolicy;
 import com.xiyu.bid.subscription.core.SubscriptionPolicy.ValidationResult;
 import com.xiyu.bid.subscription.dto.SubscriptionRequest;
@@ -15,7 +16,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,15 +39,18 @@ public class SubscriptionController {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final SubscriptionApplicationService service;
+    private final AuthService authService;
 
-    public SubscriptionController(SubscriptionApplicationService service) {
+    public SubscriptionController(SubscriptionApplicationService service, AuthService authService) {
         this.service = service;
+        this.authService = authService;
     }
 
     @PostMapping("/subscriptions")
     public ResponseEntity<Map<String, Object>> subscribe(
         @Valid @RequestBody SubscriptionRequest request,
-        @AuthenticationPrincipal User currentUser) {
+        @AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = resolveCurrentUser(userDetails);
         SubscribeResult result = service.subscribe(
             currentUser.getId(), request.targetEntityType(), request.targetEntityId());
         if (!result.success()) {
@@ -62,7 +69,8 @@ public class SubscriptionController {
     @DeleteMapping("/subscriptions")
     public ResponseEntity<Map<String, Object>> unsubscribe(
         @Valid @RequestBody SubscriptionRequest request,
-        @AuthenticationPrincipal User currentUser) {
+        @AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = resolveCurrentUser(userDetails);
         int affected = service.unsubscribe(
             currentUser.getId(), request.targetEntityType(), request.targetEntityId());
         return ResponseEntity.ok(Map.of(
@@ -73,9 +81,10 @@ public class SubscriptionController {
 
     @GetMapping("/subscriptions/me")
     public ResponseEntity<Map<String, Object>> listMine(
-        @AuthenticationPrincipal User currentUser,
+        @AuthenticationPrincipal UserDetails userDetails,
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size) {
+        User currentUser = resolveCurrentUser(userDetails);
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         int safePage = Math.max(page, 0);
         Page<SubscriptionSummary> result = service.listMySubscriptions(
@@ -94,7 +103,8 @@ public class SubscriptionController {
     public ResponseEntity<Map<String, Object>> checkSubscribed(
         @PathVariable String entityType,
         @PathVariable Long entityId,
-        @AuthenticationPrincipal User currentUser) {
+        @AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = resolveCurrentUser(userDetails);
         ValidationResult validation = SubscriptionPolicy.validate(currentUser.getId(), entityType, entityId);
         if (!validation.isValid()) {
             return ResponseEntity.badRequest().body(Map.of(
@@ -108,5 +118,20 @@ public class SubscriptionController {
             "success", true,
             "data", Map.of("subscribed", subscribed)
         ));
+    }
+
+    private User resolveCurrentUser(UserDetails userDetails) {
+        if (userDetails == null) {
+            throw new AuthenticationServiceException("UserDetails cannot be null");
+        }
+        String username = userDetails.getUsername();
+        if (username == null || username.trim().isEmpty()) {
+            throw new AuthenticationServiceException("Username cannot be null or empty");
+        }
+        try {
+            return authService.resolveUserByUsername(username.trim());
+        } catch (UsernameNotFoundException ex) {
+            throw new AuthenticationServiceException("Authenticated user not found: " + username, ex);
+        }
     }
 }

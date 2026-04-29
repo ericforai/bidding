@@ -17,6 +17,9 @@ export JWT_SECRET="${JWT_SECRET:-xiyu-bid-poc-local-dev-secret-key-please-change
 export DB_USERNAME="${DB_USERNAME:-xiyu_user}"
 export DB_PASSWORD="${DB_PASSWORD:-XiyuDB!2026}"
 export CORS_ALLOWED_ORIGINS="${CORS_ALLOWED_ORIGINS:-http://localhost:1314,http://127.0.0.1:1314}"
+# CRM webhook 共享密钥；fail-closed —— 未设置或不匹配时 /api/webhooks/crm/** 一律 401。
+# 生产部署必须通过真实环境变量注入，不得依赖以下本地默认值。
+export WEBHOOK_CRM_TOKEN="${WEBHOOK_CRM_TOKEN:-xiyu-bid-poc-local-dev-crm-webhook-token-change-in-prod}"
 
 # 服务端口（默认 18080，与前端和文档保持一致）
 SERVER_PORT="${SERVER_PORT:-18080}"
