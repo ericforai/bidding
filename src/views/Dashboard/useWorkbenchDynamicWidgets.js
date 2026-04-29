@@ -63,6 +63,11 @@ export function useWorkbenchDynamicWidgets({ state, actions }) {
       error: state.processesError.value,
     },
     ActivityList: { activities: state.activities.value },
+    MetricCards: {
+      metrics: state.metrics.value,
+      loading: state.metricsLoading.value,
+      error: state.metricsError.value,
+    },
     PriorityTodos: {
       todos: state.priorityTodos.value,
       error: state.todosError.value,
@@ -90,7 +95,11 @@ export function useWorkbenchDynamicWidgets({ state, actions }) {
     TenderList: { 'view-all': actions.viewBidding, 'tender-click': actions.handleTenderClick },
     TechnicalTaskList: { 'task-change': actions.handleTaskComplete },
     ReviewList: { review: actions.handleReview },
-    ProjectList: { 'view-all': actions.viewProject, 'project-click': actions.handleProjectClick },
+    ProjectList: {
+      'view-all': actions.viewProject,
+      'project-click': actions.handleProjectClick,
+      'share-click': actions.handleShareClick,
+    },
     ApprovalList: {
       approve: actions.handleApprove,
       reject: actions.handleReject,
@@ -114,6 +123,4 @@ export function useWorkbenchDynamicWidgets({ state, actions }) {
   }))
 
   return { widgetRegistry, widgetProps, widgetListeners }
-}
-widgetProps, widgetListeners }
 }
