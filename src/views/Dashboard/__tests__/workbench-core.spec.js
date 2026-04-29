@@ -5,6 +5,7 @@ import {
   buildQualificationBorrowPayload,
   buildQuickExpensePayload,
   buildSupportRequestPayload,
+  cleanDisplayText,
   createDefaultSupportRequestForm,
   createDefaultQuickExpenseForm,
   filterProjectsByRole,
@@ -124,6 +125,25 @@ describe('workbench project and todo core', () => {
 })
 
 describe('workbench approval and support core', () => {
+  it('cleans mojibake project names before showing process/activity text', () => {
+    const mojibakeProject = 'QAå¿«é€Ÿå‘èµ·æµ‹è¯•é¡¹ç›®'
+
+    expect(cleanDisplayText(mojibakeProject)).toBe('QA快速发起测试项目')
+    expect(normalizeProcess({
+      id: 8,
+      projectName: mojibakeProject,
+      typeName: 'bid_support',
+      title: `${mojibakeProject} - 标书支持申请`,
+      approvalType: 'bid_support',
+      status: 'PENDING',
+      description: 'QA验证：请协助准备技术标和商务响应材料',
+      submitTime: '2026-04-25T11:53:07.59642',
+    })).toMatchObject({
+      title: 'QA快速发起测试项目 - 标书支持申请',
+      description: 'QA验证：请协助准备技术标和商务响应材料',
+    })
+  })
+
   it('normalizes pending approval and my process DTOs', () => {
     expect(normalizePendingApproval({
       id: 1,

@@ -5,11 +5,61 @@
 
 import { formatTodoDeadline } from '@/views/Dashboard/workbench-formatters.js'
 
+const WINDOWS_1252_BYTES = new Map([
+  ['€', 0x80], ['‚', 0x82], ['ƒ', 0x83], ['„', 0x84], ['…', 0x85],
+  ['†', 0x86], ['‡', 0x87], ['ˆ', 0x88], ['‰', 0x89], ['Š', 0x8A],
+  ['‹', 0x8B], ['Œ', 0x8C], ['Ž', 0x8E], ['‘', 0x91], ['’', 0x92],
+  ['“', 0x93], ['”', 0x94], ['•', 0x95], ['–', 0x96], ['—', 0x97],
+  ['˜', 0x98], ['™', 0x99], ['š', 0x9A], ['›', 0x9B], ['œ', 0x9C],
+  ['ž', 0x9E], ['Ÿ', 0x9F],
+])
+
+const MOJIBAKE_SIGNAL = /[ÃÂÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ€œŒŠšŸ¿¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾]/
+const CJK_TEXT = /[\u3400-\u9fff]/
+const APPROVAL_TYPE_LABELS = {
+  bid_support: '标书支持申请',
+  technical_support: '技术支持申请',
+  project_review: '立项审批',
+  expense: '费用审批',
+  budget: '预算审批',
+}
+
+function windows1252Bytes(value) {
+  const bytes = []
+  for (const char of value) {
+    const byte = WINDOWS_1252_BYTES.get(char) ?? char.charCodeAt(0)
+    if (byte > 0xFF) return null
+    bytes.push(byte)
+  }
+  return bytes
+}
+
+export function cleanDisplayText(value, fallback = '') {
+  if (value == null) return fallback
+  const text = String(value)
+  if (!MOJIBAKE_SIGNAL.test(text)) return text
+
+  const bytes = windows1252Bytes(text)
+  if (!bytes) return fallback || text.replace(MOJIBAKE_SIGNAL, '').trim()
+
+  try {
+    const decoded = new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(bytes))
+    return CJK_TEXT.test(decoded) ? decoded : text
+  } catch {
+    return fallback || text.replace(MOJIBAKE_SIGNAL, '').trim()
+  }
+}
+
+function normalizeApprovalTypeName(value, approvalType) {
+  const normalized = String(value || approvalType || '').trim()
+  return APPROVAL_TYPE_LABELS[normalized] || cleanDisplayText(normalized)
+}
+
 export function normalizeApiTodo(task) {
   const priority = String(task?.priority || 'MEDIUM').toLowerCase()
   return {
     id: task?.id,
-    title: task?.title || '',
+    title: cleanDisplayText(task?.title || ''),
     priority,
     deadline: formatTodoDeadline(task?.dueDate),
     done: task?.status === 'COMPLETED',
@@ -24,9 +74,14 @@ export function mergePriorityTodos(alertTodos = [], apiTodos = [], limit = 8) {
 }
 
 export function normalizePendingApproval(item) {
+  const projectName = cleanDisplayText(item?.projectName || '')
+  const typeName = normalizeApprovalTypeName(item?.typeName, item?.approvalType)
+  const fallbackTitle = `${projectName} - ${typeName}`.trim()
   return {
     ...item,
-    title: item?.title || `${item?.projectName || ''} - ${item?.typeName || ''}`,
+    projectName,
+    typeName,
+    title: cleanDisplayText(item?.title || fallbackTitle, fallbackTitle),
     type: item?.approvalType || 'project_review',
     department: item?.applicantDept || '投标管理部',
     time: item?.time || item?.submitTime || '',
@@ -42,18 +97,21 @@ export function approvalStatusToProcessStatus(status) {
 
 export function normalizeProcess(item) {
   const normalizedStatus = String(item?.status || '').toUpperCase()
+  const projectName = cleanDisplayText(item?.projectName || '')
+  const typeName = normalizeApprovalTypeName(item?.typeName, item?.approvalType)
+  const fallbackTitle = `${projectName} - ${typeName}`.trim()
   return {
     id: item?.id,
-    title: item?.title || `${item?.projectName || ''} - ${item?.typeName || ''}`,
+    title: cleanDisplayText(item?.title || fallbackTitle, fallbackTitle || '当前流程'),
     status: approvalStatusToProcessStatus(item?.status),
-    description: item?.description || '暂无说明',
+    description: cleanDisplayText(item?.description || '暂无说明', '暂无说明'),
     progress: normalizedStatus === 'APPROVED' ? 100 : normalizedStatus === 'PENDING' ? 55 : 0,
     time: item?.submittedAt || item?.submitTime || item?.time || '',
   }
 }
 
 export function normalizeSupportProject(item) {
-  return { id: Number(item?.id), name: item?.name || item?.projectName || `项目#${item?.id}` }
+  return { id: Number(item?.id), name: cleanDisplayText(item?.name || item?.projectName || `项目#${item?.id}`) }
 }
 
 export function normalizeSupportProjects(items) {
