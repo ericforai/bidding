@@ -1,4 +1,10 @@
 -- V94 WeCom push notification adaptation (MySQL variant)
+--
+-- Note on NULL semantics divergence vs PostgreSQL variant:
+--   PostgreSQL uses a partial index `WHERE wecom_user_id IS NOT NULL`.
+--   MySQL/InnoDB treats every NULL as distinct in a UNIQUE index, so multiple
+--   rows with wecom_user_id = NULL are already allowed — the partial clause is
+--   unnecessary and unsupported pre-MySQL 8.0. Functional parity preserved.
 
 ALTER TABLE users ADD COLUMN wecom_user_id VARCHAR(64);
 CREATE UNIQUE INDEX uk_users_wecom_user_id ON users(wecom_user_id);

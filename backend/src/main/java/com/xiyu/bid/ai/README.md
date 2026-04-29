@@ -29,8 +29,7 @@ AI 分析能力的后端入口，负责标讯分析、项目分析与 AI Provide
 | `dto/AiAnalysisResponse.java` | DTO | AI 分析响应 |
 | `dto/DimensionScore.java` | DTO | 维度评分结果 |
 | `dto/ProjectAnalysisDTO.java` | DTO | 项目分析结果 |
-| `config/` | 子目录 | AI 异步执行配置边界 |
-| `config/AsyncConfiguration.java` | Config | 异步执行配置 |
+| `config/` | 子目录 | 包边界声明（异步线程池由顶层 `config/AsyncConfig.java` 提供） |
 
 ## 纯核心边界
 
