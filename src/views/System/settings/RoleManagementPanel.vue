@@ -112,26 +112,7 @@ const dialogVisible = ref(false)
 const saving = ref(false)
 const form = ref(emptyForm())
 
-<<<<<<< HEAD
 const menuOptions = roleMenuOptions
-=======
-const menuOptions = [
-  { value: 'dashboard', label: '工作台' },
-  { value: 'dashboard.quickStart', label: '工作台快速发起' },
-  { value: 'dashboard:view_tender_list', label: '工作台：标讯列表' },
-  { value: 'dashboard:view_project_list', label: '工作台：负责项目' },
-  { value: 'dashboard:view_technical_task', label: '工作台：技术任务' },
-  { value: 'dashboard:view_review_list', label: '工作台：待评审列表' },
-  { value: 'dashboard:view_team_task', label: '工作台：团队任务' },
-  { value: 'dashboard:view_global_projects', label: '工作台：全院重点项目' },
-  { value: 'bidding', label: '标讯中心' },
-  { value: 'project', label: '投标项目' },
-  { value: 'knowledge', label: '知识库' },
-  { value: 'resource', label: '资源管理' },
-  { value: 'analytics', label: '数据分析' },
-  { value: 'settings', label: '系统设置' }
-]
->>>>>>> f6f2ec8a (fix(conductor): Apply review suggestions for track '动态工作台配置体系与数据域权限')
 
 function emptyForm() {
   return {
