@@ -43,7 +43,7 @@ class TaskDeliverableContractTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(new ProjectWorkflowController(
-                null, taskDeliverableService, bidProcessService))
+                null, null, taskDeliverableService, bidProcessService))
                 .setControllerAdvice(new com.xiyu.bid.exception.GlobalExceptionHandler())
                 .build();
         objectMapper = new ObjectMapper().findAndRegisterModules();

@@ -32,7 +32,7 @@ public abstract class BaseOpenAiDocumentAnalyzer<T> implements DocumentAnalyzer 
         for (int i = 0; i < chunks.size(); i++) {
             DocumentChunk chunk = chunks.get(i);
             String prompt = buildPrompt(input, chunk, i + 1, chunks.size());
-            T result = requestAi(prompt);
+            T result = requestAi(prompt, input);
             partResults.add(result);
         }
         
@@ -42,6 +42,10 @@ public abstract class BaseOpenAiDocumentAnalyzer<T> implements DocumentAnalyzer 
     protected abstract String buildPrompt(DocumentAnalysisInput input, DocumentChunk chunk, int index, int total);
     
     protected abstract T requestAi(String prompt);
+
+    protected T requestAi(String prompt, DocumentAnalysisInput input) {
+        return requestAi(prompt);
+    }
     
     protected abstract DocumentAnalysisResult mergeAndMap(DocumentAnalysisInput input, List<T> results);
 

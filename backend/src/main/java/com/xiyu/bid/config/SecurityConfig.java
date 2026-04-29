@@ -70,6 +70,7 @@ public class SecurityConfig {
             "/api/auth/sessions",
             "/api/auth/verify-email/**",
             "/api/public/**",
+            "/api/integrations/organization/events",
             "/api/system/runtime-mode",
             "/api/integrations/oa/weaver/callback",
             "/actuator/health",
@@ -150,7 +151,10 @@ public class SecurityConfig {
             "Authorization",
             "Content-Type",
             "Accept",
-            "X-Requested-With"
+            "X-Requested-With",
+            "EHSY-TraceID",
+            "EHSY-SRCAPP",
+            "EHSY-Signature"
         ));
 
         configuration.setAllowCredentials(true);

@@ -1,82 +1,102 @@
+<!-- Input: user data, system roles, department options, and action handlers
+Output: presentational Role Management panel for administrative settings
+Pos: src/views/System/settings/ - System settings panels
+一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。 -->
 <template>
-  <el-card shadow="never" class="org-card">
-    <template #header>
-      <div class="panel-header">
-        <div>
-          <h3>角色维护</h3>
-          <p>角色决定菜单权限、默认数据范围，以及任务分配候选人的职责过滤。</p>
-        </div>
-        <el-button type="primary" @click="openCreate">新增角色</el-button>
+  <div class="role-management-panel">
+    <div class="panel-header">
+      <div class="header-content">
+        <h3 class="panel-title">角色权限管理</h3>
+        <p class="panel-desc">定义系统角色及其对应的功能菜单访问权限</p>
       </div>
-    </template>
+      <el-button type="primary" plain @click="handleAddRole">
+        <el-icon><Plus /></el-icon>
+        新增角色
+      </el-button>
+    </div>
 
-    <el-empty v-if="roles.length === 0" description="暂无角色，请新增角色" />
-    <el-table v-else :data="roles" border stripe>
-      <el-table-column prop="name" label="角色名称" min-width="130" />
-      <el-table-column prop="code" label="角色代码" min-width="120" />
-      <el-table-column prop="dataScope" label="数据范围" width="130">
-        <template #default="{ row }">{{ scopeText(row.dataScope) }}</template>
-      </el-table-column>
-      <el-table-column prop="userCount" label="用户数" width="90" />
-      <el-table-column label="状态" width="90">
+    <el-table :data="roles" style="width: 100%" border>
+      <el-table-column prop="name" label="角色名称" width="180" />
+      <el-table-column prop="code" label="权限编码" width="150">
         <template #default="{ row }">
-          <el-tag :type="row.enabled ? 'success' : 'info'">{{ row.enabled ? '启用' : '停用' }}</el-tag>
+          <el-tag size="small" type="info">{{ row.code }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="240">
+      <el-table-column prop="description" label="角色描述" show-overflow-tooltip />
+      <el-table-column label="菜单权限" min-width="300">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-          <el-button link :type="row.enabled ? 'warning' : 'success'" @click="toggle(row)">
-            {{ row.enabled ? '停用' : '启用' }}
-          </el-button>
-          <el-button v-if="row.isSystem" link type="info" @click="reset(row)">恢复默认</el-button>
+          <div class="permission-tags">
+            <el-tag
+              v-for="perm in row.menuPermissions"
+              :key="perm"
+              size="small"
+              class="perm-tag"
+            >
+              {{ getMenuLabel(perm) }}
+            </el-tag>
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="180" fixed="right">
+        <template #default="{ row }">
+          <el-button-group>
+            <el-button link type="primary" @click="handleEditRole(row)">编辑</el-button>
+            <el-button link type="danger" @click="toggleHandler(row)">
+              {{ row.enabled ? '禁用' : '启用' }}
+            </el-button>
+            <el-button link type="warning" @click="resetHandler(row)">重置</el-button>
+          </el-button-group>
         </template>
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="dialogVisible" :title="form.id ? '编辑角色' : '新增角色'" width="640px">
-      <el-form :model="form" label-width="110px">
-        <el-form-item label="角色代码" required>
-          <el-input v-model="form.code" :disabled="Boolean(form.id)" placeholder="英文/数字/下划线" />
-        </el-form-item>
+    <!-- Role Edit Dialog -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="form.id ? '编辑角色' : '新增角色'"
+      width="600px"
+      destroy-on-close
+    >
+      <el-form :model="form" label-width="100px" class="role-form">
         <el-form-item label="角色名称" required>
-          <el-input v-model="form.name" placeholder="如 投标经理" />
+          <el-input v-model="form.name" placeholder="如：销售经理" />
+        </el-form-item>
+        <el-form-item label="权限编码" required>
+          <el-input v-model="form.code" placeholder="如：ROLE_SALES_MGR" :disabled="!!form.id" />
         </el-form-item>
         <el-form-item label="角色描述">
-          <el-input v-model="form.description" type="textarea" :rows="2" />
+          <el-input v-model="form.description" type="textarea" rows="2" />
         </el-form-item>
-        <el-form-item label="默认数据范围">
-          <el-radio-group v-model="form.dataScope">
-            <el-radio value="all">全部数据</el-radio>
-            <el-radio value="dept">本部门</el-radio>
-            <el-radio value="deptAndSub">本部门及下级</el-radio>
-            <el-radio value="self">仅本人</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="部门白名单">
-          <el-select v-model="form.allowedDepts" multiple clearable placeholder="可选" style="width: 100%">
-            <el-option v-for="dept in deptOptions" :key="dept.value" :label="dept.label" :value="dept.value" />
+        <el-form-item label="数据范围">
+          <el-select v-model="form.dataScope" placeholder="请选择数据范围">
+            <el-option label="全部数据" value="all" />
+            <el-option label="本部门数据" value="dept" />
+            <el-option label="个人数据" value="self" />
           </el-select>
         </el-form-item>
         <el-form-item label="菜单权限">
           <el-checkbox-group v-model="form.menuPermissions">
-            <el-checkbox v-for="item in menuOptions" :key="item.value" :value="item.value">{{ item.label }}</el-checkbox>
+            <el-checkbox
+              v-for="opt in menuOptions"
+              :key="opt.value"
+              :label="opt.value"
+            >
+              {{ opt.label }}
+            </el-checkbox>
           </el-checkbox-group>
-        </el-form-item>
-        <el-form-item label="启用状态">
-          <el-switch v-model="form.enabled" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="submit">保存</el-button>
+        <el-button type="primary" :loading="saving" @click="saveRole">确定</el-button>
       </template>
     </el-dialog>
-  </el-card>
+  </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import { Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { roleMenuOptions } from '@/config/sidebar-menu'
 
@@ -101,37 +121,29 @@ function emptyForm() {
     name: '',
     description: '',
     dataScope: 'self',
-    enabled: true,
-    menuPermissions: [],
-    allowedProjects: [],
-    allowedDepts: []
+    menuPermissions: []
   }
 }
 
-const scopeText = (scope) => ({
-  all: '全部数据',
-  dept: '本部门',
-  deptAndSub: '本部门及下级',
-  self: '仅本人'
-}[scope] || scope)
+const getMenuLabel = (value) => {
+  const opt = menuOptions.find(o => o.value === value)
+  return opt ? opt.label : value
+}
 
-const openCreate = () => {
+const handleAddRole = () => {
   form.value = emptyForm()
   dialogVisible.value = true
 }
 
-const openEdit = (role) => {
+const handleEditRole = (role) => {
   form.value = {
-    ...emptyForm(),
     ...role,
-    menuPermissions: Array.isArray(role.menuPermissions) ? [...role.menuPermissions] : [],
-    allowedDepts: Array.isArray(role.allowedDepts) ? [...role.allowedDepts] : []
+    menuPermissions: Array.isArray(role.menuPermissions) ? [...role.menuPermissions] : []
   }
   dialogVisible.value = true
 }
 
-const submit = async () => {
-  if (!form.value.code.trim()) return ElMessage.warning('请填写角色代码')
+const saveRole = async () => {
   if (!form.value.name.trim()) return ElMessage.warning('请填写角色名称')
   saving.value = true
   try {
@@ -143,29 +155,37 @@ const submit = async () => {
     saving.value = false
   }
 }
-
-const toggle = (role) => props.toggleHandler(role)
-const reset = (role) => props.resetHandler(role)
 </script>
 
 <style scoped>
-.org-card {
-  border-radius: 16px;
+.role-management-panel {
+  padding: 20px;
 }
-
 .panel-header {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
   align-items: flex-start;
+  margin-bottom: 24px;
 }
-
-.panel-header h3 {
+.panel-title {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.panel-desc {
   margin: 0;
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
 }
-
-.panel-header p {
-  margin: 6px 0 0;
-  color: #667085;
+.permission-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.perm-tag {
+  margin: 2px;
+}
+.role-form {
+  padding-right: 20px;
 }
 </style>

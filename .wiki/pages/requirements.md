@@ -6,6 +6,7 @@ tags: [需求, RFP, 功能清单, 需求任务书, 追溯矩阵, 合同]
 sources:
   - .wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx
   - .wiki/sources/bidding/附件5：西域数智化投标管理平台建设项目需求任务书.docx
+  - .wiki/sources/bidding/附件6：需求功能清单.md
   - .wiki/sources/bidding/附件6：需求功能清单.xlsx
   - .wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx
   - .wiki/sources/contract/附件3-合同报价清单人工摘录.md
@@ -17,18 +18,21 @@ backlinks:
   - contract-constraints
   - dashboard-gap-analysis
   - implementation/acceptance-and-closure
+  - implementation/attachment4-gap-matrix
   - implementation/attachment4-requirement-task-book
+  - implementation/attachment6-function-list-trace
   - implementation/milestones
   - implementation/risk-register
   - implementation/sow-2026-v1-4
 created: 2026-04-15
-updated: 2026-04-28
-health_checked: 2026-04-28
+updated: 2026-04-26
+health_checked: 2026-04-26
 ---
 # 需求追溯
 
 > 本页合成自甲方正式招标文件（附件 5 需求任务书 + 附件 6 功能清单），
 > 建立需求→系统实现的追溯关系。
+> 附件 6 以人工结构化 Markdown 作为优先阅读基线，Excel 原件保留为原始来源。
 > 合同签署后，正式执行边界同步参见 [[contract-constraints]]。
 > 后续开发与产品规划的主执行基准为 [[implementation/sow-2026-v1-4]]。
 > 附件4需求任务书的完整交付核查基线参见 [[implementation/attachment4-requirement-task-book]]。

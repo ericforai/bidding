@@ -1,5 +1,7 @@
 package com.xiyu.bid.projectworkflow.integration;
 
+import com.xiyu.bid.biddraftagent.entity.BidRequirementItem;
+import com.xiyu.bid.biddraftagent.entity.BidTenderDocumentSnapshot;
 import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.projectworkflow.dto.ProjectReminderCreateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectShareLinkCreateRequest;
@@ -8,6 +10,7 @@ import com.xiyu.bid.projectworkflow.dto.ProjectTaskStatusUpdateRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -16,8 +19,11 @@ import org.springframework.test.context.ActiveProfiles;
 import com.xiyu.bid.support.NoOpPasswordEncryptionTestConfig;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -28,6 +34,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Import(NoOpPasswordEncryptionTestConfig.class)
 class ProjectWorkflowIntegrationTest extends AbstractProjectWorkflowIntegrationTest {
+
+    @SpyBean
+    private com.xiyu.bid.repository.TaskRepository taskRepositorySpy;
 
     @Test
     @WithMockUser(roles = {"ADMIN"})
@@ -129,5 +138,87 @@ class ProjectWorkflowIntegrationTest extends AbstractProjectWorkflowIntegrationT
         assertThat(projectDocumentRepository.findByProjectIdOrderByCreatedAtDesc(project.getId())).isEmpty();
         assertThat(projectReminderRepository.findByProjectIdOrderByRemindAtDesc(project.getId())).hasSize(1);
         assertThat(projectShareLinkRepository.findByProjectIdOrderByCreatedAtDesc(project.getId())).hasSize(1);
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void decomposeProjectTasks_ShouldCreateTasksFromParsedTenderRequirements() throws Exception {
+        bidTenderDocumentSnapshotRepository.save(BidTenderDocumentSnapshot.builder()
+                .projectId(project.getId())
+                .tenderId(project.getTenderId())
+                .projectDocumentId(7001L)
+                .fileName("招标文件.docx")
+                .extractedText("技术实施方案要求")
+                .profileJson("{}")
+                .extractorKey("test")
+                .analyzerKey("test")
+                .build());
+        bidRequirementItemRepository.save(BidRequirementItem.builder()
+                .projectId(project.getId())
+                .tenderId(project.getTenderId())
+                .projectDocumentId(7001L)
+                .category("technical")
+                .title("技术实施方案")
+                .content("提交平台对接和实施计划")
+                .mandatory(true)
+                .confidence(90)
+                .build());
+
+        mockMvc.perform(post("/api/projects/{projectId}/tasks/decompose", project.getId()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].name").value("技术标：技术实施方案"))
+                .andExpect(jsonPath("$.data[0].status").value("todo"));
+
+        assertThat(taskRepository.findByProjectId(project.getId()))
+                .extracting(Task::getTitle)
+                .containsExactly("技术标：技术实施方案");
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void decomposeProjectTasks_ShouldRollbackAllTasksWhenSavingFailsMidway() throws Exception {
+        bidTenderDocumentSnapshotRepository.save(BidTenderDocumentSnapshot.builder()
+                .projectId(project.getId())
+                .tenderId(project.getTenderId())
+                .projectDocumentId(7002L)
+                .fileName("招标文件.docx")
+                .extractedText("商务和技术要求")
+                .profileJson("{}")
+                .extractorKey("test")
+                .analyzerKey("test")
+                .build());
+        bidRequirementItemRepository.save(BidRequirementItem.builder()
+                .projectId(project.getId())
+                .tenderId(project.getTenderId())
+                .projectDocumentId(7002L)
+                .category("commercial")
+                .title("商务条款响应")
+                .content("完成商务偏离表")
+                .mandatory(true)
+                .confidence(90)
+                .build());
+        bidRequirementItemRepository.save(BidRequirementItem.builder()
+                .projectId(project.getId())
+                .tenderId(project.getTenderId())
+                .projectDocumentId(7002L)
+                .category("technical")
+                .title("技术实施方案")
+                .content("完成技术实施计划")
+                .mandatory(true)
+                .confidence(90)
+                .build());
+        AtomicInteger saveCount = new AtomicInteger();
+        doAnswer(invocation -> {
+            if (saveCount.incrementAndGet() == 2) {
+                throw new IllegalStateException("模拟第二个任务保存失败");
+            }
+            return invocation.callRealMethod();
+        }).when(taskRepositorySpy).save(any(Task.class));
+
+        mockMvc.perform(post("/api/projects/{projectId}/tasks/decompose", project.getId()))
+                .andExpect(status().is5xxServerError());
+
+        assertThat(taskRepository.findByProjectId(project.getId())).isEmpty();
     }
 }

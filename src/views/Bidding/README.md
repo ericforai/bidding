@@ -15,7 +15,7 @@
 | `Detail.vue` | View | 标讯详情页 |
 | `AIAnalysis.vue` | View | 标讯 AI 分析页 |
 | `CustomerOpportunityCenter.vue` | View | 客户机会中心容器页 |
-| `list/*` | View / Composable / UI | 标讯列表页局部组件、组合逻辑、样式与安全纯函数 |
+| `list/*` | View / Composable / UI | 标讯列表页局部组件、组合逻辑、样式、安全纯函数与人工录入附件识别 |
 | `detail/*` | View / Composable / UI | 标讯详情页局部组件、组合逻辑与样式 |
 | `ai-analysis/*` | View / Composable / UI | AI 分析页局部组件、组合逻辑与样式 |
 | `match-scoring/*` | UI / Pure Helper | 标讯投标匹配评分面板与展示归一化 |
@@ -24,6 +24,8 @@
 
 ## 更新记录
 
+- 2026-04-27: 标讯列表权限拆分创建与管理动作，销售/员工可人工录入标讯，但仍不可配置标讯源、删除或批量管理。
+- 2026-04-27: 人工录入标讯弹窗接入 DeepSeek/AI 文档识别，支持 doc/docx/pdf 附件解析后回填可编辑表单。
 - 2026-04-22: `List.vue` 拆为页面壳和 `list/*` 局部模块；批量领取改为服务端认证用户，删除改真实 API，标讯源密钥不再写入本地存储
 - 2026-04-22: `AIAnalysis.vue` 与 `Detail.vue` 拆为页面壳，新增 `ai-analysis/*` 与 `detail/*` 局部模块并增加行数预算门禁
 - 2026-04-24: 新增 `match-scoring/*`，标讯详情与 AI 分析页改用真实投标匹配评分结果展示。

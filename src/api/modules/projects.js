@@ -1,5 +1,5 @@
 // Input: httpClient, API mode config, project normalizers and demo adapters
-// Output: projectsApi - project list, detail, task, and lifecycle accessors
+// Output: projectsApi - project list, detail, task decomposition, and lifecycle accessors
 // Pos: src/api/modules/ - Frontend API module layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -8,6 +8,8 @@
  * 真实 API 项目访问层
  */
 import httpClient from '../client.js'
+import { apiModeFailure, demoReadonlyFailure, isDemoEntityId, isNumericId } from './projectApiGuards.js'
+import * as tenderBreakdownApi from './projectTenderBreakdown.js'
 
 function matchesProjectStatus(projectStatus, filterStatus) {
   return String(projectStatus || '').toLowerCase() === String(filterStatus || '').toLowerCase()
@@ -36,28 +38,6 @@ function applyProjectFilters(projects, params = {}) {
 
     return true
   })
-}
-
-function isNumericId(id) {
-  return /^-?\d+$/.test(String(id))
-}
-
-function isDemoEntityId(id) {
-  return Number(id) < 0
-}
-
-function apiModeFailure(entityName) {
-  return {
-    success: false,
-    message: `Current backend only supports numeric ${entityName} IDs in API mode`
-  }
-}
-
-function demoReadonlyFailure() {
-  return {
-    success: false,
-    message: 'Demo records are read-only in e2e mode'
-  }
 }
 
 function normalizeScoreDraft(draft = {}) {
@@ -99,7 +79,6 @@ export const projectsApi = {
    * 获取项目列表
    */
   async getList(params) {
-
     const response = await httpClient.get('/api/projects')
     const projects = Array.isArray(response?.data) ? response.data : []
     const data = applyProjectFilters(projects, params)
@@ -115,7 +94,6 @@ export const projectsApi = {
    * 获取项目详情
    */
   async getDetail(id) {
-
     if (!isNumericId(id)) {
       return apiModeFailure('project')
     }
@@ -138,7 +116,6 @@ export const projectsApi = {
    * 更新项目
    */
   async update(id, data) {
-
     if (!isNumericId(id)) {
       return apiModeFailure('project')
     }
@@ -154,7 +131,6 @@ export const projectsApi = {
    * 删除项目
    */
   async delete(id) {
-
     if (!isNumericId(id)) {
       return apiModeFailure('project')
     }
@@ -170,7 +146,6 @@ export const projectsApi = {
    * 获取项目任务
    */
   async getTasks(projectId) {
-
     if (!isNumericId(projectId)) {
       return apiModeFailure('project')
     }
@@ -183,7 +158,6 @@ export const projectsApi = {
   },
 
   async createTask(projectId, data) {
-
     if (!isNumericId(projectId)) {
       return apiModeFailure('project')
     }
@@ -195,8 +169,21 @@ export const projectsApi = {
     return httpClient.post(`/api/projects/${projectId}/tasks`, data)
   },
 
-  async updateTaskStatus(projectId, taskId, status) {
+  async decomposeTasks(projectId, payload) {
+    if (!isNumericId(projectId)) {
+      return apiModeFailure('project')
+    }
 
+    if (isDemoEntityId(projectId)) {
+      return demoReadonlyFailure()
+    }
+
+    return httpClient.post(`/api/projects/${projectId}/tasks/decompose`, payload, { silentError: true })
+  },
+
+  ...tenderBreakdownApi,
+
+  async updateTaskStatus(projectId, taskId, status) {
     if (!isNumericId(projectId) || !isNumericId(taskId)) {
       return apiModeFailure('task')
     }
@@ -212,7 +199,6 @@ export const projectsApi = {
    * 获取项目文档
    */
   async getDocuments(projectId) {
-
     if (!isNumericId(projectId)) {
       return apiModeFailure('project')
     }
@@ -228,7 +214,6 @@ export const projectsApi = {
    * 上传文档
    */
   async uploadDocument(projectId, formData) {
-
     if (!isNumericId(projectId)) {
       return apiModeFailure('project')
     }
@@ -246,7 +231,6 @@ export const projectsApi = {
   },
 
   async deleteDocument(projectId, documentId) {
-
     if (!isNumericId(projectId) || !isNumericId(documentId)) {
       return apiModeFailure('document')
     }
@@ -259,7 +243,6 @@ export const projectsApi = {
   },
 
   async createReminder(projectId, data) {
-
     if (!isNumericId(projectId)) {
       return apiModeFailure('project')
     }
@@ -272,7 +255,6 @@ export const projectsApi = {
   },
 
   async createShareLink(projectId, data) {
-
     if (!isNumericId(projectId)) {
       return apiModeFailure('project')
     }
@@ -285,7 +267,6 @@ export const projectsApi = {
   },
 
   async parseScoreDrafts(projectId, formData) {
-
     if (!isNumericId(projectId)) {
       return apiModeFailure('project')
     }
@@ -306,7 +287,6 @@ export const projectsApi = {
   },
 
   async getScoreDrafts(projectId) {
-
     if (!isNumericId(projectId)) {
       return apiModeFailure('project')
     }
@@ -318,7 +298,6 @@ export const projectsApi = {
   },
 
   async updateScoreDraft(projectId, draftId, payload) {
-
     if (!isNumericId(projectId) || !isNumericId(draftId)) {
       return apiModeFailure('project score draft')
     }
@@ -330,7 +309,6 @@ export const projectsApi = {
   },
 
   async generateScoreDraftTasks(projectId, draftIds) {
-
     if (!isNumericId(projectId)) {
       return apiModeFailure('project')
     }
@@ -339,7 +317,6 @@ export const projectsApi = {
   },
 
   async clearScoreDrafts(projectId) {
-
     if (!isNumericId(projectId)) {
       return apiModeFailure('project')
     }
@@ -350,7 +327,6 @@ export const projectsApi = {
   // --- Deliverable endpoints ---
 
   async getTaskDeliverables(projectId, taskId) {
-
     if (!isNumericId(projectId) || !isNumericId(taskId)) {
       return apiModeFailure('task')
     }
@@ -359,7 +335,6 @@ export const projectsApi = {
   },
 
   async createTaskDeliverable(projectId, taskId, data) {
-
     if (!isNumericId(projectId) || !isNumericId(taskId)) {
       return apiModeFailure('task')
     }
@@ -368,7 +343,6 @@ export const projectsApi = {
   },
 
   async deleteTaskDeliverable(projectId, taskId, deliverableId) {
-
     if (!isNumericId(projectId) || !isNumericId(taskId) || !isNumericId(deliverableId)) {
       return apiModeFailure('deliverable')
     }
@@ -377,7 +351,6 @@ export const projectsApi = {
   },
 
   async getDeliverableCoverage(projectId, taskId) {
-
     if (!isNumericId(projectId) || !isNumericId(taskId)) {
       return apiModeFailure('task')
     }
@@ -388,7 +361,6 @@ export const projectsApi = {
   // --- Bid submission endpoints ---
 
   async submitToBidDocument(projectId) {
-
     if (!isNumericId(projectId)) {
       return apiModeFailure('project')
     }
@@ -397,7 +369,6 @@ export const projectsApi = {
   },
 
   async getBidProcessStatus(projectId) {
-
     if (!isNumericId(projectId)) {
       return apiModeFailure('project')
     }

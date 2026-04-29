@@ -17,6 +17,10 @@ public class OpenAiBidAgentConfigurationResolver {
     private static final String DEFAULT_SETTINGS_API_KEY = "sk_xiyu_bid_server_default";
     private static final String DEFAULT_BASE_URL = "https://api.openai.com/v1";
     private static final String DEFAULT_MODEL = "gpt-5.2";
+    private static final String DEEPSEEK_PROVIDER = "deepseek";
+    private static final String DEEPSEEK_DEFAULT_BASE_URL = "https://api.deepseek.com/chat/completions";
+    private static final String DEEPSEEK_DEFAULT_MODEL = "deepseek-chat";
+    private static final String TENDER_INTAKE_USE_CASE = "tender intake document analysis";
     private static final Duration CHAT_COMPLETION_MIN_TIMEOUT = Duration.ofSeconds(90);
 
     private final SettingsService settingsService;
@@ -26,6 +30,7 @@ public class OpenAiBidAgentConfigurationResolver {
     private final String baseUrl;
     private final String model;
     private final Duration timeout;
+    private final Duration tenderIntakeTimeout;
 
     public OpenAiBidAgentConfigurationResolver(
             SettingsService pSettingsService,
@@ -34,7 +39,8 @@ public class OpenAiBidAgentConfigurationResolver {
             @Value("${ai.openai.api-key:}") String pConfiguredApiKey,
             @Value("${ai.openai.base-url:https://api.openai.com/v1}") String pBaseUrl,
             @Value("${ai.openai.model:gpt-5.2}") String pModel,
-            @Value("${ai.openai.timeout:PT30S}") Duration pTimeout
+            @Value("${ai.openai.timeout:PT30S}") Duration pTimeout,
+            @Value("${ai.deepseek.tender-intake-timeout:PT45S}") Duration pTenderIntakeTimeout
     ) {
         this.settingsService = pSettingsService;
         this.aiProviderCatalog = pAiProviderCatalog;
@@ -43,6 +49,7 @@ public class OpenAiBidAgentConfigurationResolver {
         this.baseUrl = pBaseUrl;
         this.model = pModel;
         this.timeout = pTimeout;
+        this.tenderIntakeTimeout = pTenderIntakeTimeout;
     }
 
     OpenAiBidAgentRequestConfig resolve(String useCase) {
@@ -52,6 +59,22 @@ public class OpenAiBidAgentConfigurationResolver {
                 .orElseThrow(() -> new IllegalStateException(
                         "ai.openai.api-key must be configured for " + useCase
                 ));
+    }
+
+    OpenAiBidAgentRequestConfig resolveTenderIntake() {
+        return deepSeekProviderRequest()
+                .or(this::deepSeekDefaultRequest)
+                .orElseThrow(() -> new IllegalStateException(
+                        "DeepSeek API key must be configured for "
+                                + TENDER_INTAKE_USE_CASE
+                                + "; set DEEPSEEK_API_KEY or the DeepSeek provider key in system settings"
+                ));
+    }
+
+    boolean hasTenderIntakeConfiguration() {
+        return deepSeekProviderRequest()
+                .or(this::deepSeekDefaultRequest)
+                .isPresent();
     }
 
     private Optional<OpenAiBidAgentRequestConfig> springConfiguredRequest() {
@@ -89,6 +112,45 @@ public class OpenAiBidAgentConfigurationResolver {
                                     apiStyle
                             ));
                 });
+    }
+
+    private Optional<OpenAiBidAgentRequestConfig> deepSeekProviderRequest() {
+        SettingsResponse.AiModelConfig aiModelConfig = settingsService.getInternalAiModelConfig();
+        if (aiModelConfig == null) {
+            return Optional.empty();
+        }
+
+        return findProvider(aiModelConfig, DEEPSEEK_PROVIDER)
+                .flatMap(provider -> deepSeekApiKey()
+                        .map(apiKey -> deepSeekRequestConfig(
+                                apiKey,
+                                firstNonBlank(provider.getBaseUrl(), DEEPSEEK_DEFAULT_BASE_URL),
+                                firstNonBlank(provider.getModel(), DEEPSEEK_DEFAULT_MODEL)
+                        )));
+    }
+
+    private Optional<OpenAiBidAgentRequestConfig> deepSeekDefaultRequest() {
+        return deepSeekApiKey()
+                .map(apiKey -> deepSeekRequestConfig(
+                        apiKey,
+                        DEEPSEEK_DEFAULT_BASE_URL,
+                        DEEPSEEK_DEFAULT_MODEL
+                ));
+    }
+
+    private OpenAiBidAgentRequestConfig deepSeekRequestConfig(String apiKey, String rawBaseUrl, String rawModel) {
+        return new OpenAiBidAgentRequestConfig(
+                apiKey,
+                normalizedBaseUrl(rawBaseUrl),
+                firstNonBlank(rawModel, DEEPSEEK_DEFAULT_MODEL),
+                tenderIntakeTimeout,
+                OpenAiBidAgentApiStyle.CHAT_COMPLETIONS
+        );
+    }
+
+    private Optional<String> deepSeekApiKey() {
+        return usableValue(settingsService.resolveAiApiKey(DEEPSEEK_PROVIDER))
+                .or(() -> providerEnvironmentApiKey(DEEPSEEK_PROVIDER));
     }
 
     private Optional<OpenAiBidAgentRequestConfig> integrationConfiguredRequest() {

@@ -25,96 +25,71 @@
       @metric-click="handleMetricClick"
       @retry="reloadMetrics"
     />
-    <div class="content-grid">
-      <div class="main-column">
-        <WorkCalendar
-          v-model="calendarDate"
-          v-model:active-filter="activeCalendarFilter"
-          :filters="calendarFilters"
-          :visible-events="visibleCalendarEvents"
-          :selected-date-events="selectedDateEvents"
-          :selected-date-label="selectedDateLabel"
-          :month-summary="monthCalendarSummary"
-          :upcoming-events="upcomingCalendarEvents"
-          :get-events-for-date="getEventsForDate"
-          :calendar-cell-class="calendarCellClass"
-          :get-event-type-tag="getEventTypeTag"
-          :error="calendarError"
-          @date-click="handleDateClick"
-          @event-date-select="selectCalendarEventDate"
-          @event-action="handleCalendarAction"
-          @retry="reloadSchedule"
-        />
-        <WorkbenchQuickStart v-if="canUseQuickStart" @submitted="handleApprovalSuccess" />
-        <template v-if="currentUserName === '小王'">
-          <TenderList :tenders="hotTenders" @view-all="router.push('/bidding')" @tender-click="handleTenderClick" />
-          <CustomerFollowUpList :customers="followUpCustomers" />
-        </template>
-        <template v-if="currentUserName === '张经理'">
-          <ProjectList
-            title="我的项目"
-            :projects="activeProjects"
-            :progress-color-resolver="getProgressColor"
-            :status-type-resolver="getProjectStatusType"
-            @view-all="router.push('/project')"
-            @project-click="handleProjectClick"
-          />
-          <TeamTaskList :members="teamMembers" />
-        </template>
-        <template v-if="currentUserName === '李工'">
-          <TechnicalTaskList :tasks="myTechnicalTasks" @task-change="handleTaskComplete" />
-          <ReviewList :reviews="pendingReviews" @review="handleReview" />
-        </template>
-        <ProjectList
-          v-if="currentUserRole === 'admin'"
-          title="重点项目"
-          :projects="activeProjects"
-          :meta-fields="['manager', 'deadline']"
-          :progress-color-resolver="getProgressColor"
-          :status-type-resolver="getProjectStatusType"
-          @view-all="router.push('/project')"
-          @project-click="handleProjectClick"
-        />
-        <ProjectList
-          title="进行中项目"
-          :projects="activeProjects"
-          :progress-color-resolver="getProgressColor"
-          :status-type-resolver="getProjectStatusType"
-          @view-all="router.push('/project')"
-          @project-click="handleProjectClick"
-        />
-      </div>
-      <div class="side-column">
-        <template v-if="currentUserRole === 'admin'">
-          <div class="side-summary-grid">
-            <TeamPerformance :teams="teamPerformance" />
-            <ApprovalList
-              :approvals="pendingApprovals"
-              :count="pendingApprovals.length"
-              :error="approvalsError"
-              @approve="handleApprove"
-              @reject="handleReject"
-              @retry="loadPendingApprovals"
-            />
-          </div>
-        </template>
-        <ProcessTimeline
-          :processes="myProcesses"
-          :time-formatter="formatRelativeTime"
-          :error="processesError"
-          @retry="loadMyProcesses"
-        />
-        <ActivityList :activities="activities" />
-        <PriorityTodos
-          :todos="priorityTodos"
-          :error="todosError"
-          :priority-type-resolver="getPriorityType"
-          :priority-label-resolver="getPriorityLabel"
-          @todo-toggle="handleTaskComplete"
-          @retry="loadTodos"
-        />
-      </div>
-    </div>
+    <WorkbenchStaticLayout
+      v-if="!dynamicLayout"
+      v-model:calendar-date="calendarDate"
+      v-model:active-calendar-filter="activeCalendarFilter"
+      :calendar-filters="calendarFilters"
+      :visible-calendar-events="visibleCalendarEvents"
+      :selected-date-events="selectedDateEvents"
+      :selected-date-label="selectedDateLabel"
+      :month-calendar-summary="monthCalendarSummary"
+      :upcoming-calendar-events="upcomingCalendarEvents"
+      :get-events-for-date="getEventsForDate"
+      :calendar-cell-class="calendarCellClass"
+      :get-event-type-tag="getEventTypeTag"
+      :calendar-error="calendarError"
+      :can-use-quick-start="canUseQuickStart"
+      :can-view-tender-list="canViewTenderList"
+      :can-view-technical-task="canViewTechnicalTask"
+      :can-view-review-list="canViewReviewList"
+      :can-view-project-list="canViewProjectList"
+      :can-view-team-task="canViewTeamTask"
+      :can-view-global-projects="canViewGlobalProjects"
+      :hot-tenders="hotTenders"
+      :my-technical-tasks="myTechnicalTasks"
+      :pending-reviews="pendingReviews"
+      :follow-up-customers="followUpCustomers"
+      :active-projects="activeProjects"
+      :get-progress-color="getProgressColor"
+      :get-project-status-type="getProjectStatusType"
+      :team-members="teamMembers"
+      :current-user-role="currentUserRole"
+      :team-performance="teamPerformance"
+      :pending-approvals="pendingApprovals"
+      :approvals-error="approvalsError"
+      :my-processes="myProcesses"
+      :format-relative-time="formatRelativeTime"
+      :processes-error="processesError"
+      :activities="activities"
+      :priority-todos="priorityTodos"
+      :todos-error="todosError"
+      :get-priority-type="getPriorityType"
+      :get-priority-label="getPriorityLabel"
+      @date-click="handleDateClick"
+      @event-date-select="selectCalendarEventDate"
+      @event-action="handleCalendarAction"
+      @retry-schedule="reloadSchedule"
+      @approval-success="handleApprovalSuccess"
+      @view-bidding="router.push('/bidding')"
+      @tender-click="handleTenderClick"
+      @task-change="handleTaskComplete"
+      @review="handleReview"
+      @view-project="router.push('/project')"
+      @project-click="handleProjectClick"
+      @approve="handleApprove"
+      @reject="handleReject"
+      @retry-approvals="loadPendingApprovals"
+      @retry-processes="loadMyProcesses"
+      @retry-todos="loadTodos"
+    />
+    <DynamicLayoutRenderer
+      v-else
+      :layout="dynamicLayout"
+      :registry="widgetRegistry"
+      :widget-props="widgetProps"
+      :widget-listeners="widgetListeners"
+    />
     <ApprovalDialog
       v-model:visible="approvalDialogVisible"
       :mode="approvalMode"
@@ -135,28 +110,19 @@ import { useWorkbenchSchedule } from '@/views/Dashboard/useWorkbenchSchedule.js'
 import { useWorkbenchMetrics } from '@/views/Dashboard/useWorkbenchMetrics.js'
 import { useWorkbenchTodos } from '@/views/Dashboard/useWorkbenchTodos.js'
 import { useWorkbenchApprovals } from '@/views/Dashboard/useWorkbenchApprovals.js'
+import { useWorkbenchDerivedLists } from '@/views/Dashboard/useWorkbenchDerivedLists.js'
+import { useWorkbenchDynamicWidgets } from '@/views/Dashboard/useWorkbenchDynamicWidgets.js'
 import {
   filterProjectsByRole, formatCurrentDate, formatRelativeTime, getBannerActionConfig,
   getBannerSubtitle, getBannerTitle, getPriorityLabel, getPriorityType, getProgressColor,
   getProjectStatusType, hasQuickStartPermission,
 } from '@/views/Dashboard/workbench-core.js'
-import { extractCustomersFromProjects, normalizeProjectForWorkbench } from '@/views/Dashboard/workbench-utils.js'
+import { normalizeProjectForWorkbench } from '@/views/Dashboard/workbench-utils.js'
 import ApprovalDialog from '@/components/common/ApprovalDialog.vue'
-import ActivityList from '@/views/Dashboard/components/ActivityList.vue'
-import ApprovalList from '@/views/Dashboard/components/ApprovalList.vue'
-import CustomerFollowUpList from '@/views/Dashboard/components/CustomerFollowUpList.vue'
 import MetricCards from '@/views/Dashboard/components/MetricCards.vue'
-import PriorityTodos from '@/views/Dashboard/components/PriorityTodos.vue'
-import ProcessTimeline from '@/views/Dashboard/components/ProcessTimeline.vue'
-import ProjectList from '@/views/Dashboard/components/ProjectList.vue'
-import ReviewList from '@/views/Dashboard/components/ReviewList.vue'
-import TeamPerformance from '@/views/Dashboard/components/TeamPerformance.vue'
-import TeamTaskList from '@/views/Dashboard/components/TeamTaskList.vue'
-import TechnicalTaskList from '@/views/Dashboard/components/TechnicalTaskList.vue'
-import TenderList from '@/views/Dashboard/components/TenderList.vue'
 import WelcomeBanner from '@/views/Dashboard/components/WelcomeBanner.vue'
-import WorkbenchQuickStart from '@/views/Dashboard/components/WorkbenchQuickStart.vue'
-import WorkCalendar from '@/views/Dashboard/components/WorkCalendar.vue'
+import WorkbenchStaticLayout from '@/views/Dashboard/components/WorkbenchStaticLayout.vue'
+import DynamicLayoutRenderer from '@/views/Dashboard/components/DynamicLayoutRenderer.vue'
 import {
   Briefcase, Calendar, Check, DataAnalysis, Document, Flag, TrendCharts, User,
 } from '@element-plus/icons-vue'
@@ -174,6 +140,7 @@ const currentDate = computed(() => formatCurrentDate())
 const workbenchProjects = ref([])
 const hotTenders = ref([])
 const runtimeMode = ref(null)
+const dynamicLayout = ref(null)
 
 const {
   pendingApprovals, pendingApprovalsTotalCount, approvalDialogVisible, approvalMode,
@@ -185,7 +152,7 @@ const {
 const {
   priorityTodos, pendingCount, completedTodoCount, todosError, loadTodos,
   handleTaskComplete,
-} = useWorkbenchTodos({ assigneeIdRef: currentUserId, message: ElMessage })
+} = useWorkbenchTodos({ assigneeIdRef: currentUserId, canLoadAlertTodosRef: computed(() => ['admin', 'manager'].includes(currentUserRole.value)), message: ElMessage })
 
 const myProjectCount = computed(() => filterProjectsByRole(workbenchProjects.value, {
   role: currentUserRole.value,
@@ -218,70 +185,25 @@ const bannerActions = computed(() => getBannerActionConfig(currentUserRole.value
 const runtimeModeLabel = computed(() => runtimeMode.value?.modeLabel || '')
 const runtimeModeTagType = computed(() => (runtimeMode.value?.demoFusionEnabled ? 'warning' : 'success'))
 const canUseQuickStart = computed(() => hasQuickStartPermission(userStore.currentUser))
-const activeProjects = computed(() => filterProjectsByRole(workbenchProjects.value, {
-  role: currentUserRole.value,
-  userName: currentUserName.value,
-}))
-const followUpCustomers = computed(() => extractCustomersFromProjects(workbenchProjects.value))
-const teamMembers = computed(() => {
-  const byManager = new Map()
-  for (const project of workbenchProjects.value) {
-    if (!project?.manager) continue
-    const existing = byManager.get(project.manager) || {
-      id: project.manager,
-      name: project.manager,
-      tasks: [],
-      workload: '0%',
-      workloadLevel: 'low',
-    }
-    existing.tasks.push({
-      id: `${project.id}-task`,
-      title: project.name,
-      priority: project.priority === 'high' ? 'high' : 'medium',
-    })
-    byManager.set(project.manager, existing)
-  }
 
-  return Array.from(byManager.values()).map((item) => {
-    const taskCount = item.tasks.length
-    const workload = Math.min(95, 20 + taskCount * 20)
-    return {
-      ...item,
-      workload: `${workload}%`,
-      workloadLevel: workload >= 80 ? 'high' : workload >= 50 ? 'medium' : 'low',
-    }
-  })
+const canViewTenderList = computed(() => userStore.hasPermission('dashboard:view_tender_list') || currentUserRole.value === 'staff')
+const canViewTechnicalTask = computed(() => userStore.hasPermission('dashboard:view_technical_task') || currentUserRole.value === 'staff')
+const canViewReviewList = computed(() => userStore.hasPermission('dashboard:view_review_list') || ['staff', 'manager'].includes(currentUserRole.value))
+const canViewProjectList = computed(() => userStore.hasPermission('dashboard:view_project_list') || currentUserRole.value === 'manager')
+const canViewTeamTask = computed(() => userStore.hasPermission('dashboard:view_team_task') || currentUserRole.value === 'manager')
+const canViewGlobalProjects = computed(() => userStore.hasPermission('dashboard:view_global_projects'))
+
+const {
+  activeProjects, followUpCustomers, teamMembers, myTechnicalTasks,
+  pendingReviews, teamPerformance,
+} = useWorkbenchDerivedLists({
+  workbenchProjects,
+  priorityTodos,
+  pendingApprovals,
+  currentUserRole,
+  currentUserName,
 })
-const myTechnicalTasks = computed(() => priorityTodos.value
-  .filter((todo) => todo.sourceType === 'task')
-  .slice(0, 6)
-  .map((todo) => ({
-    id: todo.id,
-    title: todo.title,
-    project: '项目任务',
-    deadline: todo.deadline || '待定',
-    priority: todo.priority === 'urgent' || todo.priority === 'high' ? 'high' : 'medium',
-    done: todo.done,
-  })))
-const pendingReviews = computed(() => pendingApprovals.value.slice(0, 6).map((item) => ({
-  id: item.id,
-  title: item.title,
-  author: item.applicantName || '待确认',
-  time: item.submitTime || item.time || '刚刚',
-})))
-const teamPerformance = computed(() => teamMembers.value.map((member) => {
-  const projectCount = member.tasks.length
-  const wins = member.tasks.filter((task) => task.priority === 'high').length
-  const active = Math.max(projectCount - wins, 0)
-  return {
-    dept: member.name,
-    size: Math.max(1, Math.min(12, projectCount * 2)),
-    progress: Number.parseInt(member.workload, 10) || 0,
-    color: '#3B82F6',
-    wins,
-    active,
-  }
-}))
+
 const activities = computed(() => {
   const processActivities = myProcesses.value.slice(0, 4).map((process) => ({
     id: `process-${process.id}`,
@@ -310,6 +232,62 @@ const {
   assigneeIdRef: currentUserId,
   onEventsLoaded: (events) => biddingStore.setCalendar(events),
 })
+
+const { widgetRegistry, widgetProps, widgetListeners } = useWorkbenchDynamicWidgets({
+  state: {
+    hotTenders,
+    myTechnicalTasks,
+    pendingReviews,
+    followUpCustomers,
+    activeProjects,
+    currentUserRole,
+    teamMembers,
+    teamPerformance,
+    pendingApprovals,
+    approvalsError,
+    myProcesses,
+    processesError,
+    activities,
+    priorityTodos,
+    todosError,
+    calendarDate,
+    activeCalendarFilter,
+    calendarFilters,
+    visibleCalendarEvents,
+    selectedDateEvents,
+    selectedDateLabel,
+    monthCalendarSummary,
+    upcomingCalendarEvents,
+    calendarError,
+  },
+  actions: {
+    getProgressColor,
+    getProjectStatusType,
+    formatRelativeTime,
+    getEventsForDate,
+    calendarCellClass,
+    getEventTypeTag,
+    viewBidding: () => router.push('/bidding'),
+    viewProject: () => router.push('/project'),
+    handleTenderClick,
+    handleTaskComplete,
+    handleReview,
+    handleProjectClick,
+    handleApprove,
+    handleReject,
+    loadPendingApprovals,
+    loadMyProcesses,
+    loadTodos,
+    handleApprovalSuccess,
+    updateCalendarDate: (value) => { calendarDate.value = value },
+    updateActiveCalendarFilter: (value) => { activeCalendarFilter.value = value },
+    handleDateClick,
+    selectCalendarEventDate,
+    handleCalendarAction,
+    reloadSchedule,
+  },
+})
+
 function iconizeAction(action) {
   return { ...action, icon: Icons[action.icon] || action.icon }
 }
@@ -391,10 +369,24 @@ async function loadRuntimeMode() {
   }
 }
 
+async function loadDynamicLayout() {
+  try {
+    const response = await dashboardApi.getLayout()
+    const layoutJson = response?.data?.layoutJson
+    dynamicLayout.value = response?.success && layoutJson && layoutJson !== '[]'
+      ? JSON.parse(layoutJson)
+      : null
+  } catch (error) {
+    console.warn('Failed to load dynamic layout, falling back to static layout', error)
+    dynamicLayout.value = null
+  }
+}
+
 onMounted(async () => {
   metricsLoading.value = true
   await Promise.allSettled([
     loadRuntimeMode(),
+    loadDynamicLayout(),
     loadWorkbenchProjects(),
     loadWorkbenchTenders(),
     loadScheduleOverview(), loadTodos(), loadPendingApprovals(), loadMyProcesses(),

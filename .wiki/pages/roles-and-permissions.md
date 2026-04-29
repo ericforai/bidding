@@ -12,11 +12,13 @@ backlinks:
   - _index
   - business-process
   - contract-constraints
+  - implementation/attachment4-gap-matrix
   - implementation/attachment4-requirement-task-book
+  - implementation/attachment6-function-list-trace
   - overview
 created: 2026-04-15
-updated: 2026-04-28
-health_checked: 2026-04-28
+updated: 2026-04-26
+health_checked: 2026-04-26
 ---
 # 角色与权限
 
@@ -138,7 +140,7 @@ Spring Security 上下文注入用户信息 -> 业务接口正常响应
 | manager | 本部门及下属团队数据 |
 | sales / staff | 仅限个人负责的数据 |
 
-数据权限通过后端的 DataScopeConfig 机制和项目访问范围服务实现，支持按组织架构层级、项目组、团队成员、显式项目授权进行隔离。客户组织架构对接采用事件库 SDK/HTTP 中转方案，详见 [[integration-organization-event-sdk]]。
+数据权限通过后端的 DataScopeConfig 机制和项目访问范围服务实现，支持按组织架构层级、项目组、团队成员、显式项目授权进行隔离。
 
 ### 项目数据权限修复收口
 

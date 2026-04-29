@@ -92,10 +92,14 @@ const mockState = vi.hoisted(() => ({
 export const mocks = mockState
 
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: mockState.routerPush }) }))
-vi.mock('@/stores/user', () => ({ useUserStore: () => ({ get currentUser() { return mockState.currentUser } }) }))
+vi.mock('@/stores/user', () => ({ useUserStore: () => ({ get currentUser() { return mockState.currentUser }, hasPermission: (key) => (mockState.currentUser?.menuPermissions || []).includes('all') || (mockState.currentUser?.menuPermissions || []).includes(key) }) }))
 vi.mock('@/stores/bidding', () => ({ useBiddingStore: () => ({ setCalendar: mockState.setCalendar }) }))
 vi.mock('@/api', () => ({
-  dashboardApi: { getSummary: mockState.dashboardGetSummary },
+  dashboardApi: { 
+    getSummary: mockState.dashboardGetSummary,
+    getRuntimeMode: vi.fn().mockResolvedValue({ data: { modeCode: 'mock', demoFusionEnabled: false } }),
+    getLayout: vi.fn().mockResolvedValue({ success: true, data: { layoutJson: '[]' } })
+  },
   approvalApi: {
     getPendingApprovals: mockState.approvalGetPendingApprovals,
     getMyApprovals: mockState.approvalGetMyApprovals,

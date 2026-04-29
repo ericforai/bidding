@@ -594,31 +594,10 @@ import { aiApi, tendersApi } from '@/api'
 import customerOpportunityApi from '@/api/modules/customerOpportunity'
 import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 import { useProjectConversion } from '@/composables/projectDetail/useProjectConversion.js'
+import { applyTenderDetailPrefill, buildProjectPrefillFromTender, hasGlobalHttpErrorMessage, tenderSchema } from './createTenderPrefill.js'
 const conversion = useProjectConversion()
 
-const tenderSchema = {
-  groups: [
-    {
-      id: 'basic',
-      title: '基本信息',
-      fields: [
-        { key: 'projectName', label: '项目名称', type: 'string' },
-        { key: 'purchaserName', label: '采购人', type: 'string' },
-        { key: 'budget', label: '项目预算', type: 'number' }
-      ]
-    },
-    {
-      id: 'timeline',
-      title: '关键节点',
-      fields: [
-        { key: 'publishDate', label: '发布日期', type: 'date' },
-        { key: 'deadline', label: '投标截止', type: 'datetime' }
-      ]
-    }
-  ]
-}
-
-const route = useRoute()
+const router = useRouter(), route = useRoute()
 const projectStore = useProjectStore()
 const userStore = useUserStore()
 const barStore = useBarStore()
@@ -723,7 +702,6 @@ const aiGeneratedTasks = ref([])
 const basicRules = {
   name: [{ required: true, message: '请输入项目名称', trigger: 'blur' }],
   customer: [{ required: true, message: '请输入客户名称', trigger: 'blur' }],
-  budget: [{ required: true, message: '请输入预算金额', trigger: 'blur' }],
   deadline: [{ required: true, message: '请选择投标截止日期', trigger: 'change' }],
   manager: [{ required: true, message: '请选择项目负责人', trigger: 'change' }]
 }
@@ -758,6 +736,17 @@ const splitTags = (value) => {
     .split(',')
     .map(item => item.trim())
     .filter(Boolean)
+}
+
+const loadTenderDetailPrefill = async () => {
+  const tenderId = selectedTenderId.value
+  if (!tenderId) return
+  try {
+    const result = await tendersApi.getDetail(tenderId)
+    if (result?.success && result.data) applyTenderDetailPrefill({ basicForm, detailForm }, buildProjectPrefillFromTender(result.data))
+  } catch (error) {
+    if (!hasGlobalHttpErrorMessage(error)) ElMessage.warning(error?.message || '标讯信息带入失败，可继续手工填写')
+  }
 }
 
 const applyOpportunityPrefill = () => {
@@ -819,6 +808,15 @@ const buildApiProjectPayload = () => {
     teamMembers: [managerId],
     startDate,
     endDate,
+    customer: basicForm.customer,
+    budget: basicForm.budget,
+    industry: basicForm.industry,
+    region: basicForm.region,
+    platform: basicForm.platform,
+    deadline: basicForm.deadline || null,
+    description: detailForm.description,
+    remark: detailForm.remark,
+    tagsJson: JSON.stringify(detailForm.tags || []),
     status: 'INITIATED',
     sourceModule: sourceInfo.module || '',
     sourceCustomerId: sourceInfo.customerId || '',
@@ -1004,7 +1002,7 @@ const handleSubmit = async () => {
     }
     router.push('/project')
   } catch (error) {
-    ElMessage.error(error?.message || '项目创建失败')
+    if (!hasGlobalHttpErrorMessage(error)) ElMessage.error(error?.message || '项目创建失败')
   } finally {
     submitting.value = false
   }
@@ -1105,6 +1103,7 @@ onMounted(async () => {
     await loadProjectData(editId)
   } else {
     applyOpportunityPrefill()
+    await loadTenderDetailPrefill()
   }
 })
 

@@ -18,6 +18,7 @@ backlinks:
   - _index
   - api-openapi
   - contract-constraints
+  - implementation/attachment4-gap-matrix
   - implementation/attachment4-requirement-task-book
   - implementation/delivery-playbook
   - implementation/milestones
@@ -26,8 +27,8 @@ backlinks:
   - roles-and-permissions
   - team-and-timeline
 created: 2026-04-15
-updated: 2026-04-28
-health_checked: 2026-04-28
+updated: 2026-04-26
+health_checked: 2026-04-26
 ---
 # 架构合成
 

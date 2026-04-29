@@ -16,6 +16,7 @@ import com.xiyu.bid.projectworkflow.dto.ProjectShareLinkDTO;
 import com.xiyu.bid.projectworkflow.dto.ProjectTaskCreateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectTaskStatusUpdateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectTaskViewDTO;
+import com.xiyu.bid.projectworkflow.service.ProjectTaskBreakdownService;
 import com.xiyu.bid.projectworkflow.service.ProjectWorkflowService;
 import com.xiyu.bid.task.dto.BidSubmissionResponse;
 import com.xiyu.bid.task.dto.DeliverableCoverageDTO;
@@ -48,6 +49,7 @@ import java.util.List;
 public class ProjectWorkflowController {
 
     private final ProjectWorkflowService projectWorkflowService;
+    private final ProjectTaskBreakdownService projectTaskBreakdownService;
     private final TaskDeliverableService taskDeliverableService;
     private final BidProcessService bidProcessService;
 
@@ -65,6 +67,14 @@ public class ProjectWorkflowController {
         sanitizeTaskRequest(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Project task created successfully", projectWorkflowService.createProjectTask(projectId, request)));
+    }
+
+    @PostMapping("/tasks/decompose")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<List<ProjectTaskViewDTO>>> decomposeProjectTasks(@PathVariable Long projectId) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Project tasks decomposed from tender breakdown successfully",
+                        projectTaskBreakdownService.decomposeProjectTasks(projectId)));
     }
 
     @PatchMapping("/tasks/{taskId}/status")

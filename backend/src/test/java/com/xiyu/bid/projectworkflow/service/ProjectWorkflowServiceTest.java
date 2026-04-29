@@ -99,7 +99,10 @@ class ProjectWorkflowServiceTest {
                 projectScoreDraftWorkflowService
         );
 
-        when(projectRepository.findById(1001L)).thenReturn(Optional.of(Project.builder().id(1001L).build()));
+        when(projectRepository.findById(1001L)).thenReturn(Optional.of(Project.builder()
+                .id(1001L)
+                .deadline(java.time.LocalDate.of(2026, 5, 20))
+                .build()));
     }
 
     @Test

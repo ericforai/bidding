@@ -3,7 +3,7 @@ import { roleMenuOptions, sidebarMenuConfig } from './sidebar-menu'
 
 describe('sidebar-menu config', () => {
   it('keeps role menu options aligned with visible top-level sidebar menus', () => {
-    expect(roleMenuOptions.map((item) => item.label)).toEqual([
+    expect(roleMenuOptions.slice(0, 8).map((item) => item.label)).toEqual([
       '工作台',
       '标讯中心',
       '投标项目',
@@ -13,17 +13,18 @@ describe('sidebar-menu config', () => {
       '数据分析',
       '系统设置'
     ])
-    expect(roleMenuOptions.map((item) => item.value)).not.toContain('dashboard.quickStart')
+    expect(roleMenuOptions.map((item) => item.value)).toContain('dashboard.quickStart')
   })
 
   it('uses the same primary permission key as the top-level sidebar menu', () => {
     const visibleMenus = sidebarMenuConfig.filter((menu) => menu.name !== 'CustomerOpportunityCenter')
 
-    expect(roleMenuOptions).toEqual(
+    expect(roleMenuOptions.slice(0, visibleMenus.length)).toEqual(
       visibleMenus.map((menu) => ({
         value: menu.meta.permissionKeys[0],
         label: menu.meta.title
       }))
     )
+    expect(new Set(roleMenuOptions.map((item) => item.value)).size).toBe(roleMenuOptions.length)
   })
 })

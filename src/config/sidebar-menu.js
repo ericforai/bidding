@@ -126,9 +126,18 @@ export const sidebarMenuConfig = [
   }
 ]
 
-export const roleMenuOptions = sidebarMenuConfig
-  .filter((menu) => !hiddenApiMenuNames.has(menu.name))
-  .map((menu) => ({
-    value: menu.meta.permissionKeys[0],
-    label: menu.meta.title
-  }))
+export const roleMenuOptions = [
+  ...sidebarMenuConfig
+    .filter((menu) => !hiddenApiMenuNames.has(menu.name))
+    .map((menu) => ({
+      value: menu.meta.permissionKeys[0],
+      label: menu.meta.title
+    })),
+  { value: 'dashboard.quickStart', label: '工作台快速发起' },
+  { value: 'dashboard:view_tender_list', label: '工作台：标讯列表' },
+  { value: 'dashboard:view_project_list', label: '工作台：负责项目' },
+  { value: 'dashboard:view_technical_task', label: '工作台：技术任务' },
+  { value: 'dashboard:view_review_list', label: '工作台：待评审列表' },
+  { value: 'dashboard:view_team_task', label: '工作台：团队任务' },
+  { value: 'dashboard:view_global_projects', label: '工作台：全院重点项目' }
+]

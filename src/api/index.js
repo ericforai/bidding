@@ -34,6 +34,7 @@ import { approvalApi } from './modules/approval.js'
 import { exportApi, ExportType, ExportFormat, ExportStatus } from './modules/export.js'
 import { auditApi } from './modules/audit.js'
 import { settingsApi } from './modules/settings.js'
+import { permissionMatrixApi } from './modules/permissionMatrix.js'
 import { projectGroupsApi } from './modules/projectGroups.js'
 import { bidResultsApi } from './modules/bidResults.js'
 import { workbenchApi } from './modules/workbench.js'
@@ -62,6 +63,7 @@ export {
   ExportStatus,
   auditApi,
   settingsApi,
+  permissionMatrixApi,
   projectGroupsApi,
   bidResultsApi,
   workbenchApi,
@@ -86,6 +88,7 @@ export default {
   export: () => Promise.resolve(exportApi),
   audit: () => Promise.resolve(auditApi),
   settings: () => Promise.resolve(settingsApi),
+  permissionMatrix: () => Promise.resolve(permissionMatrixApi),
   projectGroups: () => Promise.resolve(projectGroupsApi),
   workbench: () => Promise.resolve(workbenchApi),
   bidAgent: () => Promise.resolve(bidAgentApi),

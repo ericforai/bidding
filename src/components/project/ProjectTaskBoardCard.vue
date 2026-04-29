@@ -10,6 +10,26 @@
           <el-button
             v-if="canManageProjectTasks"
             link
+            type="success"
+            :icon="DocumentChecked"
+            data-test="tender-breakdown-button"
+            @click="$emit('tender-breakdown')"
+          >
+            解析招标文件
+          </el-button>
+          <el-button
+            v-if="canManageProjectTasks"
+            link
+            type="success"
+            :icon="DocumentChecked"
+            data-test="score-draft-button"
+            @click="$emit('score-draft-decompose')"
+          >
+            评分标准拆解
+          </el-button>
+          <el-button
+            v-if="canManageProjectTasks"
+            link
             type="primary"
             :icon="Plus"
             @click="$emit('add-task')"
@@ -33,7 +53,7 @@
       :project-id="normalizedProjectId"
       :can-generate="!tasks || tasks.length === 0"
       @task-click="$emit('task-click', $event)"
-      @status-change="$emit('status-change', $event)"
+      @status-change="(...args) => $emit('status-change', ...args)"
       @generate-tasks="$emit('generate-tasks')"
       @add-deliverable="$emit('add-deliverable', $event)"
       @remove-deliverable="$emit('remove-deliverable', $event)"
@@ -44,7 +64,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { List, Plus } from '@element-plus/icons-vue'
+import { DocumentChecked, List, Plus } from '@element-plus/icons-vue'
 import TaskBoard from '@/components/common/TaskBoard.vue'
 
 defineEmits([
@@ -52,6 +72,8 @@ defineEmits([
   'reset-tasks',
   'task-click',
   'status-change',
+  'tender-breakdown',
+  'score-draft-decompose',
   'generate-tasks',
   'add-deliverable',
   'remove-deliverable',

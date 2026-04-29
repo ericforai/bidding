@@ -12,7 +12,9 @@ backlinks:
   - ai-capabilities
   - contract-constraints
   - dashboard-gap-analysis
+  - implementation/attachment4-gap-matrix
   - implementation/attachment4-requirement-task-book
+  - implementation/attachment6-function-list-trace
   - implementation/milestones
   - modules
   - requirements
@@ -20,7 +22,7 @@ backlinks:
   - team-and-timeline
 created: 2026-04-15
 updated: 2026-04-15
-health_checked: 2026-04-28
+health_checked: 2026-04-26
 ---
 # 业务流程
 

@@ -9,6 +9,7 @@ import com.xiyu.bid.project.dto.ProjectRequest;
 import com.xiyu.bid.project.dto.ProjectDTO;
 import com.xiyu.bid.project.service.ProjectService;
 import com.xiyu.bid.util.InputSanitizer;
+import com.xiyu.bid.annotation.DataScope;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,7 @@ public class ProjectController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @DataScope(deptAlias = "department_id", userAlias = "manager_id")
     public ResponseEntity<ApiResponse<List<ProjectDTO>>> getAllProjects() {
         log.info("GET /api/projects - Fetching all projects");
         List<ProjectDTO> projects = projectService.getAllProjects();
@@ -53,7 +55,7 @@ public class ProjectController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<ProjectDTO>> createProject(@Valid @RequestBody ProjectRequest projectRequest) {
         log.info("POST /api/projects - Creating new project: {}", projectRequest.getName());
         sanitizeProjectRequest(projectRequest);

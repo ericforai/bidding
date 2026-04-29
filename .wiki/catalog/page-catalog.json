@@ -12,8 +12,8 @@
     "backlinks": [
       "_index"
     ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-28",
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/_index.md"
   },
   {
@@ -36,12 +36,14 @@
       "_index",
       "business-process",
       "contract-constraints",
+      "implementation/attachment4-gap-matrix",
       "implementation/attachment4-requirement-task-book",
+      "implementation/attachment6-function-list-trace",
       "modules",
       "requirements"
     ],
     "updated": "2026-04-24",
-    "health_checked": "2026-04-28",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/ai-capabilities.md"
   },
   {
@@ -57,10 +59,12 @@
     "backlinks": [
       "_index",
       "architecture",
+      "implementation/attachment4-gap-matrix",
+      "implementation/attachment6-function-list-trace",
       "integration-wecom"
     ],
     "updated": "2026-04-25",
-    "health_checked": "2026-04-28",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/api-openapi.md"
   },
   {
@@ -84,6 +88,7 @@
       "_index",
       "api-openapi",
       "contract-constraints",
+      "implementation/attachment4-gap-matrix",
       "implementation/attachment4-requirement-task-book",
       "implementation/delivery-playbook",
       "implementation/milestones",
@@ -92,8 +97,8 @@
       "roles-and-permissions",
       "team-and-timeline"
     ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-28",
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/architecture.md"
   },
   {
@@ -111,7 +116,9 @@
       "ai-capabilities",
       "contract-constraints",
       "dashboard-gap-analysis",
+      "implementation/attachment4-gap-matrix",
       "implementation/attachment4-requirement-task-book",
+      "implementation/attachment6-function-list-trace",
       "implementation/milestones",
       "modules",
       "requirements",
@@ -119,7 +126,7 @@
       "team-and-timeline"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-28",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/business-process.md"
   },
   {
@@ -138,6 +145,7 @@
       "_index",
       "deployment",
       "implementation/acceptance-and-closure",
+      "implementation/attachment4-gap-matrix",
       "implementation/attachment4-requirement-task-book",
       "implementation/milestones",
       "implementation/risk-register",
@@ -146,8 +154,8 @@
       "requirements",
       "team-and-timeline"
     ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-28",
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/contract-constraints.md"
   },
   {
@@ -165,7 +173,7 @@
       "design-system"
     ],
     "updated": "2026-04-16",
-    "health_checked": "2026-04-28",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/dashboard-gap-analysis.md"
   },
   {
@@ -182,10 +190,11 @@
     "backlinks": [
       "_index",
       "architecture",
+      "implementation/attachment4-gap-matrix",
       "implementation/attachment4-requirement-task-book"
     ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-28",
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/data-model.md"
   },
   {
@@ -200,10 +209,12 @@
     ],
     "backlinks": [
       "_index",
+      "implementation/attachment4-gap-matrix",
+      "implementation/attachment6-function-list-trace",
       "roles-and-permissions"
     ],
     "updated": "2026-04-25",
-    "health_checked": "2026-04-28",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/data-permission-hardening.md"
   },
   {
@@ -229,7 +240,9 @@
       "architecture",
       "contract-constraints",
       "implementation/acceptance-and-closure",
+      "implementation/attachment4-gap-matrix",
       "implementation/attachment4-requirement-task-book",
+      "implementation/attachment6-function-list-trace",
       "implementation/delivery-playbook",
       "implementation/milestones",
       "implementation/risk-register",
@@ -238,8 +251,8 @@
       "requirements",
       "team-and-timeline"
     ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-28",
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/deployment.md"
   },
   {
@@ -258,7 +271,7 @@
       "overview"
     ],
     "updated": "2026-04-22",
-    "health_checked": "2026-04-28",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/design-system.md"
   },
   {
@@ -276,7 +289,7 @@
       "_index"
     ],
     "updated": "2026-04-26",
-    "health_checked": "2026-04-28",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/docinsight-engine.md"
   },
   {
@@ -295,7 +308,7 @@
       "data-model"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-28",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/glossary.md"
   },
   {
@@ -315,14 +328,42 @@
       "_index",
       "contract-constraints",
       "design-system",
+      "implementation/attachment4-gap-matrix",
       "implementation/attachment4-requirement-task-book",
       "implementation/delivery-playbook",
       "implementation/risk-register",
       "implementation/sow-2026-v1-4"
     ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-28",
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/implementation/acceptance-and-closure.md"
+  },
+  {
+    "slug": "implementation/attachment4-gap-matrix",
+    "title": "附件4客户要求差距矩阵",
+    "space": "implementation",
+    "category": "reference",
+    "sources": [
+      ".wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx",
+      ".wiki/sources/bidding/附件6：需求功能清单.md",
+      ".wiki/sources/bidding/附件6：需求功能清单.xlsx",
+      ".wiki/pages/implementation/attachment4-requirement-task-book.md",
+      ".wiki/pages/implementation/attachment6-function-list-trace.md",
+      ".wiki/pages/requirements.md",
+      ".wiki/pages/contract-constraints.md",
+      "docs/需求闭环完成说明-2026-04-21.md",
+      "docs/UAT_PLAN.md",
+      "docs/GO_LIVE_CHECKLIST.md"
+    ],
+    "backlinks": [
+      "_index",
+      "implementation/attachment4-requirement-task-book",
+      "implementation/attachment6-function-list-trace",
+      "implementation/document-delivery-ledger"
+    ],
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
+    "path": ".wiki/pages/implementation/attachment4-gap-matrix.md"
   },
   {
     "slug": "implementation/attachment4-requirement-task-book",
@@ -335,11 +376,35 @@
     "backlinks": [
       "_index",
       "contract-constraints",
+      "implementation/attachment4-gap-matrix",
       "requirements"
     ],
     "updated": "2026-04-25",
-    "health_checked": "2026-04-28",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/implementation/attachment4-requirement-task-book.md"
+  },
+  {
+    "slug": "implementation/attachment6-function-list-trace",
+    "title": "附件6需求功能清单追溯",
+    "space": "implementation",
+    "category": "reference",
+    "sources": [
+      ".wiki/sources/bidding/附件6：需求功能清单.md",
+      ".wiki/sources/bidding/附件6：需求功能清单.xlsx",
+      ".wiki/pages/requirements.md",
+      ".wiki/pages/modules.md",
+      ".wiki/pages/implementation/attachment4-gap-matrix.md"
+    ],
+    "backlinks": [
+      "_index",
+      "implementation/acceptance-and-closure",
+      "implementation/attachment4-gap-matrix",
+      "implementation/delivery-playbook",
+      "implementation/document-delivery-ledger"
+    ],
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
+    "path": ".wiki/pages/implementation/attachment6-function-list-trace.md"
   },
   {
     "slug": "implementation/delivery-playbook",
@@ -356,9 +421,36 @@
       "implementation/acceptance-and-closure",
       "implementation/sow-2026-v1-4"
     ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-28",
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/implementation/delivery-playbook.md"
+  },
+  {
+    "slug": "implementation/document-delivery-ledger",
+    "title": "文档交付台账",
+    "space": "implementation",
+    "category": "reference",
+    "sources": [
+      ".wiki/sources/contract/附件4：西域数智化投标管理平台建设项目需求任务书.docx",
+      ".wiki/sources/bidding/附件6：需求功能清单.md",
+      ".wiki/sources/bidding/附件6：需求功能清单.xlsx",
+      ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
+      ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx",
+      ".wiki/pages/implementation/attachment4-gap-matrix.md",
+      ".wiki/pages/implementation/attachment6-function-list-trace.md",
+      ".wiki/pages/contract-constraints.md",
+      ".wiki/pages/implementation/acceptance-and-closure.md"
+    ],
+    "backlinks": [
+      "_index",
+      "implementation/acceptance-and-closure",
+      "implementation/attachment4-gap-matrix",
+      "implementation/attachment6-function-list-trace",
+      "implementation/delivery-playbook"
+    ],
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
+    "path": ".wiki/pages/implementation/document-delivery-ledger.md"
   },
   {
     "slug": "implementation/milestones",
@@ -374,11 +466,12 @@
     "backlinks": [
       "_index",
       "contract-constraints",
+      "implementation/attachment4-gap-matrix",
       "implementation/delivery-playbook",
       "implementation/sow-2026-v1-4"
     ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-28",
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/implementation/milestones.md"
   },
   {
@@ -397,11 +490,12 @@
       "_index",
       "contract-constraints",
       "implementation/delivery-playbook",
+      "implementation/document-delivery-ledger",
       "implementation/sow-2026-v1-4",
       "implementation/weekly-status"
     ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-28",
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/implementation/risk-register.md"
   },
   {
@@ -426,8 +520,8 @@
       "requirements",
       "team-and-timeline"
     ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-28",
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/implementation/sow-2026-v1-4.md"
   },
   {
@@ -442,32 +536,13 @@
     ],
     "backlinks": [
       "_index",
+      "implementation/attachment4-gap-matrix",
       "implementation/delivery-playbook",
       "implementation/risk-register"
     ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-28",
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/implementation/weekly-status.md"
-  },
-  {
-    "slug": "integration-organization-event-sdk",
-    "title": "组织架构对接 - 客户事件库 SDK 方案",
-    "space": "engineering",
-    "category": "integration",
-    "sources": [
-      ".wiki/sources/customer/事件库SDK接入说明方案.doc",
-      ".wiki/extracts/customer__事件库SDK接入说明方案.doc.md",
-      "backend/src/main/java/com/xiyu/bid/entity/User.java",
-      "backend/src/main/java/com/xiyu/bid/dto/DataScopeConfigPayload.java"
-    ],
-    "backlinks": [
-      "_index",
-      "integration-wecom",
-      "roles-and-permissions"
-    ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-28",
-    "path": ".wiki/pages/integration-organization-event-sdk.md"
   },
   {
     "slug": "integration-wecom",
@@ -480,10 +555,12 @@
       "src/views/System/settings/integration/"
     ],
     "backlinks": [
-      "_index"
+      "_index",
+      "implementation/attachment4-gap-matrix",
+      "implementation/attachment6-function-list-trace"
     ],
     "updated": "2026-04-25",
-    "health_checked": "2026-04-28",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/integration-wecom.md"
   },
   {
@@ -511,7 +588,9 @@
       "contract-constraints",
       "dashboard-gap-analysis",
       "design-system",
+      "implementation/attachment4-gap-matrix",
       "implementation/attachment4-requirement-task-book",
+      "implementation/attachment6-function-list-trace",
       "implementation/delivery-playbook",
       "implementation/weekly-status",
       "overview",
@@ -519,7 +598,7 @@
       "team-and-timeline"
     ],
     "updated": "2026-04-24",
-    "health_checked": "2026-04-28",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/modules.md"
   },
   {
@@ -542,8 +621,8 @@
       "implementation/sow-2026-v1-4",
       "team-and-timeline"
     ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-28",
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/overview.md"
   },
   {
@@ -554,6 +633,7 @@
     "sources": [
       ".wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx",
       ".wiki/sources/bidding/附件5：西域数智化投标管理平台建设项目需求任务书.docx",
+      ".wiki/sources/bidding/附件6：需求功能清单.md",
       ".wiki/sources/bidding/附件6：需求功能清单.xlsx",
       ".wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx",
       ".wiki/sources/contract/附件3-合同报价清单人工摘录.md",
@@ -566,13 +646,15 @@
       "contract-constraints",
       "dashboard-gap-analysis",
       "implementation/acceptance-and-closure",
+      "implementation/attachment4-gap-matrix",
       "implementation/attachment4-requirement-task-book",
+      "implementation/attachment6-function-list-trace",
       "implementation/milestones",
       "implementation/risk-register",
       "implementation/sow-2026-v1-4"
     ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-28",
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/requirements.md"
   },
   {
@@ -590,11 +672,13 @@
       "_index",
       "business-process",
       "contract-constraints",
+      "implementation/attachment4-gap-matrix",
       "implementation/attachment4-requirement-task-book",
+      "implementation/attachment6-function-list-trace",
       "overview"
     ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-28",
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/roles-and-permissions.md"
   },
   {
@@ -613,13 +697,15 @@
       "_index",
       "contract-constraints",
       "deployment",
+      "implementation/attachment4-gap-matrix",
+      "implementation/document-delivery-ledger",
       "implementation/risk-register",
       "implementation/sow-2026-v1-4",
       "overview",
       "requirements"
     ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-28",
+    "updated": "2026-04-26",
+    "health_checked": "2026-04-26",
     "path": ".wiki/pages/team-and-timeline.md"
   }
 ]

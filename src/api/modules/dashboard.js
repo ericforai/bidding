@@ -187,6 +187,12 @@ export const dashboardApi = {
     }
   },
 
+  async getLayout() {
+    return httpClient.get('/api/dashboard/layout/my', { silentAuthError: true })
+      .then((res) => normalizeResponse(res, null))
+      .catch((error) => normalizeError(error, null))
+  },
+  
   async getRuntimeMode() {
     const response = await httpClient.get('/api/system/runtime-mode')
     const raw = response?.data || {}
@@ -197,8 +203,11 @@ export const dashboardApi = {
         modeLabel: String(raw.modeLabel || ''),
         database: String(raw.database || ''),
         demoFusionEnabled: Boolean(raw.demoFusionEnabled),
-        activeProfiles: Array.isArray(raw.activeProfiles) ? raw.activeProfiles : [] } }
-  } }
+        activeProfiles: Array.isArray(raw.activeProfiles) ? raw.activeProfiles : [] 
+      } 
+    }
+  }
+}
 
 export const tasksApi = {
   async getMine(assigneeId) {

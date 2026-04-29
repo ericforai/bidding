@@ -14,13 +14,14 @@ backlinks:
   - _index
   - contract-constraints
   - design-system
+  - implementation/attachment4-gap-matrix
   - implementation/attachment4-requirement-task-book
   - implementation/delivery-playbook
   - implementation/risk-register
   - implementation/sow-2026-v1-4
 created: 2026-04-21
-updated: 2026-04-28
-health_checked: 2026-04-28
+updated: 2026-04-26
+health_checked: 2026-04-26
 ---
 # 实施验收与问题闭环
 
@@ -33,6 +34,8 @@ health_checked: 2026-04-28
 - 培训交接：角色化培训记录齐全
 - 合同门禁：软件平台、文档资料、培训、实施过程、系统整体五类验收均可追溯
 - 付款证据：阶段文档签发、测试上线、试运行和总体验收材料与付款节点一致
+- 文档台账：所有附件4正式交付文档与补充证据进入 [[implementation/document-delivery-ledger]]，并记录状态、签字要求和证据路径
+- 功能清单：附件6功能颗粒度通过 [[implementation/attachment6-function-list-trace]] 接入 UAT 用例和验收测试报告
 
 ## 合同验收准则
 
@@ -67,4 +70,6 @@ health_checked: 2026-04-28
 - [[requirements]]
 - [[implementation/sow-2026-v1-4]]
 - [[contract-constraints]]
+- [[implementation/document-delivery-ledger]]
+- [[implementation/attachment6-function-list-trace]]
 - [[implementation/delivery-playbook]]

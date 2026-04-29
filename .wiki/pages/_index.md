@@ -8,9 +8,9 @@ sources:
   - .wiki/INDEX.md
   - .wiki/PAGE_INDEX.md
 backlinks:
-created: 2026-04-28
-updated: 2026-04-28
-health_checked: 2026-04-28
+created: 2026-04-26
+updated: 2026-04-26
+health_checked: 2026-04-26
 ---
 # 西域投标管理平台知识库
 
@@ -27,6 +27,7 @@ health_checked: 2026-04-28
 ## Engineering Space
 
 - [[_index]] — 西域投标管理平台知识库
+- [[agent-sop-quickref]] — Agent 开发 SOP 快速参考
 - [[ai-capabilities]] — AI 能力
 - [[api-openapi]] — OpenAPI/Swagger 接口规范
 - [[architecture]] — 架构合成
@@ -38,7 +39,6 @@ health_checked: 2026-04-28
 - [[design-system]] — 设计系统基线
 - [[docinsight-engine]] — DocInsight 文档智能引擎
 - [[glossary]] — 术语表
-- [[integration-organization-event-sdk]] — 组织架构对接 - 客户事件库 SDK 方案
 - [[integration-wecom]] — 系统集成中心 - 企业微信
 - [[modules]] — 模块目录
 - [[overview]] — 项目综述
@@ -50,8 +50,11 @@ health_checked: 2026-04-28
 
 - [[contract-constraints]] — 合同约束
 - [[implementation/acceptance-and-closure]] — 实施验收与问题闭环
+- [[implementation/attachment4-gap-matrix]] — 附件4客户要求差距矩阵
 - [[implementation/attachment4-requirement-task-book]] — 附件4需求任务书交付基线
+- [[implementation/attachment6-function-list-trace]] — 附件6需求功能清单追溯
 - [[implementation/delivery-playbook]] — 实施交付作战包总览
+- [[implementation/document-delivery-ledger]] — 文档交付台账
 - [[implementation/milestones]] — 实施里程碑与依赖
 - [[implementation/risk-register]] — 实施风险台账
 - [[implementation/sow-2026-v1-4]] — SOW 2026 V1.4 执行基准

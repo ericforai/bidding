@@ -13,11 +13,12 @@ backlinks:
   - _index
   - contract-constraints
   - implementation/delivery-playbook
+  - implementation/document-delivery-ledger
   - implementation/sow-2026-v1-4
   - implementation/weekly-status
 created: 2026-04-21
-updated: 2026-04-28
-health_checked: 2026-04-28
+updated: 2026-04-26
+health_checked: 2026-04-26
 ---
 # 实施风险台账
 

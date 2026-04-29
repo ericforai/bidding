@@ -9,9 +9,11 @@ sources:
   - src/views/System/settings/integration/
 backlinks:
   - _index
+  - implementation/attachment4-gap-matrix
+  - implementation/attachment6-function-list-trace
 created: 2026-04-25
 updated: 2026-04-25
-health_checked: 2026-04-28
+health_checked: 2026-04-26
 ---
 # 系统集成中心 - 企业微信
 
@@ -34,7 +36,7 @@ health_checked: 2026-04-28
 | **企业微信** | ✅ 配置入口 + 连通性测试（Mock） | SSO 与消息推送的实际收发逻辑下一期 |
 | **CRM 系统** | ⚪ 占位「即将支持」 | 待客户提供 CRM 接口规范 |
 | **OA / 审批流** | ⚪ 占位「即将支持」 | 待选定 OA 厂商 |
-| **组织架构系统** | 🟡 接入方案已沉淀 | 基于客户事件库 SDK/HTTP 中转方案，详见 [[integration-organization-event-sdk]] |
+| **组织架构系统** | ⚪ 占位「即将支持」 | 待客户内部架构系统接口 |
 
 ## 入口路径
 
