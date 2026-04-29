@@ -3,12 +3,26 @@ package com.xiyu.bid.workflowform.domain;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public final class WorkflowFormPreviewPolicy {
+public final class WorkflowFormOaPayloadPolicy {
 
-    private WorkflowFormPreviewPolicy() {
+    private WorkflowFormOaPayloadPolicy() {
     }
 
-    public static Map<String, Object> previewPayload(
+    public static Map<String, Object> buildPayload(
+            Map<String, Object> mapping,
+            Map<String, Object> formData,
+            Map<String, Object> context,
+            Map<String, Object> applicant,
+            boolean trial
+    ) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("workflowCode", WorkflowFormSchemaPolicy.text(mapping.get("workflowCode")));
+        payload.put("trial", trial);
+        payload.put("mainFields", buildMainFields(mapping, formData, context, applicant));
+        return payload;
+    }
+
+    private static Map<String, Object> buildMainFields(
             Map<String, Object> mapping,
             Map<String, Object> formData,
             Map<String, Object> context,
@@ -22,14 +36,15 @@ public final class WorkflowFormPreviewPolicy {
                 mainFields.put(target, resolve(source, formData, context, applicant));
             }
         }
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("workflowCode", WorkflowFormSchemaPolicy.text(mapping.get("workflowCode")));
-        payload.put("trial", true);
-        payload.put("mainFields", mainFields);
-        return payload;
+        return mainFields;
     }
 
-    private static Object resolve(String source, Map<String, Object> formData, Map<String, Object> context, Map<String, Object> applicant) {
+    private static Object resolve(
+            String source,
+            Map<String, Object> formData,
+            Map<String, Object> context,
+            Map<String, Object> applicant
+    ) {
         if (source.startsWith("formData.")) {
             return formData.get(source.substring("formData.".length()));
         }

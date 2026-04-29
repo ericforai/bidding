@@ -14,7 +14,7 @@ import com.xiyu.bid.workflowform.domain.FormBusinessType;
 import com.xiyu.bid.workflowform.domain.FormSubmissionValidator;
 import com.xiyu.bid.workflowform.domain.ValidationResult;
 import com.xiyu.bid.workflowform.domain.WorkflowFormOaMappingPolicy;
-import com.xiyu.bid.workflowform.domain.WorkflowFormPreviewPolicy;
+import com.xiyu.bid.workflowform.domain.WorkflowFormOaPayloadPolicy;
 import com.xiyu.bid.workflowform.domain.WorkflowFormSchemaPolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -45,14 +45,14 @@ public class WorkflowFormSubmissionService {
         Long id = transactionTemplate.execute(status ->
                 store.create(template.businessType(), command.templateCode(), template.version(), command.projectId(),
                         command.applicantName(), command.formData(), template.schema(), binding.fieldMapping(), Map.of()));
-        Map<String, Object> oaPayload = WorkflowFormPreviewPolicy.previewPayload(
+        Map<String, Object> oaPayload = WorkflowFormOaPayloadPolicy.buildPayload(
                 binding.fieldMapping(), command.formData(),
                 Map.of("formInstanceId", String.valueOf(id), "templateCode", command.templateCode()),
-                Map.of("name", command.applicantName() == null ? "" : command.applicantName()));
+                Map.of("name", command.applicantName() == null ? "" : command.applicantName()), false);
         transactionTemplate.executeWithoutResult(status -> store.updateOaPayload(id, oaPayload));
         OaStartResult result = oaWorkflowGateway.startProcess(new OaStartCommand(
                 binding.workflowCode(), template.businessType(), id, command.applicantName(), command.formData(),
-                command.templateCode(), oaPayload));
+                command.templateCode(), oaPayload, false));
         if (!result.success()) {
             transactionTemplate.executeWithoutResult(status ->
                     store.markOaFailed(id, result.oaInstanceId(), result.errorMessage() == null ? "OA 流程发起失败" : result.errorMessage()));

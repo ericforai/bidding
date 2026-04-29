@@ -13,6 +13,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -67,5 +68,46 @@ class ProjectMemberControllerTest {
         mockMvc.perform(delete("/api/projects/1/members/201"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    @WithMockUser(roles = "MANAGER")
+    void getMembers_ShouldReturnForbidden_WhenProjectIsOutsideScope() throws Exception {
+        when(projectAccessScopeService.currentUserHasAdminAccess()).thenReturn(false);
+        when(projectAccessScopeService.getAllowedProjectIdsForCurrentUser()).thenReturn(java.util.List.of(2L));
+
+        mockMvc.perform(get("/api/projects/1/members"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(projectMemberService);
+    }
+
+    @Test
+    @WithMockUser(roles = "MANAGER")
+    void addMember_ShouldReturnForbidden_WhenProjectIsOutsideScope() throws Exception {
+        when(projectAccessScopeService.currentUserHasAdminAccess()).thenReturn(false);
+        when(projectAccessScopeService.getAllowedProjectIdsForCurrentUser()).thenReturn(java.util.List.of(2L));
+
+        mockMvc.perform(post("/api/projects/1/members")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": 201,
+                                  "memberRole": "TECHNICAL_EXPERT",
+                                  "permissionLevel": "EDITOR"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(projectMemberService);
+    }
+
+    @Test
+    @WithMockUser(roles = "MANAGER")
+    void removeMember_ShouldReturnForbidden_WhenProjectIsOutsideScope() throws Exception {
+        when(projectAccessScopeService.currentUserHasAdminAccess()).thenReturn(false);
+        when(projectAccessScopeService.getAllowedProjectIdsForCurrentUser()).thenReturn(java.util.List.of(2L));
+
+        mockMvc.perform(delete("/api/projects/1/members/201"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(projectMemberService);
     }
 }

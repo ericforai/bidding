@@ -1,6 +1,7 @@
 package com.xiyu.bid.workflowform.controller;
 
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.workflowform.application.WorkflowFormConfigException;
 import com.xiyu.bid.workflowform.application.command.WorkflowFormOaBindingCommand;
 import com.xiyu.bid.workflowform.application.command.WorkflowFormTemplateDraftCommand;
 import com.xiyu.bid.workflowform.application.service.WorkflowFormAdminService;
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -80,12 +82,22 @@ public class WorkflowFormAdminController {
 
     @PostMapping("/templates/{templateCode}/oa/test-submit")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> previewTrialSubmit(
+    public ResponseEntity<ApiResponse<?>> previewTrialSubmit(
             @PathVariable String templateCode,
             @Valid @RequestBody WorkflowFormTrialSubmitRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.success("试提交预览已生成",
+        return ResponseEntity.ok(ApiResponse.success("试提交已发送到 OA 测试通道",
                 adminService.previewTrialSubmit(templateCode, request.formData(), request.applicantName())));
+    }
+
+    @ExceptionHandler(WorkflowFormConfigException.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleConfigException(WorkflowFormConfigException exception) {
+        return ResponseEntity.badRequest().body(ApiResponse.<Map<String, Object>>builder()
+                .success(false)
+                .code(400)
+                .message(exception.getMessage())
+                .data(Map.of("errorCode", WorkflowFormConfigException.ERROR_CODE))
+                .build());
     }
 
     private WorkflowFormTemplateDraftCommand toCommand(WorkflowFormTemplateDraftRequest request) {

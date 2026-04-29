@@ -16,6 +16,7 @@ import com.xiyu.bid.workflowform.infrastructure.persistence.repository.OaProcess
 import com.xiyu.bid.workflowform.infrastructure.persistence.repository.WorkflowFormTemplateDraftJpaRepository;
 import com.xiyu.bid.workflowform.infrastructure.persistence.repository.WorkflowFormTemplateJpaRepository;
 import com.xiyu.bid.workflowform.infrastructure.persistence.repository.WorkflowFormTemplateVersionJpaRepository;
+import com.xiyu.bid.workflowform.infrastructure.persistence.repository.WorkflowFormTemplateVersionMaxRow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +40,23 @@ public class JpaWorkflowFormAdminStore implements WorkflowFormAdminStore {
 
     @Override
     public List<WorkflowFormTemplateAdminRecord> listTemplates() {
-        return draftRepository.findAll().stream().map(this::toAdminRecord).toList();
+        List<WorkflowFormTemplateDraftEntity> drafts = draftRepository.findAll();
+        List<String> templateCodes = drafts.stream().map(WorkflowFormTemplateDraftEntity::getTemplateCode).toList();
+        if (templateCodes.isEmpty()) {
+            return List.of();
+        }
+        Map<String, Integer> versions = versionRepository.findMaxVersions(templateCodes).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        WorkflowFormTemplateVersionMaxRow::getTemplateCode,
+                        WorkflowFormTemplateVersionMaxRow::getVersion));
+        Map<String, OaProcessBindingRecord> bindings = bindingRepository.findAllById(templateCodes).stream()
+                .map(this::toBindingRecord)
+                .collect(java.util.stream.Collectors.toMap(OaProcessBindingRecord::templateCode, binding -> binding));
+        return drafts.stream().map(entity -> toAdminRecord(
+                entity,
+                versions.getOrDefault(entity.getTemplateCode(), 0),
+                bindings.get(entity.getTemplateCode())
+        )).toList();
     }
 
     @Override
@@ -107,7 +124,8 @@ public class JpaWorkflowFormAdminStore implements WorkflowFormAdminStore {
         draft.setStatus("PUBLISHED");
         draftRepository.save(draft);
         return new WorkflowFormTemplateAdminRecord(templateCode, draft.getName(), draft.getBusinessType(),
-                nextVersion, draft.isEnabled(), "PUBLISHED", readJson(draft.getDraftSchemaJson()));
+                nextVersion, draft.isEnabled(), "PUBLISHED", readJson(draft.getDraftSchemaJson()),
+                findBinding(templateCode).orElse(null));
     }
 
     private void upsertActiveProjection(WorkflowFormTemplateDraftEntity draft, int version) {
@@ -123,9 +141,17 @@ public class JpaWorkflowFormAdminStore implements WorkflowFormAdminStore {
     }
 
     private WorkflowFormTemplateAdminRecord toAdminRecord(WorkflowFormTemplateDraftEntity entity) {
+        return toAdminRecord(entity, versionRepository.findMaxVersion(entity.getTemplateCode()),
+                findBinding(entity.getTemplateCode()).orElse(null));
+    }
+
+    private WorkflowFormTemplateAdminRecord toAdminRecord(
+            WorkflowFormTemplateDraftEntity entity,
+            Integer version,
+            OaProcessBindingRecord binding
+    ) {
         return new WorkflowFormTemplateAdminRecord(entity.getTemplateCode(), entity.getName(), entity.getBusinessType(),
-                versionRepository.findMaxVersion(entity.getTemplateCode()), entity.isEnabled(), entity.getStatus(),
-                readJson(entity.getDraftSchemaJson()));
+                version, entity.isEnabled(), entity.getStatus(), readJson(entity.getDraftSchemaJson()), binding);
     }
 
     private OaProcessBindingRecord toBindingRecord(OaProcessBindingEntity entity) {

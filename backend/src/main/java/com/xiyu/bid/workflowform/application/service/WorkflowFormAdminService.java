@@ -1,13 +1,18 @@
 package com.xiyu.bid.workflowform.application.service;
 
+import com.xiyu.bid.workflowform.application.WorkflowFormConfigException;
 import com.xiyu.bid.workflowform.application.command.WorkflowFormOaBindingCommand;
 import com.xiyu.bid.workflowform.application.command.WorkflowFormTemplateDraftCommand;
+import com.xiyu.bid.workflowform.application.port.OaStartCommand;
+import com.xiyu.bid.workflowform.application.port.OaStartResult;
+import com.xiyu.bid.workflowform.application.port.OaWorkflowGateway;
 import com.xiyu.bid.workflowform.application.port.OaProcessBindingRecord;
 import com.xiyu.bid.workflowform.application.port.WorkflowFormAdminStore;
 import com.xiyu.bid.workflowform.application.port.WorkflowFormTemplateAdminRecord;
+import com.xiyu.bid.workflowform.application.view.WorkflowFormTrialSubmitView;
 import com.xiyu.bid.workflowform.domain.ValidationResult;
 import com.xiyu.bid.workflowform.domain.WorkflowFormOaMappingPolicy;
-import com.xiyu.bid.workflowform.domain.WorkflowFormPreviewPolicy;
+import com.xiyu.bid.workflowform.domain.WorkflowFormOaPayloadPolicy;
 import com.xiyu.bid.workflowform.domain.WorkflowFormSchemaPolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +26,7 @@ import java.util.Map;
 public class WorkflowFormAdminService {
 
     private final WorkflowFormAdminStore store;
+    private final OaWorkflowGateway oaWorkflowGateway;
 
     public List<WorkflowFormTemplateAdminRecord> listTemplates() {
         return store.listTemplates();
@@ -38,25 +44,33 @@ public class WorkflowFormAdminService {
 
     public WorkflowFormTemplateAdminRecord publish(String templateCode, String publishedBy) {
         WorkflowFormTemplateAdminRecord draft = store.findDraft(templateCode)
-                .orElseThrow(() -> new IllegalArgumentException("流程表单草稿不存在"));
+                .orElseThrow(() -> new WorkflowFormConfigException("流程表单草稿不存在"));
         requireValidSchema(draft.schema());
         OaProcessBindingRecord binding = store.findBinding(templateCode)
                 .filter(OaProcessBindingRecord::enabled)
-                .orElseThrow(() -> new IllegalArgumentException("流程表单未配置启用的 OA 绑定"));
+                .orElseThrow(() -> new WorkflowFormConfigException("流程表单未配置启用的 OA 绑定"));
         requireValidMapping(binding.fieldMapping());
         return store.publish(templateCode, publishedBy);
     }
 
-    public Map<String, Object> previewTrialSubmit(String templateCode, Map<String, Object> formData, String applicantName) {
+    public WorkflowFormTrialSubmitView previewTrialSubmit(
+            String templateCode,
+            Map<String, Object> formData,
+            String applicantName
+    ) {
         OaProcessBindingRecord binding = store.findBinding(templateCode)
-                .orElseThrow(() -> new IllegalArgumentException("流程表单未配置 OA 绑定"));
+                .orElseThrow(() -> new WorkflowFormConfigException("流程表单未配置 OA 绑定"));
         requireValidMapping(binding.fieldMapping());
-        return WorkflowFormPreviewPolicy.previewPayload(
+        Map<String, Object> payload = WorkflowFormOaPayloadPolicy.buildPayload(
                 binding.fieldMapping(),
                 formData,
                 Map.of("formInstanceId", "PREVIEW", "templateCode", templateCode),
-                Map.of("name", applicantName == null ? "" : applicantName)
+                Map.of("name", applicantName == null ? "" : applicantName),
+                true
         );
+        OaStartResult result = oaWorkflowGateway.startProcess(new OaStartCommand(
+                binding.workflowCode(), null, null, applicantName, formData, templateCode, payload, true));
+        return new WorkflowFormTrialSubmitView(result.success(), result.oaInstanceId(), result.errorMessage(), payload);
     }
 
     private void requireValidSchema(Map<String, Object> schema) {
@@ -70,7 +84,7 @@ public class WorkflowFormAdminService {
 
     private void requireValid(ValidationResult result) {
         if (!result.valid()) {
-            throw new IllegalArgumentException(String.join(";", result.errors()));
+            throw new WorkflowFormConfigException(String.join(";", result.errors()));
         }
     }
 }

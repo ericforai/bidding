@@ -62,3 +62,26 @@ export function buildMappingFromFields(workflowCode, fields) {
       }))
   }
 }
+
+export function buildSelectedTemplateState(template = {}) {
+  const schema = { fields: (template.schema?.fields || []).map((field) => ({ ...field })) }
+  const binding = template.oaBinding || {}
+  return {
+    draft: {
+      templateCode: template.templateCode,
+      name: template.name,
+      businessType: template.businessType,
+      enabled: template.enabled,
+      schema
+    },
+    oa: {
+      provider: binding.provider || 'WEAVER',
+      workflowCode: binding.workflowCode || '',
+      fieldMapping: binding.fieldMapping || { workflowCode: binding.workflowCode || '', mainFields: [] }
+    }
+  }
+}
+
+export function extractWorkflowFormError(error, fallback = '流程表单操作失败') {
+  return error?.response?.data?.message || error?.message || fallback
+}

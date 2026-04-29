@@ -12,4 +12,12 @@ public interface WorkflowFormTemplateVersionJpaRepository extends JpaRepository<
 
     @Query("select coalesce(max(v.version), 0) from WorkflowFormTemplateVersionEntity v where v.templateCode = :templateCode")
     Integer findMaxVersion(@Param("templateCode") String templateCode);
+
+    @Query("""
+            select v.templateCode as templateCode, coalesce(max(v.version), 0) as version
+            from WorkflowFormTemplateVersionEntity v
+            where v.templateCode in :templateCodes
+            group by v.templateCode
+            """)
+    List<WorkflowFormTemplateVersionMaxRow> findMaxVersions(@Param("templateCodes") List<String> templateCodes);
 }

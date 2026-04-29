@@ -11,6 +11,7 @@ public record OaStartCommand(
         String applicantName,
         Map<String, Object> formData,
         String templateCode,
-        Map<String, Object> mappedPayload
+        Map<String, Object> mappedPayload,
+        boolean trial
 ) {
 }
