@@ -1,11 +1,11 @@
 package com.xiyu.bid.security;
 
-import com.xiyu.bid.entity.CrmCustomerPermission;
+import com.xiyu.bid.matrixcollaboration.entity.CrmCustomerPermission;
 import com.xiyu.bid.entity.Project;
-import com.xiyu.bid.entity.ProjectMember;
+import com.xiyu.bid.matrixcollaboration.entity.ProjectMember;
 import com.xiyu.bid.entity.User;
-import com.xiyu.bid.repository.CrmCustomerPermissionRepository;
-import com.xiyu.bid.repository.ProjectMemberRepository;
+import com.xiyu.bid.matrixcollaboration.repository.CrmCustomerPermissionRepository;
+import com.xiyu.bid.matrixcollaboration.repository.ProjectMemberRepository;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.service.ProjectAccessScopeService;

@@ -1,8 +1,8 @@
 package com.xiyu.bid.security.service;
 
 import com.xiyu.bid.dto.webhook.CrmPermissionWebhookPayload;
-import com.xiyu.bid.entity.CrmCustomerPermission;
-import com.xiyu.bid.repository.CrmCustomerPermissionRepository;
+import com.xiyu.bid.matrixcollaboration.entity.CrmCustomerPermission;
+import com.xiyu.bid.matrixcollaboration.repository.CrmCustomerPermissionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

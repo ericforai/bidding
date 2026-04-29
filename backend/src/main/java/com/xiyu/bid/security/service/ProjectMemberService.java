@@ -2,9 +2,9 @@ package com.xiyu.bid.security.service;
 
 import com.xiyu.bid.dto.ProjectMemberDTO;
 import com.xiyu.bid.dto.ProjectMemberRequest;
-import com.xiyu.bid.entity.ProjectMember;
+import com.xiyu.bid.matrixcollaboration.entity.ProjectMember;
 import com.xiyu.bid.entity.User;
-import com.xiyu.bid.repository.ProjectMemberRepository;
+import com.xiyu.bid.matrixcollaboration.repository.ProjectMemberRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;

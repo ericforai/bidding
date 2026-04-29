@@ -2,12 +2,12 @@ package com.xiyu.bid.aspect;
 
 import com.xiyu.bid.admin.service.DataScopeConfigService;
 import com.xiyu.bid.annotation.DataScope;
-import com.xiyu.bid.entity.CrmCustomerPermission;
-import com.xiyu.bid.entity.ProjectMember;
+import com.xiyu.bid.matrixcollaboration.entity.CrmCustomerPermission;
+import com.xiyu.bid.matrixcollaboration.entity.ProjectMember;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.enums.DataScopeType;
-import com.xiyu.bid.repository.CrmCustomerPermissionRepository;
-import com.xiyu.bid.repository.ProjectMemberRepository;
+import com.xiyu.bid.matrixcollaboration.repository.CrmCustomerPermissionRepository;
+import com.xiyu.bid.matrixcollaboration.repository.ProjectMemberRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.security.DataScopeContext;
 import com.xiyu.bid.security.DataScopeContextHolder;
