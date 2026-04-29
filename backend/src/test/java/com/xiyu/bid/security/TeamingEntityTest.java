@@ -1,7 +1,7 @@
 package com.xiyu.bid.security;
 
-import com.xiyu.bid.entity.CrmCustomerPermission;
-import com.xiyu.bid.entity.ProjectMember;
+import com.xiyu.bid.matrixcollaboration.entity.CrmCustomerPermission;
+import com.xiyu.bid.matrixcollaboration.entity.ProjectMember;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

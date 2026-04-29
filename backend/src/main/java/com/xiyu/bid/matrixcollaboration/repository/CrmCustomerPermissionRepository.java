@@ -1,6 +1,6 @@
-package com.xiyu.bid.repository;
+package com.xiyu.bid.matrixcollaboration.repository;
 
-import com.xiyu.bid.entity.CrmCustomerPermission;
+import com.xiyu.bid.matrixcollaboration.entity.CrmCustomerPermission;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
