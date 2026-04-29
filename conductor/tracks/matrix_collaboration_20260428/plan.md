@@ -34,4 +34,4 @@
     - [x] 在项目组件中增加“协作”按钮，实现人员搜索与权限分配弹窗。
 - [x] **Task: 全流程手动验收**
     - [x] 演示“跨部门分享”后受邀人工作台实时同步。
-- [ ] **Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md)**
+- [x] **Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md)**
