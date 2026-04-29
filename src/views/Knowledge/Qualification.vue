@@ -50,6 +50,7 @@
       :feature-placeholder="borrowFeaturePlaceholder"
       :form="borrowForm"
       :qualification="currentQualification"
+      :schema="borrowFormSchema"
       @confirm="handleConfirmBorrow"
     />
   </div>
@@ -68,6 +69,7 @@ const {
   borrowDialogVisible,
   borrowFeaturePlaceholder,
   borrowForm,
+  borrowFormSchema,
   borrowLoading,
   borrowRecords,
   currentQualification,

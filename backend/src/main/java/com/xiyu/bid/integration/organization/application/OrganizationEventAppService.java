@@ -9,7 +9,6 @@ import com.xiyu.bid.integration.organization.domain.OrganizationEventStatus;
 import com.xiyu.bid.integration.organization.domain.OrganizationEventValidation;
 import com.xiyu.bid.integration.organization.domain.OrganizationEventType;
 import com.xiyu.bid.integration.organization.domain.OrganizationUserSyncPlan;
-import com.xiyu.bid.integration.organization.dto.OrganizationEventWebhookData;
 import com.xiyu.bid.integration.organization.dto.OrganizationEventWebhookRequest;
 import com.xiyu.bid.integration.organization.dto.OrganizationEventWebhookResponse;
 import com.xiyu.bid.integration.organization.infrastructure.persistence.entity.OrganizationDepartmentEntity;

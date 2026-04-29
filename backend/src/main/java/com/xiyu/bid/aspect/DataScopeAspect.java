@@ -2,7 +2,6 @@ package com.xiyu.bid.aspect;
 
 import com.xiyu.bid.admin.service.DataScopeConfigService;
 import com.xiyu.bid.annotation.DataScope;
-import com.xiyu.bid.entity.RoleProfileCatalog;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.enums.DataScopeType;
 import com.xiyu.bid.repository.UserRepository;

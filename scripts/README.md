@@ -8,6 +8,7 @@
 | 文件 | 地位 | 功能 |
 |------|------|------|
 | `check-doc-consistency.sh` | 兼容入口脚本 | 保留旧命令入口，转调新的文档治理检查器 |
+| `agent-worktree-guard.sh` | 门禁脚本 | 阻止在基础分支、共享 bootstrap worktree 或缺少 `.agent-task-context` 的任务 worktree 中提交 |
 | `check-doc-governance.mjs` | 门禁脚本 | 检查强制目录 README 和强制文件头注释是否符合规范 |
 | `check-front-data-boundaries.mjs` | 门禁脚本 | 检查业务层是否发生遗留 Demo 回退代码污染 |
 | `check-line-budgets.mjs` | 门禁脚本 | 对核心源码目录执行 300 行棘轮门禁：默认检查当前工作区；pre-commit 走 staged，CI 走显式 diff 范围 |

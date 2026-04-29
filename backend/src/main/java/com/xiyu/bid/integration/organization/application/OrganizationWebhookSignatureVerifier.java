@@ -6,7 +6,9 @@ import org.springframework.stereotype.Component;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
 @Component
@@ -31,7 +33,7 @@ public class OrganizationWebhookSignatureVerifier {
             Mac mac = Mac.getInstance(HMAC_ALGORITHM);
             mac.init(new SecretKeySpec(properties.getWebhookSecret().getBytes(StandardCharsets.UTF_8), HMAC_ALGORITHM));
             return mac.doFinal(canonical.getBytes(StandardCharsets.UTF_8));
-        } catch (Exception ex) {
+        } catch (InvalidKeyException | NoSuchAlgorithmException ex) {
             return new byte[0];
         }
     }

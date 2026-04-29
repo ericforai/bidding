@@ -1,5 +1,6 @@
 package com.xiyu.bid.integration.organization.application;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.integration.organization.domain.OrganizationUserSnapshot;
@@ -39,7 +40,7 @@ final class OrganizationEventPayloadMapper {
     private static JsonNode readPayload(String payload) {
         try {
             return OBJECT_MAPPER.readTree(payload);
-        } catch (Exception ex) {
+        } catch (JsonProcessingException ex) {
             throw new IllegalArgumentException("事件消息不是合法 JSON");
         }
     }

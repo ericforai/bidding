@@ -72,6 +72,7 @@ public class SecurityConfig {
             "/api/public/**",
             "/api/integrations/organization/events",
             "/api/system/runtime-mode",
+            "/api/integrations/oa/weaver/callback",
             "/actuator/health",
             "/actuator/health/**",
             "/actuator/info",

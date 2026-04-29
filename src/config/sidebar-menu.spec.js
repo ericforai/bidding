@@ -38,5 +38,6 @@ describe('sidebar-menu config', () => {
         label: menu.meta.title
       }))
     )
+    expect(new Set(roleMenuOptions.map((item) => item.value)).size).toBe(roleMenuOptions.length)
   })
 })

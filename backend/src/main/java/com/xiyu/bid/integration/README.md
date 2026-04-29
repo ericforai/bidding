@@ -4,7 +4,7 @@
 
 ## 职责
 
-负责第三方系统集成的领域逻辑、凭证管理、连通性探测和客户事件接入。当前支持企业微信（WeCom）集成，并新增客户组织架构事件库 HTTP 中转接入。遵循六边形架构：domain 定义纯业务规则，application 编排用例，infrastructure 实现外部 I/O，controller 暴露 HTTP 接口。
+负责第三方系统集成的领域逻辑、凭证管理、连通性探测和客户事件接入。当前支持企业微信（WeCom）集成，并新增客户组织架构事件库 HTTP 中转接入；泛微 OA 流程触发与回调验签的第一版适配位于 `../workflowform/infrastructure/oa`，由流程表单中心持有用例边界。遵循六边形架构：domain 定义纯业务规则，application 编排用例，infrastructure 实现外部 I/O，controller 暴露 HTTP 接口。
 
 ## 目录结构
 

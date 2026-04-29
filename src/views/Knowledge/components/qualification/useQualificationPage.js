@@ -10,6 +10,7 @@ import { triggerDownload } from '@/api/modules/export'
 import { getAccessToken } from '@/api/session.js'
 import { useQualificationStore } from '@/stores/qualification'
 import { useUserStore } from '@/stores/user'
+import { useQualificationBorrowWorkflow } from './useQualificationBorrowWorkflow'
 
 export function useQualificationPage() {
   const qualificationStore = useQualificationStore()
@@ -54,13 +55,12 @@ export function useQualificationPage() {
     file: null
   })
 
-  const borrowForm = reactive({
-    borrower: '',
-    department: '',
-    purpose: '',
-    returnDate: '',
-    remark: ''
-  })
+  const {
+    borrowForm,
+    borrowFormSchema,
+    handleConfirmBorrow,
+    openBorrowDialog
+  } = useQualificationBorrowWorkflow({ currentQualification, borrowDialogVisible })
 
   const filteredQualifications = computed(() => {
     const result = qualifications.value
@@ -88,16 +88,6 @@ export function useQualificationPage() {
       issueDate: '',
       expiryDate: '',
       file: null
-    })
-  }
-
-  function resetBorrowForm() {
-    Object.assign(borrowForm, {
-      borrower: '',
-      department: '',
-      purpose: '',
-      returnDate: '',
-      remark: ''
     })
   }
 
@@ -175,38 +165,6 @@ export function useQualificationPage() {
   function handleView(row) {
     currentQualification.value = row
     detailDialogVisible.value = true
-  }
-
-  function openBorrowDialog(row) {
-    currentQualification.value = row
-    resetBorrowForm()
-    borrowDialogVisible.value = true
-  }
-
-  async function handleConfirmBorrow() {
-    if (!currentQualification.value?.id) {
-      ElMessage.warning('请先从资质列表选择待借阅资质')
-      return
-    }
-    if (!borrowForm.borrower || !borrowForm.purpose) {
-      ElMessage.warning('请填写必填项')
-      return
-    }
-
-    const result = await qualificationStore.submitBorrow(currentQualification.value.id, borrowForm)
-
-    if (result?.success) {
-      borrowDialogVisible.value = false
-      ElMessage.success('借阅申请已提交')
-      return
-    }
-
-    if (isFeatureUnavailableResponse(result)) {
-      ElMessage.warning(result.message || '资质借阅接口暂未接入')
-      return
-    }
-
-    ElMessage.error(result?.message || '借阅申请提交失败')
   }
 
   async function handleReturn(row) {
@@ -292,6 +250,7 @@ export function useQualificationPage() {
     borrowDialogVisible,
     borrowFeaturePlaceholder,
     borrowForm,
+    borrowFormSchema,
     borrowLoading,
     borrowRecords,
     currentQualification,
