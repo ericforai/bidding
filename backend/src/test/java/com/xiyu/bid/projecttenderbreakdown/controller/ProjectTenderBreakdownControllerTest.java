@@ -115,6 +115,19 @@ class ProjectTenderBreakdownControllerTest {
                 .andExpect(jsonPath("$.data.settingsPath").value("/settings"))
                 .andExpect(jsonPath("$.data.message").value("DeepSeek API Key 未配置。请管理员到系统设置 → AI 模型配置中填写 DeepSeek provider key，或在服务端设置 DEEPSEEK_API_KEY 后重启。"));
 
+        verify(projectAccessScopeService).assertCurrentUserCanAccessProject(12L);
         verify(readinessService).readiness(12L);
+    }
+
+    @Test
+    @WithMockUser(roles = "STAFF")
+    void getReadiness_whenProjectOutsideScope_shouldReturnForbidden() throws Exception {
+        org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException("无权访问"))
+                .when(projectAccessScopeService).assertCurrentUserCanAccessProject(99L);
+
+        mockMvc.perform(get("/api/projects/{projectId}/tender-breakdown/readiness", 99L))
+                .andExpect(status().isForbidden());
+
+        org.mockito.Mockito.verifyNoInteractions(readinessService);
     }
 }
