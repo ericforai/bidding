@@ -1,10 +1,11 @@
 // Input: HTTP requests against /api/subscriptions and /api/entities/*/subscription
-// Output: controller contract coverage via standalone MockMvc
+// Output: controller contract coverage via standalone MockMvc with UserDetails principal
 // Pos: Test/订阅控制器契约测试
 package com.xiyu.bid.subscription.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.entity.User;
+import com.xiyu.bid.service.AuthService;
 import com.xiyu.bid.subscription.dto.SubscriptionRequest;
 import com.xiyu.bid.subscription.dto.SubscriptionSummary;
 import com.xiyu.bid.subscription.service.SubscriptionApplicationService;
@@ -22,6 +23,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -54,15 +56,24 @@ class SubscriptionControllerTest {
     @Mock
     private SubscriptionApplicationService service;
 
+    @Mock
+    private AuthService authService;
+
     @InjectMocks
     private SubscriptionController controller;
 
     private static final User TEST_USER = User.builder()
         .id(7L).username("alice").email("a@x.com").fullName("Alice").password("p")
         .role(User.Role.STAFF).build();
+    private static final UserDetails TEST_DETAILS = org.springframework.security.core.userdetails.User
+        .withUsername("alice")
+        .password("p")
+        .authorities("ROLE_STAFF")
+        .build();
 
     @BeforeEach
     void setUp() {
+        when(authService.resolveUserByUsername("alice")).thenReturn(TEST_USER);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
             .setCustomArgumentResolvers(new HandlerMethodArgumentResolver() {
                 @Override
@@ -74,7 +85,7 @@ class SubscriptionControllerTest {
                 public Object resolveArgument(MethodParameter parameter,
                     ModelAndViewContainer mavContainer, NativeWebRequest webRequest,
                     WebDataBinderFactory binderFactory) {
-                    return TEST_USER;
+                    return TEST_DETAILS;
                 }
             })
             .build();
