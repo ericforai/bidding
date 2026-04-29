@@ -29,10 +29,45 @@ async function getWorkflowInstance(id) {
   return httpClient.get(`/api/workflow-forms/instances/${id}`)
 }
 
+async function listAdminTemplates() {
+  return httpClient.get('/api/admin/workflow-forms/templates')
+}
+
+async function listBusinessTypes() {
+  return httpClient.get('/api/admin/workflow-forms/business-types')
+}
+
+async function createTemplateDraft(payload = {}) {
+  return httpClient.post('/api/admin/workflow-forms/templates', payload)
+}
+
+async function updateTemplateDraft(templateCode, payload = {}) {
+  return httpClient.put(`/api/admin/workflow-forms/templates/${templateCode}/draft`, payload)
+}
+
+async function saveOaBinding(templateCode, payload = {}) {
+  return httpClient.put(`/api/admin/workflow-forms/templates/${templateCode}/oa-binding`, payload)
+}
+
+async function publishTemplate(templateCode) {
+  return httpClient.post(`/api/admin/workflow-forms/templates/${templateCode}/publish`)
+}
+
+async function testSubmitTemplate(templateCode, payload = {}) {
+  return httpClient.post(`/api/admin/workflow-forms/templates/${templateCode}/oa/test-submit`, payload)
+}
+
 export const workflowFormApi = {
   getFormDefinition,
   submitWorkflowForm,
-  getWorkflowInstance
+  getWorkflowInstance,
+  listAdminTemplates,
+  listBusinessTypes,
+  createTemplateDraft,
+  updateTemplateDraft,
+  saveOaBinding,
+  publishTemplate,
+  testSubmitTemplate
 }
 
 export default workflowFormApi

@@ -113,6 +113,11 @@ export const sidebarMenuConfig = [
         meta: { title: '组织设置', roles: ['admin'], permissionKeys: ['settings'] }
       },
       {
+        path: '/settings/workflow-forms',
+        name: 'WorkflowFormDesigner',
+        meta: { title: '流程表单配置', roles: ['admin'], permissionKeys: ['settings', 'settings-workflow-forms'] }
+      },
+      {
         path: '/settings/alert-rules',
         name: 'AlertRules',
         meta: { title: '告警规则', roles: ['admin', 'manager'], permissionKeys: ['settings'] }

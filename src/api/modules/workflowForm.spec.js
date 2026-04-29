@@ -8,7 +8,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@/api/client', () => ({
   default: {
     get: vi.fn(),
-    post: vi.fn()
+    post: vi.fn(),
+    put: vi.fn()
   }
 }))
 
@@ -46,5 +47,23 @@ describe('workflowFormApi', () => {
 
     expect(httpClient.get).toHaveBeenCalledWith('/api/workflow-forms/templates/QUALIFICATION_BORROW/active')
     expect(result.data.fields.map((field) => field.key)).toContain('qualificationId')
+  })
+
+  it('admin template APIs use dedicated configuration endpoints', async () => {
+    httpClient.get.mockResolvedValue({ success: true, data: [] })
+    httpClient.post.mockResolvedValue({ success: true, data: { templateCode: 'SEAL_APPLY' } })
+    httpClient.put.mockResolvedValue({ success: true, data: { workflowCode: 'WF_SEAL' } })
+
+    await workflowFormApi.listAdminTemplates()
+    await workflowFormApi.createTemplateDraft({ templateCode: 'SEAL_APPLY' })
+    await workflowFormApi.saveOaBinding('SEAL_APPLY', { workflowCode: 'WF_SEAL' })
+    await workflowFormApi.publishTemplate('SEAL_APPLY')
+    await workflowFormApi.testSubmitTemplate('SEAL_APPLY', { formData: { title: '测试' } })
+
+    expect(httpClient.get).toHaveBeenCalledWith('/api/admin/workflow-forms/templates')
+    expect(httpClient.post).toHaveBeenCalledWith('/api/admin/workflow-forms/templates', { templateCode: 'SEAL_APPLY' })
+    expect(httpClient.put).toHaveBeenCalledWith('/api/admin/workflow-forms/templates/SEAL_APPLY/oa-binding', { workflowCode: 'WF_SEAL' })
+    expect(httpClient.post).toHaveBeenCalledWith('/api/admin/workflow-forms/templates/SEAL_APPLY/publish')
+    expect(httpClient.post).toHaveBeenCalledWith('/api/admin/workflow-forms/templates/SEAL_APPLY/oa/test-submit', { formData: { title: '测试' } })
   })
 })

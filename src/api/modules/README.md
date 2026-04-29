@@ -26,7 +26,7 @@
 | `resources.js` | API 模块 | 平台账号、BAR、证书、资源能力调用 |
 | `settings.js` | API 模块 | 系统设置页的数据权限与组织树读写 |
 | `tenders.js` | API 模块 | 标讯列表、详情、入项、上传任务和人工录入文档识别调用 |
-| `workflowForm.js` | API 模块 | 流程表单模板读取和表单实例提交，供 OA 审批类业务入口复用 |
+| `workflowForm.js` | API 模块 | 流程表单运行态模板读取/实例提交，以及管理员模板配置、发布、OA 绑定和试提交接口 |
 
 `auth.js` 返回的用户快照会保留会话级权限字段，例如 `allowedProjectIds` 和 `allowedDepts`，供 store 和路由恢复使用。
 
@@ -37,4 +37,4 @@
 - 2026-04-27: `projects.js` 新增项目任务拆解接口，供项目详情页按真实 API 生成任务看板。
 - 2026-04-27: 新增 `permissionMatrix.js`，接入管理员只读接口入口权限矩阵，帮助核对菜单权限与后端接口入口层授权。
 - 2026-04-27: `tenders.js` 新增人工录入标讯附件的 `/api/doc-insight/parse` 真实 API 调用，使用 `TENDER_INTAKE` profile。
-- 2026-04-29: 新增 `workflowForm.js`，资质借阅申请改为通过流程表单中心提交并触发 OA。
+- 2026-04-29: 新增 `workflowForm.js`，资质借阅申请改为通过流程表单中心提交并触发 OA；扩展管理员流程表单配置、发布、OA 绑定和试提交 API。
