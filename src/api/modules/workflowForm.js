@@ -33,6 +33,10 @@ async function listAdminTemplates() {
   return httpClient.get('/api/admin/workflow-forms/templates')
 }
 
+async function listTemplateVersions(templateCode) {
+  return httpClient.get(`/api/admin/workflow-forms/templates/${templateCode}/versions`)
+}
+
 async function listBusinessTypes() {
   return httpClient.get('/api/admin/workflow-forms/business-types')
 }
@@ -53,6 +57,10 @@ async function publishTemplate(templateCode) {
   return httpClient.post(`/api/admin/workflow-forms/templates/${templateCode}/publish`)
 }
 
+async function rollbackTemplateVersion(templateCode, version) {
+  return httpClient.post(`/api/admin/workflow-forms/templates/${templateCode}/versions/${version}/rollback`)
+}
+
 async function testSubmitTemplate(templateCode, payload = {}) {
   return httpClient.post(`/api/admin/workflow-forms/templates/${templateCode}/oa/test-submit`, payload)
 }
@@ -62,11 +70,13 @@ export const workflowFormApi = {
   submitWorkflowForm,
   getWorkflowInstance,
   listAdminTemplates,
+  listTemplateVersions,
   listBusinessTypes,
   createTemplateDraft,
   updateTemplateDraft,
   saveOaBinding,
   publishTemplate,
+  rollbackTemplateVersion,
   testSubmitTemplate
 }
 

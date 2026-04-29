@@ -24,6 +24,27 @@
           <strong>{{ template.name }}</strong>
           <span>{{ template.templateCode }} · v{{ template.version || 0 }} · {{ template.status }}</span>
         </button>
+        <div v-if="selectedTemplateVersions.length > 0" class="version-list">
+          <div class="version-list-title">历史版本</div>
+          <div
+            v-for="version in selectedTemplateVersions"
+            :key="`${version.templateCode}-${version.version}`"
+            class="version-row"
+          >
+            <div>
+              <p>v{{ version.version }}</p>
+              <span>{{ version.publishedAt || '-' }}</span>
+            </div>
+            <el-button
+              type="primary"
+              size="small"
+              :disabled="version.version === draft.version"
+              @click="rollback(version.version)"
+            >
+              回滚
+            </el-button>
+          </div>
+        </div>
       </aside>
 
       <section class="designer-main">
@@ -111,159 +132,34 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
-import { workflowFormApi } from '@/api/modules/workflowForm.js'
 import DynamicWorkflowForm from '@/components/common/DynamicWorkflowForm.vue'
-import {
-  FIELD_TYPES,
-  buildDefaultTemplate,
-  buildMappingFromFields,
-  buildSelectedTemplateState,
-  createField,
-  extractWorkflowFormError,
-  moveField,
-  removeField
-} from './workflow-form-designer/workflowFormDesignerCore.js'
+import { useWorkflowFormDesigner } from './workflow-form-designer/useWorkflowFormDesigner.js'
 import './workflow-form-designer/workflow-form-designer.css'
 
-const templates = ref([])
-const businessTypes = ref(['GENERAL_WORKFLOW', 'QUALIFICATION_BORROW'])
-const draft = reactive(buildDefaultTemplate())
-const oa = reactive({ provider: 'WEAVER', workflowCode: '', fieldMapping: { workflowCode: '', mainFields: [] } })
-const fieldTypes = FIELD_TYPES
-const previewVisible = ref(false)
-const previewModel = ref({})
-const trialPayload = ref('')
-const operationError = ref('')
-const loading = reactive({ templates: false, save: false, publish: false, trial: false })
-
-const normalizedSchema = computed(() => ({
-  fields: draft.schema.fields.map(normalizeFieldOptions)
-}))
-
-function normalizeFieldOptions(field) {
-  if (field.type !== 'select') return field
-  const optionsText = field.optionsText || field.options?.map((option) => `${option.label}=${option.value}`).join('\n') || ''
-  return {
-    ...field,
-    options: optionsText.split('\n').map((line) => {
-      const [label, value] = line.split('=')
-      return { label: label?.trim(), value: (value || label || '').trim() }
-    }).filter((option) => option.label)
-  }
-}
-
-async function loadTemplates() {
-  loading.templates = true
-  operationError.value = ''
-  try {
-    const [templateResponse, typeResponse] = await Promise.all([
-      workflowFormApi.listAdminTemplates(),
-      workflowFormApi.listBusinessTypes()
-    ])
-    templates.value = templateResponse.data || []
-    businessTypes.value = typeResponse.data || businessTypes.value
-    if (templates.value.length > 0) selectTemplate(templates.value[0])
-  } catch (error) {
-    operationError.value = extractWorkflowFormError(error, '流程表单模板加载失败')
-    ElMessage.error(operationError.value)
-  } finally {
-    loading.templates = false
-  }
-}
-
-function selectTemplate(template) {
-  const selected = buildSelectedTemplateState(template)
-  Object.assign(draft, selected.draft)
-  Object.assign(oa, selected.oa)
-}
-
-function newTemplate() {
-  Object.assign(draft, buildDefaultTemplate())
-  Object.assign(oa, { provider: 'WEAVER', workflowCode: '', fieldMapping: { workflowCode: '', mainFields: [] } })
-}
-
-function addField() {
-  draft.schema.fields.push(createField(`field${draft.schema.fields.length + 1}`, '新字段', 'text'))
-}
-
-function deleteField(key) {
-  draft.schema.fields = removeField(draft.schema.fields, key)
-}
-
-function move(index, direction) {
-  draft.schema.fields = moveField(draft.schema.fields, index, direction)
-}
-
-function normalizeField(field) {
-  if (field.type === 'select' && !field.optionsText) field.optionsText = '选项一=option_1'
-  if (field.type === 'info') field.required = false
-}
-
-function autoMapping() {
-  oa.fieldMapping = buildMappingFromFields(oa.workflowCode || `WF_${draft.templateCode}`, normalizedSchema.value.fields)
-  oa.workflowCode = oa.fieldMapping.workflowCode
-}
-
-async function saveAll() {
-  loading.save = true
-  operationError.value = ''
-  try {
-    const payload = { ...draft, schema: normalizedSchema.value }
-    await workflowFormApi.createTemplateDraft(payload)
-    await workflowFormApi.saveOaBinding(draft.templateCode, {
-      provider: oa.provider,
-      workflowCode: oa.workflowCode,
-      fieldMapping: oa.fieldMapping,
-      enabled: true
-    })
-    ElMessage.success('流程表单草稿已保存')
-    await loadTemplates()
-  } catch (error) {
-    operationError.value = extractWorkflowFormError(error, '流程表单草稿保存失败')
-    ElMessage.error(operationError.value)
-    throw error
-  } finally {
-    loading.save = false
-  }
-}
-
-async function publish() {
-  loading.publish = true
-  operationError.value = ''
-  try {
-    await saveAll()
-    await workflowFormApi.publishTemplate(draft.templateCode)
-    ElMessage.success('流程表单已发布')
-    await loadTemplates()
-  } catch (error) {
-    operationError.value = extractWorkflowFormError(error, '流程表单发布失败')
-    ElMessage.error(operationError.value)
-  } finally {
-    loading.publish = false
-  }
-}
-
-async function trialSubmit() {
-  loading.trial = true
-  operationError.value = ''
-  try {
-    const response = await workflowFormApi.testSubmitTemplate(draft.templateCode, {
-      applicantName: '测试管理员',
-      formData: Object.fromEntries(normalizedSchema.value.fields.map((field) => [field.key, previewModel.value[field.key] || `测试${field.label}`]))
-    })
-    trialPayload.value = JSON.stringify(response.data, null, 2)
-    if (response.data?.oaStarted) {
-      ElMessage.success('OA 测试流程已发起')
-    }
-  } catch (error) {
-    operationError.value = extractWorkflowFormError(error, '流程表单试提交失败')
-    ElMessage.error(operationError.value)
-  } finally {
-    loading.trial = false
-  }
-}
-
-onMounted(loadTemplates)
+const {
+  addField,
+  autoMapping,
+  deleteField,
+  draft,
+  fieldTypes,
+  loadTemplateVersions,
+  loadTemplates,
+  move,
+  newTemplate,
+  normalizeField,
+  operationError,
+  oa,
+  businessTypes,
+  previewModel,
+  previewVisible,
+  publish,
+  rollback,
+  normalizedSchema,
+  trialPayload,
+  trialSubmit,
+  templates,
+  selectedTemplateVersions,
+  loading,
+  saveAll
+} = useWorkflowFormDesigner()
 </script>

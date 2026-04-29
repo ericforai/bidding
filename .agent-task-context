@@ -1,0 +1,8 @@
+{
+  "agent": "codex",
+  "branch": "codex/workflow-form-versioning",
+  "worktree": "/Users/user/xiyu/worktrees/codex-workflow-form-versioning",
+  "task": "流程表单历史版本管理能力开发与收口（历史版本查看/回滚）",
+  "updatedAt": "2026-04-29T21:45:00+08:00",
+  "notes": "work on branch after prior review cycle"
+}

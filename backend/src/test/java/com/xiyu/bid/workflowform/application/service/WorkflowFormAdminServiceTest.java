@@ -94,8 +94,31 @@ class WorkflowFormAdminServiceTest {
         assertThat(service.listTemplates().getFirst().oaBinding().fieldMapping()).isEqualTo(mapping("title", "oa_title"));
     }
 
+    @Test
+    void rollback_to_historical_version_creates_new_version_record() {
+        InMemoryWorkflowFormAdminStore store = new InMemoryWorkflowFormAdminStore();
+        WorkflowFormAdminService service = new WorkflowFormAdminService(store, new CapturingOaWorkflowGateway());
+
+        service.saveDraft(new WorkflowFormTemplateDraftCommand(
+                "SEAL_APPLY", "用章申请", FormBusinessType.GENERAL_WORKFLOW, true, schema("title")));
+        service.saveOaBinding(new WorkflowFormOaBindingCommand(
+                "SEAL_APPLY", "WEAVER", "WF_SEAL", mapping("title", "field_title"), true));
+        service.publish("SEAL_APPLY", "admin");
+        service.saveDraft(new WorkflowFormTemplateDraftCommand(
+                "SEAL_APPLY", "用章申请", FormBusinessType.GENERAL_WORKFLOW, true, schema("title", "第二版")));
+
+        var rolled = service.rollback("SEAL_APPLY", 1, "admin");
+
+        assertThat(rolled.version()).isEqualTo(2);
+        assertThat(rolled.schema()).isEqualTo(schema("title"));
+    }
+
     private static Map<String, Object> schema(String key) {
         return Map.of("fields", List.of(Map.of("key", key, "label", "标题", "type", "text", "required", true)));
+    }
+
+    private static Map<String, Object> schema(String key, String label) {
+        return Map.of("fields", List.of(Map.of("key", key, "label", label, "type", "text", "required", true)));
     }
 
     private static Map<String, Object> mapping(String sourceKey, String target) {

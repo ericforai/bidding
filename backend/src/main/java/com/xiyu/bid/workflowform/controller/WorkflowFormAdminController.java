@@ -45,6 +45,12 @@ public class WorkflowFormAdminController {
         return ResponseEntity.ok(ApiResponse.success(adminService.listTemplates()));
     }
 
+    @GetMapping("/templates/{templateCode}/versions")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<?>> versions(@PathVariable String templateCode) {
+        return ResponseEntity.ok(ApiResponse.success(adminService.listVersions(templateCode)));
+    }
+
     @PostMapping("/templates")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<?>> createDraft(@Valid @RequestBody WorkflowFormTemplateDraftRequest request) {
@@ -67,6 +73,17 @@ public class WorkflowFormAdminController {
     public ResponseEntity<ApiResponse<?>> publish(@PathVariable String templateCode, Authentication authentication) {
         String operator = authentication == null ? "system" : authentication.getName();
         return ResponseEntity.ok(ApiResponse.success("流程表单已发布", adminService.publish(templateCode, operator)));
+    }
+
+    @PostMapping("/templates/{templateCode}/versions/{version}/rollback")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<?>> rollback(
+            @PathVariable String templateCode,
+            @PathVariable int version,
+            Authentication authentication
+    ) {
+        String operator = authentication == null ? "system" : authentication.getName();
+        return ResponseEntity.ok(ApiResponse.success("流程表单已回滚到历史版本", adminService.rollback(templateCode, version, operator)));
     }
 
     @PutMapping("/templates/{templateCode}/oa-binding")

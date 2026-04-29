@@ -8,6 +8,7 @@ import com.xiyu.bid.workflowform.application.port.OaProcessBindingRecord;
 import com.xiyu.bid.workflowform.application.port.WorkflowFormAdminStore;
 import com.xiyu.bid.workflowform.application.port.WorkflowFormTemplateAdminRecord;
 import com.xiyu.bid.workflowform.application.port.WorkflowFormTemplateRecord;
+import com.xiyu.bid.workflowform.application.port.WorkflowFormTemplateVersionRecord;
 import com.xiyu.bid.workflowform.infrastructure.persistence.entity.OaProcessBindingEntity;
 import com.xiyu.bid.workflowform.infrastructure.persistence.entity.WorkflowFormTemplateDraftEntity;
 import com.xiyu.bid.workflowform.infrastructure.persistence.entity.WorkflowFormTemplateEntity;
@@ -78,6 +79,12 @@ public class JpaWorkflowFormAdminStore implements WorkflowFormAdminStore {
     }
 
     @Override
+    public List<WorkflowFormTemplateVersionRecord> listVersions(String templateCode) {
+        return versionRepository.findByTemplateCodeOrderByVersionDesc(templateCode).stream()
+                .map(this::toVersionRecord).toList();
+    }
+
+    @Override
     @Transactional
     public WorkflowFormTemplateAdminRecord saveDraft(WorkflowFormTemplateDraftCommand command) {
         WorkflowFormTemplateDraftEntity entity = draftRepository.findByTemplateCode(command.templateCode())
@@ -128,6 +135,22 @@ public class JpaWorkflowFormAdminStore implements WorkflowFormAdminStore {
                 findBinding(templateCode).orElse(null));
     }
 
+    @Override
+    @Transactional
+    public WorkflowFormTemplateAdminRecord rollback(String templateCode, int targetVersion, String operator) {
+        WorkflowFormTemplateDraftEntity draft = draftRepository.findByTemplateCode(templateCode)
+                .orElseThrow(() -> new IllegalArgumentException("流程表单草稿不存在"));
+        WorkflowFormTemplateVersionEntity target = versionRepository.findByTemplateCodeAndVersion(templateCode, targetVersion)
+                .orElseThrow(() -> new IllegalArgumentException("未找到目标历史版本: " + targetVersion));
+        draft.setName(target.getName());
+        draft.setBusinessType(target.getBusinessType());
+        draft.setEnabled(target.isEnabled());
+        draft.setDraftSchemaJson(target.getSchemaJson());
+        draft.setStatus("DRAFT");
+        draftRepository.save(draft);
+        return publish(templateCode, operator);
+    }
+
     private void upsertActiveProjection(WorkflowFormTemplateDraftEntity draft, int version) {
         WorkflowFormTemplateEntity active = activeRepository.findById(draft.getTemplateCode())
                 .orElseGet(WorkflowFormTemplateEntity::new);
@@ -157,6 +180,19 @@ public class JpaWorkflowFormAdminStore implements WorkflowFormAdminStore {
     private OaProcessBindingRecord toBindingRecord(OaProcessBindingEntity entity) {
         return new OaProcessBindingRecord(entity.getTemplateCode(), entity.getProvider(), entity.getWorkflowCode(),
                 readJson(entity.getFieldMappingJson()), entity.isEnabled());
+    }
+
+    private WorkflowFormTemplateVersionRecord toVersionRecord(WorkflowFormTemplateVersionEntity entity) {
+        return new WorkflowFormTemplateVersionRecord(
+                entity.getTemplateCode(),
+                entity.getVersion(),
+                entity.getName(),
+                entity.getBusinessType(),
+                entity.isEnabled(),
+                entity.getPublishedBy(),
+                entity.getPublishedAt(),
+                readJson(entity.getSchemaJson())
+        );
     }
 
     private Map<String, Object> readJson(String json) {
