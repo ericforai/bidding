@@ -12,7 +12,7 @@
 |--------|------|
 | `layout/` | 布局组件 (MainLayout, Header, Sidebar) |
 | `charts/` | 图表组件 (LineChart, BarChart, PieChart) |
-| `common/` | 通用组件 (TaskBoard, AnimatedNumber) |
+| `common/` | 通用组件 (TaskBoard, AnimatedNumber, DynamicWorkflowForm) |
 | `ai/` | AI 相关组件 (合规检查、版本管理等) |
 
 ## layout 组件
@@ -37,6 +37,7 @@
 |------|------|
 | `TaskBoard.vue` | 任务看板 |
 | `AnimatedNumber.vue` | 数字动画 |
+| `DynamicWorkflowForm.vue` | schema 驱动流程表单，支持附件上传字段 |
 
 ## ai 组件
 
