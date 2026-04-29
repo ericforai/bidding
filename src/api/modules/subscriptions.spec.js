@@ -5,7 +5,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/api/client', () => ({
+vi.mock('../client.js', () => ({
   default: {
     get: vi.fn(),
     post: vi.fn(),
@@ -15,7 +15,7 @@ vi.mock('@/api/client', () => ({
   }
 }))
 
-import httpClient from '@/api/client'
+import httpClient from '../client.js'
 import { subscriptionsApi } from './subscriptions.js'
 
 describe('subscriptionsApi', () => {

@@ -19,7 +19,7 @@ describe('mentionsApi', () => {
   })
 
   it('creates a mention with full payload', async () => {
-    httpClient.post.mockResolvedValue({ data: { success: true, data: { mentionCount: 2, notificationId: 100 } } })
+    httpClient.post.mockResolvedValue({ success: true, data: { mentionCount: 2, notificationId: 100 } })
     const result = await mentionsApi.create({
       content: '@[Alice](1) please review',
       sourceEntityType: 'DOCUMENT',
@@ -32,12 +32,12 @@ describe('mentionsApi', () => {
       sourceEntityId: 42,
       title: '审核请求'
     })
-    expect(result.data.mentionCount).toBe(2)
+    expect(result.mentionCount).toBe(2)
   })
 
   it('returns response data', async () => {
-    httpClient.post.mockResolvedValue({ data: { success: true, data: { mentionCount: 0, notificationId: 0 } } })
+    httpClient.post.mockResolvedValue({ success: true, data: { mentionCount: 0, notificationId: 0 } })
     const result = await mentionsApi.create({ content: 'plain text', title: 'none' })
-    expect(result.success).toBe(true)
+    expect(result.mentionCount).toBe(0)
   })
 })

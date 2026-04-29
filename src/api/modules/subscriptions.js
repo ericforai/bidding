@@ -26,8 +26,10 @@ export const subscriptionsApi = {
   },
 
   async check(targetEntityType, targetEntityId) {
+    const safeType = encodeURIComponent(String(targetEntityType))
+    const safeId = encodeURIComponent(String(targetEntityId))
     const { data } = await httpClient.get(
-      `/api/entities/${targetEntityType}/${targetEntityId}/subscription`
+      `/api/entities/${safeType}/${safeId}/subscription`
     )
     return data
   }
