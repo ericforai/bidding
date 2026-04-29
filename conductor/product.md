@@ -18,10 +18,10 @@ To streamline and intelligentize the entire enterprise bidding lifecycle, reduci
 - **Data-Driven Decisions:** Provides actionable insights through comprehensive dashboards tracking win rates, ROI, and competitive intelligence.
 
 ## Key Features
-1. **Workbench:** Configurable dynamic dashboard with role-based widgets, fine-grained permission control, and departmental data scope isolation.
+1. **Workbench:** Configurable dynamic dashboard with role-based widgets, fine-grained permission control, matrix-style collaboration, and CRM-inherited data scope isolation.
 2. **Bidding Info Center:** External tender acquisition with AI matching and analysis.
 3. **Project Management:** Project tracking, collaborative task assignment, and AI-assisted document drafting and review.
 4. **Knowledge Asset Center:** Management of qualifications, cases, and document templates.
 5. **Resource Management:** Tracking of expenses, bid bonds, and platform accounts.
 6. **Data Analytics:** Management cockpit with ROI and win-rate trends.
-7. **System Configuration:** Granular role-based access control and system auditing.
+7. **System Configuration:** Granular role-based access control, cross-departmental collaboration settings, CRM permission mirroring, and system auditing.
