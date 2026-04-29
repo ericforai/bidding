@@ -17,12 +17,27 @@ class InMemoryWorkflowFormInstanceStore implements WorkflowFormInstanceStore {
     private long nextId = 1L;
     private final Set<String> eventIds = new HashSet<>();
 
+    public Long create(FormBusinessType businessType, String templateCode, Long projectId,
+                       String applicantName, Map<String, Object> formData) {
+        return create(businessType, templateCode, 1, projectId, applicantName, formData,
+                Map.of(), Map.of(), Map.of());
+    }
+
     @Override
-    public Long create(FormBusinessType businessType, String templateCode, Long projectId, String applicantName, Map<String, Object> formData) {
+    public Long create(FormBusinessType businessType, String templateCode, Integer templateVersion, Long projectId,
+                       String applicantName, Map<String, Object> formData, Map<String, Object> schemaSnapshot,
+                       Map<String, Object> oaBindingSnapshot, Map<String, Object> oaPayload) {
         Long id = nextId++;
-        records.put(id, new WorkflowFormInstanceRecord(id, businessType, templateCode, projectId, applicantName,
-                WorkflowFormStatus.SUBMITTED, new LinkedHashMap<>(formData), null, false, null));
+        records.put(id, new WorkflowFormInstanceRecord(id, businessType, templateCode, templateVersion, projectId, applicantName,
+                WorkflowFormStatus.SUBMITTED, new LinkedHashMap<>(formData), new LinkedHashMap<>(schemaSnapshot),
+                new LinkedHashMap<>(oaBindingSnapshot), new LinkedHashMap<>(oaPayload), null, false, null));
         return id;
+    }
+
+    @Override
+    public void updateOaPayload(Long id, Map<String, Object> oaPayload) {
+        WorkflowFormInstanceRecord record = records.get(id);
+        records.put(id, record.withOaPayload(new LinkedHashMap<>(oaPayload)));
     }
 
     @Override

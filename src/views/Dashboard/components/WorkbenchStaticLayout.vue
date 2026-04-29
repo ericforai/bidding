@@ -47,6 +47,7 @@
         :status-type-resolver="getProjectStatusType"
         @view-all="$emit('viewProject')"
         @project-click="$emit('projectClick', $event)"
+        @share-click="$emit('shareClick', $event)"
       />
       <TeamTaskList v-if="canViewTeamTask" :members="teamMembers" />
       <ProjectList
@@ -58,6 +59,7 @@
         :status-type-resolver="getProjectStatusType"
         @view-all="$emit('viewProject')"
         @project-click="$emit('projectClick', $event)"
+        @share-click="$emit('shareClick', $event)"
       />
       <ProjectList
         title="进行中项目"
@@ -66,6 +68,7 @@
         :status-type-resolver="getProjectStatusType"
         @view-all="$emit('viewProject')"
         @project-click="$emit('projectClick', $event)"
+        @share-click="$emit('shareClick', $event)"
       />
     </div>
     <div class="side-column">
@@ -172,6 +175,7 @@ defineEmits([
   'review',
   'viewProject',
   'projectClick',
+  'shareClick',
   'approve',
   'reject',
   'retryApprovals',

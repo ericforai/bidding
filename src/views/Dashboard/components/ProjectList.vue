@@ -75,14 +75,24 @@ Pos: src/views/Dashboard/components/ - Dashboard display components
             </span>
           </div>
         </div>
-        <el-tag :type="resolveStatusType(project.status)" size="small">{{ project.status }}</el-tag>
+        <div class="project-actions">
+          <el-button 
+            circle 
+            size="small" 
+            class="share-btn" 
+            @click="handleShare($event, project)"
+          >
+            <el-icon><Share /></el-icon>
+          </el-button>
+          <el-tag :type="resolveStatusType(project.status)" size="small">{{ project.status }}</el-tag>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ArrowRight, Calendar, User } from '@element-plus/icons-vue'
+import { ArrowRight, Calendar, User, Share } from '@element-plus/icons-vue'
 import EmptyState from './EmptyState.vue'
 
 const props = defineProps({
@@ -96,8 +106,12 @@ const props = defineProps({
   error: { type: String, default: '' },
 })
 
-const emit = defineEmits(['view-all', 'project-click', 'retry'])
+const emit = defineEmits(['view-all', 'project-click', 'share-click', 'retry'])
 const selectProject = (project) => emit('project-click', project)
+const handleShare = (event, project) => {
+  event.stopPropagation()
+  emit('share-click', project)
+}
 
 const defaultProgressColor = (progress) => {
   if (progress >= 80) return '#059669'
@@ -120,3 +134,19 @@ const resolveStatusType = (status) => (
   props.statusTypeResolver ? props.statusTypeResolver(status) : defaultStatusType(status)
 )
 </script>
+
+<style scoped>
+.project-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.share-btn {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.project-card:hover .share-btn {
+  opacity: 1;
+}
+</style>

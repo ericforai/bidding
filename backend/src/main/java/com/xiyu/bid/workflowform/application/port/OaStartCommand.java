@@ -9,6 +9,9 @@ public record OaStartCommand(
         FormBusinessType businessType,
         Long formInstanceId,
         String applicantName,
-        Map<String, Object> formData
+        Map<String, Object> formData,
+        String templateCode,
+        Map<String, Object> mappedPayload,
+        boolean trial
 ) {
 }

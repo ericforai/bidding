@@ -196,6 +196,12 @@ const routes = [
         meta: { title: '系统设置', roles: ['admin'] }
       },
       {
+        path: 'settings/workflow-forms',
+        name: 'WorkflowFormDesigner',
+        component: () => import('@/views/System/WorkflowFormDesigner.vue'),
+        meta: { title: '流程表单配置', roles: ['admin'], activeMenu: '/settings' }
+      },
+      {
         path: 'settings/alert-rules',
         name: 'AlertRules',
         component: () => import('@/views/System/AlertRules.vue'),

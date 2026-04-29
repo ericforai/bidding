@@ -71,6 +71,7 @@ public class SecurityConfig {
             "/api/auth/verify-email/**",
             "/api/public/**",
             "/api/integrations/organization/events",
+            "/api/webhooks/crm/**",
             "/api/system/runtime-mode",
             "/api/integrations/oa/weaver/callback",
             "/actuator/health",

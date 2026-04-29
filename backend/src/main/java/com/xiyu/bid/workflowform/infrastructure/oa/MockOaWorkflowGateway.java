@@ -14,6 +14,7 @@ public class MockOaWorkflowGateway implements OaWorkflowGateway {
 
     @Override
     public OaStartResult startProcess(OaStartCommand command) {
-        return new OaStartResult(true, "MOCK-OA-" + UUID.randomUUID(), null);
+        String prefix = command.trial() ? "MOCK-TRIAL-OA-" : "MOCK-OA-";
+        return new OaStartResult(true, prefix + UUID.randomUUID(), null);
     }
 }

@@ -14,7 +14,7 @@
 ## Backend
 - **Language:** Java 21
 - **Framework:** Spring Boot 3.2
-- **Data Visibility:** AOP-based Data Scope filtering (Self/Dept/All)
+- **Data Visibility:** AOP-based Data Scope filtering (Self/Dept/All) + Collaboration ACL + CRM Mirroring
 - **Security:** Spring Security + JWT
 - **Data Access:** Spring Data JPA
 - **Database:** MySQL 8.0

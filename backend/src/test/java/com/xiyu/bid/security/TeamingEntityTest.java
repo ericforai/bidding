@@ -1,44 +1,43 @@
 package com.xiyu.bid.security;
 
-import com.xiyu.bid.matrixcollaboration.infrastructure.persistence.entity.CrmCustomerPermission;
-import com.xiyu.bid.matrixcollaboration.infrastructure.persistence.entity.ProjectMember;
+import com.xiyu.bid.entity.CrmCustomerPermission;
+import com.xiyu.bid.entity.ProjectMember;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TeamingEntityTest {
 
     @Test
-    void crmCustomerPermissionBuilderCreatesValidEntity() {
-        CrmCustomerPermission permission = CrmCustomerPermission.builder()
+    void testCrmCustomerPermission() {
+        CrmCustomerPermission perm = CrmCustomerPermission.builder()
                 .id(1L)
                 .customerId("CRM_CUST_001")
                 .userId(100L)
                 .permissionType("OWNER")
                 .build();
-
-        assertThat(permission.getId()).isEqualTo(1L);
-        assertThat(permission.getCustomerId()).isEqualTo("CRM_CUST_001");
-        assertThat(permission.getUserId()).isEqualTo(100L);
-        assertThat(permission.getPermissionType()).isEqualTo("OWNER");
+        
+        assertEquals(1L, perm.getId());
+        assertEquals("CRM_CUST_001", perm.getCustomerId());
+        assertEquals(100L, perm.getUserId());
+        assertEquals("OWNER", perm.getPermissionType());
     }
 
     @Test
-    void projectMemberBuilderCreatesValidEntity() {
+    void testProjectMember() {
         ProjectMember member = ProjectMember.builder()
                 .id(1L)
                 .projectId(500L)
                 .userId(101L)
                 .memberRole("TECHNICAL_EXPERT")
                 .permissionLevel("EDITOR")
-                .inherited(false)
+                .isInherited(false)
                 .build();
-
-        assertThat(member.getId()).isEqualTo(1L);
-        assertThat(member.getProjectId()).isEqualTo(500L);
-        assertThat(member.getUserId()).isEqualTo(101L);
-        assertThat(member.getMemberRole()).isEqualTo("TECHNICAL_EXPERT");
-        assertThat(member.getPermissionLevel()).isEqualTo("EDITOR");
-        assertThat(member.isInherited()).isFalse();
+        
+        assertEquals(1L, member.getId());
+        assertEquals(500L, member.getProjectId());
+        assertEquals(101L, member.getUserId());
+        assertEquals("TECHNICAL_EXPERT", member.getMemberRole());
+        assertEquals("EDITOR", member.getPermissionLevel());
+        assertEquals(false, member.isInherited());
     }
 }

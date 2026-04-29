@@ -37,6 +37,9 @@ public class WorkflowFormInstanceEntity {
     @Column(name = "template_code", nullable = false, length = 80)
     private String templateCode;
 
+    @Column(name = "template_version")
+    private Integer templateVersion;
+
     @Column(name = "project_id")
     private Long projectId;
 
@@ -50,6 +53,15 @@ public class WorkflowFormInstanceEntity {
 
     @Column(name = "form_data_json", nullable = false, columnDefinition = "TEXT")
     private String formDataJson;
+
+    @Column(name = "schema_snapshot_json", columnDefinition = "TEXT")
+    private String schemaSnapshotJson;
+
+    @Column(name = "oa_binding_snapshot_json", columnDefinition = "TEXT")
+    private String oaBindingSnapshotJson;
+
+    @Column(name = "oa_payload_json", columnDefinition = "TEXT")
+    private String oaPayloadJson;
 
     @Column(name = "oa_instance_id", length = 120)
     private String oaInstanceId;

@@ -25,6 +25,7 @@
       @metric-click="handleMetricClick"
       @retry="reloadMetrics"
     />
+
     <WorkbenchStaticLayout
       v-if="!dynamicLayout"
       v-model:calendar-date="calendarDate"
@@ -77,12 +78,14 @@
       @review="handleReview"
       @view-project="router.push('/project')"
       @project-click="handleProjectClick"
+      @share-click="handleShareClick"
       @approve="handleApprove"
       @reject="handleReject"
       @retry-approvals="loadPendingApprovals"
       @retry-processes="loadMyProcesses"
       @retry-todos="loadTodos"
     />
+
     <DynamicLayoutRenderer
       v-else
       :layout="dynamicLayout"
@@ -90,11 +93,17 @@
       :widget-props="widgetProps"
       :widget-listeners="widgetListeners"
     />
+
     <ApprovalDialog
       v-model:visible="approvalDialogVisible"
       :mode="approvalMode"
       :approval-info="currentApprovalItem"
       @success="handleApprovalSuccess"
+    />
+    <ProjectCollaboratorsDialog
+      v-model="collabDialogVisible"
+      :project="selectedProjectForCollab"
+      @changed="handleProjectMemberChanged"
     />
   </div>
 </template>
@@ -113,13 +122,14 @@ import { useWorkbenchApprovals } from '@/views/Dashboard/useWorkbenchApprovals.j
 import { useWorkbenchDerivedLists } from '@/views/Dashboard/useWorkbenchDerivedLists.js'
 import { useWorkbenchDynamicWidgets } from '@/views/Dashboard/useWorkbenchDynamicWidgets.js'
 import {
-  filterProjectsByRole, formatCurrentDate, formatRelativeTime, getBannerActionConfig,
+  formatCurrentDate, formatRelativeTime, getBannerActionConfig,
   getBannerSubtitle, getBannerTitle, getPriorityLabel, getPriorityType, getProgressColor,
   getProjectStatusType, hasQuickStartPermission,
 } from '@/views/Dashboard/workbench-core.js'
 import { normalizeProjectForWorkbench } from '@/views/Dashboard/workbench-utils.js'
 import ApprovalDialog from '@/components/common/ApprovalDialog.vue'
 import MetricCards from '@/views/Dashboard/components/MetricCards.vue'
+import ProjectCollaboratorsDialog from '@/views/Dashboard/components/ProjectCollaboratorsDialog.vue'
 import WelcomeBanner from '@/views/Dashboard/components/WelcomeBanner.vue'
 import WorkbenchStaticLayout from '@/views/Dashboard/components/WorkbenchStaticLayout.vue'
 import DynamicLayoutRenderer from '@/views/Dashboard/components/DynamicLayoutRenderer.vue'
@@ -141,6 +151,8 @@ const workbenchProjects = ref([])
 const hotTenders = ref([])
 const runtimeMode = ref(null)
 const dynamicLayout = ref(null)
+const collabDialogVisible = ref(false)
+const selectedProjectForCollab = ref(null)
 
 const {
   pendingApprovals, pendingApprovalsTotalCount, approvalDialogVisible, approvalMode,
@@ -154,11 +166,7 @@ const {
   handleTaskComplete,
 } = useWorkbenchTodos({ assigneeIdRef: currentUserId, canLoadAlertTodosRef: computed(() => ['admin', 'manager'].includes(currentUserRole.value)), message: ElMessage })
 
-const myProjectCount = computed(() => filterProjectsByRole(workbenchProjects.value, {
-  role: currentUserRole.value,
-  userName: currentUserName.value,
-  limit: Number.POSITIVE_INFINITY,
-}).length)
+const myProjectCount = computed(() => workbenchProjects.value.length)
 
 const {
   summaryStats, metricsLoading, metricsError, metrics, loadWorkbenchSummary, handleMetricClick,
@@ -204,23 +212,6 @@ const {
   currentUserName,
 })
 
-const activities = computed(() => {
-  const processActivities = myProcesses.value.slice(0, 4).map((process) => ({
-    id: `process-${process.id}`,
-    type: process.status === 'urgent' ? 'warning' : process.status === 'in-progress' ? 'success' : 'info',
-    text: process.title,
-    time: process.time || '刚刚',
-  }))
-  if (processActivities.length > 0) {
-    return processActivities
-  }
-  return priorityTodos.value.slice(0, 4).map((todo) => ({
-    id: `todo-${todo.id}`,
-    type: todo.done ? 'success' : 'warning',
-    text: todo.title,
-    time: todo.deadline || '待处理',
-  }))
-})
 const {
   calendarDate, activeCalendarFilter, selectedDateKey, calendarFilters, visibleCalendarEvents,
   selectedDateEvents, selectedDateLabel, monthCalendarSummary, upcomingCalendarEvents,
@@ -247,7 +238,7 @@ const { widgetRegistry, widgetProps, widgetListeners } = useWorkbenchDynamicWidg
     approvalsError,
     myProcesses,
     processesError,
-    activities,
+    activities: computed(() => activities.value),
     priorityTodos,
     todosError,
     calendarDate,
@@ -259,6 +250,13 @@ const { widgetRegistry, widgetProps, widgetListeners } = useWorkbenchDynamicWidg
     monthCalendarSummary,
     upcomingCalendarEvents,
     calendarError,
+    canUseQuickStart,
+    canViewTenderList,
+    canViewTechnicalTask,
+    canViewReviewList,
+    canViewProjectList,
+    canViewTeamTask,
+    canViewGlobalProjects
   },
   actions: {
     getProgressColor,
@@ -267,12 +265,15 @@ const { widgetRegistry, widgetProps, widgetListeners } = useWorkbenchDynamicWidg
     getEventsForDate,
     calendarCellClass,
     getEventTypeTag,
+    getPriorityType,
+    getPriorityLabel,
     viewBidding: () => router.push('/bidding'),
     viewProject: () => router.push('/project'),
     handleTenderClick,
     handleTaskComplete,
     handleReview,
     handleProjectClick,
+    handleShareClick,
     handleApprove,
     handleReject,
     loadPendingApprovals,
@@ -286,6 +287,24 @@ const { widgetRegistry, widgetProps, widgetListeners } = useWorkbenchDynamicWidg
     handleCalendarAction,
     reloadSchedule,
   },
+})
+
+const activities = computed(() => {
+  const processActivities = myProcesses.value.slice(0, 4).map((process) => ({
+    id: `process-${process.id}`,
+    type: process.status === 'urgent' ? 'warning' : process.status === 'in-progress' ? 'success' : 'info',
+    text: process.title,
+    time: process.time || '刚刚',
+  }))
+  if (processActivities.length > 0) {
+    return processActivities
+  }
+  return priorityTodos.value.slice(0, 4).map((todo) => ({
+    id: `todo-${todo.id}`,
+    type: todo.done ? 'success' : 'warning',
+    text: todo.title,
+    time: todo.deadline || '待处理',
+  }))
 })
 
 function iconizeAction(action) {
@@ -309,6 +328,15 @@ function handleProjectClick(project) {
     return
   }
   router.push({ path: '/project', query: { demoProjectId: projectId } })
+}
+
+function handleShareClick(project) {
+  selectedProjectForCollab.value = project
+  collabDialogVisible.value = true
+}
+
+function handleProjectMemberChanged() {
+  loadWorkbenchProjects()
 }
 
 function handleReview(review) {
@@ -406,3 +434,12 @@ watch(calendarMonthKey, async (current, previous) => {
 <script>
 export default { name: 'DashboardWorkbench' }
 </script>
+
+<style scoped>
+.side-summary-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+</style>
