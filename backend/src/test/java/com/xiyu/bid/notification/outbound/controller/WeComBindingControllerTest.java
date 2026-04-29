@@ -78,6 +78,28 @@ class WeComBindingControllerTest {
     }
 
     @Test
+    @DisplayName("PUT with control chars rejects via @Pattern")
+    void put_RejectsControlChars() throws Exception {
+        String body = objectMapper.writeValueAsString(new WeComBindingRequest("abc\r\nX"));
+
+        mockMvc.perform(put("/api/admin/users/7/wecom-binding")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("PUT with Chinese characters rejects via @Pattern")
+    void put_RejectsChineseChars() throws Exception {
+        String body = objectMapper.writeValueAsString(new WeComBindingRequest("张三"));
+
+        mockMvc.perform(put("/api/admin/users/7/wecom-binding")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("DELETE unbinds the user")
     void delete_Unbinds() throws Exception {
         mockMvc.perform(delete("/api/admin/users/7/wecom-binding"))
