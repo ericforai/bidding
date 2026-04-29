@@ -6,11 +6,11 @@
 - [x] **Task: 数据库 Schema 建立** 97141c3
     - [x] 创建 `CrmCustomerPermission` 实体与镜像表。
     - [x] 创建 `ProjectMember` 实体与协作表（支持 VIEWER/EDITOR 角色）。
-- [ ] **Task: CRM Webhook 接收端实现**
-    - [ ] 实现 `/api/webhooks/crm/permissions` 接口。
-    - [ ] 实现幂等同步逻辑（根据 CRM 推送更新本地镜像）。
-- [ ] **Task: TDD - 验证同步与持久化**
-    - [ ] 编写测试用例，模拟 Webhook 推送并断言数据库状态。
+- [x] **Task: CRM Webhook 接收端实现** 6f723bc
+    - [x] 实现 `/api/webhooks/crm/permissions` 接口。
+    - [x] 实现幂等同步逻辑（根据 CRM 推送更新本地镜像）。
+- [x] **Task: TDD - 验证同步与持久化** 386e3fb
+    - [x] 编写测试用例，模拟 Webhook 推送并断言数据库状态。
 - [ ] **Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)**
 
 ## Phase 2: 后端 AOP 拦截器深度重构
