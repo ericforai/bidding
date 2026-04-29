@@ -1,6 +1,6 @@
 -- Seed default admin user for first-run / private deployment scenarios.
 -- Password: XiyuAdmin2026! (must be changed after deployment)
--- Idempotent via INSERT...SELECT WHERE NOT EXISTS (portable across H2 and PostgreSQL).
+-- Idempotent via INSERT...SELECT WHERE NOT EXISTS.
 
 INSERT INTO users (username, password, email, full_name, role, enabled, email_verified, role_id, created_at, updated_at)
 SELECT 'admin',

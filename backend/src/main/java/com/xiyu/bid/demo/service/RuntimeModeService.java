@@ -53,9 +53,6 @@ public class RuntimeModeService {
         if (lower.contains(":mysql:")) {
             return "mysql";
         }
-        if (lower.contains(":postgresql:")) {
-            return "postgresql";
-        }
         return "unknown";
     }
 
@@ -66,9 +63,6 @@ public class RuntimeModeService {
         if (profiles.stream().anyMatch(profile -> "mysql".equalsIgnoreCase(profile))) {
             return "real_api_mysql";
         }
-        if ("postgresql".equalsIgnoreCase(database)) {
-            return "real_api_postgresql";
-        }
         return "real_api";
     }
 
@@ -76,7 +70,6 @@ public class RuntimeModeService {
         return switch (modeCode) {
             case "e2e_demo_fusion" -> "E2E/H2（真实 + Demo 融合）";
             case "real_api_mysql" -> "真实 API（MySQL）";
-            case "real_api_postgresql" -> "真实 API（PostgreSQL）";
             default -> "真实 API";
         };
     }

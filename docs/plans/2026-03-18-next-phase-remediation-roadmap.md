@@ -20,9 +20,9 @@
 ### 可执行清单
 
 1. 补齐源码内正式 `system_settings` Flyway 迁移
-   - 把编译产物中的 `V13__create_system_settings_table.sql` 回补到 `backend/src/main/resources/db/migration/`
+   - 把编译产物中的 `V13__create_system_settings_table.sql` 回补到 `backend/src/main/resources/db/migration-mysql/`
    - 补充 Flyway 验证，确保空库启动时 baseline 之后继续执行 `V13`
-   - 复核 `B2__full_schema_baseline.sql` 与 `V13` 的执行顺序和不冲突性
+   - 复核 MySQL baseline 与 `V13` 的执行顺序和不冲突性
 
 2. 设计并落地服务端 refresh session 基础设施
    - 新增 refresh session 持久化表、实体和 repository

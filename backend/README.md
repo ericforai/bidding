@@ -84,7 +84,7 @@ mvn -Pjava-quality,java-quality-spotbugs,quality-strict -DskipTests -Djacoco.ski
 mvn test -Dtest=FPJavaArchitectureTest,MaintainabilityArchitectureTest,ArchitectureTest
 
 # Flyway / 资源链路门禁
-mvn test -Dtest=FlywayBaselineContextTest,FlywayMysqlContainerTest,ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest
+mvn test -Dtest=FlywayMysqlContainerTest,ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest
 ```
 
 ## 环境变量

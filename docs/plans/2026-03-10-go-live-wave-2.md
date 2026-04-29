@@ -20,9 +20,9 @@
 - `scripts/release/deploy.sh`
   - 前后端构建、后端迁移、基础前置检查、发布摘要输出
 - `scripts/release/backup-db.sh`
-  - 基于 `pg_dump` 的数据库备份脚本
+  - 基于 `mysqldump` 的数据库备份脚本
 - `scripts/release/restore-db.sh`
-  - 基于 `psql` 的数据库恢复脚本
+  - 基于 `mysql` 客户端的数据库恢复脚本
 - `scripts/release/preflight.sh`
   - 检查必要环境变量、Docker、Java/Node 版本、数据库连接参数
 
@@ -48,8 +48,8 @@
 - `npm run build`
 - `VITE_API_MODE=api npm run build`
 - `mvn -DskipTests compile`
-- `mvn -Dtest=FlywayBaselineContextTest,ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest test`
-- `mvn -Dtest=FlywayPostgresContainerTest test`
+- `mvn -Dtest=ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest test`
+- `mvn -Dtest=FlywayMysqlContainerTest test`
 - `bash scripts/release/preflight.sh` 在缺少生产变量时应给出明确失败信息
 
 ## Risks

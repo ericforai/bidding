@@ -26,21 +26,11 @@ cd "$BACKEND_DIR"
 mvn -DskipTests compile
 
 printf '\n==> Running critical backend tests\n'
-mvn -Dtest=FlywayBaselineContextTest,ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest test
-
-printf '\n==> Running dual database migration parity gate\n'
-mvn -Dtest=DualDatabaseMigrationParityTest test
+mvn -Dtest=ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest test
 
 if command -v docker >/dev/null 2>&1; then
   printf '\n==> Running MySQL Testcontainers baseline verification\n'
   mvn -Dtest=FlywayMysqlContainerTest test
-
-  if [[ "${RUN_LEGACY_POSTGRES_CHECKS:-0}" == "1" ]]; then
-    printf '\n==> Running legacy PostgreSQL Testcontainers compatibility verification\n'
-    mvn -Dtest=FlywayPostgresContainerTest test
-  else
-    printf '\nSkipping legacy PostgreSQL Testcontainers verification. Set RUN_LEGACY_POSTGRES_CHECKS=1 to run it.\n'
-  fi
 else
   printf '\nSkipping MySQL Testcontainers verification because Docker is unavailable.\n'
 fi

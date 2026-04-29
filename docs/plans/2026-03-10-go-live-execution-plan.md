@@ -58,10 +58,9 @@
 - frontend: `npm ci && npm run build`
 - backend: `mvn -DskipTests compile`
 - backend critical tests:
-  - `FlywayBaselineContextTest`
   - `ExpenseControllerIntegrationTest`
   - `BarCertificateControllerIntegrationTest`
-- 如果 runner 支持 Docker，再运行 `FlywayPostgresContainerTest`
+- 如果 runner 支持 Docker，再运行 `FlywayMysqlContainerTest`
 
 ## Phase 5: Fix Configuration Hazards
 - 校正 `application.yml` 中配置层级，确保 `datasource/jpa/flyway/cache/jackson` 归属 `spring` 而不是错误挂载到 `ai`
@@ -77,8 +76,8 @@
 - `npm run build`
 - `VITE_API_MODE=api npm run build`
 - `mvn -DskipTests compile`
-- `mvn -Dtest=FlywayBaselineContextTest,ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest test`
-- 若 Docker 可用：`mvn -Dtest=FlywayPostgresContainerTest test`
+- `mvn -Dtest=ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest test`
+- 若 Docker 可用：`mvn -Dtest=FlywayMysqlContainerTest test`
 
 ## Risks
 - 工作树当前已有大量未提交改动，本轮必须在现有改动上增量推进，不能回滚用户已有工作

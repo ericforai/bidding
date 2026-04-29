@@ -1,5 +1,5 @@
 -- MySQL 8.0 baseline for new customer deployments.
--- PostgreSQL remains on db/migration; future V74+ changes must be mirrored here.
+-- MySQL 8.0 is the single supported migration path; future changes belong in db/migration-mysql.
 set names utf8mb4;
 
     create table accounts (

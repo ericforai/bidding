@@ -97,7 +97,7 @@ class FlywayMysqlContainerTest {
                 Integer.class
         );
 
-        Integer postgresIncrementalRuns = jdbcTemplate.queryForObject(
+        Integer legacyIncrementalRuns = jdbcTemplate.queryForObject(
                 """
                 select count(*)
                 from flyway_schema_history
@@ -110,7 +110,7 @@ class FlywayMysqlContainerTest {
         assertEquals(1, projectQualityTableCount);
         assertEquals(1, tenderAssignmentTableCount);
         assertEquals(3, roleSeedCount);
-        assertEquals(0, postgresIncrementalRuns);
+        assertEquals(0, legacyIncrementalRuns);
     }
 
     @Test

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Input: rehearsal environment variables, database engine/container configuration, and backend build inputs
-# Output: running MySQL 8.0 rehearsal services or explicit legacy PostgreSQL compatibility services, backend/frontend pid files, and failure log tails
+# Input: rehearsal environment variables, MySQL 8.0 container configuration, and backend build inputs
+# Output: running MySQL 8.0 rehearsal services, backend/frontend pid files, and failure log tails
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -43,17 +43,6 @@ wait_for_backend_health() {
 
 start_database() {
   case "$DB_ENGINE" in
-    postgres)
-      printf '==> Starting PostgreSQL container %s on %s\n' "$POSTGRES_CONTAINER_NAME" "$POSTGRES_PORT"
-      docker rm -f "$POSTGRES_CONTAINER_NAME" >/dev/null 2>&1 || true
-      docker run -d \
-        --name "$POSTGRES_CONTAINER_NAME" \
-        -e POSTGRES_DB="$DB_NAME" \
-        -e POSTGRES_USER="$DB_USER" \
-        -e POSTGRES_PASSWORD="$DB_PASSWORD" \
-        -p "${POSTGRES_PORT}:5432" \
-        postgres:16-alpine >/dev/null
-      ;;
     mysql)
       printf '==> Starting MySQL container %s on %s\n' "$MYSQL_CONTAINER_NAME" "$MYSQL_PORT"
       docker rm -f "$MYSQL_CONTAINER_NAME" >/dev/null 2>&1 || true
@@ -73,16 +62,6 @@ start_database() {
 
 wait_for_database() {
   case "$DB_ENGINE" in
-    postgres)
-      printf '==> Waiting for PostgreSQL\n'
-      for i in {1..60}; do
-        if docker exec "$POSTGRES_CONTAINER_NAME" pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; then
-          break
-        fi
-        sleep 1
-      done
-      docker exec "$POSTGRES_CONTAINER_NAME" pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null
-      ;;
     mysql)
       printf '==> Waiting for MySQL\n'
       for i in {1..90}; do
@@ -99,9 +78,6 @@ wait_for_database() {
 
 count_users() {
   case "$DB_ENGINE" in
-    postgres)
-      docker exec "$POSTGRES_CONTAINER_NAME" psql -U "$DB_USER" -d "$DB_NAME" -t -A -c 'select count(*) from users;'
-      ;;
     mysql)
       docker exec "$MYSQL_CONTAINER_NAME" mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" -Nse 'select count(*) from users;'
       ;;

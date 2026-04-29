@@ -208,7 +208,6 @@ configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "
 |------|------|------|
 | Spring Boot | 3.2.0 | ✅ 最新稳定版 |
 | jjwt | 0.12.3 | ✅ 最新版本 |
-| PostgreSQL Driver | runtime | ✅ |
 | Jsoup | (用于XSS防护) | ✅ |
 
 **建议**:

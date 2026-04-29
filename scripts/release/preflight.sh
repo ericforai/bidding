@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Input: release environment variables, MySQL-first database engine selection, and local tool availability
-# Output: preflight checks for MySQL 8.0 release workflows and explicit legacy PostgreSQL compatibility
+# Input: release environment variables, MySQL 8.0 database selection, and local tool availability
+# Output: preflight checks for MySQL 8.0 release workflows
 # Pos: scripts/release/ - Release automation and rehearsal helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -9,7 +9,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 BACKEND_DIR="$ROOT_DIR/backend"
 
 required_commands=(node npm java mvn)
-optional_commands=(docker pg_dump psql mysqldump mysql)
+optional_commands=(docker mysqldump mysql)
 DB_USER="${DB_USER:-${DB_USERNAME:-}}"
 DB_USERNAME="${DB_USERNAME:-$DB_USER}"
 required_env=(SPRING_PROFILES_ACTIVE DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD JWT_SECRET REDIS_HOST CORS_ALLOWED_ORIGINS)
@@ -46,8 +46,6 @@ if [[ "$missing_env" -ne 0 ]]; then
 fi
 
 case "$DB_ENGINE" in
-  postgres)
-    ;;
   mysql)
     if [[ ",$SPRING_PROFILES_ACTIVE," != *",mysql,"* ]]; then
       printf 'MySQL deployments must include mysql in SPRING_PROFILES_ACTIVE, for example: prod,mysql\n' >&2
@@ -55,7 +53,7 @@ case "$DB_ENGINE" in
     fi
     ;;
   *)
-    printf 'Unsupported DB_ENGINE: %s. Use postgres or mysql.\n' "$DB_ENGINE" >&2
+    printf 'Unsupported DB_ENGINE: %s. Use mysql.\n' "$DB_ENGINE" >&2
     exit 1
     ;;
 esac
