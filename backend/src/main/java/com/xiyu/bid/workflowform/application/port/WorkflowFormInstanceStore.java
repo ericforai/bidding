@@ -6,7 +6,11 @@ import java.util.Map;
 import java.util.Optional;
 
 public interface WorkflowFormInstanceStore {
-    Long create(FormBusinessType businessType, String templateCode, Long projectId, String applicantName, Map<String, Object> formData);
+    Long create(FormBusinessType businessType, String templateCode, Integer templateVersion, Long projectId,
+                String applicantName, Map<String, Object> formData, Map<String, Object> schemaSnapshot,
+                Map<String, Object> oaBindingSnapshot, Map<String, Object> oaPayload);
+
+    void updateOaPayload(Long id, Map<String, Object> oaPayload);
 
     void markOaApproving(Long id, String oaInstanceId);
 

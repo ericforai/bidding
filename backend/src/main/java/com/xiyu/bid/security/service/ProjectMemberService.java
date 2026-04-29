@@ -6,6 +6,7 @@ import com.xiyu.bid.entity.ProjectMember;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.ProjectMemberRepository;
 import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,9 +22,11 @@ public class ProjectMemberService {
 
     private final ProjectMemberRepository projectMemberRepository;
     private final UserRepository userRepository;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     @Transactional(readOnly = true)
     public List<ProjectMemberDTO> getProjectMembers(Long projectId) {
+        assertCanAccessProject(projectId);
         log.info("Fetching members for project: {}", projectId);
         return projectMemberRepository.findByProjectId(projectId).stream()
                 .map(this::convertToDTO)
@@ -32,6 +35,7 @@ public class ProjectMemberService {
 
     @Transactional
     public ProjectMemberDTO addProjectMember(Long projectId, ProjectMemberRequest request) {
+        assertCanAccessProject(projectId);
         log.info("Adding user {} to project: {}", request.getUserId(), projectId);
         
         ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, request.getUserId())
@@ -49,8 +53,18 @@ public class ProjectMemberService {
 
     @Transactional
     public void removeProjectMember(Long projectId, Long userId) {
+        assertCanAccessProject(projectId);
         log.info("Removing user {} from project: {}", userId, projectId);
         projectMemberRepository.deleteByProjectIdAndUserId(projectId, userId);
+    }
+
+    private void assertCanAccessProject(Long projectId) {
+        if (projectId == null || projectAccessScopeService.currentUserHasAdminAccess()) {
+            return;
+        }
+        if (!projectAccessScopeService.getAllowedProjectIdsForCurrentUser().contains(projectId)) {
+            throw new SecurityException("无权访问该项目");
+        }
     }
 
     private ProjectMemberDTO convertToDTO(ProjectMember entity) {

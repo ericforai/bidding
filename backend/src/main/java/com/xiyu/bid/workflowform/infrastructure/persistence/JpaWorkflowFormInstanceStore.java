@@ -27,16 +27,29 @@ public class JpaWorkflowFormInstanceStore implements WorkflowFormInstanceStore {
     private final ObjectMapper objectMapper;
 
     @Override
-    public Long create(FormBusinessType businessType, String templateCode, Long projectId, String applicantName, Map<String, Object> formData) {
+    public Long create(FormBusinessType businessType, String templateCode, Integer templateVersion, Long projectId,
+                       String applicantName, Map<String, Object> formData, Map<String, Object> schemaSnapshot,
+                       Map<String, Object> oaBindingSnapshot, Map<String, Object> oaPayload) {
         WorkflowFormInstanceEntity entity = new WorkflowFormInstanceEntity();
         entity.setBusinessType(businessType);
         entity.setTemplateCode(templateCode);
+        entity.setTemplateVersion(templateVersion);
         entity.setProjectId(projectId);
         entity.setApplicantName(applicantName);
         entity.setStatus(WorkflowFormStatus.SUBMITTED);
         entity.setFormDataJson(writeJson(formData));
+        entity.setSchemaSnapshotJson(writeJson(schemaSnapshot));
+        entity.setOaBindingSnapshotJson(writeJson(oaBindingSnapshot));
+        entity.setOaPayloadJson(writeJson(oaPayload));
         entity.setBusinessApplied(false);
         return repository.save(entity).getId();
+    }
+
+    @Override
+    public void updateOaPayload(Long id, Map<String, Object> oaPayload) {
+        WorkflowFormInstanceEntity entity = get(id);
+        entity.setOaPayloadJson(writeJson(oaPayload));
+        repository.save(entity);
     }
 
     @Override
@@ -132,10 +145,14 @@ public class JpaWorkflowFormInstanceStore implements WorkflowFormInstanceStore {
                 entity.getId(),
                 entity.getBusinessType(),
                 entity.getTemplateCode(),
+                entity.getTemplateVersion(),
                 entity.getProjectId(),
                 entity.getApplicantName(),
                 entity.getStatus(),
                 readJson(entity.getFormDataJson()),
+                readOptionalJson(entity.getSchemaSnapshotJson()),
+                readOptionalJson(entity.getOaBindingSnapshotJson()),
+                readOptionalJson(entity.getOaPayloadJson()),
                 entity.getOaInstanceId(),
                 entity.isBusinessApplied(),
                 entity.getBusinessApplyError()
@@ -156,5 +173,12 @@ public class JpaWorkflowFormInstanceStore implements WorkflowFormInstanceStore {
         } catch (IOException exception) {
             throw new IllegalStateException("表单数据解析失败", exception);
         }
+    }
+
+    private Map<String, Object> readOptionalJson(String json) {
+        if (json == null || json.isBlank()) {
+            return Map.of();
+        }
+        return readJson(json);
     }
 }

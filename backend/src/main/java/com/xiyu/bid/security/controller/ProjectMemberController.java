@@ -4,6 +4,7 @@ import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.dto.ProjectMemberDTO;
 import com.xiyu.bid.dto.ProjectMemberRequest;
 import com.xiyu.bid.security.service.ProjectMemberService;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -25,10 +26,12 @@ import java.util.List;
 public class ProjectMemberController {
 
     private final ProjectMemberService projectMemberService;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<List<ProjectMemberDTO>>> getMembers(@PathVariable Long projectId) {
+        assertCanAccessProject(projectId);
         log.info("GET /api/projects/{}/members - Fetching project members", projectId);
         return ResponseEntity.ok(ApiResponse.success(projectMemberService.getProjectMembers(projectId)));
     }
@@ -38,6 +41,7 @@ public class ProjectMemberController {
     public ResponseEntity<ApiResponse<ProjectMemberDTO>> addMember(
             @PathVariable Long projectId,
             @RequestBody ProjectMemberRequest request) {
+        assertCanAccessProject(projectId);
         log.info("POST /api/projects/{}/members - Adding member", projectId);
         return ResponseEntity.ok(ApiResponse.success("Member added successfully", projectMemberService.addProjectMember(projectId, request)));
     }
@@ -47,8 +51,18 @@ public class ProjectMemberController {
     public ResponseEntity<ApiResponse<Void>> removeMember(
             @PathVariable Long projectId,
             @PathVariable Long userId) {
+        assertCanAccessProject(projectId);
         log.info("DELETE /api/projects/{}/members/{} - Removing member", projectId, userId);
         projectMemberService.removeProjectMember(projectId, userId);
         return ResponseEntity.ok(ApiResponse.success("Member removed successfully", null));
+    }
+
+    private void assertCanAccessProject(Long projectId) {
+        if (projectId == null || projectAccessScopeService.currentUserHasAdminAccess()) {
+            return;
+        }
+        if (!projectAccessScopeService.getAllowedProjectIdsForCurrentUser().contains(projectId)) {
+            throw new SecurityException("无权访问该项目");
+        }
     }
 }

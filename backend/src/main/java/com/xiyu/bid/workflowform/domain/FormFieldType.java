@@ -6,9 +6,11 @@ public enum FormFieldType {
     NUMBER,
     DATE,
     SELECT,
+    PERSON,
     PROJECT,
     QUALIFICATION,
     ATTACHMENT,
+    INFO,
     SECTION,
     TABLE
 }
