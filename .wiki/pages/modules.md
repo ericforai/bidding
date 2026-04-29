@@ -32,7 +32,7 @@ backlinks:
   - team-and-timeline
   - workflow-form-center
 created: 2026-04-15
-updated: 2026-04-24
+updated: 2026-04-29
 health_checked: 2026-04-29
 ---
 # 模块目录
@@ -87,6 +87,8 @@ health_checked: 2026-04-29
 | 项目立项 | 三步表单引导式创建（基本信息、团队组建、任务规划） |
 | 项目详情 | 项目全信息管理、进度跟踪、团队成员 |
 | 任务看板 | 四阶段看板（待办、进行中、审核中、已完成） |
+| 招标文件解析 | 项目级上传并解析招标文件，产出需求项和章节快照，供任务拆解与 AI 初稿复用 |
+| 任务拆解 | 根据已解析需求项生成商务、技术、资料、评分复核等协作任务 |
 | AI 检查 | AI 合规检查 + AI 质量检查双引擎 |
 | 结果录入 | 中标/未中标登记、竞对信息记录 |
 
@@ -170,6 +172,7 @@ health_checked: 2026-04-29
 |------|--------|------|
 | project | `com.xiyu.bid.project` | 项目管理（CRUD、状态流转、团队管理） |
 | projectworkflow | `com.xiyu.bid.projectworkflow` | 项目工作流（审批流程、阶段推进） |
+| projecttenderbreakdown | `com.xiyu.bid.projecttenderbreakdown` | 项目级招标文件解析入口，提供 readiness 检查和上传解析 API |
 | task (core) | `com.xiyu.bid.task.core` | 任务核心策略（状态流转守卫、交付物关联规则、标书提交校验） |
 | task (entity) | `com.xiyu.bid.task.entity` | 任务交付物实体（TaskDeliverable + V56 迁移） |
 | task (repository) | `com.xiyu.bid.task.repository` | 交付物数据访问层 |
@@ -186,6 +189,9 @@ health_checked: 2026-04-29
 
 | Method | Path | 用途 |
 |--------|------|------|
+| GET | `/api/projects/{id}/tender-breakdown/readiness` | 检查项目级招标文件解析配置是否就绪 |
+| POST | `/api/projects/{id}/tender-breakdown` | 上传并解析项目招标文件，写入需求项和章节快照 |
+| POST | `/api/projects/{id}/tasks/decompose` | 根据已解析招标文件结果生成项目任务 |
 | GET | `/projects/{id}/tasks/{taskId}/deliverables` | 获取任务交付物列表 |
 | POST | `/projects/{id}/tasks/{taskId}/deliverables` | 上传交付物 |
 | DELETE | `/projects/{id}/tasks/{taskId}/deliverables/{delId}` | 删除交付物 |

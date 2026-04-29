@@ -11,7 +11,7 @@ sources:
 backlinks:
   - _index
 created: 2026-04-26
-updated: 2026-04-26
+updated: 2026-04-29
 health_checked: 2026-04-29
 ---
 # DocInsight 文档智能引擎
@@ -69,3 +69,15 @@ DocumentAnalysisResult result = docInsightService.process(
   :markdown="rawMarkdown"
 />
 ```
+
+## 5. 项目级招标文件解析复用
+
+项目详情页的“解析招标文件”入口把 DocInsight/招标文件解析能力沉淀为项目级基础能力：
+
+1. 前端先调用 readiness 检查，确认 DeepSeek provider key 或 `DEEPSEEK_API_KEY` 已配置。
+2. 用户上传项目对应的招标文件。
+3. 后端写入招标文件快照和需求项。
+4. “拆解任务”读取需求项生成任务看板。
+5. “AI 生成初稿”读取同一份解析结果生成标书章节计划和初稿内容。
+
+这意味着解析招标文件不再被隐藏在“AI 生成初稿”按钮之后；它是项目进入执行后的独立准备动作。

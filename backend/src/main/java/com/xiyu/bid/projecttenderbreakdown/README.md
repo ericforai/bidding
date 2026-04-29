@@ -18,8 +18,16 @@ AI 生成初稿共同复用，因此不再归属于 `biddraftagent` 的 controll
 | `controller/` | API 边界 | 暴露项目级招标文件解析和 readiness 检查接口 |
 | `application/` | Application Service / Port | 执行项目权限守卫、返回解析配置就绪状态 |
 
+## API 入口
+
+| Method | Path | 用途 |
+|--------|------|------|
+| `GET` | `/api/projects/{projectId}/tender-breakdown/readiness` | 检查当前用户项目权限和 DeepSeek 解析配置是否就绪 |
+| `POST` | `/api/projects/{projectId}/tender-breakdown` | 上传并解析项目级招标文件，写入快照和需求项 |
+
 ## 复用关系
 
 - 上传解析仍复用 `BidTenderDocumentImportAppService.parseTenderDocument()`，避免复制文件保存、正文提取、需求项入库逻辑。
 - DeepSeek 配置检查复用 `biddraftagent.application.TenderIntakeConfigurationReadiness` 端口和 readiness DTO，避免 AI 基础设施反向依赖本项目入口模块。
 - 模块只做项目级入口编排，不承担招标要求抽取规则、任务生成规则或数据库实体转换。
+- 解析入口是独立项目能力：任务拆解和 AI 生成初稿都可以消费解析结果，但彼此不互相阻塞。

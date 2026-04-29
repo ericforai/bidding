@@ -4,6 +4,7 @@
 
 ## 职责
 项目流程模块承接项目任务、提醒、分享链接、文档和评分草稿等派生能力。它位于 Project 域的执行侧，负责把项目执行中的子流程收拢到统一边界。
+任务拆解只读取已解析的招标文件需求项或章节快照，不直接调用 AI；解析入口由 `projecttenderbreakdown` 模块提供。
 
 ## 边界清单
 | 文件 | 地位 | 功能 |
@@ -26,3 +27,11 @@
 | `entity/ProjectScoreDraft.java` | Entity | 评分草稿实体 |
 | `repository/` | Repository | 项目流程持久化访问 |
 | `dto/` | DTO | 任务、提醒、文档、分享和评分草稿请求/响应 |
+
+## 任务拆解数据来源
+
+1. 优先读取最新招标文件解析后的 `bid_requirement_items`。
+2. 若需求项为空，回退读取 `document_sections` 的顶层和二级章节。
+3. 若仍为空，返回业务错误“未找到可用于拆解任务的标书拆解结果”。
+
+`TaskBreakdownPolicy` 是纯核心，负责把来源快照映射为待创建任务决策；`ProjectTaskBreakdownService` 只做权限、取数、事务和保存编排。

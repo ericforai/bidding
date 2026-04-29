@@ -10,6 +10,7 @@ sources:
   - src/api/modules/workflowForm.js
   - backend/src/main/java/com/xiyu/bid/workflowform/
 backlinks:
+  - _index
   - integration-wecom
   - modules
 created: 2026-04-29
