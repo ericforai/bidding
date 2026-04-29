@@ -7,6 +7,7 @@
 ## 边界
 
 - `WorkflowFormDesigner.vue` 是页面壳和交互编排，所有数据通过 `workflowFormApi` 访问真实后端。
+- 已加入历史版本入口：管理员可查看某模板发布历史，并可一键回滚到目标版本（回滚会形成新发布版本）。
 - `workflowFormDesignerCore.js` 是前端纯 helper，负责默认模板、字段增删排序、OA 映射生成、既有模板绑定恢复和错误文案提取。
 - `workflow-form-designer.css` 只承载页面样式，避免 Vue 单文件超过 300 行。
 

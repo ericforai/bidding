@@ -15,9 +15,13 @@ public interface WorkflowFormAdminStore {
 
     Optional<OaProcessBindingRecord> findBinding(String templateCode);
 
+    List<WorkflowFormTemplateVersionRecord> listVersions(String templateCode);
+
     WorkflowFormTemplateAdminRecord saveDraft(WorkflowFormTemplateDraftCommand command);
 
     OaProcessBindingRecord saveBinding(WorkflowFormOaBindingCommand command);
 
     WorkflowFormTemplateAdminRecord publish(String templateCode, String publishedBy);
+
+    WorkflowFormTemplateAdminRecord rollback(String templateCode, int targetVersion, String operator);
 }

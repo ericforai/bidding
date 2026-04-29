@@ -9,6 +9,7 @@ import com.xiyu.bid.workflowform.application.port.OaWorkflowGateway;
 import com.xiyu.bid.workflowform.application.port.OaProcessBindingRecord;
 import com.xiyu.bid.workflowform.application.port.WorkflowFormAdminStore;
 import com.xiyu.bid.workflowform.application.port.WorkflowFormTemplateAdminRecord;
+import com.xiyu.bid.workflowform.application.port.WorkflowFormTemplateVersionRecord;
 import com.xiyu.bid.workflowform.application.view.WorkflowFormTrialSubmitView;
 import com.xiyu.bid.workflowform.domain.ValidationResult;
 import com.xiyu.bid.workflowform.domain.WorkflowFormOaMappingPolicy;
@@ -51,6 +52,19 @@ public class WorkflowFormAdminService {
                 .orElseThrow(() -> new WorkflowFormConfigException("流程表单未配置启用的 OA 绑定"));
         requireValidMapping(binding.fieldMapping());
         return store.publish(templateCode, publishedBy);
+    }
+
+    public List<WorkflowFormTemplateVersionRecord> listVersions(String templateCode) {
+        return store.listVersions(templateCode);
+    }
+
+    public WorkflowFormTemplateAdminRecord rollback(String templateCode, int version, String operator) {
+        store.findDraft(templateCode).orElseThrow(() -> new WorkflowFormConfigException("流程表单草稿不存在"));
+        try {
+            return store.rollback(templateCode, version, operator);
+        } catch (IllegalArgumentException exception) {
+            throw new WorkflowFormConfigException(exception.getMessage());
+        }
     }
 
     public WorkflowFormTrialSubmitView previewTrialSubmit(

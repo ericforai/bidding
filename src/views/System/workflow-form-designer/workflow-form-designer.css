@@ -59,6 +59,41 @@
   border-color: #2f6fed;
 }
 
+.version-list {
+  margin-top: 12px;
+}
+
+.version-list-title {
+  margin: 0 0 8px;
+  color: #344b68;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.version-row {
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid #dce5ef;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.version-row p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.version-row span {
+  color: #6a7280;
+  font-size: 11px;
+}
+
 .designer-main {
   min-width: 0;
   flex: 1;

@@ -6,9 +6,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface WorkflowFormTemplateVersionJpaRepository extends JpaRepository<WorkflowFormTemplateVersionEntity, Long> {
     List<WorkflowFormTemplateVersionEntity> findByTemplateCodeOrderByVersionDesc(String templateCode);
+
+    Optional<WorkflowFormTemplateVersionEntity> findByTemplateCodeAndVersion(String templateCode, Integer version);
 
     @Query("select coalesce(max(v.version), 0) from WorkflowFormTemplateVersionEntity v where v.templateCode = :templateCode")
     Integer findMaxVersion(@Param("templateCode") String templateCode);
