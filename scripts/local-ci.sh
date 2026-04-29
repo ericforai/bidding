@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Input: local CI mode, optional LOCAL_CI_BASE override, and developer machine toolchain state
+# Input: local CI mode, optional LOCAL_CI_BASE override, and developer machine toolchain state; H2 integration tests explicitly own ddl-auto
 # Output: GitHub Actions-equivalent local validation for frontend, backend, E2E, and optional release gates
 # Pos: scripts/ - Local CI fallback for repository validation
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
@@ -166,7 +166,7 @@ run_backend_full() {
   prepare_backend_build
   run_backend mvn -DskipTests compile
   run_backend mvn -DforkCount=0 -Dtest=FPJavaArchitectureTest,MaintainabilityArchitectureTest test
-  run_backend mvn -Dtest=FlywayBaselineContextTest,ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest test
+  run_backend mvn -Dspring.jpa.hibernate.ddl-auto=create-drop -Dtest=FlywayBaselineContextTest,ExpenseControllerIntegrationTest,BarCertificateControllerIntegrationTest test
   run_backend mvn -Dtest=DualDatabaseMigrationParityTest,FlywayPostgresContainerTest,FlywayMysqlContainerTest,ArchitectureTest test
   run_backend mvn -Pjava-quality,java-quality-spotbugs,quality-strict -DskipTests -Djacoco.skip=true checkstyle:check pmd:check spotbugs:check
 }

@@ -41,7 +41,7 @@ public class Notification {
     @Column(name = "body", columnDefinition = "TEXT")
     private String body;
 
-    @Column(name = "payload_json", columnDefinition = "jsonb")
+    @Column(name = "payload_json", columnDefinition = "TEXT")
     private String payloadJson;
 
     @Column(name = "created_by", nullable = false)

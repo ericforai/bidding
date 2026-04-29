@@ -6,10 +6,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "workflow_form_templates")
@@ -24,14 +25,14 @@ public class WorkflowFormTemplateEntity {
     private String name;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "business_type", nullable = false, length = 64)
     private FormBusinessType businessType;
 
     @Column(nullable = false)
     private Integer version;
 
-    @Lob
-    @Column(name = "schema_json", nullable = false)
+    @Column(name = "schema_json", nullable = false, columnDefinition = "TEXT")
     private String schemaJson;
 
     @Column(nullable = false)

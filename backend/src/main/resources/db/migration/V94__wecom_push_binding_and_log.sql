@@ -5,9 +5,7 @@
 --   2. notification_outbound_log — observability for outbound notification deliveries
 
 ALTER TABLE users ADD COLUMN wecom_user_id VARCHAR(64);
-CREATE UNIQUE INDEX uk_users_wecom_user_id
-    ON users(wecom_user_id)
-    WHERE wecom_user_id IS NOT NULL;
+CREATE UNIQUE INDEX uk_users_wecom_user_id ON users(wecom_user_id);
 
 CREATE TABLE notification_outbound_log (
     id BIGSERIAL PRIMARY KEY,

@@ -1,4 +1,4 @@
--- V93 inbox P1: subscription + mention tables
+-- V95 inbox P1: subscription + mention tables
 --
 -- 新增：
 --   1. subscription  — 多态关注（user 关注 任意实体）

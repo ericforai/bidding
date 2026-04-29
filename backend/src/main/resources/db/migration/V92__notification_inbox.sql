@@ -6,7 +6,7 @@ CREATE TABLE notification (
     source_entity_id BIGINT,
     title VARCHAR(200) NOT NULL,
     body TEXT,
-    payload_json JSONB,
+    payload_json TEXT,
     created_by BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
