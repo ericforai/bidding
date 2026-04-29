@@ -3,7 +3,7 @@
 ## Phase 1: 基础设施与 CRM 同步补全
 本阶段重点在于建立持久化表结构和外部同步通道。
 
-- [ ] **Task: 数据库 Schema 建立**
+- [~] **Task: 数据库 Schema 建立**
     - [ ] 创建 `CrmCustomerPermission` 实体与镜像表。
     - [ ] 创建 `ProjectMember` 实体与协作表（支持 VIEWER/EDITOR 角色）。
 - [ ] **Task: CRM Webhook 接收端实现**
