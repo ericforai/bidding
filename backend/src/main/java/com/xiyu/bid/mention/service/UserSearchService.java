@@ -16,6 +16,7 @@ public class UserSearchService {
 
     private static final int DEFAULT_LIMIT = 10;
     private static final int MAX_LIMIT = 50;
+    private static final int MAX_QUERY_LENGTH = 100;
 
     private final UserRepository userRepository;
 
@@ -27,13 +28,25 @@ public class UserSearchService {
         if (query == null || query.isBlank()) {
             return List.of();
         }
+        String trimmed = query.trim();
+        if (trimmed.length() > MAX_QUERY_LENGTH) {
+            trimmed = trimmed.substring(0, MAX_QUERY_LENGTH);
+        }
+        String escaped = escapeLike(trimmed);
         int safeLimit = clampLimit(limit);
-        return userRepository.searchActiveUsers(query.trim(), safeLimit).stream()
+        return userRepository.searchActiveUsers(escaped, safeLimit).stream()
             .map(u -> new UserSearchResult(
                 u.getId(),
                 u.getFullName(),
                 u.getRole() == null ? null : u.getRole().name()))
             .toList();
+    }
+
+    private static String escapeLike(String raw) {
+        return raw
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_");
     }
 
     private static int clampLimit(Integer limit) {

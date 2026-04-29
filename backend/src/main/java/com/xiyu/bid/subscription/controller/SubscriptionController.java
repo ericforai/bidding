@@ -4,6 +4,8 @@
 package com.xiyu.bid.subscription.controller;
 
 import com.xiyu.bid.entity.User;
+import com.xiyu.bid.subscription.core.SubscriptionPolicy;
+import com.xiyu.bid.subscription.core.SubscriptionPolicy.ValidationResult;
 import com.xiyu.bid.subscription.dto.SubscriptionRequest;
 import com.xiyu.bid.subscription.dto.SubscriptionSummary;
 import com.xiyu.bid.subscription.service.SubscriptionApplicationService;
@@ -12,6 +14,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +29,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
+@PreAuthorize("isAuthenticated()")
 public class SubscriptionController {
 
     private static final int MAX_PAGE_SIZE = 100;
@@ -91,6 +95,14 @@ public class SubscriptionController {
         @PathVariable String entityType,
         @PathVariable Long entityId,
         @AuthenticationPrincipal User currentUser) {
+        ValidationResult validation = SubscriptionPolicy.validate(currentUser.getId(), entityType, entityId);
+        if (!validation.isValid()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "errorCode", validation.errorCode() == null ? "" : validation.errorCode(),
+                "message", validation.errorMessage() == null ? "" : validation.errorMessage()
+            ));
+        }
         boolean subscribed = service.isSubscribed(currentUser.getId(), entityType, entityId);
         return ResponseEntity.ok(Map.of(
             "success", true,

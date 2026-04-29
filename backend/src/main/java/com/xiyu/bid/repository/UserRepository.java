@@ -34,8 +34,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByIdIn(Collection<Long> ids);
 
     @Query(value = "SELECT * FROM users u WHERE u.enabled = TRUE "
-        + "AND (LOWER(u.full_name) LIKE LOWER(CONCAT('%', :q, '%')) "
-        + "OR LOWER(u.username) LIKE LOWER(CONCAT('%', :q, '%'))) "
+        + "AND (LOWER(u.full_name) LIKE LOWER(CONCAT('%', :q, '%')) ESCAPE '\\' "
+        + "OR LOWER(u.username) LIKE LOWER(CONCAT('%', :q, '%')) ESCAPE '\\') "
         + "ORDER BY u.full_name LIMIT :lim", nativeQuery = true)
     List<User> searchActiveUsers(@Param("q") String query, @Param("lim") int limit);
 }

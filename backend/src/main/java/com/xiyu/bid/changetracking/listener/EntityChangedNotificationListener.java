@@ -12,6 +12,8 @@ import com.xiyu.bid.notification.dto.CreateNotificationRequest;
 import com.xiyu.bid.notification.service.NotificationApplicationService;
 import com.xiyu.bid.subscription.entity.Subscription;
 import com.xiyu.bid.subscription.repository.SubscriptionRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -22,6 +24,9 @@ import java.util.Objects;
 
 @Component
 public class EntityChangedNotificationListener {
+
+    private static final int MAX_FANOUT = 500;
+    private static final Logger log = LoggerFactory.getLogger(EntityChangedNotificationListener.class);
 
     private final SubscriptionRepository subscriptionRepository;
     private final NotificationApplicationService notificationService;
@@ -36,7 +41,7 @@ public class EntityChangedNotificationListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onEntityChanged(EntityChangedEvent event) {
-        List<Long> recipientIds = subscriptionRepository
+        List<Long> allSubscribers = subscriptionRepository
             .findByTargetEntityTypeAndTargetEntityId(event.entityType(), event.entityId())
             .stream()
             .map(Subscription::getUserId)
@@ -44,8 +49,17 @@ public class EntityChangedNotificationListener {
             .distinct()
             .toList();
 
-        if (recipientIds.isEmpty()) {
+        if (allSubscribers.isEmpty()) {
             return;
+        }
+
+        List<Long> recipientIds = allSubscribers.size() <= MAX_FANOUT
+            ? allSubscribers
+            : allSubscribers.subList(0, MAX_FANOUT);
+
+        if (allSubscribers.size() > MAX_FANOUT) {
+            log.warn("Subscriber fan-out truncated for {} {}: {} -> {}",
+                event.entityType(), event.entityId(), allSubscribers.size(), MAX_FANOUT);
         }
 
         List<FieldChange> changes = ChangeDiffPolicy.diff(event.before(), event.after());
