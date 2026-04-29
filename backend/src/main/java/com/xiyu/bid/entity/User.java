@@ -69,6 +69,9 @@ public class User {
     @Column(name = "department_name", length = 100)
     private String departmentName;
 
+    @Column(name = "wecom_user_id", length = 64)
+    private String wecomUserId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
