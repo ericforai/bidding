@@ -130,7 +130,7 @@ public class NotificationApplicationService {
         }
         userNotificationRepository.saveAll(userRows);
 
-        return DispatchResult.valid();
+        return DispatchResult.validWithId(saved.getId());
     }
 
     private String serializePayload(Map<String, Object> payload) {

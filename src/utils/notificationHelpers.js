@@ -65,3 +65,42 @@ export const resolveNotificationRoute = (item) => {
   if (!Number.isFinite(safeId) || safeId <= 0) return null
   return `${prefix}${safeId}`
 }
+
+export const parseNotificationPayload = (payloadJson) => {
+  if (!payloadJson) return {}
+  if (typeof payloadJson === 'object') return payloadJson
+  try {
+    return JSON.parse(payloadJson)
+  } catch {
+    return {}
+  }
+}
+
+export const extractChanges = (notification) => {
+  const payload = parseNotificationPayload(notification?.payloadJson)
+  return Array.isArray(payload.changes) ? payload.changes : []
+}
+
+export const hasChangeDiff = (notification) =>
+  extractChanges(notification).length > 0
+
+const MENTION_TOKEN_REGEX = /@\[([^\]]+)\]\((\d+)\)/g
+const MAX_PARSED_MENTIONS = 20
+
+export const parseMentionContent = (raw) => {
+  if (!raw || typeof raw !== 'string') {
+    return { plainText: '', mentionedUserIds: [] }
+  }
+  const ids = []
+  let match
+  MENTION_TOKEN_REGEX.lastIndex = 0
+  while ((match = MENTION_TOKEN_REGEX.exec(raw)) !== null) {
+    const id = Number(match[2])
+    if (Number.isFinite(id) && !ids.includes(id)) {
+      ids.push(id)
+      if (ids.length >= MAX_PARSED_MENTIONS) break
+    }
+  }
+  const plainText = raw.replace(MENTION_TOKEN_REGEX, '@$1')
+  return { plainText, mentionedUserIds: ids }
+}

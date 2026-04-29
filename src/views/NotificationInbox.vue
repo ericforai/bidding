@@ -52,6 +52,7 @@
         <div class="inbox-item-body">
           <div class="inbox-item-title">{{ item.title }}</div>
           <div v-if="item.body" class="inbox-item-desc">{{ item.body }}</div>
+          <ChangeDiffCard v-if="hasChangeDiff(item)" :changes="extractChanges(item)" />
           <div class="inbox-item-meta">
             <el-tag v-if="item.type" size="small" type="info">{{ getNotificationTypeLabel(item.type) }}</el-tag>
             <span class="inbox-item-time">{{ formatNotificationTime(item.createdAt) }}</span>
@@ -83,8 +84,11 @@ import {
   getNotificationIcon,
   getNotificationTypeLabel,
   formatNotificationTime,
-  resolveNotificationRoute
+  resolveNotificationRoute,
+  extractChanges,
+  hasChangeDiff
 } from '@/utils/notificationHelpers'
+import ChangeDiffCard from '@/components/common/ChangeDiffCard.vue'
 
 const router = useRouter()
 const store = useNotificationStore()
