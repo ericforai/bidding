@@ -8,9 +8,9 @@ sources:
   - .wiki/INDEX.md
   - .wiki/PAGE_INDEX.md
 backlinks:
-created: 2026-04-26
-updated: 2026-04-26
-health_checked: 2026-04-26
+created: 2026-04-29
+updated: 2026-04-29
+health_checked: 2026-04-29
 ---
 # 西域投标管理平台知识库
 
@@ -39,12 +39,14 @@ health_checked: 2026-04-26
 - [[design-system]] — 设计系统基线
 - [[docinsight-engine]] — DocInsight 文档智能引擎
 - [[glossary]] — 术语表
+- [[integration-organization-event-sdk]] — 组织架构对接 - 客户事件库 SDK 方案
 - [[integration-wecom]] — 系统集成中心 - 企业微信
 - [[modules]] — 模块目录
 - [[overview]] — 项目综述
 - [[requirements]] — 需求追溯
 - [[roles-and-permissions]] — 角色与权限
 - [[team-and-timeline]] — 团队与排期
+- [[workflow-form-center]] — 流程表单中心与泛微 OA
 
 ## Implementation Space
 

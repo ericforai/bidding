@@ -16,8 +16,8 @@ backlinks:
   - implementation/delivery-playbook
   - implementation/document-delivery-ledger
 created: 2026-04-26
-updated: 2026-04-26
-health_checked: 2026-04-26
+updated: 2026-04-29
+health_checked: 2026-04-29
 ---
 # 附件6需求功能清单追溯
 

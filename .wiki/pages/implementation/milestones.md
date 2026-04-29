@@ -16,7 +16,7 @@ backlinks:
   - implementation/sow-2026-v1-4
 created: 2026-04-21
 updated: 2026-04-26
-health_checked: 2026-04-26
+health_checked: 2026-04-29
 ---
 # 实施里程碑与依赖
 

@@ -30,9 +30,10 @@ backlinks:
   - overview
   - requirements
   - team-and-timeline
+  - workflow-form-center
 created: 2026-04-15
 updated: 2026-04-24
-health_checked: 2026-04-26
+health_checked: 2026-04-29
 ---
 # 模块目录
 
@@ -137,6 +138,7 @@ health_checked: 2026-04-26
 | 角色权限配置 | 按组织架构配置系统权限与数据权限（admin/manager/staff） |
 | 系统参数配置 | 预警时间、分发规则、集成参数等系统级配置 |
 | 操作日志 | 全部关键操作的审计轨迹 |
+| 流程表单配置 | 管理员配置表单模板、字段 schema、泛微 OA 绑定、试提交和发布；详见 [[workflow-form-center]] |
 
 ---
 
@@ -207,6 +209,7 @@ health_checked: 2026-04-26
 | qualification | `com.xiyu.bid.qualification` | 资质库管理（证照、到期提醒、借阅） |
 | casework | `com.xiyu.bid.casework` | 案例库管理（归档、标签、检索） |
 | template | `com.xiyu.bid.template` | 模板库管理（分类、版本、应用） |
+| workflowform | `com.xiyu.bid.workflowform` | 流程表单中心（模板配置、版本快照、OA 触发、回调结果、审批通过后应用业务） |
 
 ### 3.5 资源域
 
