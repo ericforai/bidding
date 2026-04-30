@@ -245,7 +245,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBarStore } from '@/stores/bar'
 import {
@@ -298,31 +298,25 @@ const siteRules = {
 }
 
 // 过滤后的站点列表
-const filteredSites = computed(() => {
-  let result = [...barStore.sites]
-
-  if (filterForm.value.region) {
-    result = result.filter(s => s.region === filterForm.value.region)
-  }
-  if (filterForm.value.industry) {
-    result = result.filter(s => s.industry === filterForm.value.industry)
-  }
-  if (filterForm.value.loginType) {
-    result = result.filter(s => s.loginType === filterForm.value.loginType)
-  }
-  if (filterForm.value.status) {
-    result = result.filter(s => s.status === filterForm.value.status)
-  }
-  if (filterForm.value.riskLevel) {
-    result = result.filter(s => s.riskLevel === filterForm.value.riskLevel)
-  }
-
-  pagination.value.total = result.length
-
-  const start = (pagination.value.page - 1) * pagination.value.pageSize
-  const end = start + pagination.value.pageSize
-  return result.slice(start, end)
+const matchedSites = computed(() => {
+  const { region, industry, loginType, status, riskLevel } = filterForm.value
+  return barStore.sites.filter((s) =>
+    (!region || s.region === region)
+    && (!industry || s.industry === industry)
+    && (!loginType || s.loginType === loginType)
+    && (!status || s.status === status)
+    && (!riskLevel || s.riskLevel === riskLevel)
+  )
 })
+
+const filteredSites = computed(() => {
+  const start = (pagination.value.page - 1) * pagination.value.pageSize
+  return matchedSites.value.slice(start, start + pagination.value.pageSize)
+})
+
+watch(() => matchedSites.value.length, (total) => {
+  pagination.value.total = total
+}, { immediate: true })
 
 const getLoginTypeText = (type) => {
   const map = {
@@ -444,7 +438,7 @@ const handleMoreAction = async (command, site) => {
         ElMessage.success(`站点「${site.name}」验证通过`)
       }
       break
-    case 'copy':
+    case 'copy': {
       const siteInfo = `站点名称：${site.name}\n网址：${site.url}\n地区：${site.region}\n行业：${site.industry}`
       navigator.clipboard.writeText(siteInfo).then(() => {
         ElMessage.success('站点信息已复制到剪贴板')
@@ -452,6 +446,7 @@ const handleMoreAction = async (command, site) => {
         ElMessage.error('复制失败')
       })
       break
+    }
     case 'toggle':
       {
         const nextStatus = site.status === 'active' ? 'inactive' : 'active'

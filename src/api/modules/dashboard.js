@@ -188,9 +188,15 @@ export const dashboardApi = {
   },
 
   async getLayout() {
-    return httpClient.get('/api/dashboard/layout/my', { silentAuthError: true })
-      .then((res) => normalizeResponse(res, null))
-      .catch((error) => normalizeError(error, null))
+    try {
+      const response = await httpClient.get('/api/dashboard/layout/my', { silentAuthError: true })
+      return {
+        success: response?.success === true,
+        data: response?.data || null
+      }
+    } catch (error) {
+      return { success: false, data: null, error }
+    }
   },
   
   async getRuntimeMode() {
