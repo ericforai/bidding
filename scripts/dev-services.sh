@@ -42,6 +42,8 @@ REDIS_HOST="${REDIS_HOST:-localhost}"
 DEFAULT_REDIS_PORT="6379"
 FALLBACK_REDIS_PORT="16379"
 REDIS_PORT="${REDIS_PORT:-}"
+REDIS_DB="${REDIS_DB:-0}"
+SPRING_DATA_REDIS_DATABASE="${SPRING_DATA_REDIS_DATABASE:-$REDIS_DB}"
 
 is_valid_command() {
   case "$1" in
@@ -347,7 +349,7 @@ start_backend() {
   echo "[backend] starting on :$BACKEND_PORT"
   echo "[backend] profile: $ACTIVE_BACKEND_PROFILE"
   echo "[backend] database: MySQL at ${DB_HOST}:${DB_PORT}/${DB_NAME}"
-  echo "[backend] redis: ${REDIS_HOST}:${REDIS_PORT}"
+  echo "[backend] redis: ${REDIS_HOST}:${REDIS_PORT}/${SPRING_DATA_REDIS_DATABASE}"
   : >"$BACKEND_LOG"
   (
     cd "$ROOT_DIR/backend"
@@ -361,6 +363,8 @@ start_backend() {
       DB_PASSWORD="$DB_PASSWORD" \
       REDIS_HOST="$REDIS_HOST" \
       REDIS_PORT="$REDIS_PORT" \
+      REDIS_DB="$REDIS_DB" \
+      SPRING_DATA_REDIS_DATABASE="$SPRING_DATA_REDIS_DATABASE" \
       CORS_ALLOWED_ORIGINS="http://localhost:${FRONTEND_PORT},http://127.0.0.1:${FRONTEND_PORT}" \
       mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT}" \
       >>"$BACKEND_LOG" 2>&1 < /dev/null &

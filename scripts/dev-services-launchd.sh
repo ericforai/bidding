@@ -24,6 +24,8 @@ REDIS_HOST="${REDIS_HOST:-localhost}"
 DEFAULT_REDIS_PORT="6379"
 FALLBACK_REDIS_PORT="16379"
 REDIS_PORT="${REDIS_PORT:-}"
+REDIS_DB="${REDIS_DB:-0}"
+SPRING_DATA_REDIS_DATABASE="${SPRING_DATA_REDIS_DATABASE:-$REDIS_DB}"
 PLIST_PATH="${HOME}/Library/LaunchAgents/${LAUNCHD_LABEL}.plist"
 LAUNCHD_STDOUT_LOG="$RUNTIME_DIR/launchd.out.log"
 LAUNCHD_STDERR_LOG="$RUNTIME_DIR/launchd.err.log"
@@ -49,6 +51,7 @@ Environment variables:
   DB_HOST/DB_PORT/DB_NAME    MySQL connection target
   DB_USERNAME/DB_PASSWORD    MySQL credentials
   REDIS_HOST/REDIS_PORT      Redis connection target
+  REDIS_DB                   Redis logical database for this agent
   BACKEND_START_TIMEOUT_SECONDS/FRONTEND_START_TIMEOUT_SECONDS
                              Startup wait budgets (defaults: 300/90)
   CURL_CONNECT_TIMEOUT_SECONDS/CURL_MAX_TIME_SECONDS
@@ -142,6 +145,10 @@ write_plist() {
     <string>${REDIS_HOST}</string>
     <key>REDIS_PORT</key>
     <string>${REDIS_PORT}</string>
+    <key>REDIS_DB</key>
+    <string>${REDIS_DB}</string>
+    <key>SPRING_DATA_REDIS_DATABASE</key>
+    <string>${SPRING_DATA_REDIS_DATABASE}</string>
     <key>BACKEND_PORT</key>
     <string>${BACKEND_PORT}</string>
     <key>FRONTEND_PORT</key>
