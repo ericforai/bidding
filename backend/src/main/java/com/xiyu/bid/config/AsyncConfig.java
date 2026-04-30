@@ -14,7 +14,7 @@ import java.util.concurrent.Executor;
 
 /**
  * 异步配置
- * 用于审计日志等需要异步执行的操作
+ * 用于操作日志等需要异步执行的操作
  */
 @Configuration
 @EnableAsync
@@ -48,7 +48,7 @@ public class AsyncConfig implements AsyncConfigurer {
     }
 
     /**
-     * 审计日志专用线程池
+     * 操作日志专用线程池
      */
     @Bean(name = "auditLogExecutor")
     public ThreadPoolTaskExecutor auditLogExecutor() {

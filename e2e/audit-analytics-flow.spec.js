@@ -77,78 +77,71 @@ async function authedJson(path, session, options = {}) {
   return requestJson(`${apiBaseUrl}${path}`, { ...options, headers })
 }
 
-function toLocalDateTimeString(date) {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000)
-    .toISOString()
-    .slice(0, 19)
+function auditQueryPath(params, basePath = '/api/audit') {
+  return `${basePath}?${new URLSearchParams(params).toString()}`
 }
 
-async function waitForAuditItems(session, minimumCount = 1) {
-  let payload = null
+async function waitForAuditItem(session, params, matchesItem, basePath = '/api/audit') {
+  let items = []
 
   await expect.poll(async () => {
-    payload = await authedJson('/api/audit', session)
-    return Array.isArray(payload?.data?.items) ? payload.data.items.length : 0
+    const payload = await authedJson(auditQueryPath(params, basePath), session)
+    items = Array.isArray(payload?.data?.items) ? payload.data.items : []
+    return items.some(matchesItem) ? 1 : 0
   }, {
-    message: 'Audit items were not visible before timeout',
-    intervals: [500],
-    timeout: 10000,
-  }).toBeGreaterThanOrEqual(minimumCount)
+    message: 'Expected operation log item was not visible before timeout',
+    intervals: [500, 1000],
+    timeout: 15000,
+  }).toBe(1)
 
-  return payload
+  return items.find(matchesItem)
 }
 
-test('dashboard and audit screens render real operational data', async ({ page }) => {
+test('dashboard, operation log and audit log screens render one real key operation record', async ({ page }) => {
   const session = await ensureSession()
   const suffix = Date.now()
 
-  const officeTender = await authedJson('/api/tenders', session, {
+  const qualification = await authedJson('/api/knowledge/qualifications', session, {
     method: 'POST',
     body: JSON.stringify({
-      title: `智慧办公平台项目 ${suffix}`,
-      source: 'ERI-101',
-      budget: 530000,
-      deadline: toLocalDateTimeString(new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)),
-      status: 'TRACKING',
-      aiScore: 84,
-      riskLevel: 'LOW',
+      name: `ERI-101 操作日志资质 ${suffix}`,
+      type: 'CONSTRUCTION',
+      level: 'FIRST',
+      subjectType: 'COMPANY',
+      subjectName: '西域数智化投标管理平台',
+      category: 'LICENSE',
+      issueDate: '2026-04-01',
+      expiryDate: '2027-04-01',
+      certificateNo: `ERI-AUDIT-${suffix}`,
+      issuer: 'E2E 操作日志测试中心',
+      holderName: '西域数智',
+      fileUrl: '',
     }),
   })
-  expect(officeTender?.data?.id).toBeTruthy()
+  expect(qualification?.data?.id).toBeTruthy()
 
-  const cloudTender = await authedJson('/api/tenders', session, {
-    method: 'POST',
-    body: JSON.stringify({
-      title: `云服务扩容项目 ${suffix}`,
-      source: 'ERI-101',
-      budget: 910000,
-      deadline: toLocalDateTimeString(new Date(Date.now() + 8 * 24 * 60 * 60 * 1000)),
-      status: 'TRACKING',
-      aiScore: 79,
-      riskLevel: 'MEDIUM',
-    }),
+  const qualificationId = String(qualification.data.id)
+  const auditItem = await waitForAuditItem(
+    session,
+    { keyword: qualificationId, action: 'CREATE', module: 'qualification' },
+    (item) => String(item.target) === qualificationId && item.detail === '创建资质'
+  )
+  expect(auditItem).toMatchObject({
+    actionType: 'create',
+    detail: '创建资质',
+    target: qualificationId,
   })
-  expect(cloudTender?.data?.id).toBeTruthy()
-
-  const projectPayload = await authedJson('/api/projects', session, {
-    method: 'POST',
-    body: JSON.stringify({
-      name: `ERI-101 运营看板项目 ${suffix}`,
-      tenderId: officeTender.data.id,
-      status: 'BIDDING',
-      managerId: session.user.id,
-      teamMembers: [session.user.id],
-      startDate: toLocalDateTimeString(new Date()),
-      endDate: toLocalDateTimeString(new Date(Date.now() + 10 * 24 * 60 * 60 * 1000)),
-    }),
+  const operationItem = await waitForAuditItem(
+    session,
+    { keyword: qualificationId, action: 'CREATE', module: 'qualification' },
+    (item) => String(item.target) === qualificationId && item.detail === '创建资质',
+    '/api/audit/my'
+  )
+  expect(operationItem).toMatchObject({
+    actionType: 'create',
+    detail: '创建资质',
+    target: qualificationId,
   })
-  expect(projectPayload?.data?.id).toBeTruthy()
-
-  await authedJson('/api/knowledge/templates', session)
-
-  const auditBefore = await waitForAuditItems(session)
-  expect(Array.isArray(auditBefore?.data?.items)).toBeTruthy()
-  expect(auditBefore.data.items.length).toBeGreaterThan(0)
 
   await page.addInitScript(({ token, user }) => {
     sessionStorage.setItem('token', token)
@@ -161,22 +154,24 @@ test('dashboard and audit screens render real operational data', async ({ page }
   await expect(page.getByText('中标率趋势')).toBeVisible()
   await expect(page.locator('.metric-cards .b2b-metric-card').first()).toBeVisible()
 
-  await page.goto('/settings')
-  await expect(page.locator('#main-content').getByText('系统设置')).toBeVisible()
-  await page.getByRole('tab', { name: '审计日志' }).click()
+  await page.goto('/operation-logs')
+  await expect(page.getByRole('heading', { name: '操作日志' })).toBeVisible()
   await expect(page.getByText('今日操作')).toBeVisible()
-  const firstAuditRow = page.locator('.audit-table .el-table__row').first()
-  await expect(firstAuditRow).toBeVisible()
-  await expect(page.getByText('export').or(page.getByText('审计日志')).first()).toBeVisible()
 
-  const firstAuditRowText = await firstAuditRow.innerText()
-  const stableSearchKeyword = firstAuditRowText
-    .split(/\s+/)
-    .find((segment) => segment.length >= 2 && /[\u4e00-\u9fa5a-zA-Z]/.test(segment))
-
-  expect(stableSearchKeyword).toBeTruthy()
-
-  await page.getByPlaceholder('搜索操作内容/对象').fill(stableSearchKeyword)
+  await page.getByPlaceholder('搜索操作内容/对象').fill(qualificationId)
   await page.getByRole('button', { name: /搜索/ }).click()
-  await expect(page.locator('.audit-table .el-table__row').first()).toBeVisible()
+
+  const qualificationAuditRow = page
+    .locator('.audit-table .el-table__row')
+    .filter({ hasText: qualificationId })
+    .filter({ hasText: '创建资质' })
+    .first()
+  await expect(qualificationAuditRow).toBeVisible()
+  await expect(qualificationAuditRow).toContainText('创建资质')
+
+  await page.goto('/audit-logs')
+  await expect(page.getByRole('heading', { name: '审计日志' })).toBeVisible()
+  await page.getByPlaceholder('搜索操作内容/对象').fill(qualificationId)
+  await page.getByRole('button', { name: /搜索/ }).click()
+  await expect(page.locator('.audit-table .el-table__row').filter({ hasText: qualificationId }).first()).toBeVisible()
 })

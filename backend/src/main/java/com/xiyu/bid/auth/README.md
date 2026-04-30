@@ -18,3 +18,8 @@
 | `controller/AuthController.java` | Controller | 登录/注册端点 |
 | `entity/` | 子目录 | 用户实体边界 |
 | `entity/User.java` | Entity | 用户实体 |
+
+## 角色授权口径
+
+- Spring Security 基础权限继续使用 `users.role` 对应的 `ROLE_ADMIN`、`ROLE_MANAGER`、`ROLE_STAFF`，避免自定义角色破坏既有业务 API 放行规则。
+- `auditor` 是角色档案能力，不写入 `users.role` 枚举；登录时额外授予 `ROLE_AUDITOR`，用于访问审计日志 API。

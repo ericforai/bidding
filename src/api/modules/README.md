@@ -9,7 +9,7 @@
 |------|------|------|
 | `ai.js` | API 模块 | AI 评分、竞争、ROI、合规等智能分析调用 |
 | `approval.js` | API 模块 | 审批流和审批记录相关调用 |
-| `audit.js` | API 模块 | 审计日志和系统审计相关调用 |
+| `audit.js` | API 模块 | 审计日志与个人操作日志调用，沿用 `/api/audit` 兼容路径并新增 `/api/audit/my` |
 | `auth.js` | API 模块 | 登录、登出、当前用户和鉴权相关调用 |
 | `bidAgent.js` | API 模块 | 项目标书写作 Agent 运行、状态、写入和审查调用 |
 | `bidMatchScoring.js` | API 模块 | 投标匹配评分模型、模型激活和标讯评分结果调用 |

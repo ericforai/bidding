@@ -15,6 +15,8 @@ describe('sidebar-menu config', () => {
       '资源管理',
       'AI 智能中心',
       '数据分析',
+      '操作日志',
+      '审计日志',
       '系统设置'
     ])
     expect(workbenchOptions.map((item) => item.value)).toEqual([

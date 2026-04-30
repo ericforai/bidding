@@ -83,16 +83,17 @@
       <el-tab-pane label="系统集成" name="integration">
         <SystemIntegrationPanel />
       </el-tab-pane>
-      <el-tab-pane label="审计日志" name="audit">
-        <AuditLogPanel />
+      <el-tab-pane v-if="canViewAuditLogs" label="审计日志" name="audit">
+        <AuditLogPanel mode="audit" />
       </el-tab-pane>
     </el-tabs>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 import AiModelSettingsPanel from './settings/AiModelSettingsPanel.vue'
 import BidMatchScoringSettingsPanel from './settings/BidMatchScoringSettingsPanel.vue'
 import DepartmentTreePanel from './settings/DepartmentTreePanel.vue'
@@ -110,7 +111,10 @@ import {
 } from './settings/useBidMatchScoringSettings'
 
 const route = useRoute()
-const activeTab = ref(typeof route.query.tab === 'string' ? route.query.tab : 'departments')
+const userStore = useUserStore()
+const canViewAuditLogs = computed(() => ['admin', 'auditor'].includes(String(userStore.userRole || '').toLowerCase()))
+const initialTab = typeof route.query.tab === 'string' ? route.query.tab : 'departments'
+const activeTab = ref(initialTab === 'audit' && !canViewAuditLogs.value ? 'departments' : initialTab)
 
 const {
   loading,
@@ -165,6 +169,12 @@ const loadAll = async () => {
     loadBidScoringSettings()
   ])
 }
+
+watch(canViewAuditLogs, (allowed) => {
+  if (!allowed && activeTab.value === 'audit') {
+    activeTab.value = 'departments'
+  }
+}, { immediate: true })
 
 onMounted(loadAll)
 </script>

@@ -1,26 +1,28 @@
-// Input: @Auditable 切点、审计上下文、IAuditLogService
-// Output: 审计日志记录与环绕增强
-// Pos: Aspect/审计切面层
-// 维护声明: 仅维护横切审计逻辑；不要在此层承载业务规则.
+// Input: @Auditable 切点、操作上下文、IAuditLogService
+// Output: 操作日志记录与环绕增强
+// Pos: Aspect/操作日志切面层
+// 维护声明: 仅维护横切操作记录逻辑；不要在此层承载业务规则.
 package com.xiyu.bid.aspect;
 
 import com.xiyu.bid.audit.service.AuditLogService;
 import com.xiyu.bid.audit.service.IAuditLogService;
+import com.xiyu.bid.audit.core.AuditActionPolicy;
+import com.xiyu.bid.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 
 /**
- * 审计日志切面
+ * 操作日志切面
  * 自动记录带有 @Auditable 注解的方法调用
  */
 @Aspect
@@ -30,6 +32,7 @@ import java.lang.reflect.Modifier;
 public class AuditableAspect {
 
     private final IAuditLogService auditLogService;
+    private final AuditActionPolicy auditActionPolicy;
 
     @Around("@annotation(com.xiyu.bid.annotation.Auditable)")
     public Object auditMethod(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -43,8 +46,7 @@ public class AuditableAspect {
         // 获取当前用户信息
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String userId = auth != null ? auth.getName() : "system";
-        String username = auth != null && auth.getPrincipal() != null ?
-            auth.getPrincipal().toString() : "system";
+        String username = auth != null ? auth.getName() : "system";
 
         // 记录开始时间
         long startTime = System.currentTimeMillis();
@@ -69,8 +71,8 @@ public class AuditableAspect {
             // 计算执行时间
             long duration = System.currentTimeMillis() - startTime;
 
-            // 记录审计日志
-            if (auditable != null) {
+            // 记录关键操作
+            if (auditable != null && auditActionPolicy.shouldRecord(auditable.action())) {
                 AuditLogService.AuditLogEntry entry = AuditLogService.AuditLogEntry.builder()
                     .userId(userId)
                     .username(username)
@@ -95,7 +97,7 @@ public class AuditableAspect {
      * 从方法参数中提取实体ID
      */
     private String extractEntityId(Object[] args, Object result) {
-        String resultId = extractIdFromObject(result);
+        String resultId = extractIdFromObject(result, 0);
         if (resultId != null) {
             return resultId;
         }
@@ -105,7 +107,7 @@ public class AuditableAspect {
         }
 
         for (Object arg : args) {
-            String argId = extractIdFromObject(arg);
+            String argId = extractIdFromObject(arg, 0);
             if (argId != null) {
                 return argId;
             }
@@ -119,9 +121,17 @@ public class AuditableAspect {
         return null;
     }
 
-    private String extractIdFromObject(Object value) {
-        if (value == null) {
+    private String extractIdFromObject(Object value, int depth) {
+        if (value == null || depth > 4) {
             return null;
+        }
+
+        if (value instanceof ResponseEntity<?> response) {
+            return extractIdFromObject(response.getBody(), depth + 1);
+        }
+
+        if (value instanceof ApiResponse<?> apiResponse) {
+            return extractIdFromObject(apiResponse.getData(), depth + 1);
         }
 
         if (value instanceof Number || value instanceof CharSequence) {
@@ -129,19 +139,43 @@ public class AuditableAspect {
             return str.length() <= 100 ? str : null;
         }
 
+        String beanId = invokeNoArgIdMethod(value, "getId");
+        if (beanId != null) {
+            return beanId;
+        }
+
+        return invokeNoArgIdMethod(value, "id");
+    }
+
+    private String invokeNoArgIdMethod(Object value, String methodName) {
         try {
-            Method getId = value.getClass().getMethod("getId");
-            if (Modifier.isPublic(getId.getModifiers()) && getId.getParameterCount() == 0) {
+            Method getId = findNoArgMethod(value, methodName);
+            if (getId != null && getId.getParameterCount() == 0) {
+                if (!getId.canAccess(value)) {
+                    getId.setAccessible(true);
+                }
                 Object id = getId.invoke(value);
                 if (id != null) {
                     String str = id.toString();
                     return str.length() <= 100 ? str : null;
                 }
             }
-        } catch (ReflectiveOperationException ignored) {
+        } catch (ReflectiveOperationException | SecurityException ignored) {
             // Fall through to no ID extracted.
         }
 
         return null;
+    }
+
+    private Method findNoArgMethod(Object value, String methodName) {
+        try {
+            return value.getClass().getMethod(methodName);
+        } catch (NoSuchMethodException ignored) {
+            try {
+                return value.getClass().getDeclaredMethod(methodName);
+            } catch (NoSuchMethodException missing) {
+                return null;
+            }
+        }
     }
 }
