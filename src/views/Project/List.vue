@@ -100,7 +100,7 @@
  一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 -->
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
@@ -127,28 +127,24 @@ const pagination = ref({
 
 const userList = computed(() => userStore.users)
 
-const filteredProjects = computed(() => {
-  let result = [...projectStore.projects]
-
-  if (searchForm.value.name) {
-    result = result.filter(p => p.name.includes(searchForm.value.name))
-  }
-  if (searchForm.value.customer) {
-    result = result.filter(p => p.customer.includes(searchForm.value.customer))
-  }
-  if (searchForm.value.status) {
-    result = result.filter(p => p.status === searchForm.value.status)
-  }
-  if (searchForm.value.manager) {
-    result = result.filter(p => p.manager === searchForm.value.manager)
-  }
-
-  pagination.value.total = result.length
-
-  const start = (pagination.value.page - 1) * pagination.value.pageSize
-  const end = start + pagination.value.pageSize
-  return result.slice(start, end)
+const matchedProjects = computed(() => {
+  const { name, customer, status, manager } = searchForm.value
+  return projectStore.projects.filter((p) =>
+    (!name || p.name.includes(name))
+    && (!customer || p.customer.includes(customer))
+    && (!status || p.status === status)
+    && (!manager || p.manager === manager)
+  )
 })
+
+const filteredProjects = computed(() => {
+  const start = (pagination.value.page - 1) * pagination.value.pageSize
+  return matchedProjects.value.slice(start, start + pagination.value.pageSize)
+})
+
+watch(() => matchedProjects.value.length, (total) => {
+  pagination.value.total = total
+}, { immediate: true })
 
 const getStatusType = (status) => {
   const typeMap = {

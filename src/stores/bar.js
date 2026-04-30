@@ -9,7 +9,7 @@ import {  resourcesApi } from '@/api'
 function computeCapability(site) {
   const accounts = Array.isArray(site.accounts) ? site.accounts : []
   const uks = Array.isArray(site.uks) ? site.uks : []
-  const hasDetailedChildData = false || accounts.length > 0 || uks.length > 0
+  const hasDetailedChildData = accounts.length > 0 || uks.length > 0
 
   const hasAccount = accounts.length > 0
   const hasAvailableUK = uks.some((uk) => uk.status === 'available')

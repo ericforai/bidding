@@ -74,7 +74,7 @@ const router = useRouter()
 const route = useRoute()
 
 const isRemoteProjectId = computed(() => /^\d+$/.test(String(route.params.id || '')))
-const canUseLocalEditorActions = computed(() => false && !isRemoteProjectId.value)
+const canUseLocalEditorActions = computed(() => false)
 const canUseEditorExportActions = computed(() => isRemoteProjectId.value || canUseLocalEditorActions.value)
 const canUseEditorArchiveActions = computed(() => isRemoteProjectId.value || canUseLocalEditorActions.value)
 

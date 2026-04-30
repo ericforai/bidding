@@ -206,7 +206,7 @@ const drawerVisible = computed({
 })
 
 const isNumericProjectId = computed(() => /^\d+$/.test(String(props.projectId || '')))
-const shouldUseRealCards = computed(() => true && !props.showDemoFeatures && isNumericProjectId.value)
+const shouldUseRealCards = computed(() => !props.showDemoFeatures && isNumericProjectId.value)
 
 const scoreCoverageText = computed(() => {
   if (shouldUseRealCards.value && aiCards.value.score) {
