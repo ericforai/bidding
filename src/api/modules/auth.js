@@ -28,7 +28,8 @@ export const clearAuthState = () => {
 export const authApi = {
   async login(username, password, rememberMe = true) {
     const response = await httpClient.post('/api/auth/login', { username, password, rememberMe }, {
-      skipAuthRefresh: true
+      skipAuthRefresh: true,
+      skipGlobalErrorMessage: true
     })
     const authPayload = response?.data
     const normalizedUser = normalizeUser(authPayload)

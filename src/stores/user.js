@@ -14,6 +14,7 @@ import {
   persistUserHint
 } from '@/api/session.js'
 import { navigateToLogin } from '@/router/sessionNavigation.js'
+import { resolveLoginFailureMessage } from './loginFailureMessage.js'
 
 export const useUserStore = defineStore('user', {
   state: () => {
@@ -68,10 +69,16 @@ export const useUserStore = defineStore('user', {
     },
 
     async login(username, password, remember = true) {
-      const result = await authApi.login(username, password, remember)
+      let result
+
+      try {
+        result = await authApi.login(username, password, remember)
+      } catch (error) {
+        throw new Error(resolveLoginFailureMessage(error))
+      }
 
       if (!result?.success || !result?.data?.user || !result?.data?.token) {
-        throw new Error(result?.message || 'Login failed')
+        throw new Error(resolveLoginFailureMessage(result))
       }
 
       this.applyAuthSession(result.data, remember)

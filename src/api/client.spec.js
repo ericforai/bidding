@@ -93,6 +93,22 @@ describe('httpClient response errors', () => {
     expect(mocks.error).not.toHaveBeenCalled()
   })
 
+  it('skips global session-expired toast for handled login credential failures', async () => {
+    await import('./client.js')
+
+    const error = {
+      config: { skipGlobalErrorMessage: true, url: '/api/auth/login' },
+      response: {
+        status: 401,
+        data: { message: '用户名或密码错误' },
+      },
+    }
+
+    await expect(mocks.responseHandlers.rejected(error)).rejects.toBe(error)
+
+    expect(mocks.error).not.toHaveBeenCalled()
+  })
+
   it('keeps global error toast for normal business errors', async () => {
     await import('./client.js')
 

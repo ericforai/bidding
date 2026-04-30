@@ -198,7 +198,7 @@ const handleLogin = async () => {
     router.push('/dashboard')
   } catch (error) {
     if (error !== false) {
-      ElMessage.error('登录失败，请检查用户名和密码')
+      ElMessage.error(error?.message || '登录失败，请稍后重试')
     }
   } finally {
     loading.value = false
