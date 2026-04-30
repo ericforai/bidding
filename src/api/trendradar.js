@@ -228,10 +228,10 @@ export async function clearCache() {
  * 优先显示 MRO 相关内容，自动过滤政治敏感内容
  * 保证始终返回完整的30个MRO行业
  */
-export function transformToIndustryTrends(topics, useMRO = true, mockData = null) {
-  // 如果没有话题但有 mock 数据，直接返回 mock 数据
+export function transformToIndustryTrends(topics, useMRO = true, fallbackData = null) {
+  // 没有话题时，返回调用方传入的 fallback（或默认 MRO 30 个行业）
   if (!topics || topics.length === 0) {
-    return mockData || getDefaultMROTrends()
+    return fallbackData || getDefaultMROTrends()
   }
 
   // 先过滤掉政治敏感话题
