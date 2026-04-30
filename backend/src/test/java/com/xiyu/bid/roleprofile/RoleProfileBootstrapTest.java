@@ -5,6 +5,7 @@ import com.xiyu.bid.entity.RoleProfileCatalog;
 import com.xiyu.bid.repository.RoleProfileRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -16,6 +17,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,7 +32,7 @@ class RoleProfileBootstrapTest {
     private RoleProfileBootstrap roleProfileBootstrap;
 
     @Test
-    void ensureSystemRolesShouldAppendMissingSeedPermissions() {
+    void ensureSystemRolesShouldPreserveCustomizedSystemRolePermissions() {
         Map<String, RoleProfile> roles = seedRoles();
         RoleProfile manager = roles.get(RoleProfileCatalog.MANAGER_CODE);
         manager.setMenuPermissions(List.of("dashboard"));
@@ -38,8 +41,23 @@ class RoleProfileBootstrapTest {
 
         roleProfileBootstrap.ensureSystemRoles();
 
-        assertThat(manager.getMenuPermissions()).contains("dashboard", "operation-logs");
-        verify(roleProfileRepository).save(manager);
+        assertThat(manager.getMenuPermissions()).containsExactly("dashboard");
+        verify(roleProfileRepository, never()).save(manager);
+    }
+
+    @Test
+    void ensureSystemRolesShouldCreateMissingRoleWithSeedPermissions() {
+        when(roleProfileRepository.findByCodeIgnoreCase(anyString())).thenReturn(Optional.empty());
+
+        roleProfileBootstrap.ensureSystemRoles();
+
+        ArgumentCaptor<RoleProfile> captor = ArgumentCaptor.forClass(RoleProfile.class);
+        verify(roleProfileRepository, atLeastOnce()).save(captor.capture());
+        assertThat(captor.getAllValues())
+                .filteredOn(role -> RoleProfileCatalog.STAFF_CODE.equals(role.getCode()))
+                .singleElement()
+                .satisfies(role -> assertThat(role.getMenuPermissions())
+                        .contains(RoleProfileCatalog.QUICK_START_PERMISSION, RoleProfileCatalog.AI_CENTER_PERMISSION));
     }
 
     private Map<String, RoleProfile> seedRoles() {
