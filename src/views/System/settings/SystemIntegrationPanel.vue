@@ -1,7 +1,6 @@
-<!-- Input: useWeComSettings composable wired to WeComIntegrationCard + coming-soon cards -->
-<!-- Output: System Integration panel with 4 integration cards in a vertical stack; forwards sending/testSendResult/sendTest to card -->
+<!-- Input: WeCom + OA 配置卡片面板，统一挂在系统集成 Tab -->
+<!-- Output: 系统设置中企业微信与泛微 OA 配置入口（OA 使用系统设置 integrationConfig 持久化） -->
 <!-- Pos: src/views/System/settings/ -->
-<!-- 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。 -->
 
 <template>
   <div class="system-integration-panel">
@@ -24,8 +23,15 @@
         @test-conn="testConn"
       />
 
+      <WeaverIntegrationCard
+        :form="oaForm"
+        :secret-configured="oaSecretConfigured"
+        :loading="oaLoading"
+        :saving="oaSaving"
+        @save="saveOaConfig"
+      />
+
       <IntegrationComingSoonCard title="CRM 系统" />
-      <IntegrationComingSoonCard title="OA / 审批流" />
       <IntegrationComingSoonCard title="组织架构系统" />
     </div>
   </div>
@@ -35,7 +41,9 @@
 import { onMounted } from 'vue'
 import { useWeComSettings } from './useWeComSettings.js'
 import WeComIntegrationCard from './integration/WeComIntegrationCard.vue'
+import WeaverIntegrationCard from './integration/WeaverIntegrationCard.vue'
 import IntegrationComingSoonCard from './integration/IntegrationComingSoonCard.vue'
+import { useSystemIntegrationSettings } from './useSystemIntegrationSettings.js'
 
 const {
   loading,
@@ -49,7 +57,19 @@ const {
   testConn,
 } = useWeComSettings()
 
-onMounted(load)
+const {
+  loading: oaLoading,
+  saving: oaSaving,
+  form: oaForm,
+  secretConfigured: oaSecretConfigured,
+  load: loadSystemIntegration,
+  save: saveOaConfig,
+} = useSystemIntegrationSettings()
+
+onMounted(() => {
+  load()
+  loadSystemIntegration()
+})
 </script>
 
 <style scoped>
