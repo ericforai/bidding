@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Input: local dev environment, backend profile options, and repository startup commands
-# Output: stable daemon-like start/stop/status/log control with port identity checks and bounded health probes
+# Output: stable daemon-like start/stop/status/log control with current-code identity checks, Vite cache reset, and bounded health probes
 # Pos: scripts/ - local service lifecycle management
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -16,6 +16,8 @@ FRONTEND_URL="http://127.0.0.1:${FRONTEND_PORT}/"
 
 BACKEND_PID_FILE="$RUNTIME_DIR/backend.pid"
 FRONTEND_PID_FILE="$RUNTIME_DIR/frontend.pid"
+BACKEND_ID_FILE="$RUNTIME_DIR/backend.identity"
+FRONTEND_ID_FILE="$RUNTIME_DIR/frontend.identity"
 BACKEND_LOG="$RUNTIME_DIR/backend.log"
 FRONTEND_LOG="$RUNTIME_DIR/frontend.log"
 WATCHDOG_PID_FILE="$RUNTIME_DIR/watchdog.pid"
@@ -25,6 +27,7 @@ BACKEND_START_TIMEOUT_SECONDS="${BACKEND_START_TIMEOUT_SECONDS:-300}"
 FRONTEND_START_TIMEOUT_SECONDS="${FRONTEND_START_TIMEOUT_SECONDS:-90}"
 CURL_CONNECT_TIMEOUT_SECONDS="${CURL_CONNECT_TIMEOUT_SECONDS:-1}"
 CURL_MAX_TIME_SECONDS="${CURL_MAX_TIME_SECONDS:-3}"
+VITE_RESET_CACHE_ON_START="${VITE_RESET_CACHE_ON_START:-true}"
 DEFAULT_BACKEND_PROFILE="${BACKEND_PROFILE:-dev,mysql}"
 FRONTEND_HEALTH_SCRIPT="$ROOT_DIR/scripts/dev-frontend-health.sh"
 BACKEND_PROFILE_OVERRIDE=""
@@ -123,15 +126,88 @@ process_command() {
   ps -p "$pid" -o command= 2>/dev/null || true
 }
 
+process_cwd() {
+  local pid="$1"
+  lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -n 1
+}
+
+hash_stream() {
+  shasum -a 256 | awk '{print $1}'
+}
+
+workspace_fingerprint() {
+  if git -C "$ROOT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    local pathspec=(-- . ':(exclude)node_modules' ':(exclude)backend/target' ':(exclude).runtime' ':(exclude)dist' ':(exclude)coverage')
+    {
+      git -C "$ROOT_DIR" rev-parse HEAD
+      git -C "$ROOT_DIR" status --porcelain=v1 --untracked-files=all "${pathspec[@]}"
+      git -C "$ROOT_DIR" diff --binary --no-ext-diff HEAD "${pathspec[@]}"
+      git -C "$ROOT_DIR" diff --cached --binary --no-ext-diff "${pathspec[@]}"
+    } | hash_stream
+  else
+    printf 'no-git:%s\n' "$ROOT_DIR" | hash_stream
+  fi
+}
+
+backend_expected_identity() {
+  {
+    printf 'kind=backend\n'
+    printf 'root=%s\n' "$ROOT_DIR"
+    printf 'workspace=%s\n' "$(workspace_fingerprint)"
+    printf 'profile=%s\n' "$ACTIVE_BACKEND_PROFILE"
+    printf 'backend_port=%s\n' "$BACKEND_PORT"
+    printf 'frontend_port=%s\n' "$FRONTEND_PORT"
+    printf 'db=%s:%s/%s\n' "$DB_HOST" "$DB_PORT" "$DB_NAME"
+    printf 'db_user=%s\n' "$DB_USERNAME"
+    printf 'redis=%s:%s\n' "$REDIS_HOST" "$REDIS_PORT"
+  } | hash_stream
+}
+
+frontend_expected_identity() {
+  {
+    printf 'kind=frontend\n'
+    printf 'root=%s\n' "$ROOT_DIR"
+    printf 'workspace=%s\n' "$(workspace_fingerprint)"
+    printf 'frontend_port=%s\n' "$FRONTEND_PORT"
+    printf 'backend_port=%s\n' "$BACKEND_PORT"
+    printf 'api_base=%s\n' "http://127.0.0.1:${BACKEND_PORT}"
+  } | hash_stream
+}
+
+write_identity_file() {
+  local file="$1"
+  local pid="$2"
+  local identity="$3"
+  {
+    printf 'pid=%s\n' "$pid"
+    printf 'identity=%s\n' "$identity"
+  } >"$file"
+}
+
+identity_file_matches() {
+  local file="$1"
+  local pid="$2"
+  local identity="$3"
+  [[ -f "$file" ]] || return 1
+  grep -Fxq "pid=${pid}" "$file" || return 1
+  grep -Fxq "identity=${identity}" "$file" || return 1
+}
+
 curl_health() {
   local url="$1"
   curl --connect-timeout "$CURL_CONNECT_TIMEOUT_SECONDS" --max-time "$CURL_MAX_TIME_SECONDS" -fsS "$url" >/dev/null 2>&1
 }
 
 backend_matches_workspace() {
-  local pid cmd
+  local pid cmd cwd
   while IFS= read -r pid; do
     [[ -n "$pid" ]] || continue
+    cwd="$(process_cwd "$pid")"
+    case "$cwd" in
+      "$ROOT_DIR/backend"|"$ROOT_DIR/backend/"*)
+        return 0
+        ;;
+    esac
     cmd="$(process_command "$pid")"
     case "$cmd" in
       *"$ROOT_DIR/backend/target/classes"*|*"$ROOT_DIR/backend"*)
@@ -140,6 +216,13 @@ backend_matches_workspace() {
     esac
   done < <(port_listener_pids "$BACKEND_PORT")
   return 1
+}
+
+backend_current_for_pid() {
+  local pid="$1"
+  local identity="$2"
+  is_pid_running "$pid" || return 1
+  identity_file_matches "$BACKEND_ID_FILE" "$pid" "$identity"
 }
 
 print_backend_mismatch() {
@@ -193,6 +276,13 @@ frontend_matches_workspace() {
     "$FRONTEND_HEALTH_SCRIPT" >/dev/null 2>&1
 }
 
+frontend_current_for_pid() {
+  local pid="$1"
+  local identity="$2"
+  is_pid_running "$pid" || return 1
+  identity_file_matches "$FRONTEND_ID_FILE" "$pid" "$identity"
+}
+
 print_frontend_mismatch() {
   ROOT_DIR="$ROOT_DIR" \
     FRONTEND_URL="$FRONTEND_URL" \
@@ -218,29 +308,40 @@ wait_frontend() {
 
 start_backend() {
   local pid=""
+  local identity=""
   resolve_redis_port
+  identity="$(backend_expected_identity)"
   pid="$(read_pid "$BACKEND_PID_FILE" 2>/dev/null || true)"
   if is_pid_running "$pid"; then
-    if is_port_listening "$BACKEND_PORT"; then
-      if backend_matches_workspace; then
-        echo "[backend] already running (pid=$pid, port=$BACKEND_PORT)"
+    if backend_current_for_pid "$pid" "$identity"; then
+      if is_port_listening "$BACKEND_PORT"; then
+        if backend_matches_workspace; then
+          echo "[backend] already running (pid=$pid, port=$BACKEND_PORT)"
+        else
+          print_backend_mismatch
+          return 1
+        fi
       else
-        print_backend_mismatch
-        return 1
+        echo "[backend] process is running (pid=$pid), waiting for port $BACKEND_PORT to become ready"
       fi
-    else
-      echo "[backend] process is running (pid=$pid), waiting for port $BACKEND_PORT to become ready"
+      return 0
     fi
-    return 0
+    echo "[backend] stale tracked process detected, restarting for current code/config"
+    stop_one "backend" "$BACKEND_PID_FILE"
   fi
 
   if is_port_listening "$BACKEND_PORT"; then
     if backend_matches_workspace; then
-      echo "[backend] already running (untracked, port=$BACKEND_PORT)"
-      return 0
+      echo "[backend] untracked or stale workspace process detected on port $BACKEND_PORT, restarting"
+      stop_one "backend" "$BACKEND_PID_FILE"
+      if is_port_listening "$BACKEND_PORT"; then
+        print_backend_mismatch
+        return 1
+      fi
+    else
+      print_backend_mismatch
+      return 1
     fi
-    print_backend_mismatch
-    return 1
   fi
 
   echo "[backend] starting on :$BACKEND_PORT"
@@ -263,49 +364,68 @@ start_backend() {
       CORS_ALLOWED_ORIGINS="http://localhost:${FRONTEND_PORT},http://127.0.0.1:${FRONTEND_PORT}" \
       mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT}" \
       >>"$BACKEND_LOG" 2>&1 < /dev/null &
-    echo $! >"$BACKEND_PID_FILE"
+    local started_pid=$!
+    echo "$started_pid" >"$BACKEND_PID_FILE"
+    write_identity_file "$BACKEND_ID_FILE" "$started_pid" "$identity"
   )
 }
 
 start_frontend() {
   local pid=""
+  local identity=""
+  local frontend_cache_dir="$RUNTIME_DIR/vite-cache"
+  identity="$(frontend_expected_identity)"
   pid="$(read_pid "$FRONTEND_PID_FILE" 2>/dev/null || true)"
   if is_pid_running "$pid"; then
-    if is_port_listening "$FRONTEND_PORT"; then
-      if frontend_matches_workspace; then
-        echo "[frontend] already running (pid=$pid, port=$FRONTEND_PORT)"
+    if frontend_current_for_pid "$pid" "$identity"; then
+      if is_port_listening "$FRONTEND_PORT"; then
+        if frontend_matches_workspace; then
+          echo "[frontend] already running (pid=$pid, port=$FRONTEND_PORT)"
+        else
+          echo "[frontend] process is running (pid=$pid), waiting for API-mode workspace probe to become ready"
+        fi
       else
-        echo "[frontend] pid=$pid is listening on port $FRONTEND_PORT, but it is not this workspace in API mode" >&2
-        print_frontend_mismatch
-        return 1
+        echo "[frontend] process is running (pid=$pid), waiting for port $FRONTEND_PORT to become ready"
       fi
-    else
-      echo "[frontend] process is running (pid=$pid), waiting for port $FRONTEND_PORT to become ready"
+      return 0
     fi
-    return 0
+    echo "[frontend] stale tracked process detected, restarting for current code/config"
+    stop_one "frontend" "$FRONTEND_PID_FILE"
   fi
 
   if is_port_listening "$FRONTEND_PORT"; then
     if frontend_matches_workspace; then
-      echo "[frontend] already running (untracked, port=$FRONTEND_PORT)"
-      return 0
+      echo "[frontend] untracked or stale workspace process detected on port $FRONTEND_PORT, restarting"
+      stop_one "frontend" "$FRONTEND_PID_FILE"
+      if is_port_listening "$FRONTEND_PORT"; then
+        echo "[frontend] port $FRONTEND_PORT is still occupied after cleanup" >&2
+        print_frontend_mismatch
+        return 1
+      fi
+    else
+      echo "[frontend] port $FRONTEND_PORT is occupied by another service" >&2
+      print_frontend_mismatch
+      echo "[frontend] stop the conflicting service or run: npm run dev:stable:stop" >&2
+      return 1
     fi
-    echo "[frontend] port $FRONTEND_PORT is occupied by another service" >&2
-    print_frontend_mismatch
-    echo "[frontend] stop the conflicting service or run: npm run dev:stable:stop" >&2
-    return 1
   fi
 
   echo "[frontend] starting on :$FRONTEND_PORT"
   : >"$FRONTEND_LOG"
   (
     cd "$ROOT_DIR"
+    if [[ "$VITE_RESET_CACHE_ON_START" == "true" ]]; then
+      rm -rf "$frontend_cache_dir"
+    fi
     nohup env \
+      VITE_CACHE_DIR="$frontend_cache_dir" \
       VITE_API_MODE=api \
       VITE_API_BASE_URL="http://127.0.0.1:${BACKEND_PORT}" \
-      npm run dev -- --host 127.0.0.1 --port "$FRONTEND_PORT" \
+      npm run dev -- --host 127.0.0.1 --port "$FRONTEND_PORT" --force \
       >>"$FRONTEND_LOG" 2>&1 < /dev/null &
-    echo $! >"$FRONTEND_PID_FILE"
+    local started_pid=$!
+    echo "$started_pid" >"$FRONTEND_PID_FILE"
+    write_identity_file "$FRONTEND_ID_FILE" "$started_pid" "$identity"
   )
 }
 
@@ -336,6 +456,11 @@ stop_one() {
   fi
 
   rm -f "$pid_file"
+  if [[ "$name" == "frontend" ]]; then
+    rm -f "$FRONTEND_ID_FILE"
+  elif [[ "$name" == "backend" ]]; then
+    rm -f "$BACKEND_ID_FILE"
+  fi
 }
 
 status() {
@@ -344,6 +469,11 @@ status() {
   fpid="$(read_pid "$FRONTEND_PID_FILE" 2>/dev/null || true)"
   local bstate="down" fstate="down"
   local bhttp="down" fhttp="down"
+  local bidentity="missing" fidentity="missing"
+  local expected_backend_identity expected_frontend_identity
+  resolve_redis_port
+  expected_backend_identity="$(backend_expected_identity)"
+  expected_frontend_identity="$(frontend_expected_identity)"
 
   if is_port_listening "$BACKEND_PORT"; then
     if backend_matches_workspace; then
@@ -352,8 +482,14 @@ status() {
       else
         bstate="up(port=$BACKEND_PORT)"
       fi
+      if identity_file_matches "$BACKEND_ID_FILE" "$bpid" "$expected_backend_identity"; then
+        bidentity="current"
+      else
+        bidentity="stale"
+      fi
     else
       bstate="up(port=$BACKEND_PORT,mismatch)"
+      bidentity="mismatch"
     fi
   fi
   if is_port_listening "$FRONTEND_PORT"; then
@@ -370,6 +506,13 @@ status() {
         fstate="up(port=$FRONTEND_PORT,mismatch)"
       fi
     fi
+    if identity_file_matches "$FRONTEND_ID_FILE" "$fpid" "$expected_frontend_identity"; then
+      fidentity="current"
+    elif frontend_matches_workspace; then
+      fidentity="stale"
+    else
+      fidentity="mismatch"
+    fi
   fi
   if curl_health "$BACKEND_HEALTH_URL"; then
     bhttp="ok"
@@ -378,8 +521,8 @@ status() {
     fhttp="ok"
   fi
 
-  echo "backend: $bstate http=$bhttp url=$BACKEND_HEALTH_URL"
-  echo "frontend: $fstate http=$fhttp url=$FRONTEND_URL"
+  echo "backend: $bstate http=$bhttp identity=$bidentity url=$BACKEND_HEALTH_URL"
+  echo "frontend: $fstate http=$fhttp identity=$fidentity url=$FRONTEND_URL"
 }
 
 logs() {
@@ -394,13 +537,25 @@ watchdog_pid() {
   read_pid "$WATCHDOG_PID_FILE" 2>/dev/null || true
 }
 
+watchdog_process_pids() {
+  pgrep -f "${ROOT_DIR}/scripts/dev-services.sh.*watch-run" 2>/dev/null | while IFS= read -r pid; do
+    [[ "$pid" != "$$" ]] || continue
+    printf '%s\n' "$pid"
+  done
+}
+
 watchdog_running() {
   local pid
   pid="$(watchdog_pid)"
-  is_pid_running "$pid"
+  if is_pid_running "$pid"; then
+    return 0
+  fi
+  [[ -n "$(watchdog_process_pids)" ]]
 }
 
 watchdog_loop() {
+  echo "$$" >"$WATCHDOG_PID_FILE"
+  trap 'rm -f "$WATCHDOG_PID_FILE"' EXIT
   echo "[$(date '+%F %T')] watchdog loop started interval=${WATCHDOG_INTERVAL_SECONDS}s"
   while true; do
     if ! curl_health "$BACKEND_HEALTH_URL"; then
@@ -445,16 +600,28 @@ watchdog_start() {
 }
 
 watchdog_stop() {
-  local pid
+  local pid stopped=false
   pid="$(watchdog_pid)"
   if is_pid_running "$pid"; then
     echo "[watchdog] stopping pid=$pid"
     kill "$pid" >/dev/null 2>&1 || true
+    stopped=true
     sleep 1
     if is_pid_running "$pid"; then
       kill -9 "$pid" >/dev/null 2>&1 || true
     fi
-  else
+  fi
+  while IFS= read -r pid; do
+    [[ -n "$pid" ]] || continue
+    echo "[watchdog] stopping untracked pid=$pid"
+    kill "$pid" >/dev/null 2>&1 || true
+    stopped=true
+    sleep 1
+    if is_pid_running "$pid"; then
+      kill -9 "$pid" >/dev/null 2>&1 || true
+    fi
+  done < <(watchdog_process_pids)
+  if [[ "$stopped" == false ]]; then
     echo "[watchdog] not running"
   fi
   rm -f "$WATCHDOG_PID_FILE"
@@ -463,7 +630,13 @@ watchdog_stop() {
 watchdog_status() {
   local state="down"
   if watchdog_running; then
-    state="up(pid=$(watchdog_pid), interval=${WATCHDOG_INTERVAL_SECONDS}s)"
+    local pid
+    pid="$(watchdog_pid)"
+    if is_pid_running "$pid"; then
+      state="up(pid=$pid, interval=${WATCHDOG_INTERVAL_SECONDS}s)"
+    else
+      state="up(untracked=$(watchdog_process_pids | tr '\n' ',' | sed 's/,$//'), interval=${WATCHDOG_INTERVAL_SECONDS}s)"
+    fi
   fi
   echo "watchdog: $state"
 }
@@ -484,6 +657,7 @@ Environment:
   JWT_SECRET                 JWT secret for local auth
   BACKEND_START_TIMEOUT_SECONDS/FRONTEND_START_TIMEOUT_SECONDS
                              Startup wait budgets (defaults: 300/90)
+  VITE_RESET_CACHE_ON_START  Remove runtime Vite optimizer cache before frontend start (default: true)
 EOF
 }
 

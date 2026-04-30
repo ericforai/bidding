@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Input: launchd command argument, optional runtime environment variables
-# Output: launchd-managed dev service lifecycle actions, child-process cleanup, and bounded status checks
+# Output: launchd-managed dev service lifecycle actions, child-process cleanup, current-code restart, and bounded status checks
 # Pos: scripts/ - macOS launchd wrapper for dev-services watchdog
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -51,6 +51,8 @@ Environment variables:
   REDIS_HOST/REDIS_PORT      Redis connection target
   BACKEND_START_TIMEOUT_SECONDS/FRONTEND_START_TIMEOUT_SECONDS
                              Startup wait budgets (defaults: 300/90)
+  CURL_CONNECT_TIMEOUT_SECONDS/CURL_MAX_TIME_SECONDS
+                             Health probe network budgets (defaults: 1/3)
 EOF
 }
 
@@ -120,6 +122,10 @@ write_plist() {
     <string>${BACKEND_START_TIMEOUT_SECONDS}</string>
     <key>FRONTEND_START_TIMEOUT_SECONDS</key>
     <string>${FRONTEND_START_TIMEOUT_SECONDS}</string>
+    <key>CURL_CONNECT_TIMEOUT_SECONDS</key>
+    <string>${CURL_CONNECT_TIMEOUT_SECONDS}</string>
+    <key>CURL_MAX_TIME_SECONDS</key>
+    <string>${CURL_MAX_TIME_SECONDS}</string>
     <key>JWT_SECRET</key>
     <string>${JWT_SECRET}</string>
     <key>DB_HOST</key>
@@ -174,9 +180,11 @@ start_service() {
     echo "run: scripts/dev-services-launchd.sh install" >&2
     exit 1
   fi
-  if ! is_loaded; then
-    launchctl bootstrap "$LAUNCHD_DOMAIN" "$PLIST_PATH"
+  if is_loaded; then
+    launchctl bootout "$(service_target)" >/dev/null 2>&1 || true
   fi
+  cleanup_child_services
+  launchctl bootstrap "$LAUNCHD_DOMAIN" "$PLIST_PATH"
   launchctl kickstart -k "$(service_target)"
   echo "started: $(service_target)"
 }
@@ -201,6 +209,11 @@ status_service() {
     echo "launchd: up ($(service_target))"
   else
     echo "launchd: down ($(service_target))"
+  fi
+
+  if [[ -x "$DEV_SERVICES_SCRIPT" ]]; then
+    "$DEV_SERVICES_SCRIPT" --profile "$BACKEND_PROFILE" status
+    return
   fi
 
   if lsof -nP -iTCP:"$BACKEND_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
