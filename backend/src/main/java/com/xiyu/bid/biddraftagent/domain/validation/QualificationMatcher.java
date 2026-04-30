@@ -63,14 +63,14 @@ public class QualificationMatcher {
     /**
      * 智能匹配：
      * - 长名称（length > 5，如"ISO9001质量管理体系"）：使用不区分大小写的子串匹配，误匹配风险低。
-     * - 短名称（length <= 5，如"ISO"）：仅使用词边界正则匹配，防止"ISO"匹配"ISOLATED"。
-     *   此处不回退到 contains，以消除误匹配漏洞。
+     * - 短名称（length <= 5，如"ISO"）：如果全部是英文字母（如"ISO"），仅使用词边界正则匹配，防止"ISO"匹配"ISOLATED"。
+     *   如果包含非英文字母（如中文字符"涉密甲级"或特殊字符"C++"），正则的 \b 无法按预期工作，此时降级使用 contains。
      */
     boolean isSmartMatch(String source, String target) {
-        if (target.length() > 5) {
+        if (target.length() > 5 || !target.matches("^[a-zA-Z]+$")) {
             return source.toLowerCase().contains(target.toLowerCase());
         }
-        // Short name: word boundary match only
+        // Short name (pure English letters): word boundary match only
         Pattern pattern = shortNamePatternCache.computeIfAbsent(
                 target,
                 t -> Pattern.compile("\\b" + Pattern.quote(t) + "\\b", Pattern.CASE_INSENSITIVE)

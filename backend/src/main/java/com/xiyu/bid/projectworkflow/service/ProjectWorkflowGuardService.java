@@ -25,8 +25,12 @@ class ProjectWorkflowGuardService {
 
     Project requireProject(Long projectId) {
         projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
-        return projectRepository.findById(projectId)
+        Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", String.valueOf(projectId)));
+        if (project.getStatus() == Project.Status.INITIATED || project.getStatus() == Project.Status.ARCHIVED) {
+            throw new IllegalStateException("Project is not in a valid state for workflow operations: " + project.getStatus());
+        }
+        return project;
     }
 
     Task requireTask(Long projectId, Long taskId) {
