@@ -73,6 +73,7 @@ public class DataScopeConfigService {
         this.roleProfileBootstrap = pRoleProfileBootstrap;
     }
 
+    @Transactional
     public DataScopeConfigResponse getConfig() {
         roleProfileBootstrap.ensureSystemRoles();
         return assembler.toResponse(loadUsers(), roleProfileRepository.findAll(), configStore.loadPayload());
