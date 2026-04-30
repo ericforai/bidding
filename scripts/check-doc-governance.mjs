@@ -17,7 +17,6 @@ const governedDirectories = [
   'scripts',
   'src/api',
   'src/api/modules',
-  'src/api/mock-adapters',
   'src/stores',
   'src/views',
   'src/components',
@@ -49,7 +48,6 @@ if (fs.existsSync(backendModuleRoot)) {
 
 const governedFilePatterns = [
   /^src\/api\/index\.js$/,
-  /^src\/api\/mock-adapters\/.+\.js$/,
   /^src\/api\/modules\/.+\.js$/,
   /^src\/stores\/.+\.js$/,
   /^scripts\/[^/]+\.mjs$/,
