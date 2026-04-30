@@ -141,18 +141,28 @@ export const sidebarMenuConfig = [
   }
 ]
 
+export const workbenchRoleMenuChildren = [
+  { value: 'dashboard.quickStart', label: '快速发起', fullLabel: '工作台：快速发起' },
+  { value: 'dashboard:view_tender_list', label: '标讯列表', fullLabel: '工作台：标讯列表' },
+  { value: 'dashboard:view_project_list', label: '负责项目', fullLabel: '工作台：负责项目' },
+  { value: 'dashboard:view_technical_task', label: '技术任务', fullLabel: '工作台：技术任务' },
+  { value: 'dashboard:view_review_list', label: '待评审列表', fullLabel: '工作台：待评审列表' },
+  { value: 'dashboard:view_team_task', label: '团队任务', fullLabel: '工作台：团队任务' },
+  { value: 'dashboard:view_global_projects', label: '项目总览', fullLabel: '工作台：项目总览' }
+]
+
+export const roleMenuGroups = sidebarMenuConfig
+  .filter((menu) => !hiddenApiMenuNames.has(menu.name))
+  .map((menu) => ({
+    value: menu.meta.permissionKeys[0],
+    label: menu.meta.title,
+    children: menu.name === 'Dashboard' ? workbenchRoleMenuChildren : []
+  }))
+
 export const roleMenuOptions = [
-  ...sidebarMenuConfig
-    .filter((menu) => !hiddenApiMenuNames.has(menu.name))
-    .map((menu) => ({
-      value: menu.meta.permissionKeys[0],
-      label: menu.meta.title
-    })),
-  { value: 'dashboard.quickStart', label: '工作台快速发起' },
-  { value: 'dashboard:view_tender_list', label: '工作台：标讯列表' },
-  { value: 'dashboard:view_project_list', label: '工作台：负责项目' },
-  { value: 'dashboard:view_technical_task', label: '工作台：技术任务' },
-  { value: 'dashboard:view_review_list', label: '工作台：待评审列表' },
-  { value: 'dashboard:view_team_task', label: '工作台：团队任务' },
-  { value: 'dashboard:view_global_projects', label: '工作台：全院重点项目' }
+  ...roleMenuGroups.map((group) => ({ value: group.value, label: group.label })),
+  ...roleMenuGroups.flatMap((group) => group.children.map((child) => ({
+    value: child.value,
+    label: child.fullLabel || `${group.label}：${child.label}`
+  })))
 ]
