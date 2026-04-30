@@ -9,7 +9,7 @@ import { getFeaturePlaceholder, isFeatureUnavailableResponse, qualificationsApi 
 const qualificationFallbackPlaceholder = {
   title: '资质库暂未接入',
   message: '当前环境未返回真实资质列表，请确认后端服务和权限配置。',
-  hint: '资质页面已移除本地 mock，只展示真实接口结果。'
+  hint: '数据来源为后端接口，请联系管理员确认权限或检查服务状态。'
 }
 
 export const useQualificationStore = defineStore('qualification', {

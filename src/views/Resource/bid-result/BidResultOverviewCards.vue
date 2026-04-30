@@ -4,7 +4,7 @@
       <el-card shadow="hover" class="overview-card">
         <div class="icon system"><el-icon><Connection /></el-icon></div>
         <h3>内部系统同步</h3>
-        <p>保留 mock provider，但同步日志和结果入库打通。</p>
+        <p>同步内部系统的中标结果，日志与数据入库全流程打通。</p>
         <el-button type="primary" plain :loading="syncing" @click="$emit('sync')">立即同步</el-button>
         <div class="foot">最近同步：{{ overview.lastSyncTime || '暂无' }}</div>
       </el-card>

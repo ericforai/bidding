@@ -1,4 +1,4 @@
-// Input: authApi responses and demo user adapter for mock-mode session setup
+// Input: authApi responses, persisted session snapshot, runtime settings
 // Output: useUserStore - Pinia store for auth, session restore, and user scope state
 // Pos: src/stores/ - State management layer
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。

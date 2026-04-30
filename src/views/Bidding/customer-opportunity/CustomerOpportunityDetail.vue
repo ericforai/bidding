@@ -133,7 +133,7 @@
         <div class="api-empty-card">
           <el-tag size="small" type="info" effect="light" class="api-empty-tag">API 模式</el-tag>
           <h2>客户商机中心暂未接入真实数据源</h2>
-          <p>当前页面仅保留 mock 演示链路。真实模式下不会读取 demo 数据，也不会模拟 AI 洞察或扫描成功态。</p>
+          <p>真实数据源尚未接入。请等待后端商机数据落地后再查看洞察与推荐结果。</p>
           <div class="api-empty-actions">
             <el-button disabled>刷新洞察</el-button>
             <el-button link type="primary" @click="$emit('go-bidding')">返回标讯中心</el-button>
