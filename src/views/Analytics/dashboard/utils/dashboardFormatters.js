@@ -108,7 +108,7 @@ export function formatMetricCell(column, value, row = {}, metricDrawerType = '')
       return { WON: '已中标', LOST: '未中标', IN_PROGRESS: '进行中' }[value] || value
     }
     if (metricDrawerType === 'team' && column.key === 'role') {
-      return { ADMIN: '管理员', MANAGER: '经理', STAFF: '员工' }[value] || value
+      return { ADMIN: '管理员', AUDITOR: '审计员', MANAGER: '经理', STAFF: '员工' }[value] || value
     }
   }
 

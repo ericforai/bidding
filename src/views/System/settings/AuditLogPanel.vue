@@ -3,8 +3,8 @@
     <template #header>
       <div class="panel-header">
         <div>
-          <h3>关键操作记录</h3>
-          <p>查看新增、修改、删除和状态流转类操作，并支持按关键词快速筛选。</p>
+          <h3>{{ panelTitle }}</h3>
+          <p>{{ panelDescription }}</p>
         </div>
         <el-tag type="info" effect="plain">今日操作 {{ todayCount }}</el-tag>
       </div>
@@ -49,12 +49,27 @@
 import { computed, onMounted, ref } from 'vue'
 import { auditApi } from '@/api'
 
+const props = defineProps({
+  mode: {
+    type: String,
+    default: 'operation',
+    validator: (value) => ['operation', 'audit'].includes(value)
+  }
+})
+
 const loading = ref(false)
 const keyword = ref('')
 const rows = ref([])
 const total = ref(0)
 const errorMessage = ref('')
 const lastLoadedAt = ref('-')
+const isAuditMode = computed(() => props.mode === 'audit')
+const panelTitle = computed(() => (isAuditMode.value ? '审计日志' : '操作日志'))
+const panelDescription = computed(() => (
+  isAuditMode.value
+    ? '查看全员关键操作记录，供管理员和审计员追溯新增、修改、删除和状态流转类变更。'
+    : '查看自己的新增、修改、删除和状态流转类操作记录，并支持按关键词快速筛选。'
+))
 
 const firstPresent = (...values) => values.find((value) => value != null && String(value).trim() !== '')
 
@@ -88,7 +103,10 @@ async function loadLogs() {
   loading.value = true
   errorMessage.value = ''
   try {
-    const response = await auditApi.getLogs(keyword.value ? { keyword: keyword.value } : {})
+    const params = keyword.value ? { keyword: keyword.value } : {}
+    const response = isAuditMode.value
+      ? await auditApi.getAuditLogs(params)
+      : await auditApi.getOperationLogs(params)
     const payload = response?.data
     const items = Array.isArray(payload?.items)
       ? payload.items
@@ -101,7 +119,7 @@ async function loadLogs() {
   } catch (error) {
     rows.value = []
     total.value = 0
-    errorMessage.value = error?.message || '操作日志加载失败'
+    errorMessage.value = error?.message || (isAuditMode.value ? '审计日志加载失败' : '操作日志加载失败')
   } finally {
     loading.value = false
   }

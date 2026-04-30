@@ -25,7 +25,7 @@ class AuditLogControllerSecurityTest {
     private MockMvc mockMvc;
 
     @Test
-    void queryOperationLogs_isAdminOnly() throws NoSuchMethodException {
+    void queryAuditLogs_isAdminOrAuditorOnly() throws NoSuchMethodException {
         Method method = AuditLogController.class.getMethod(
                 "getAuditLogs",
                 String.class,
@@ -40,20 +40,34 @@ class AuditLogControllerSecurityTest {
         PreAuthorize preAuthorize = method.getAnnotation(PreAuthorize.class);
 
         assertThat(preAuthorize).isNotNull();
-        assertThat(preAuthorize.value()).isEqualTo("hasRole('ADMIN')");
+        assertThat(preAuthorize.value()).isEqualTo("hasAnyRole('ADMIN', 'AUDITOR')");
     }
 
     @Test
     @WithMockUser(username = "manager", roles = {"MANAGER"})
-    void managerCannotQueryOperationLogs() throws Exception {
+    void managerCannotQueryAuditLogs() throws Exception {
         mockMvc.perform(get("/api/audit"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(username = "staff", roles = {"STAFF"})
-    void staffCannotQueryOperationLogs() throws Exception {
+    void staffCannotQueryAuditLogs() throws Exception {
         mockMvc.perform(get("/api/audit"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "auditor", roles = {"AUDITOR"})
+    void auditorCanQueryAuditLogs() throws Exception {
+        mockMvc.perform(get("/api/audit"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "staff", roles = {"STAFF"})
+    void staffCanQueryOwnOperationLogs() throws Exception {
+        mockMvc.perform(get("/api/audit/my"))
+                .andExpect(status().isOk());
     }
 }

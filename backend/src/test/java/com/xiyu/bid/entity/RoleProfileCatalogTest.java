@@ -14,6 +14,17 @@ class RoleProfileCatalogTest {
                 RoleProfileCatalog.definitionForCode(RoleProfileCatalog.STAFF_CODE);
 
         assertThat(definition.menuPermissions())
-                .contains("dashboard", RoleProfileCatalog.QUICK_START_PERMISSION, RoleProfileCatalog.AI_CENTER_PERMISSION);
+                .contains("dashboard", "operation-logs", RoleProfileCatalog.QUICK_START_PERMISSION,
+                        RoleProfileCatalog.AI_CENTER_PERMISSION);
+    }
+
+    @Test
+    @DisplayName("审计员默认拥有审计日志和个人操作日志入口权限")
+    void auditorRoleShouldIncludeAuditAndOperationLogPermissions() {
+        RoleProfileCatalog.SeedDefinition definition =
+                RoleProfileCatalog.definitionForCode(RoleProfileCatalog.AUDITOR_CODE);
+
+        assertThat(definition.menuPermissions()).contains("audit-logs", "operation-logs");
+        assertThat(RoleProfileCatalog.legacyRoleForCode(RoleProfileCatalog.AUDITOR_CODE)).isEqualTo(User.Role.STAFF);
     }
 }

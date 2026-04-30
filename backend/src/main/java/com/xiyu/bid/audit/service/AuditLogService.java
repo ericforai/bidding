@@ -1,7 +1,7 @@
 // Input: 操作事件、查询条件、请求上下文和 Repository 编排服务
-// Output: 异步/同步操作日志写入与查询结果
-// Pos: Service/操作日志应用编排层
-// 维护声明: 仅维护操作日志编排入口；规则、查询、映射变化请同步拆分后的协作者.
+// Output: 异步/同步日志写入、全量审计查询与个人操作查询结果
+// Pos: Service/审计/操作日志应用编排层
+// 维护声明: 仅维护日志编排入口；规则、查询、映射变化请同步拆分后的协作者.
 package com.xiyu.bid.audit.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 操作日志服务 facade，保留原有契约并委托拆分后的写入、查询协作者。
+ * 审计/操作日志服务 facade，保留原有契约并委托拆分后的写入、查询协作者。
  */
 @Service
 @RequiredArgsConstructor
@@ -141,6 +141,17 @@ public class AuditLogService implements IAuditLogService {
                                            LocalDateTime end,
                                            Boolean success) {
         return auditLogQueryService.queryLogs(keyword, action, module, operator, start, end, success);
+    }
+
+    @Override
+    public AuditLogQueryResponse queryMyOperationLogs(String username,
+                                                      String keyword,
+                                                      String action,
+                                                      String module,
+                                                      LocalDateTime start,
+                                                      LocalDateTime end,
+                                                      Boolean success) {
+        return auditLogQueryService.queryLogsForActor(username, keyword, action, module, start, end, success);
     }
 
     private String toJsonString(Object obj) {

@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -26,7 +27,7 @@ public class AuditLogController {
     private final IAuditLogService auditLogService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AUDITOR')")
     public ResponseEntity<ApiResponse<AuditLogQueryResponse>> getAuditLogs(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String action,
@@ -36,11 +37,39 @@ public class AuditLogController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end
     ) {
-        Boolean success = null;
-        if (status != null && !status.isBlank()) {
-            success = !"failed".equalsIgnoreCase(status);
-        }
+        Boolean success = successFromStatus(status);
         AuditLogQueryResponse response = auditLogService.queryLogs(keyword, action, module, operator, start, end, success);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/my")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<AuditLogQueryResponse>> getMyOperationLogs(
+            Authentication authentication,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String action,
+            @RequestParam(required = false) String module,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end
+    ) {
+        Boolean success = successFromStatus(status);
+        AuditLogQueryResponse response = auditLogService.queryMyOperationLogs(
+                authentication.getName(),
+                keyword,
+                action,
+                module,
+                start,
+                end,
+                success
+        );
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    private Boolean successFromStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        return !"failed".equalsIgnoreCase(status);
     }
 }

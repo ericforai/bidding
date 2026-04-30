@@ -83,8 +83,8 @@
       <el-tab-pane label="系统集成" name="integration">
         <SystemIntegrationPanel />
       </el-tab-pane>
-      <el-tab-pane v-if="isAdmin" label="操作日志" name="audit">
-        <AuditLogPanel />
+      <el-tab-pane v-if="canViewAuditLogs" label="审计日志" name="audit">
+        <AuditLogPanel mode="audit" />
       </el-tab-pane>
     </el-tabs>
   </div>
@@ -112,9 +112,9 @@ import {
 
 const route = useRoute()
 const userStore = useUserStore()
-const isAdmin = computed(() => String(userStore.userRole || '').toLowerCase() === 'admin')
+const canViewAuditLogs = computed(() => ['admin', 'auditor'].includes(String(userStore.userRole || '').toLowerCase()))
 const initialTab = typeof route.query.tab === 'string' ? route.query.tab : 'departments'
-const activeTab = ref(initialTab === 'audit' && !isAdmin.value ? 'departments' : initialTab)
+const activeTab = ref(initialTab === 'audit' && !canViewAuditLogs.value ? 'departments' : initialTab)
 
 const {
   loading,
@@ -170,7 +170,7 @@ const loadAll = async () => {
   ])
 }
 
-watch(isAdmin, (allowed) => {
+watch(canViewAuditLogs, (allowed) => {
   if (!allowed && activeTab.value === 'audit') {
     activeTab.value = 'departments'
   }

@@ -46,8 +46,7 @@ public class AuditableAspect {
         // 获取当前用户信息
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String userId = auth != null ? auth.getName() : "system";
-        String username = auth != null && auth.getPrincipal() != null ?
-            auth.getPrincipal().toString() : "system";
+        String username = auth != null ? auth.getName() : "system";
 
         // 记录开始时间
         long startTime = System.currentTimeMillis();

@@ -1,5 +1,5 @@
 // Input: RoleProfileRepository and RoleProfileCatalog seed definitions
-// Output: persisted built-in role profiles
+// Output: persisted built-in role profiles with required seed permissions
 // Pos: roleprofile/ - neutral role profile bootstrap component
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.roleprofile;
@@ -11,7 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -25,8 +27,15 @@ public class RoleProfileBootstrap {
             roleProfileRepository.findByCodeIgnoreCase(definition.code())
                     .ifPresentOrElse(
                             existing -> {
+                                boolean changed = false;
                                 if (!Boolean.TRUE.equals(existing.getIsSystem())) {
                                     existing.setIsSystem(true);
+                                    changed = true;
+                                }
+                                if (mergeSeedPermissions(existing, definition)) {
+                                    changed = true;
+                                }
+                                if (changed) {
                                     roleProfileRepository.save(existing);
                                 }
                             },
@@ -48,5 +57,14 @@ public class RoleProfileBootstrap {
         role.setAllowedProjects(List.of());
         role.setAllowedDepts(List.of());
         return role;
+    }
+
+    private boolean mergeSeedPermissions(RoleProfile role, RoleProfileCatalog.SeedDefinition definition) {
+        Set<String> mergedPermissions = new LinkedHashSet<>(role.getMenuPermissions());
+        boolean changed = mergedPermissions.addAll(definition.menuPermissions());
+        if (changed) {
+            role.setMenuPermissions(List.copyOf(mergedPermissions));
+        }
+        return changed;
     }
 }

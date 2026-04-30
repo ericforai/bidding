@@ -7,6 +7,7 @@ import java.util.Map;
 public final class RoleProfileCatalog {
 
     public static final String ADMIN_CODE = "admin";
+    public static final String AUDITOR_CODE = "auditor";
     public static final String MANAGER_CODE = "manager";
     public static final String STAFF_CODE = "staff";
     public static final String QUICK_START_PERMISSION = "dashboard.quickStart";
@@ -14,10 +15,14 @@ public final class RoleProfileCatalog {
 
     private static final Map<String, SeedDefinition> DEFINITIONS = Map.of(
             ADMIN_CODE, new SeedDefinition(ADMIN_CODE, "管理员", "系统管理员，拥有所有权限", true, "all", List.of("all")),
+            AUDITOR_CODE, new SeedDefinition(AUDITOR_CODE, "审计员", "审计人员，可查看全量审计日志和个人操作日志", true, "all",
+                    List.of("dashboard", "operation-logs", "audit-logs")),
             MANAGER_CODE, new SeedDefinition(MANAGER_CODE, "经理", "部门经理，可查看项目、知识库、资源与分析数据", true, "dept",
-                    List.of("dashboard", "bidding", "project", "knowledge", "resource", AI_CENTER_PERMISSION, "analytics", "settings")),
+                    List.of("dashboard", "operation-logs", "bidding", "project", "knowledge", "resource",
+                            AI_CENTER_PERMISSION, "analytics", "settings")),
             STAFF_CODE, new SeedDefinition(STAFF_CODE, "员工", "业务人员，可查看工作台、标讯、项目、知识库与资源", true, "self",
-                    List.of("dashboard", QUICK_START_PERMISSION, "bidding", "project", "knowledge", "resource", AI_CENTER_PERMISSION))
+                    List.of("dashboard", "operation-logs", QUICK_START_PERMISSION, "bidding", "project", "knowledge",
+                            "resource", AI_CENTER_PERMISSION))
     );
 
     private RoleProfileCatalog() {
@@ -26,6 +31,7 @@ public final class RoleProfileCatalog {
     public static List<SeedDefinition> seedDefinitions() {
         return List.of(
                 DEFINITIONS.get(ADMIN_CODE),
+                DEFINITIONS.get(AUDITOR_CODE),
                 DEFINITIONS.get(MANAGER_CODE),
                 DEFINITIONS.get(STAFF_CODE)
         );

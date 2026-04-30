@@ -190,6 +190,18 @@ const routes = [
         redirect: '/analytics/dashboard'
       },
       {
+        path: 'operation-logs',
+        name: 'OperationLogs',
+        component: () => import('@/views/System/OperationLogPage.vue'),
+        meta: { title: '操作日志' }
+      },
+      {
+        path: 'audit-logs',
+        name: 'AuditLogs',
+        component: () => import('@/views/System/AuditLogPage.vue'),
+        meta: { title: '审计日志', roles: ['admin', 'auditor'] }
+      },
+      {
         path: 'settings',
         name: 'Settings',
         component: () => import('@/views/System/Settings.vue'),

@@ -103,6 +103,16 @@ export const sidebarMenuConfig = [
     meta: { title: '数据分析', icon: 'analytics', roles: ['admin', 'manager'], permissionKeys: ['analytics', 'analytics-dashboard'] }
   },
   {
+    path: '/operation-logs',
+    name: 'OperationLogs',
+    meta: { title: '操作日志', icon: 'history', permissionKeys: ['operation-logs'] }
+  },
+  {
+    path: '/audit-logs',
+    name: 'AuditLogs',
+    meta: { title: '审计日志', icon: 'lock', roles: ['admin', 'auditor'], permissionKeys: ['audit-logs'] }
+  },
+  {
     path: '/settings',
     name: 'Settings',
     meta: { title: '系统设置', icon: 'settings', roles: ['admin'], permissionKeys: ['settings'] },

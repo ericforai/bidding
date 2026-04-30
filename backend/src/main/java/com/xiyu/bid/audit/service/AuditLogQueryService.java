@@ -39,12 +39,41 @@ public class AuditLogQueryService {
                 end,
                 success
         );
+        return toResponse(logs, module);
+    }
+
+    public AuditLogQueryResponse queryLogsForActor(String actorUsername,
+                                                   String keyword,
+                                                   String action,
+                                                   String module,
+                                                   LocalDateTime start,
+                                                   LocalDateTime end,
+                                                   Boolean success) {
+        String normalizedActor = normalizeBlank(actorUsername);
+        if (normalizedActor == null) {
+            return toResponse(List.of(), module);
+        }
+        String actorUserId = userRepository.findByUsername(normalizedActor)
+                .map(user -> String.valueOf(user.getId()))
+                .orElse(null);
+        List<AuditLog> logs = auditLogRepository.searchLogsForActor(
+                normalizeBlank(keyword),
+                normalizeBlank(action),
+                normalizedActor,
+                actorUserId,
+                start,
+                end,
+                success
+        );
+        return toResponse(logs, module);
+    }
+
+    private AuditLogQueryResponse toResponse(List<AuditLog> logs, String module) {
         Map<String, User> userCache = resolveUsers(logs);
         List<AuditLogItemDTO> items = logs.stream()
                 .map(log -> itemMapper.toItemDto(log, userCache.get(userKey(log))))
                 .filter(item -> module == null || module.isBlank() || module.equalsIgnoreCase(item.getModule()))
                 .toList();
-
         return AuditLogQueryResponse.builder()
                 .items(items)
                 .summary(toSummary(items, LocalDateTime.now()))

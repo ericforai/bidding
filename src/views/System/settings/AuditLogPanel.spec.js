@@ -6,12 +6,14 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  getLogs: vi.fn(),
+  getAuditLogs: vi.fn(),
+  getOperationLogs: vi.fn(),
 }))
 
 vi.mock('@/api', () => ({
   auditApi: {
-    getLogs: mocks.getLogs,
+    getAuditLogs: mocks.getAuditLogs,
+    getOperationLogs: mocks.getOperationLogs,
   },
 }))
 
@@ -72,6 +74,20 @@ function mountPanel() {
   })
 }
 
+function mountAuditPanel() {
+  return mount(AuditLogPanel, {
+    props: {
+      mode: 'audit',
+    },
+    global: {
+      stubs,
+      directives: {
+        loading: {},
+      },
+    },
+  })
+}
+
 function buttonByText(wrapper, text) {
   return wrapper.findAll('button').find((button) => button.text() === text)
 }
@@ -88,7 +104,7 @@ describe('AuditLogPanel', () => {
   })
 
   it('loads operation rows and prefers detail plus summary.totalCount when normalizing fields', async () => {
-    mocks.getLogs.mockResolvedValue({
+    mocks.getOperationLogs.mockResolvedValue({
       success: true,
       data: {
         items: [
@@ -117,7 +133,9 @@ describe('AuditLogPanel', () => {
     const wrapper = mountPanel()
     await flushPromises()
 
-    expect(mocks.getLogs).toHaveBeenCalledWith({})
+    expect(mocks.getOperationLogs).toHaveBeenCalledWith({})
+    expect(mocks.getAuditLogs).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('操作日志')
     expect(wrapper.text()).toContain('共 42 条记录')
     expect(wrapper.text()).toContain('创建资质')
     expect(wrapper.text()).toContain('李总')
@@ -128,7 +146,7 @@ describe('AuditLogPanel', () => {
   })
 
   it('searches by keyword and reset clears the query before reloading', async () => {
-    mocks.getLogs.mockResolvedValue({
+    mocks.getOperationLogs.mockResolvedValue({
       success: true,
       data: {
         items: [],
@@ -143,17 +161,17 @@ describe('AuditLogPanel', () => {
     await buttonByText(wrapper, '搜索').trigger('click')
     await flushPromises()
 
-    expect(mocks.getLogs).toHaveBeenLastCalledWith({ keyword: '创建资质' })
+    expect(mocks.getOperationLogs).toHaveBeenLastCalledWith({ keyword: '创建资质' })
 
     await buttonByText(wrapper, '重置').trigger('click')
     await flushPromises()
 
     expect(wrapper.find('input[placeholder="搜索操作内容/对象"]').element.value).toBe('')
-    expect(mocks.getLogs).toHaveBeenLastCalledWith({})
+    expect(mocks.getOperationLogs).toHaveBeenLastCalledWith({})
   })
 
   it('shows an error state and clears rows when loading fails', async () => {
-    mocks.getLogs.mockRejectedValue(new Error('操作日志服务不可用'))
+    mocks.getOperationLogs.mockRejectedValue(new Error('操作日志服务不可用'))
 
     const wrapper = mountPanel()
     await flushPromises()
@@ -161,5 +179,22 @@ describe('AuditLogPanel', () => {
     expect(wrapper.text()).toContain('操作日志服务不可用')
     expect(wrapper.text()).toContain('共 0 条记录')
     expect(wrapper.findAll('.audit-row')).toHaveLength(0)
+  })
+
+  it('loads full audit rows in audit mode', async () => {
+    mocks.getAuditLogs.mockResolvedValue({
+      success: true,
+      data: {
+        items: [],
+        summary: { totalCount: 0 },
+      },
+    })
+
+    const wrapper = mountAuditPanel()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('审计日志')
+    expect(mocks.getAuditLogs).toHaveBeenCalledWith({})
+    expect(mocks.getOperationLogs).not.toHaveBeenCalled()
   })
 })

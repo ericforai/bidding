@@ -1,5 +1,5 @@
 // Input: auditApi with mocked HTTP client
-// Output: audit log query endpoint and parameter pass-through coverage
+// Output: audit and personal operation log endpoint parameter pass-through coverage
 // Pos: src/api/modules/ - API module unit tests
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -19,7 +19,7 @@ describe('auditApi', () => {
     vi.clearAllMocks()
   })
 
-  it('getLogs(): passes query parameters to the real audit endpoint unchanged', async () => {
+  it('getAuditLogs(): passes query parameters to the full audit endpoint unchanged', async () => {
     const response = {
       success: true,
       data: {
@@ -39,10 +39,28 @@ describe('auditApi', () => {
       end: '2026-04-30T23:59:59',
     }
 
-    const result = await auditApi.getLogs(params)
+    const result = await auditApi.getAuditLogs(params)
 
     expect(httpClient.get).toHaveBeenCalledOnce()
     expect(httpClient.get).toHaveBeenCalledWith('/api/audit', { params })
+    expect(result).toBe(response)
+  })
+
+  it('getOperationLogs(): passes query parameters to the current-user endpoint unchanged', async () => {
+    const response = {
+      success: true,
+      data: {
+        items: [],
+        summary: { totalCount: 0 },
+      },
+    }
+    httpClient.get.mockResolvedValue(response)
+
+    const params = { keyword: '创建资质' }
+    const result = await auditApi.getOperationLogs(params)
+
+    expect(httpClient.get).toHaveBeenCalledOnce()
+    expect(httpClient.get).toHaveBeenCalledWith('/api/audit/my', { params })
     expect(result).toBe(response)
   })
 })

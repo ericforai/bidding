@@ -14,6 +14,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class AuditLogQueryServiceTest {
@@ -67,6 +68,53 @@ class AuditLogQueryServiceTest {
 
         assertEquals("空白用户", response.getItems().get(0).getOperator());
         verify(userRepository).findByUsername("blank-user");
+    }
+
+    @Test
+    void queryLogsForActor_shouldRestrictRepositorySearchToCurrentUser() {
+        AuditLog ownLog = log(4L, "42", "xiaowang", "DELETE", "Task", "400");
+        User user = User.builder()
+                .id(42L)
+                .username("xiaowang")
+                .fullName("小王")
+                .role(User.Role.STAFF)
+                .build();
+        when(userRepository.findByUsername("xiaowang")).thenReturn(Optional.of(user));
+        when(auditLogRepository.searchLogsForActor("删除", "DELETE", "xiaowang", "42", null, null, true))
+                .thenReturn(List.of(ownLog));
+        when(userRepository.findAllById(List.of(42L))).thenReturn(List.of(user));
+
+        AuditLogQueryResponse response = service.queryLogsForActor(
+                "xiaowang",
+                "删除",
+                "DELETE",
+                "task",
+                null,
+                null,
+                true
+        );
+
+        assertEquals(1, response.getItems().size());
+        assertEquals("小王", response.getItems().get(0).getOperator());
+        assertEquals("task", response.getItems().get(0).getModule());
+        verify(auditLogRepository).searchLogsForActor("删除", "DELETE", "xiaowang", "42", null, null, true);
+    }
+
+    @Test
+    void queryLogsForActor_shouldReturnEmptyWhenActorMissing() {
+        AuditLogQueryResponse response = service.queryLogsForActor(
+                " ",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        assertEquals(0, response.getItems().size());
+        assertEquals(0, response.getSummary().getTotalCount());
+        verifyNoInteractions(auditLogRepository, userRepository);
     }
 
     private AuditLog log(Long id, String userId, String username, String action, String entityType, String entityId) {

@@ -77,15 +77,15 @@ async function authedJson(path, session, options = {}) {
   return requestJson(`${apiBaseUrl}${path}`, { ...options, headers })
 }
 
-function auditQueryPath(params) {
-  return `/api/audit?${new URLSearchParams(params).toString()}`
+function auditQueryPath(params, basePath = '/api/audit') {
+  return `${basePath}?${new URLSearchParams(params).toString()}`
 }
 
-async function waitForAuditItem(session, params, matchesItem) {
+async function waitForAuditItem(session, params, matchesItem, basePath = '/api/audit') {
   let items = []
 
   await expect.poll(async () => {
-    const payload = await authedJson(auditQueryPath(params), session)
+    const payload = await authedJson(auditQueryPath(params, basePath), session)
     items = Array.isArray(payload?.data?.items) ? payload.data.items : []
     return items.some(matchesItem) ? 1 : 0
   }, {
@@ -97,7 +97,7 @@ async function waitForAuditItem(session, params, matchesItem) {
   return items.find(matchesItem)
 }
 
-test('dashboard and operation log screens render one real key operation record', async ({ page }) => {
+test('dashboard, operation log and audit log screens render one real key operation record', async ({ page }) => {
   const session = await ensureSession()
   const suffix = Date.now()
 
@@ -131,6 +131,17 @@ test('dashboard and operation log screens render one real key operation record',
     detail: '创建资质',
     target: qualificationId,
   })
+  const operationItem = await waitForAuditItem(
+    session,
+    { keyword: qualificationId, action: 'CREATE', module: 'qualification' },
+    (item) => String(item.target) === qualificationId && item.detail === '创建资质',
+    '/api/audit/my'
+  )
+  expect(operationItem).toMatchObject({
+    actionType: 'create',
+    detail: '创建资质',
+    target: qualificationId,
+  })
 
   await page.addInitScript(({ token, user }) => {
     sessionStorage.setItem('token', token)
@@ -143,9 +154,8 @@ test('dashboard and operation log screens render one real key operation record',
   await expect(page.getByText('中标率趋势')).toBeVisible()
   await expect(page.locator('.metric-cards .b2b-metric-card').first()).toBeVisible()
 
-  await page.goto('/settings')
-  await expect(page.getByRole('heading', { name: '系统设置' })).toBeVisible()
-  await page.getByRole('tab', { name: '操作日志' }).click()
+  await page.goto('/operation-logs')
+  await expect(page.getByRole('heading', { name: '操作日志' })).toBeVisible()
   await expect(page.getByText('今日操作')).toBeVisible()
 
   await page.getByPlaceholder('搜索操作内容/对象').fill(qualificationId)
@@ -158,4 +168,10 @@ test('dashboard and operation log screens render one real key operation record',
     .first()
   await expect(qualificationAuditRow).toBeVisible()
   await expect(qualificationAuditRow).toContainText('创建资质')
+
+  await page.goto('/audit-logs')
+  await expect(page.getByRole('heading', { name: '审计日志' })).toBeVisible()
+  await page.getByPlaceholder('搜索操作内容/对象').fill(qualificationId)
+  await page.getByRole('button', { name: /搜索/ }).click()
+  await expect(page.locator('.audit-table .el-table__row').filter({ hasText: qualificationId }).first()).toBeVisible()
 })
