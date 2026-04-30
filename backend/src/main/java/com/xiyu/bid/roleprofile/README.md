@@ -8,4 +8,4 @@
 ## 边界清单
 | 文件 | 地位 | 功能 |
 |------|------|------|
-| `RoleProfileBootstrap.java` | Component | 根据 `RoleProfileCatalog` 补齐内置系统角色，并为既有系统角色追加必需种子权限 |
+| `RoleProfileBootstrap.java` | Component | 根据 `RoleProfileCatalog` 补齐缺失的内置系统角色，并保留管理员已保存的角色权限配置 |
