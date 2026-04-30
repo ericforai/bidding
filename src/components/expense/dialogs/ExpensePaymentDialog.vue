@@ -58,6 +58,8 @@
 </template>
 
 <script setup>
+defineModel('form', { type: Object, required: true })
+
 defineProps({
   modelValue: {
     type: Boolean,
@@ -66,10 +68,6 @@ defineProps({
   expense: {
     type: Object,
     default: null
-  },
-  form: {
-    type: Object,
-    required: true
   },
   records: {
     type: Array,
