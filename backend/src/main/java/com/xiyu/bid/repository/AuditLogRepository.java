@@ -2,6 +2,7 @@ package com.xiyu.bid.repository;
 
 import com.xiyu.bid.entity.AuditLog;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -10,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 审计日志数据访问层
+ * 操作日志数据访问层，内部沿用 AuditLog 命名兼容既有表结构。
  */
 @Repository
 public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
@@ -87,6 +88,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
     /**
      * 删除旧的日志（用于定期清理）
      */
+    @Modifying
     @Query("DELETE FROM AuditLog a WHERE a.timestamp < :beforeDate")
     void deleteOldLogs(@Param("beforeDate") LocalDateTime beforeDate);
 }

@@ -15,4 +15,4 @@ Repository 只定义数据访问接口和查询边界，不写业务判断。这
 | `QualificationRepository.java` | Repository | 资质数据访问 |
 | `CaseRepository.java` | Repository | 案例数据访问 |
 | `TemplateRepository.java` | Repository | 模板数据访问 |
-| `AuditLogRepository.java` | Repository | 审计日志数据访问 |
+| `AuditLogRepository.java` | Repository | 操作日志数据访问，内部沿用 AuditLog 命名 |

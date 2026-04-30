@@ -6,8 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 可审计注解
- * 标记需要记录审计日志的方法
+ * 操作记录注解
+ * 标记需要记录操作日志的方法
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

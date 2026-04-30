@@ -1,10 +1,9 @@
 // Input: batch command services and request DTOs
-// Output: Batch operation facade methods for controllers
+// Output: Batch operation facade methods; audit logging is delegated to command services
 // Pos: Service/业务层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.batch.service;
 
-import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.batch.core.BatchValidationPolicy;
 import com.xiyu.bid.batch.dto.BatchApproveFeesRequest;
 import com.xiyu.bid.batch.dto.BatchAssignRequest;
@@ -34,14 +33,12 @@ public class BatchOperationService {
     private final BatchFeeCommandService feeCommandService;
     private final BatchValidationPolicy validationPolicy;
 
-    @Auditable(action = "BATCH_CLAIM", entityType = "TENDER", description = "Batch claim tenders")
     @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
     @PreAuthorize("hasAuthority('CLAIM_TENDER')")
     public BatchOperationResponse batchClaimTenders(List<Long> tenderIds, Long userId) {
         return tenderCommandService.batchClaimTenders(tenderIds, userId);
     }
 
-    @Auditable(action = "BATCH_ASSIGN", entityType = "TASK", description = "Batch assign tasks")
     @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
     @PreAuthorize("hasAuthority('ASSIGN_TASK')")
     public BatchOperationResponse batchAssignTasks(List<Long> taskIds, Long assigneeId) {
@@ -54,7 +51,6 @@ public class BatchOperationService {
         return taskCommandService.batchAssignTasks(request, currentUser);
     }
 
-    @Auditable(action = "BATCH_DELETE", entityType = "PROJECT", description = "Batch delete projects")
     @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
     @PreAuthorize("hasAuthority('DELETE_PROJECT')")
     public BatchOperationResponse batchDeleteProjects(List<Long> projectIds, Long userId, User.Role userRole) {
@@ -85,14 +81,12 @@ public class BatchOperationService {
         };
     }
 
-    @Auditable(action = "BATCH_UPDATE", entityType = "PROJECT", description = "Batch update projects")
     @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
     @PreAuthorize("hasAuthority('UPDATE_PROJECT')")
     public BatchOperationResponse batchUpdateProjects(BatchProjectUpdateRequest request, Long userId, User.Role userRole) {
         return projectCommandService.batchUpdateProjects(request, userId, userRole);
     }
 
-    @Auditable(action = "BATCH_PAY", entityType = "FEE", description = "Batch mark fees as paid")
     @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
     @PreAuthorize("hasAuthority('PAY_FEE')")
     public BatchOperationResponse batchApproveFees(BatchApproveFeesRequest request, Long userId) {

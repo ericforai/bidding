@@ -10,7 +10,7 @@
 |------|------|------|
 | `SecurityConfig.java` | Config | 安全与权限配置 |
 | `JwtConfig.java` | Config | JWT Bean 配置 |
-| `AsyncConfig.java` | Config | 异步线程池配置 |
+| `AsyncConfig.java` | Config | 异步线程池配置，含操作日志线程池 |
 | `RateLimitConfig.java` | Config | 速率限制配置 |
 | `RateLimitFilter.java` | Config | 登录限流过滤器 |
 | `PaginationConstants.java` | Config | 分页常量 |

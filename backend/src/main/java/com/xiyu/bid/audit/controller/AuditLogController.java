@@ -26,7 +26,7 @@ public class AuditLogController {
     private final IAuditLogService auditLogService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<AuditLogQueryResponse>> getAuditLogs(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String action,

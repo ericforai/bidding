@@ -1,7 +1,7 @@
 // Input: AuditLog 实体、查询条件和事件上下文
-// Output: 审计日志记录与查询结果
+// Output: 操作日志记录与查询结果
 // Pos: Service/业务编排层
-// 维护声明: 仅维护审计服务契约；实现变更请同步 Controller 与 Aspect.
+// 维护声明: 仅维护操作日志服务契约；实现变更请同步 Controller 与 Aspect.
 package com.xiyu.bid.audit.service;
 
 import com.xiyu.bid.audit.dto.AuditLogQueryResponse;
@@ -10,14 +10,14 @@ import com.xiyu.bid.entity.AuditLog;
 import java.time.LocalDateTime;
 
 /**
- * 审计日志服务接口
+ * 操作日志服务接口
  * 用于支持单元测试中的 Mock
  */
 public interface IAuditLogService {
 
     /**
-     * 记录审计日志
-     * @param entry 审计日志条目
+     * 记录操作日志
+     * @param entry 操作日志条目
      */
     void log(AuditLogService.AuditLogEntry entry);
 

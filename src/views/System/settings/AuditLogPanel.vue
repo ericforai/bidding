@@ -3,8 +3,8 @@
     <template #header>
       <div class="panel-header">
         <div>
-          <h3>审计日志</h3>
-          <p>查看真实 API 返回的系统操作记录，并支持按关键词快速筛选。</p>
+          <h3>关键操作记录</h3>
+          <p>查看新增、修改、删除和状态流转类操作，并支持按关键词快速筛选。</p>
         </div>
         <el-tag type="info" effect="plain">今日操作 {{ todayCount }}</el-tag>
       </div>
@@ -56,13 +56,28 @@ const total = ref(0)
 const errorMessage = ref('')
 const lastLoadedAt = ref('-')
 
+const firstPresent = (...values) => values.find((value) => value != null && String(value).trim() !== '')
+
+const toFiniteNumber = (value) => {
+  if (value == null || value === '') return null
+  const numeric = Number(value)
+  return Number.isFinite(numeric) ? numeric : null
+}
+
 const normalizeAuditRow = (item = {}) => ({
-  id: item.id ?? `${item.timestamp || item.time || ''}-${item.operator || item.userName || ''}-${item.action || item.actionType || ''}`,
-  time: item.timestamp || item.time || item.createdAt || '-',
-  operator: item.operator || item.userName || item.createdByName || '未知用户',
-  action: item.action || item.actionType || item.description || '未知操作',
-  target: item.target || item.entityName || item.objectName || item.entityType || '-'
+  id: item.id ?? `${firstPresent(item.timestamp, item.time, '')}-${firstPresent(item.operator, item.userName, '')}-${firstPresent(item.detail, item.action, item.actionType, '')}`,
+  time: firstPresent(item.timestamp, item.time, item.createdAt) || '-',
+  operator: firstPresent(item.operator, item.userName, item.createdByName, item.username) || '未知用户',
+  action: firstPresent(item.detail, item.action, item.actionType, item.description, item.operationContent) || '未知操作',
+  target: firstPresent(item.target, item.entityId, item.entityName, item.objectName, item.entityType) || '-'
 })
+
+const resolveTotal = (payload, rowCount) => (
+  toFiniteNumber(payload?.summary?.totalCount)
+  ?? toFiniteNumber(payload?.total)
+  ?? toFiniteNumber(payload?.totalCount)
+  ?? rowCount
+)
 
 const todayCount = computed(() => {
   const today = new Date().toISOString().slice(0, 10)
@@ -81,12 +96,12 @@ async function loadLogs() {
         ? payload
         : []
     rows.value = items.map(normalizeAuditRow)
-    total.value = Number(payload?.total || rows.value.length || 0)
+    total.value = resolveTotal(payload, rows.value.length)
     lastLoadedAt.value = new Date().toLocaleString('zh-CN', { hour12: false })
   } catch (error) {
     rows.value = []
     total.value = 0
-    errorMessage.value = error?.message || '审计日志加载失败'
+    errorMessage.value = error?.message || '操作日志加载失败'
   } finally {
     loading.value = false
   }

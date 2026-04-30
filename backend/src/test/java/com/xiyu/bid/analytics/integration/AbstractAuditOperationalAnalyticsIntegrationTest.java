@@ -150,10 +150,10 @@ abstract class AbstractAuditOperationalAnalyticsIntegrationTest {
         auditLogService.logSync(AuditLogService.AuditLogEntry.builder()
                 .userId(String.valueOf(adminUser.getId()))
                 .username(adminUser.getUsername())
-                .action("EXPORT")
+                .action("UPDATE")
                 .entityType("PROJECT")
                 .entityId(String.valueOf(project.getId()))
-                .description("Exported project package")
+                .description("Updated project status")
                 .success(true)
                 .build());
         auditLogService.logSync(AuditLogService.AuditLogEntry.builder()
