@@ -12,8 +12,8 @@
 
 - 对外项目名称统一为“西域数智化投标管理平台”。
 - 仓库名、包名、构件名中的 `xiyu-bid-poc`、`bid-poc` 属于历史遗留。
-- 当前项目按真实 API 交付模式协作，不再把 Mock 当作正常路径。
-- 仓库中仍保留少量 `frontendDemo`、`demoPersistence` 等遗留内容；这些只代表待清理技术债，不代表允许继续使用的架构策略。
+- 当前项目按真实 API 交付模式协作，Mock 模式已于 2026-04-30 退役（`mock.js`、`mock-adapters/`、`.env.mock` 均已删除）。
+- 如仍在其它文档或评论中看到 `frontendDemo` / `demoPersistence` / `isMockMode` 字样，视为过期表述，不代表仓库真实状态。
 
 ## 推荐命令
 
@@ -129,11 +129,11 @@ npm run test:e2e
 3. **后端默认端口不是 8080，而是 18080**
    当前文档、脚本、E2E 和联调路径都以 `18080` 为准。
 
-4. **仓库仍有 Mock 遗留，但不应继续使用**
-   `src/api/config.js`、部分 API 模块、部分 Store 和路由里仍有双模式痕迹；它们是历史技术债，不是允许继续依赖的路径。
+4. **Mock 模式已退役（2026-04-30）**
+   `src/api/mock.js`、`src/api/mock-adapters/`、`.env.mock` 均已删除；`src/api/config.js` 硬编码 `mode: 'api'`，不再读取 `VITE_API_MODE`。旧文档里的"双模式切换"/`isMockMode()` 路径均为已退役的历史表述，不要再把它们当作现状。
 
 5. **`check-front-data-boundaries` 不是全能扫描器**
-   它能拦一部分明显违规导入，但还不能覆盖所有 `isMockMode()` 或 API 模块内部的双模式遗留；代码审查时仍需人工检查。
+   它拦一部分明显违规导入（如直接 import 已删除的 mock 模块），但不能覆盖所有前端数据边界；代码审查时仍需人工检查。
 
 6. **安全配置当前比目标生产策略更宽松**
    当前 `SecurityConfig` 仍放行 `/api/auth/sessions`、`/actuator/info`、`/h2-console/**`，默认 CORS 也兼容若干历史开发端口。不要继续扩大这些范围；如需调整，必须同步文档与代码。
