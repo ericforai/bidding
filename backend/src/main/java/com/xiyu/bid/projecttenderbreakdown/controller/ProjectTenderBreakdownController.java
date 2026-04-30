@@ -31,6 +31,7 @@ public class ProjectTenderBreakdownController {
     @GetMapping("/readiness")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<TenderBreakdownReadiness>> readiness(@PathVariable Long projectId) {
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
         return ResponseEntity.ok(ApiResponse.success(readinessService.readiness(projectId)));
     }
 
