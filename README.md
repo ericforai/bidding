@@ -104,7 +104,7 @@ npm run dev:stable:status
 
 说明：
 - `npm run dev:stable:start` 会调用 `scripts/dev-services.sh`，适合日常联调和反复重启
-- `npm run dev:all` 会调用根目录 `start.sh`，适合前台一次性拉起整套服务
+- `npm run dev:all` 是兼容入口，会转调同一套 `scripts/dev-services.sh` 稳定启动逻辑
 - 后端默认启动到 `127.0.0.1:18080`
 - 前端默认启动到 `127.0.0.1:1314`
 - 后端默认使用 `dev,mysql`
@@ -117,7 +117,7 @@ npm run dev:stable:status
 
 | 场景 | 前端数据来源 | 后端 Profile | 数据行为 |
 | --- | --- | --- | --- |
-| 本地联调（推荐） | 真实 API | `dev,mysql`（`start.sh` 默认） | 连接 MySQL 8.0，仅真实数据库数据，不注入 Demo |
+| 本地联调（推荐） | 真实 API | `dev,mysql`（稳定启动脚本默认） | 连接 MySQL 8.0，仅真实数据库数据，不注入 Demo |
 | 生产真实库 | 真实 API | `prod,mysql`（或等价真实库 profile） | 连接 MySQL 8.0，仅真实数据库数据，不注入 Demo |
 | 自动化 E2E 基线 | 真实 API | `e2e`（测试脚本专用） | API 返回真实数据 + 内存 Demo 融合；Demo 使用负数 ID 且只读 |
 | 历史 mock 资产 | 禁止作为页面主路径 | 不适用 | 仅保留为迁移技术债与参考，不允许新增页面直连 |
@@ -138,6 +138,8 @@ npm run dev:stable:watch:status
 - 以 `dev,mysql` 启动后端
 - 传入本地数据库和 Redis 连接参数
 - 校验前端是否真的是当前工作区对应的 API 模式实例
+- 校验前后端进程是否匹配当前代码指纹和启动参数，避免拉取新代码后复用旧进程
+- 前端启动前重建 Vite 依赖优化缓存，降低分支切换后的 `chunk-*.js` 404 风险
 
 停止服务：
 
