@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Input: local dev environment, backend profile options, and repository startup commands
-# Output: stable daemon-like start/stop/status/log control for frontend/backend dev services
+# Output: stable daemon-like start/stop/status/log control with port identity checks and bounded health probes
 # Pos: scripts/ - local service lifecycle management
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -21,6 +21,10 @@ FRONTEND_LOG="$RUNTIME_DIR/frontend.log"
 WATCHDOG_PID_FILE="$RUNTIME_DIR/watchdog.pid"
 WATCHDOG_LOG="$RUNTIME_DIR/watchdog.log"
 WATCHDOG_INTERVAL_SECONDS="${WATCHDOG_INTERVAL_SECONDS:-5}"
+BACKEND_START_TIMEOUT_SECONDS="${BACKEND_START_TIMEOUT_SECONDS:-300}"
+FRONTEND_START_TIMEOUT_SECONDS="${FRONTEND_START_TIMEOUT_SECONDS:-90}"
+CURL_CONNECT_TIMEOUT_SECONDS="${CURL_CONNECT_TIMEOUT_SECONDS:-1}"
+CURL_MAX_TIME_SECONDS="${CURL_MAX_TIME_SECONDS:-3}"
 DEFAULT_BACKEND_PROFILE="${BACKEND_PROFILE:-dev,mysql}"
 FRONTEND_HEALTH_SCRIPT="$ROOT_DIR/scripts/dev-frontend-health.sh"
 BACKEND_PROFILE_OVERRIDE=""
@@ -28,7 +32,7 @@ ACTIVE_BACKEND_PROFILE=""
 JWT_SECRET="${JWT_SECRET:-xiyu-bid-poc-local-dev-secret-key-please-change-in-prod-32bytes-min}"
 DB_HOST="${DB_HOST:-localhost}"
 DB_PORT="${DB_PORT:-3306}"
-DB_NAME="${DB_NAME:-xiyu_bid}"
+DB_NAME="${DB_NAME:-xiyu_bid_main}"
 DB_USERNAME="${DB_USERNAME:-xiyu_user}"
 DB_PASSWORD="${DB_PASSWORD:-XiyuDB!2026}"
 REDIS_HOST="${REDIS_HOST:-localhost}"
@@ -109,6 +113,42 @@ is_port_listening() {
   lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1
 }
 
+port_listener_pids() {
+  local port="$1"
+  lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true
+}
+
+process_command() {
+  local pid="$1"
+  ps -p "$pid" -o command= 2>/dev/null || true
+}
+
+curl_health() {
+  local url="$1"
+  curl --connect-timeout "$CURL_CONNECT_TIMEOUT_SECONDS" --max-time "$CURL_MAX_TIME_SECONDS" -fsS "$url" >/dev/null 2>&1
+}
+
+backend_matches_workspace() {
+  local pid cmd
+  while IFS= read -r pid; do
+    [[ -n "$pid" ]] || continue
+    cmd="$(process_command "$pid")"
+    case "$cmd" in
+      *"$ROOT_DIR/backend/target/classes"*|*"$ROOT_DIR/backend"*)
+        return 0
+        ;;
+    esac
+  done < <(port_listener_pids "$BACKEND_PORT")
+  return 1
+}
+
+print_backend_mismatch() {
+  echo "[backend] port $BACKEND_PORT is occupied by another service" >&2
+  echo "[backend] expected workspace marker: $ROOT_DIR/backend" >&2
+  lsof -nP -iTCP:"$BACKEND_PORT" -sTCP:LISTEN >&2 || true
+  echo "[backend] stop the conflicting service or run: npm run dev:stable:stop" >&2
+}
+
 resolve_redis_port() {
   if [[ -n "$REDIS_PORT" ]]; then
     return 0
@@ -135,7 +175,7 @@ wait_http() {
   local start
   start="$(date +%s)"
   while true; do
-    if curl -fsS "$url" >/dev/null 2>&1; then
+    if curl_health "$url"; then
       return 0
     fi
     if (( $(date +%s) - start >= timeout )); then
@@ -182,11 +222,25 @@ start_backend() {
   pid="$(read_pid "$BACKEND_PID_FILE" 2>/dev/null || true)"
   if is_pid_running "$pid"; then
     if is_port_listening "$BACKEND_PORT"; then
-      echo "[backend] already running (pid=$pid, port=$BACKEND_PORT)"
+      if backend_matches_workspace; then
+        echo "[backend] already running (pid=$pid, port=$BACKEND_PORT)"
+      else
+        print_backend_mismatch
+        return 1
+      fi
     else
       echo "[backend] process is running (pid=$pid), waiting for port $BACKEND_PORT to become ready"
     fi
     return 0
+  fi
+
+  if is_port_listening "$BACKEND_PORT"; then
+    if backend_matches_workspace; then
+      echo "[backend] already running (untracked, port=$BACKEND_PORT)"
+      return 0
+    fi
+    print_backend_mismatch
+    return 1
   fi
 
   echo "[backend] starting on :$BACKEND_PORT"
@@ -272,13 +326,13 @@ stop_one() {
   fi
 
   if [[ "$name" == "frontend" ]]; then
-    while IFS= read -r p; do kill "$p" >/dev/null 2>&1 || true; done < <(lsof -tiTCP:"$FRONTEND_PORT" -sTCP:LISTEN || true)
+    while IFS= read -r p; do kill "$p" >/dev/null 2>&1 || true; done < <(port_listener_pids "$FRONTEND_PORT")
     sleep 1
-    while IFS= read -r p; do kill -9 "$p" >/dev/null 2>&1 || true; done < <(lsof -tiTCP:"$FRONTEND_PORT" -sTCP:LISTEN || true)
+    while IFS= read -r p; do kill -9 "$p" >/dev/null 2>&1 || true; done < <(port_listener_pids "$FRONTEND_PORT")
   elif [[ "$name" == "backend" ]]; then
-    while IFS= read -r p; do kill "$p" >/dev/null 2>&1 || true; done < <(lsof -tiTCP:"$BACKEND_PORT" -sTCP:LISTEN || true)
+    while IFS= read -r p; do kill "$p" >/dev/null 2>&1 || true; done < <(port_listener_pids "$BACKEND_PORT")
     sleep 1
-    while IFS= read -r p; do kill -9 "$p" >/dev/null 2>&1 || true; done < <(lsof -tiTCP:"$BACKEND_PORT" -sTCP:LISTEN || true)
+    while IFS= read -r p; do kill -9 "$p" >/dev/null 2>&1 || true; done < <(port_listener_pids "$BACKEND_PORT")
   fi
 
   rm -f "$pid_file"
@@ -292,10 +346,14 @@ status() {
   local bhttp="down" fhttp="down"
 
   if is_port_listening "$BACKEND_PORT"; then
-    if is_pid_running "$bpid"; then
-      bstate="up(pid=$bpid)"
+    if backend_matches_workspace; then
+      if is_pid_running "$bpid"; then
+        bstate="up(pid=$bpid)"
+      else
+        bstate="up(port=$BACKEND_PORT)"
+      fi
     else
-      bstate="up(port=$BACKEND_PORT)"
+      bstate="up(port=$BACKEND_PORT,mismatch)"
     fi
   fi
   if is_port_listening "$FRONTEND_PORT"; then
@@ -313,7 +371,7 @@ status() {
       fi
     fi
   fi
-  if curl -fsS "$BACKEND_HEALTH_URL" >/dev/null 2>&1; then
+  if curl_health "$BACKEND_HEALTH_URL"; then
     bhttp="ok"
   fi
   if frontend_matches_workspace; then
@@ -345,16 +403,19 @@ watchdog_running() {
 watchdog_loop() {
   echo "[$(date '+%F %T')] watchdog loop started interval=${WATCHDOG_INTERVAL_SECONDS}s"
   while true; do
-    if ! curl -fsS "$BACKEND_HEALTH_URL" >/dev/null 2>&1; then
+    if ! curl_health "$BACKEND_HEALTH_URL"; then
       echo "[$(date '+%F %T')] backend unhealthy, attempting restart"
-      start_backend
-      wait_http "$BACKEND_HEALTH_URL" 120 >/dev/null 2>&1 || true
+      if start_backend; then
+        wait_http "$BACKEND_HEALTH_URL" "$BACKEND_START_TIMEOUT_SECONDS" >/dev/null 2>&1 || true
+      else
+        echo "[$(date '+%F %T')] backend restart skipped because port identity check failed"
+      fi
     fi
 
     if ! frontend_matches_workspace; then
       echo "[$(date '+%F %T')] frontend unhealthy, attempting restart"
       if start_frontend; then
-        wait_frontend 60 >/dev/null 2>&1 || true
+        wait_frontend "$FRONTEND_START_TIMEOUT_SECONDS" >/dev/null 2>&1 || true
       else
         echo "[$(date '+%F %T')] frontend restart skipped because port identity check failed"
       fi
@@ -421,6 +482,8 @@ Environment:
   DB_USERNAME/DB_PASSWORD    MySQL credentials
   REDIS_HOST/REDIS_PORT      Redis connection target
   JWT_SECRET                 JWT secret for local auth
+  BACKEND_START_TIMEOUT_SECONDS/FRONTEND_START_TIMEOUT_SECONDS
+                             Startup wait budgets (defaults: 300/90)
 EOF
 }
 
@@ -430,13 +493,13 @@ parse_args "$@"
 case "$CMD" in
   start)
     start_backend
-    if ! wait_http "$BACKEND_HEALTH_URL" 120; then
+    if ! wait_http "$BACKEND_HEALTH_URL" "$BACKEND_START_TIMEOUT_SECONDS"; then
       echo "[backend] failed to become healthy. See logs:"
       logs
       exit 1
     fi
     start_frontend
-    if ! wait_frontend 60; then
+    if ! wait_frontend "$FRONTEND_START_TIMEOUT_SECONDS"; then
       echo "[frontend] failed to become healthy. See logs:"
       print_frontend_mismatch
       logs

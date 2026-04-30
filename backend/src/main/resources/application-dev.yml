@@ -13,6 +13,8 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
 app:
+  tender-processing:
+    worker-enabled: ${APP_TENDER_WORKER_ENABLED:false}
   bootstrap:
     admin:
       username: admin

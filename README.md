@@ -108,7 +108,7 @@ npm run dev:stable:status
 - 后端默认启动到 `127.0.0.1:18080`
 - 前端默认启动到 `127.0.0.1:1314`
 - 后端默认使用 `dev,mysql`
-- 启动脚本会自动传入本地 MySQL 默认值：`localhost:3306/xiyu_bid`、用户 `xiyu_user`
+- 启动脚本会自动传入本地 MySQL 默认值：`localhost:3306/xiyu_bid_main`、用户 `xiyu_user`
 - 启动脚本会自动识别本机 Redis：优先 `6379`，若仅 Docker 暴露 `16379` 也会自动切换
 - 前端会以 `VITE_API_MODE=api` 连接真实后端（不新增前端 mock 主入口）
 - 如需覆盖本地连接信息，可在启动前设置 `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USERNAME`、`DB_PASSWORD`、`REDIS_HOST`、`REDIS_PORT`
