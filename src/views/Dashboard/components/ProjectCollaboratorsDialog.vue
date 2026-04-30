@@ -116,17 +116,22 @@ const loadMembers = async () => {
 }
 
 const searchUsers = async (query) => {
-  if (query.length < 2) return
+  if (!query || query.length < 2) return
   searching.value = true
   try {
-    // Mock user search or use real API
-    // For now, let's assume we use the system users API if available
-    // But since it's a POC, I'll provide some static options if query matches
-    userOptions.value = [
-      { id: 101, fullName: '李工', username: 'ligong' },
-      { id: 102, fullName: '王工', username: 'wanggong' },
-      { id: 103, fullName: '张会计', username: 'zhang' }
-    ].filter(u => u.fullName.includes(query))
+    // Lazy import keeps `usersApi` out of this dialog's eager module graph,
+    // so component-mount tests that mock `@/api` don't have to also mock the
+    // transitive client.js + router import chain reached via @/api/modules/users.js.
+    const { usersApi } = await import('@/api/modules/users.js')
+    // usersApi.search already unwraps the {success, data} envelope and returns the array directly.
+    // Backend UserSearchResult: { id, name, role }; UI el-option label uses `fullName`.
+    const list = await usersApi.search(query)
+    userOptions.value = Array.isArray(list)
+      ? list.map((u) => ({ id: u.id, fullName: u.name, role: u.role }))
+      : []
+  } catch (err) {
+    userOptions.value = []
+    ElMessage.error('搜索成员失败')
   } finally {
     searching.value = false
   }
