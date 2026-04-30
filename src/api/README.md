@@ -16,9 +16,7 @@
 | `index.js` | 导出入口 | 统一导出所有 API 模块 |
 | `authNormalizer.js` | 纯 DTO 工具 | 认证响应用户信息归一化 |
 | `authStoreBridge.js` | 桥接模块 | HTTP 客户端与 Pinia 认证状态同步 |
-| `mock-adapters/` | (待移除) | 旧版的本地 demo 数据组装转换层，即将整体拆除 |
 | `modules/` | 目录 | 按业务模块拆分的 API 调用函数 |
-| `examples.js` | 示例 | API 使用示例代码 |
 | `trendradar.js` | 趋势雷达 | 趋势雷达相关 API |
 
 ## modules/ 目录
@@ -56,3 +54,4 @@
 - 2026-04-22: 新增 `bidAgent.js` 并在 `index.js` 暴露 `bidAgentApi`，接入项目标书写作 Agent 的真实 API 单一路径
 - 2026-04-24: 新增 `bidMatchScoring.js` 并在 `index.js` 暴露 `bidMatchScoringApi`，接入自定义投标匹配评分真实 API。
 - 2026-04-28: `client.js` 支持 `silentError` / `skipGlobalErrorMessage`，供项目任务拆解等页面自管业务错误展示。
+- 2026-04-30: 退役死代码 —— 删除零调用者的 `mock-adapters/` 目录和 `examples.js` 文档文件，随带清理 `.env.mock` 模板（`config.js` 早已硬编码 API 模式，不读 `VITE_API_MODE`）。

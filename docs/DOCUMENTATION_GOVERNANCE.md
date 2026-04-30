@@ -23,7 +23,6 @@
 - `scripts/`
 - `src/api/`
 - `src/api/modules/`
-- `src/api/mock-adapters/`
 - `src/stores/`
 - `src/views/`
 - `src/components/`
@@ -44,7 +43,6 @@
 以下文件必须使用统一头注释：
 
 - `src/api/index.js`
-- `src/api/mock-adapters/**/*.js`
 - `src/api/modules/**/*.js`
 - `src/stores/**/*.js`
 - `scripts/*.mjs`

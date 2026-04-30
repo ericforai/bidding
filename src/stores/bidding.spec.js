@@ -1,4 +1,4 @@
-// Input: bidding store, mocked tenders API, demo todo/calendar adapters
+// Input: bidding store, mocked tenders API
 // Output: store state and action regression coverage
 // Pos: stores/测试 - bidding store spec
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
@@ -13,15 +13,6 @@ vi.mock('@/api', () => ({
   tendersApi: {
     getList: vi.fn()
   },
-}))
-
-// Mock frontendDemo
-vi.mock('@/api/mock-adapters/frontendDemo.js', () => ({
-  getDemoCalendar: () => [],
-  getDemoTodos: () => [
-    { id: 1, title: '待办1', priority: 'high' },
-    { id: 2, title: '待办2', priority: 'low' }
-  ]
 }))
 
 describe('Bidding Store', () => {
