@@ -2,10 +2,7 @@
 
 ## 概述
 
-项目现在支持**双模式切换**：Mock 数据模式 / 真实后端 API 模式
-
-- **Mock 模式**：使用本地 Mock 数据，无需启动后端，适合前端开发和演示
-- **API 模式**：调用真实后端接口，需要启动后端服务
+项目运行**唯一走真实后端 API**（API-only）。`src/api/mock.js` 与 `src/api/mock-adapters/` 已彻底移除，`config.js` 硬编码 `mode: 'api'`，不再读取 `VITE_API_MODE`。本地启动用 `npm run dev:all` 或 `backend/start.sh` 即可连通后端。
 
 > **本指南聚焦"前后端联调"**。如果你是外部集成方（OA / CRM / 企业微信等）想要对接接口，请直接看下方 OpenAPI 入口。
 
@@ -30,9 +27,8 @@
 
 ```
 src/api/
-├── config.js              # API 配置（模式切换、基础URL）
+├── config.js              # API 配置（硬编码 mode='api' + 基础URL）
 ├── client.js              # Axios 客户端封装
-├── mock.js                # Mock 数据源（保留原有数据）
 ├── trendradar.js          # TrendRadar API（已存在）
 ├── modules/               # 按模块分组的 API 调用
 │   ├── auth.js           # 认证模块
@@ -47,30 +43,11 @@ src/api/
 └── index.js              # 统一导出
 ```
 
-## 模式切换
+## 启动方式
 
-### 方式一：环境变量
+系统默认就是真实 API 模式。启动前后端联调请用根目录的 `npm run dev:all`（同时拉起前后端），或单独运行 `backend/start.sh` + `npm run dev`。详见仓库根目录 `CLAUDE.md` 的"推荐命令"章节。
 
-创建或修改 `.env` 文件：
-
-```bash
-# Mock 模式（默认）
-VITE_API_MODE=mock
-
-# 或使用真实 API
-VITE_API_MODE=api
-VITE_API_BASE_URL=http://localhost:8080
-```
-
-### 方式二：命令行参数
-
-```bash
-# 使用 Mock 模式启动
-npm run dev
-
-# 使用 API 模式启动（需先切换环境变量）
-VITE_API_MODE=api npm run dev
-```
+> 部分脚本（`scripts/dev-*`、`scripts/release/*`）仍会显式注入 `VITE_API_MODE=api` 环境变量 —— 这是为了配合 `scripts/dev-frontend-health.sh` 的健康检查，不代表 `config.js` 还支持切换。
 
 ## 使用示例
 
@@ -227,32 +204,6 @@ await dashboardApi.tasks.getList({ status: 'pending' })
 }
 ```
 
-## 迁移指南
-
-### 从旧 Mock 迁移到新 API 层
-
-**旧方式（直接使用 mockData）：**
-```javascript
-import { mockData } from '@/api/mock'
-const users = mockData.users
-```
-
-**新方式（使用 API 层）：**
-```javascript
-import { mockData } from '@/api'  // 仍可访问原 Mock 数据
-const users = mockData.users
-
-// 或使用 API（推荐，支持模式切换）
-import { authApi } from '@/api'
-const result = await authApi.getCurrentUser()
-```
-
-### 批量迁移建议
-
-1. **优先迁移核心功能**：登录、项目列表、标讯列表
-2. **保持 Mock 数据完整**：作为 fallback 和演示数据
-3. **逐步测试 API 模式**：确保后端接口正常后再切换
-
 ## 拦截器说明
 
 ### 请求拦截器
@@ -292,6 +243,5 @@ try {
 ## 注意事项
 
 1. **Token 管理**：登录后 Token 自动存储到 localStorage，请求自动携带
-2. **模式切换**：修改 `.env` 文件后需重启开发服务器
-3. **CORS 配置**：后端已配置允许 `http://localhost:1314` 跨域
-4. **数据一致性**：Mock 模式下数据不持久化，刷新后恢复初始值
+2. **CORS 配置**：后端已配置允许 `http://localhost:1314` 跨域
+3. **数据来源**：所有数据来自真实后端接口；刷新后数据是否保留取决于后端状态，不存在本地兜底。
