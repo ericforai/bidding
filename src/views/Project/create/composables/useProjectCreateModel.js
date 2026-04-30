@@ -74,33 +74,33 @@ export function useProjectCreateModel({ route, userStore, projectStore, router }
   const editProjectId = ref(null)
 
   function addTask() {
-    taskForm.tasks.push({
+    const nextTask = {
       name: '',
       owner: '',
       deadline: '',
       priority: 'medium',
       status: 'todo'
-    })
+    }
+    taskForm.tasks = [...taskForm.tasks, nextTask]
   }
 
   function removeTask(index) {
-    taskForm.tasks.splice(index, 1)
+    taskForm.tasks = taskForm.tasks.filter((_, taskIndex) => taskIndex !== index)
   }
 
   function handleCompetitorsChange(value) {
-    value.forEach((name) => {
+    const normalizedValue = Array.isArray(value) ? value : []
+    competitorAnalysis.value = normalizedValue.map((name) => {
       const existing = competitorAnalysis.value.find((c) => c.name === name)
-      if (!existing) {
-        competitorAnalysis.value.push({
-          name,
-          strength: '',
-          weakness: '',
-          winRate: 0,
-          history: ''
-        })
+      if (existing) return existing
+      return {
+        name,
+        strength: '',
+        weakness: '',
+        winRate: 0,
+        history: ''
       }
     })
-    competitorAnalysis.value = competitorAnalysis.value.filter((c) => value.includes(c.name))
   }
 
   function applyOpportunityPrefill() {
