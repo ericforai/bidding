@@ -13,7 +13,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionAttribute;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -117,6 +120,16 @@ class DataScopeConfigServiceTest {
 
         assertThat(response.getRoles()).isEmpty();
         verify(roleProfileBootstrap).ensureSystemRoles();
+    }
+
+    @Test
+    void getConfig_ShouldUseWritableTransactionBecauseRoleBootstrapMayInsertRoles() throws Exception {
+        Method method = DataScopeConfigService.class.getMethod("getConfig");
+        TransactionAttribute attribute = new AnnotationTransactionAttributeSource()
+                .getTransactionAttribute(method, DataScopeConfigService.class);
+
+        assertThat(attribute).isNotNull();
+        assertThat(attribute.isReadOnly()).isFalse();
     }
 
     @Test
