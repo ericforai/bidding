@@ -32,12 +32,7 @@
 <script setup>
 import { Search } from '@element-plus/icons-vue'
 
-defineProps({
-  searchForm: {
-    type: Object,
-    required: true
-  }
-})
+defineModel('searchForm', { type: Object, required: true })
 
 defineEmits(['search', 'reset'])
 </script>

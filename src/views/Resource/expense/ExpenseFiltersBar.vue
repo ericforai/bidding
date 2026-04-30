@@ -1,8 +1,8 @@
 <template>
   <el-card class="search-card">
-    <el-form :inline="true" :model="modelValue">
+    <el-form :inline="true" :model="model">
       <el-form-item label="项目">
-        <el-select v-model="modelValue.projectId" placeholder="全部项目" clearable filterable>
+        <el-select v-model="model.projectId" placeholder="全部项目" clearable filterable>
           <el-option
             v-for="project in projectOptions"
             :key="project.id"
@@ -12,7 +12,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="部门">
-        <el-select v-model="modelValue.department" placeholder="全部部门" clearable filterable>
+        <el-select v-model="model.department" placeholder="全部部门" clearable filterable>
           <el-option
             v-for="department in departmentOptions"
             :key="department.key"
@@ -22,7 +22,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="费用类型">
-        <el-select v-model="modelValue.expenseType" placeholder="全部" clearable>
+        <el-select v-model="model.expenseType" placeholder="全部" clearable>
           <el-option label="保证金" value="保证金" />
           <el-option label="标书费" value="标书费" />
           <el-option label="差旅费" value="差旅费" />
@@ -31,7 +31,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="状态">
-        <el-select v-model="modelValue.status" placeholder="全部" clearable>
+        <el-select v-model="model.status" placeholder="全部" clearable>
           <el-option label="待审批" value="PENDING_APPROVAL" />
           <el-option label="待支付" value="APPROVED" />
           <el-option label="已支付" value="PAID" />
@@ -42,7 +42,7 @@
       </el-form-item>
       <el-form-item label="发生日期">
         <el-date-picker
-          v-model="modelValue.dateRange"
+          v-model="model.dateRange"
           type="daterange"
           range-separator="至"
           start-placeholder="开始日期"
@@ -64,8 +64,9 @@
 // Pos: src/views/Resource/expense/ - Expense page filter bar
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
+const model = defineModel({ type: Object, required: true })
+
 defineProps({
-  modelValue: { type: Object, required: true },
   projectOptions: { type: Array, default: () => [] },
   departmentOptions: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false }

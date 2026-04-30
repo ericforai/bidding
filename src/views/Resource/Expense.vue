@@ -1,7 +1,7 @@
 <template>
   <div class="expense-page">
     <ExpenseToolbar
-      :search-form="searchForm"
+      v-model:search-form="searchForm"
       :stats="stats"
       @search="handleSearch"
       @reset="handleReset"
@@ -33,7 +33,7 @@
 
     <ExpenseApplyDialog
       v-model="showApplyDialog"
-      :form="applyForm"
+      v-model:form="applyForm"
       :projects="availableProjects"
       :submitting="applySubmitting"
       @submit="submitApply"
@@ -41,16 +41,16 @@
 
     <ExpenseApproveDialog
       v-model="showApprovalDialog"
+      v-model:form="approvalForm"
       :expense="currentApprovalItem"
-      :form="approvalForm"
       :submitting="approvalSubmitting"
       @submit="submitApproval"
     />
 
     <ExpensePaymentDialog
       v-model="showPaymentDialog"
+      v-model:form="paymentForm"
       :expense="currentExpense"
-      :form="paymentForm"
       :records="detailPayments"
       :submitting="paymentSubmitting"
       @submit="submitPayment"

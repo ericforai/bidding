@@ -80,11 +80,9 @@
 <script setup>
 import { Download, Plus, Search } from '@element-plus/icons-vue'
 
+defineModel('searchForm', { type: Object, required: true })
+
 defineProps({
-  searchForm: {
-    type: Object,
-    required: true
-  },
   stats: {
     type: Object,
     required: true

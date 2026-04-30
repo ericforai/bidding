@@ -34,14 +34,12 @@
 </template>
 
 <script setup>
+defineModel('form', { type: Object, required: true })
+
 defineProps({
   modelValue: {
     type: Boolean,
     default: false
-  },
-  form: {
-    type: Object,
-    required: true
   },
   projects: {
     type: Array,

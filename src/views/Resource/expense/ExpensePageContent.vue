@@ -1,7 +1,7 @@
 <template>
   <div class="expense-page">
     <ExpenseFiltersBar
-      :model-value="searchForm"
+      v-model="searchForm"
       :project-options="projectOptions"
       :department-options="departmentOptions"
       :loading="loading"
