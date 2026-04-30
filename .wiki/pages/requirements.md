@@ -25,8 +25,8 @@ backlinks:
   - implementation/risk-register
   - implementation/sow-2026-v1-4
 created: 2026-04-15
-updated: 2026-04-29
-health_checked: 2026-04-29
+updated: 2026-04-30
+health_checked: 2026-04-30
 ---
 # 需求追溯
 
@@ -141,7 +141,7 @@ health_checked: 2026-04-29
 
 | 要求项 | 甲方要求 | 对应安排 |
 |-------|---------|---------|
-| 实施周期 | SOW V1.4 以 2026-04-27 启动、2026-06-25 正式上线为基线；阶段表以 2026-05-06 至 2026-06-25 为实施主计划 | 以 [[implementation/sow-2026-v1-4]]、[[team-and-timeline]] 与 [[contract-constraints]] 为准 |
+| 实施周期 | 根据 2026-04-30 本周与客户达成的一致，当前以 2026-04-27 启动准备、2026-05-07 项目启动会、2026-05-09 首场正式客户访谈、2026-07-10 正式上线为执行基线 | 以 [[implementation/sow-2026-v1-4]]、[[team-and-timeline]] 与 [[contract-constraints]] 为准 |
 | 项目经理 | 5 年以上经验，全程驻场 | 卢文融（项目经理）；唐诵文作为项目顾问支持关键节点 |
 | 试运行保障 | SOW V1.4 与合同付款门禁均按 6 个月试运行跟踪 | 按 [[implementation/sow-2026-v1-4]]、合同付款与验收门禁管理 |
 | 质保期 | 验收后 12 个月免费技术支持 | 合同约定 |
