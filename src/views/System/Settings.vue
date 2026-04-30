@@ -113,8 +113,22 @@ import {
 const route = useRoute()
 const userStore = useUserStore()
 const canViewAuditLogs = computed(() => ['admin', 'auditor'].includes(String(userStore.userRole || '').toLowerCase()))
-const initialTab = typeof route.query.tab === 'string' ? route.query.tab : 'departments'
-const activeTab = ref(initialTab === 'audit' && !canViewAuditLogs.value ? 'departments' : initialTab)
+const settingsTabNames = new Set([
+  'departments',
+  'roles',
+  'interface-permissions',
+  'users',
+  'ai-models',
+  'bid-match-scoring',
+  'integration',
+  'audit'
+])
+const getRouteTab = () => {
+  const tab = typeof route.query.tab === 'string' ? route.query.tab : ''
+  if (tab === 'audit' && !canViewAuditLogs.value) return 'departments'
+  return settingsTabNames.has(tab) ? tab : 'departments'
+}
+const activeTab = ref(getRouteTab())
 
 const {
   loading,
@@ -177,6 +191,10 @@ watch(canViewAuditLogs, (allowed) => {
 }, { immediate: true })
 
 onMounted(loadAll)
+
+watch(() => route.query.tab, () => {
+  activeTab.value = getRouteTab()
+})
 </script>
 
 <style scoped>

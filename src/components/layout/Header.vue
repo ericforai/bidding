@@ -1,12 +1,10 @@
 <template>
   <div class="header-container">
     <div class="header-left">
-      <!-- PC端折叠按钮 -->
       <el-icon class="collapse-icon" @click="handleToggle" v-if="!isMobile">
         <Expand v-if="collapse" />
         <Fold v-else />
       </el-icon>
-      <!-- 移动端菜单按钮 -->
       <el-icon class="mobile-menu-icon" @click="handleMobileMenuClick" v-else>
         <Menu />
       </el-icon>
@@ -28,7 +26,6 @@
       />
     </div>
 
-    <!-- 移动端搜索按钮 -->
     <div class="header-center-mobile" v-else-if="globalSearchEnabled">
       <el-icon class="mobile-search-icon" @click="showMobileSearch = true">
         <Search />
@@ -81,6 +78,10 @@
               <el-icon><Setting /></el-icon>
               系统设置
             </el-dropdown-item>
+            <el-dropdown-item v-if="canAccessSettings" command="operation-log">
+              <el-icon><DocumentChecked /></el-icon>
+              操作日志
+            </el-dropdown-item>
             <el-dropdown-item divided command="logout">
               <el-icon><SwitchButton /></el-icon>
               退出登录
@@ -90,7 +91,6 @@
       </el-dropdown>
     </div>
 
-    <!-- 移动端搜索弹窗 -->
     <el-dialog v-if="globalSearchEnabled" v-model="showMobileSearch" title="搜索"
       :width="isMobile ? '90%' : '500px'"
       class="mobile-search-dialog"
@@ -120,7 +120,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   Search, Bell, ArrowDown, User, Setting,
-  SwitchButton, Expand, Fold, Menu
+  SwitchButton, Expand, Fold, Menu, DocumentChecked
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { useNotificationStore } from '@/stores/notifications'
@@ -222,8 +222,9 @@ const handleCommand = async (command) => {
     case 'profile':
       break
     case 'settings':
+    case 'operation-log':
       if (canAccessSettings.value) {
-        router.push('/settings')
+        router.push(command === 'operation-log' ? { path: '/settings', query: { tab: 'audit' } } : '/settings')
       } else {
         ElMessage.warning('当前角色无权访问系统设置')
       }
@@ -243,7 +244,6 @@ const handleCommand = async (command) => {
 </script>
 
 <style scoped>
-/* ========== 主容器 ========== */
 .header-container {
   display: flex;
   align-items: center;
@@ -253,7 +253,6 @@ const handleCommand = async (command) => {
   gap: var(--space-md);
 }
 
-/* ========== 左侧区域 ========== */
 .header-left {
   display: flex;
   align-items: center;
@@ -305,7 +304,6 @@ const handleCommand = async (command) => {
   color: var(--text-primary);
 }
 
-/* ========== 中间搜索区 ========== */
 .header-center {
   flex: 1;
   max-width: 500px;
@@ -347,7 +345,6 @@ const handleCommand = async (command) => {
   color: var(--text-secondary, #64748b);
 }
 
-/* ========== 右侧用户区 ========== */
 .header-right {
   display: flex;
   align-items: center;
@@ -384,7 +381,6 @@ const handleCommand = async (command) => {
   transform: scale(0.95);
 }
 
-/* 徽标样式优化 */
 :deep(.el-badge__content) {
   background: linear-gradient(135deg, #ef4444, #dc2626);
   border: 2px solid #ffffff;
@@ -456,14 +452,12 @@ const handleCommand = async (command) => {
   flex-shrink: 0;
 }
 
-/* ========== 下拉菜单 ========== */
 .user-info-dropdown {
   cursor: default;
   padding: var(--space-sm) 12px;
   background: transparent;
 }
 
-/* 下拉菜单项样式优化 */
 :deep(.el-dropdown-menu) {
   padding: 8px;
   border-radius: 12px;
@@ -502,7 +496,6 @@ const handleCommand = async (command) => {
   color: currentColor;
 }
 
-/* 分割线样式 */
 :deep(.el-dropdown-menu__item--divided::before) {
   height: 1px;
   margin: 0;
@@ -546,7 +539,6 @@ const handleCommand = async (command) => {
   margin-top: 2px;
 }
 
-/* ========== 移动端搜索区 ========== */
 .header-center-mobile {
   flex: 1;
   display: flex;
@@ -563,7 +555,6 @@ const handleCommand = async (command) => {
   justify-content: center;
 }
 
-/* ========== 移动端响应式 ========== */
 @media (max-width: 768px) {
   .header-container {
     padding: 0 var(--space-sm);
@@ -601,7 +592,6 @@ const handleCommand = async (command) => {
   }
 }
 
-/* ========== 移动端搜索对话框 ========== */
 .mobile-search-dialog :deep(.el-dialog__body) {
   padding: 20px;
 }
