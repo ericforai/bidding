@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { roleMenuOptions, sidebarMenuConfig } from './sidebar-menu'
+import { hiddenApiMenuNames, roleMenuOptions, sidebarMenuConfig } from './sidebar-menu'
 
 describe('sidebar-menu config', () => {
   it('keeps role menu options aligned with visible top-level sidebar menus', () => {
-    const visibleMenus = sidebarMenuConfig.filter((menu) => menu.name !== 'CustomerOpportunityCenter')
+    const visibleMenus = sidebarMenuConfig.filter((menu) => !hiddenApiMenuNames.has(menu.name))
     const topLevelOptions = roleMenuOptions.slice(0, visibleMenus.length)
     const workbenchOptions = roleMenuOptions.slice(visibleMenus.length)
 
@@ -15,10 +15,11 @@ describe('sidebar-menu config', () => {
       '资源管理',
       'AI 智能中心',
       '数据分析',
-      '操作日志',
-      '审计日志',
       '系统设置'
     ])
+    expect(topLevelOptions.map((item) => item.label)).not.toEqual(
+      expect.arrayContaining(['操作日志', '审计日志'])
+    )
     expect(workbenchOptions.map((item) => item.value)).toEqual([
       'dashboard.quickStart',
       'dashboard:view_tender_list',
@@ -31,7 +32,7 @@ describe('sidebar-menu config', () => {
   })
 
   it('uses the same primary permission key as the top-level sidebar menu', () => {
-    const visibleMenus = sidebarMenuConfig.filter((menu) => menu.name !== 'CustomerOpportunityCenter')
+    const visibleMenus = sidebarMenuConfig.filter((menu) => !hiddenApiMenuNames.has(menu.name))
     const topLevelOptions = roleMenuOptions.slice(0, visibleMenus.length)
 
     expect(topLevelOptions).toEqual(
