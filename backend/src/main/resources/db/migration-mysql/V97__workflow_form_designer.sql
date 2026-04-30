@@ -39,7 +39,33 @@ WHERE NOT EXISTS (
   WHERE v.template_code = workflow_form_templates.template_code AND v.version = workflow_form_templates.version
 );
 
-ALTER TABLE workflow_form_instances ADD COLUMN template_version INT;
-ALTER TABLE workflow_form_instances ADD COLUMN schema_snapshot_json TEXT;
-ALTER TABLE workflow_form_instances ADD COLUMN oa_binding_snapshot_json TEXT;
-ALTER TABLE workflow_form_instances ADD COLUMN oa_payload_json TEXT;
+-- MySQL 8.0 不支持 `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`。
+-- 用存储过程 + information_schema 前置判断实现幂等，保证 Flyway repair 后重跑不报 Duplicate column。
+DROP PROCEDURE IF EXISTS p_add_col_if_missing;
+DELIMITER $$
+CREATE PROCEDURE p_add_col_if_missing(
+  IN p_table VARCHAR(64),
+  IN p_column VARCHAR(64),
+  IN p_definition VARCHAR(255)
+)
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = p_table
+      AND COLUMN_NAME = p_column
+  ) THEN
+    SET @ddl = CONCAT('ALTER TABLE `', p_table, '` ADD COLUMN `', p_column, '` ', p_definition);
+    PREPARE stmt FROM @ddl;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+  END IF;
+END$$
+DELIMITER ;
+
+CALL p_add_col_if_missing('workflow_form_instances', 'template_version', 'INT');
+CALL p_add_col_if_missing('workflow_form_instances', 'schema_snapshot_json', 'TEXT');
+CALL p_add_col_if_missing('workflow_form_instances', 'oa_binding_snapshot_json', 'TEXT');
+CALL p_add_col_if_missing('workflow_form_instances', 'oa_payload_json', 'TEXT');
+
+DROP PROCEDURE IF EXISTS p_add_col_if_missing;
