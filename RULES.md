@@ -270,6 +270,27 @@ npm run check:line-budgets
 - 本地手动执行 `npm run check:line-budgets` 默认检查当前工作区；`.githooks/pre-commit` 执行暂存区检查；CI 按 PR / push diff 执行相同规则。
 - 现有局部门禁（如 `MaintainabilityArchitectureTest` 与 Bidding 页面预算测试）继续保留，作为更细粒度的专项约束。
 
+### 2.7 设置持久化契约（Defaults / Migration / User Config）
+
+系统设置、角色权限、数据范围等管理员可保存配置必须区分三种所有权：
+
+- **Defaults**：只用于首次创建缺失配置，不得在读取、列表刷新、bootstrap、定时刷新等普通路径里反复应用。
+- **Migration**：已上线环境需要补齐新默认权限或新字段时，必须写一次性迁移脚本，并说明影响面。
+- **User Config**：管理员保存后的配置是事实源，后续默认值、bootstrap 和初始化器不得覆盖用户保存过的字段。
+
+执行要求：
+- 设置类保存链路必须补契约测试，至少覆盖“保存 → 再读取/列表刷新/触发初始化 → 用户配置保持不变”。
+- 恢复系统默认值必须通过显式重置入口完成，例如 `RoleProfileService.resetRole`，不得藏在普通刷新路径中。
+- bootstrap / initializer 如需写已有数据，只能写系统身份、版本戳等非用户配置字段；写用户配置字段必须改为迁移脚本或显式重置。
+- 当前角色权限护栏由 `RoleProfileServicePersistenceTest` 和 `RoleProfileBootstrapArchitectureTest` 覆盖。
+
+执行命令：
+
+```bash
+cd /Users/user/xiyu/xiyu-bid-poc/backend
+mvn test -Dtest=RoleProfileServicePersistenceTest,RoleProfileBootstrapArchitectureTest
+```
+
 ---
 
 ## 3. Mock 政策（统一决策）
@@ -484,5 +505,4 @@ Controller → Service → Repository → Entity
 ### 11.2 开发过程中
 若主目录的 `main` 分支发生了合并更新，正在开发中的 Agent **必须**择机执行：
 - `git rebase origin/main`：将当前任务分支移至最新基准之上，并立即运行验证脚本（TDD）。
-
 
