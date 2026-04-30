@@ -14,6 +14,7 @@
 | `check-line-budgets.mjs` | 门禁脚本 | 对核心源码目录执行 300 行棘轮门禁：默认检查当前工作区；pre-commit 走 staged，CI 走显式 diff 范围 |
 | `check-version-sync.mjs` | 门禁脚本 | 校验根目录 `VERSION`、`package.json` 与 `backend/pom.xml` 是否保持一致 |
 | `agent-start-task.sh` | 工作区初始化脚本 | 为指定 Agent 创建独立 worktree、任务分支和本地 `.agent-task-context`，避免在默认工作区开发 |
+| `agent-dev.sh` | 启动脚本 | 多 Agent 本地服务统一入口：自动识别当前 worktree 的端口、数据库、Redis DB 和 launchd label，并提供 `morning/up/restart/status/logs/stop` 一键命令 |
 | `agent-worktree-guard.sh` | 提交门禁脚本 | 阻止在 `main`、`agent/*-init`、共享 Agent bootstrap worktree 或缺少任务上下文的 worktree 中提交 |
 | `line-budget.config.json` | 配置文件 | 声明 300 行门禁的纳入目录、文件类型与排除规则，供 pre-commit 与 CI 共用 |
 | `wiki-common.mjs` | 基础库脚本 | 提供 Wiki ingest/build/check 共用的 frontmatter、目录、索引与链接处理能力 |
