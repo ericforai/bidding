@@ -15,10 +15,6 @@
           <el-icon><Plus /></el-icon>
           新增站点
         </el-button>
-        <el-button v-if="showDemoOnlyActions" @click="handleImport">
-          <el-icon><Upload /></el-icon>
-          导入
-        </el-button>
       </div>
     </div>
 
@@ -249,7 +245,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBarStore } from '@/stores/bar'
 import {
-  Back, Plus, Upload, Search, RefreshLeft, View, Edit, Delete, CopyDocument, MoreFilled, Link, Setting
+  Back, Plus, Search, RefreshLeft, View, Edit, Delete, CopyDocument, MoreFilled, Link, Setting
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -260,7 +256,6 @@ const loading = ref(false)
 const showAddDialog = ref(false)
 const editingSite = ref(null)
 const siteFormRef = ref(null)
-const showDemoOnlyActions = false
 
 const filterForm = ref({
   region: '',
@@ -409,10 +404,6 @@ const handleSaveSite = async () => {
   } catch (error) {
     // 表单验证失败
   }
-}
-
-const handleImport = () => {
-  ElMessage.success('已执行演示导入，站点台账数据保持当前 mock 集')
 }
 
 const handleVisitSite = (site) => {
