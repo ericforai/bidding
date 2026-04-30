@@ -9,3 +9,9 @@
 | 文件 | 地位 | 功能 |
 |------|------|------|
 | `RoleProfileBootstrap.java` | Component | 根据 `RoleProfileCatalog` 补齐缺失的内置系统角色，并保留管理员已保存的角色权限配置 |
+
+## 配置所有权
+- `RoleProfileCatalog` 只定义内置角色的首次创建默认值。
+- `RoleProfileBootstrap` 只能补齐缺失角色，或修正系统角色身份标记；不得在已有角色上覆盖管理员保存过的菜单权限、数据范围、项目范围、部门范围或启停状态。
+- 已上线环境需要补权限默认值时，必须使用一次性迁移脚本；管理员主动恢复默认值时，必须走 `RoleProfileService.resetRole` 显式入口。
+- 相关门禁由 `RoleProfileBootstrapArchitectureTest` 与 `RoleProfileServicePersistenceTest` 覆盖。
