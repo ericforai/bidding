@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Input: launchd command argument, optional runtime environment variables
-# Output: launchd-managed dev service lifecycle actions and status logs
+# Output: launchd-managed dev service lifecycle actions, child-process cleanup, and bounded status checks
 # Pos: scripts/ - macOS launchd wrapper for dev-services watchdog
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -17,7 +17,7 @@ LAUNCHD_PATH="${LAUNCHD_PATH:-/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/us
 JWT_SECRET="${JWT_SECRET:-xiyu-bid-poc-local-dev-secret-key-please-change-in-prod-32bytes-min}"
 DB_HOST="${DB_HOST:-localhost}"
 DB_PORT="${DB_PORT:-3306}"
-DB_NAME="${DB_NAME:-xiyu_bid}"
+DB_NAME="${DB_NAME:-xiyu_bid_main}"
 DB_USERNAME="${DB_USERNAME:-xiyu_user}"
 DB_PASSWORD="${DB_PASSWORD:-XiyuDB!2026}"
 REDIS_HOST="${REDIS_HOST:-localhost}"
@@ -30,6 +30,11 @@ LAUNCHD_STDERR_LOG="$RUNTIME_DIR/launchd.err.log"
 BACKEND_PORT="${BACKEND_PORT:-18080}"
 FRONTEND_PORT="${FRONTEND_PORT:-1314}"
 FRONTEND_HEALTH_SCRIPT="$ROOT_DIR/scripts/dev-frontend-health.sh"
+DEV_SERVICES_SCRIPT="$ROOT_DIR/scripts/dev-services.sh"
+BACKEND_START_TIMEOUT_SECONDS="${BACKEND_START_TIMEOUT_SECONDS:-300}"
+FRONTEND_START_TIMEOUT_SECONDS="${FRONTEND_START_TIMEOUT_SECONDS:-90}"
+CURL_CONNECT_TIMEOUT_SECONDS="${CURL_CONNECT_TIMEOUT_SECONDS:-1}"
+CURL_MAX_TIME_SECONDS="${CURL_MAX_TIME_SECONDS:-3}"
 
 usage() {
   cat <<'EOF'
@@ -44,6 +49,8 @@ Environment variables:
   DB_HOST/DB_PORT/DB_NAME    MySQL connection target
   DB_USERNAME/DB_PASSWORD    MySQL credentials
   REDIS_HOST/REDIS_PORT      Redis connection target
+  BACKEND_START_TIMEOUT_SECONDS/FRONTEND_START_TIMEOUT_SECONDS
+                             Startup wait budgets (defaults: 300/90)
 EOF
 }
 
@@ -58,6 +65,11 @@ is_loaded() {
 is_port_listening() {
   local port="$1"
   lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1
+}
+
+curl_health() {
+  local url="$1"
+  curl --connect-timeout "$CURL_CONNECT_TIMEOUT_SECONDS" --max-time "$CURL_MAX_TIME_SECONDS" -fsS "$url" >/dev/null 2>&1
 }
 
 resolve_redis_port() {
@@ -104,6 +116,10 @@ write_plist() {
     <string>${BACKEND_PROFILE}</string>
     <key>WATCHDOG_INTERVAL_SECONDS</key>
     <string>${WATCHDOG_INTERVAL_SECONDS}</string>
+    <key>BACKEND_START_TIMEOUT_SECONDS</key>
+    <string>${BACKEND_START_TIMEOUT_SECONDS}</string>
+    <key>FRONTEND_START_TIMEOUT_SECONDS</key>
+    <string>${FRONTEND_START_TIMEOUT_SECONDS}</string>
     <key>JWT_SECRET</key>
     <string>${JWT_SECRET}</string>
     <key>DB_HOST</key>
@@ -134,11 +150,18 @@ write_plist() {
 EOF
 }
 
+cleanup_child_services() {
+  if [[ -f "$DEV_SERVICES_SCRIPT" ]]; then
+    "$DEV_SERVICES_SCRIPT" --profile "$BACKEND_PROFILE" stop || true
+  fi
+}
+
 install_service() {
   write_plist
   if is_loaded; then
     launchctl bootout "$(service_target)" >/dev/null 2>&1 || true
   fi
+  cleanup_child_services
   launchctl bootstrap "$LAUNCHD_DOMAIN" "$PLIST_PATH"
   launchctl kickstart -k "$(service_target)"
   echo "installed and started: $(service_target)"
@@ -165,6 +188,7 @@ stop_service() {
   else
     echo "already stopped: $(service_target)"
   fi
+  cleanup_child_services
 }
 
 status_service() {
@@ -185,7 +209,7 @@ status_service() {
   if lsof -nP -iTCP:"$FRONTEND_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
     fstate="up(port=$FRONTEND_PORT)"
   fi
-  if curl -fsS "http://127.0.0.1:${BACKEND_PORT}/actuator/health" >/dev/null 2>&1; then
+  if curl_health "http://127.0.0.1:${BACKEND_PORT}/actuator/health"; then
     bhttp="ok"
   fi
   if ROOT_DIR="$ROOT_DIR" FRONTEND_URL="http://127.0.0.1:${FRONTEND_PORT}/" BACKEND_PORT="$BACKEND_PORT" "$FRONTEND_HEALTH_SCRIPT" >/dev/null 2>&1; then
@@ -208,6 +232,7 @@ uninstall_service() {
   if is_loaded; then
     launchctl bootout "$(service_target)" >/dev/null 2>&1 || true
   fi
+  cleanup_child_services
   rm -f "$PLIST_PATH"
   echo "uninstalled: $(service_target)"
 }

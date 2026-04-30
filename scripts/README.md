@@ -27,7 +27,9 @@
 | `clean-local-artifacts.sh` | 清理脚本 | 删除本地产生的测试、报告和演练产物 |
 | `dev-env.sh` | 环境识别脚本 | 按当前 main checkout 或多 Agent worktree 导出专属前端端口、后端端口、数据库名和 Redis DB |
 | `dev-frontend.sh` | 启动脚本 | 统一前端本地启动入口，强制 Vite 使用真实 API 模式和默认后端地址 |
-| `dev-frontend-health.sh` | 健康检查脚本 | 校验 `1314` 前端服务是否来自当前仓库，并确认运行时 API 模式和后端地址正确 |
+| `dev-frontend-health.sh` | 健康检查脚本 | 用有界探针校验 `1314` 前端服务是否来自当前仓库，并确认运行时 API 模式和后端地址正确 |
+| `dev-services.sh` | 启动脚本 | 管理本地前后端服务启动、停止、状态和 watchdog，并用可配置等待预算校验端口是否属于当前工作区 |
+| `dev-services-launchd.sh` | 启动脚本 | 管理 macOS launchd 常驻服务，停止、重启、卸载时同步清理子进程并传递启动等待预算，避免残留端口占用 |
 | `start-backend.sh` | 启动脚本 | 多 Agent worktree 后端启动入口，注入独立端口、数据库和 Redis DB；自动在本机 Redis `6379/16379` 之间选择可用端口后转调后端启动脚本 |
 | `start-frontend.sh` | 启动脚本 | 多 Agent worktree 前端启动入口，按 `dev-env.sh` 分配端口启动 Vite |
 | `sync-env.sh` | 环境同步脚本 | 将根目录环境模板同步到指定 worktree，辅助多 Agent 环境初始化 |
