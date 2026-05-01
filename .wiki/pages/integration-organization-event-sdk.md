@@ -209,27 +209,27 @@ Content-Type: application/json
 
 ## 配置项
 
+运行时优先读取系统设置页的 `integrationConfig`，`application.yml` 仅作为兜底默认值：
+
+- `orgEnabled`：组织架构事件接入开关，关闭后 webhook/SDK 消费会拒绝并记录 REJECTED。
+- `orgSystem`：组织系统/事件来源标识，会并入允许的 `eventSource` 列表。
+- `orgAppKey`：客户侧应用标识，会并入允许的 `eventSource` 列表；真实主数据 adapter 落地后也作为鉴权参数来源。
+- `orgAppSecret`：HTTP webhook HMAC 签名密钥；为空时回退到 `xiyu.integrations.organization.webhook-secret`。
+- `ipWhitelist`：HTTP webhook 灾备入口来源 IP 白名单；为空表示不限制来源 IP。
+
+仍保留的 yml 兜底配置：
+
 ```yaml
 xiyu:
   integrations:
     organization:
       enabled: false
-      mode: sdk # sdk | webhook
-      consumer-group: xiyu-bid
-      sdk:
-        service-name: XiyuBidService
-        server-register-url: https://event-busserver.ehsy.com
-        enable-register: true
-      master-data:
-        base-url: https://customer-master-data.example.com
-      security:
-        allowed-source-apps:
-          - customer-org
-        allowed-ips: []
-      mapping:
-        default-role: staff
-        admin-role-codes: []
-        manager-role-codes: []
+      webhook-secret: ""
+      ip-whitelist: ""
+      allowed-source-apps:
+        - customer-org
+      admin-role-codes: []
+      manager-role-codes: []
 ```
 
 ## 实施阶段

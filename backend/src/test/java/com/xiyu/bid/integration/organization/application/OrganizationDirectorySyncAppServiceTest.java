@@ -26,8 +26,6 @@ class OrganizationDirectorySyncAppServiceTest {
 
     @BeforeEach
     void setUp() {
-        OrganizationIntegrationProperties properties = new OrganizationIntegrationProperties();
-        properties.setAllowedSourceApps(List.of("customer-org"));
         gateway = new FakeGateway();
         inbox = new FakeInbox();
         departmentWriter = new FakeDepartmentWriter();
@@ -38,7 +36,7 @@ class OrganizationDirectorySyncAppServiceTest {
                 gateway,
                 departmentWriter,
                 userWriter,
-                properties
+                fixedSettings(true)
         );
     }
 
@@ -104,6 +102,13 @@ class OrganizationDirectorySyncAppServiceTest {
                   "data": {"%s": "%s"}
                 }
                 """.formatted(topic, idField, id));
+    }
+
+    static OrganizationIntegrationSettingsResolver fixedSettings(boolean enabled) {
+        OrganizationIntegrationProperties properties = new OrganizationIntegrationProperties();
+        properties.setEnabled(enabled);
+        properties.setAllowedSourceApps(List.of("customer-org"));
+        return new OrganizationIntegrationSettingsResolver(null, properties);
     }
 
     static class FakeGateway implements OrganizationDirectoryGateway {

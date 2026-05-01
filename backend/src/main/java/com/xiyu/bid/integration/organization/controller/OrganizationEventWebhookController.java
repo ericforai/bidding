@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @RestController
 @RequestMapping("/api/integrations/organization/events")
 @RequiredArgsConstructor
@@ -26,9 +28,18 @@ public class OrganizationEventWebhookController {
             @RequestBody OrganizationEventWebhookRequest request,
             @RequestHeader(value = "EHSY-TraceID", required = false) String traceId,
             @RequestHeader(value = "EHSY-SRCAPP", required = false) String sourceApp,
-            @RequestHeader(value = "EHSY-Signature", required = false) String signature
+            @RequestHeader(value = "EHSY-Signature", required = false) String signature,
+            HttpServletRequest servletRequest
     ) {
         String payload = request == null ? "" : request.eventMessage();
+        if (!signatureVerifier.ipAllowed(servletRequest.getRemoteAddr())) {
+            return ResponseEntity.status(403).body(new OrganizationEventWebhookResponse(
+                    "500",
+                    "ip not allowed",
+                    System.currentTimeMillis(),
+                    new OrganizationEventWebhookData("", false, false, "REJECTED")
+            ));
+        }
         if (!signatureVerifier.valid(traceId, sourceApp, payload, signature)) {
             return ResponseEntity.status(401).body(new OrganizationEventWebhookResponse(
                     "500",
