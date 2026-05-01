@@ -24,12 +24,14 @@ AI 生成初稿共同复用，因此不再归属于 `biddraftagent` 的 controll
 |--------|------|------|
 | `GET` | `/api/projects/{projectId}/tender-breakdown/readiness` | 检查当前用户项目权限和 DeepSeek 解析配置是否就绪 |
 | `GET` | `/api/projects/{projectId}/tender-breakdown/latest` | 返回项目最新已解析招标文件快照；无快照时返回空数据，前端再进入上传解析 |
+| `POST` | `/api/projects/{projectId}/tender-breakdown/reuse-uploaded` | 复用项目文档中已上传的招标文件，直接解析并写入快照；无可复用文件时返回空数据 |
 | `POST` | `/api/projects/{projectId}/tender-breakdown` | 上传并解析项目级招标文件，写入快照和需求项 |
 
 ## 复用关系
 
 - 上传解析仍复用 `BidTenderDocumentImportAppService.parseTenderDocument()`，避免复制文件保存、正文提取、需求项入库逻辑。
 - 最新快照查询复用 `BidTenderDocumentImportAppService.latestParsedTenderDocument()`，只读取已入库的解析快照，不重新读取或上传文件。
+- 已上传文件复用通过 `BidUploadedTenderDocumentReuseAppService.parseLatestUploadedTenderDocument()` 读取项目文档中真实落盘的招标文件，生成新的解析快照而不要求用户再次选择文件。
 - DeepSeek 配置检查复用 `biddraftagent.application.TenderIntakeConfigurationReadiness` 端口和 readiness DTO，避免 AI 基础设施反向依赖本项目入口模块。
 - 模块只做项目级入口编排，不承担招标要求抽取规则、任务生成规则或数据库实体转换。
 - 解析入口是独立项目能力：任务拆解和 AI 生成初稿都可以消费解析结果，但彼此不互相阻塞。

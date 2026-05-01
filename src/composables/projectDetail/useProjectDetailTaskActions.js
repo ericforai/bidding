@@ -3,7 +3,7 @@ import { taskTemplates } from './constants.js'
 import { normalizeTaskStatusForApi } from '@/views/Project/project-utils'
 
 export function useProjectDetailTaskActions(context) {
-  const { route, userStore, projectStore, projectsApi, isApiProject, message, state, workflow } = context
+  const { route, userStore, projectStore, projectsApi, tenderBreakdownApi = projectsApi, isApiProject, message, state, workflow } = context
   const pushActivity = (action) => state.activities.value.unshift({ id: Date.now(), user: userStore.userName, action, time: new Date().toLocaleString('zh-CN', { hour12: false }) })
   const ensureTaskList = () => {
     if (!state.project.value) {
@@ -26,11 +26,45 @@ export function useProjectDetailTaskActions(context) {
   )
   const hasReusableTenderBreakdown = (result = {}) => Boolean(result?.document?.snapshotId)
   const isNotFoundResponse = (error) => Number(error?.response?.status || error?.status || error?.code) === 404
-  const resolveTenderBreakdownReuseMessage = (result = {}) => {
+  const resolveTenderBreakdownReuseMessage = (result = {}, uploaded = false) => {
     const documentName = result?.document?.name
+    const sourceText = uploaded ? '项目已上传的招标文件' : '已解析的招标文件'
     return documentName
-      ? `已复用已解析的招标文件「${documentName}」，可直接拆解任务或生成标书初稿`
-      : '已复用已解析的招标文件，可直接拆解任务或生成标书初稿'
+      ? `已复用${sourceText}「${documentName}」，可直接拆解任务或生成标书初稿`
+      : `已复用${sourceText}，可直接拆解任务或生成标书初稿`
+  }
+  const ensureTenderBreakdownReady = async () => {
+    const readinessResult = await tenderBreakdownApi.getTenderBreakdownReadiness(route.params.id)
+    const readiness = readinessResult?.data || {}
+    if (!readinessResult?.success) throw new Error(readinessResult?.message || '无法检查 DeepSeek 配置状态')
+    if (readiness.ready === false) {
+      message.warning(resolveTenderBreakdownReadinessMessage(readiness))
+      return false
+    }
+    return true
+  }
+  const notifyTenderBreakdownReused = (result, uploaded = false) => {
+    const documentName = result?.document?.name || '招标文件'
+    pushActivity(uploaded ? `复用了项目已上传招标文件「${documentName}」` : `复用了已解析招标文件「${documentName}」`)
+    message.success(resolveTenderBreakdownReuseMessage(result, uploaded))
+  }
+  const tryParseUploadedTenderBreakdown = async () => {
+    if (typeof tenderBreakdownApi.parseUploadedTenderBreakdown !== 'function') {
+      return false
+    }
+    const ready = await ensureTenderBreakdownReady()
+    if (!ready) return true
+    state.tenderBreakdownParsing.value = true
+    try {
+      const result = await tenderBreakdownApi.parseUploadedTenderBreakdown(route.params.id)
+      if (result?.success && hasReusableTenderBreakdown(result.data)) {
+        notifyTenderBreakdownReused(result.data, true)
+        return true
+      }
+      return false
+    } finally {
+      state.tenderBreakdownParsing.value = false
+    }
   }
 
   const getTaskTemplateByProject = (project) => {
@@ -89,12 +123,11 @@ export function useProjectDetailTaskActions(context) {
       message.warning('正在解析招标文件，请稍候')
       return
     }
-    if (typeof projectsApi.getLatestTenderBreakdown === 'function') {
+    if (typeof tenderBreakdownApi.getLatestTenderBreakdown === 'function') {
       try {
-        const latestResult = await projectsApi.getLatestTenderBreakdown(route.params.id)
+        const latestResult = await tenderBreakdownApi.getLatestTenderBreakdown(route.params.id)
         if (latestResult?.success && hasReusableTenderBreakdown(latestResult.data)) {
-          pushActivity(`复用了已解析招标文件「${latestResult.data.document.name || '招标文件'}」`)
-          message.success(resolveTenderBreakdownReuseMessage(latestResult.data))
+          notifyTenderBreakdownReused(latestResult.data)
           return
         }
       } catch (error) {
@@ -105,6 +138,15 @@ export function useProjectDetailTaskActions(context) {
         message.error(resolveErrorMessage(error, '读取已解析招标文件失败'))
         return
       }
+    }
+    try {
+      if (await tryParseUploadedTenderBreakdown()) {
+        return
+      }
+    } catch (error) {
+      if (isNotFoundResponse(error)) return
+      message.error(resolveErrorMessage(error, '复用已上传招标文件失败'))
+      return
     }
     state.tenderBreakdownDialogVisible.value = true
   }
@@ -128,18 +170,13 @@ export function useProjectDetailTaskActions(context) {
     }
 
     try {
-      const readinessResult = await projectsApi.getTenderBreakdownReadiness(route.params.id)
-      const readiness = readinessResult?.data || {}
-      if (!readinessResult?.success) {
-        throw new Error(readinessResult?.message || '无法检查 DeepSeek 配置状态')
-      }
-      if (readiness.ready === false) {
-        message.warning(resolveTenderBreakdownReadinessMessage(readiness))
+      const ready = await ensureTenderBreakdownReady()
+      if (!ready) {
         return false
       }
 
       state.tenderBreakdownParsing.value = true
-      const result = await projectsApi.parseTenderBreakdown(route.params.id, file)
+      const result = await tenderBreakdownApi.parseTenderBreakdown(route.params.id, file)
       if (!result?.success || !result?.data?.document?.snapshotId) {
         throw new Error(result?.message || '招标文件解析失败')
       }

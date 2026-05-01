@@ -22,7 +22,7 @@
 | `permissionMatrix.js` | API 模块 | 管理员只读接口权限矩阵调用和响应标准化 |
 | `qualification.js` | API 模块 | 资质 CRUD 与借阅记录/借阅申请接线，供知识页和 store 复用 |
 | `projectGroups.js` | API 模块 | 项目组正式领域模型的管理、删除与项目绑定配置 |
-| `projectTenderBreakdown.js` | API 模块 | 项目级招标文件解析、最新解析快照复用、解析配置 readiness 和上传解析调用 |
+| `projectTenderBreakdown.js` | API 模块 | 项目级招标文件解析、最新解析快照复用、已上传文件复用、解析配置 readiness 和上传解析调用 |
 | `projects.js` | API 模块 | 项目列表、详情、任务拆解、评分、结果录入调用 |
 | `resources.js` | API 模块 | 平台账号、BAR、证书、资源能力调用 |
 | `settings.js` | API 模块 | 系统设置页的数据权限与组织树读写 |
@@ -37,7 +37,7 @@
 - 2026-04-24: 新增 `bidMatchScoring.js`，接入自定义投标匹配评分模型和标讯评分结果真实 API。
 - 2026-04-27: `projects.js` 新增项目任务拆解接口，供项目详情页按真实 API 生成任务看板。
 - 2026-04-27: 新增 `projectTenderBreakdown.js`，项目详情页可独立解析招标文件，解析结果供任务拆解和 AI 生成初稿复用。
-- 2026-05-01: `projectTenderBreakdown.js` 新增最新解析快照查询，项目详情页优先复用已解析招标文件，缺少快照时才进入上传解析。
+- 2026-05-01: `projectTenderBreakdown.js` 新增最新解析快照查询和已上传文件复用接口，项目详情页优先复用已解析招标文件，再复用项目文档中的真实上传文件，缺少可用来源时才进入上传解析。
 - 2026-04-27: 新增 `permissionMatrix.js`，接入管理员只读接口入口权限矩阵，帮助核对菜单权限与后端接口入口层授权。
 - 2026-04-27: `tenders.js` 新增人工录入标讯附件的 `/api/doc-insight/parse` 真实 API 调用，使用 `TENDER_INTAKE` profile。
 - 2026-04-29: 新增 `workflowForm.js`，资质借阅申请改为通过流程表单中心提交并触发 OA；扩展管理员流程表单配置、发布、OA 绑定、试提交和附件上传 API。

@@ -8,6 +8,7 @@ import com.xiyu.bid.util.InputSanitizer;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -44,7 +46,7 @@ public class ProjectDocumentController {
         )));
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<ProjectDocumentDTO>> createProjectDocument(
             @PathVariable Long projectId,
@@ -55,6 +57,38 @@ public class ProjectDocumentController {
                 .body(ApiResponse.success(
                         "Project document created successfully",
                         projectWorkflowService.createProjectDocument(projectId, request)
+                ));
+    }
+
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<ProjectDocumentDTO>> uploadProjectDocument(
+            @PathVariable Long projectId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String size,
+            @RequestParam(required = false) String fileType,
+            @RequestParam(required = false) String documentCategory,
+            @RequestParam(required = false) String linkedEntityType,
+            @RequestParam(required = false) Long linkedEntityId,
+            @RequestParam(required = false) Long uploaderId,
+            @RequestParam(required = false) String uploaderName
+    ) {
+        ProjectDocumentCreateRequest request = ProjectDocumentCreateRequest.builder()
+                .name(name == null || name.isBlank() ? file.getOriginalFilename() : name)
+                .size(size)
+                .fileType(fileType)
+                .documentCategory(documentCategory)
+                .linkedEntityType(linkedEntityType)
+                .linkedEntityId(linkedEntityId)
+                .uploaderId(uploaderId)
+                .uploaderName(uploaderName)
+                .build();
+        sanitizeDocumentRequest(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(
+                        "Project document uploaded successfully",
+                        projectWorkflowService.createUploadedProjectDocument(projectId, request, file)
                 ));
     }
 

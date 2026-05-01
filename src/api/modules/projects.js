@@ -214,12 +214,10 @@ export const projectsApi = {
    * 上传文档
    */
   async uploadDocument(projectId, formData) {
-    if (!isNumericId(projectId)) {
-      return apiModeFailure('project')
-    }
-
-    if (isDemoEntityId(projectId)) {
-      return demoReadonlyFailure()
+    if (!isNumericId(projectId)) return apiModeFailure('project')
+    if (isDemoEntityId(projectId)) return demoReadonlyFailure()
+    if (formData.get('file')) {
+      return httpClient.post(`/api/projects/${projectId}/documents`, formData, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 })
     }
 
     return httpClient.post(`/api/projects/${projectId}/documents`, {

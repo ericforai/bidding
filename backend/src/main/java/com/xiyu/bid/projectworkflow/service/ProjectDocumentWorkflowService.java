@@ -92,4 +92,5 @@ class ProjectDocumentWorkflowService {
         String normalized = trimToNull(value);
         return normalized != null ? normalized : fallback;
     }
+
 }

@@ -1,4 +1,4 @@
-// Input: TenderDocumentAnalysisInput and DocumentAnalysisInput with mocked AI responses
+// Input: TenderDocumentAnalysisInput and DocumentAnalysisInput with mocked DeepSeek-compatible AI responses
 // Output: assertions on full field round-trip (CRIT-1) and prompt rule content (CRIT-2)
 // Pos: biddraftagent/infrastructure/openai (integration test with mocks)
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
@@ -52,7 +52,8 @@ class OpenAiTenderDocumentAnalyzerTest {
         analyzer = new OpenAiTenderDocumentAnalyzer(configurationResolver, structuredOutputService, chunker);
 
         lenient().when(configurationResolver.resolve(anyString())).thenReturn(new OpenAiBidAgentRequestConfig(
-                "key", "http://api.openai.com", "gpt-4", java.time.Duration.ofSeconds(30), OpenAiBidAgentApiStyle.CHAT_COMPLETIONS
+                "deepseek-key", "https://api.deepseek.com", "deepseek-chat",
+                java.time.Duration.ofSeconds(90), OpenAiBidAgentApiStyle.CHAT_COMPLETIONS
         ));
         lenient().when(configurationResolver.resolveTenderIntake()).thenReturn(new OpenAiBidAgentRequestConfig(
                 "deepseek-key", "https://api.deepseek.com", "deepseek-chat",

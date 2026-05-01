@@ -155,6 +155,53 @@ describe('useProjectDetailTaskActions', () => {
     expect(state.tenderBreakdownDialogVisible.value).toBe(true)
   })
 
+  it('API 项目无解析快照但已有上传标书时点击解析入口直接复用上传文件', async () => {
+    const success = vi.fn()
+    const projectsApi = {
+      getLatestTenderBreakdown: vi.fn().mockResolvedValue({
+        success: true,
+        data: null,
+      }),
+      getTenderBreakdownReadiness: vi.fn().mockResolvedValue({
+        success: true,
+        data: { ready: true },
+      }),
+      parseUploadedTenderBreakdown: vi.fn().mockResolvedValue({
+        success: true,
+        data: {
+          document: {
+            name: '已上传招标文件.docx',
+            snapshotId: 701,
+          },
+        },
+      }),
+    }
+    const state = {
+      project: { value: { id: 12, tasks: [] } },
+      activities: { value: [] },
+      tenderBreakdownDialogVisible: { value: false },
+      tenderBreakdownParsing: { value: false },
+    }
+    const { handleOpenTenderBreakdown } = useProjectDetailTaskActions({
+      route: { params: { id: 12 } },
+      userStore: { userName: '小王' },
+      projectStore: {},
+      projectsApi,
+      isApiProject: { value: true },
+      message: { success, error: vi.fn(), warning: vi.fn() },
+      state,
+      workflow: {},
+    })
+
+    await handleOpenTenderBreakdown()
+
+    expect(projectsApi.getLatestTenderBreakdown).toHaveBeenCalledWith(12)
+    expect(projectsApi.getTenderBreakdownReadiness).toHaveBeenCalledWith(12)
+    expect(projectsApi.parseUploadedTenderBreakdown).toHaveBeenCalledWith(12)
+    expect(state.tenderBreakdownDialogVisible.value).toBe(false)
+    expect(success).toHaveBeenCalledWith('已复用项目已上传的招标文件「已上传招标文件.docx」，可直接拆解任务或生成标书初稿')
+  })
+
   it('最新解析快照接口暂不可用时不展示 404 错误并回退到上传弹窗', async () => {
     const error = vi.fn()
     const getLatestTenderBreakdown = vi.fn().mockRejectedValue({
