@@ -5,6 +5,7 @@ import { bidMatchScoringApi, tendersApi } from '@/api'
 import {
   buildWinProbabilityView,
   formatTenderDisplayField,
+  formatTenderIndustry,
   getTenderDateTimeParts,
   safeTenderUrl,
 } from '../bidding-utils.js'
@@ -35,7 +36,7 @@ export function useBiddingDetailPage() {
   const scoreEmptyDescription = computed(() => scoreSummary.value.description)
 
   const regionMeta = computed(() => formatTenderDisplayField(tender.value?.region))
-  const industryMeta = computed(() => formatTenderDisplayField(tender.value?.industry))
+  const industryMeta = computed(() => formatTenderIndustry(tender.value?.industry))
   const deadlineParts = computed(() => getTenderDateTimeParts(tender.value?.deadline))
   const winProbabilityView = computed(() => {
     const score = scoreForView.value?.totalScore ?? tender.value?.aiScore ?? 0

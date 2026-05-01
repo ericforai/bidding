@@ -122,6 +122,34 @@ export function formatTenderDisplayField(value, missingText = '未提取') {
   }
 }
 
+const TENDER_INDUSTRY_LABELS = {
+  ENERGY: '能源',
+  TRANSPORTATION: '交通',
+  MANUFACTURING: '制造业',
+  INFRASTRUCTURE: '基础设施',
+  REAL_ESTATE: '房地产',
+  ENVIRONMENTAL: '环保',
+  GOVERNMENT: '政府',
+  EDUCATION: '教育',
+  MEDICAL: '医疗',
+  INTERNET: '互联网',
+  FINANCE: '金融',
+  OTHER: '其他',
+}
+
+export function formatTenderIndustry(value, missingText = '未提取') {
+  const raw = value == null ? '' : String(value).trim()
+  if (!raw) {
+    return {
+      text: missingText,
+      isMissing: true,
+      tooltip: '真实 API 暂无该字段，未做推断填充'
+    }
+  }
+  const label = TENDER_INDUSTRY_LABELS[raw.toUpperCase()] || raw
+  return { text: label, isMissing: false, tooltip: '' }
+}
+
 export function buildWinProbabilityView(scoreValue) {
   const score = Number(scoreValue)
   const sourceScore = Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 0
