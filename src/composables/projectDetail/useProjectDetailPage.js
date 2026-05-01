@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/user'
 import { useBarStore } from '@/stores/bar'
 import { approvalApi, collaborationApi, knowledgeApi, projectsApi } from '@/api'
 import { complianceApi, scoreAnalysisApi } from '@/api/modules/ai.js'
+import * as projectTenderBreakdownApi from '@/api/modules/projectTenderBreakdown.js'
 import { useProjectExpenseAggregation } from '@/components/project/composables/useProjectExpenseAggregation.js'
 import { deliverableTypeMap } from './constants.js'
 import { useProjectDetailAI } from './useProjectDetailAI.js'
@@ -30,7 +31,7 @@ export function useProjectDetailPage() {
   const isApiProject = computed(() => !isDemoMode && /^-?\d+$/.test(String(route.params.id || '')))
 
   const context = {
-    route, router, projectStore, userStore, barStore, projectsApi, collaborationApi, approvalApi, knowledgeApi, complianceApi, scoreAnalysisApi,
+    route, router, projectStore, userStore, barStore, projectsApi, tenderBreakdownApi: projectTenderBreakdownApi, collaborationApi, approvalApi, knowledgeApi, complianceApi, scoreAnalysisApi,
     isDemoMode, isApiProject, demoAutoTasks, demoMobileCard, deliverableTypeMap, message: ElMessage, confirm: ElMessageBox.confirm,
   }
 

@@ -1,6 +1,7 @@
 package com.xiyu.bid.projecttenderbreakdown.controller;
 
 import com.xiyu.bid.biddraftagent.application.BidTenderDocumentImportAppService;
+import com.xiyu.bid.biddraftagent.application.BidUploadedTenderDocumentReuseAppService;
 import com.xiyu.bid.biddraftagent.application.TenderBreakdownReadiness;
 import com.xiyu.bid.biddraftagent.domain.TenderRequirementProfile;
 import com.xiyu.bid.biddraftagent.dto.BidTenderDocumentDTO;
@@ -47,6 +48,9 @@ class ProjectTenderBreakdownControllerTest {
 
     @MockBean
     private BidTenderDocumentImportAppService importAppService;
+
+    @MockBean
+    private BidUploadedTenderDocumentReuseAppService uploadedReuseAppService;
 
     @MockBean
     private ProjectAccessScopeService projectAccessScopeService;
@@ -174,6 +178,48 @@ class ProjectTenderBreakdownControllerTest {
 
         verify(projectAccessScopeService).assertCurrentUserCanAccessProject(12L);
         verify(importAppService).latestParsedTenderDocument(12L);
+    }
+
+    @Test
+    @WithMockUser(roles = "STAFF")
+    void reuseUploadedTenderBreakdown_shouldParseExistingProjectDocumentWithoutMultipartUpload() throws Exception {
+        BidTenderDocumentParseDTO result = BidTenderDocumentParseDTO.builder()
+                .message("已复用项目已上传的招标文件")
+                .document(BidTenderDocumentDTO.builder()
+                        .id(501L)
+                        .projectId(12L)
+                        .tenderId(22L)
+                        .name("已上传招标文件.docx")
+                        .snapshotId(701L)
+                        .extractedTextLength(128)
+                        .build())
+                .requirementProfile(new TenderRequirementProfile(
+                        "项目名称",
+                        null,
+                        null,
+                        null,
+                        List.of("资格要求"),
+                        List.of("技术要求"),
+                        List.of("商务要求"),
+                        List.of("评分标准"),
+                        null,
+                        List.of("投标材料"),
+                        List.of("风险提示"),
+                        List.of(),
+                        List.of()
+                ))
+                .build();
+        when(uploadedReuseAppService.parseLatestUploadedTenderDocument(12L)).thenReturn(Optional.of(result));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/projects/{projectId}/tender-breakdown/reuse-uploaded", 12L))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.document.snapshotId").value(701))
+                .andExpect(jsonPath("$.data.document.name").value("已上传招标文件.docx"));
+
+        verify(projectAccessScopeService).assertCurrentUserCanAccessProject(12L);
+        verify(uploadedReuseAppService).parseLatestUploadedTenderDocument(12L);
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.xiyu.bid.projecttenderbreakdown.controller;
 
 import com.xiyu.bid.biddraftagent.application.BidTenderDocumentImportAppService;
+import com.xiyu.bid.biddraftagent.application.BidUploadedTenderDocumentReuseAppService;
 import com.xiyu.bid.biddraftagent.application.TenderBreakdownReadiness;
 import com.xiyu.bid.biddraftagent.dto.BidTenderDocumentParseDTO;
 import com.xiyu.bid.dto.ApiResponse;
@@ -26,6 +27,7 @@ public class ProjectTenderBreakdownController {
 
     private final ProjectAccessScopeService projectAccessScopeService;
     private final BidTenderDocumentImportAppService importAppService;
+    private final BidUploadedTenderDocumentReuseAppService uploadedReuseAppService;
     private final ProjectTenderBreakdownReadinessService readinessService;
 
     @GetMapping("/readiness")
@@ -43,6 +45,17 @@ public class ProjectTenderBreakdownController {
         return importAppService.latestParsedTenderDocument(projectId)
                 .map(result -> ResponseEntity.ok(ApiResponse.success(result.getMessage(), result)))
                 .orElseGet(() -> ResponseEntity.ok(ApiResponse.success("尚未解析招标文件", null)));
+    }
+
+    @PostMapping("/reuse-uploaded")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<BidTenderDocumentParseDTO>> reuseUploadedTenderBreakdown(
+            @PathVariable Long projectId) {
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
+        return uploadedReuseAppService.parseLatestUploadedTenderDocument(projectId)
+                .map(result -> ResponseEntity.status(HttpStatus.CREATED)
+                        .body(ApiResponse.success(result.getMessage(), result)))
+                .orElseGet(() -> ResponseEntity.ok(ApiResponse.success("尚未找到可复用的已上传招标文件", null)));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

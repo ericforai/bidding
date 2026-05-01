@@ -77,6 +77,42 @@ describe('projectsApi', () => {
     expect(httpClient.get).toHaveBeenCalledWith('/api/projects/12/tender-breakdown/latest', { silentError: true })
   })
 
+  it('parseUploadedTenderBreakdown(): reuses an already uploaded tender document without multipart upload', async () => {
+    httpClient.post.mockResolvedValue({
+      success: true,
+      data: { document: { snapshotId: 701, name: '已上传招标文件.docx' } },
+    })
+
+    await projectsApi.parseUploadedTenderBreakdown(12)
+
+    expect(httpClient.post).toHaveBeenCalledWith(
+      '/api/projects/12/tender-breakdown/reuse-uploaded',
+      null,
+      { timeout: 120000, silentError: true },
+    )
+  })
+
+  it('uploadDocument(): sends real project document files as multipart payloads', async () => {
+    const file = new File(['招标正文'], '招标文件.docx', {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    })
+    const formData = new FormData()
+    formData.set('file', file)
+    formData.set('name', file.name)
+    httpClient.post.mockResolvedValue({
+      success: true,
+      data: { id: 301, fileUrl: 'bid-agent://tender-documents/12/stored.docx' },
+    })
+
+    await projectsApi.uploadDocument(12, formData)
+
+    expect(httpClient.post).toHaveBeenCalledWith(
+      '/api/projects/12/documents',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 },
+    )
+  })
+
   it('decomposeTasks(): rejects non-numeric project IDs before request', async () => {
     const result = await projectsApi.decomposeTasks('PROJECT_12')
 

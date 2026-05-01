@@ -16,8 +16,8 @@
 | `domain/` | 纯核心 | 招标要求归类、材料匹配打分、缺漏检查、人工确认和写作覆盖决策 |
 | `application/` | Application Service / Port / Planner | 编排招标文件导入、run 生命周期、生成写入计划、定义文档写入端口 |
 | `infrastructure/documenteditor/` | Adapter | 把写入计划转换为 `documenteditor` 批量章节树写入请求 |
-| `infrastructure/openai/` | Adapter | 通过 AI SDK 拆解招标要求、生成草稿、审阅摘要和交接清单；`TENDER_INTAKE` 强制走 DeepSeek Chat Completions |
-| `infrastructure/tenderdocument/` | Adapter | 保存上传文件，优先通过带 `X-Sidecar-Key` 共享密钥的 MarkItDown sidecar 提取正文，失败时降级到 POI/PDFBox |
+| `infrastructure/openai/` | Adapter | 通过 AI SDK 拆解招标要求、生成草稿、审阅摘要和交接清单；`TENDER_INTAKE` 强制走 DeepSeek Chat Completions；`e2e` profile 下不激活 |
+| `infrastructure/tenderdocument/` | Adapter | 保存上传文件，优先通过带 `X-Sidecar-Key` 共享密钥的 MarkItDown sidecar 提取正文，失败时降级到 POI/PDFBox；同时适配 projectworkflow 的项目文档文件存储端口 |
 | `infrastructure/e2e/` | Adapter | 仅 `e2e` profile 生效的固定文本提取、配置就绪和招标要求解析替身，用于 Playwright 端到端回归，不参与生产路径 |
 | `controller/` | API 边界 | 暴露项目级 tender document import、run/review/apply 接口 |
 | `repository/` | JPA Repository | 读写 run、artifact、招标文件解析快照与 requirement items |
@@ -30,11 +30,11 @@
 - `domain/*` 不依赖 Spring、Repository、JPA、日志、IO、异常业务流、时间或随机数。
 - 应用层只负责编排：取快照、调用纯核心、生成 artifact、写 run 状态、调用文档写入端口。
 - `documenteditor` 写入只发生在基础设施适配器中，且必须尊重锁定章节和来源 metadata。
-- 招标文件结构化拆解和草稿正文生成只有真实 AI 调用路径；项目绑定 `TENDER` / 标书草稿生成沿用 `ai.openai.*`、系统设置 provider 或 `integrationConfig` 配置。入库前 `TENDER_INTAKE` 固定使用 DeepSeek Chat Completions，key 优先读取系统设置 DeepSeek provider，再读 `DEEPSEEK_API_KEY`，默认模型为 `deepseek-chat`。
+- 招标文件结构化拆解和草稿正文生成只有真实 AI 调用路径；项目绑定 `TENDER` / 标书草稿生成统一使用 DeepSeek Chat Completions，key 优先读取系统设置 DeepSeek provider，再读 `DEEPSEEK_API_KEY`，默认模型为 `deepseek-chat`。
 
 ## 招标文件到标书初稿链路
 
-1. `POST /api/projects/{projectId}/bid-agent/tender-documents` 上传 `.doc`、`.docx` 或文本型 `.pdf` 招标文件。项目详情页独立解析入口由 `projecttenderbreakdown` 模块承载，底层复用本模块的导入应用服务；再次点击解析入口时可通过最新快照查询复用已解析结果，不需要重复上传。
+1. `POST /api/projects/{projectId}/bid-agent/tender-documents` 上传 `.doc`、`.docx` 或文本型 `.pdf` 招标文件。项目详情页独立解析入口由 `projecttenderbreakdown` 模块承载，底层复用本模块的导入应用服务；再次点击解析入口时会先复用最新解析快照，再尝试复用项目文档中已上传的真实招标文件，不需要重复选择同一文件。
 2. `infrastructure/tenderdocument` 保存文件并提取正文；扫描件 PDF 会显式提示需要 OCR/人工处理。
 3. `infrastructure/openai` 使用 structured outputs 拆解项目名称、预算、地区、行业、发布日期、截止时间、招标范围、资格要求、技术要求、商务要求、评分标准、必须材料和风险点；无法从正文确认的结构化字段保持为空。
 4. 解析结果写入 `bid_tender_document_snapshots`、`bid_requirement_items`，并在 Tender 对应字段为空时补充标题、采购人、预算、地区、行业、发布日期、截止时间、描述和标签。
@@ -46,6 +46,7 @@
 
 - `POST /api/projects/{projectId}/bid-agent/tender-documents`
 - `GET /api/projects/{projectId}/tender-breakdown/latest`
+- `POST /api/projects/{projectId}/tender-breakdown/reuse-uploaded`
 - `POST /api/projects/{projectId}/bid-agent/runs`
 - `GET /api/projects/{projectId}/bid-agent/runs/{runId}`
 - `POST /api/projects/{projectId}/bid-agent/runs/{runId}/apply`

@@ -73,6 +73,12 @@ class ProjectWorkflowServiceTest {
                 new ProjectDocumentViewAssembler(),
                 mock(ProjectDocumentBindingGateway.class)
         );
+        ProjectDocumentUploadWorkflowService projectDocumentUploadWorkflowService =
+                mock(ProjectDocumentUploadWorkflowService.class);
+        ProjectDocumentFacade projectDocumentFacade = new ProjectDocumentFacade(
+                projectDocumentWorkflowService,
+                projectDocumentUploadWorkflowService
+        );
         ProjectReminderWorkflowService projectReminderWorkflowService = new ProjectReminderWorkflowService(
                 guardService,
                 projectReminderRepository,
@@ -94,7 +100,7 @@ class ProjectWorkflowServiceTest {
         );
         service = new ProjectWorkflowService(
                 projectTaskWorkflowService,
-                projectDocumentWorkflowService,
+                projectDocumentFacade,
                 projectReminderWorkflowService,
                 projectShareLinkWorkflowService,
                 projectScoreDraftWorkflowService

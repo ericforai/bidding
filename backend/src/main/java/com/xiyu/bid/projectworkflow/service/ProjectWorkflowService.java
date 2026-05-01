@@ -30,7 +30,7 @@ import java.util.List;
 public class ProjectWorkflowService {
 
     private final ProjectTaskWorkflowService projectTaskWorkflowService;
-    private final ProjectDocumentWorkflowService projectDocumentWorkflowService;
+    private final ProjectDocumentFacade projectDocumentFacade;
     private final ProjectReminderWorkflowService projectReminderWorkflowService;
     private final ProjectShareLinkWorkflowService projectShareLinkWorkflowService;
     private final ProjectScoreDraftWorkflowService projectScoreDraftWorkflowService;
@@ -54,7 +54,7 @@ public class ProjectWorkflowService {
 
     @Transactional(readOnly = true)
     public List<ProjectDocumentDTO> getProjectDocuments(Long projectId) {
-        return projectDocumentWorkflowService.getProjectDocuments(projectId);
+        return projectDocumentFacade.getProjectDocuments(projectId);
     }
 
     @Transactional(readOnly = true)
@@ -64,7 +64,7 @@ public class ProjectWorkflowService {
             String linkedEntityType,
             Long linkedEntityId
     ) {
-        return projectDocumentWorkflowService.getProjectDocuments(
+        return projectDocumentFacade.getProjectDocuments(
                 projectId,
                 documentCategory,
                 linkedEntityType,
@@ -76,11 +76,19 @@ public class ProjectWorkflowService {
             Long projectId,
             ProjectDocumentCreateRequest request
     ) {
-        return projectDocumentWorkflowService.createProjectDocument(projectId, request);
+        return projectDocumentFacade.createProjectDocument(projectId, request);
+    }
+
+    public ProjectDocumentDTO createUploadedProjectDocument(
+            Long projectId,
+            ProjectDocumentCreateRequest request,
+            MultipartFile file
+    ) {
+        return projectDocumentFacade.createUploadedProjectDocument(projectId, request, file);
     }
 
     public void deleteProjectDocument(Long projectId, Long documentId) {
-        projectDocumentWorkflowService.deleteProjectDocument(projectId, documentId);
+        projectDocumentFacade.deleteProjectDocument(projectId, documentId);
     }
 
     @Transactional(readOnly = true)

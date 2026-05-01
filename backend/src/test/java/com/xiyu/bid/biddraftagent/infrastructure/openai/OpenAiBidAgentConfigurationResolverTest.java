@@ -21,19 +21,21 @@ import static org.mockito.Mockito.when;
 class OpenAiBidAgentConfigurationResolverTest {
 
     @Test
-    void resolve_shouldPreferSpringConfiguredApiKey() {
+    void resolve_shouldUseDeepSeekEnvironmentKeyBeforeLegacySpringOpenAiKey() {
         SettingsService settingsService = mock(SettingsService.class);
         Environment environment = mock(Environment.class);
-        OpenAiBidAgentConfigurationResolver resolver = resolver(settingsService, environment, " sk-env ");
+        when(settingsService.getInternalAiModelConfig()).thenReturn(null);
+        when(settingsService.resolveAiApiKey("deepseek")).thenReturn(null);
+        when(environment.getProperty("DEEPSEEK_API_KEY")).thenReturn(" sk-deepseek ");
+        OpenAiBidAgentConfigurationResolver resolver = resolver(settingsService, environment);
 
         OpenAiBidAgentRequestConfig config = resolver.resolve("bid draft generation");
 
-        assertThat(config.apiKey()).isEqualTo("sk-env");
-        assertThat(config.baseUrl()).isEqualTo("https://api.example.test/v1");
-        assertThat(config.model()).isEqualTo("gpt-test");
+        assertThat(config.apiKey()).isEqualTo("sk-deepseek");
+        assertThat(config.baseUrl()).isEqualTo("https://api.deepseek.com");
+        assertThat(config.model()).isEqualTo("deepseek-chat");
         assertThat(config.timeout()).isEqualTo(Duration.ofSeconds(90));
-        assertThat(config.apiStyle()).isEqualTo(OpenAiBidAgentApiStyle.RESPONSES);
-        verifyNoInteractions(settingsService, environment);
+        assertThat(config.apiStyle()).isEqualTo(OpenAiBidAgentApiStyle.CHAT_COMPLETIONS);
     }
 
     @Test
@@ -47,7 +49,7 @@ class OpenAiBidAgentConfigurationResolverTest {
         ));
         when(settingsService.resolveAiApiKey("deepseek")).thenReturn(null);
         when(environment.getProperty("DEEPSEEK_API_KEY")).thenReturn(" sk-deepseek ");
-        OpenAiBidAgentConfigurationResolver resolver = resolver(settingsService, environment, "");
+        OpenAiBidAgentConfigurationResolver resolver = resolver(settingsService, environment);
 
         OpenAiBidAgentRequestConfig config = resolver.resolve("tender document analysis");
 
@@ -72,9 +74,6 @@ class OpenAiBidAgentConfigurationResolverTest {
                 settingsService,
                 new AiProviderCatalog(),
                 environment,
-                "",
-                "https://api.openai.com/v1",
-                "gpt-5.2",
                 Duration.ofSeconds(30),
                 Duration.ofSeconds(45)
         );
@@ -85,7 +84,7 @@ class OpenAiBidAgentConfigurationResolverTest {
     }
 
     @Test
-    void resolve_shouldKeepResponsesApiForActiveOpenAiProvider() {
+    void resolve_shouldIgnoreActiveOpenAiProviderAndUseDeepSeekKey() {
         SettingsService settingsService = mock(SettingsService.class);
         Environment environment = mock(Environment.class);
         when(settingsService.getInternalAiModelConfig()).thenReturn(aiModelConfig(
@@ -94,29 +93,40 @@ class OpenAiBidAgentConfigurationResolverTest {
                 "gpt-4o-mini"
         ));
         when(settingsService.resolveAiApiKey("openai")).thenReturn(" sk-openai ");
-        OpenAiBidAgentConfigurationResolver resolver = resolver(settingsService, environment, "");
+        when(settingsService.resolveAiApiKey("deepseek")).thenReturn(null);
+        when(environment.getProperty("DEEPSEEK_API_KEY")).thenReturn(" sk-deepseek ");
+        OpenAiBidAgentConfigurationResolver resolver = resolver(settingsService, environment);
 
         OpenAiBidAgentRequestConfig config = resolver.resolve("tender document analysis");
 
-        assertThat(config.apiStyle()).isEqualTo(OpenAiBidAgentApiStyle.RESPONSES);
-        assertThat(config.baseUrl()).isEqualTo("https://api.openai.com/v1");
+        assertThat(config.apiKey()).isEqualTo("sk-deepseek");
+        assertThat(config.apiStyle()).isEqualTo(OpenAiBidAgentApiStyle.CHAT_COMPLETIONS);
+        assertThat(config.baseUrl()).isEqualTo("https://api.deepseek.com");
+        verify(settingsService, never()).resolveAiApiKey("openai");
     }
 
     @Test
-    void resolve_shouldUseSystemSettingsApiKeyWhenSpringKeyMissing() {
+    void resolve_shouldUseDeepSeekProviderSettingsKeyWhenLegacyIntegrationKeyExists() {
         SettingsService settingsService = mock(SettingsService.class);
         Environment environment = mock(Environment.class);
         when(settingsService.getSettings()).thenReturn(settingsWithApiKey(" sk-system "));
-        OpenAiBidAgentConfigurationResolver resolver = resolver(settingsService, environment, "");
+        when(settingsService.getInternalAiModelConfig()).thenReturn(aiModelConfig(
+                "deepseek",
+                "https://api.deepseek.com/chat/completions",
+                "deepseek-chat"
+        ));
+        when(settingsService.resolveAiApiKey("deepseek")).thenReturn(" sk-deepseek ");
+        OpenAiBidAgentConfigurationResolver resolver = resolver(settingsService, environment);
 
         OpenAiBidAgentRequestConfig config = resolver.resolve("tender document analysis");
 
-        assertThat(config.apiKey()).isEqualTo("sk-system");
-        assertThat(config.apiStyle()).isEqualTo(OpenAiBidAgentApiStyle.RESPONSES);
+        assertThat(config.apiKey()).isEqualTo("sk-deepseek");
+        assertThat(config.apiStyle()).isEqualTo(OpenAiBidAgentApiStyle.CHAT_COMPLETIONS);
+        verify(settingsService, never()).getSettings();
     }
 
     @Test
-    void resolve_shouldUseSystemSettingsGatewayWhenSpringValuesAreDefault() {
+    void resolve_shouldUseDeepSeekDefaultsWhenLegacyIntegrationGatewayExists() {
         SettingsService settingsService = mock(SettingsService.class);
         Environment environment = mock(Environment.class);
         when(settingsService.getSettings()).thenReturn(settingsWithAiConfig(
@@ -124,34 +134,39 @@ class OpenAiBidAgentConfigurationResolverTest {
                 " https://gateway.example.test/v1 ",
                 " gpt-system "
         ));
+        when(settingsService.getInternalAiModelConfig()).thenReturn(null);
+        when(settingsService.resolveAiApiKey("deepseek")).thenReturn(null);
+        when(environment.getProperty("DEEPSEEK_API_KEY")).thenReturn(" sk-deepseek ");
         OpenAiBidAgentConfigurationResolver resolver = new OpenAiBidAgentConfigurationResolver(
                 settingsService,
                 new AiProviderCatalog(),
                 environment,
-                "",
-                "https://api.openai.com/v1",
-                "gpt-5.2",
                 Duration.ofSeconds(90),
                 Duration.ofSeconds(45)
         );
 
         OpenAiBidAgentRequestConfig config = resolver.resolve("tender document analysis");
 
-        assertThat(config.baseUrl()).isEqualTo("https://gateway.example.test/v1");
-        assertThat(config.model()).isEqualTo("gpt-system");
-        assertThat(config.apiStyle()).isEqualTo(OpenAiBidAgentApiStyle.RESPONSES);
+        assertThat(config.baseUrl()).isEqualTo("https://api.deepseek.com");
+        assertThat(config.model()).isEqualTo("deepseek-chat");
+        assertThat(config.apiStyle()).isEqualTo(OpenAiBidAgentApiStyle.CHAT_COMPLETIONS);
+        verify(settingsService, never()).getSettings();
     }
 
     @Test
-    void resolve_shouldRejectMissingAndPlaceholderApiKeys() {
+    void resolve_shouldRejectMissingDeepSeekKey() {
         SettingsService settingsService = mock(SettingsService.class);
         Environment environment = mock(Environment.class);
         when(settingsService.getSettings()).thenReturn(settingsWithApiKey("sk_xiyu_bid_server_default"));
-        OpenAiBidAgentConfigurationResolver resolver = resolver(settingsService, environment, "");
+        when(settingsService.getInternalAiModelConfig()).thenReturn(null);
+        when(settingsService.resolveAiApiKey("deepseek")).thenReturn(null);
+        OpenAiBidAgentConfigurationResolver resolver = resolver(settingsService, environment);
 
         assertThatThrownBy(() -> resolver.resolve("bid draft generation"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage("ai.openai.api-key must be configured for bid draft generation");
+                .hasMessageContaining("DeepSeek API key must be configured for bid draft generation")
+                .hasMessageContaining("DEEPSEEK_API_KEY");
+        verify(settingsService, never()).getSettings();
     }
 
     @Test
@@ -165,7 +180,7 @@ class OpenAiBidAgentConfigurationResolverTest {
                 "deepseek-reasoner"
         ));
         when(settingsService.resolveAiApiKey("deepseek")).thenReturn(" sk-deepseek-settings ");
-        OpenAiBidAgentConfigurationResolver resolver = resolver(settingsService, environment, " sk-openai ");
+        OpenAiBidAgentConfigurationResolver resolver = resolver(settingsService, environment);
 
         OpenAiBidAgentRequestConfig config = resolver.resolveTenderIntake();
 
@@ -185,7 +200,7 @@ class OpenAiBidAgentConfigurationResolverTest {
         when(settingsService.getInternalAiModelConfig()).thenReturn(null);
         when(settingsService.resolveAiApiKey("deepseek")).thenReturn(null);
         when(environment.getProperty("DEEPSEEK_API_KEY")).thenReturn(" sk-deepseek-env ");
-        OpenAiBidAgentConfigurationResolver resolver = resolver(settingsService, environment, "");
+        OpenAiBidAgentConfigurationResolver resolver = resolver(settingsService, environment);
 
         OpenAiBidAgentRequestConfig config = resolver.resolveTenderIntake();
 
@@ -213,9 +228,6 @@ class OpenAiBidAgentConfigurationResolverTest {
                 settingsService,
                 aiProviderCatalog,
                 environment,
-                "",
-                "https://api.example.test/v1",
-                "gpt-test",
                 Duration.ofSeconds(90),
                 Duration.ofSeconds(45)
         );
@@ -230,16 +242,12 @@ class OpenAiBidAgentConfigurationResolverTest {
 
     private OpenAiBidAgentConfigurationResolver resolver(
             SettingsService settingsService,
-            Environment environment,
-            String configuredApiKey
+            Environment environment
     ) {
         return new OpenAiBidAgentConfigurationResolver(
                 settingsService,
                 new AiProviderCatalog(),
                 environment,
-                configuredApiKey,
-                "https://api.example.test/v1",
-                "gpt-test",
                 Duration.ofSeconds(90),
                 Duration.ofSeconds(45)
         );
