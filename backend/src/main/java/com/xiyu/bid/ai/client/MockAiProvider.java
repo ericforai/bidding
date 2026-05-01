@@ -20,29 +20,29 @@ import java.util.Map;
 public class MockAiProvider implements AiProvider {
 
     private static final List<String> COMMON_STRENGTHS = Arrays.asList(
-        "Strong technical team capabilities",
-        "Competitive pricing strategy",
-        "Good project management experience",
-        "Solid financial health",
-        "Relevant industry experience",
-        "Excellent track record with similar projects"
+        "技术团队实力雄厚，具备项目核心能力",
+        "报价策略有竞争力，成本控制合理",
+        "项目管理经验丰富，交付能力可靠",
+        "财务状况稳健，履约保障能力强",
+        "行业经验贴合本项目需求",
+        "有类似项目优秀交付案例"
     );
 
     private static final List<String> COMMON_WEAKNESSES = Arrays.asList(
-        "Limited experience in very large-scale projects",
-        "Tight timeline may require additional resources",
-        "Some team members lack specific certifications",
-        "Geographic distance from client location",
-        "Limited portfolio in this specific sector"
+        "缺少同等规模超大型项目的实施经验",
+        "项目周期紧张，资源投入需追加保障",
+        "部分团队成员尚未取得专项资质认证",
+        "距离客户现场较远，驻场成本偏高",
+        "在该细分行业的项目储备相对有限"
     );
 
     private static final List<String> COMMON_RECOMMENDATIONS = Arrays.asList(
-        "Highlight relevant case studies in the proposal",
-        "Prepare detailed competitive pricing strategy",
-        "Consider partnering with local firms for geographic coverage",
-        "Obtain required certifications before bid submission",
-        "Allocate additional resources for tight timeline",
-        "Emphasize team qualifications and experience"
+        "在标书中突出展示相关行业标杆案例",
+        "准备详细的差异化报价与议价策略",
+        "与本地合作伙伴联合投标以补齐区域覆盖",
+        "投标前完成关键资质认证的补齐",
+        "针对紧张工期追加人力与交付冗余",
+        "强化团队资质与专家履历的呈现"
     );
 
     @Override
@@ -187,19 +187,19 @@ public class MockAiProvider implements AiProvider {
 
         return Arrays.asList(
             DimensionScore.builder()
-                    .dimension("Technical")
+                    .dimension("技术")
                     .score(normalizeScore(technicalScore))
-                    .details("Technical capabilities and expertise assessment")
+                    .details("技术能力与专业度综合评估")
                     .build(),
             DimensionScore.builder()
-                    .dimension("Financial")
+                    .dimension("财务")
                     .score(normalizeScore(financialScore))
-                    .details("Financial health and pricing competitiveness")
+                    .details("财务健康度与报价竞争力")
                     .build(),
             DimensionScore.builder()
-                    .dimension("Timing")
+                    .dimension("进度")
                     .score(normalizeScore(timingScore))
-                    .details("Project timeline and delivery feasibility")
+                    .details("项目周期与交付可行性")
                     .build()
         );
     }
@@ -214,19 +214,19 @@ public class MockAiProvider implements AiProvider {
 
         return Arrays.asList(
             DimensionScore.builder()
-                    .dimension("Team")
+                    .dimension("团队")
                     .score(normalizeScore(teamScore))
-                    .details("Team composition and capabilities")
+                    .details("团队配置与协作能力")
                     .build(),
             DimensionScore.builder()
-                    .dimension("Resources")
+                    .dimension("资源")
                     .score(normalizeScore(resourceScore))
-                    .details("Resource allocation and availability")
+                    .details("资源投入与可用性")
                     .build(),
             DimensionScore.builder()
-                    .dimension("Risk")
+                    .dimension("风险")
                     .score(normalizeScore(riskScore))
-                    .details("Risk assessment and mitigation strategies")
+                    .details("风险识别与应对策略")
                     .build()
         );
     }

@@ -118,10 +118,13 @@ export function getTagType(tag) {
 
 export function formatAmount(amount) {
   const numericAmount = Number(amount || 0)
-  if (numericAmount >= 10000) {
-    return `${(numericAmount / 10000).toFixed(1)} 亿元`
+  if (numericAmount >= 100000000) {
+    return `${(numericAmount / 100000000).toFixed(2)} 亿元`
   }
-  return `${numericAmount} 万元`
+  if (numericAmount >= 10000) {
+    return `${(numericAmount / 10000).toFixed(1)} 万元`
+  }
+  return `${numericAmount.toLocaleString('zh-CN')} 元`
 }
 
 export function getIndustryLabel(value) {

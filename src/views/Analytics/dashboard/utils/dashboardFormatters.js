@@ -1,10 +1,14 @@
 // Status / file-type / amount / rate formatters shared across dashboard widgets
 
 export function formatAmount(amount) {
-  if (amount >= 10000) {
-    return (amount / 10000).toFixed(1) + '亿'
+  const numeric = Number(amount || 0)
+  if (numeric >= 100000000) {
+    return (numeric / 100000000).toFixed(2) + '亿'
   }
-  return amount + '万'
+  if (numeric >= 10000) {
+    return (numeric / 10000).toFixed(1) + '万'
+  }
+  return numeric.toLocaleString('zh-CN') + '元'
 }
 
 export function formatMetricAmount(amount) {
