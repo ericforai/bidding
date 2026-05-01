@@ -43,38 +43,38 @@
         </div>
       </template>
 
-      <el-table :data="filteredProjects" stripe style="width: 100%" v-loading="loading">
-        <el-table-column prop="name" label="项目名称" min-width="200" show-overflow-tooltip>
+      <el-table :data="filteredProjects" stripe class="project-table" style="width: 100%" v-loading="loading">
+        <el-table-column label="项目信息" min-width="420">
           <template #default="{ row }">
-            <el-link type="primary" @click="goToDetail(row.id)">{{ row.name }}</el-link>
+            <div class="project-name-cell">
+              <el-link class="project-title-link" type="primary" @click="goToDetail(row.id)">{{ row.name }}</el-link>
+              <div class="project-meta"><span class="meta-label">客户</span><span class="meta-value">{{ row.customer }}</span></div>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column prop="customer" label="客户" width="150" />
         <el-table-column prop="budget" label="预算(万元)" width="120" align="right">
+          <template #default="{ row }">{{ row.budget }}</template>
+        </el-table-column>
+        <el-table-column label="状态/进度" width="180">
           <template #default="{ row }">
-            {{ row.budget }}
+            <div class="status-progress-cell">
+              <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag><el-progress class="project-progress" :percentage="row.progress" :status="getProgressStatus(row.progress)" />
+            </div>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column label="负责人/截止" width="150">
           <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
+            <div class="owner-deadline-cell">
+              <span class="owner-name">{{ row.manager || '未分配' }}</span><span class="deadline-text">{{ row.deadline || '未设置' }}</span>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column prop="progress" label="进度" width="150">
+        <el-table-column label="操作" width="104" align="center">
           <template #default="{ row }">
-            <el-progress :percentage="row.progress" :status="getProgressStatus(row.progress)" />
-          </template>
-        </el-table-column>
-        <el-table-column prop="manager" label="负责人" width="100" />
-        <el-table-column prop="deadline" label="截止日期" width="120" />
-        <el-table-column label="操作" width="180" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" :icon="View" @click="goToDetail(row.id)">
-              查看详情
-            </el-button>
-            <el-button link type="primary" :icon="Edit" @click="handleEdit(row.id)">
-              编辑
-            </el-button>
+            <div class="table-actions">
+              <el-tooltip content="查看详情" placement="top"><el-button class="table-action-button" text type="primary" :icon="View" aria-label="查看详情" @click="goToDetail(row.id)" /></el-tooltip>
+              <el-tooltip content="编辑" placement="top"><el-button class="table-action-button" text type="primary" :icon="Edit" aria-label="编辑" @click="handleEdit(row.id)" /></el-tooltip>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -95,7 +95,7 @@
 
 <!--
  Input: useProjectStore, useUserStore (from @/stores), vue-router
- Output: ProjectList component - 投标项目列表页面
+ Output: ProjectList component - 投标项目列表页面（搜索、表格布局、分页）
  Pos: src/views/Project/ - 视图层
  一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 -->
@@ -224,10 +224,6 @@ onMounted(async () => {
   margin-bottom: 0;
 }
 
-.table-card {
-  min-height: calc(100vh - 280px);
-}
-
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -241,10 +237,24 @@ onMounted(async () => {
 }
 
 .pagination {
-  margin-top: 16px;
+  margin-top: 18px;
   display: flex;
   justify-content: flex-end;
 }
+
+.project-table { border: 1px solid #eef2f0; border-radius: 10px; overflow: hidden; }
+.project-table :deep(.el-table__header-wrapper th.el-table__cell) { height: 48px; background: #f7faf8; color: #334155; font-weight: 600; }
+.project-table :deep(.el-table__cell) { padding: 14px 0; border-bottom-color: #edf2f0; vertical-align: middle; }
+.project-table :deep(.el-table__row:hover > td.el-table__cell) { background: #f8fbfa; }
+.project-name-cell { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.project-title-link { align-self: flex-start; justify-content: flex-start; } .project-title-link :deep(.el-link__inner) { white-space: normal; line-height: 1.45; text-align: left; font-weight: 600; color: #14796b; }
+.project-meta { display: inline-flex; align-items: center; gap: 6px; color: #64748b; font-size: 13px; line-height: 1.4; } .meta-label { padding: 1px 6px; border-radius: 4px; background: #eef2f6; color: #475569; font-size: 12px; } .deadline-text { color: #64748b; font-size: 13px; line-height: 1.4; }
+.status-progress-cell, .owner-deadline-cell { display: flex; flex-direction: column; gap: 8px; }
+.project-progress :deep(.el-progress__text) { min-width: 28px; color: #475569; }
+.owner-name { color: #334155; font-weight: 500; line-height: 1.4; }
+.table-actions { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.table-actions :deep(.table-action-button) { width: 30px; height: 30px; padding: 0; margin-left: 0; border-radius: 8px; background: #eef7f3; }
+.table-actions :deep(.table-action-button:hover) { background: #dcefe7; color: var(--brand-xiyu-logo-active, #1F553F); }
 
 /* 移动端响应式样式 */
 @media (max-width: 768px) {
@@ -286,18 +296,8 @@ onMounted(async () => {
     width: 100%;
   }
 
-  /* 表格移动端优化 */
-  .table-card :deep(.el-table) {
-    font-size: 12px;
-  }
-
-  .table-card :deep(.el-table__body-wrapper) {
-    overflow-x: auto;
-  }
-
-  .table-card :deep(.el-table__cell) {
-    padding: 8px 4px;
-  }
+  .table-card :deep(.el-table) { font-size: 12px; }
+  .table-card :deep(.el-table__cell) { padding: 8px 4px; }
 
   /* 分页移动端优化 */
   .pagination {
