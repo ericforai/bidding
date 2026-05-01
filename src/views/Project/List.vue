@@ -106,6 +106,7 @@ import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
 import { Search, Refresh, Plus, View, Edit } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { getProjectStatusText, getProjectStatusType } from './project-utils.js'
 
 const router = useRouter()
 const projectStore = useProjectStore()
@@ -146,29 +147,8 @@ watch(() => matchedProjects.value.length, (total) => {
   pagination.value.total = total
 }, { immediate: true })
 
-const getStatusType = (status) => {
-  const typeMap = {
-    drafting: 'info',
-    reviewing: 'warning',
-    bidding: 'primary',
-    won: 'success',
-    lost: 'danger',
-    pending: 'info'
-  }
-  return typeMap[status] || 'info'
-}
-
-const getStatusText = (status) => {
-  const textMap = {
-    drafting: '草稿中',
-    reviewing: '评审中',
-    bidding: '投标中',
-    won: '已中标',
-    lost: '未中标',
-    pending: '待立项'
-  }
-  return textMap[status] || status
-}
+const getStatusType = (status) => getProjectStatusType(status)
+const getStatusText = (status) => getProjectStatusText(status)
 
 const getProgressStatus = (progress) => {
   if (progress === 100) return 'success'

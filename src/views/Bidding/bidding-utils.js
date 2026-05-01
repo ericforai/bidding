@@ -153,6 +153,17 @@ export function formatTenderIndustry(value, missingText = '未提取') {
 export function buildWinProbabilityView(scoreValue) {
   const score = Number(scoreValue)
   const sourceScore = Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 0
+  if (sourceScore <= 0) {
+    return {
+      rate: 0,
+      percent: 0,
+      label: '暂无',
+      sourceScore,
+      hasScore: false,
+      tooltip: '暂无真实匹配评分，无法换算赢面参考'
+    }
+  }
+
   let rate = 1
   if (sourceScore >= 90) rate = 5
   else if (sourceScore >= 80) rate = 4
@@ -165,7 +176,8 @@ export function buildWinProbabilityView(scoreValue) {
     percent,
     label: `${percent}%`,
     sourceScore,
-    tooltip: '由投标匹配评分按星级分档换算，仅作投标概率参考，不是后端直接返回的独立概率'
+    hasScore: true,
+    tooltip: '由真实投标匹配评分按星级分档换算，仅作赢面参考，不是后端直接返回的中标概率'
   }
 }
 

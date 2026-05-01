@@ -9,7 +9,7 @@
 .page-header {
   margin-bottom: 20px;
   background: white;
-  padding: 16px 20px;
+  padding: 18px 22px;
   border-radius: 8px;
 }
 
@@ -31,7 +31,19 @@
 
 .header-actions {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 520px;
+}
+
+.header-actions .el-button {
+  margin-left: 0;
+  min-width: 92px;
+}
+
+.header-actions .secondary-action {
+  --el-button-font-weight: 500;
 }
 
 .header-actions .el-button.is-active {

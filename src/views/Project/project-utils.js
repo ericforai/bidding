@@ -1,5 +1,5 @@
-// Input: backend FeeDTO, AuditLogItemDTO, task status strings
-// Output: pure normalizer functions for project data transformations
+// Input: backend FeeDTO, AuditLogItemDTO, project/task status strings
+// Output: pure normalizer and display functions for project data transformations
 // Pos: src/views/Project/ - Project module utilities
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -33,6 +33,36 @@ const TASK_STATUS_FROM_API = {
   REVIEW: 'review',
   COMPLETED: 'done',
   CANCELLED: 'cancelled'
+}
+
+const PROJECT_STATUS_TEXT = {
+  INITIATED: '已立项',
+  PREPARING: '编制中',
+  REVIEWING: '评审中',
+  SEALING: '盖章中',
+  BIDDING: '投标中',
+  ARCHIVED: '已归档',
+  drafting: '草稿中',
+  reviewing: '评审中',
+  bidding: '投标中',
+  won: '已中标',
+  lost: '未中标',
+  pending: '待立项'
+}
+
+const PROJECT_STATUS_TYPE = {
+  INITIATED: 'info',
+  PREPARING: 'primary',
+  REVIEWING: 'warning',
+  SEALING: 'warning',
+  BIDDING: 'primary',
+  ARCHIVED: 'success',
+  drafting: 'info',
+  reviewing: 'warning',
+  bidding: 'primary',
+  won: 'success',
+  lost: 'danger',
+  pending: 'info'
 }
 
 const ACTION_TYPE_LABEL = {
@@ -93,6 +123,15 @@ export function normalizeAuditLogForTimeline(auditLog) {
     action: auditLog.detail || actionTypeLabel || '',
     time: auditLog.time || ''
   }
+}
+
+export function getProjectStatusText(status) {
+  if (status == null || status === '') return ''
+  return PROJECT_STATUS_TEXT[status] || status
+}
+
+export function getProjectStatusType(status) {
+  return PROJECT_STATUS_TYPE[status] || 'info'
 }
 
 /**
