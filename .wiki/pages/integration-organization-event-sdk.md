@@ -11,17 +11,18 @@ sources:
 backlinks:
   - _index
 created: 2026-04-28
-updated: 2026-04-28
-health_checked: 2026-04-29
+updated: 2026-04-30
+health_checked: 2026-04-30
 ---
 # 组织架构对接 - 客户事件库 SDK 方案
 
 ## 结论
 
-客户提供的《事件库SDK接入说明方案》不是传统组织架构 REST API 文档，而是事件总线接入规范。西域数智化投标管理平台应把组织架构对接设计为“事件驱动同步”：
+客户最新 PDF 口径明确：组织架构同步不是“事件 payload 直读主数据”，而是“事件库通知 + 接口回查主数据”。西域数智化投标管理平台应把组织架构对接设计为“事件驱动触发、主数据接口回查”的同步链路：
 
-- Java 接入优先嵌入客户 `ClientSDK`，通过 `@AcceptEvent` 消费组织、部门、人员、岗位/角色变更事件。
-- 若生产环境无法直接引入 SDK，则采用客户文档中的“非 Java 工程接入 SDK 方案”，由事件中转服务通过 HTTPS POST 推送到平台。
+- 事件库只负责通知变化，事件 `data` 仅携带 `deptId` 或 `userId`，不得作为部门/用户主数据来源。
+- 平台收到 `BaseOssDept` / `BaseOssUser` 事件后，必须通过客户组织架构主数据接口回查部门或人员详情，再更新平台用户、部门、角色映射和数据权限读模型。
+- 客户 `ClientSDK` jar 当前未提供 Maven 私服或离线包，第一版先实现端口适配、HTTP 中转接收、HTTP 回查测试入口和灾备入口；后续拿到 jar 后只补 SDK adapter，不改应用服务和纯核心。
 - 平台内部仍保持真实后端 API 单一路径：前端只读平台后端的用户、部门、权限配置接口，不直接连接客户事件库或 mock 数据。
 
 ## 客户接入规范摘要
@@ -40,26 +41,68 @@ health_checked: 2026-04-29
 | HTTP 接收参数 | `eventTopic:String`、`eventMessage:String` |
 | HTTP 发送 URL | `/api/event/sendEvent`、`/api/event/asyncSendEvent` |
 
+## 最新事件契约
+
+事件库 Topic 以客户 PDF 为准，第一版只支持组织架构基础数据变更通知：
+
+| Topic | 语义 | 事件 data 字段 | 后续动作 |
+|---|---|---|---|
+| `BaseOssDept` | 部门主数据发生变化 | `data.deptId` | 使用 `deptId` 回查部门主数据接口 |
+| `BaseOssUser` | 用户主数据发生变化 | `data.userId` | 使用 `userId` 回查用户主数据接口 |
+
+事件消息需要保留以下追踪与分发字段：
+
+| 字段 | 说明 |
+|---|---|
+| `traceId` | 调用链追踪 ID，进入事件日志和应用日志 |
+| `spanId` | 当前调用 span |
+| `parentId` | 父级调用 span |
+| `eventSource` | 事件来源系统 |
+| `eventTopic` | 事件 Topic，当前支持 `BaseOssDept`、`BaseOssUser` |
+| `time` | 事件发生或投递时间 |
+| `key` | 事件 key，用于辅助幂等和排查 |
+| `data.deptId` | 部门事件的部门 ID，仅用于回查 |
+| `data.userId` | 用户事件的用户 ID，仅用于回查 |
+
+示例：
+
+```json
+{
+  "traceId": "trace-20260430-001",
+  "spanId": "span-001",
+  "parentId": "parent-000",
+  "eventSource": "oss",
+  "eventTopic": "BaseOssUser",
+  "time": "2026-04-30T10:15:30+08:00",
+  "key": "user-10001",
+  "data": {
+    "userId": "10001"
+  }
+}
+```
+
+禁止把上述事件 `data` 当作主数据 JSON 展开解析。除 `deptId` / `userId` 外的用户姓名、手机号、邮箱、部门名称、上级部门、启停用、岗位角色等字段均以回查接口返回为准。
+
 ## 对平台现状的映射
 
 | 客户组织概念 | 平台落点 | 当前状态 | 处理策略 |
 |---|---|---|---|
-| 部门编码 | `DataScopeConfigPayload.DepartmentNode.departmentCode` | 已有配置 DTO | 新增持久化部门表或复用现有设置存储前需确认数据源 |
-| 部门名称 | `departmentName` / `User.departmentName` | 已有字段 | 组织事件落库后同步用户快照 |
-| 上级部门 | `parentDepartmentCode` | 已有 DTO 字段 | 保留树结构，用于数据权限和部门选择 |
-| 用户账号 | `User.username` | 已有唯一字段 | 建议映射客户侧工号/登录名，避免用姓名做主键 |
-| 用户姓名 | `User.fullName` | 已有字段 | 跟随人员事件增量更新 |
+| 部门 ID | `DataScopeConfigPayload.DepartmentNode.departmentCode` 或新增外部部门 ID | 已有配置 DTO | 从 `BaseOssDept.data.deptId` 回查部门主数据后写入 |
+| 部门名称 | `departmentName` / `User.departmentName` | 已有字段 | 以部门主数据接口返回为准，不从事件 payload 读取 |
+| 上级部门 | `parentDepartmentCode` | 已有 DTO 字段 | 以部门主数据接口返回为准，保留树结构 |
+| 用户 ID | `User.username` 或新增 external user id | 已有唯一字段 | 从 `BaseOssUser.data.userId` 回查用户主数据后映射 |
+| 用户姓名 | `User.fullName` | 已有字段 | 以用户主数据接口返回为准 |
 | 用户手机号 | `User.phone` | 已有字段 | 作为辅助匹配，不作为唯一主键 |
-| 用户邮箱 | `User.email` | 已有唯一字段 | 客户未提供时需生成不可登录占位邮箱或放宽约束 |
-| 角色/岗位 | `User.role` / `RoleProfile` | 已有 RBAC | 通过映射表转换为 `admin/manager/staff` 或具体 `RoleProfile` |
-| 启停用 | `User.enabled` | 已有字段 | 人员离职/停用事件置为 false，不物理删除 |
+| 用户邮箱 | `User.email` | 已有唯一字段 | 客户接口未提供时需生成不可登录占位邮箱或放宽约束 |
+| 角色/岗位 | `User.role` / `RoleProfile` | 已有 RBAC | 以用户主数据或岗位接口返回为准，通过映射表转换 |
+| 启停用 | `User.enabled` | 已有字段 | 以用户主数据状态为准，不物理删除 |
 
 ## 目标架构
 
 ```text
 客户组织系统
   |
-  | 组织/部门/人员变更事件
+  | BaseOssDept / BaseOssUser 变更通知
   v
 客户事件总线 / 事件库 SDK
   |
@@ -68,7 +111,7 @@ health_checked: 2026-04-29
   v
 西域后端 integration.organization
   |
-  | 解析、幂等、校验、差异计算
+  | 解析通知、幂等、校验、按 ID 回查主数据、差异计算
   v
 用户/部门/角色映射持久化
   |
@@ -85,15 +128,16 @@ health_checked: 2026-04-29
 backend/src/main/java/com/xiyu/bid/integration/organization/
 ├── domain/
 │   ├── OrganizationEvent.java              # 不可变事件值对象
-│   ├── OrganizationEventType.java          # DEPARTMENT_UPSERT / USER_UPSERT / DISABLE 等
+│   ├── OrganizationEventType.java          # BASE_OSS_DEPT / BASE_OSS_USER
 │   ├── OrganizationSyncCommand.java        # 纯核心输入命令
 │   ├── OrganizationSyncPlan.java           # 纯核心输出：待新增/更新/停用动作
-│   ├── OrganizationEventParser.java        # JSON -> 领域事件，返回 Result
+│   ├── OrganizationEventParser.java        # JSON -> ID 通知事件，返回 Result
 │   ├── OrganizationSyncPolicy.java         # 差异计算、角色映射、幂等规则
 │   └── OrganizationValidationResult.java
 ├── application/
-│   ├── OrganizationEventAppService.java    # 事务编排、查库、保存、审计
+│   ├── OrganizationEventAppService.java    # 事务编排、回查主数据、保存、审计
 │   ├── OrganizationEventGateway.java       # SDK/HTTP 入口统一调用接口
+│   ├── OrganizationMasterDataGateway.java  # 客户组织主数据回查端口
 │   └── OrganizationSyncAuditService.java   # 同步结果记录
 ├── controller/
 │   └── OrganizationEventWebhookController.java # HTTP 中转接收入口
@@ -113,26 +157,24 @@ backend/src/main/java/com/xiyu/bid/integration/organization/
 
 | 规则 | 说明 |
 |---|---|
-| 幂等键 | 优先使用客户事件唯一 ID；若无，使用 `eventTopic + traceId + payloadHash` |
-| 部门先于人员 | 人员所属部门不存在时，先创建“待确认部门”或将事件进入重试队列 |
+| 事件只作通知 | `data.deptId` / `data.userId` 只能触发回查，不能直接写用户或部门主数据 |
+| 幂等键 | 优先使用客户事件唯一 ID 或 `key`；若无，使用 `eventTopic + traceId + payloadHash` |
+| 回查失败可重试 | 主数据接口超时、404、字段缺失、鉴权失败均记录事件日志并进入重试/人工处理 |
+| 部门先于人员 | 用户回查结果中的所属部门不存在时，先回查部门或将事件进入重试队列 |
 | 不物理删除用户 | 离职、禁用、删除类事件统一映射为 `enabled=false` |
 | 角色默认降级 | 未识别岗位默认 `STAFF`，并记录告警，禁止自动升为管理员 |
 | 邮箱缺失处理 | 在确认客户字段前，采用临时占位策略必须经过产品/安全确认 |
 | 数据权限联动 | 部门变更后刷新用户数据范围快照，但项目授权不自动扩大 |
 | 失败可重放 | 解析失败、外键缺失、约束冲突均记录原始事件和失败原因，支持后台重放 |
 
-## 事件 Topic 设计建议
+## 事件 Topic 支持范围
 
-需与客户最终确认事件编码。建议平台先按内部语义预留映射表：
+旧文档中 `org.user.upsert`、`org.department.upsert` 等内部语义 Topic 已废弃，不再表示客户事件 payload 可以直接 upsert 平台用户或部门。当前按客户 PDF 只接收以下 Topic：
 
-| 内部语义 | 建议客户 Topic | 处理动作 |
+| 客户 Topic | 内部语义 | 处理动作 |
 |---|---|---|
-| 部门新增/更新 | `org.department.upsert` | upsert 部门树节点 |
-| 部门禁用/删除 | `org.department.disable` | 标记部门不可选，历史用户保留 |
-| 人员新增/更新 | `org.user.upsert` | upsert 用户基础信息与组织归属 |
-| 人员离职/停用 | `org.user.disable` | `User.enabled=false` |
-| 岗位/角色变更 | `org.user.role.changed` | 更新 `RoleProfile` 映射 |
-| 全量同步完成 | `org.sync.snapshot.completed` | 对账、生成差异报告 |
+| `BaseOssDept` | 部门变化通知 | 读取 `data.deptId`，回查部门主数据，再生成部门新增/更新/停用计划 |
+| `BaseOssUser` | 用户变化通知 | 读取 `data.userId`，回查用户主数据，再生成用户新增/更新/停用与角色映射计划 |
 
 ## HTTP 中转接口草案
 
@@ -145,8 +187,8 @@ Content-Type: application/json
 
 ```json
 {
-  "eventTopic": "org.user.upsert",
-  "eventMessage": "{\"userCode\":\"u001\",\"name\":\"张三\",\"departmentCode\":\"sales-east\"}"
+  "eventTopic": "BaseOssUser",
+  "eventMessage": "{\"traceId\":\"trace-20260430-001\",\"spanId\":\"span-001\",\"parentId\":\"parent-000\",\"eventSource\":\"oss\",\"eventTopic\":\"BaseOssUser\",\"time\":\"2026-04-30T10:15:30+08:00\",\"key\":\"user-10001\",\"data\":{\"userId\":\"10001\"}}"
 }
 ```
 
@@ -158,7 +200,8 @@ Content-Type: application/json
   "msg": "success",
   "timestamp": 1777359048000,
   "data": {
-    "eventId": "org.user.upsert:trace:hash",
+    "eventId": "BaseOssUser:trace:hash",
+    "masterDataLookup": "scheduled",
     "accepted": true
   }
 }
@@ -177,6 +220,8 @@ xiyu:
         service-name: XiyuBidService
         server-register-url: https://event-busserver.ehsy.com
         enable-register: true
+      master-data:
+        base-url: https://customer-master-data.example.com
       security:
         allowed-source-apps:
           - customer-org
@@ -191,19 +236,22 @@ xiyu:
 
 ### 阶段 0：客户澄清
 
-1. 获取组织架构事件 Topic 清单、样例 `eventMessage`、字段字典、事件唯一 ID 规则。
-2. 确认全量初始化方式：事件快照、批量文件、数据库视图或一次性 API。
-3. 确认人员唯一键：工号、AD 账号、手机号、邮箱哪个为主键。
-4. 确认部门删除语义：物理删除、停用、合并、迁移。
-5. 确认网络与安全：事件总线地址、生产域名、IP 白名单、HTTPS 证书、是否有签名。
+1. 获取 `ClientSDK` jar、Maven 私服地址或离线入库流程。
+2. 获取 YAPI 中 `BaseOssDept` / `BaseOssUser` 事件字段、部门主数据回查接口、用户主数据回查接口字段字典和样例。
+3. 确认生产地址：事件库地址、主数据接口地址、测试地址、灾备地址。
+4. 确认网络与安全：IP 白名单、HTTPS 证书、鉴权方式、签名方式、token 获取与过期策略。
+5. 确认全量初始化方式：主数据分页接口、事件快照、批量文件、数据库视图或一次性 API。
+6. 确认人员唯一键：工号、AD 账号、手机号、邮箱、`userId` 哪个为主键。
+7. 确认部门删除语义：物理删除、停用、合并、迁移。
 
 ### 阶段 1：最小闭环
 
-1. 新增组织事件 domain 纯核心与单元测试。
-2. 新增 HTTP webhook 接收入口，先不依赖 SDK，便于本地和联调环境验证。
-3. 新增事件日志表，记录 trace、source、topic、payload hash、处理状态。
-4. 新增部门持久化模型或确认复用现有配置存储。
-5. 将用户 upsert 接到 `User`、`RoleProfile`、数据权限配置读模型。
+1. 新增组织事件 domain 纯核心与单元测试，只解析 `BaseOssDept` / `BaseOssUser` 通知和 ID。
+2. 新增 HTTP webhook 接收入口，先不依赖 SDK，便于本地、联调、灾备和自动化测试验证。
+3. 新增客户主数据 HTTP 回查端口与测试入口，用 `deptId` / `userId` 拉取详情后再生成同步计划。
+4. 新增事件日志表，记录 trace、source、topic、key、payload hash、回查状态、处理状态。
+5. 新增部门持久化模型或确认复用现有配置存储。
+6. 将回查后的用户主数据接到 `User`、`RoleProfile`、数据权限配置读模型。
 
 ### 阶段 2：SDK 正式接入
 
@@ -211,6 +259,7 @@ xiyu:
 2. 增加 `OrganizationEventSdkConsumer`，用 `@AcceptEvent` 消费客户确认的 Topic。
 3. SDK 入口只做边界转换，统一委托 `OrganizationEventAppService`。
 4. 增加 SDK 开关，生产可选择 `sdk`，测试/灾备可切到 `webhook`。
+5. SDK adapter 只替换事件入口，不替换主数据回查端口、纯核心、幂等日志和同步计划。
 
 ### 阶段 3：对账与运维
 
@@ -228,14 +277,14 @@ xiyu:
 | 权限边界 | 若新增/修改带项目关联的用户可见范围，运行 `mvn test -Dtest=ProjectAccessGuardCoverageTest` |
 | API 契约 | `mvn test -Dtest=OrganizationEventWebhookControllerTest` |
 | 前端配置页 | `npx vitest run <相关测试文件>`、`npm run check:front-data-boundaries`、`npm run build` |
-| 联调 | 使用客户样例事件分别验证部门新增、人员新增、人员转部门、人员停用、未知角色 |
+| 联调 | 使用客户样例 `BaseOssDept` / `BaseOssUser` 事件验证接收、按 ID 回查、部门新增、人员新增、人员转部门、人员停用、未知角色 |
 
 ## 风险与决策
 
 | 风险 | 等级 | 建议 |
 |---|---|---|
-| 文档未提供组织事件 payload 字段 | 高 | 不进入开发排期前必须补齐样例与字段字典 |
-| SDK 只能从客户私服获取 | 中 | 提前开通 Maven 私服访问或提供离线 jar 入库流程 |
+| YAPI 未提供事件与主数据回查字段 | 高 | 不进入业务落库前必须补齐事件字段、用户接口、部门接口样例与字段字典 |
+| SDK jar 当前缺失 | 中 | 第一版使用 HTTP 入口完成端口适配、测试和灾备；拿到 jar 后只补 SDK adapter |
 | 事件无签名，仅 IP 白名单 | 中 | 至少增加来源应用白名单、trace 记录、可选共享密钥 |
 | 用户邮箱唯一约束与客户字段不匹配 | 高 | 设计 external_user_id，并评估用户表唯一约束迁移 |
 | 部门变更影响项目数据权限 | 高 | 先更新组织归属，不自动扩大项目可见范围 |
@@ -243,11 +292,13 @@ xiyu:
 
 ## 待客户确认问题
 
-1. 组织架构相关事件 Topic 和每个 Topic 的 `eventMessage` JSON 样例是什么？
-2. `eventMessage` 是否包含事件 ID、事件时间、操作类型、版本号？
-3. 人员唯一标识是什么？是否可能变更？
-4. 邮箱、手机号是否必填且唯一？
-5. 部门是否存在排序、区域、成本中心、业务线等扩展字段？
-6. 角色/岗位如何映射到平台 `admin/manager/staff` 与自定义 `RoleProfile`？
-7. 是否要求平台向客户系统回传同步结果事件？
-8. 生产事件总线地址、测试事件总线地址、IP 白名单和证书要求是什么？
+1. `ClientSDK` jar 如何获取？是否提供 Maven 私服、账号、版本号和离线包？
+2. YAPI 中 `BaseOssDept`、`BaseOssUser` 的完整字段、样例和错误码是什么？
+3. 部门主数据回查接口、用户主数据回查接口的地址、入参、返回字段、分页和错误码是什么？
+4. 生产事件库地址、主数据接口生产地址、测试地址、灾备地址是什么？
+5. IP 白名单、HTTPS 证书、鉴权方式、签名方式、token 获取与过期策略是什么？
+6. 人员唯一标识是什么？`userId` 是否稳定，是否可能合并或变更？
+7. 邮箱、手机号是否必填且唯一？
+8. 部门是否存在排序、区域、成本中心、业务线等扩展字段？
+9. 角色/岗位如何映射到平台 `admin/manager/staff` 与自定义 `RoleProfile`？
+10. 是否要求平台向客户系统回传同步结果事件？

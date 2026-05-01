@@ -51,8 +51,8 @@ class OrganizationEventWebhookControllerTest {
     @DisplayName("POST returns customer code/msg/timestamp/data envelope")
     void post_returnsCustomerEnvelope() throws Exception {
         OrganizationEventWebhookRequest request = new OrganizationEventWebhookRequest(
-                "org.user.upsert",
-                "{\"userCode\":\"u001\"}"
+                "BaseOssUser",
+                "{\"traceId\":\"trace-1\",\"spanId\":\"span-1\",\"parentId\":\"parent-1\",\"eventSource\":\"customer-org\",\"eventTopic\":\"BaseOssUser\",\"time\":\"2026-04-30T10:15:30+08:00\",\"key\":\"event-1\",\"data\":{\"userId\":\"10001\"}}"
         );
         OrganizationEventWebhookResponse response = new OrganizationEventWebhookResponse(
                 "200",
@@ -81,8 +81,8 @@ class OrganizationEventWebhookControllerTest {
     @DisplayName("POST rejects requests with missing or invalid signature")
     void post_invalidSignature_returns401() throws Exception {
         OrganizationEventWebhookRequest request = new OrganizationEventWebhookRequest(
-                "org.user.upsert",
-                "{\"userCode\":\"u001\"}"
+                "BaseOssUser",
+                "{\"traceId\":\"trace-1\",\"spanId\":\"span-1\",\"parentId\":\"parent-1\",\"eventSource\":\"customer-org\",\"eventTopic\":\"BaseOssUser\",\"time\":\"2026-04-30T10:15:30+08:00\",\"key\":\"event-1\",\"data\":{\"userId\":\"10001\"}}"
         );
         when(signatureVerifier.valid("trace-1", "customer-org", request.eventMessage(), null)).thenReturn(false);
 

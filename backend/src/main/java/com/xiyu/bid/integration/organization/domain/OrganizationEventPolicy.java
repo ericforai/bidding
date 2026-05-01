@@ -1,14 +1,9 @@
 package com.xiyu.bid.integration.organization.domain;
 
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.Set;
 
 public final class OrganizationEventPolicy {
-
-    private static final String STAFF = "staff";
-    private static final String MANAGER = "manager";
-    private static final String ADMIN = "admin";
 
     private OrganizationEventPolicy() {
     }
@@ -26,20 +21,13 @@ public final class OrganizationEventPolicy {
         if (isBlank(envelope.message())) {
             return OrganizationEventValidation.invalid("事件消息内容不能为空");
         }
-        return typeFromTopic(envelope.topic())
+        return OrganizationSyncPolicy.topicFromEventTopic(envelope.topic())
                 .map(OrganizationEventValidation::ok)
                 .orElseGet(() -> OrganizationEventValidation.invalid("不支持的组织事件主题"));
     }
 
     public static String mapRoleCode(String externalRoleCode, Set<String> adminRoleCodes, Set<String> managerRoleCodes) {
-        String normalized = normalize(externalRoleCode);
-        if (adminRoleCodes.contains(normalized)) {
-            return ADMIN;
-        }
-        if (managerRoleCodes.contains(normalized)) {
-            return MANAGER;
-        }
-        return STAFF;
+        return OrganizationSyncPolicy.mapRoleCode(externalRoleCode, adminRoleCodes, managerRoleCodes);
     }
 
     public static OrganizationUserSyncPlan planUserSync(
@@ -50,7 +38,7 @@ public final class OrganizationEventPolicy {
         String username = firstPresent(incoming.username(), incoming.externalUserId());
         String fullName = firstPresent(incoming.fullName(), username);
         String email = firstPresent(incoming.email(), username + "@external-org.local");
-        String roleCode = mapRoleCode(incoming.externalRoleCode(), adminRoleCodes, managerRoleCodes);
+        String roleCode = OrganizationSyncPolicy.mapRoleCode(incoming.externalRoleCode(), adminRoleCodes, managerRoleCodes);
         return new OrganizationUserSyncPlan(
                 normalize(username),
                 fullName.trim(),
@@ -61,13 +49,6 @@ public final class OrganizationEventPolicy {
                 roleCode,
                 incoming.enabled()
         );
-    }
-
-    private static java.util.Optional<OrganizationEventType> typeFromTopic(String topic) {
-        String normalized = normalize(topic);
-        return Arrays.stream(OrganizationEventType.values())
-                .filter(type -> type.topic().equals(normalized))
-                .findFirst();
     }
 
     private static String firstPresent(String preferred, String fallback) {

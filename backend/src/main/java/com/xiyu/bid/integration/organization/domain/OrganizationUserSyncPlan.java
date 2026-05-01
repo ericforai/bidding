@@ -8,6 +8,19 @@ public record OrganizationUserSyncPlan(
         String departmentCode,
         String departmentName,
         String roleCode,
-        boolean enabled
+        boolean enabled,
+        boolean deleteUser
 ) {
+    public OrganizationUserSyncPlan(
+            String username,
+            String fullName,
+            String email,
+            String phone,
+            String departmentCode,
+            String departmentName,
+            String roleCode,
+            boolean enabled
+    ) {
+        this(username, fullName, email, phone, departmentCode, departmentName, roleCode, enabled, false);
+    }
 }

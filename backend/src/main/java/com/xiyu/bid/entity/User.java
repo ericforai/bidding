@@ -72,6 +72,18 @@ public class User {
     @Column(name = "wecom_user_id", length = 64)
     private String wecomUserId;
 
+    @Column(name = "external_org_user_id", length = 128)
+    private String externalOrgUserId;
+
+    @Column(name = "external_org_source_app", length = 100)
+    private String externalOrgSourceApp;
+
+    @Column(name = "last_org_event_key", length = 128)
+    private String lastOrgEventKey;
+
+    @Column(name = "last_org_synced_at")
+    private LocalDateTime lastOrgSyncedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
