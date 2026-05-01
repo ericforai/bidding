@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Input: launchd command argument, optional runtime environment variables
-# Output: launchd-managed dev service lifecycle actions, child-process cleanup, current-code restart, and bounded status checks
+# Output: launchd-managed sidecar/backend/frontend lifecycle actions, child-process cleanup, current-code restart, and bounded status checks
 # Pos: scripts/ - macOS launchd wrapper for dev-services watchdog
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -26,13 +26,18 @@ FALLBACK_REDIS_PORT="16379"
 REDIS_PORT="${REDIS_PORT:-}"
 REDIS_DB="${REDIS_DB:-0}"
 SPRING_DATA_REDIS_DATABASE="${SPRING_DATA_REDIS_DATABASE:-$REDIS_DB}"
+SIDECAR_HOST="${SIDECAR_HOST:-127.0.0.1}"
+SIDECAR_PORT="${SIDECAR_PORT:-8000}"
+SIDECAR_SHARED_KEY_FILE="${SIDECAR_SHARED_KEY_FILE:-$RUNTIME_DIR/sidecar.shared-key}"
 PLIST_PATH="${HOME}/Library/LaunchAgents/${LAUNCHD_LABEL}.plist"
 LAUNCHD_STDOUT_LOG="$RUNTIME_DIR/launchd.out.log"
 LAUNCHD_STDERR_LOG="$RUNTIME_DIR/launchd.err.log"
 BACKEND_PORT="${BACKEND_PORT:-18080}"
 FRONTEND_PORT="${FRONTEND_PORT:-1314}"
+SIDECAR_HEALTH_URL="http://${SIDECAR_HOST}:${SIDECAR_PORT}/health"
 FRONTEND_HEALTH_SCRIPT="$ROOT_DIR/scripts/dev-frontend-health.sh"
 DEV_SERVICES_SCRIPT="$ROOT_DIR/scripts/dev-services.sh"
+SIDECAR_START_TIMEOUT_SECONDS="${SIDECAR_START_TIMEOUT_SECONDS:-60}"
 BACKEND_START_TIMEOUT_SECONDS="${BACKEND_START_TIMEOUT_SECONDS:-300}"
 FRONTEND_START_TIMEOUT_SECONDS="${FRONTEND_START_TIMEOUT_SECONDS:-90}"
 CURL_CONNECT_TIMEOUT_SECONDS="${CURL_CONNECT_TIMEOUT_SECONDS:-1}"
@@ -52,8 +57,10 @@ Environment variables:
   DB_USERNAME/DB_PASSWORD    MySQL credentials
   REDIS_HOST/REDIS_PORT      Redis connection target
   REDIS_DB                   Redis logical database for this agent
-  BACKEND_START_TIMEOUT_SECONDS/FRONTEND_START_TIMEOUT_SECONDS
-                             Startup wait budgets (defaults: 300/90)
+  SIDECAR_HOST/SIDECAR_PORT  Document converter sidecar bind target
+  SIDECAR_SHARED_KEY_FILE    Local runtime file used by dev-services.sh for sidecar auth
+  SIDECAR_START_TIMEOUT_SECONDS/BACKEND_START_TIMEOUT_SECONDS/FRONTEND_START_TIMEOUT_SECONDS
+                             Startup wait budgets (defaults: 60/300/90)
   CURL_CONNECT_TIMEOUT_SECONDS/CURL_MAX_TIME_SECONDS
                              Health probe network budgets (defaults: 1/3)
 EOF
@@ -123,6 +130,8 @@ write_plist() {
     <string>${WATCHDOG_INTERVAL_SECONDS}</string>
     <key>BACKEND_START_TIMEOUT_SECONDS</key>
     <string>${BACKEND_START_TIMEOUT_SECONDS}</string>
+    <key>SIDECAR_START_TIMEOUT_SECONDS</key>
+    <string>${SIDECAR_START_TIMEOUT_SECONDS}</string>
     <key>FRONTEND_START_TIMEOUT_SECONDS</key>
     <string>${FRONTEND_START_TIMEOUT_SECONDS}</string>
     <key>CURL_CONNECT_TIMEOUT_SECONDS</key>
@@ -153,6 +162,12 @@ write_plist() {
     <string>${BACKEND_PORT}</string>
     <key>FRONTEND_PORT</key>
     <string>${FRONTEND_PORT}</string>
+    <key>SIDECAR_HOST</key>
+    <string>${SIDECAR_HOST}</string>
+    <key>SIDECAR_PORT</key>
+    <string>${SIDECAR_PORT}</string>
+    <key>SIDECAR_SHARED_KEY_FILE</key>
+    <string>${SIDECAR_SHARED_KEY_FILE}</string>
   </dict>
   <key>StandardOutPath</key>
   <string>${LAUNCHD_STDOUT_LOG}</string>
@@ -182,11 +197,7 @@ install_service() {
 }
 
 start_service() {
-  if [[ ! -f "$PLIST_PATH" ]]; then
-    echo "plist not found: $PLIST_PATH" >&2
-    echo "run: scripts/dev-services-launchd.sh install" >&2
-    exit 1
-  fi
+  write_plist
   if is_loaded; then
     launchctl bootout "$(service_target)" >/dev/null 2>&1 || true
   fi
@@ -209,8 +220,10 @@ stop_service() {
 status_service() {
   local bstate="down"
   local fstate="down"
+  local sstate="down"
   local bhttp="down"
   local fhttp="down"
+  local shttp="down"
 
   if is_loaded; then
     echo "launchd: up ($(service_target))"
@@ -229,13 +242,20 @@ status_service() {
   if lsof -nP -iTCP:"$FRONTEND_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
     fstate="up(port=$FRONTEND_PORT)"
   fi
+  if lsof -nP -iTCP:"$SIDECAR_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+    sstate="up(port=$SIDECAR_PORT)"
+  fi
   if curl_health "http://127.0.0.1:${BACKEND_PORT}/actuator/health"; then
     bhttp="ok"
+  fi
+  if curl_health "$SIDECAR_HEALTH_URL"; then
+    shttp="ok"
   fi
   if ROOT_DIR="$ROOT_DIR" FRONTEND_URL="http://127.0.0.1:${FRONTEND_PORT}/" BACKEND_PORT="$BACKEND_PORT" "$FRONTEND_HEALTH_SCRIPT" >/dev/null 2>&1; then
     fhttp="ok"
   fi
 
+  echo "sidecar: $sstate http=$shttp url=$SIDECAR_HEALTH_URL"
   echo "backend: $bstate http=$bhttp url=http://127.0.0.1:${BACKEND_PORT}/actuator/health"
   echo "frontend: $fstate http=$fhttp url=http://127.0.0.1:${FRONTEND_PORT}/"
 }

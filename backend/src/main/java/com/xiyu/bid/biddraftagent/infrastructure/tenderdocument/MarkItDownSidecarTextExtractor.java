@@ -1,5 +1,5 @@
-// Input: 原始文件字节 + 文件名；通过 HTTP 调用 MarkItDown sidecar 做 doc→markdown 转换
-// Output: ExtractedTenderDocument（含 markdown 正文 + 结构化元数据）；sidecar 不可用时降级到 PoiPdf 提取器
+// Input: 原始文件字节、文件名和可选共享密钥；通过 HTTP 调用 MarkItDown sidecar 做 doc→markdown 转换
+// Output: ExtractedTenderDocument（含 markdown 正文 + 结构化元数据）；带 X-Sidecar-Key 鉴权，sidecar 不可用时降级到 PoiPdf 提取器
 // Pos: biddraftagent/infrastructure/tenderdocument — 带降级的 sidecar HTTP 适配器
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -36,19 +36,24 @@ import org.springframework.web.client.RestTemplate;
 @Slf4j
 public class MarkItDownSidecarTextExtractor implements TenderDocumentTextExtractor {
 
+    private static final String SIDECAR_KEY_HEADER = "X-Sidecar-Key";
+
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final String sidecarUrl;
+    private final String sidecarSharedKey;
     private final PoiPdfTenderDocumentTextExtractor fallbackExtractor;
 
     public MarkItDownSidecarTextExtractor(
             @Qualifier("markItDownSidecarRestTemplate") RestTemplate restTemplate,
             ObjectMapper objectMapper,
             @Value("${app.converter.sidecar-url:http://localhost:8000}") String sidecarUrl,
+            @Value("${app.converter.sidecar-shared-key:${APP_CONVERTER_SIDECAR_SHARED_KEY:${SIDECAR_SHARED_KEY:}}}") String sidecarSharedKey,
             PoiPdfTenderDocumentTextExtractor fallbackExtractor) {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
         this.sidecarUrl = sidecarUrl;
+        this.sidecarSharedKey = sidecarSharedKey == null ? "" : sidecarSharedKey.trim();
         this.fallbackExtractor = fallbackExtractor;
     }
 
@@ -58,6 +63,9 @@ public class MarkItDownSidecarTextExtractor implements TenderDocumentTextExtract
             log.info("Sending document {} to MarkItDown sidecar...", fileName);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            if (!sidecarSharedKey.isBlank()) {
+                headers.set(SIDECAR_KEY_HEADER, sidecarSharedKey);
+            }
 
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("file", new ByteArrayResource(content) {

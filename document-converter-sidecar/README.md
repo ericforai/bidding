@@ -41,6 +41,9 @@ The service will be available at `http://127.0.0.1:8000`.
 | `SIDECAR_SHARED_KEY` | *(unset)* | Shared secret enforced via `X-Sidecar-Key` request header. **Must be set in production.** When unset a warning is logged and auth is skipped (dev convenience). |
 | `SIDECAR_MAX_UPLOAD_MB` | `30` | Maximum accepted upload size in megabytes. Requests exceeding this limit receive HTTP 413. Matches the Java-side `MarkItDownSidecarTextExtractor` limit. |
 
+仓库级 `scripts/dev-services.sh` 会在本地运行时生成 `.runtime/dev-services/sidecar.shared-key`，
+并同时注入 sidecar 与 Java 后端；不要把该密钥写入源码或提交到 Git。
+
 ---
 
 ## API contract
