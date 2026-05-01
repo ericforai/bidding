@@ -42,7 +42,7 @@ class ProjectDocumentWorkflowService {
     }
 
     ProjectDocumentDTO createProjectDocument(Long projectId, ProjectDocumentCreateRequest request) {
-        guardService.requireProject(projectId);
+        guardService.requireWorkflowMutationProject(projectId);
         ProjectDocument document = ProjectDocument.builder()
                 .projectId(projectId)
                 .name(request.getName().trim())
@@ -61,7 +61,7 @@ class ProjectDocumentWorkflowService {
     }
 
     void deleteProjectDocument(Long projectId, Long documentId) {
-        guardService.requireProject(projectId);
+        guardService.requireWorkflowMutationProject(projectId);
         ProjectDocument document = guardService.requireDocument(projectId, documentId);
         projectDocumentRepository.delete(document);
         projectDocumentBindingGateway.onDocumentDeleted(document);

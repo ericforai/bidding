@@ -29,14 +29,53 @@ class ProjectWorkflowGuardServiceTest {
     private ProjectWorkflowGuardService projectWorkflowGuardService;
 
     @Test
-    void shouldThrowExceptionWhenProjectIsInitiated() {
+    void requireProject_ShouldAllowReadForInitiatedProject() {
         Project project = Project.builder()
                 .id(1L)
                 .status(Project.Status.INITIATED)
                 .build();
         when(projectRepository.findById(anyLong())).thenReturn(Optional.of(project));
 
-        assertThatThrownBy(() -> projectWorkflowGuardService.requireProject(1L))
+        Project result = projectWorkflowGuardService.requireProject(1L);
+
+        assertThat(result.getStatus()).isEqualTo(Project.Status.INITIATED);
+    }
+
+    @Test
+    void requireProject_ShouldAllowReadForArchivedProject() {
+        Project project = Project.builder()
+                .id(1L)
+                .status(Project.Status.ARCHIVED)
+                .build();
+        when(projectRepository.findById(anyLong())).thenReturn(Optional.of(project));
+
+        Project result = projectWorkflowGuardService.requireProject(1L);
+
+        assertThat(result.getStatus()).isEqualTo(Project.Status.ARCHIVED);
+    }
+
+    @Test
+    void requireWorkflowMutationProject_ShouldAllowInitiatedProject() {
+        Project project = Project.builder()
+                .id(1L)
+                .status(Project.Status.INITIATED)
+                .build();
+        when(projectRepository.findById(anyLong())).thenReturn(Optional.of(project));
+
+        Project result = projectWorkflowGuardService.requireWorkflowMutationProject(1L);
+
+        assertThat(result.getStatus()).isEqualTo(Project.Status.INITIATED);
+    }
+
+    @Test
+    void requireWorkflowMutationProject_ShouldRejectArchivedProject() {
+        Project project = Project.builder()
+                .id(1L)
+                .status(Project.Status.ARCHIVED)
+                .build();
+        when(projectRepository.findById(anyLong())).thenReturn(Optional.of(project));
+
+        assertThatThrownBy(() -> projectWorkflowGuardService.requireWorkflowMutationProject(1L))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("not in a valid state");
     }
