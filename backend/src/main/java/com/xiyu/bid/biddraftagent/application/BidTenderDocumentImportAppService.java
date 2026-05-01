@@ -23,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +33,7 @@ public class BidTenderDocumentImportAppService {
     private static final String DOCUMENT_CATEGORY = "TENDER_FILE";
     private static final String LINKED_ENTITY_TYPE = "TENDER";
     private static final String PARSE_SUCCESS_MESSAGE = "招标文件已解析，已更新招标要求快照";
+    private static final String REUSE_SUCCESS_MESSAGE = "已复用已解析的招标文件";
 
     private final ProjectAccessScopeService projectAccessScopeService;
     private final ProjectRepository projectRepository;
@@ -79,6 +81,20 @@ public class BidTenderDocumentImportAppService {
                 profile
         );
         return buildParseResult(persistedDocument, tender.getId(), extracted.textLength(), profile);
+    }
+
+    public Optional<BidTenderDocumentParseDTO> latestParsedTenderDocument(Long projectId) {
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
+        return documentSnapshotRepository.findTopByProjectIdOrderByCreatedAtDescIdDesc(projectId)
+                .map(snapshot -> {
+                    ProjectDocument document = projectDocumentRepository.findById(snapshot.getProjectDocumentId())
+                            .orElse(null);
+                    TenderRequirementProfile profile = jsonCodec.fromJson(
+                            snapshot.getProfileJson(),
+                            TenderRequirementProfile.class
+                    );
+                    return buildReuseResult(snapshot, document, profile);
+                });
     }
 
     private void validateFile(MultipartFile file) {
@@ -214,6 +230,39 @@ public class BidTenderDocumentImportAppService {
                 .requirementProfile(profile)
                 .message(PARSE_SUCCESS_MESSAGE)
                 .build();
+    }
+
+    private BidTenderDocumentParseDTO buildReuseResult(
+            BidTenderDocumentSnapshot snapshot,
+            ProjectDocument document,
+            TenderRequirementProfile profile
+    ) {
+        return BidTenderDocumentParseDTO.builder()
+                .document(BidTenderDocumentDTO.builder()
+                        .id(snapshot.getProjectDocumentId())
+                        .projectId(snapshot.getProjectId())
+                        .tenderId(snapshot.getTenderId())
+                        .name(firstNonBlank(document == null ? null : document.getName(), snapshot.getFileName()))
+                        .fileType(firstNonBlank(
+                                document == null ? null : document.getFileType(),
+                                TenderDocumentFileType.toProjectDocumentType(snapshot.getFileName(), snapshot.getContentType())
+                        ))
+                        .size(document == null ? null : document.getSize())
+                        .fileUrl(firstNonBlank(document == null ? null : document.getFileUrl(), snapshot.getFileUrl()))
+                        .snapshotId(snapshot.getId())
+                        .extractedTextLength(textLength(snapshot.getExtractedText()))
+                        .build())
+                .requirementProfile(profile)
+                .message(REUSE_SUCCESS_MESSAGE)
+                .build();
+    }
+
+    private String firstNonBlank(String preferred, String fallback) {
+        return preferred == null || preferred.isBlank() ? fallback : preferred;
+    }
+
+    private int textLength(String text) {
+        return text == null ? 0 : text.length();
     }
 
     private String formatSize(long bytes) {

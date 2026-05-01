@@ -35,6 +35,16 @@ public class ProjectTenderBreakdownController {
         return ResponseEntity.ok(ApiResponse.success(readinessService.readiness(projectId)));
     }
 
+    @GetMapping("/latest")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<BidTenderDocumentParseDTO>> latestParsedTenderBreakdown(
+            @PathVariable Long projectId) {
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
+        return importAppService.latestParsedTenderDocument(projectId)
+                .map(result -> ResponseEntity.ok(ApiResponse.success(result.getMessage(), result)))
+                .orElseGet(() -> ResponseEntity.ok(ApiResponse.success("尚未解析招标文件", null)));
+    }
+
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<BidTenderDocumentParseDTO>> parseTenderBreakdown(

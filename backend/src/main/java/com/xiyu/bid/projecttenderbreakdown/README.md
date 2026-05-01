@@ -5,7 +5,7 @@
 ## 职责说明
 
 `projecttenderbreakdown` 承载项目详情页“解析招标文件”的项目级入口。
-它负责权限守卫、解析就绪检查和 HTTP 边界编排，并把上传文件交给现有招标文件导入服务写入
+它负责权限守卫、解析就绪检查、最新解析结果复用和 HTTP 边界编排，并把上传文件交给现有招标文件导入服务写入
 `bid_tender_document_snapshots` 与 `bid_requirement_items`。
 
 本模块保持 API 路径 `/api/projects/{projectId}/tender-breakdown` 不变。解析结果后续可被任务拆解和
@@ -23,11 +23,13 @@ AI 生成初稿共同复用，因此不再归属于 `biddraftagent` 的 controll
 | Method | Path | 用途 |
 |--------|------|------|
 | `GET` | `/api/projects/{projectId}/tender-breakdown/readiness` | 检查当前用户项目权限和 DeepSeek 解析配置是否就绪 |
+| `GET` | `/api/projects/{projectId}/tender-breakdown/latest` | 返回项目最新已解析招标文件快照；无快照时返回空数据，前端再进入上传解析 |
 | `POST` | `/api/projects/{projectId}/tender-breakdown` | 上传并解析项目级招标文件，写入快照和需求项 |
 
 ## 复用关系
 
 - 上传解析仍复用 `BidTenderDocumentImportAppService.parseTenderDocument()`，避免复制文件保存、正文提取、需求项入库逻辑。
+- 最新快照查询复用 `BidTenderDocumentImportAppService.latestParsedTenderDocument()`，只读取已入库的解析快照，不重新读取或上传文件。
 - DeepSeek 配置检查复用 `biddraftagent.application.TenderIntakeConfigurationReadiness` 端口和 readiness DTO，避免 AI 基础设施反向依赖本项目入口模块。
 - 模块只做项目级入口编排，不承担招标要求抽取规则、任务生成规则或数据库实体转换。
 - 解析入口是独立项目能力：任务拆解和 AI 生成初稿都可以消费解析结果，但彼此不互相阻塞。

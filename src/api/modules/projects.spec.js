@@ -1,5 +1,5 @@
 // Input: projects API module with mocked HTTP client
-// Output: project task decomposition endpoint coverage
+// Output: project task decomposition and tender breakdown endpoint coverage
 // Pos: src/api/modules/ - API module unit tests
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -64,6 +64,17 @@ describe('projectsApi', () => {
     await projectsApi.getTenderBreakdownReadiness(12)
 
     expect(httpClient.get).toHaveBeenCalledWith('/api/projects/12/tender-breakdown/readiness', { silentError: true })
+  })
+
+  it('getLatestTenderBreakdown(): fetches the reusable parsed tender breakdown snapshot', async () => {
+    httpClient.get.mockResolvedValue({
+      success: true,
+      data: { document: { snapshotId: 601 } },
+    })
+
+    await projectsApi.getLatestTenderBreakdown(12)
+
+    expect(httpClient.get).toHaveBeenCalledWith('/api/projects/12/tender-breakdown/latest', { silentError: true })
   })
 
   it('decomposeTasks(): rejects non-numeric project IDs before request', async () => {
