@@ -1,5 +1,6 @@
 import { ElMessageBox } from 'element-plus'
 import { taskTemplates } from './constants.js'
+import { normalizeTaskStatusForApi } from '@/views/Project/project-utils'
 
 export function useProjectDetailTaskActions(context) {
   const { route, userStore, projectStore, projectsApi, isApiProject, message, state, workflow } = context
@@ -158,7 +159,7 @@ export function useProjectDetailTaskActions(context) {
       return
     }
     try {
-      const result = await projectsApi.updateTaskStatus(route.params.id, task?.id, ({ todo: 'TODO', doing: 'IN_PROGRESS', review: 'REVIEW', done: 'COMPLETED' }[newStatus] || 'TODO'))
+      const result = await projectsApi.updateTaskStatus(route.params.id, task?.id, normalizeTaskStatusForApi(newStatus))
       if (!result?.success || !result?.data) throw new Error(result?.message || '任务状态更新失败')
       Object.assign(task, result.data)
       message.success('任务状态已更新')
