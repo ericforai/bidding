@@ -24,6 +24,13 @@ export function useProjectDetailTaskActions(context) {
     readiness.message
     || 'DeepSeek API Key 未配置。请管理员到系统设置 → AI 模型配置中填写 DeepSeek provider key，或在服务端设置 DEEPSEEK_API_KEY 后重启。'
   )
+  const hasReusableTenderBreakdown = (result = {}) => Boolean(result?.document?.snapshotId)
+  const resolveTenderBreakdownReuseMessage = (result = {}) => {
+    const documentName = result?.document?.name
+    return documentName
+      ? `已复用已解析的招标文件「${documentName}」，可直接拆解任务或生成标书初稿`
+      : '已复用已解析的招标文件，可直接拆解任务或生成标书初稿'
+  }
 
   const getTaskTemplateByProject = (project) => {
     const industry = project?.industry?.toLowerCase() || ''
@@ -68,7 +75,32 @@ export function useProjectDetailTaskActions(context) {
     state.scoreDraftDialogVisible.value = true
   }
 
-  const handleOpenTenderBreakdown = () => {
+  const handleOpenTenderBreakdown = async () => {
+    if (!state.project.value) {
+      message.warning('项目信息未加载')
+      return
+    }
+    if (!isApiProject.value) {
+      message.warning('当前项目不支持解析招标文件')
+      return
+    }
+    if (state.tenderBreakdownParsing.value) {
+      message.warning('正在解析招标文件，请稍候')
+      return
+    }
+    if (typeof projectsApi.getLatestTenderBreakdown === 'function') {
+      try {
+        const latestResult = await projectsApi.getLatestTenderBreakdown(route.params.id)
+        if (latestResult?.success && hasReusableTenderBreakdown(latestResult.data)) {
+          pushActivity(`复用了已解析招标文件「${latestResult.data.document.name || '招标文件'}」`)
+          message.success(resolveTenderBreakdownReuseMessage(latestResult.data))
+          return
+        }
+      } catch (error) {
+        message.error(resolveErrorMessage(error, '读取已解析招标文件失败'))
+        return
+      }
+    }
     state.tenderBreakdownDialogVisible.value = true
   }
 

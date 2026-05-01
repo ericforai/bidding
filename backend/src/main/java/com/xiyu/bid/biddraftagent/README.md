@@ -34,7 +34,7 @@
 
 ## 招标文件到标书初稿链路
 
-1. `POST /api/projects/{projectId}/bid-agent/tender-documents` 上传 `.doc`、`.docx` 或文本型 `.pdf` 招标文件。项目详情页独立解析入口由 `projecttenderbreakdown` 模块承载，底层复用本模块的导入应用服务。
+1. `POST /api/projects/{projectId}/bid-agent/tender-documents` 上传 `.doc`、`.docx` 或文本型 `.pdf` 招标文件。项目详情页独立解析入口由 `projecttenderbreakdown` 模块承载，底层复用本模块的导入应用服务；再次点击解析入口时可通过最新快照查询复用已解析结果，不需要重复上传。
 2. `infrastructure/tenderdocument` 保存文件并提取正文；扫描件 PDF 会显式提示需要 OCR/人工处理。
 3. `infrastructure/openai` 使用 structured outputs 拆解项目名称、预算、地区、行业、发布日期、截止时间、招标范围、资格要求、技术要求、商务要求、评分标准、必须材料和风险点；无法从正文确认的结构化字段保持为空。
 4. 解析结果写入 `bid_tender_document_snapshots`、`bid_requirement_items`，并在 Tender 对应字段为空时补充标题、采购人、预算、地区、行业、发布日期、截止时间、描述和标签。
@@ -45,6 +45,7 @@
 ## 关键 API
 
 - `POST /api/projects/{projectId}/bid-agent/tender-documents`
+- `GET /api/projects/{projectId}/tender-breakdown/latest`
 - `POST /api/projects/{projectId}/bid-agent/runs`
 - `GET /api/projects/{projectId}/bid-agent/runs/{runId}`
 - `POST /api/projects/{projectId}/bid-agent/runs/{runId}/apply`
