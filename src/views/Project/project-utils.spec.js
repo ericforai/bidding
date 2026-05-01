@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   normalizeFeeForDisplay,
   normalizeAuditLogForTimeline,
+  getProjectStatusText,
+  getProjectStatusType,
   normalizeTaskStatusForApi,
   normalizeTaskStatusFromApi
 } from './project-utils.js'
@@ -232,6 +234,28 @@ describe('normalizeTaskStatusForApi', () => {
 
   it('returns undefined for undefined', () => {
     expect(normalizeTaskStatusForApi(undefined)).toBeUndefined()
+  })
+})
+
+describe('project status display helpers', () => {
+  it.each([
+    ['INITIATED', '已立项', 'info'],
+    ['PREPARING', '编制中', 'primary'],
+    ['REVIEWING', '评审中', 'warning'],
+    ['SEALING', '盖章中', 'warning'],
+    ['BIDDING', '投标中', 'primary'],
+    ['ARCHIVED', '已归档', 'success'],
+    ['drafting', '草稿中', 'info'],
+    ['won', '已中标', 'success'],
+    ['lost', '未中标', 'danger']
+  ])('maps status "%s" to localized text and tag type', (status, text, type) => {
+    expect(getProjectStatusText(status)).toBe(text)
+    expect(getProjectStatusType(status)).toBe(type)
+  })
+
+  it('passes unknown project status text through safely', () => {
+    expect(getProjectStatusText('CUSTOM_STATUS')).toBe('CUSTOM_STATUS')
+    expect(getProjectStatusType('CUSTOM_STATUS')).toBe('info')
   })
 })
 

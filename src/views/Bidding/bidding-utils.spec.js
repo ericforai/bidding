@@ -254,10 +254,18 @@ describe('display and URL helpers', () => {
       sourceScore: 86
     })
     expect(buildWinProbabilityView(null)).toMatchObject({
-      rate: 1,
-      percent: 20,
-      label: '20%',
-      sourceScore: 0
+      rate: 0,
+      percent: 0,
+      label: '暂无',
+      sourceScore: 0,
+      hasScore: false
+    })
+    expect(buildWinProbabilityView(0)).toMatchObject({
+      rate: 0,
+      percent: 0,
+      label: '暂无',
+      sourceScore: 0,
+      hasScore: false
     })
   })
 })

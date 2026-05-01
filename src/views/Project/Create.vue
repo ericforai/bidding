@@ -39,8 +39,10 @@
             ref="taskStepRef"
             :task-form="taskForm"
             :user-list="userList"
+            :decomposing="decomposing"
             @add-task="addTask"
             @remove-task="removeTask"
+            @auto-decompose="handleCreateAndDecompose"
           />
         </div>
 
@@ -123,7 +125,6 @@ import { Loading } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import DocVerificationWorkbench from '../../components/common/doc-insight/DocVerificationWorkbench.vue'
 import { aiApi } from '@/api'
-import customerOpportunityApi from '@/api/modules/customerOpportunity'
 import { notifyFeatureUnavailable } from '@/utils/featureFeedback'
 import { useProjectConversion } from '@/composables/projectDetail/useProjectConversion.js'
 import { hasGlobalHttpErrorMessage, tenderSchema } from './createTenderPrefill.js'
@@ -133,6 +134,7 @@ import TaskStep from './create/steps/TaskStep.vue'
 import AiAssistStep from './create/steps/AiAssistStep.vue'
 import AssetCheckDialog from './create/dialogs/AssetCheckDialog.vue'
 import { useProjectCreateModel } from './create/composables/useProjectCreateModel.js'
+import { useProjectCreateSubmit } from './create/composables/useProjectCreateSubmit.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -144,6 +146,7 @@ const conversion = useProjectConversion()
 
 const currentStep = ref(0)
 const submitting = ref(false)
+const decomposing = ref(false)
 const analyzing = ref(false)
 const showAssetCheckDialog = ref(false)
 const assetCheckResult = ref(null)
@@ -190,13 +193,23 @@ const {
   loadTenderDetailPrefill,
   loadAvailableTenders,
   loadProjectData,
-  resolveApiTenderId,
-  buildApiProjectPayload
+  buildApiProjectPayload,
+  buildTaskCreatePayloads
 } = model
 
 const pageTitle = computed(() => (isEditMode.value ? '编辑项目' : '创建项目'))
 const userList = computed(() => userStore.users)
 const platformOptions = computed(() => barStore.sites || [])
+const { handleSubmit, handleCreateAndDecompose } = useProjectCreateSubmit({
+  projectStore,
+  router,
+  sourceInfo,
+  submitting,
+  decomposing,
+  buildApiProjectPayload,
+  buildTaskCreatePayloads,
+  hasGlobalHttpErrorMessage,
+})
 
 async function nextStep() {
   if (currentStep.value === 0) {
@@ -252,42 +265,6 @@ async function runAIAnalysis() {
     ElMessage.error('AI分析失败')
   } finally {
     analyzing.value = false
-  }
-}
-
-async function handleSubmit() {
-  submitting.value = true
-  try {
-    const projectData = buildApiProjectPayload()
-    const createdProject = await projectStore.createProject(projectData)
-
-    if (createdProject?.id && sourceInfo.opportunityId) {
-      try {
-        await customerOpportunityApi.convertToProject(sourceInfo.opportunityId, createdProject.id)
-      } catch (convertError) {
-        ElMessage.warning(
-          convertError?.response?.data?.message || '项目已创建，但商机转化状态回写失败'
-        )
-      }
-    }
-
-    const tenderId = resolveApiTenderId()
-    if (tenderId && createdProject?.id) {
-      ElMessage.success('基础信息已保存，正在为您提取标书证据链...')
-      const parseResult = await conversion.parseTender(createdProject.id, tenderId)
-      if (parseResult) return
-    }
-
-    ElMessage.success('项目创建成功')
-    if (createdProject?.id) {
-      router.push(`/project/${createdProject.id}`)
-      return
-    }
-    router.push('/project')
-  } catch (error) {
-    if (!hasGlobalHttpErrorMessage(error)) ElMessage.error(error?.message || '项目创建失败')
-  } finally {
-    submitting.value = false
   }
 }
 
