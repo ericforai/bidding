@@ -65,4 +65,15 @@ describe('sidecar dev service lifecycle', () => {
     expect(servicesScript).toContain('APP_CONVERTER_SIDECAR_SHARED_KEY="$SIDECAR_SHARED_KEY"')
     expect(servicesScript).toContain('APP_DOC_INSIGHT_SIDECAR_SHARED_KEY="$SIDECAR_SHARED_KEY"')
   })
+
+  it('passes DeepSeek API key from launchd environment to backend children', () => {
+    const launchdScript = readFileSync(resolve(rootDir, 'scripts/dev-services-launchd.sh'), 'utf8')
+    const servicesScript = readFileSync(resolve(rootDir, 'scripts/dev-services.sh'), 'utf8')
+
+    expect(launchdScript).toContain('DEEPSEEK_API_KEY="${DEEPSEEK_API_KEY:-}"')
+    expect(launchdScript).toContain('<key>DEEPSEEK_API_KEY</key>')
+    expect(launchdScript).toContain('<string>${DEEPSEEK_API_KEY}</string>')
+    expect(servicesScript).toContain('DEEPSEEK_API_KEY="${DEEPSEEK_API_KEY:-}"')
+    expect(servicesScript).toContain('DEEPSEEK_API_KEY="$DEEPSEEK_API_KEY"')
+  })
 })

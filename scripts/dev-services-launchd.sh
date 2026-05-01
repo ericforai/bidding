@@ -20,6 +20,7 @@ DB_PORT="${DB_PORT:-3306}"
 DB_NAME="${DB_NAME:-xiyu_bid_main}"
 DB_USERNAME="${DB_USERNAME:-xiyu_user}"
 DB_PASSWORD="${DB_PASSWORD:-XiyuDB!2026}"
+DEEPSEEK_API_KEY="${DEEPSEEK_API_KEY:-}"
 REDIS_HOST="${REDIS_HOST:-localhost}"
 DEFAULT_REDIS_PORT="6379"
 FALLBACK_REDIS_PORT="16379"
@@ -55,6 +56,7 @@ Environment variables:
   JWT_SECRET                 JWT secret passed to backend process
   DB_HOST/DB_PORT/DB_NAME    MySQL connection target
   DB_USERNAME/DB_PASSWORD    MySQL credentials
+  DEEPSEEK_API_KEY           DeepSeek API key passed to backend process
   REDIS_HOST/REDIS_PORT      Redis connection target
   REDIS_DB                   Redis logical database for this agent
   SIDECAR_HOST/SIDECAR_PORT  Document converter sidecar bind target
@@ -150,6 +152,8 @@ write_plist() {
     <string>${DB_USERNAME}</string>
     <key>DB_PASSWORD</key>
     <string>${DB_PASSWORD}</string>
+    <key>DEEPSEEK_API_KEY</key>
+    <string>${DEEPSEEK_API_KEY}</string>
     <key>REDIS_HOST</key>
     <string>${REDIS_HOST}</string>
     <key>REDIS_PORT</key>
