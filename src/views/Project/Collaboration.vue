@@ -48,7 +48,7 @@
             <div class="comment-content">{{ comment.content }}</div>
           </div>
 
-          <el-input v-model="newComment" type="textarea" :rows="3" placeholder="添加评论..." style="margin-top: 16px;" />
+          <MentionInput v-model="newComment" :rows="3" placeholder="添加评论，输入 @ 提及同事" class="comment-mention-input" />
           <el-button type="primary" @click="addComment" style="margin-top: 8px;">发送评论</el-button>
         </div>
       </el-tab-pane>
@@ -60,7 +60,10 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { collaborationApi } from '@/api/modules/collaboration.js'
+import { mentionsApi } from '@/api/modules/mentions.js'
 import { useProjectStore } from '@/stores/project.js'
+import MentionInput from '@/components/common/MentionInput.vue'
+import { parseMentionContent } from '@/utils/notificationHelpers.js'
 
 const projectId = ref(null)
 const projects = ref([])
@@ -101,15 +104,34 @@ async function selectThread(thread) {
 }
 
 async function addComment() {
-  if (!newComment.value.trim()) return
+  const raw = newComment.value
+  if (!raw.trim()) return
+  const thread = selectedThread.value
+  if (!thread) return
+  const { plainText, mentionedUserIds } = parseMentionContent(raw)
   try {
-    await collaborationApi.addComment(selectedThread.value.id, { content: newComment.value })
-    ElMessage.success('评论已发送')
-    newComment.value = ''
-    selectThread(selectedThread.value)
+    await collaborationApi.addComment(thread.id, { content: plainText })
   } catch (e) {
     ElMessage.error('发送失败')
+    return
   }
+  newComment.value = ''
+  if (mentionedUserIds.length > 0) {
+    try {
+      await mentionsApi.create({
+        content: raw,
+        sourceEntityType: 'COMMENT',
+        sourceEntityId: thread.id,
+        title: thread.title
+      })
+      ElMessage.success('评论已发送')
+    } catch (e) {
+      ElMessage.warning('评论已发送，但 @ 通知发送失败')
+    }
+  } else {
+    ElMessage.success('评论已发送')
+  }
+  selectThread(thread)
 }
 
 function statusType(s) {
@@ -140,4 +162,5 @@ function formatTime(t) {
 .comment-item { padding: 12px; border-bottom: 1px solid #eee; }
 .comment-header { display: flex; gap: 12px; margin-bottom: 8px; font-size: 14px; }
 .comment-content { color: #606266; }
+.comment-mention-input { margin-top: 16px; }
 </style>
