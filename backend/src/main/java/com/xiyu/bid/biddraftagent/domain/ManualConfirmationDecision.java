@@ -16,6 +16,7 @@ public record ManualConfirmationDecision(
     public boolean requiresConfirmation() {
         return pricingConfirmationRequired
                 || legalConfirmationRequired
-                || qualificationAuthenticityConfirmationRequired;
+                || qualificationAuthenticityConfirmationRequired
+                || (!reasons.isEmpty() && reasons.stream().anyMatch(r -> r.contains("存在未闭合材料缺口")));
     }
 }
