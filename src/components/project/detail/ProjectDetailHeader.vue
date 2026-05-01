@@ -1,15 +1,17 @@
 <template>
-  <el-page-header @back="ctx.goBack" class="page-header">
+  <el-page-header @back="ctx.goBack" class="page-header project-detail-toolbar">
     <template #content>
       <div class="header-content">
-        <span class="project-name">{{ ctx.project?.name }}</span>
-        <el-tag :type="ctx.getStatusType(ctx.project?.status)" class="status-tag">
-          {{ ctx.getStatusText(ctx.project?.status) }}
-        </el-tag>
+        <div class="header-title">
+          <span class="project-name" :title="ctx.project?.name">{{ ctx.project?.name }}</span>
+          <el-tag :type="ctx.getStatusType(ctx.project?.status)" class="status-tag">
+            {{ ctx.getStatusText(ctx.project?.status) }}
+          </el-tag>
+        </div>
       </div>
     </template>
     <template #extra>
-      <div class="header-actions">
+      <div class="header-actions" aria-label="项目操作">
         <el-button :icon="Edit" @click="ctx.handleEdit">编辑</el-button>
         <el-button v-if="ctx.canSubmit" type="primary" :icon="DocumentChecked" @click="ctx.handleSubmitApproval">提交审批</el-button>
         <el-button v-if="ctx.canRecordResult" type="success" :icon="Coin" @click="ctx.handleRecordResult">录入结果</el-button>
