@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Input: agent worktree command for local dev services
-# Output: one-command SOP sync and launchd-managed frontend/backend lifecycle
+# Output: one-command SOP sync and launchd-managed sidecar/frontend/backend lifecycle
 # Pos: scripts/多 Agent 本地开发服务统一入口
 # 维护声明: 若 dev-env.sh 的资源映射或 dev-services-launchd.sh 参数变化，请同步更新本脚本与 scripts/README.md。
 set -euo pipefail
@@ -19,7 +19,7 @@ Commands:
   restart    restart launchd-managed services for this worktree
   start      start an already installed launchd service
   stop       stop launchd service and child processes
-  status     show launchd, backend, and frontend status
+  status     show launchd, sidecar, backend, and frontend status
   logs       show launchd logs
   uninstall  remove launchd service and stop child processes
 USAGE
@@ -44,9 +44,10 @@ agent_key() {
 }
 
 AGENT_KEY="$(agent_key)"
-export FRONTEND_PORT BACKEND_PORT DB_NAME REDIS_DB
+export FRONTEND_PORT BACKEND_PORT SIDECAR_PORT DB_NAME REDIS_DB
 export SPRING_DATA_REDIS_DATABASE="${SPRING_DATA_REDIS_DATABASE:-$REDIS_DB}"
 export LAUNCHD_LABEL="${LAUNCHD_LABEL:-com.xiyu.bid.dev-services.${AGENT_KEY}}"
+SIDECAR_HEALTH_URL="http://127.0.0.1:${SIDECAR_PORT}/health"
 BACKEND_HEALTH_URL="http://127.0.0.1:${BACKEND_PORT}/actuator/health"
 FRONTEND_URL="http://127.0.0.1:${FRONTEND_PORT}/"
 
@@ -58,9 +59,10 @@ wait_ready() {
   local timeout="${AGENT_DEV_START_TIMEOUT_SECONDS:-360}"
   local start
   start="$(date +%s)"
-  echo "[agent-dev] waiting for backend and frontend readiness"
+  echo "[agent-dev] waiting for sidecar, backend and frontend readiness"
   while true; do
-    if curl -fsS "$BACKEND_HEALTH_URL" >/dev/null 2>&1 && \
+    if curl -fsS "$SIDECAR_HEALTH_URL" >/dev/null 2>&1 && \
+      curl -fsS "$BACKEND_HEALTH_URL" >/dev/null 2>&1 && \
       ROOT_DIR="$ROOT_DIR" \
       FRONTEND_URL="$FRONTEND_URL" \
       FRONTEND_PORT="$FRONTEND_PORT" \

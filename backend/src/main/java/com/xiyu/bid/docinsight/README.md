@@ -26,7 +26,7 @@ DocInsight 模块负责通用文档上传、文本抽取、结构化分块和 AI
 | `domain/StructuralDocumentChunker.java` | Pure Core | 结构化文档分块策略 |
 | `domain/TextChunker.java` | Pure Core | 文本分块接口 |
 | `infrastructure/config/MarkItDownSidecarClientConfig.java` | Config | MarkItDown sidecar 客户端配置 |
-| `infrastructure/extractor/MarkItDownSidecarExtractor.java` | Adapter | MarkItDown sidecar 文本抽取适配 |
+| `infrastructure/extractor/MarkItDownSidecarExtractor.java` | Adapter | MarkItDown sidecar 文本抽取适配，支持 `X-Sidecar-Key` 共享密钥 |
 | `infrastructure/openai/BaseOpenAiDocumentAnalyzer.java` | Adapter | AI 通用文档解析适配 |
 | `infrastructure/storage/LocalDocumentStorage.java` | Adapter | 本地文档存储适配 |
 

@@ -103,13 +103,14 @@ npm run dev:stable:status
 ```
 
 说明：
-- `npm run dev:stable:start` 会调用 `scripts/dev-services.sh`，适合日常联调和反复重启
-- `npm run dev:all` 是兼容入口，会转调同一套 `scripts/dev-services.sh` 稳定启动逻辑
-- 后端默认启动到 `127.0.0.1:18080`
-- 前端默认启动到 `127.0.0.1:1314`
+- `npm run dev:stable:start` 会调用 `scripts/dev-services.sh`，统一拉起文档转换 sidecar、后端和前端，适合日常联调和反复重启
+- `npm run dev:all` 是兼容入口，会先按当前目录加载 `scripts/dev-env.sh`，再转调同一套 `scripts/dev-services.sh` 稳定启动逻辑
+- 主目录默认启动到前端 `127.0.0.1:1314`、后端 `127.0.0.1:18080`、sidecar `127.0.0.1:8000`、数据库 `xiyu_bid_main`
+- 多 Agent worktree 会自动使用专属端口和数据库，例如 Codex worktree 使用前端 `1316`、后端 `18082`、sidecar `8002`、数据库 `xiyu_bid_codex`
 - 后端默认使用 `dev,mysql`
-- 启动脚本会自动传入本地 MySQL 默认值：`localhost:3306/xiyu_bid_main`、用户 `xiyu_user`
+- 启动脚本会自动传入本地 MySQL 默认用户 `xiyu_user`
 - 启动脚本会自动识别本机 Redis：优先 `6379`，若仅 Docker 暴露 `16379` 也会自动切换
+- 启动脚本会为文档转换 sidecar 自动生成本地共享密钥，保存到 `.runtime/dev-services/sidecar.shared-key`，并同时注入 sidecar 与后端，不写入源码
 - 前端会以 `VITE_API_MODE=api` 连接真实后端（不新增前端 mock 主入口）
 - 如需覆盖本地连接信息，可在启动前设置 `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USERNAME`、`DB_PASSWORD`、`REDIS_HOST`、`REDIS_PORT`
 

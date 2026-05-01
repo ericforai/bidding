@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Input: local dev environment, backend profile options, and repository startup commands
-# Output: stable daemon-like start/stop/status/log control with current-code identity checks, Vite cache reset, and bounded health probes
+# Output: stable daemon-like start/stop/status/log control for sidecar/backend/frontend with current-code identity checks, Vite cache reset, and bounded health probes
 # Pos: scripts/ - local service lifecycle management
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -11,18 +11,32 @@ mkdir -p "$RUNTIME_DIR"
 
 BACKEND_PORT="${BACKEND_PORT:-18080}"
 FRONTEND_PORT="${FRONTEND_PORT:-1314}"
+SIDECAR_PORT="${SIDECAR_PORT:-8000}"
 BACKEND_HEALTH_URL="http://127.0.0.1:${BACKEND_PORT}/actuator/health"
 FRONTEND_URL="http://127.0.0.1:${FRONTEND_PORT}/"
+SIDECAR_HOST="${SIDECAR_HOST:-127.0.0.1}"
+SIDECAR_URL="http://${SIDECAR_HOST}:${SIDECAR_PORT}"
+SIDECAR_HEALTH_URL="${SIDECAR_URL}/health"
+SIDECAR_DIR="$ROOT_DIR/document-converter-sidecar"
+SIDECAR_VENV_BIN="${SIDECAR_VENV_BIN:-$SIDECAR_DIR/.venv/bin}"
+SIDECAR_UVICORN="${SIDECAR_UVICORN:-$SIDECAR_VENV_BIN/uvicorn}"
+SIDECAR_MAX_UPLOAD_MB="${SIDECAR_MAX_UPLOAD_MB:-30}"
+SIDECAR_SHARED_KEY="${SIDECAR_SHARED_KEY:-}"
+SIDECAR_SHARED_KEY_FILE="${SIDECAR_SHARED_KEY_FILE:-$RUNTIME_DIR/sidecar.shared-key}"
 
+SIDECAR_PID_FILE="$RUNTIME_DIR/sidecar.pid"
 BACKEND_PID_FILE="$RUNTIME_DIR/backend.pid"
 FRONTEND_PID_FILE="$RUNTIME_DIR/frontend.pid"
+SIDECAR_ID_FILE="$RUNTIME_DIR/sidecar.identity"
 BACKEND_ID_FILE="$RUNTIME_DIR/backend.identity"
 FRONTEND_ID_FILE="$RUNTIME_DIR/frontend.identity"
+SIDECAR_LOG="$RUNTIME_DIR/sidecar.log"
 BACKEND_LOG="$RUNTIME_DIR/backend.log"
 FRONTEND_LOG="$RUNTIME_DIR/frontend.log"
 WATCHDOG_PID_FILE="$RUNTIME_DIR/watchdog.pid"
 WATCHDOG_LOG="$RUNTIME_DIR/watchdog.log"
 WATCHDOG_INTERVAL_SECONDS="${WATCHDOG_INTERVAL_SECONDS:-5}"
+SIDECAR_START_TIMEOUT_SECONDS="${SIDECAR_START_TIMEOUT_SECONDS:-60}"
 BACKEND_START_TIMEOUT_SECONDS="${BACKEND_START_TIMEOUT_SECONDS:-300}"
 FRONTEND_START_TIMEOUT_SECONDS="${FRONTEND_START_TIMEOUT_SECONDS:-90}"
 CURL_CONNECT_TIMEOUT_SECONDS="${CURL_CONNECT_TIMEOUT_SECONDS:-1}"
@@ -137,6 +151,52 @@ hash_stream() {
   shasum -a 256 | awk '{print $1}'
 }
 
+load_sidecar_shared_key() {
+  if [[ -n "$SIDECAR_SHARED_KEY" ]]; then
+    export SIDECAR_SHARED_KEY
+    return 0
+  fi
+  if [[ -f "$SIDECAR_SHARED_KEY_FILE" ]]; then
+    SIDECAR_SHARED_KEY="$(tr -d '\r\n' <"$SIDECAR_SHARED_KEY_FILE")"
+    export SIDECAR_SHARED_KEY
+  fi
+}
+
+generate_sidecar_shared_key() {
+  if ! command -v openssl >/dev/null 2>&1; then
+    echo "[sidecar] openssl is required to generate SIDECAR_SHARED_KEY" >&2
+    return 1
+  fi
+  openssl rand -hex 32
+}
+
+ensure_sidecar_shared_key() {
+  local generated_key
+  local previous_umask
+  load_sidecar_shared_key
+  if [[ -n "$SIDECAR_SHARED_KEY" ]]; then
+    return 0
+  fi
+
+  generated_key="$(generate_sidecar_shared_key)"
+  previous_umask="$(umask)"
+  umask 077
+  printf '%s\n' "$generated_key" >"$SIDECAR_SHARED_KEY_FILE"
+  umask "$previous_umask"
+  chmod 600 "$SIDECAR_SHARED_KEY_FILE" >/dev/null 2>&1 || true
+  SIDECAR_SHARED_KEY="$generated_key"
+  export SIDECAR_SHARED_KEY
+}
+
+sidecar_shared_key_hash() {
+  load_sidecar_shared_key
+  if [[ -z "$SIDECAR_SHARED_KEY" ]]; then
+    printf 'unset\n'
+    return 0
+  fi
+  printf '%s' "$SIDECAR_SHARED_KEY" | hash_stream
+}
+
 workspace_fingerprint() {
   if git -C "$ROOT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     local pathspec=(-- . ':(exclude)node_modules' ':(exclude)backend/target' ':(exclude).runtime' ':(exclude)dist' ':(exclude)coverage')
@@ -151,6 +211,19 @@ workspace_fingerprint() {
   fi
 }
 
+sidecar_expected_identity() {
+  {
+    printf 'kind=sidecar\n'
+    printf 'root=%s\n' "$ROOT_DIR"
+    printf 'workspace=%s\n' "$(workspace_fingerprint)"
+    printf 'sidecar_dir=%s\n' "$SIDECAR_DIR"
+    printf 'sidecar_host=%s\n' "$SIDECAR_HOST"
+    printf 'sidecar_port=%s\n' "$SIDECAR_PORT"
+    printf 'sidecar_max_upload_mb=%s\n' "$SIDECAR_MAX_UPLOAD_MB"
+    printf 'sidecar_key_hash=%s\n' "$(sidecar_shared_key_hash)"
+  } | hash_stream
+}
+
 backend_expected_identity() {
   {
     printf 'kind=backend\n'
@@ -162,6 +235,8 @@ backend_expected_identity() {
     printf 'db=%s:%s/%s\n' "$DB_HOST" "$DB_PORT" "$DB_NAME"
     printf 'db_user=%s\n' "$DB_USERNAME"
     printf 'redis=%s:%s\n' "$REDIS_HOST" "$REDIS_PORT"
+    printf 'sidecar_url=%s\n' "$SIDECAR_URL"
+    printf 'sidecar_key_hash=%s\n' "$(sidecar_shared_key_hash)"
   } | hash_stream
 }
 
@@ -225,6 +300,40 @@ backend_current_for_pid() {
   local identity="$2"
   is_pid_running "$pid" || return 1
   identity_file_matches "$BACKEND_ID_FILE" "$pid" "$identity"
+}
+
+sidecar_matches_workspace() {
+  local pid cmd cwd
+  while IFS= read -r pid; do
+    [[ -n "$pid" ]] || continue
+    cwd="$(process_cwd "$pid")"
+    case "$cwd" in
+      "$SIDECAR_DIR"|"$SIDECAR_DIR/"*)
+        return 0
+        ;;
+    esac
+    cmd="$(process_command "$pid")"
+    case "$cmd" in
+      *"$SIDECAR_DIR"*|*"document-converter-sidecar"*"app:app"*)
+        return 0
+        ;;
+    esac
+  done < <(port_listener_pids "$SIDECAR_PORT")
+  return 1
+}
+
+sidecar_current_for_pid() {
+  local pid="$1"
+  local identity="$2"
+  is_pid_running "$pid" || return 1
+  identity_file_matches "$SIDECAR_ID_FILE" "$pid" "$identity"
+}
+
+print_sidecar_mismatch() {
+  echo "[sidecar] port $SIDECAR_PORT is occupied by another service" >&2
+  echo "[sidecar] expected workspace marker: $SIDECAR_DIR" >&2
+  lsof -nP -iTCP:"$SIDECAR_PORT" -sTCP:LISTEN >&2 || true
+  echo "[sidecar] stop the conflicting service or choose another SIDECAR_PORT" >&2
 }
 
 print_backend_mismatch() {
@@ -308,10 +417,77 @@ wait_frontend() {
   done
 }
 
+start_sidecar() {
+  local pid=""
+  local identity=""
+  ensure_sidecar_shared_key
+  identity="$(sidecar_expected_identity)"
+  pid="$(read_pid "$SIDECAR_PID_FILE" 2>/dev/null || true)"
+
+  if [[ ! -d "$SIDECAR_DIR" ]]; then
+    echo "[sidecar] directory not found: $SIDECAR_DIR" >&2
+    return 1
+  fi
+  if [[ ! -x "$SIDECAR_UVICORN" ]]; then
+    echo "[sidecar] uvicorn not found: $SIDECAR_UVICORN" >&2
+    echo "[sidecar] run: cd document-converter-sidecar && python -m venv .venv && .venv/bin/pip install -r requirements.txt" >&2
+    return 1
+  fi
+
+  if is_pid_running "$pid"; then
+    if sidecar_current_for_pid "$pid" "$identity"; then
+      if is_port_listening "$SIDECAR_PORT"; then
+        if sidecar_matches_workspace; then
+          echo "[sidecar] already running (pid=$pid, port=$SIDECAR_PORT)"
+        else
+          print_sidecar_mismatch
+          return 1
+        fi
+      else
+        echo "[sidecar] process is running (pid=$pid), waiting for port $SIDECAR_PORT to become ready"
+      fi
+      return 0
+    fi
+    echo "[sidecar] stale tracked process detected, restarting for current code/config"
+    stop_one "sidecar" "$SIDECAR_PID_FILE"
+  fi
+
+  if is_port_listening "$SIDECAR_PORT"; then
+    if sidecar_matches_workspace; then
+      echo "[sidecar] untracked or stale workspace process detected on port $SIDECAR_PORT, restarting"
+      stop_one "sidecar" "$SIDECAR_PID_FILE"
+      if is_port_listening "$SIDECAR_PORT"; then
+        print_sidecar_mismatch
+        return 1
+      fi
+    else
+      print_sidecar_mismatch
+      return 1
+    fi
+  fi
+
+  echo "[sidecar] starting on ${SIDECAR_URL}"
+  : >"$SIDECAR_LOG"
+  (
+    cd "$SIDECAR_DIR"
+    nohup env \
+      SIDECAR_HOST="$SIDECAR_HOST" \
+      SIDECAR_PORT="$SIDECAR_PORT" \
+      SIDECAR_SHARED_KEY="$SIDECAR_SHARED_KEY" \
+      SIDECAR_MAX_UPLOAD_MB="$SIDECAR_MAX_UPLOAD_MB" \
+      "$SIDECAR_UVICORN" app:app --host "$SIDECAR_HOST" --port "$SIDECAR_PORT" \
+      >>"$SIDECAR_LOG" 2>&1 < /dev/null &
+    local started_pid=$!
+    echo "$started_pid" >"$SIDECAR_PID_FILE"
+    write_identity_file "$SIDECAR_ID_FILE" "$started_pid" "$identity"
+  )
+}
+
 start_backend() {
   local pid=""
   local identity=""
   resolve_redis_port
+  ensure_sidecar_shared_key
   identity="$(backend_expected_identity)"
   pid="$(read_pid "$BACKEND_PID_FILE" 2>/dev/null || true)"
   if is_pid_running "$pid"; then
@@ -365,6 +541,10 @@ start_backend() {
       REDIS_PORT="$REDIS_PORT" \
       REDIS_DB="$REDIS_DB" \
       SPRING_DATA_REDIS_DATABASE="$SPRING_DATA_REDIS_DATABASE" \
+      APP_CONVERTER_SIDECAR_URL="$SIDECAR_URL" \
+      APP_CONVERTER_SIDECAR_SHARED_KEY="$SIDECAR_SHARED_KEY" \
+      APP_DOC_INSIGHT_SIDECAR_URL="$SIDECAR_URL" \
+      APP_DOC_INSIGHT_SIDECAR_SHARED_KEY="$SIDECAR_SHARED_KEY" \
       CORS_ALLOWED_ORIGINS="http://localhost:${FRONTEND_PORT},http://127.0.0.1:${FRONTEND_PORT}" \
       mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT}" \
       >>"$BACKEND_LOG" 2>&1 < /dev/null &
@@ -457,6 +637,10 @@ stop_one() {
     while IFS= read -r p; do kill "$p" >/dev/null 2>&1 || true; done < <(port_listener_pids "$BACKEND_PORT")
     sleep 1
     while IFS= read -r p; do kill -9 "$p" >/dev/null 2>&1 || true; done < <(port_listener_pids "$BACKEND_PORT")
+  elif [[ "$name" == "sidecar" ]]; then
+    while IFS= read -r p; do kill "$p" >/dev/null 2>&1 || true; done < <(port_listener_pids "$SIDECAR_PORT")
+    sleep 1
+    while IFS= read -r p; do kill -9 "$p" >/dev/null 2>&1 || true; done < <(port_listener_pids "$SIDECAR_PORT")
   fi
 
   rm -f "$pid_file"
@@ -464,21 +648,43 @@ stop_one() {
     rm -f "$FRONTEND_ID_FILE"
   elif [[ "$name" == "backend" ]]; then
     rm -f "$BACKEND_ID_FILE"
+  elif [[ "$name" == "sidecar" ]]; then
+    rm -f "$SIDECAR_ID_FILE"
   fi
 }
 
 status() {
-  local bpid fpid
+  local spid bpid fpid
+  spid="$(read_pid "$SIDECAR_PID_FILE" 2>/dev/null || true)"
   bpid="$(read_pid "$BACKEND_PID_FILE" 2>/dev/null || true)"
   fpid="$(read_pid "$FRONTEND_PID_FILE" 2>/dev/null || true)"
-  local bstate="down" fstate="down"
-  local bhttp="down" fhttp="down"
-  local bidentity="missing" fidentity="missing"
-  local expected_backend_identity expected_frontend_identity
+  local sstate="down" bstate="down" fstate="down"
+  local shttp="down" bhttp="down" fhttp="down"
+  local sidentity="missing" bidentity="missing" fidentity="missing"
+  local expected_sidecar_identity expected_backend_identity expected_frontend_identity
   resolve_redis_port
+  load_sidecar_shared_key
+  expected_sidecar_identity="$(sidecar_expected_identity)"
   expected_backend_identity="$(backend_expected_identity)"
   expected_frontend_identity="$(frontend_expected_identity)"
 
+  if is_port_listening "$SIDECAR_PORT"; then
+    if sidecar_matches_workspace; then
+      if is_pid_running "$spid"; then
+        sstate="up(pid=$spid)"
+      else
+        sstate="up(port=$SIDECAR_PORT)"
+      fi
+      if identity_file_matches "$SIDECAR_ID_FILE" "$spid" "$expected_sidecar_identity"; then
+        sidentity="current"
+      else
+        sidentity="stale"
+      fi
+    else
+      sstate="up(port=$SIDECAR_PORT,mismatch)"
+      sidentity="mismatch"
+    fi
+  fi
   if is_port_listening "$BACKEND_PORT"; then
     if backend_matches_workspace; then
       if is_pid_running "$bpid"; then
@@ -521,15 +727,22 @@ status() {
   if curl_health "$BACKEND_HEALTH_URL"; then
     bhttp="ok"
   fi
+  if curl_health "$SIDECAR_HEALTH_URL"; then
+    shttp="ok"
+  fi
   if frontend_matches_workspace; then
     fhttp="ok"
   fi
 
+  echo "sidecar: $sstate http=$shttp identity=$sidentity url=$SIDECAR_HEALTH_URL"
   echo "backend: $bstate http=$bhttp identity=$bidentity url=$BACKEND_HEALTH_URL"
   echo "frontend: $fstate http=$fhttp identity=$fidentity url=$FRONTEND_URL"
 }
 
 logs() {
+  echo "=== sidecar ($SIDECAR_LOG) ==="
+  tail -n 80 "$SIDECAR_LOG" 2>/dev/null || true
+  echo
   echo "=== backend ($BACKEND_LOG) ==="
   tail -n 80 "$BACKEND_LOG" 2>/dev/null || true
   echo
@@ -562,6 +775,15 @@ watchdog_loop() {
   trap 'rm -f "$WATCHDOG_PID_FILE"' EXIT
   echo "[$(date '+%F %T')] watchdog loop started interval=${WATCHDOG_INTERVAL_SECONDS}s"
   while true; do
+    if ! curl_health "$SIDECAR_HEALTH_URL"; then
+      echo "[$(date '+%F %T')] sidecar unhealthy, attempting restart"
+      if start_sidecar; then
+        wait_http "$SIDECAR_HEALTH_URL" "$SIDECAR_START_TIMEOUT_SECONDS" >/dev/null 2>&1 || true
+      else
+        echo "[$(date '+%F %T')] sidecar restart skipped because port identity check failed"
+      fi
+    fi
+
     if ! curl_health "$BACKEND_HEALTH_URL"; then
       echo "[$(date '+%F %T')] backend unhealthy, attempting restart"
       if start_backend; then
@@ -658,9 +880,10 @@ Environment:
   DB_HOST/DB_PORT/DB_NAME    MySQL connection target
   DB_USERNAME/DB_PASSWORD    MySQL credentials
   REDIS_HOST/REDIS_PORT      Redis connection target
+  SIDECAR_HOST/SIDECAR_PORT  Document converter sidecar bind target
   JWT_SECRET                 JWT secret for local auth
-  BACKEND_START_TIMEOUT_SECONDS/FRONTEND_START_TIMEOUT_SECONDS
-                             Startup wait budgets (defaults: 300/90)
+  SIDECAR_START_TIMEOUT_SECONDS/BACKEND_START_TIMEOUT_SECONDS/FRONTEND_START_TIMEOUT_SECONDS
+                             Startup wait budgets (defaults: 60/300/90)
   VITE_RESET_CACHE_ON_START  Remove runtime Vite optimizer cache before frontend start (default: true)
 EOF
 }
@@ -670,6 +893,12 @@ parse_args "$@"
 
 case "$CMD" in
   start)
+    start_sidecar
+    if ! wait_http "$SIDECAR_HEALTH_URL" "$SIDECAR_START_TIMEOUT_SECONDS"; then
+      echo "[sidecar] failed to become healthy. See logs:"
+      logs
+      exit 1
+    fi
     start_backend
     if ! wait_http "$BACKEND_HEALTH_URL" "$BACKEND_START_TIMEOUT_SECONDS"; then
       echo "[backend] failed to become healthy. See logs:"
@@ -691,6 +920,7 @@ case "$CMD" in
     watchdog_stop
     stop_one "frontend" "$FRONTEND_PID_FILE"
     stop_one "backend" "$BACKEND_PID_FILE"
+    stop_one "sidecar" "$SIDECAR_PID_FILE"
     ;;
   restart)
     "$0" --profile "$ACTIVE_BACKEND_PROFILE" stop

@@ -22,17 +22,22 @@ import java.util.Map;
 @Slf4j
 public class MarkItDownSidecarExtractor implements DocumentTextExtractor {
 
+    private static final String SIDECAR_KEY_HEADER = "X-Sidecar-Key";
+
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final String sidecarUrl;
+    private final String sidecarSharedKey;
 
     public MarkItDownSidecarExtractor(
             @Qualifier("markItDownSidecarRestTemplate") RestTemplate restTemplate,
             ObjectMapper objectMapper,
-            @Value("${app.doc-insight.sidecar-url:http://localhost:8000}") String sidecarUrl) {
+            @Value("${app.doc-insight.sidecar-url:http://localhost:8000}") String sidecarUrl,
+            @Value("${app.doc-insight.sidecar-shared-key:${APP_DOC_INSIGHT_SIDECAR_SHARED_KEY:${SIDECAR_SHARED_KEY:}}}") String sidecarSharedKey) {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
         this.sidecarUrl = sidecarUrl;
+        this.sidecarSharedKey = sidecarSharedKey == null ? "" : sidecarSharedKey.trim();
     }
 
     @Override
@@ -40,6 +45,9 @@ public class MarkItDownSidecarExtractor implements DocumentTextExtractor {
         log.info("Sending document {} to MarkItDown sidecar...", fileName);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        if (!sidecarSharedKey.isBlank()) {
+            headers.set(SIDECAR_KEY_HEADER, sidecarSharedKey);
+        }
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", new ByteArrayResource(content) {
