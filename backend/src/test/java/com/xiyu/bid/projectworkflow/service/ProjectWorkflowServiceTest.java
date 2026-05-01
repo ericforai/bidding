@@ -5,6 +5,7 @@ import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftGenerateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftUpdateRequest;
+import com.xiyu.bid.projectworkflow.dto.ProjectTaskCreateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectTaskViewDTO;
 import com.xiyu.bid.projectworkflow.repository.ProjectDocumentRepository;
 import com.xiyu.bid.projectworkflow.repository.ProjectReminderRepository;
@@ -103,6 +104,62 @@ class ProjectWorkflowServiceTest {
                 .id(1001L)
                 .deadline(java.time.LocalDate.of(2026, 5, 20))
                 .build()));
+    }
+
+    @Test
+    void getProjectTasks_ShouldAllowArchivedProjectRead() {
+        when(projectRepository.findById(1001L)).thenReturn(Optional.of(Project.builder()
+                .id(1001L)
+                .status(Project.Status.ARCHIVED)
+                .build()));
+        when(taskRepository.findByProjectId(1001L)).thenReturn(List.of(Task.builder()
+                .id(3001L)
+                .projectId(1001L)
+                .title("归档任务")
+                .status(Task.Status.COMPLETED)
+                .priority(Task.Priority.MEDIUM)
+                .build()));
+
+        List<ProjectTaskViewDTO> tasks = service.getProjectTasks(1001L);
+
+        assertThat(tasks).hasSize(1);
+        assertThat(tasks.getFirst().getName()).isEqualTo("归档任务");
+    }
+
+    @Test
+    void createProjectTask_ShouldAllowInitiatedProjectMutation() {
+        when(projectRepository.findById(1001L)).thenReturn(Optional.of(Project.builder()
+                .id(1001L)
+                .status(Project.Status.INITIATED)
+                .build()));
+        when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> {
+            Task task = invocation.getArgument(0);
+            task.setId(3002L);
+            return task;
+        });
+
+        ProjectTaskViewDTO task = service.createProjectTask(1001L, ProjectTaskCreateRequest.builder()
+                .title(" 启动后补充任务 ")
+                .priority(ProjectTaskCreateRequest.Priority.MEDIUM)
+                .build());
+
+        assertThat(task.getId()).isEqualTo(3002L);
+        assertThat(task.getName()).isEqualTo("启动后补充任务");
+    }
+
+    @Test
+    void createProjectTask_ShouldRejectArchivedProjectMutation() {
+        when(projectRepository.findById(1001L)).thenReturn(Optional.of(Project.builder()
+                .id(1001L)
+                .status(Project.Status.ARCHIVED)
+                .build()));
+
+        assertThatThrownBy(() -> service.createProjectTask(1001L, ProjectTaskCreateRequest.builder()
+                .title("归档后新增任务")
+                .priority(ProjectTaskCreateRequest.Priority.MEDIUM)
+                .build()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("not in a valid state");
     }
 
     @Test

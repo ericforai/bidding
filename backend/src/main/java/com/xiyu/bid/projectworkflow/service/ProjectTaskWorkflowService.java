@@ -33,7 +33,7 @@ class ProjectTaskWorkflowService {
     }
 
     ProjectTaskViewDTO createProjectTask(Long projectId, ProjectTaskCreateRequest request) {
-        guardService.requireProject(projectId);
+        guardService.requireWorkflowMutationProject(projectId);
         User assigneeUser = resolveAssignee(request.getAssigneeId());
         Task task = Task.builder()
                 .projectId(projectId)
@@ -52,7 +52,7 @@ class ProjectTaskWorkflowService {
     }
 
     ProjectTaskViewDTO updateProjectTaskStatus(Long projectId, Long taskId, ProjectTaskStatusUpdateRequest request) {
-        guardService.requireProject(projectId);
+        guardService.requireWorkflowMutationProject(projectId);
         Task task = guardService.requireTask(projectId, taskId);
         task.setStatus(toEntityStatus(request.getStatus()));
         return toTaskView(taskRepository.save(task));

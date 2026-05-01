@@ -37,7 +37,7 @@ class ProjectScoreDraftWorkflowService {
     }
 
     ProjectScoreDraftParseResponse parseProjectScoreDrafts(Long projectId, MultipartFile file) {
-        guardService.requireProject(projectId);
+        guardService.requireWorkflowMutationProject(projectId);
         clearNonGeneratedDrafts(projectId);
         List<ProjectScoreDraftDTO> draftDTOs = projectScoreDraftRepository.saveAll(scoreDraftParserService.parse(projectId, file))
                 .stream()
@@ -47,7 +47,7 @@ class ProjectScoreDraftWorkflowService {
     }
 
     ProjectScoreDraftDTO updateProjectScoreDraft(Long projectId, Long draftId, ProjectScoreDraftUpdateRequest request) {
-        guardService.requireProject(projectId);
+        guardService.requireWorkflowMutationProject(projectId);
         ProjectScoreDraft draft = guardService.requireDraft(projectId, draftId);
         ScoreDraftPolicy.UpdateDecision decision = ScoreDraftPolicy.decideUpdate(new ScoreDraftPolicy.UpdateCommand(
                 toCoreStatus(draft.getStatus()),
@@ -67,7 +67,7 @@ class ProjectScoreDraftWorkflowService {
     }
 
     List<ProjectTaskViewDTO> generateTasksFromScoreDrafts(Long projectId, ProjectScoreDraftGenerateRequest request) {
-        guardService.requireProject(projectId);
+        guardService.requireWorkflowMutationProject(projectId);
         List<ProjectScoreDraft> drafts = request.getDraftIds().stream()
                 .map(draftId -> guardService.requireDraft(projectId, draftId))
                 .toList();
@@ -83,7 +83,7 @@ class ProjectScoreDraftWorkflowService {
     }
 
     void clearNonGeneratedDrafts(Long projectId) {
-        guardService.requireProject(projectId);
+        guardService.requireWorkflowMutationProject(projectId);
         projectScoreDraftRepository.deleteByProjectIdAndStatusIn(
                 projectId,
                 List.of(ProjectScoreDraft.Status.DRAFT, ProjectScoreDraft.Status.READY, ProjectScoreDraft.Status.SKIPPED)

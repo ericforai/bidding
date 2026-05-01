@@ -32,7 +32,7 @@ public class ProjectTaskBreakdownService {
     }
 
     private List<ProjectTaskViewDTO> decomposeProjectTasksLocked(Long projectId) {
-        Project project = accessGuard.requireProject(projectId);
+        Project project = accessGuard.requireWorkflowMutationProject(projectId);
         List<TaskBreakdownPolicy.SourceSnapshot> sources = sourceReader.collectRequirementSources(projectId);
         if (sources.isEmpty()) {
             sources = sourceReader.collectSectionSources(projectId);

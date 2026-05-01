@@ -27,7 +27,7 @@ class ProjectReminderWorkflowService {
     }
 
     ProjectReminderDTO createProjectReminder(Long projectId, ProjectReminderCreateRequest request) {
-        guardService.requireProject(projectId);
+        guardService.requireWorkflowMutationProject(projectId);
         ProjectReminder reminder = ProjectReminder.builder()
                 .projectId(projectId)
                 .title(request.getTitle().trim())
