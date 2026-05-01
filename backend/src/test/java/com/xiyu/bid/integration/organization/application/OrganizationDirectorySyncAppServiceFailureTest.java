@@ -24,8 +24,6 @@ class OrganizationDirectorySyncAppServiceFailureTest {
 
     @BeforeEach
     void setUp() {
-        OrganizationIntegrationProperties properties = new OrganizationIntegrationProperties();
-        properties.setAllowedSourceApps(List.of("customer-org"));
         gateway = new FakeGateway();
         inbox = new FakeInbox();
         userWriter = new FakeUserWriter();
@@ -35,7 +33,7 @@ class OrganizationDirectorySyncAppServiceFailureTest {
                 gateway,
                 new FakeDepartmentWriter(),
                 userWriter,
-                properties
+                OrganizationDirectorySyncAppServiceTest.fixedSettings(true)
         );
     }
 

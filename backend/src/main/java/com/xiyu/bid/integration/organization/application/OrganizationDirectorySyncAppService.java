@@ -17,11 +17,12 @@ public class OrganizationDirectorySyncAppService {
     private final OrganizationDirectoryGateway directoryGateway;
     private final OrganizationDepartmentSyncWriter departmentWriter;
     private final OrganizationUserSyncWriter userWriter;
-    private final OrganizationIntegrationProperties properties;
+    private final OrganizationIntegrationSettingsResolver settingsResolver;
 
     public OrganizationEventWebhookResponse receiveWebhook(OrganizationEventWebhookRequest request) {
         String rawPayload = request == null ? "" : request.eventMessage();
-        if (!properties.isEnabled()) {
+        OrganizationIntegrationSettings settings = settingsResolver.resolve();
+        if (!settings.enabled()) {
             String eventKey = OrganizationEventKeyFactory.hash(rawPayload);
             inboxService.markRejected(eventKey, "组织架构事件接入已关闭", rawPayload);
             return response("500", "组织架构事件接入已关闭", eventKey, false, false, OrganizationEventStatus.REJECTED);
@@ -37,12 +38,16 @@ public class OrganizationDirectorySyncAppService {
             inboxService.markRejected(eventKey, "HTTP事件Topic与payload不一致", rawPayload);
             return response("500", "HTTP事件Topic与payload不一致", eventKey, false, false, OrganizationEventStatus.REJECTED);
         }
-        return processNotice(parsed.notice(), rawPayload);
+        return processNotice(parsed.notice(), rawPayload, settings);
     }
 
-    private OrganizationEventWebhookResponse processNotice(OrganizationEventNotice notice, String rawPayload) {
+    private OrganizationEventWebhookResponse processNotice(
+            OrganizationEventNotice notice,
+            String rawPayload,
+            OrganizationIntegrationSettings settings
+    ) {
         String eventKey = inboxService.eventKey(notice);
-        if (!allowed(notice.eventSource())) {
+        if (!settings.sourceAllowed(notice.eventSource())) {
             inboxService.markRejected(eventKey, "事件来源不在白名单内", rawPayload);
             return response("500", "事件来源不在白名单内", eventKey, false, false, OrganizationEventStatus.REJECTED);
         }
@@ -79,10 +84,6 @@ public class OrganizationDirectorySyncAppService {
     private OrganizationEventWebhookResponse failLookup(String eventKey, String errorCode) {
         inboxService.markFailed(eventKey, "组织架构主数据接口未返回数据", errorCode);
         return response("500", "组织架构主数据接口未返回数据", eventKey, false, false, OrganizationEventStatus.FAILED);
-    }
-
-    private boolean allowed(String sourceApp) {
-        return properties.getAllowedSourceApps().stream().anyMatch(sourceApp::equals);
     }
 
     private boolean requestTopicMatchesPayload(OrganizationEventWebhookRequest request, OrganizationEventNotice notice) {

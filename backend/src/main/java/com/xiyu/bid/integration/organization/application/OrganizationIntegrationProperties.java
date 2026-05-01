@@ -13,6 +13,7 @@ import java.util.List;
 public class OrganizationIntegrationProperties {
     private boolean enabled = true;
     private String webhookSecret = "";
+    private String ipWhitelist = "";
     private int eventLogRetentionDays = 90;
     private List<String> allowedSourceApps = new ArrayList<>(List.of("customer-org"));
     private List<String> adminRoleCodes = new ArrayList<>();
