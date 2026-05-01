@@ -28,7 +28,7 @@ class ProjectShareLinkWorkflowService {
     }
 
     ProjectShareLinkDTO createProjectShareLink(Long projectId, ProjectShareLinkCreateRequest request) {
-        guardService.requireProject(projectId);
+        guardService.requireWorkflowMutationProject(projectId);
         String token = UUID.randomUUID().toString().replace("-", "");
         String baseUrl = request.getBaseUrl().trim().replaceAll("/+$", "");
         ProjectShareLink shareLink = ProjectShareLink.builder()
