@@ -25,6 +25,7 @@ export function useProjectDetailTaskActions(context) {
     || 'DeepSeek API Key 未配置。请管理员到系统设置 → AI 模型配置中填写 DeepSeek provider key，或在服务端设置 DEEPSEEK_API_KEY 后重启。'
   )
   const hasReusableTenderBreakdown = (result = {}) => Boolean(result?.document?.snapshotId)
+  const isNotFoundResponse = (error) => Number(error?.response?.status || error?.status || error?.code) === 404
   const resolveTenderBreakdownReuseMessage = (result = {}) => {
     const documentName = result?.document?.name
     return documentName
@@ -97,6 +98,10 @@ export function useProjectDetailTaskActions(context) {
           return
         }
       } catch (error) {
+        if (isNotFoundResponse(error)) {
+          state.tenderBreakdownDialogVisible.value = true
+          return
+        }
         message.error(resolveErrorMessage(error, '读取已解析招标文件失败'))
         return
       }

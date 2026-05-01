@@ -155,6 +155,40 @@ describe('useProjectDetailTaskActions', () => {
     expect(state.tenderBreakdownDialogVisible.value).toBe(true)
   })
 
+  it('最新解析快照接口暂不可用时不展示 404 错误并回退到上传弹窗', async () => {
+    const error = vi.fn()
+    const getLatestTenderBreakdown = vi.fn().mockRejectedValue({
+      response: {
+        status: 404,
+        data: {
+          message: 'No static resource api/projects/12/tender-breakdown/latest.',
+        },
+      },
+    })
+    const state = {
+      project: { value: { id: 12, tasks: [] } },
+      activities: { value: [] },
+      tenderBreakdownDialogVisible: { value: false },
+      tenderBreakdownParsing: { value: false },
+    }
+    const { handleOpenTenderBreakdown } = useProjectDetailTaskActions({
+      route: { params: { id: 12 } },
+      userStore: { userName: '小王' },
+      projectStore: {},
+      projectsApi: { getLatestTenderBreakdown },
+      isApiProject: { value: true },
+      message: { success: vi.fn(), error, warning: vi.fn() },
+      state,
+      workflow: {},
+    })
+
+    await handleOpenTenderBreakdown()
+
+    expect(getLatestTenderBreakdown).toHaveBeenCalledWith(12)
+    expect(state.tenderBreakdownDialogVisible.value).toBe(true)
+    expect(error).not.toHaveBeenCalled()
+  })
+
   it('API 项目缺少 DeepSeek 配置时上传前提示配置指引且不解析文件', async () => {
     const file = new File(['招标正文'], '招标文件.docx')
     const warning = vi.fn()
