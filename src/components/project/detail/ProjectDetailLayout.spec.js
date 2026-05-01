@@ -120,4 +120,20 @@ describe('ProjectDetail layout', () => {
     expect(shellCss).toContain('grid-template-columns: minmax(0, 1fr)')
     expect(shellCss).toContain('width: 100% !important')
   })
+
+  it('documents aligned secondary action controls', () => {
+    const shellCss = readFileSync(
+      resolve(process.cwd(), 'src/components/project/detail/project-detail-shell.css'),
+      'utf8',
+    )
+    const sidebarCss = readFileSync(
+      resolve(process.cwd(), 'src/components/project/detail/project-detail-sidebar.css'),
+      'utf8',
+    )
+
+    expect(shellCss).toContain('.workflow-header-actions')
+    expect(shellCss).toContain('margin-left: auto')
+    expect(sidebarCss).toContain('.action-list .el-button')
+    expect(sidebarCss).toContain('margin-left: 0')
+  })
 })
