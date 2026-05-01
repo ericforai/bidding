@@ -78,7 +78,7 @@
               <el-icon><Setting /></el-icon>
               系统设置
             </el-dropdown-item>
-            <el-dropdown-item v-if="canAccessSettings" command="operation-log">
+            <el-dropdown-item command="operation-log">
               <el-icon><DocumentChecked /></el-icon>
               操作日志
             </el-dropdown-item>
@@ -222,12 +222,14 @@ const handleCommand = async (command) => {
     case 'profile':
       break
     case 'settings':
-    case 'operation-log':
       if (canAccessSettings.value) {
-        router.push(command === 'operation-log' ? { path: '/settings', query: { tab: 'audit' } } : '/settings')
+        router.push('/settings')
       } else {
         ElMessage.warning('当前角色无权访问系统设置')
       }
+      break
+    case 'operation-log':
+      router.push('/operation-logs')
       break
     case 'logout':
       try {
