@@ -45,6 +45,11 @@
   gap: 12px;
 }
 
+.action-list .el-button {
+  width: 100%;
+  margin-left: 0;
+}
+
 .activity-content {
   font-size: 14px;
 }
