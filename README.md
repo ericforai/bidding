@@ -113,6 +113,35 @@ npm run dev:stable:status
 - 前端会以 `VITE_API_MODE=api` 连接真实后端（不新增前端 mock 主入口）
 - 如需覆盖本地连接信息，可在启动前设置 `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USERNAME`、`DB_PASSWORD`、`REDIS_HOST`、`REDIS_PORT`
 
+### 新 Mac / 未安装 MySQL 的 Docker 启动方式
+
+如果新电脑已有 Docker Desktop，但没有本机 MySQL，可以直接用项目脚本拉起本地 MySQL 8.0 和 Redis 容器，并把变量写入 `.runtime/local-docker/local-docker.env`：
+
+```bash
+npm install
+npm run dev:docker:start
+```
+
+常用命令：
+
+```bash
+npm run dev:docker:status
+npm run dev:docker:logs
+npm run dev:docker:stop
+```
+
+默认容器变量：
+- MySQL：`127.0.0.1:3306/xiyu_bid_main`，用户 `xiyu_user`，密码 `XiyuDB!2026`
+- Redis：`127.0.0.1:6379/0`
+- 前端：`127.0.0.1:1314`
+- 后端：`127.0.0.1:18080`
+
+如果端口被占用，可显式覆盖：
+
+```bash
+DB_PORT=13306 REDIS_PORT=16379 npm run dev:docker:start
+```
+
 ### 运行模式矩阵
 
 | 场景 | 前端数据来源 | 后端 Profile | 数据行为 |
