@@ -26,55 +26,54 @@
 ### Task A1：Flyway 迁移 — 建表 + 种子
 
 **Files:**
-- Create: `backend/src/main/resources/db/migration/V99__task_status_dict.sql`
+- Create: `backend/src/main/resources/db/migration-mysql/V101__task_status_dict.sql`
 
 **Step 1：编写迁移 SQL**
 
 ```sql
--- V99: 任务状态字典（全平台统一主数据），解耦任务状态的显示与业务判断
+-- V101: 任务状态字典（全平台统一主数据），解耦任务状态的显示与业务判断
+-- NOTE: is_initial 的"全表至多一条 true"唯一性由 service 层在写入时校验，
+--       因为 MySQL 8 不支持 WHERE 子句的 partial index；生成列 + 唯一索引的
+--       变通方案留待"状态字典管理页"上线时再评估，避免现在引入额外复杂度。
 CREATE TABLE task_status_dict (
     code         VARCHAR(32)  NOT NULL PRIMARY KEY,
     name         VARCHAR(64)  NOT NULL,
     category     VARCHAR(16)  NOT NULL,
     color        VARCHAR(16)  NOT NULL DEFAULT '#909399',
     sort_order   INT          NOT NULL DEFAULT 0,
-    is_initial   TINYINT(1)   NOT NULL DEFAULT 0,
-    is_terminal  TINYINT(1)   NOT NULL DEFAULT 0,
-    enabled      TINYINT(1)   NOT NULL DEFAULT 1,
-    created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    updated_by   VARCHAR(64)  NULL,
+    is_initial   BOOLEAN      NOT NULL DEFAULT FALSE,
+    is_terminal  BOOLEAN      NOT NULL DEFAULT FALSE,
+    enabled      BOOLEAN      NOT NULL DEFAULT TRUE,
+    created_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by   BIGINT       NULL,
+    updated_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_by   BIGINT       NULL,
     CONSTRAINT ck_task_status_dict_category CHECK (category IN ('OPEN','IN_PROGRESS','REVIEW','CLOSED'))
 );
 
-CREATE UNIQUE INDEX uk_task_status_dict_initial ON task_status_dict (is_initial) WHERE is_initial = 1;
 CREATE INDEX idx_task_status_dict_enabled_sort ON task_status_dict (enabled, sort_order);
 
 -- 种子：保持与历史 ENUM 等价的 4 条记录，确保业务语义一致
 INSERT INTO task_status_dict (code, name, category, color, sort_order, is_initial, is_terminal, enabled)
 VALUES
-    ('TODO',        '待办',   'OPEN',        '#909399', 10, 1, 0, 1),
-    ('IN_PROGRESS', '进行中', 'IN_PROGRESS', '#409eff', 20, 0, 0, 1),
-    ('REVIEW',      '待审核', 'REVIEW',      '#e6a23c', 30, 0, 0, 1),
-    ('COMPLETED',   '已完成', 'CLOSED',      '#67c23a', 40, 0, 1, 1);
+    ('TODO',        '待办',   'OPEN',        '#909399', 10, TRUE,  FALSE, TRUE),
+    ('IN_PROGRESS', '进行中', 'IN_PROGRESS', '#409eff', 20, FALSE, FALSE, TRUE),
+    ('REVIEW',      '待审核', 'REVIEW',      '#e6a23c', 30, FALSE, FALSE, TRUE),
+    ('COMPLETED',   '已完成', 'CLOSED',      '#67c23a', 40, FALSE, TRUE,  TRUE);
 ```
 
-> MySQL 8 不支持 partial index；`is_initial` 唯一性通过应用层 + 触发器或 before-insert 校验；本 MVP 通过**应用层 service 约束**即可，上面的 partial index 语法改为删除：
+> MySQL 8 不支持 WHERE 子句的 partial index；`is_initial` 的"全表至多一条 true"唯一性通过 service 层写入时校验（本 MVP 的既定策略，已在 SQL 头部 NOTE 中说明）。
 
-**Step 2：改写为 MySQL 8 兼容版本**
-
-把上面 `CREATE UNIQUE INDEX uk_task_status_dict_initial ON task_status_dict (is_initial) WHERE is_initial = 1;` **删除**；改为在 service 层写入时校验（`is_initial=true` 的记录最多一条）。
-
-**Step 3：运行迁移验证**
+**Step 2：运行迁移验证**
 
 Run: `cd backend && ./start.sh`（后台启动，看日志出现 `Successfully applied 1 migration to schema`）
 停止后台进程。
 
-**Step 4：Commit**
+**Step 3：Commit**
 
 ```bash
-git add backend/src/main/resources/db/migration/V99__task_status_dict.sql
-git commit -m "feat(task): V99 add task_status_dict table with seed data"
+git add backend/src/main/resources/db/migration-mysql/V101__task_status_dict.sql
+git commit -m "feat(task): V101 add task_status_dict table with seed data"
 ```
 
 ---
@@ -332,15 +331,15 @@ git commit -m "feat(task): expose GET /api/task-status-dict"
 
 ## Phase B — Task.content 字段 + status 列类型迁移
 
-### Task B1：Flyway 迁移 V100
+### Task B1：Flyway 迁移 V102
 
 **Files:**
-- Create: `backend/src/main/resources/db/migration/V100__task_content_and_status_fk.sql`
+- Create: `backend/src/main/resources/db/migration-mysql/V102__task_content_and_status_fk.sql`
 
 **Step 1：写迁移 SQL**
 
 ```sql
--- V100: Task 新增 content 富文本字段；status 列由 ENUM 扩展为 VARCHAR(32)，回填历史数据
+-- V102: Task 新增 content 富文本字段；status 列由 ENUM 扩展为 VARCHAR(32)，回填历史数据
 ALTER TABLE task ADD COLUMN content MEDIUMTEXT NULL COMMENT '任务详细描述（富文本/markdown）';
 
 -- 注意：原 task.status 为 VARCHAR（存 ENUM name）或 ENUM，两种都兼容。
@@ -358,8 +357,8 @@ Run: 启动后端看日志 `Successfully applied 1 migration to schema`。
 **Step 3：Commit**
 
 ```bash
-git add backend/src/main/resources/db/migration/V100__task_content_and_status_fk.sql
-git commit -m "feat(task): V100 add Task.content and widen status column"
+git add backend/src/main/resources/db/migration-mysql/V102__task_content_and_status_fk.sql
+git commit -m "feat(task): V102 add Task.content and widen status column"
 ```
 
 ---
@@ -1399,7 +1398,7 @@ git push origin HEAD:$(git rev-parse --abbrev-ref HEAD)
 
 ## 风险与回退
 
-- **迁移失败**：V99 / V100 如失败，回退脚本：
+- **迁移失败**：V101 / V102 如失败，回退脚本：
   ```sql
   DROP TABLE IF EXISTS task_status_dict;
   ALTER TABLE task DROP COLUMN content;
