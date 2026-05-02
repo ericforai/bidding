@@ -66,14 +66,29 @@ describe('sidecar dev service lifecycle', () => {
     expect(servicesScript).toContain('APP_DOC_INSIGHT_SIDECAR_SHARED_KEY="$SIDECAR_SHARED_KEY"')
   })
 
-  it('passes DeepSeek API key from launchd environment to backend children', () => {
+  it('keeps the DeepSeek API key out of the launchd plist and passes it through a local key file', () => {
     const launchdScript = readFileSync(resolve(rootDir, 'scripts/dev-services-launchd.sh'), 'utf8')
     const servicesScript = readFileSync(resolve(rootDir, 'scripts/dev-services.sh'), 'utf8')
 
     expect(launchdScript).toContain('DEEPSEEK_API_KEY="${DEEPSEEK_API_KEY:-}"')
-    expect(launchdScript).toContain('<key>DEEPSEEK_API_KEY</key>')
-    expect(launchdScript).toContain('<string>${DEEPSEEK_API_KEY}</string>')
+    expect(launchdScript).toContain('DEEPSEEK_API_KEY_FILE="${DEEPSEEK_API_KEY_FILE:-$RUNTIME_DIR/deepseek.api-key}"')
+    expect(launchdScript).toContain('write_deepseek_api_key_file')
+    expect(launchdScript).toContain("Print :EnvironmentVariables:DEEPSEEK_API_KEY")
+    expect(launchdScript).toContain('<key>DEEPSEEK_API_KEY_FILE</key>')
+    expect(launchdScript).toContain('<string>${DEEPSEEK_API_KEY_FILE}</string>')
+    expect(launchdScript).not.toContain('<key>DEEPSEEK_API_KEY</key>')
+    expect(launchdScript).not.toContain('<string>${DEEPSEEK_API_KEY}</string>')
     expect(servicesScript).toContain('DEEPSEEK_API_KEY="${DEEPSEEK_API_KEY:-}"')
+    expect(servicesScript).toContain('DEEPSEEK_API_KEY_FILE="${DEEPSEEK_API_KEY_FILE:-$RUNTIME_DIR/deepseek.api-key}"')
+    expect(servicesScript).toContain('load_deepseek_api_key')
     expect(servicesScript).toContain('DEEPSEEK_API_KEY="$DEEPSEEK_API_KEY"')
+  })
+
+  it('includes only a DeepSeek API key hash in backend identity', () => {
+    const servicesScript = readFileSync(resolve(rootDir, 'scripts/dev-services.sh'), 'utf8')
+
+    expect(servicesScript).toContain('deepseek_api_key_hash')
+    expect(servicesScript).toContain("printf 'deepseek_key_hash=%s\\n' \"$(deepseek_api_key_hash)\"")
+    expect(servicesScript).not.toContain("printf 'deepseek_api_key=%s")
   })
 })

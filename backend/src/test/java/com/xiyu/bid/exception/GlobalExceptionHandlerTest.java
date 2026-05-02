@@ -16,7 +16,7 @@ class GlobalExceptionHandlerTest {
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
     @Test
-    void handleOpenAiUnauthorizedException_shouldReturnDeepSeekCredentialMessage() {
+    void handleOpenAiUnauthorizedException_shouldReturnGenericAiCredentialMessage() {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/projects/1/tender-breakdown");
         ErrorObject error = ErrorObject.builder()
                 .code("invalid_api_key")
@@ -34,7 +34,8 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getCode()).isEqualTo(502);
-        assertThat(response.getBody().getMessage()).contains("DeepSeek API Key 无效或已失效");
+        assertThat(response.getBody().getMessage()).contains("AI provider API Key 无效或已失效");
+        assertThat(response.getBody().getMessage()).doesNotContain("DeepSeek");
         assertThat(response.getBody().getMessage()).doesNotContain("2f99");
     }
 }

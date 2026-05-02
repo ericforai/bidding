@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Input: launchd command argument, optional runtime environment variables
-# Output: launchd-managed sidecar/backend/frontend lifecycle actions, child-process cleanup, current-code restart, and bounded status checks
+# Output: launchd-managed sidecar/backend/frontend lifecycle actions, child-process cleanup, local secret-file handoff, current-code restart, and bounded status checks
 # Pos: scripts/ - macOS launchd wrapper for dev-services watchdog
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -21,6 +21,7 @@ DB_NAME="${DB_NAME:-xiyu_bid_main}"
 DB_USERNAME="${DB_USERNAME:-xiyu_user}"
 DB_PASSWORD="${DB_PASSWORD:-XiyuDB!2026}"
 DEEPSEEK_API_KEY="${DEEPSEEK_API_KEY:-}"
+DEEPSEEK_API_KEY_FILE="${DEEPSEEK_API_KEY_FILE:-$RUNTIME_DIR/deepseek.api-key}"
 REDIS_HOST="${REDIS_HOST:-localhost}"
 DEFAULT_REDIS_PORT="6379"
 FALLBACK_REDIS_PORT="16379"
@@ -56,7 +57,8 @@ Environment variables:
   JWT_SECRET                 JWT secret passed to backend process
   DB_HOST/DB_PORT/DB_NAME    MySQL connection target
   DB_USERNAME/DB_PASSWORD    MySQL credentials
-  DEEPSEEK_API_KEY           DeepSeek API key passed to backend process
+  DEEPSEEK_API_KEY           DeepSeek API key copied to a local 0600 file for backend process
+  DEEPSEEK_API_KEY_FILE      Local runtime file used by dev-services.sh for DeepSeek API key
   REDIS_HOST/REDIS_PORT      Redis connection target
   REDIS_DB                   Redis logical database for this agent
   SIDECAR_HOST/SIDECAR_PORT  Document converter sidecar bind target
@@ -100,8 +102,26 @@ resolve_redis_port() {
   fi
 }
 
+write_deepseek_api_key_file() {
+  local previous_umask
+  if [[ -z "$DEEPSEEK_API_KEY" && -f "$PLIST_PATH" && -x /usr/libexec/PlistBuddy ]]; then
+    DEEPSEEK_API_KEY="$(/usr/libexec/PlistBuddy -c 'Print :EnvironmentVariables:DEEPSEEK_API_KEY' "$PLIST_PATH" 2>/dev/null || true)"
+  fi
+  if [[ -z "$DEEPSEEK_API_KEY" ]]; then
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$DEEPSEEK_API_KEY_FILE")"
+  previous_umask="$(umask)"
+  umask 077
+  printf '%s\n' "$DEEPSEEK_API_KEY" >"$DEEPSEEK_API_KEY_FILE"
+  umask "$previous_umask"
+  chmod 600 "$DEEPSEEK_API_KEY_FILE" >/dev/null 2>&1 || true
+}
+
 write_plist() {
   resolve_redis_port
+  write_deepseek_api_key_file
   mkdir -p "$(dirname "$PLIST_PATH")"
   cat >"$PLIST_PATH" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -152,8 +172,8 @@ write_plist() {
     <string>${DB_USERNAME}</string>
     <key>DB_PASSWORD</key>
     <string>${DB_PASSWORD}</string>
-    <key>DEEPSEEK_API_KEY</key>
-    <string>${DEEPSEEK_API_KEY}</string>
+    <key>DEEPSEEK_API_KEY_FILE</key>
+    <string>${DEEPSEEK_API_KEY_FILE}</string>
     <key>REDIS_HOST</key>
     <string>${REDIS_HOST}</string>
     <key>REDIS_PORT</key>
