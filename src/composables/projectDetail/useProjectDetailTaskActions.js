@@ -221,7 +221,7 @@ export function useProjectDetailTaskActions(context) {
     }).catch(() => {})
   }
 
-  const handleTaskClick = (task) => { state.currentTask.value = task; state.taskDialogVisible.value = true }
+  const handleTaskClick = (task) => { state.currentTask.value = task }
 
   const handleSaveTask = async (payload = {}) => {
     const { mode = 'create', data = {} } = payload
@@ -329,9 +329,7 @@ export function useProjectDetailTaskActions(context) {
     const tasks = state.project.value?.tasks || []
     if (!tasks.length) return
 
-    const allCompleted = tasks.every((task) => projectStore?.isTerminalStatus
-      ? projectStore.isTerminalStatus(task.status)
-      : String(task.status || '').toUpperCase() === 'COMPLETED')
+    const allCompleted = tasks.every((task) => projectStore.isTerminalStatus(task.status))
     if (!allCompleted) {
       message.warning('请先完成所有任务后再提交至标书编写流程')
       return

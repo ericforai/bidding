@@ -42,7 +42,6 @@ describe('project detail action regressions', () => {
       activities: ref([]),
       scoreDraftDialogVisible: ref(false),
       currentTask: ref(null),
-      taskDialogVisible: ref(false),
     }
 
     const { handleAddTask } = useProjectDetailTaskActions({
