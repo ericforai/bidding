@@ -63,16 +63,25 @@
         />
       </el-form-item>
     </template>
-    <el-alert v-if="validationMessage" type="warning" :closable="false" :title="validationMessage" />
   </el-form>
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
+
+/**
+ * @callback UploadFn
+ * @param {Object} field         The field descriptor
+ * @param {Object} request       Element Plus http-request hook param ({ file, onSuccess, onError })
+ * @returns {Promise<{ fileName:string, fileUrl:string, storagePath:string, contentType?:string, size?:number }>}
+ *          Must return a normalized attachment object. The renderer keys dedupe/remove on
+ *          (storagePath ?? fileUrl ?? fileName).
+ */
 
 const props = defineProps({
   fields: { type: Array, required: true },
   modelValue: { type: Object, default: () => ({}) },
+  // See UploadFn typedef above
   uploadFn: { type: Function, default: null },
   disabled: { type: Boolean, default: false }
 })
@@ -80,7 +89,6 @@ const props = defineProps({
 const emit = defineEmits(['submit', 'update:modelValue'])
 
 const localValue = reactive({ ...props.modelValue })
-const validationMessage = ref('')
 const visibleFields = computed(() => (props.fields || []).filter((field) => !field.hidden))
 
 watch(
@@ -111,11 +119,20 @@ function getAttachmentFileList(field) {
 
 async function uploadAttachment(field, request) {
   if (!props.uploadFn) {
-    throw new Error('uploadFn prop is required for attachment fields')
+    const err = new Error('uploadFn prop is required for attachment fields')
+    request?.onError?.(err)
+    throw err
   }
   const file = request?.file?.raw || request?.file
   if (!file) return null
   const attachment = await props.uploadFn(field, request)
+  if (attachment && !attachment.fileName && !attachment.fileUrl && !attachment.storagePath) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[DynamicFormRenderer] uploadFn returned an attachment without fileName/fileUrl/storagePath; ' +
+      'dedupe and remove handlers key on these fields. See UploadFn typedef.'
+    )
+  }
   localValue[field.key] = [...getAttachmentValue(field), attachment]
   request?.onSuccess?.(attachment)
   return attachment
@@ -145,9 +162,7 @@ function isEmptyValue(value) {
 
 function validate() {
   const missing = visibleFields.value.find((field) => field.required && field.type !== 'info' && isEmptyValue(localValue[field.key]))
-  const message = missing ? `请填写${missing.label}` : ''
-  validationMessage.value = message
-  return message
+  return missing ? `请填写${missing.label}` : ''
 }
 
 function submit() {

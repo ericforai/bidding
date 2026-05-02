@@ -110,4 +110,36 @@ describe('DynamicFormRenderer', () => {
       wrapper.vm.uploadAttachment(fields[0], { file: new File(['x'], 'a.pdf') })
     ).rejects.toThrow(/uploadFn/)
   })
+
+  it('attachment uploadFn missing: calls request.onError and throws', async () => {
+    const fields = [{ key: 'f', label: 'F', type: 'attachment' }]
+    const wrapper = mount(DynamicFormRenderer, {
+      props: { fields, modelValue: {} },
+      global: { stubs: elementStubs }
+    })
+    const onError = vi.fn()
+    await expect(
+      wrapper.vm.uploadAttachment(fields[0], { file: new File(['x'], 'a.pdf'), onError })
+    ).rejects.toThrow(/uploadFn/)
+    expect(onError).toHaveBeenCalledTimes(1)
+    expect(onError.mock.calls[0][0]).toBeInstanceOf(Error)
+  })
+
+  it('attachment uploadFn returning incomplete attachment logs a warn', async () => {
+    const uploadFn = vi.fn().mockResolvedValue({ contentType: 'application/pdf' })
+    const fields = [{ key: 'f', label: 'F', type: 'attachment' }]
+    const wrapper = mount(DynamicFormRenderer, {
+      props: { fields, modelValue: {}, uploadFn },
+      global: { stubs: elementStubs }
+    })
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      await wrapper.vm.uploadAttachment(fields[0], { file: new File(['x'], 'a.pdf') })
+      await flushPromises()
+      expect(warnSpy).toHaveBeenCalled()
+      expect(warnSpy.mock.calls[0][0]).toContain('DynamicFormRenderer')
+    } finally {
+      warnSpy.mockRestore()
+    }
+  })
 })
