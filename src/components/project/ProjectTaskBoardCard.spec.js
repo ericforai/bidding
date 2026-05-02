@@ -104,6 +104,10 @@ describe('ProjectTaskBoardCard', () => {
     expect(wrapper.vm.drawerVisible).toBe(true)
     expect(wrapper.vm.drawerMode).toBe('create')
     expect(wrapper.vm.editingTask).toEqual({})
+    // Regression: the button must NOT emit the legacy `add-task` event,
+    // which would trigger the parent's placeholder-creation path and
+    // produce a duplicate task alongside the drawer save.
+    expect(wrapper.emitted('add-task')).toBeFalsy()
   })
 
   it('opens drawer in edit mode when TaskBoard emits task-click', async () => {

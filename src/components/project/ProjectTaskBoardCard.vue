@@ -157,9 +157,12 @@ function openEdit(task) {
 }
 
 function handleAddTaskClick() {
-  // Preserve legacy emit so parents that still listen to `add-task` see the intent,
-  // while the drawer becomes the primary create UX.
-  emit('add-task')
+  // Drawer save is now the single creation point; we intentionally do NOT
+  // emit `add-task` here — the legacy parent handler would immediately
+  // create a placeholder task via the API and append it to the board,
+  // which combined with the drawer save produced a duplicate task.
+  // `add-task` stays in defineEmits for backward compatibility with parents
+  // that still bind `@add-task` (it is now a no-op binding).
   openCreate()
 }
 
