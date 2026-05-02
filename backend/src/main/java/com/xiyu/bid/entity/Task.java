@@ -50,6 +50,14 @@ public class Task {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    /**
+     * Task rich content (Markdown text, up to ~64KB via V102 TEXT column).
+     * Stored as raw Markdown; the frontend is responsible for render-time
+     * HTML sanitization (see {@code src/utils/markdown.js}).
+     */
+    @Column(columnDefinition = "TEXT")
+    private String content;
+
     /** Assignee user id. */
     @Column(name = "assignee_id")
     private Long assigneeId;

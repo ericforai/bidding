@@ -158,8 +158,18 @@ public class TaskController {
         return ResponseEntity.ok(ApiResponse.success("Overdue tasks retrieved successfully", tasks));
     }
 
+    /**
+     * Maximum accepted Markdown content length, matches {@code tasks.content TEXT}
+     * (64KB) ceiling from V102 migration.
+     */
+    private static final int MAX_CONTENT_LEN = 65_535;
+
     private void sanitizeTaskDTO(TaskDTO dto) {
         if (dto.getTitle() != null) dto.setTitle(InputSanitizer.sanitizeString(dto.getTitle(), 200));
         if (dto.getDescription() != null) dto.setDescription(InputSanitizer.sanitizeString(dto.getDescription(), 2000));
+        // NOTE: content is Markdown. Do NOT strip HTML tags here – frontend is responsible
+        // for render-time sanitization (DOMPurify / equivalent in src/utils/markdown.js).
+        // We only defensively strip ASCII control chars and cap length to the TEXT ceiling.
+        if (dto.getContent() != null) dto.setContent(InputSanitizer.sanitizeString(dto.getContent(), MAX_CONTENT_LEN));
     }
 }
