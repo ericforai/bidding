@@ -21,13 +21,6 @@ final class ScoreDraftLineClassifier {
             "序号", "评价项目", "评分标准", "评标分值", "评审内容", "评分因素", "分值", "评分细则",
             "评分标准说明", "评分项目", "分数", "评分因素及标准", "条款号", "详细", "评审", "标准"
     );
-    private static final List<String> RULE_STARTERS = List.of(
-            "供应商", "根据", "按", "提供", "最大程度", "接受平台", "结算周期",
-            "办公用品", "方案应包含", "1、", "（一）", "若该商品"
-    );
-    private static final List<String> TITLE_REJECT_PREFIXES = List.of(
-            "根据", "提供", "最大程度", "接受平台", "办公用品", "方案应包含", "1、", "（一）", "若该商品"
-    );
 
     private ScoreDraftLineClassifier() {
     }
@@ -36,6 +29,7 @@ final class ScoreDraftLineClassifier {
         return Arrays.stream(normalizeExtractedText(extractedText).split("\n"))
                 .map(String::trim)
                 .filter(line -> !line.isBlank())
+                .flatMap(line -> ScoreDraftCompactTableLineExpander.expand(line).stream())
                 .toList();
     }
 
@@ -89,7 +83,7 @@ final class ScoreDraftLineClassifier {
         if (!isSerialLine(lines.get(index)) || index + 1 >= lines.size()) {
             return false;
         }
-        return isPotentialTitle(lines.get(index + 1));
+        return ScoreDraftCompactTableLineExpander.isPotentialTitle(lines.get(index + 1));
     }
 
     static boolean isScoreOnlyLine(String line) {
@@ -97,23 +91,7 @@ final class ScoreDraftLineClassifier {
     }
 
     static String cleanTitle(String raw) {
-        String title = Optional.ofNullable(raw).orElse("").trim();
-        if (title.isBlank()) {
-            return "";
-        }
-
-        Matcher combined = Pattern.compile("^(\\d+)\\s*(.+)$").matcher(title);
-        if (combined.matches()) {
-            title = combined.group(2).trim();
-        }
-
-        for (String starter : RULE_STARTERS) {
-            int index = title.indexOf(starter);
-            if (index > 0) {
-                return title.substring(0, index).trim();
-            }
-        }
-        return title;
+        return ScoreDraftCompactTableLineExpander.cleanTitle(raw);
     }
 
     static String joinLines(List<String> lines) {
@@ -150,22 +128,5 @@ final class ScoreDraftLineClassifier {
 
     private static boolean isSerialLine(String line) {
         return DIGITS_ONLY.matcher(line).matches();
-    }
-
-    private static boolean isPotentialTitle(String line) {
-        if (line == null) {
-            return false;
-        }
-        String text = line.trim();
-        if (text.isBlank() || isTableHeader(text) || isScoreOnlyLine(text)) {
-            return false;
-        }
-        if (text.length() > 80 || text.contains("http")) {
-            return false;
-        }
-        if (text.contains("，") || text.contains("。") || text.contains("；") || text.contains("：") || text.contains("得")) {
-            return false;
-        }
-        return TITLE_REJECT_PREFIXES.stream().noneMatch(text::startsWith);
     }
 }

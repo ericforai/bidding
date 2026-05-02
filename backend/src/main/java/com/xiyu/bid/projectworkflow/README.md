@@ -23,7 +23,9 @@
 | `service/ProjectDocumentFileStorage.java` | Port | 项目文档文件落盘端口，由 bid-agent 文件存储适配器实现，避免 projectworkflow 反向依赖解析模块 |
 | `service/ProjectDocumentViewAssembler.java` | Assembler | 项目文档实体到 DTO 的装配 |
 | `service/ProjectDocumentBindingGateway.java` | Port | 项目文档与外部附件业务的可替换集成边界 |
-| `service/ScoreDraftParserService.java` | Service | 评分草稿解析 |
+| `service/ScoreDraftParserService.java` | Service | 评分草稿解析，支持 Word、Excel 和文本型 PDF 上传 |
+| `parser/ScoreDraftDocumentTextExtractor.java` | Adapter | 将 Word、Excel、文本型 PDF 评分文件抽取为统一行文本，供评分草稿纯解析器消费 |
+| `parser/ScoreDraftCompactTableLineExpander.java` | Core Helper | 将 PDF 抽取出的同一行表格文本展开为既有评分解析器可识别的行序列 |
 | `entity/ProjectDocument.java` | Entity | 项目文档实体 |
 | `entity/ProjectReminder.java` | Entity | 项目提醒实体 |
 | `entity/ProjectShareLink.java` | Entity | 项目分享链接实体 |
