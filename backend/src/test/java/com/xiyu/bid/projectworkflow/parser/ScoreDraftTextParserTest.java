@@ -67,6 +67,33 @@ class ScoreDraftTextParserTest {
     }
 
     @Test
+    void parse_ShouldSplitCompactPdfTableRowsIntoScoreSections() {
+        String text = """
+                3.6 商务评分标准（20分）
+                序号 评价项目 评分标准 评标分值
+                1 同类项目业绩 每提供1个同类项目业绩得2分，最高6分。 6
+                3.7 技术评分标准（50分）
+                评分项目 分数 评分因素及标准
+                整体方案 15 最大程度满足采购文件要求。
+                3.8 价格评分标准（30分）
+                序号 评价项目 分值 评分细则
+                1 品类折扣率 25 接受平台的价格管控，确保用户单位享受优惠价格。
+                """;
+
+        var sections = parser.parse("评分标准.pdf", text);
+
+        assertThat(sections).hasSize(3);
+        assertThat(sections).extracting(ParsedSection::category)
+                .containsExactly("business", "technical", "price");
+        assertThat(sections.get(0).seeds()).extracting(DraftSeed::scoreItemTitle)
+                .containsExactly("同类项目业绩");
+        assertThat(sections.get(1).seeds()).extracting(DraftSeed::scoreItemTitle)
+                .containsExactly("整体方案");
+        assertThat(sections.get(2).seeds()).extracting(DraftSeed::scoreItemTitle)
+                .containsExactly("品类折扣率");
+    }
+
+    @Test
     void parse_ShouldFilterOutTextWithoutValidSections() {
         assertThat(parser.parse("评分标准.docx", "普通说明\n无评分标准")).isEmpty();
     }

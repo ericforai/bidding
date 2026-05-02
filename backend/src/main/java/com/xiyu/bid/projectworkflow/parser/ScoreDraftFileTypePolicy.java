@@ -15,9 +15,15 @@ public class ScoreDraftFileTypePolicy {
         if (lower.endsWith(".doc")) {
             return FileType.DOC;
         }
-        if (lower.endsWith(".pdf")) {
-            throw new IllegalArgumentException("暂不支持 PDF 评分表解析，请优先上传 Word 版本评分标准");
+        if (lower.endsWith(".xlsx")) {
+            return FileType.XLSX;
         }
-        throw new IllegalArgumentException("仅支持 .doc/.docx 评分文件");
+        if (lower.endsWith(".xls")) {
+            return FileType.XLS;
+        }
+        if (lower.endsWith(".pdf")) {
+            return FileType.PDF;
+        }
+        throw new IllegalArgumentException("仅支持 .doc/.docx/.xls/.xlsx/.pdf 评分文件");
     }
 }

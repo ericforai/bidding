@@ -2,5 +2,8 @@ package com.xiyu.bid.projectworkflow.parser;
 
 public enum FileType {
     DOC,
-    DOCX
+    DOCX,
+    XLS,
+    XLSX,
+    PDF
 }
