@@ -41,6 +41,7 @@ import { workbenchApi } from './modules/workbench.js'
 import { bidAgentApi } from './modules/bidAgent.js'
 import { bidMatchScoringApi } from './modules/bidMatchScoring.js'
 import { workflowFormApi } from './modules/workflowForm.js'
+import { taskStatusDictApi } from './modules/taskStatusDict.js'
 
 export {
   httpClient,
@@ -69,7 +70,8 @@ export {
   workbenchApi,
   bidAgentApi,
   bidMatchScoringApi,
-  workflowFormApi
+  workflowFormApi,
+  taskStatusDictApi
 }
 
 export default {
@@ -93,5 +95,6 @@ export default {
   workbench: () => Promise.resolve(workbenchApi),
   bidAgent: () => Promise.resolve(bidAgentApi),
   bidMatchScoring: () => Promise.resolve(bidMatchScoringApi),
-  workflowForm: () => Promise.resolve(workflowFormApi)
+  workflowForm: () => Promise.resolve(workflowFormApi),
+  taskStatusDict: () => Promise.resolve(taskStatusDictApi)
 }
