@@ -1,0 +1,111 @@
+// Input: mocked taskStatusDictApi + task fixtures + el-* stubs
+// Output: regression spec covering dynamic columns, terminal-based progress, dict-driven dropdown
+// Pos: src/components/common/ - TaskBoard component tests
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
+import { mount, flushPromises } from '@vue/test-utils'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import TaskBoard from './TaskBoard.vue'
+
+vi.mock('@/api/modules/taskStatusDict.js', () => ({
+  taskStatusDictApi: {
+    list: vi.fn().mockResolvedValue({
+      success: true,
+      data: [
+        { code: 'TODO', name: '待办', category: 'OPEN', color: '#909399', sortOrder: 10, initial: true, terminal: false },
+        { code: 'IN_PROGRESS', name: '进行中', category: 'IN_PROGRESS', color: '#409eff', sortOrder: 20, initial: false, terminal: false },
+        { code: 'REVIEW', name: '待审核', category: 'REVIEW', color: '#e6a23c', sortOrder: 30, initial: false, terminal: false },
+        { code: 'COMPLETED', name: '已完成', category: 'CLOSED', color: '#67c23a', sortOrder: 40, initial: false, terminal: true },
+        { code: 'ARCHIVED', name: '已归档', category: 'CLOSED', color: '#c0c4cc', sortOrder: 50, initial: false, terminal: true }
+      ]
+    })
+  },
+  default: {
+    list: vi.fn()
+  }
+}))
+
+// Light stubs — keep slot text visible so `.text()` assertions work, and avoid
+// the cost of spinning up the full element-plus registry.
+const globalStubs = {
+  ElTag: { props: ['type', 'size', 'closable'], template: '<span class="el-tag-stub"><slot /></span>' },
+  ElBadge: { props: ['value'], template: '<span class="el-badge-stub">{{ value }}<slot /></span>' },
+  ElButton: { props: ['type', 'size', 'disabled'], template: '<button class="el-button-stub" :disabled="disabled"><slot /></button>' },
+  ElIcon: { template: '<i class="el-icon-stub"><slot /></i>' },
+  ElEmpty: { props: ['description', 'imageSize'], template: '<div class="el-empty-stub">{{ description }}</div>' },
+  ElLink: { props: ['href', 'type'], template: '<a class="el-link-stub" :href="href"><slot /></a>' },
+  ElDropdown: { template: '<div class="el-dropdown-stub"><slot /><slot name="dropdown" /></div>' },
+  ElDropdownItem: {
+    name: 'ElDropdownItem',
+    props: ['divided', 'disabled'],
+    template: '<div class="el-dropdown-item" :class="{ disabled }"><slot /></div>',
+  },
+  ElDialog: { props: ['modelValue', 'title', 'width'], template: '<div v-if="modelValue" class="el-dialog-stub"><slot /><slot name="footer" /></div>' },
+  ElForm: { props: ['model', 'labelWidth'], template: '<form class="el-form-stub"><slot /></form>' },
+  ElFormItem: { props: ['label'], template: '<div class="el-form-item-stub"><label>{{ label }}</label><slot /></div>' },
+  ElInput: {
+    props: ['modelValue', 'placeholder'],
+    emits: ['update:modelValue'],
+    template: '<input class="el-input-stub" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+  },
+  ElSelect: {
+    props: ['modelValue', 'placeholder'],
+    emits: ['update:modelValue'],
+    template: '<select class="el-select-stub" :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><slot /></select>',
+  },
+  ElOption: { props: ['label', 'value'], template: '<option :value="value">{{ label }}</option>' },
+  ElUpload: { template: '<div class="el-upload-stub"><slot /><slot name="tip" /></div>' },
+}
+
+function mountBoard(props = {}) {
+  return mount(TaskBoard, {
+    props,
+    global: { stubs: globalStubs },
+  })
+}
+
+describe('TaskBoard (dynamic columns)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('renders one column per enabled status from the dict', async () => {
+    const wrapper = mountBoard({ tasks: [] })
+    await flushPromises()
+    expect(wrapper.findAll('.board-column').length).toBe(5)
+  })
+
+  it('progress is terminal-based, not the string "done"', async () => {
+    const wrapper = mountBoard({
+      tasks: [
+        { id: 1, status: 'COMPLETED' },
+        { id: 2, status: 'ARCHIVED' },
+        { id: 3, status: 'IN_PROGRESS' },
+        { id: 4, status: 'TODO' }
+      ]
+    })
+    await flushPromises()
+    // 2 terminal out of 4 → 50%
+    expect(wrapper.text()).toContain('50%')
+  })
+
+  it('legacy lowercase task status is normalized to uppercase for bucketing', async () => {
+    const wrapper = mountBoard({
+      tasks: [
+        { id: 1, status: 'todo' }
+      ]
+    })
+    await flushPromises()
+    const todoBadge = wrapper.findAll('.board-column')[0].find('.el-badge-stub')
+    expect(todoBadge.text()).toContain('1')
+  })
+
+  it('dropdown items reflect dict (no hardcoded 4)', async () => {
+    const wrapper = mountBoard({ tasks: [{ id: 1, name: 'T1', status: 'TODO' }] })
+    await flushPromises()
+    const items = wrapper.findAllComponents({ name: 'ElDropdownItem' })
+    // At least 5 status transitions + 1 "上传交付物" = 6
+    expect(items.length).toBeGreaterThanOrEqual(5)
+  })
+})

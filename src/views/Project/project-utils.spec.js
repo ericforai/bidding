@@ -220,7 +220,17 @@ describe('normalizeTaskStatusForApi', () => {
     ['doing', 'IN_PROGRESS'],
     ['done', 'COMPLETED'],
     ['review', 'REVIEW']
-  ])('maps frontend status "%s" to backend "%s"', (input, expected) => {
+  ])('maps legacy frontend lowercase status "%s" to backend "%s"', (input, expected) => {
+    expect(normalizeTaskStatusForApi(input)).toBe(expected)
+  })
+
+  it.each([
+    ['TODO', 'TODO'],
+    ['IN_PROGRESS', 'IN_PROGRESS'],
+    ['REVIEW', 'REVIEW'],
+    ['COMPLETED', 'COMPLETED'],
+    ['CANCELLED', 'CANCELLED']
+  ])('passes uppercase canonical code "%s" through as identity', (input, expected) => {
     expect(normalizeTaskStatusForApi(input)).toBe(expected)
   })
 
@@ -261,11 +271,22 @@ describe('project status display helpers', () => {
 
 describe('normalizeTaskStatusFromApi', () => {
   it.each([
-    ['TODO', 'todo'],
-    ['IN_PROGRESS', 'doing'],
-    ['COMPLETED', 'done'],
-    ['REVIEW', 'review']
-  ])('maps backend status "%s" to frontend "%s"', (input, expected) => {
+    ['TODO', 'TODO'],
+    ['IN_PROGRESS', 'IN_PROGRESS'],
+    ['COMPLETED', 'COMPLETED'],
+    ['REVIEW', 'REVIEW'],
+    ['CANCELLED', 'CANCELLED']
+  ])('passes backend uppercase code "%s" through as identity', (input, expected) => {
+    expect(normalizeTaskStatusFromApi(input)).toBe(expected)
+  })
+
+  it.each([
+    ['todo', 'TODO'],
+    ['doing', 'IN_PROGRESS'],
+    ['review', 'REVIEW'],
+    ['done', 'COMPLETED'],
+    ['cancelled', 'CANCELLED']
+  ])('upgrades legacy lowercase "%s" to uppercase canonical "%s"', (input, expected) => {
     expect(normalizeTaskStatusFromApi(input)).toBe(expected)
   })
 
