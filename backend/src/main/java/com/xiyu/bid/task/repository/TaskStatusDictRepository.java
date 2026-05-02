@@ -17,10 +17,11 @@ public interface TaskStatusDictRepository
         extends JpaRepository<TaskStatusDict, String> {
 
     /**
-     * Find all enabled status rows ordered by {@code sort_order} asc.
-     * Used by看板列渲染与下拉筛选器。
+     * 查询全部启用中的状态字典项，按 {@code sort_order} 升序排列。
      *
-     * @return enabled statuses, sorted ascending by sortOrder
+     * <p>用于看板列渲染与下拉筛选器。</p>
+     *
+     * @return 启用中的状态列表，按 sortOrder 升序
      */
     List<TaskStatusDict> findByEnabledTrueOrderBySortOrderAsc();
 

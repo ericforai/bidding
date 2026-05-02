@@ -36,6 +36,7 @@ class TaskStatusDictRepositoryTest {
     @BeforeEach
     void seedDict() {
         // Mirror V101 seed data (4 rows, sort_order 10/20/30/40)
+        // plus one disabled row to verify the enabled filter.
         entityManager.persist(row(
                 "TODO", "待办", TaskStatusCategory.OPEN,
                 "#909399", 10, true, false, true));
@@ -48,6 +49,9 @@ class TaskStatusDictRepositoryTest {
         entityManager.persist(row(
                 "COMPLETED", "已完成", TaskStatusCategory.CLOSED,
                 "#67c23a", 40, false, true, true));
+        entityManager.persist(row(
+                "ARCHIVED", "归档", TaskStatusCategory.OPEN,
+                "#c0c4cc", 50, false, false, false));
         entityManager.flush();
     }
 
@@ -59,6 +63,8 @@ class TaskStatusDictRepositoryTest {
         assertThat(list).extracting(TaskStatusDict::getCode)
                 .containsExactly(
                         "TODO", "IN_PROGRESS", "REVIEW", "COMPLETED");
+        assertThat(list).extracting(TaskStatusDict::getCode)
+                .doesNotContain("ARCHIVED");
     }
 
     @Test

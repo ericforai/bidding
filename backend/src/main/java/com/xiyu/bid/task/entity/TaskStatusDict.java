@@ -5,7 +5,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,9 +23,9 @@ import java.time.LocalDateTime;
  * code（逻辑主键）、category（大类）、color、sort_order、
  * is_initial、is_terminal、enabled。</p>
  *
- * <p>时间戳字段 {@code created_at} / {@code updated_at} 由数据库
- * 默认值填充（CURRENT_TIMESTAMP / ON UPDATE CURRENT_TIMESTAMP），
- * JPA 侧标记为不可插入/不可更新，避免覆盖 DB 默认值。</p>
+ * <p>时间戳字段 {@code created_at} / {@code updated_at} 通过
+ * {@link PrePersist} / {@link PreUpdate} 回调由 JPA 层维护，
+ * 与 {@link TaskDeliverable} 等兄弟实体保持一致。</p>
  */
 @Entity
 @Table(name = "task_status_dict")
@@ -71,27 +74,26 @@ public class TaskStatusDict {
      * 以保留 {@code isInitial} JavaBean 属性名（供 Spring Data 派生方法
      * {@code findByIsInitialTrue} 使用）。</p>
      */
+    @NotNull
     @Column(name = "is_initial", nullable = false)
     private Boolean isInitial;
 
     /** 是否为终态（一般对应 category = CLOSED）。 */
+    @NotNull
     @Column(name = "is_terminal", nullable = false)
     private Boolean isTerminal;
 
     /** 是否启用（停用后不再出现在看板列与筛选器中）。 */
+    @NotNull
     @Column(name = "enabled", nullable = false)
-    private Boolean enabled;
+    private Boolean enabled = Boolean.TRUE;
 
-    /** 创建时间（由 DB 默认值填充）。 */
-    @Column(name = "created_at", nullable = false,
-            insertable = false, updatable = false,
-            columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    /** 创建时间（由 {@link PrePersist} 回调填充）。 */
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    /** 更新时间（由 DB 默认值 + ON UPDATE 自动维护）。 */
-    @Column(name = "updated_at", nullable = false,
-            insertable = false, updatable = false,
-            columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    /** 更新时间（由 {@link PrePersist} / {@link PreUpdate} 回调维护）。 */
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     /** 创建人 userId（审计字段，可空）。 */
@@ -101,4 +103,18 @@ public class TaskStatusDict {
     /** 最后更新人 userId（审计字段，可空）。 */
     @Column(name = "updated_by")
     private Long updatedBy;
+
+    /** 插入前自动设置创建与更新时间。 */
+    @PrePersist
+    protected void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    /** 更新前自动刷新更新时间。 */
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
