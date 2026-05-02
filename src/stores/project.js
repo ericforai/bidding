@@ -5,6 +5,7 @@
 
 import { defineStore } from 'pinia'
 import { httpClient, projectsApi, resourcesApi } from '@/api'
+import { taskStatusDictApi } from '@/api/modules/taskStatusDict.js'
 
 function normalizeExpenseDate(value) {
   if (!value) return ''
@@ -94,12 +95,23 @@ export const useProjectStore = defineStore('project', {
     },
     expenseLoading: false,
     expenseError: '',
+    taskStatuses: [],
+    taskStatusesLoaded: false,
   }),
 
   getters: {
     inProgressProjects: (state) => state.projects.filter(p => p.status !== 'won' && p.status !== 'lost'),
     wonProjects: (state) => state.projects.filter(p => p.status === 'won'),
-    findProjectById: (state) => (id) => state.projects.find(p => p.id === id)
+    findProjectById: (state) => (id) => state.projects.find(p => p.id === id),
+    terminalStatusCodes: (state) => new Set(
+      (state.taskStatuses || []).filter((s) => s && s.terminal).map((s) => s.code)
+    ),
+    isTerminalStatus() {
+      return (code) => {
+        if (!code) return false
+        return this.terminalStatusCodes.has(String(code).toUpperCase())
+      }
+    }
   },
 
   actions: {
@@ -207,10 +219,24 @@ export const useProjectStore = defineStore('project', {
         const task = project.tasks.find(t => t.id === taskId)
         if (task) {
           task.status = status
-          const doneCount = project.tasks.filter(t => t.status === 'done').length
+          const doneCount = project.tasks.filter(t => this.isTerminalStatus(t.status)).length
           project.progress = Math.round((doneCount / project.tasks.length) * 100)
         }
       }
+    },
+
+    async loadTaskStatuses() {
+      if (this.taskStatusesLoaded) return this.taskStatuses
+      try {
+        const res = await taskStatusDictApi.list()
+        this.taskStatuses = Array.isArray(res?.data) ? res.data : []
+      } catch (err) {
+        console.error('[projectStore] loadTaskStatuses failed', err)
+        this.taskStatuses = []
+      } finally {
+        this.taskStatusesLoaded = true
+      }
+      return this.taskStatuses
     }
   }
 })

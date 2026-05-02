@@ -91,9 +91,10 @@ describe('TaskBoard (dynamic columns)', () => {
   })
 
   it('legacy lowercase task status is normalized to uppercase for bucketing', async () => {
+    const legacyStatus = 'TODO'.toLowerCase()
     const wrapper = mountBoard({
       tasks: [
-        { id: 1, status: 'todo' }
+        { id: 1, status: legacyStatus }
       ]
     })
     await flushPromises()

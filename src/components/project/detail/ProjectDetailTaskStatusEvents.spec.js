@@ -9,7 +9,7 @@ import { projectDetailKey } from '@/composables/projectDetail/context.js'
 const mainColumnContext = {
   project: {
     id: 12,
-    tasks: [{ id: 501, name: '商务标：商务响应', status: 'todo' }],
+    tasks: [{ id: 501, name: '商务标：商务响应', status: 'TODO' }],
     documents: [],
   },
   approvalHistory: [],
@@ -91,7 +91,7 @@ describe('ProjectDetail task status event wiring', () => {
     const detail = {
       project: ref({
         id: 12,
-        tasks: [{ id: 601, name: '技术标：技术方案', status: 'todo' }],
+        tasks: [{ id: 601, name: '技术标：技术方案', status: 'TODO' }],
       }),
       approvalHistory: ref([]),
       projectExpenses: ref([]),

@@ -50,7 +50,7 @@
     "wiki:ingest": "node scripts/wiki-ingest.mjs",
     "wiki:build": "node scripts/wiki-build.mjs",
     "wiki:check": "node scripts/wiki-check.mjs",
-    "build": "npm run check:version-sync && npm run check:front-data-boundaries && npm run check:doc-governance && vite build",
+    "build": "npm run check:version-sync && npm run check:front-data-boundaries && npm run check:doc-governance && npm run check:task-status-literal && vite build",
     "build:api": "vite build --mode api",
     "preview": "vite preview",
     "test:e2e": "npx playwright test --config playwright.config.js",

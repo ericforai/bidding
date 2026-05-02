@@ -94,7 +94,7 @@ export function useProjectDetailTaskActions(context) {
     state.project.value.tasks = getTaskTemplateByProject(state.project.value).map((taskTemplate, index) => {
       const taskDeadline = new Date(deadline)
       taskDeadline.setDate(taskDeadline.getDate() - taskTemplate.deadlineOffset)
-      return { id: `${state.project.value.id}_T${String(index + 1).padStart(3, '0')}`, name: taskTemplate.name, description: taskTemplate.description, owner: taskTemplate.owner, status: 'todo', priority: taskTemplate.priority, deadline: taskDeadline.toISOString().split('T')[0], hasDeliverable: taskTemplate.needsDeliverable, deliverableType: taskTemplate.deliverableType || 'other', deliverables: [] }
+      return { id: `${state.project.value.id}_T${String(index + 1).padStart(3, '0')}`, name: taskTemplate.name, description: taskTemplate.description, owner: taskTemplate.owner, status: 'TODO', priority: taskTemplate.priority, deadline: taskDeadline.toISOString().split('T')[0], hasDeliverable: taskTemplate.needsDeliverable, deliverableType: taskTemplate.deliverableType || 'other', deliverables: [] }
     })
     pushActivity(`根据项目模板自动生成了 ${state.project.value.tasks.length} 个任务`)
     message.success(`已自动生成 ${state.project.value.tasks.length} 个任务`)
@@ -195,7 +195,7 @@ export function useProjectDetailTaskActions(context) {
     if (!state.project.value) return
     const nextIndex = (state.project.value.tasks?.length || 0) + 1
     const dueDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-    const newTask = { name: `新增任务 ${nextIndex}`, owner: userStore.userName, assignee: userStore.userName, department: '投标管理部', dueDate: dueDate.toISOString().split('T')[0], priority: 'medium', status: 'todo', deliverables: [], hasDeliverable: false }
+    const newTask = { name: `新增任务 ${nextIndex}`, owner: userStore.userName, assignee: userStore.userName, department: '投标管理部', dueDate: dueDate.toISOString().split('T')[0], priority: 'medium', status: 'TODO', deliverables: [], hasDeliverable: false }
 
     if (!isApiProject.value) {
       state.project.value.tasks = Array.isArray(state.project.value.tasks) ? state.project.value.tasks : []
@@ -264,7 +264,9 @@ export function useProjectDetailTaskActions(context) {
     const tasks = state.project.value?.tasks || []
     if (!tasks.length) return
 
-    const allCompleted = tasks.every((task) => task.status === 'done')
+    const allCompleted = tasks.every((task) => projectStore?.isTerminalStatus
+      ? projectStore.isTerminalStatus(task.status)
+      : String(task.status || '').toUpperCase() === 'COMPLETED')
     if (!allCompleted) {
       message.warning('请先完成所有任务后再提交至标书编写流程')
       return
