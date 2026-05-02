@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Input: local dev environment, backend profile options, and repository startup commands
-# Output: stable daemon-like start/stop/status/log control for sidecar/backend/frontend with current-code identity checks, Vite cache reset, and bounded health probes
+# Output: stable daemon-like start/stop/status/log control for sidecar/backend/frontend with current-code identity checks, secret-file handoff, Vite cache reset, and bounded health probes
 # Pos: scripts/ - local service lifecycle management
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -53,6 +53,7 @@ DB_NAME="${DB_NAME:-xiyu_bid_main}"
 DB_USERNAME="${DB_USERNAME:-xiyu_user}"
 DB_PASSWORD="${DB_PASSWORD:-XiyuDB!2026}"
 DEEPSEEK_API_KEY="${DEEPSEEK_API_KEY:-}"
+DEEPSEEK_API_KEY_FILE="${DEEPSEEK_API_KEY_FILE:-$RUNTIME_DIR/deepseek.api-key}"
 REDIS_HOST="${REDIS_HOST:-localhost}"
 DEFAULT_REDIS_PORT="6379"
 FALLBACK_REDIS_PORT="16379"
@@ -152,6 +153,20 @@ hash_stream() {
   shasum -a 256 | awk '{print $1}'
 }
 
+load_deepseek_api_key() {
+  if [[ -n "$DEEPSEEK_API_KEY" ]]; then
+    export DEEPSEEK_API_KEY
+    return 0
+  fi
+  if [[ -r "$DEEPSEEK_API_KEY_FILE" ]]; then
+    DEEPSEEK_API_KEY="$(tr -d '\r\n' <"$DEEPSEEK_API_KEY_FILE")"
+    export DEEPSEEK_API_KEY
+  elif [[ -f "$DEEPSEEK_API_KEY_FILE" ]]; then
+    echo "[backend] cannot read DEEPSEEK_API_KEY_FILE: $DEEPSEEK_API_KEY_FILE" >&2
+    return 1
+  fi
+}
+
 load_sidecar_shared_key() {
   if [[ -n "$SIDECAR_SHARED_KEY" ]]; then
     export SIDECAR_SHARED_KEY
@@ -198,6 +213,15 @@ sidecar_shared_key_hash() {
   printf '%s' "$SIDECAR_SHARED_KEY" | hash_stream
 }
 
+deepseek_api_key_hash() {
+  load_deepseek_api_key
+  if [[ -z "$DEEPSEEK_API_KEY" ]]; then
+    printf 'unset\n'
+    return 0
+  fi
+  printf '%s' "$DEEPSEEK_API_KEY" | hash_stream
+}
+
 workspace_fingerprint() {
   if git -C "$ROOT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     local pathspec=(-- . ':(exclude)node_modules' ':(exclude)backend/target' ':(exclude).runtime' ':(exclude)dist' ':(exclude)coverage')
@@ -238,6 +262,7 @@ backend_expected_identity() {
     printf 'redis=%s:%s\n' "$REDIS_HOST" "$REDIS_PORT"
     printf 'sidecar_url=%s\n' "$SIDECAR_URL"
     printf 'sidecar_key_hash=%s\n' "$(sidecar_shared_key_hash)"
+    printf 'deepseek_key_hash=%s\n' "$(deepseek_api_key_hash)"
   } | hash_stream
 }
 
@@ -489,6 +514,7 @@ start_backend() {
   local identity=""
   resolve_redis_port
   ensure_sidecar_shared_key
+  load_deepseek_api_key
   identity="$(backend_expected_identity)"
   pid="$(read_pid "$BACKEND_PID_FILE" 2>/dev/null || true)"
   if is_pid_running "$pid"; then
