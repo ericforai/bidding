@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+// Input: src/ and e2e/ source trees, forbidden literal regex list, skip list
+// Output: violation report for hardcoded task-status literal comparisons
+// Pos: scripts/ - Repository maintenance guardrail for dictionary-driven task status
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+//
 // Forbid hardcoded task-status literal comparisons in src/ and e2e/.
 // Task statuses are dictionary-driven (task_status_dict); business code
 // must judge on the `category === 'CLOSED'` semantic, or use a terminal
