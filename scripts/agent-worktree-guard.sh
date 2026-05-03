@@ -42,4 +42,8 @@ if [[ "$ROOT_DIR" == /Users/user/xiyu/worktrees/* && ! -f "$ROOT_DIR/.agent-task
   exit 1
 fi
 
+if [[ -f "$ROOT_DIR/package.json" && -f "$ROOT_DIR/scripts/check-agent-locks.mjs" ]]; then
+  npm run agent:lock-check:changed
+fi
+
 echo "agent-worktree-guard: ok ($WORKTREE_NAME on $BRANCH_NAME)"

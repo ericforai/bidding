@@ -14,8 +14,53 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  agent-locks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Resolve agent lock base
+        id: agent-lock-base
+        env:
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            git fetch --no-tags --depth=1 origin "${GITHUB_BASE_REF}"
+            base="$(git merge-base HEAD "origin/${GITHUB_BASE_REF}")"
+          else
+            base="${PUSH_BEFORE_SHA:-}"
+            if [[ -z "$base" || "$base" == "0000000000000000000000000000000000000000" ]]; then
+              if [[ -n "${DEFAULT_BRANCH:-}" ]]; then
+                git fetch --no-tags --depth=1 origin "${DEFAULT_BRANCH}"
+                base="$(git merge-base HEAD "origin/${DEFAULT_BRANCH}")"
+              else
+                base="$(git rev-parse HEAD~1)"
+              fi
+            fi
+          fi
+
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch remote branch locks
+        run: git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
+
+      - name: Run agent lock gate
+        run: node scripts/check-agent-locks.mjs --base "${{ steps.agent-lock-base.outputs.base }}" --head HEAD
+
   line-budget:
     runs-on: ubuntu-latest
+    needs: [agent-locks]
     steps:
       - name: Checkout
         uses: actions/checkout@v4

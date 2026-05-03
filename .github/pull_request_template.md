@@ -5,6 +5,8 @@
 ## Scope Check
 - [ ] I changed only the files required for this task.
 - [ ] I reviewed `git diff` and did not include unrelated local changes.
+- [ ] I ran `npm run agent:lock-check`, and any locked files touched by this PR are owned by this branch/task.
+- [ ] If I needed a lock, I used `npm run agent:lock-acquire` and pushed the branch so other Agents can see it.
 - [ ] I pushed the branch before asking for review.
 
 ## Architecture Self-Check

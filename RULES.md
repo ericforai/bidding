@@ -490,6 +490,16 @@ Controller → Service → Repository → Entity
 - 公共组件重构、路由大改、权限模型调整。
 - `package.json` 或 lock 文件的大规模更新。
 
+### 10.4 文件锁门禁
+- **锁注册表**：`.agent-locks.yml` 是仓库级文件锁登记表，第一版仅支持 `scope: file` 与 `scope: directory`。
+- **锁定时机**：Plan 阶段发现将修改高冲突文件、共享入口、公共目录或已有 Agent 正在开发的区域时，必须先登记锁再编码。
+- **必填字段**：每条锁必须包含 `path`、`scope`、`owner`、`branch`、`task`、`expiresAt`、`reason`；禁止提交无过期时间的长期锁。
+- **命令化管理**：新建任务时优先使用 `scripts/agent-start-task.sh <agent> <task> --lock <path> --lock-dir <dir> --lock-reason "<reason>"` 批量登记初始锁；开发中使用 `npm run agent:lock-acquire -- --path <path> --scope file --reason "<reason>"` 追加锁，使用 `npm run agent:lock-release -- --path <path>` 或 `npm run agent:lock-release -- --all` 释放当前分支锁。
+- **本地检查**：开发前执行 `npm run agent:lock-check`，提交前执行 `npm run agent:lock-check:changed`。命中其他 Agent 的有效锁时必须停止修改并协商。
+- **远端可见**：锁登记后必须随任务分支推送；其他 Agent 执行 `git fetch origin` 后，锁检查会合并 `origin/*` 分支中的锁。
+- **CI 检查**：PR 会用当前 diff 执行 `scripts/check-agent-locks.mjs --base <base> --head HEAD`，锁冲突会阻断合并。
+- **职责边界**：文件锁只用于提前暴露并行修改冲突；高频锁冲突文件必须按 Split-First Rule 拆分职责，不能长期靠锁排队。
+
 ---
 
 ## 11. 强同步规则 (Sync First Rule)
@@ -505,4 +515,3 @@ Controller → Service → Repository → Entity
 ### 11.2 开发过程中
 若主目录的 `main` 分支发生了合并更新，正在开发中的 Agent **必须**择机执行：
 - `git rebase origin/main`：将当前任务分支移至最新基准之上，并立即运行验证脚本（TDD）。
-
