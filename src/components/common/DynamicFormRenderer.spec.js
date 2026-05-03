@@ -87,6 +87,19 @@ describe('DynamicFormRenderer', () => {
     expect(r.data).toEqual({ a: 'x' })
   })
 
+  it('does not echo modelValue prop sync back to parent', async () => {
+    const fields = [{ key: 'a', label: '甲', type: 'text' }]
+    const wrapper = mount(DynamicFormRenderer, {
+      props: { fields, modelValue: { a: '' } },
+      global: { stubs: elementStubs }
+    })
+
+    await wrapper.setProps({ modelValue: { a: 'from-parent' } })
+    await flushPromises()
+
+    expect(wrapper.emitted('update:modelValue')).toBeFalsy()
+  })
+
   it('attachment field: calls injected uploadFn', async () => {
     const uploadFn = vi.fn().mockResolvedValue({ fileName: 'a.pdf', fileUrl: '/x' })
     const fields = [{ key: 'f', label: 'F', type: 'attachment' }]

@@ -304,7 +304,7 @@ export function useProjectDetailTaskActions(context) {
     try {
       const result = await projectsApi.updateTaskStatus(route.params.id, task?.id, normalizeTaskStatusForApi(newStatus))
       if (!result?.success || !result?.data) throw new Error(result?.message || '任务状态更新失败')
-      Object.assign(task, result.data)
+      Object.assign(task, taskBackendToCard(result.data))
       message.success('任务状态已更新')
     } catch (error) {
       message.error(error.message || '任务状态更新失败')

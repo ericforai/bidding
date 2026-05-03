@@ -57,6 +57,27 @@ async function updateTaskContentFixture(session, task, content) {
   return payload.data
 }
 
+async function selectDialogOption(page, dialog, labelText, optionText) {
+  const formItem = dialog.locator('.el-form-item').filter({ has: page.locator(`label:has-text("${labelText}")`) })
+  await formItem.locator('.el-select').first().click()
+  const dropdown = page.locator('.el-select-dropdown:visible').last()
+  await expect(dropdown).toBeVisible()
+  const option = dropdown.locator('.el-select-dropdown__item', { hasText: optionText }).first()
+  await expect(option).toBeVisible()
+  await option.click()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.el-select-dropdown:visible')).toHaveCount(0)
+}
+
+async function setInputValue(locator, value) {
+  await expect(locator).toBeVisible()
+  await locator.evaluate((element, nextValue) => {
+    element.value = nextValue
+    element.dispatchEvent(new Event('input', { bubbles: true }))
+    element.dispatchEvent(new Event('change', { bubbles: true }))
+  }, value)
+}
+
 test.describe('Task board customization core flow', () => {
   test('drawer create → edit preserves content → status change updates progress', async ({ page }) => {
     const { session, projectId } = await bootstrapProject(page, '任务看板定制')
@@ -111,7 +132,15 @@ test.describe('Task board customization core flow', () => {
     // Dropdown items are rendered as "设为{name}"; target the COMPLETED terminal status.
     const completeMenuItem = page.locator('.el-dropdown-menu__item', { hasText: '设为已完成' }).first()
     await expect(completeMenuItem).toBeVisible()
-    await completeMenuItem.click()
+    await Promise.all([
+      page.waitForResponse((response) =>
+        response.url().includes(`/api/projects/${projectId}/tasks/`) &&
+        response.url().endsWith('/status') &&
+        response.request().method() === 'PATCH' &&
+        response.ok()
+      ),
+      completeMenuItem.click(),
+    ])
 
     // Progress tag should reflect the terminal transition (100% for a single task).
     await expect(progressTag).toContainText('100%')
@@ -199,24 +228,19 @@ test.describe('Task board customization core flow', () => {
 
     // Text inputs inside DynamicFormRenderer — scope by placeholder so we
     // don't depend on el-form-item label DOM order.
-    await dialog.locator('input[placeholder*="ARCHIVED"]').fill(code)
-    await dialog.locator('input[placeholder="请输入显示名"]').fill(displayName)
-    await dialog.locator('input[placeholder*="hex"]').fill('#c0c4cc')
+    await setInputValue(dialog.locator('input[placeholder*="ARCHIVED"]'), code)
+    await setInputValue(dialog.locator('input[placeholder="请输入显示名"]'), displayName)
+    await setInputValue(dialog.locator('input[placeholder*="hex"]'), '#c0c4cc')
 
     // Category is an el-select. Element Plus teleports the dropdown outside
     // the dialog, so we click the select trigger inside the dialog, then
     // pick the option from the page-level dropdown.
     // The three selects in the form (category, isInitial, isTerminal) appear
     // in the same order as formFields — target category by its form-item label.
-    const categoryItem = dialog.locator('.el-form-item').filter({ has: page.locator('label:has-text("类别")') })
-    await categoryItem.locator('.el-select').first().click()
-    // Teleported dropdown lives on `body`, not inside the dialog scope.
-    await page.locator('.el-select-dropdown__item', { hasText: '终态（CLOSED）' }).first().click()
+    await selectDialogOption(page, dialog, '类别', '终态（CLOSED）')
 
     // isTerminal → "是". isInitial stays at the default "否" (pre-filled).
-    const terminalItem = dialog.locator('.el-form-item').filter({ has: page.locator('label:has-text("设为终态")') })
-    await terminalItem.locator('.el-select').first().click()
-    await page.locator('.el-select-dropdown__item', { hasText: '是' }).first().click()
+    await selectDialogOption(page, dialog, '设为终态', '是')
 
     // Save.
     await dialog.getByRole('button', { name: '保存' }).click()

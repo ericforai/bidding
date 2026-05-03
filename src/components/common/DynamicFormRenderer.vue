@@ -67,7 +67,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, watch } from 'vue'
+import { computed, nextTick, reactive, watch } from 'vue'
 
 /**
  * @callback UploadFn
@@ -90,17 +90,33 @@ const emit = defineEmits(['submit', 'update:modelValue'])
 
 const localValue = reactive({ ...props.modelValue })
 const visibleFields = computed(() => (props.fields || []).filter((field) => !field.hidden))
+let syncingFromParent = false
+
+function hasSameEntries(left = {}, right = {}) {
+  const leftKeys = Object.keys(left)
+  const rightKeys = Object.keys(right)
+  return leftKeys.length === rightKeys.length &&
+    leftKeys.every((key) => Object.is(left[key], right[key]))
+}
 
 watch(
   () => props.modelValue,
   (value) => {
+    if (hasSameEntries(localValue, value || {})) return
+    syncingFromParent = true
     Object.keys(localValue).forEach((key) => delete localValue[key])
     Object.assign(localValue, value || {})
+    nextTick(() => {
+      syncingFromParent = false
+    })
   },
   { deep: true }
 )
 
-watch(localValue, () => emit('update:modelValue', { ...localValue }), { deep: true })
+watch(localValue, () => {
+  if (syncingFromParent) return
+  emit('update:modelValue', { ...localValue })
+}, { deep: true })
 
 function getAttachmentValue(field) {
   const value = localValue[field.key]
