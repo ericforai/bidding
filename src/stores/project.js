@@ -252,6 +252,11 @@ export const useProjectStore = defineStore('project', {
         this.taskStatusesLoaded = true
       }
       return this.taskStatuses
+    },
+
+    invalidateTaskStatuses() {
+      this.taskStatuses = []
+      this.taskStatusesLoaded = false
     }
   }
 })
