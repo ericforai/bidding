@@ -164,3 +164,38 @@ export function normalizeTaskStatusFromApi(backendStatus) {
   if (backendStatus == null) return undefined
   return TASK_STATUS_FROM_API[backendStatus] || backendStatus
 }
+
+/**
+ * 把 TaskForm.vue 表单字段（前端命名）转成后端 TaskDTO 字段。
+ *  - name → title
+ *  - deadline → dueDate
+ *  - owner 暂时丢弃（assignee_id 接通留给后续）
+ *  - undefined 字段不写入，保留 PATCH 语义
+ */
+export function taskFormDtoToBackend(form = {}) {
+  const dto = {}
+  if (form.name !== undefined) dto.title = form.name
+  if (form.content !== undefined) dto.content = form.content
+  if (form.status !== undefined) dto.status = form.status
+  if (form.priority !== undefined) dto.priority = form.priority
+  if (form.deadline !== undefined) dto.dueDate = form.deadline
+  return dto
+}
+
+/**
+ * 把后端 TaskDTO 转回看板卡片字段（前端命名 + 计算字段）。
+ */
+export function taskBackendToCard(dto = {}) {
+  const deliverables = Array.isArray(dto.deliverables) ? dto.deliverables : []
+  return {
+    id: dto.id,
+    name: dto.title ?? '',
+    content: dto.content ?? '',
+    status: dto.status,
+    priority: dto.priority,
+    deadline: dto.dueDate ?? '',
+    owner: dto.assigneeName ?? '',
+    deliverables,
+    hasDeliverable: deliverables.length > 0,
+  }
+}

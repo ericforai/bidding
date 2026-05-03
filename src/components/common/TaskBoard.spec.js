@@ -1,4 +1,4 @@
-// Input: mocked taskStatusDictApi + task fixtures + el-* stubs
+// Input: mocked projectStore taskStatuses + task fixtures + el-* stubs
 // Output: regression spec covering dynamic columns, terminal-based progress, dict-driven dropdown
 // Pos: src/components/common/ - TaskBoard component tests
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
@@ -6,25 +6,29 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import TaskBoard from './TaskBoard.vue'
 
-vi.mock('@/api/modules/taskStatusDict.js', () => ({
-  taskStatusDictApi: {
-    list: vi.fn().mockResolvedValue({
-      success: true,
-      data: [
-        { code: 'TODO', name: '待办', category: 'OPEN', color: '#909399', sortOrder: 10, initial: true, terminal: false },
-        { code: 'IN_PROGRESS', name: '进行中', category: 'IN_PROGRESS', color: '#409eff', sortOrder: 20, initial: false, terminal: false },
-        { code: 'REVIEW', name: '待审核', category: 'REVIEW', color: '#e6a23c', sortOrder: 30, initial: false, terminal: false },
-        { code: 'COMPLETED', name: '已完成', category: 'CLOSED', color: '#67c23a', sortOrder: 40, initial: false, terminal: true },
-        { code: 'ARCHIVED', name: '已归档', category: 'CLOSED', color: '#c0c4cc', sortOrder: 50, initial: false, terminal: true }
-      ]
-    })
-  },
-  default: {
-    list: vi.fn()
-  }
+const mockStatuses = [
+  { code: 'TODO', name: '待办', category: 'OPEN', color: '#909399', sortOrder: 10, initial: true, terminal: false },
+  { code: 'IN_PROGRESS', name: '进行中', category: 'IN_PROGRESS', color: '#409eff', sortOrder: 20, initial: false, terminal: false },
+  { code: 'REVIEW', name: '待审核', category: 'REVIEW', color: '#e6a23c', sortOrder: 30, initial: false, terminal: false },
+  { code: 'COMPLETED', name: '已完成', category: 'CLOSED', color: '#67c23a', sortOrder: 40, initial: false, terminal: true },
+  { code: 'ARCHIVED', name: '已归档', category: 'CLOSED', color: '#c0c4cc', sortOrder: 50, initial: false, terminal: true },
+]
+
+const loadTaskStatusesMock = vi.fn()
+
+vi.mock('@/stores/project', () => ({
+  useProjectStore: () => ({
+    taskStatuses: mockStatuses,
+    taskStatusesLoaded: true,
+    loadTaskStatuses: loadTaskStatusesMock,
+    addDeliverable: vi.fn(),
+    removeDeliverable: vi.fn(),
+    submitToBidDocument: vi.fn(),
+  }),
 }))
+
+import TaskBoard from './TaskBoard.vue'
 
 // Light stubs — keep slot text visible so `.text()` assertions work, and avoid
 // the cost of spinning up the full element-plus registry.
@@ -68,6 +72,7 @@ function mountBoard(props = {}) {
 describe('TaskBoard (dynamic columns)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    loadTaskStatusesMock.mockClear()
   })
 
   it('renders one column per enabled status from the dict', async () => {
@@ -108,5 +113,32 @@ describe('TaskBoard (dynamic columns)', () => {
     const items = wrapper.findAllComponents({ name: 'ElDropdownItem' })
     // At least 5 status transitions + 1 "上传交付物" = 6
     expect(items.length).toBeGreaterThanOrEqual(5)
+  })
+})
+
+describe('TaskBoard (store bootstrap)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    loadTaskStatusesMock.mockClear()
+  })
+
+  it('calls projectStore.loadTaskStatuses if not yet loaded', async () => {
+    // Re-import with a fresh mock that reports taskStatusesLoaded=false
+    vi.resetModules()
+    const loadFn = vi.fn()
+    vi.doMock('@/stores/project', () => ({
+      useProjectStore: () => ({
+        taskStatuses: [],
+        taskStatusesLoaded: false,
+        loadTaskStatuses: loadFn,
+        addDeliverable: vi.fn(),
+        removeDeliverable: vi.fn(),
+        submitToBidDocument: vi.fn(),
+      }),
+    }))
+    const Comp = (await import('./TaskBoard.vue')).default
+    mount(Comp, { props: { tasks: [] }, global: { stubs: globalStubs } })
+    await flushPromises()
+    expect(loadFn).toHaveBeenCalled()
   })
 })

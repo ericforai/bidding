@@ -5,7 +5,9 @@ import {
   getProjectStatusText,
   getProjectStatusType,
   normalizeTaskStatusForApi,
-  normalizeTaskStatusFromApi
+  normalizeTaskStatusFromApi,
+  taskFormDtoToBackend,
+  taskBackendToCard
 } from './project-utils.js'
 
 describe('normalizeFeeForDisplay', () => {
@@ -300,5 +302,46 @@ describe('normalizeTaskStatusFromApi', () => {
 
   it('returns undefined for undefined', () => {
     expect(normalizeTaskStatusFromApi(undefined)).toBeUndefined()
+  })
+})
+
+describe('task DTO mapper', () => {
+  it('taskFormDtoToBackend maps form fields to backend names', () => {
+    const result = taskFormDtoToBackend({
+      name: 'T1', content: '# md', status: 'TODO', priority: 'high',
+      deadline: '2026-06-01', owner: '张三',
+    })
+    expect(result).toEqual({
+      title: 'T1', content: '# md', status: 'TODO',
+      priority: 'high', dueDate: '2026-06-01',
+    })
+    expect(result).not.toHaveProperty('owner')
+    expect(result).not.toHaveProperty('name')
+    expect(result).not.toHaveProperty('deadline')
+  })
+
+  it('taskFormDtoToBackend skips undefined fields (PATCH semantics)', () => {
+    const result = taskFormDtoToBackend({ name: 'T', status: 'TODO' })
+    expect(result).toEqual({ title: 'T', status: 'TODO' })
+  })
+
+  it('taskBackendToCard maps backend dto to board card shape', () => {
+    const result = taskBackendToCard({
+      id: 7, title: 'T2', content: 'c', status: 'COMPLETED',
+      priority: 'medium', dueDate: '2026-05-15',
+      assigneeName: '李宗', deliverables: [{ id: 1 }],
+    })
+    expect(result).toEqual({
+      id: 7, name: 'T2', content: 'c', status: 'COMPLETED',
+      priority: 'medium', deadline: '2026-05-15',
+      owner: '李宗', deliverables: [{ id: 1 }], hasDeliverable: true,
+    })
+  })
+
+  it('taskBackendToCard handles missing optional fields', () => {
+    const result = taskBackendToCard({ id: 1, title: 'X', status: 'TODO' })
+    expect(result.deliverables).toEqual([])
+    expect(result.hasDeliverable).toBe(false)
+    expect(result.owner).toBe('')
   })
 })

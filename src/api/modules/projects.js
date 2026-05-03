@@ -183,6 +183,10 @@ export const projectsApi = {
 
   ...tenderBreakdownApi,
 
+  async updateTask(taskId, dto) {
+    return httpClient.put(`/api/tasks/${taskId}`, dto)
+  },
+
   async updateTaskStatus(projectId, taskId, status) {
     if (!isNumericId(projectId) || !isNumericId(taskId)) {
       return apiModeFailure('task')

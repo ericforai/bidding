@@ -412,3 +412,71 @@ describe('useProjectDetailTaskActions', () => {
     expect(error).not.toHaveBeenCalled()
   })
 })
+
+describe('handleSaveTask edit branch', () => {
+  const buildEditCtx = ({ updateTask, projectTasks }) => {
+    const state = {
+      project: ref({ id: 1, tasks: projectTasks }),
+      activities: ref([]),
+      scoreDraftDialogVisible: ref(false),
+      currentTask: ref(null),
+      taskDialogVisible: ref(false),
+    }
+    const message = { success: vi.fn(), error: vi.fn(), warning: vi.fn() }
+    return {
+      ctx: {
+        route: { params: { id: '1' } },
+        userStore: { userName: '测试', currentUser: { id: 1 } },
+        projectStore: { updateTask },
+        projectsApi: {},
+        isApiProject: ref(true),
+        message,
+        state,
+        workflow: {},
+      },
+      state,
+      message,
+    }
+  }
+
+  it('calls projectStore.updateTask with mapped dto and syncs card', async () => {
+    const updateTask = vi.fn().mockResolvedValue({
+      id: 7,
+      title: 'New',
+      content: 'md',
+      status: 'TODO',
+      dueDate: '2026-06-01',
+    })
+    const tasks = [{ id: 7, name: 'Old', content: '', status: 'TODO' }]
+    const { ctx, state, message } = buildEditCtx({ updateTask, projectTasks: tasks })
+
+    const { handleSaveTask } = useProjectDetailTaskActions(ctx)
+    await handleSaveTask({
+      mode: 'edit',
+      data: { id: 7, name: 'New', content: 'md', status: 'TODO', deadline: '2026-06-01' },
+    })
+
+    expect(updateTask).toHaveBeenCalledWith(1, 7, {
+      title: 'New',
+      content: 'md',
+      status: 'TODO',
+      dueDate: '2026-06-01',
+    })
+    const updated = state.project.value.tasks[0]
+    expect(updated.name).toBe('New')
+    expect(updated.content).toBe('md')
+    expect(updated.deadline).toBe('2026-06-01')
+    expect(message.success).toHaveBeenCalledWith('任务已更新')
+  })
+
+  it('shows error toast when updateTask rejects', async () => {
+    const updateTask = vi.fn().mockRejectedValue(new Error('boom'))
+    const tasks = [{ id: 7, name: 'Old' }]
+    const { ctx, message } = buildEditCtx({ updateTask, projectTasks: tasks })
+
+    const { handleSaveTask } = useProjectDetailTaskActions(ctx)
+    await handleSaveTask({ mode: 'edit', data: { id: 7, name: 'X' } })
+
+    expect(message.error).toHaveBeenCalled()
+  })
+})
