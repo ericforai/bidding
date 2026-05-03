@@ -1,7 +1,8 @@
 // Input: Playwright E2E suite for task board API fixtures, drawer readback, and status customization
 // Output: regression coverage for seeded columns, content persistence, sanitizer, progress updates,
 //         N1 reload-loop + control-char round-trip persistence proofs,
-//         and D1 admin-side task-status-dict create flow via /settings panel
+//         D1 admin-side task-status-dict create flow via /settings panel,
+//         and N4-E1 admin-defines-extended-field → TaskForm value persists across reload
 // Pos: e2e/ - Playwright end-to-end coverage
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -285,5 +286,118 @@ test.describe('Task board customization core flow', () => {
     expect(value).toContain('next-line')
     await editDrawer.getByRole('button', { name: '取消' }).click()
     await expect(editDrawer).toBeHidden()
+  })
+
+  // N4-E1: end-to-end proof of the task-extended-field pipeline.
+  //   1. ADMIN session navigates to /settings?tab=task-extended-fields and
+  //      creates a new schema entry.
+  //   2. The same browser context (the fixture user is ADMIN) bootstraps a
+  //      fresh project and opens the "新增任务" drawer; TaskForm should now
+  //      render the "扩展字段" divider + DynamicFormRenderer field.
+  //   3. We fill the system field (name) plus the extended value, save, then
+  //      reload the page and reopen the task — value must be intact.
+  // This case proves: schema CRUD, projectStore.invalidateTaskExtendedFields
+  // cross-component propagation, TaskForm submit-merge into the
+  // PUT /api/tasks/{id} body, and the V103 extended_fields_json column
+  // round-trip in a single flow.
+  test('admin defines extended field → TaskForm persists value across reload', async ({ page }) => {
+    // Random suffix keeps re-runs from colliding on the unique key invariant
+    // enforced by TaskExtendedFieldAdminService. Lowercase + underscore only —
+    // the admin service rejects anything else with a 400.
+    const suffix = Math.random().toString(36).slice(2, 8)
+    const fieldKey = `e2e_${suffix}`
+    const fieldLabel = `E2E 测试字段 ${suffix}`
+
+    // --- 1. Admin creates the extended field via /settings panel ---
+    // Mirror the admin-adds-ARCHIVED-status flow: createAuthenticatedSession
+    // returns an ADMIN-role user (the register fallback assigns ADMIN), then
+    // we inject the token via addInitScript so the SPA bootstraps logged in.
+    const session = await createAuthenticatedSession()
+    await page.addInitScript(({ token, user }) => {
+      sessionStorage.setItem('token', token)
+      sessionStorage.setItem('user', JSON.stringify(user))
+    }, session)
+
+    await page.goto('/settings?tab=task-extended-fields')
+    await expect(page.locator('h3', { hasText: '任务扩展字段' })).toBeVisible({ timeout: 10000 })
+
+    // Open the create dialog. data-test is preserved on the root element since
+    // this el-button is a regular primary button (not link mode).
+    await page.locator('[data-test="new-field-btn"]').click()
+
+    const dialog = page.locator('.el-dialog').filter({ hasText: '新增扩展字段' })
+    await expect(dialog).toBeVisible({ timeout: 5000 })
+
+    // Inputs are inside DynamicFormRenderer. Key has a snake_case placeholder
+    // ("snake_case，例如 tender_chapter"); 显示名 has no placeholder so we
+    // target by form-item label proximity. fieldType defaults to 'text'.
+    await setInputValue(dialog.locator('input[placeholder*="snake_case"]'), fieldKey)
+    const labelItem = dialog.locator('.el-form-item').filter({
+      has: page.locator('label:has-text("显示名")'),
+    })
+    await setInputValue(labelItem.locator('input').first(), fieldLabel)
+
+    // Leave 字段类型 = text (default), 必填 = 否 (default), no placeholder, no options.
+    await dialog.getByRole('button', { name: '保存' }).click()
+    await expect(dialog).toBeHidden({ timeout: 5000 })
+
+    // The new row appears in the dictionary table.
+    await expect(page.locator('.dict-table').locator(`text=${fieldKey}`)).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('.dict-table').locator(`text=${fieldLabel}`)).toBeVisible()
+
+    // --- 2. Bootstrap a fresh project and open the task drawer ---
+    // bootstrapProject would call createAuthenticatedSession again and wipe
+    // our session via addInitScript, so inline the parts we need instead and
+    // keep the same admin session that just created the field.
+    const project = await createProjectFixture(session, 'N4-E1-验证')
+    const projectId = String(project.id)
+    await page.goto(`/project/${projectId}`)
+    await expect(page).toHaveURL(/\/project\/\d+$/)
+    await expect(page.getByText('任务看板').first()).toBeVisible()
+
+    // Open the create-task drawer via the "添加任务" button (data-test in
+    // ProjectTaskBoardCard). The drawer title for create mode is "新增任务".
+    await page.locator('[data-test="add-task-button"]').first().click()
+    const drawer = page.locator('.el-drawer').filter({ hasText: '新增任务' })
+    await expect(drawer).toBeVisible({ timeout: 5000 })
+
+    // Extended fields section should render because the schema now has one
+    // enabled entry. The divider carries the literal "扩展字段" label.
+    await expect(drawer.locator('.el-divider').filter({ hasText: '扩展字段' })).toBeVisible({ timeout: 5000 })
+
+    // Fill name + the new extended field. The extended-field input lives
+    // inside DynamicFormRenderer, scoped by its el-form-item label.
+    await drawer.locator('input[placeholder="请输入任务名称"]').first().fill('N4-E1 测试任务')
+    const extFormItem = drawer.locator('.el-form-item').filter({
+      has: page.locator(`label:has-text("${fieldLabel}")`),
+    })
+    await expect(extFormItem).toBeVisible()
+    await extFormItem.locator('input').first().fill('扩展值ABC')
+
+    // Save via the data-test selector to avoid catching the drawer close [×]
+    // button or other "保存" buttons elsewhere on the page.
+    await drawer.locator('[data-test="task-drawer-save"]').click()
+    await expect(drawer).toBeHidden({ timeout: 5000 })
+
+    // --- 3. Reload → reopen task → extended value must persist ---
+    await page.reload()
+    await expect(page.getByText('任务看板').first()).toBeVisible()
+    const persistedCard = page.locator('.column-content .task-card').filter({ hasText: 'N4-E1 测试任务' }).first()
+    await expect(persistedCard).toBeVisible({ timeout: 10000 })
+    await persistedCard.click()
+
+    const editDrawer2 = page.locator('.el-drawer').filter({ hasText: '编辑任务' })
+    await expect(editDrawer2).toBeVisible({ timeout: 5000 })
+    await expect(editDrawer2.locator('.el-divider').filter({ hasText: '扩展字段' })).toBeVisible()
+
+    const persistedItem = editDrawer2.locator('.el-form-item').filter({
+      has: page.locator(`label:has-text("${fieldLabel}")`),
+    })
+    await expect(persistedItem).toBeVisible()
+    const persistedValue = await persistedItem.locator('input').first().inputValue()
+    expect(persistedValue).toBe('扩展值ABC')
+
+    await editDrawer2.locator('[data-test="task-drawer-cancel"]').click()
+    await expect(editDrawer2).toBeHidden()
   })
 })
