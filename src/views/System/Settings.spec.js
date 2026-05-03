@@ -111,6 +111,7 @@ const stubs = {
   BidMatchScoringSettingsPanel: childStub,
   SystemIntegrationPanel: childStub,
   TaskStatusDictPanel: { template: '<div>任务状态字典面板</div>' },
+  TaskExtendedFieldPanel: { template: '<div>任务扩展字段面板</div>' },
   AuditLogPanel: { template: '<div>审计日志面板</div>' },
 }
 
@@ -162,6 +163,22 @@ describe('Settings', () => {
 
   it('redirects task-status-dict query tab away for non-admin', () => {
     const wrapper = mountSettings({ role: 'staff', query: { tab: 'task-status-dict' } })
+
+    expect(wrapper.find('.settings-tabs').attributes('data-active')).toBe('departments')
+  })
+
+  it('shows task extended fields tab only for admin', () => {
+    const adminWrapper = mountSettings({ role: 'admin' })
+    expect(adminWrapper.text()).toContain('任务扩展字段')
+    expect(adminWrapper.text()).toContain('任务扩展字段面板')
+
+    const managerWrapper = mountSettings({ role: 'manager' })
+    expect(managerWrapper.text()).not.toContain('任务扩展字段')
+    expect(managerWrapper.text()).not.toContain('任务扩展字段面板')
+  })
+
+  it('redirects task-extended-fields query tab away for non-admin', () => {
+    const wrapper = mountSettings({ role: 'staff', query: { tab: 'task-extended-fields' } })
 
     expect(wrapper.find('.settings-tabs').attributes('data-active')).toBe('departments')
   })

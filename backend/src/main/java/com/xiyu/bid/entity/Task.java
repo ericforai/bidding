@@ -62,6 +62,17 @@ public class Task {
     @Column(columnDefinition = "TEXT")
     private String content;
 
+    /**
+     * Task extended fields as a JSON object ({@code {"key":"value", ...}}),
+     * stored in the V103 {@code extended_fields_json} TEXT column.
+     *
+     * <p>Schema of the keys/types is defined in the
+     * {@code task_extended_field} table. The JSON payload is validated
+     * against that schema at the service layer on write.</p>
+     */
+    @Column(name = "extended_fields_json", columnDefinition = "TEXT")
+    private String extendedFieldsJson;
+
     /** Assignee user id. */
     @Column(name = "assignee_id")
     private Long assigneeId;

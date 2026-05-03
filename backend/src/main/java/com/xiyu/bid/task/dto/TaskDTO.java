@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 /**
  * 任务数据传输对象
@@ -36,4 +37,11 @@ public class TaskDTO {
     private LocalDateTime dueDate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    /**
+     * 动态扩展字段（由 task_extended_field 定义、在任务粒度存储）。
+     * 在实体上以 JSON 字符串形式保存于 {@code tasks.extended_fields_json}，
+     * 在 DTO 层暴露为 {@code Map<String, Object>} 便于前端直接使用。
+     * 当底层 JSON 为空时，{@code toDTO} 返回空 Map 而非 {@code null}。
+     */
+    private Map<String, Object> extendedFields;
 }
