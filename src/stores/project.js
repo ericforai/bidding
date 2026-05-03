@@ -213,6 +213,21 @@ export const useProjectStore = defineStore('project', {
       return updatedProject
     },
 
+    async updateTask(projectId, taskId, dto) {
+      const result = await projectsApi.updateTask(taskId, dto)
+      if (!result?.success) {
+        throw new Error(result?.message || '更新任务失败')
+      }
+      const project = this.currentProject
+      if (project && String(project.id) === String(projectId) && Array.isArray(project.tasks)) {
+        const idx = project.tasks.findIndex(t => t.id === taskId)
+        if (idx >= 0) {
+          project.tasks[idx] = { ...project.tasks[idx], ...result.data }
+        }
+      }
+      return result.data
+    },
+
     async updateTaskStatus(projectId, taskId, status) {
       const project = this.projects.find(p => p.id === projectId)
       if (project) {
