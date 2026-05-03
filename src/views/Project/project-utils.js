@@ -50,6 +50,17 @@ const TASK_STATUS_FROM_API = {
   cancelled: 'CANCELLED'
 }
 
+const TASK_PRIORITY_TO_API = {
+  low: 'LOW',
+  medium: 'MEDIUM',
+  high: 'HIGH',
+  urgent: 'URGENT',
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
+  URGENT: 'URGENT'
+}
+
 const PROJECT_STATUS_TEXT = {
   INITIATED: '已立项',
   PREPARING: '编制中',
@@ -157,6 +168,11 @@ export function normalizeTaskStatusForApi(frontendStatus) {
   return TASK_STATUS_TO_API[frontendStatus] || frontendStatus
 }
 
+export function normalizeTaskPriorityForApi(frontendPriority) {
+  if (frontendPriority == null) return undefined
+  return TASK_PRIORITY_TO_API[frontendPriority] || frontendPriority
+}
+
 /**
  * Backend task status enum → frontend status
  */
@@ -176,8 +192,8 @@ export function taskFormDtoToBackend(form = {}) {
   const dto = {}
   if (form.name !== undefined) dto.title = form.name
   if (form.content !== undefined) dto.content = form.content
-  if (form.status !== undefined) dto.status = form.status
-  if (form.priority !== undefined) dto.priority = form.priority
+  if (form.status !== undefined) dto.status = normalizeTaskStatusForApi(form.status)
+  if (form.priority !== undefined) dto.priority = normalizeTaskPriorityForApi(form.priority)
   if (form.deadline !== undefined) dto.dueDate = form.deadline
   return dto
 }
@@ -189,12 +205,12 @@ export function taskBackendToCard(dto = {}) {
   const deliverables = Array.isArray(dto.deliverables) ? dto.deliverables : []
   return {
     id: dto.id,
-    name: dto.title ?? '',
+    name: dto.title ?? dto.name ?? '',
     content: dto.content ?? '',
-    status: dto.status,
+    status: normalizeTaskStatusFromApi(dto.status),
     priority: dto.priority,
     deadline: dto.dueDate ?? '',
-    owner: dto.assigneeName ?? '',
+    owner: dto.assigneeName ?? dto.owner ?? dto.assignee ?? '',
     deliverables,
     hasDeliverable: deliverables.length > 0,
   }

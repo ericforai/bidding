@@ -9,6 +9,9 @@ import com.xiyu.bid.repository.RoleProfileRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.entity.RoleProfile;
 import com.xiyu.bid.entity.RoleProfileCatalog;
+import com.xiyu.bid.task.entity.TaskStatusCategory;
+import com.xiyu.bid.task.entity.TaskStatusDict;
+import com.xiyu.bid.task.repository.TaskStatusDictRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -29,12 +32,37 @@ public class E2eDemoDataInitializer implements ApplicationRunner {
 
     private final UserRepository userRepository;
     private final RoleProfileRepository roleProfileRepository;
+    private final TaskStatusDictRepository taskStatusDictRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(ApplicationArguments args) {
         ensureSystemRoles();
+        seedTaskStatuses();
         seedDemoUsers();
+    }
+
+    void seedTaskStatuses() {
+        List<TaskStatusSeed> seeds = List.of(
+                new TaskStatusSeed("TODO", "待办", TaskStatusCategory.OPEN, "#909399", 10, true, false),
+                new TaskStatusSeed("IN_PROGRESS", "进行中", TaskStatusCategory.IN_PROGRESS, "#409eff", 20, false, false),
+                new TaskStatusSeed("REVIEW", "待审核", TaskStatusCategory.REVIEW, "#e6a23c", 30, false, false),
+                new TaskStatusSeed("COMPLETED", "已完成", TaskStatusCategory.CLOSED, "#67c23a", 40, false, true)
+        );
+
+        seeds.forEach(seed -> {
+            TaskStatusDict status = taskStatusDictRepository.findById(seed.code())
+                    .orElseGet(TaskStatusDict::new);
+            status.setCode(seed.code());
+            status.setName(seed.name());
+            status.setCategory(seed.category());
+            status.setColor(seed.color());
+            status.setSortOrder(seed.sortOrder());
+            status.setIsInitial(seed.initial());
+            status.setIsTerminal(seed.terminal());
+            status.setEnabled(true);
+            taskStatusDictRepository.save(status);
+        });
     }
 
     void seedDemoUsers() {
@@ -96,5 +124,9 @@ public class E2eDemoDataInitializer implements ApplicationRunner {
     }
 
     private record DemoUser(String username, String fullName, String email, User.Role role) {
+    }
+
+    private record TaskStatusSeed(String code, String name, TaskStatusCategory category,
+                                  String color, int sortOrder, boolean initial, boolean terminal) {
     }
 }

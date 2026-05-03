@@ -48,6 +48,9 @@ public class RoutingAiProvider implements AiProvider {
         if (!settingsService.isAiEnabled()) {
             throw new IllegalStateException("AI 功能已在系统设置中关闭");
         }
+        if ("mock".equalsIgnoreCase(legacyProviderMode)) {
+            return null;
+        }
 
         SettingsResponse.AiModelConfig aiModelConfig = settingsService.getInternalAiModelConfig();
         String providerCode = normalize(aiModelConfig.getActiveProvider());
@@ -64,10 +67,6 @@ public class RoutingAiProvider implements AiProvider {
         String apiKey = settingsService.resolveAiApiKey(providerCode);
         if (apiKey == null || apiKey.isBlank()) {
             apiKey = resolveEnvironmentApiKey(providerCode);
-        }
-
-        if ((apiKey == null || apiKey.isBlank()) && "mock".equalsIgnoreCase(legacyProviderMode)) {
-            return null;
         }
 
         return new AiProviderRuntimeConfig(providerCode, provider.getBaseUrl(), provider.getModel(), apiKey);

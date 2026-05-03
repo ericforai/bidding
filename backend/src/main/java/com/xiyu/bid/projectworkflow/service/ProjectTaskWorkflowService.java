@@ -39,6 +39,7 @@ class ProjectTaskWorkflowService {
                 .projectId(projectId)
                 .title(request.getTitle().trim())
                 .description(trimToNull(request.getDescription()))
+                .content(request.getContent())
                 .assigneeId(request.getAssigneeId())
                 .assigneeDeptCode(assigneeUser != null ? assigneeUser.getDepartmentCode() : trimToNull(request.getAssigneeDeptCode()))
                 .assigneeDeptName(assigneeUser != null ? assigneeUser.getDepartmentName() : defaultString(trimToNull(request.getAssigneeDeptName()), "未配置部门"))

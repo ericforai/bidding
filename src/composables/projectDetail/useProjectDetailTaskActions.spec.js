@@ -5,6 +5,60 @@ import { useProjectDetailTaskActions } from './useProjectDetailTaskActions.js'
 import { useProjectDetailTasks } from './useProjectDetailTasks.js'
 
 describe('useProjectDetailTaskActions', () => {
+  it('API 项目新增任务时把 Markdown content 发送到后端 content 字段', async () => {
+    const createTask = vi.fn().mockResolvedValue({
+      success: true,
+      data: {
+        id: 601,
+        name: '编写技术响应',
+        content: '# 技术响应\n- 保留列表',
+        status: 'TODO',
+      },
+    })
+    const state = {
+      project: ref({ id: 12, name: '测试项目', tasks: [] }),
+      activities: ref([]),
+      scoreDraftDialogVisible: ref(false),
+      currentTask: ref(null),
+      taskDialogVisible: ref(false),
+    }
+    const message = { success: vi.fn(), error: vi.fn(), warning: vi.fn() }
+
+    const { handleSaveTask } = useProjectDetailTaskActions({
+      route: { params: { id: '12' } },
+      userStore: { userName: '测试用户', currentUser: { id: 9 } },
+      projectStore: {},
+      projectsApi: { createTask },
+      isApiProject: ref(true),
+      message,
+      state,
+      workflow: {},
+    })
+
+    await handleSaveTask({
+      mode: 'create',
+      data: {
+        name: '编写技术响应',
+        content: '# 技术响应\n- 保留列表',
+        owner: '测试用户',
+        priority: 'high',
+        deadline: '2026-06-01',
+      },
+    })
+
+    expect(createTask).toHaveBeenCalledWith('12', expect.objectContaining({
+      title: '编写技术响应',
+      description: '',
+      content: '# 技术响应\n- 保留列表',
+      priority: 'HIGH',
+    }))
+    expect(state.project.value.tasks[0]).toEqual(expect.objectContaining({
+      id: 601,
+      content: '# 技术响应\n- 保留列表',
+    }))
+    expect(message.success).toHaveBeenCalledWith('任务已新增')
+  })
+
   it('API 项目点击拆解任务调用后端拆解接口并写入任务，不打开评分弹窗', async () => {
     const success = vi.fn()
     const error = vi.fn()
@@ -445,6 +499,7 @@ describe('handleSaveTask edit branch', () => {
       title: 'New',
       content: 'md',
       status: 'TODO',
+      priority: 'HIGH',
       dueDate: '2026-06-01',
     })
     const tasks = [{ id: 7, name: 'Old', content: '', status: 'TODO' }]
@@ -453,13 +508,14 @@ describe('handleSaveTask edit branch', () => {
     const { handleSaveTask } = useProjectDetailTaskActions(ctx)
     await handleSaveTask({
       mode: 'edit',
-      data: { id: 7, name: 'New', content: 'md', status: 'TODO', deadline: '2026-06-01' },
+      data: { id: 7, name: 'New', content: 'md', status: 'TODO', priority: 'high', deadline: '2026-06-01' },
     })
 
     expect(updateTask).toHaveBeenCalledWith(1, 7, {
       title: 'New',
       content: 'md',
       status: 'TODO',
+      priority: 'HIGH',
       dueDate: '2026-06-01',
     })
     const updated = state.project.value.tasks[0]
