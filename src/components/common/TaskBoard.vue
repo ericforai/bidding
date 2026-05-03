@@ -137,7 +137,6 @@ import { ref, computed, onMounted } from 'vue'
 import { MoreFilled, User, Calendar, Document, MagicStick, Upload, DocumentAdd, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useProjectStore } from '@/stores/project'
-import { taskStatusDictApi } from '@/api/modules/taskStatusDict.js'
 
 const props = defineProps({
   tasks: {
@@ -165,19 +164,13 @@ const deliverableForm = ref({
   file: null
 })
 
-const statuses = ref([])
-const loadingStatuses = ref(false)
+const statuses = computed(() => projectStore.taskStatuses)
+// eslint-disable-next-line no-unused-vars
+const loadingStatuses = computed(() => !projectStore.taskStatusesLoaded)
 
-onMounted(async () => {
-  loadingStatuses.value = true
-  try {
-    const res = await taskStatusDictApi.list()
-    statuses.value = Array.isArray(res?.data) ? res.data : []
-  } catch (err) {
-    console.error('[TaskBoard] Failed to load task status dict', err)
-    statuses.value = []
-  } finally {
-    loadingStatuses.value = false
+onMounted(() => {
+  if (!projectStore.taskStatusesLoaded) {
+    projectStore.loadTaskStatuses()
   }
 })
 
