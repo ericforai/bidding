@@ -120,3 +120,12 @@ Agent 在每次对话开始或切换任务时，必须声明当前环境。
 - **资源分配**：每个 Agent 拥有专属的端口（前端 131x / 后端 1808x）和数据库名，互不干扰。
 - **验证责任**：遵循“谁改代码，谁在自己的 Worktree 跑通验证”原则。报告“任务完成”前，必须提供在 Worktree 内部执行 `npm run build` 和 `mvn test` 的成功证据。
 
+### 4. 文件锁门禁
+- **锁注册表**：仓库根目录 `.agent-locks.yml` 是多 Agent 文件锁的唯一登记入口，支持 `scope: file` 与 `scope: directory`。
+- **开工前声明**：Agent 在 Plan 阶段必须列出预计修改文件；触碰高冲突文件、目录或公共入口前，必须先在 `.agent-locks.yml` 登记锁。
+- **锁字段**：每条锁必须包含 `path`、`scope`、`owner`、`branch`、`task`、`expiresAt`、`reason`；`expiresAt` 必须设置，避免长期占用。
+- **命令化管理**：新建任务时优先使用 `scripts/agent-start-task.sh <agent> <task> --lock <path> --lock-dir <dir> --lock-reason "<reason>"` 批量登记初始锁；开发中使用 `npm run agent:lock-acquire -- --path <path> --scope file --reason "<reason>"` 追加锁，使用 `npm run agent:lock-release -- --path <path>` 或 `npm run agent:lock-release -- --all` 释放当前分支锁，避免手写字段错误。
+- **本地门禁**：开工和提交前执行 `npm run agent:lock-check` 或 `npm run agent:lock-check:changed`，不得修改其他 Agent 持有的有效锁路径。
+- **远端可见**：锁登记后必须随任务分支推送；其他 Agent 执行 `git fetch origin` 后，锁检查会合并 `origin/*` 分支中的锁。
+- **CI 门禁**：PR 会执行 `scripts/check-agent-locks.mjs --base <base> --head HEAD`；命中其他 Agent 的有效锁时禁止合并。
+- **串行例外**：Flyway Migration、依赖升级、全局权限模型、路由大改等高风险任务仍必须串行，不得仅靠文件锁并行推进。
