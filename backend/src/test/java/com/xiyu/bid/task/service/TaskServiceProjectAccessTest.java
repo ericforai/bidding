@@ -1,5 +1,6 @@
 package com.xiyu.bid.task.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.repository.TaskRepository;
 import com.xiyu.bid.repository.UserRepository;
@@ -48,7 +49,7 @@ class TaskServiceProjectAccessTest {
                 projectAccessScopeService,
                 roleProfileService
         );
-        taskService = new TaskService(taskRepository, projectAccessScopeService, assignmentSupport);
+        taskService = new TaskService(taskRepository, projectAccessScopeService, assignmentSupport, new ObjectMapper());
     }
 
     @Test

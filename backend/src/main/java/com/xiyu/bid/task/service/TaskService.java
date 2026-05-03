@@ -4,6 +4,9 @@
 // 维护声明: 仅维护任务 CRUD 与项目数据权限编排；人员分配和团队工作量留在 TaskAssignmentSupport。
 package com.xiyu.bid.task.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.exception.ResourceNotFoundException;
@@ -14,24 +17,38 @@ import com.xiyu.bid.task.dto.TaskAssignmentCandidateDTO;
 import com.xiyu.bid.task.dto.TaskAssignmentRequest;
 import com.xiyu.bid.task.dto.TaskDTO;
 import com.xiyu.bid.task.dto.TeamTaskWorkloadDTO;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class TaskService {
+
+    private static final TypeReference<Map<String, Object>> EXTENDED_FIELDS_TYPE =
+            new TypeReference<Map<String, Object>>() {};
 
     private final TaskRepository taskRepository;
     private final ProjectAccessScopeService projectAccessScopeService;
     private final TaskAssignmentSupport assignmentSupport;
+    private final ObjectMapper objectMapper;
+
+    public TaskService(TaskRepository taskRepository,
+                       ProjectAccessScopeService projectAccessScopeService,
+                       TaskAssignmentSupport assignmentSupport,
+                       ObjectMapper objectMapper) {
+        this.taskRepository = taskRepository;
+        this.projectAccessScopeService = projectAccessScopeService;
+        this.assignmentSupport = assignmentSupport;
+        this.objectMapper = objectMapper;
+    }
 
     @Transactional
     public TaskDTO createTask(TaskDTO taskDTO) {
@@ -54,6 +71,7 @@ public class TaskService {
                 .status(taskDTO.getStatus() != null ? taskDTO.getStatus() : Task.Status.TODO)
                 .priority(taskDTO.getPriority() != null ? taskDTO.getPriority() : Task.Priority.MEDIUM)
                 .dueDate(taskDTO.getDueDate())
+                .extendedFieldsJson(serializeExtendedFields(taskDTO.getExtendedFields()))
                 .build());
         log.info("Task created successfully with id: {}", savedTask.getId());
         return toDTO(savedTask);
@@ -98,6 +116,9 @@ public class TaskService {
         }
         if (taskDTO.getDueDate() != null) {
             task.setDueDate(taskDTO.getDueDate());
+        }
+        if (taskDTO.getExtendedFields() != null) {
+            task.setExtendedFieldsJson(serializeExtendedFields(taskDTO.getExtendedFields()));
         }
         return toDTO(taskRepository.save(task));
     }
@@ -232,7 +253,32 @@ public class TaskService {
                 .dueDate(task.getDueDate())
                 .createdAt(task.getCreatedAt())
                 .updatedAt(task.getUpdatedAt())
+                .extendedFields(deserializeExtendedFields(task))
                 .build();
+    }
+
+    private String serializeExtendedFields(Map<String, Object> extendedFields) {
+        if (extendedFields == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(extendedFields);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("扩展字段序列化失败: " + e.getMessage(), e);
+        }
+    }
+
+    private Map<String, Object> deserializeExtendedFields(Task task) {
+        String json = task.getExtendedFieldsJson();
+        if (json == null || json.isBlank()) {
+            return Collections.emptyMap();
+        }
+        try {
+            return objectMapper.readValue(json, EXTENDED_FIELDS_TYPE);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to parse extendedFieldsJson for task {}: {}", task.getId(), e.getMessage());
+            return Collections.emptyMap();
+        }
     }
 
     private static TaskAssignmentRequest assignmentRequestFrom(TaskDTO taskDTO) {
