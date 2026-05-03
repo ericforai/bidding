@@ -28,6 +28,7 @@ FALLBACK_REDIS_PORT="16379"
 REDIS_PORT="${REDIS_PORT:-}"
 REDIS_DB="${REDIS_DB:-0}"
 SPRING_DATA_REDIS_DATABASE="${SPRING_DATA_REDIS_DATABASE:-$REDIS_DB}"
+SPRING_JPA_HIBERNATE_DDL_AUTO="${SPRING_JPA_HIBERNATE_DDL_AUTO:-validate}"
 SIDECAR_HOST="${SIDECAR_HOST:-127.0.0.1}"
 SIDECAR_PORT="${SIDECAR_PORT:-8000}"
 SIDECAR_SHARED_KEY_FILE="${SIDECAR_SHARED_KEY_FILE:-$RUNTIME_DIR/sidecar.shared-key}"
@@ -61,6 +62,8 @@ Environment variables:
   DEEPSEEK_API_KEY_FILE      Local runtime file used by dev-services.sh for DeepSeek API key
   REDIS_HOST/REDIS_PORT      Redis connection target
   REDIS_DB                   Redis logical database for this agent
+  SPRING_JPA_HIBERNATE_DDL_AUTO
+                             Hibernate schema action passed to backend
   SIDECAR_HOST/SIDECAR_PORT  Document converter sidecar bind target
   SIDECAR_SHARED_KEY_FILE    Local runtime file used by dev-services.sh for sidecar auth
   SIDECAR_START_TIMEOUT_SECONDS/BACKEND_START_TIMEOUT_SECONDS/FRONTEND_START_TIMEOUT_SECONDS
@@ -182,6 +185,8 @@ write_plist() {
     <string>${REDIS_DB}</string>
     <key>SPRING_DATA_REDIS_DATABASE</key>
     <string>${SPRING_DATA_REDIS_DATABASE}</string>
+    <key>SPRING_JPA_HIBERNATE_DDL_AUTO</key>
+    <string>${SPRING_JPA_HIBERNATE_DDL_AUTO}</string>
     <key>BACKEND_PORT</key>
     <string>${BACKEND_PORT}</string>
     <key>FRONTEND_PORT</key>
