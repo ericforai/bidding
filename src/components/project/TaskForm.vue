@@ -14,6 +14,24 @@
         />
       </el-form-item>
 
+      <el-form-item label="任务附件">
+        <el-upload
+          data-test="task-attachment-upload"
+          :auto-upload="false"
+          :file-list="attachmentFileList"
+          :disabled="readonly"
+          accept=".doc,.docx,.pdf,.xls,.xlsx"
+          multiple
+          @change="handleAttachmentChange"
+          @remove="handleAttachmentRemove"
+        >
+          <el-button :icon="Upload" :disabled="readonly">添加附件</el-button>
+          <template #tip>
+            <div class="attachment-tip">保存任务后上传到该任务</div>
+          </template>
+        </el-upload>
+      </el-form-item>
+
       <el-form-item label="负责人">
         <el-select
           v-model="localValue.assigneeId"
@@ -73,6 +91,7 @@
 
 <script setup>
 import { computed, nextTick, reactive, ref, watch, onMounted } from 'vue'
+import { Upload } from '@element-plus/icons-vue'
 import { taskStatusDictApi } from '@/api/modules/taskStatusDict.js'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
@@ -92,11 +111,18 @@ const localValue = reactive({ ...props.modelValue })
 if (!localValue.extendedFields) {
   localValue.extendedFields = {}
 }
+if (!Array.isArray(localValue.attachments)) {
+  localValue.attachments = []
+}
 const statuses = ref([])
 const loadingStatuses = ref(false)
 const validationMessage = ref('')
 const extFormRef = ref(null)
 const readonly = computed(() => props.mode === 'view')
+const attachmentFileList = computed(() => localValue.attachments.map((file, index) => ({
+  name: file?.name || `附件${index + 1}`,
+  raw: file,
+})))
 let syncingFromModel = false
 const { assigneeOptions, loadingAssignees, loadAssignees, ensureSelectedAssignee, handleAssigneeChange, assigneeLabel } =
   useTaskAssigneeOptions({ localValue, isCreateMode: () => props.mode === 'create', userStore })
@@ -118,6 +144,9 @@ watch(() => props.modelValue, (v) => {
   Object.assign(localValue, v || {})
   if (!localValue.extendedFields) {
     localValue.extendedFields = {}
+  }
+  if (!Array.isArray(localValue.attachments)) {
+    localValue.attachments = []
   }
   ensureSelectedAssignee()
   nextTick(() => {
@@ -165,6 +194,20 @@ function validate() {
   return ''
 }
 
+function normalizeUploadFiles(fileList = []) {
+  return (Array.isArray(fileList) ? fileList : [fileList])
+    .map((item) => item?.raw || item)
+    .filter(Boolean)
+}
+
+function handleAttachmentChange(file, fileList = []) {
+  localValue.attachments = normalizeUploadFiles(fileList.length ? fileList : [file])
+}
+
+function handleAttachmentRemove(_file, fileList = []) {
+  localValue.attachments = normalizeUploadFiles(fileList)
+}
+
 function submit() {
   const msg = validate()
   if (msg) return { valid: false, message: msg }
@@ -195,5 +238,11 @@ defineExpose({ submit, validate })
 .assignee-option small {
   color: #909399;
   font-size: 12px;
+}
+
+.attachment-tip {
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.4;
 }
 </style>

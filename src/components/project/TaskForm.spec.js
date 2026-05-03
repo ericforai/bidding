@@ -110,7 +110,10 @@ const globalStubs = {
     template: '<button type="button"><slot /></button>',
   },
   ElUpload: {
-    template: '<div class="el-upload-stub"><slot /><slot name="tip" /></div>',
+    name: 'ElUpload',
+    props: ['fileList', 'autoUpload', 'disabled', 'accept'],
+    emits: ['change', 'remove'],
+    template: '<div class="el-upload-stub" data-test="task-attachment-upload"><slot /><slot name="tip" /></div>',
   },
 }
 
@@ -164,6 +167,22 @@ describe('TaskForm', () => {
     const r = wrapper.vm.submit()
     expect(r.valid).toBe(true)
     expect(r.data.name).toBe('X')
+  })
+
+  it('includes selected task attachments in submit payload', async () => {
+    const wrapper = mount(TaskForm, {
+      props: { mode: 'create', modelValue: { name: 'X' } },
+      global: { stubs: globalStubs },
+    })
+    await flushPromises()
+    const file = new File(['附件内容'], '任务附件.docx', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
+
+    await wrapper.findComponent({ name: 'ElUpload' }).vm.$emit('change', { raw: file, name: file.name }, [{ raw: file, name: file.name }])
+    const r = wrapper.vm.submit()
+
+    expect(wrapper.text()).toContain('任务附件')
+    expect(r.valid).toBe(true)
+    expect(r.data.attachments).toEqual([file])
   })
 
   it('defaults status to dict.initial code on mount when empty', async () => {
