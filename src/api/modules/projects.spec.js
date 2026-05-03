@@ -127,4 +127,11 @@ describe('projectsApi', () => {
     expect(result.success).toBe(false)
     expect(result.message).toContain('Demo records are read-only')
   })
+
+  it('updateTask issues PUT /api/tasks/{id} with backend dto', async () => {
+    httpClient.put.mockResolvedValue({ success: true, data: { id: 1, title: 'X', status: 'TODO' } })
+    const result = await projectsApi.updateTask(1, { title: 'X', status: 'TODO' })
+    expect(httpClient.put).toHaveBeenCalledWith('/api/tasks/1', { title: 'X', status: 'TODO' })
+    expect(result.data.id).toBe(1)
+  })
 })
