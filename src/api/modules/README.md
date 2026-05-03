@@ -27,6 +27,8 @@
 | `resources.js` | API 模块 | 平台账号、BAR、证书、资源能力调用 |
 | `settings.js` | API 模块 | 系统设置页的数据权限与组织树读写 |
 | `taskStatusDict.js` | API 模块 | 项目任务状态字典查询（启用状态列表），供动态任务看板驱动列配置 |
+| `taskExtendedField.js` | API 模块 | 项目任务扩展字段 schema 读取（启用字段列表），供 TaskForm 动态渲染 |
+| `taskExtendedFieldAdmin.js` | API 模块 | 管理员对任务扩展字段 schema 的 CRUD、启停与排序调用 |
 | `tenders.js` | API 模块 | 标讯列表、详情、入项、上传任务和人工录入文档识别调用 |
 | `workflowForm.js` | API 模块 | 流程表单运行态模板读取、附件上传、实例提交，以及管理员模板配置、发布、OA 绑定和试提交接口 |
 
@@ -43,3 +45,4 @@
 - 2026-04-27: `tenders.js` 新增人工录入标讯附件的 `/api/doc-insight/parse` 真实 API 调用，使用 `TENDER_INTAKE` profile。
 - 2026-04-29: 新增 `workflowForm.js`，资质借阅申请改为通过流程表单中心提交并触发 OA；扩展管理员流程表单配置、发布、OA 绑定、试提交和附件上传 API。
 - 2026-05-01: 新增 `taskStatusDict.js`，接入启用状态的任务状态字典查询 API，供动态任务看板按后端字典驱动列配置。
+- 2026-05-03: 新增 `taskExtendedField.js` 与 `taskExtendedFieldAdmin.js`，接入任务扩展字段 schema 的公开读取与管理员 CRUD/启停/排序 API，供 TaskForm 动态渲染扩展字段。
