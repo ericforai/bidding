@@ -49,6 +49,13 @@
       >
         <TaskStatusDictPanel />
       </el-tab-pane>
+      <el-tab-pane
+        v-if="isAdmin"
+        label="任务扩展字段"
+        name="task-extended-fields"
+      >
+        <TaskExtendedFieldPanel />
+      </el-tab-pane>
       <el-tab-pane label="用户组织归属" name="users">
         <UserOrganizationPanel
           v-loading="loading"
@@ -110,6 +117,7 @@ import UserOrganizationPanel from './settings/UserOrganizationPanel.vue'
 import AuditLogPanel from './settings/AuditLogPanel.vue'
 import SystemIntegrationPanel from './settings/SystemIntegrationPanel.vue'
 import TaskStatusDictPanel from './settings/TaskStatusDictPanel.vue'
+import TaskExtendedFieldPanel from './settings/TaskExtendedFieldPanel.vue'
 import { useOrganizationSettings } from './settings/useOrganizationSettings'
 import { useAiModelSettings } from './settings/useAiModelSettings'
 import {
@@ -127,6 +135,7 @@ const settingsTabNames = new Set([
   'roles',
   'interface-permissions',
   'task-status-dict',
+  'task-extended-fields',
   'users',
   'ai-models',
   'bid-match-scoring',
@@ -137,6 +146,7 @@ const getRouteTab = () => {
   const tab = typeof route.query.tab === 'string' ? route.query.tab : ''
   if (tab === 'audit' && !canViewAuditLogs.value) return 'departments'
   if (tab === 'task-status-dict' && !isAdmin.value) return 'departments'
+  if (tab === 'task-extended-fields' && !isAdmin.value) return 'departments'
   return settingsTabNames.has(tab) ? tab : 'departments'
 }
 const activeTab = ref(getRouteTab())
@@ -203,6 +213,9 @@ watch(canViewAuditLogs, (allowed) => {
 
 watch(isAdmin, (allowed) => {
   if (!allowed && activeTab.value === 'task-status-dict') {
+    activeTab.value = 'departments'
+  }
+  if (!allowed && activeTab.value === 'task-extended-fields') {
     activeTab.value = 'departments'
   }
 }, { immediate: true })
