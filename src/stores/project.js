@@ -6,6 +6,7 @@
 import { defineStore } from 'pinia'
 import { httpClient, projectsApi, resourcesApi } from '@/api'
 import { taskStatusDictApi } from '@/api/modules/taskStatusDict.js'
+import { taskExtendedFieldApi } from '@/api/modules/taskExtendedField.js'
 
 function normalizeExpenseDate(value) {
   if (!value) return ''
@@ -97,6 +98,8 @@ export const useProjectStore = defineStore('project', {
     expenseError: '',
     taskStatuses: [],
     taskStatusesLoaded: false,
+    taskExtendedFields: [],
+    taskExtendedFieldsLoaded: false,
   }),
 
   getters: {
@@ -257,6 +260,25 @@ export const useProjectStore = defineStore('project', {
     invalidateTaskStatuses() {
       this.taskStatuses = []
       this.taskStatusesLoaded = false
+    },
+
+    async loadTaskExtendedFields() {
+      if (this.taskExtendedFieldsLoaded) return this.taskExtendedFields
+      try {
+        const res = await taskExtendedFieldApi.list()
+        this.taskExtendedFields = Array.isArray(res?.data) ? res.data : []
+      } catch (err) {
+        console.error('[projectStore] loadTaskExtendedFields failed', err)
+        this.taskExtendedFields = []
+      } finally {
+        this.taskExtendedFieldsLoaded = true
+      }
+      return this.taskExtendedFields
+    },
+
+    invalidateTaskExtendedFields() {
+      this.taskExtendedFields = []
+      this.taskExtendedFieldsLoaded = false
     }
   }
 })
