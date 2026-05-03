@@ -14,6 +14,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -32,6 +34,8 @@ public class Task {
     private static final int LEN_CODE = 100;
     /** Column length for role code. */
     private static final int LEN_ROLE_CODE = 64;
+    /** Column length for status code. */
+    private static final int LEN_STATUS = 32;
 
     /** Unique identifier. */
     @Id
@@ -80,7 +84,8 @@ public class Task {
 
     /** Current task status. */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = LEN_STATUS)
     private Status status = Status.TODO;
 
     /** Task priority level. */
