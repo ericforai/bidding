@@ -1,5 +1,7 @@
 // Input: Playwright E2E suite for task board API fixtures, drawer readback, and status customization
-// Output: regression coverage for seeded columns, content persistence, sanitizer, and progress updates
+// Output: regression coverage for seeded columns, content persistence, sanitizer, progress updates,
+//         N1 reload-loop + control-char round-trip persistence proofs,
+//         and D1 admin-side task-status-dict create flow via /settings panel
 // Pos: e2e/ - Playwright end-to-end coverage
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -159,6 +161,70 @@ test.describe('Task board customization core flow', () => {
     expect(value).toContain('\n')
     await editDrawer.getByRole('button', { name: '取消' }).click()
     await expect(editDrawer).toBeHidden()
+  })
+
+  // D1 (task-status-dict admin flow): ADMIN can create a new status via
+  // /settings?tab=task-status-dict and see it in the dictionary table. The
+  // cross-session propagation into other users' TaskForm dropdown is covered
+  // by M-B2's projectStore.invalidateTaskStatuses unit tests; this case only
+  // proves the admin create flow works end-to-end against the real backend.
+  test('admin adds ARCHIVED status via system settings panel', async ({ page }) => {
+    // The fixture creates an ADMIN-role user (role: 'ADMIN' in register
+    // fallback), so the task-status-dict tab will be visible.
+    const session = await createAuthenticatedSession()
+    await page.addInitScript(({ token, user }) => {
+      sessionStorage.setItem('token', token)
+      sessionStorage.setItem('user', JSON.stringify(user))
+    }, session)
+
+    // Use a run-unique code so re-runs don't collide with the seeded dict
+    // or a previous run's row. Keep it uppercase + underscore-safe per the
+    // invariants enforced by TaskStatusDictAdminService.
+    const suffix = Date.now().toString().slice(-6)
+    const code = `ARCHV_${suffix}`
+    const displayName = `已归档${suffix}`
+
+    await page.goto('/settings?tab=task-status-dict')
+
+    // Tab content is the TaskStatusDictPanel; wait for the panel heading.
+    await expect(page.locator('h3', { hasText: '任务状态字典' })).toBeVisible({ timeout: 10000 })
+
+    // Open the create dialog. data-test is forwarded to the native button
+    // only when el-button is not `link`; this one is a regular primary button
+    // so the attribute is preserved on the root.
+    await page.locator('[data-test="new-status-btn"]').click()
+
+    const dialog = page.locator('.el-dialog').filter({ hasText: '新增状态' })
+    await expect(dialog).toBeVisible({ timeout: 5000 })
+
+    // Text inputs inside DynamicFormRenderer — scope by placeholder so we
+    // don't depend on el-form-item label DOM order.
+    await dialog.locator('input[placeholder*="ARCHIVED"]').fill(code)
+    await dialog.locator('input[placeholder="请输入显示名"]').fill(displayName)
+    await dialog.locator('input[placeholder*="hex"]').fill('#c0c4cc')
+
+    // Category is an el-select. Element Plus teleports the dropdown outside
+    // the dialog, so we click the select trigger inside the dialog, then
+    // pick the option from the page-level dropdown.
+    // The three selects in the form (category, isInitial, isTerminal) appear
+    // in the same order as formFields — target category by its form-item label.
+    const categoryItem = dialog.locator('.el-form-item').filter({ has: page.locator('label:has-text("类别")') })
+    await categoryItem.locator('.el-select').first().click()
+    // Teleported dropdown lives on `body`, not inside the dialog scope.
+    await page.locator('.el-select-dropdown__item', { hasText: '终态（CLOSED）' }).first().click()
+
+    // isTerminal → "是". isInitial stays at the default "否" (pre-filled).
+    const terminalItem = dialog.locator('.el-form-item').filter({ has: page.locator('label:has-text("设为终态")') })
+    await terminalItem.locator('.el-select').first().click()
+    await page.locator('.el-select-dropdown__item', { hasText: '是' }).first().click()
+
+    // Save.
+    await dialog.getByRole('button', { name: '保存' }).click()
+    await expect(dialog).toBeHidden({ timeout: 5000 })
+
+    // The panel reloads the list after save; the new row should be visible.
+    await expect(page.locator('.dict-table').locator(`text=${code}`)).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('.dict-table').locator(`text=${displayName}`)).toBeVisible()
   })
 
   // N1: Sanitizer contract — control characters (e.g. BEL 0x07) must be
