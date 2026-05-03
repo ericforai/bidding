@@ -56,7 +56,7 @@ export function useProjectCreateModel({ route, userStore, projectStore, router }
 
   const taskForm = reactive({
     tasks: [
-      { name: '', owner: '', deadline: '', priority: 'medium', status: 'todo' }
+      { name: '', owner: '', deadline: '', priority: 'medium', status: 'TODO' }
     ]
   })
 
@@ -80,7 +80,7 @@ export function useProjectCreateModel({ route, userStore, projectStore, router }
       owner: '',
       deadline: '',
       priority: 'medium',
-      status: 'todo'
+      status: 'TODO'
     })
   }
 

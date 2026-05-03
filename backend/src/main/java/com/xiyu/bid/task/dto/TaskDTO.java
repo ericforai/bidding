@@ -21,6 +21,11 @@ public class TaskDTO {
     private Long projectId;
     private String title;
     private String description;
+    /**
+     * Markdown rich content (raw text, sanitized at render time by the frontend).
+     * Persisted to {@code tasks.content TEXT} (V102, up to ~64KB).
+     */
+    private String content;
     private Long assigneeId;
     private String assigneeDeptCode;
     private String assigneeDeptName;

@@ -12,7 +12,7 @@
     </div>
     <div class="board-columns-container">
       <div class="board-column" v-for="column in columns" :key="column.key">
-      <div class="column-header" :class="`column-${column.key}`">
+      <div class="column-header" :style="getColumnHeaderStyle(column)">
         <span class="column-title">{{ column.title }}</span>
         <el-badge :value="getTaskCount(column.key)" class="badge" />
       </div>
@@ -21,7 +21,7 @@
           v-for="task in getTasksByStatus(column.key)"
           :key="task.id"
           class="task-card"
-          :class="{ 'task-high': task.priority === 'high', 'task-review': task.status === 'review' }"
+          :class="{ 'task-high': task.priority === 'high', 'task-review': column.category === 'REVIEW' }"
           @click="handleTaskClick(task)"
         >
           <div class="task-header">
@@ -36,17 +36,13 @@
             <el-dropdown trigger="click" @click.stop>
               <el-icon class="more-icon"><MoreFilled /></el-icon>
               <template #dropdown>
-                <el-dropdown-item @click="handleStatusChange(task, 'todo')" :disabled="task.status === 'todo'">
-                  设为待办
-                </el-dropdown-item>
-                <el-dropdown-item @click="handleStatusChange(task, 'doing')" :disabled="task.status === 'doing'">
-                  设为进行中
-                </el-dropdown-item>
-                <el-dropdown-item @click="handleStatusChange(task, 'review')" :disabled="task.status === 'review'">
-                  提交审核
-                </el-dropdown-item>
-                <el-dropdown-item @click="handleStatusChange(task, 'done')" :disabled="task.status === 'done'">
-                  设为已完成
+                <el-dropdown-item
+                  v-for="s in statuses"
+                  :key="s.code"
+                  :disabled="normalizeStatus(task.status) === s.code"
+                  @click="handleStatusChange(task, s.code)"
+                >
+                  设为{{ s.name }}
                 </el-dropdown-item>
                 <el-dropdown-item divided @click="handleUploadDeliverable(task)">
                   <el-icon><Upload /></el-icon>
@@ -137,10 +133,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { MoreFilled, User, Calendar, Document, MagicStick, Upload, DocumentAdd, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useProjectStore } from '@/stores/project'
+import { taskStatusDictApi } from '@/api/modules/taskStatusDict.js'
 
 const props = defineProps({
   tasks: {
@@ -168,35 +165,79 @@ const deliverableForm = ref({
   file: null
 })
 
-const columns = [
-  { key: 'todo', title: '待办' },
-  { key: 'doing', title: '进行中' },
-  { key: 'review', title: '待审核' },
-  { key: 'done', title: '已完成' }
-]
+const statuses = ref([])
+const loadingStatuses = ref(false)
 
-// 计算进度
+onMounted(async () => {
+  loadingStatuses.value = true
+  try {
+    const res = await taskStatusDictApi.list()
+    statuses.value = Array.isArray(res?.data) ? res.data : []
+  } catch (err) {
+    console.error('[TaskBoard] Failed to load task status dict', err)
+    statuses.value = []
+  } finally {
+    loadingStatuses.value = false
+  }
+})
+
+const normalizeStatus = (status) => String(status || '').toUpperCase()
+
+const columns = computed(() => statuses.value.map((s) => ({
+  key: s.code,
+  title: s.name,
+  color: s.color,
+  category: s.category,
+  terminal: s.terminal
+})))
+
+const terminalCodes = computed(() => new Set(
+  statuses.value.filter((s) => s.terminal).map((s) => s.code)
+))
+
+// 计算进度（基于 terminal 标记，不再依赖 'done' 字面量）
 const progress = computed(() => {
   if (props.tasks.length === 0) return 0
-  const completedCount = props.tasks.filter(t => t.status === 'done').length
-  return Math.round((completedCount / props.tasks.length) * 100)
+  const doneCount = props.tasks.filter((t) => terminalCodes.value.has(normalizeStatus(t.status))).length
+  return Math.round((doneCount / props.tasks.length) * 100)
 })
 
-// 所有任务都完成且审核通过
+// 所有任务都已到达终态
 const allTasksCompleted = computed(() => {
-  return props.tasks.length > 0 && props.tasks.every(t => t.status === 'done')
+  if (props.tasks.length === 0) return false
+  return props.tasks.every((t) => terminalCodes.value.has(normalizeStatus(t.status)))
 })
 
-const canSubmitToDocument = computed(() => {
-  return props.tasks.length > 0 && props.tasks.every(t => t.status === 'done')
-})
+const canSubmitToDocument = computed(() => allTasksCompleted.value)
 
-const getTasksByStatus = (status) => {
-  return props.tasks.filter(t => t.status === status)
+const getTasksByStatus = (code) => {
+  return props.tasks.filter((t) => normalizeStatus(t.status) === code)
 }
 
-const getTaskCount = (status) => {
-  return getTasksByStatus(status).length
+const getTaskCount = (code) => {
+  return getTasksByStatus(code).length
+}
+
+const getColumnHeaderStyle = (column) => {
+  const color = column?.color || '#909399'
+  return {
+    color,
+    background: hexToSoftBackground(color)
+  }
+}
+
+const hexToSoftBackground = (hex) => {
+  if (typeof hex !== 'string' || !/^#([\da-f]{3}|[\da-f]{6})$/i.test(hex)) {
+    return '#f5f7fa'
+  }
+  let normalized = hex.replace('#', '')
+  if (normalized.length === 3) {
+    normalized = normalized.split('').map((c) => c + c).join('')
+  }
+  const r = parseInt(normalized.slice(0, 2), 16)
+  const g = parseInt(normalized.slice(2, 4), 16)
+  const b = parseInt(normalized.slice(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, 0.12)`
 }
 
 const getPriorityType = (priority) => {
@@ -355,26 +396,6 @@ const handleSubmitToDocument = async () => {
   justify-content: space-between;
   align-items: center;
   font-weight: 500;
-}
-
-.column-todo .column-header {
-  background: #e8e9eb;
-  color: #606266;
-}
-
-.column-doing .column-header {
-  background: #e1f3ff;
-  color: #409eff;
-}
-
-.column-review .column-header {
-  background: #fff7e6;
-  color: #e6a23c;
-}
-
-.column-done .column-header {
-  background: #e1f9e8;
-  color: #67c23a;
 }
 
 .column-title {

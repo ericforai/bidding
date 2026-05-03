@@ -14,9 +14,9 @@ describe('useProjectCreateModel task payloads', () => {
   it('normalizes valid manual task rows for real project task API', () => {
     const model = createModel()
     model.taskForm.tasks = [
-      { name: '  商务响应文件  ', owner: '张经理', deadline: '2026-06-01', priority: 'high', status: 'todo' },
-      { name: '', owner: '小王', deadline: '', priority: 'medium', status: 'todo' },
-      { name: '技术方案', owner: '', deadline: '', priority: 'low', status: 'todo' },
+      { name: '  商务响应文件  ', owner: '张经理', deadline: '2026-06-01', priority: 'high', status: 'TODO' },
+      { name: '', owner: '小王', deadline: '', priority: 'medium', status: 'TODO' },
+      { name: '技术方案', owner: '', deadline: '', priority: 'low', status: 'TODO' },
     ]
 
     expect(model.buildTaskCreatePayloads()).toEqual([

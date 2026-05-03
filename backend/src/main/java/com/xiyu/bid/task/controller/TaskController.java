@@ -158,8 +158,24 @@ public class TaskController {
         return ResponseEntity.ok(ApiResponse.success("Overdue tasks retrieved successfully", tasks));
     }
 
+    /**
+     * Maximum accepted Markdown content length, measured in <em>characters</em>.
+     *
+     * <p>V102 迁移将 {@code tasks.content} 定义为 MySQL {@code TEXT}，其容量上限为
+     * <strong>65,535 字节</strong>（而非字符数）。在 UTF-8 下，单个 CJK 字符占 3 字节，
+     * 若直接以 65,535 字符为上限，CJK 文本可能达到约 196KB，超出列容量。因此这里
+     * 收紧到 20,000 字符：即便全部是 CJK 也只占约 60KB，稳妥落在 64KB 内，同时对
+     * 前端亦是友好、可在编辑器中强制提示的上限。</p>
+     */
+    private static final int MAX_CONTENT_CHARS = 20_000;
+
     private void sanitizeTaskDTO(TaskDTO dto) {
         if (dto.getTitle() != null) dto.setTitle(InputSanitizer.sanitizeString(dto.getTitle(), 200));
         if (dto.getDescription() != null) dto.setDescription(InputSanitizer.sanitizeString(dto.getDescription(), 2000));
+        // NOTE: content is Markdown. Do NOT strip HTML tags here – frontend is responsible
+        // for render-time sanitization (DOMPurify / equivalent in src/utils/markdown.js).
+        // 使用 sanitizeMarkdown 以保留 \t \n \r（普通 sanitizeString 会剥离所有 0x00-0x1F
+        // 控制字符并 trim，会破坏标题、列表、代码块等 Markdown 结构）。
+        if (dto.getContent() != null) dto.setContent(InputSanitizer.sanitizeMarkdown(dto.getContent(), MAX_CONTENT_CHARS));
     }
 }

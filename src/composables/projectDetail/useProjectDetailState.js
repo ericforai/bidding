@@ -8,7 +8,6 @@ export function useProjectDetailState(context) {
   const approvalHistory = ref([])
   const assetCheckResult = ref(null)
 
-  const taskDialogVisible = ref(false)
   const resultDialogVisible = ref(false)
   const competitorDialogVisible = ref(false)
   const processDialogVisible = ref(false)
@@ -81,7 +80,6 @@ export function useProjectDetailState(context) {
     loading,
     approvalHistory,
     assetCheckResult,
-    taskDialogVisible,
     resultDialogVisible,
     competitorDialogVisible,
     processDialogVisible,

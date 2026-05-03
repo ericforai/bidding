@@ -94,7 +94,7 @@ export function useProjectDetailTaskActions(context) {
     state.project.value.tasks = getTaskTemplateByProject(state.project.value).map((taskTemplate, index) => {
       const taskDeadline = new Date(deadline)
       taskDeadline.setDate(taskDeadline.getDate() - taskTemplate.deadlineOffset)
-      return { id: `${state.project.value.id}_T${String(index + 1).padStart(3, '0')}`, name: taskTemplate.name, description: taskTemplate.description, owner: taskTemplate.owner, status: 'todo', priority: taskTemplate.priority, deadline: taskDeadline.toISOString().split('T')[0], hasDeliverable: taskTemplate.needsDeliverable, deliverableType: taskTemplate.deliverableType || 'other', deliverables: [] }
+      return { id: `${state.project.value.id}_T${String(index + 1).padStart(3, '0')}`, name: taskTemplate.name, description: taskTemplate.description, owner: taskTemplate.owner, status: 'TODO', priority: taskTemplate.priority, deadline: taskDeadline.toISOString().split('T')[0], hasDeliverable: taskTemplate.needsDeliverable, deliverableType: taskTemplate.deliverableType || 'other', deliverables: [] }
     })
     pushActivity(`根据项目模板自动生成了 ${state.project.value.tasks.length} 个任务`)
     message.success(`已自动生成 ${state.project.value.tasks.length} 个任务`)
@@ -195,7 +195,7 @@ export function useProjectDetailTaskActions(context) {
     if (!state.project.value) return
     const nextIndex = (state.project.value.tasks?.length || 0) + 1
     const dueDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-    const newTask = { name: `新增任务 ${nextIndex}`, owner: userStore.userName, assignee: userStore.userName, department: '投标管理部', dueDate: dueDate.toISOString().split('T')[0], priority: 'medium', status: 'todo', deliverables: [], hasDeliverable: false }
+    const newTask = { name: `新增任务 ${nextIndex}`, owner: userStore.userName, assignee: userStore.userName, department: '投标管理部', dueDate: dueDate.toISOString().split('T')[0], priority: 'medium', status: 'TODO', deliverables: [], hasDeliverable: false }
 
     if (!isApiProject.value) {
       state.project.value.tasks = Array.isArray(state.project.value.tasks) ? state.project.value.tasks : []
@@ -221,7 +221,72 @@ export function useProjectDetailTaskActions(context) {
     }).catch(() => {})
   }
 
-  const handleTaskClick = (task) => { state.currentTask.value = task; state.taskDialogVisible.value = true }
+  const handleTaskClick = (task) => { state.currentTask.value = task }
+
+  const handleSaveTask = async (payload = {}) => {
+    const { mode = 'create', data = {} } = payload
+    if (!state.project.value) {
+      message.warning('项目信息未加载')
+      return
+    }
+
+    // Edit mode: merge the submitted fields into the existing task in-place. The
+    // backend currently only exposes updateTaskStatus; we patch the client-side
+    // view optimistically so the drawer save flow is responsive, and leave the
+    // dedicated update endpoint to a later wiring step.
+    if (mode === 'edit' && data?.id != null) {
+      const tasks = ensureTaskList()
+      const target = tasks.find((t) => String(t.id) === String(data.id))
+      if (target) {
+        Object.assign(target, data)
+        pushActivity(`更新了任务「${data.name || target.name}」`)
+        message.success('任务已更新')
+      }
+      return
+    }
+
+    // Create mode: for API projects reuse createTask; for demo projects push
+    // the record locally.
+    const title = data?.name || `新增任务 ${(state.project.value.tasks?.length || 0) + 1}`
+    const dueDate = data?.deadline ? new Date(data.deadline) : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+
+    if (!isApiProject.value) {
+      const list = ensureTaskList()
+      list.unshift({
+        id: `TASK_${Date.now()}`,
+        name: title,
+        owner: data?.owner || userStore.userName,
+        assignee: data?.owner || userStore.userName,
+        department: '投标管理部',
+        dueDate: dueDate.toISOString().split('T')[0],
+        priority: data?.priority || 'medium',
+        status: data?.status || 'todo',
+        content: data?.content || '',
+        deliverables: [],
+        hasDeliverable: false,
+      })
+      pushActivity(`新增了任务「${title}」`)
+      message.success('已新增演示任务')
+      return
+    }
+
+    try {
+      const result = await projectsApi.createTask(route.params.id, {
+        title,
+        description: data?.content || '',
+        assigneeId: userStore.currentUser?.id || null,
+        assigneeName: data?.owner || userStore.userName,
+        priority: (data?.priority || 'medium').toUpperCase(),
+        dueDate: dueDate.toISOString(),
+      })
+      if (!result?.success || !result?.data) throw new Error(result?.message || '新增任务失败')
+      ensureTaskList().unshift({ ...result.data, deliverables: [], hasDeliverable: false })
+      pushActivity(`新增了任务「${result.data.name}」`)
+      message.success('任务已新增')
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '新增任务失败'))
+    }
+  }
   const handleTaskStatusChange = async (task, newStatus) => {
     if (task) {
       task.status = newStatus
@@ -264,7 +329,7 @@ export function useProjectDetailTaskActions(context) {
     const tasks = state.project.value?.tasks || []
     if (!tasks.length) return
 
-    const allCompleted = tasks.every((task) => task.status === 'done')
+    const allCompleted = tasks.every((task) => projectStore.isTerminalStatus(task.status))
     if (!allCompleted) {
       message.warning('请先完成所有任务后再提交至标书编写流程')
       return
@@ -294,5 +359,5 @@ export function useProjectDetailTaskActions(context) {
     }
   }
 
-  return { handleGenerateTasks, handleScoreDraftGenerated, handleOpenScoreDraftDecompose, handleOpenTenderBreakdown, handleTenderBreakdownUpload, handleAddTask, handleResetTasks, handleTaskClick, handleTaskStatusChange, handleAddDeliverable, handleRemoveDeliverable, handleSubmitToDocument }
+  return { handleGenerateTasks, handleScoreDraftGenerated, handleOpenScoreDraftDecompose, handleOpenTenderBreakdown, handleTenderBreakdownUpload, handleAddTask, handleResetTasks, handleTaskClick, handleSaveTask, handleTaskStatusChange, handleAddDeliverable, handleRemoveDeliverable, handleSubmitToDocument }
 }

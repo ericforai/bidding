@@ -14,7 +14,7 @@ describe('useProjectDetailTaskActions', () => {
         {
           id: 501,
           name: '资格文件整理',
-          status: 'todo',
+          status: 'TODO',
           deliverables: null,
           hasDeliverable: false,
         },
@@ -348,7 +348,7 @@ describe('useProjectDetailTaskActions', () => {
       data: { id: 42, name: '资格审查', status: 'cancelled' },
     })
     const state = {
-      project: ref({ id: 12, name: '测试项目', tasks: [{ id: 42, name: '资格审查', status: 'todo' }] }),
+      project: ref({ id: 12, name: '测试项目', tasks: [{ id: 42, name: '资格审查', status: 'TODO' }] }),
       activities: ref([]),
       scoreDraftDialogVisible: ref(false),
       currentTask: ref(null),

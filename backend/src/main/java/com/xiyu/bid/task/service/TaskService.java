@@ -45,6 +45,7 @@ public class TaskService {
                 .projectId(taskDTO.getProjectId())
                 .title(taskDTO.getTitle())
                 .description(taskDTO.getDescription())
+                .content(taskDTO.getContent())
                 .assigneeId(assignment.assigneeId())
                 .assigneeDeptCode(assignment.assigneeDeptCode())
                 .assigneeDeptName(assignment.assigneeDeptName())
@@ -82,6 +83,9 @@ public class TaskService {
         }
         if (taskDTO.getDescription() != null) {
             task.setDescription(taskDTO.getDescription());
+        }
+        if (taskDTO.getContent() != null) {
+            task.setContent(taskDTO.getContent());
         }
         if (hasAssignmentChange(taskDTO)) {
             assignmentSupport.applyAssignment(task, assignmentSupport.resolveAssignmentSnapshot(assignmentRequestFrom(taskDTO), null));
@@ -217,6 +221,7 @@ public class TaskService {
                 .projectId(task.getProjectId())
                 .title(task.getTitle())
                 .description(task.getDescription())
+                .content(task.getContent())
                 .assigneeId(task.getAssigneeId())
                 .assigneeDeptCode(task.getAssigneeDeptCode())
                 .assigneeDeptName(task.getAssigneeDeptName())
