@@ -41,7 +41,15 @@ public class ProjectWorkflowService {
     }
 
     public ProjectTaskViewDTO createProjectTask(Long projectId, ProjectTaskCreateRequest request) {
-        return projectTaskWorkflowService.createProjectTask(projectId, request);
+        return createProjectTask(projectId, request, null);
+    }
+
+    public ProjectTaskViewDTO createProjectTask(
+            Long projectId,
+            ProjectTaskCreateRequest request,
+            String creatorUsername
+    ) {
+        return projectTaskWorkflowService.createProjectTask(projectId, request, creatorUsername);
     }
 
     public ProjectTaskViewDTO updateProjectTaskStatus(

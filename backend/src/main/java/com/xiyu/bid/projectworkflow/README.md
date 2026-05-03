@@ -14,6 +14,7 @@
 | `core/ScoreDraftPolicy.java` | Core | 评分草稿更新与任务生成的纯规则，返回显式决策和值对象，不直接做 I/O |
 | `core/TaskBreakdownPolicy.java` | Core | 根据招标需求项或标书章节快照生成任务拆解决策，不访问数据库或框架 |
 | `service/ProjectWorkflowService.java` | Service | 项目流程门面；转调任务、评分草稿、文档、提醒和分享链接子服务 |
+| `service/ProjectTaskWorkflowService.java` | Service | 项目任务查询、创建和状态流转；创建任务未显式指定责任人时默认当前创建人 |
 | `service/ProjectTaskBreakdownService.java` | Service | 任务拆解编排；读取真实标书拆解结果、调用纯核心、保存项目任务 |
 | `service/ProjectTaskBreakdownSourceReader.java` | Reader | 读取任务拆解来源；通过端口读取招标需求项，章节只兜底读取顶层/二级章节 |
 | `service/ProjectTaskRequirementSourceGateway.java` | Port | 任务拆解读取招标需求来源的端口，由招标文件解析能力侧提供实现，避免流程模块反向依赖解析模块实体 |

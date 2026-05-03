@@ -59,8 +59,8 @@
       @task-click="handleTaskClick"
       @status-change="(...args) => $emit('status-change', ...args)"
       @generate-tasks="$emit('generate-tasks')"
-      @add-deliverable="$emit('add-deliverable', $event)"
-      @remove-deliverable="$emit('remove-deliverable', $event)"
+      @add-deliverable="(...args) => $emit('add-deliverable', ...args)"
+      @remove-deliverable="(...args) => $emit('remove-deliverable', ...args)"
       @submit-to-document="$emit('submit-to-document', $event)"
     />
 

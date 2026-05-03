@@ -63,7 +63,6 @@
               <span>{{ task.deadline }}</span>
             </div>
           </div>
-          <!-- 交付物列表 -->
           <div v-if="task.deliverables && task.deliverables.length > 0" class="deliverables">
             <div class="deliverable-title">交付物:</div>
             <div v-for="del in task.deliverables" :key="del.id" class="deliverable-item">
@@ -81,7 +80,6 @@
     </div>
     </div>
 
-    <!-- 提交至标书编写按钮 -->
     <div class="submit-section" v-if="canSubmitToDocument">
       <el-button type="success" size="large" @click="handleSubmitToDocument" :disabled="!allTasksCompleted">
         <el-icon><DocumentAdd /></el-icon>
@@ -90,7 +88,6 @@
       <div class="submit-tip">所有任务已完成并审核通过，可开始标书编写</div>
     </div>
 
-    <!-- 上传交付物对话框 -->
     <el-dialog v-model="showUploadDialog" title="上传交付物" width="500px">
       <el-form :model="deliverableForm" label-width="80px">
         <el-form-item label="交付物名称">
@@ -137,6 +134,7 @@ import { ref, computed, onMounted } from 'vue'
 import { MoreFilled, User, Calendar, Document, MagicStick, Upload, DocumentAdd, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useProjectStore } from '@/stores/project'
+import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
   tasks: {
@@ -153,6 +151,7 @@ const props = defineProps({
 const emit = defineEmits(['task-click', 'status-change', 'generate-tasks', 'submit-to-document', 'add-deliverable', 'remove-deliverable'])
 
 const projectStore = useProjectStore()
+const userStore = useUserStore()
 
 const showUploadDialog = ref(false)
 const currentTask = ref(null)
@@ -165,8 +164,6 @@ const deliverableForm = ref({
 })
 
 const statuses = computed(() => projectStore.taskStatuses)
-// eslint-disable-next-line no-unused-vars
-const loadingStatuses = computed(() => !projectStore.taskStatusesLoaded)
 
 onMounted(() => {
   if (!projectStore.taskStatusesLoaded) {
@@ -188,14 +185,12 @@ const terminalCodes = computed(() => new Set(
   statuses.value.filter((s) => s.terminal).map((s) => s.code)
 ))
 
-// 计算进度（基于 terminal 标记，不再依赖 'done' 字面量）
 const progress = computed(() => {
   if (props.tasks.length === 0) return 0
   const doneCount = props.tasks.filter((t) => terminalCodes.value.has(normalizeStatus(t.status))).length
   return Math.round((doneCount / props.tasks.length) * 100)
 })
 
-// 所有任务都已到达终态
 const allTasksCompleted = computed(() => {
   if (props.tasks.length === 0) return false
   return props.tasks.every((t) => terminalCodes.value.has(normalizeStatus(t.status)))
@@ -297,14 +292,17 @@ const handleSaveDeliverable = async () => {
       other: 'OTHER'
     }
 
-    await projectStore.addDeliverable(props.projectId, currentTask.value.id, {
+    const savedDeliverable = await projectStore.addDeliverable(props.projectId, currentTask.value.id, {
       name: deliverableForm.value.name,
       deliverableType: typeMap[deliverableForm.value.type] || 'DOCUMENT',
       size: deliverableForm.value.file ? `${(deliverableForm.value.file.size / 1024).toFixed(1)}KB` : null,
-      fileType: deliverableForm.value.file?.type || null
+      fileType: deliverableForm.value.file?.type || null,
+      file: deliverableForm.value.file,
+      uploaderId: userStore.currentUser?.id ?? null,
+      uploaderName: userStore.userName,
     })
 
-    emit('add-deliverable', currentTask.value.id, { name: deliverableForm.value.name })
+    emit('add-deliverable', currentTask.value.id, savedDeliverable)
 
     showUploadDialog.value = false
     deliverableForm.value = { name: '', type: 'document', file: null }

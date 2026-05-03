@@ -31,6 +31,20 @@ describe('usersApi', () => {
     expect(httpClient.get).toHaveBeenCalledWith('/api/users/search', { params: { q: 'bob', limit: 5 } })
   })
 
+  it('loads task assignment candidates from the organization-backed task endpoint', async () => {
+    httpClient.get.mockResolvedValue({
+      success: true,
+      data: [{ userId: 9, name: '张经理', deptName: '投标管理部', roleName: '部门经理' }],
+    })
+
+    const result = await usersApi.getTaskAssignmentCandidates({ deptCode: 'BID', roleCode: 'manager' })
+
+    expect(httpClient.get).toHaveBeenCalledWith('/api/tasks/assignment-candidates', {
+      params: { deptCode: 'BID', roleCode: 'manager' },
+    })
+    expect(result).toEqual([{ userId: 9, name: '张经理', deptName: '投标管理部', roleName: '部门经理' }])
+  })
+
   it('propagates HTTP errors', async () => {
     httpClient.get.mockRejectedValue(new Error('Network'))
     await expect(usersApi.search('x')).rejects.toThrow('Network')

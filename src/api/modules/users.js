@@ -8,5 +8,10 @@ export const usersApi = {
   async search(query, limit = 10) {
     const { data } = await httpClient.get('/api/users/search', { params: { q: query, limit } })
     return data
+  },
+
+  async getTaskAssignmentCandidates(params = undefined) {
+    const response = await httpClient.get('/api/tasks/assignment-candidates', { params })
+    return response?.data || []
   }
 }

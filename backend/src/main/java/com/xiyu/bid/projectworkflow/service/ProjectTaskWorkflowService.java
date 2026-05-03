@@ -1,5 +1,8 @@
 package com.xiyu.bid.projectworkflow.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.projectworkflow.dto.ProjectTaskCreateRequest;
@@ -12,18 +15,23 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 class ProjectTaskWorkflowService {
 
     private static final DateTimeFormatter DISPLAY_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.CHINA);
+    private static final TypeReference<Map<String, Object>> EXTENDED_FIELDS_TYPE =
+            new TypeReference<>() {};
 
     private final ProjectWorkflowGuardService guardService;
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
+    private final ObjectMapper objectMapper;
 
     List<ProjectTaskViewDTO> getProjectTasks(Long projectId) {
         guardService.requireProject(projectId);
@@ -33,14 +41,19 @@ class ProjectTaskWorkflowService {
     }
 
     ProjectTaskViewDTO createProjectTask(Long projectId, ProjectTaskCreateRequest request) {
+        return createProjectTask(projectId, request, null);
+    }
+
+    ProjectTaskViewDTO createProjectTask(Long projectId, ProjectTaskCreateRequest request, String creatorUsername) {
         guardService.requireWorkflowMutationProject(projectId);
-        User assigneeUser = resolveAssignee(request.getAssigneeId());
+        User assigneeUser = resolveAssignee(request.getAssigneeId(), creatorUsername);
         Task task = Task.builder()
                 .projectId(projectId)
                 .title(request.getTitle().trim())
                 .description(trimToNull(request.getDescription()))
                 .content(request.getContent())
-                .assigneeId(request.getAssigneeId())
+                .extendedFieldsJson(serializeExtendedFields(request.getExtendedFields()))
+                .assigneeId(assigneeUser != null ? assigneeUser.getId() : request.getAssigneeId())
                 .assigneeDeptCode(assigneeUser != null ? assigneeUser.getDepartmentCode() : trimToNull(request.getAssigneeDeptCode()))
                 .assigneeDeptName(assigneeUser != null ? assigneeUser.getDepartmentName() : defaultString(trimToNull(request.getAssigneeDeptName()), "未配置部门"))
                 .assigneeRoleCode(assigneeUser != null ? assigneeUser.getRoleCode() : trimToNull(request.getAssigneeRoleCode()))
@@ -49,7 +62,7 @@ class ProjectTaskWorkflowService {
                 .status(Task.Status.TODO)
                 .dueDate(request.getDueDate())
                 .build();
-        return toTaskView(taskRepository.save(task), request.getAssigneeName());
+        return toTaskView(taskRepository.save(task), assigneeUser != null ? assigneeUser.getFullName() : request.getAssigneeName());
     }
 
     ProjectTaskViewDTO updateProjectTaskStatus(Long projectId, Long taskId, ProjectTaskStatusUpdateRequest request) {
@@ -85,6 +98,7 @@ class ProjectTaskWorkflowService {
                 .name(task.getTitle())
                 .description(task.getDescription())
                 .content(task.getContent())
+                .extendedFields(deserializeExtendedFields(task))
                 .assigneeId(task.getAssigneeId())
                 .assigneeDeptCode(task.getAssigneeDeptCode())
                 .assigneeRoleCode(task.getAssigneeRoleCode())
@@ -105,6 +119,14 @@ class ProjectTaskWorkflowService {
             return null;
         }
         return userRepository.findById(assigneeId).orElse(null);
+    }
+
+    private User resolveAssignee(Long assigneeId, String creatorUsername) {
+        User explicitAssignee = resolveAssignee(assigneeId);
+        if (explicitAssignee != null || assigneeId != null || !hasText(creatorUsername)) {
+            return explicitAssignee;
+        }
+        return userRepository.findByUsername(creatorUsername).orElse(null);
     }
 
     private String resolveDisplayName(Long userId, String fallback) {
@@ -164,6 +186,32 @@ class ProjectTaskWorkflowService {
     private String defaultString(String value, String fallback) {
         String normalized = trimToNull(value);
         return normalized != null ? normalized : fallback;
+    }
+
+    private String serializeExtendedFields(Map<String, Object> extendedFields) {
+        if (extendedFields == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(extendedFields);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("扩展字段格式无效", e);
+        }
+    }
+
+    private Map<String, Object> deserializeExtendedFields(Task task) {
+        if (!hasText(task.getExtendedFieldsJson())) {
+            return Collections.emptyMap();
+        }
+        try {
+            return objectMapper.readValue(task.getExtendedFieldsJson(), EXTENDED_FIELDS_TYPE);
+        } catch (JsonProcessingException e) {
+            return Collections.emptyMap();
+        }
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     private Task.Priority toEntityPriority(ProjectTaskCreateRequest.Priority priority) {

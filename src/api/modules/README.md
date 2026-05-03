@@ -30,6 +30,7 @@
 | `taskExtendedField.js` | API 模块 | 项目任务扩展字段 schema 读取（启用字段列表），供 TaskForm 动态渲染 |
 | `taskExtendedFieldAdmin.js` | API 模块 | 管理员对任务扩展字段 schema 的 CRUD、启停与排序调用 |
 | `tenders.js` | API 模块 | 标讯列表、详情、入项、上传任务和人工录入文档识别调用 |
+| `users.js` | API 模块 | 用户搜索与任务负责人候选人查询，候选人来自后端组织归属/数据权限过滤 |
 | `workflowForm.js` | API 模块 | 流程表单运行态模板读取、附件上传、实例提交，以及管理员模板配置、发布、OA 绑定和试提交接口 |
 
 `auth.js` 返回的用户快照会保留会话级权限字段，例如 `allowedProjectIds` 和 `allowedDepts`，供 store 和路由恢复使用。
@@ -46,3 +47,4 @@
 - 2026-04-29: 新增 `workflowForm.js`，资质借阅申请改为通过流程表单中心提交并触发 OA；扩展管理员流程表单配置、发布、OA 绑定、试提交和附件上传 API。
 - 2026-05-01: 新增 `taskStatusDict.js`，接入启用状态的任务状态字典查询 API，供动态任务看板按后端字典驱动列配置。
 - 2026-05-03: 新增 `taskExtendedField.js` 与 `taskExtendedFieldAdmin.js`，接入任务扩展字段 schema 的公开读取与管理员 CRUD/启停/排序 API，供 TaskForm 动态渲染扩展字段。
+- 2026-05-03: `users.js` 接入 `/api/tasks/assignment-candidates`，任务负责人改为从组织归属候选人中选择，不再手写姓名。
