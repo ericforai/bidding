@@ -6,6 +6,7 @@ import {
   getProjectStatusType,
   normalizeTaskStatusForApi,
   normalizeTaskStatusFromApi,
+  normalizeTaskPriorityForApi,
   taskFormDtoToBackend,
   taskBackendToCard
 } from './project-utils.js'
@@ -306,6 +307,12 @@ describe('normalizeTaskStatusFromApi', () => {
 })
 
 describe('task DTO mapper', () => {
+  it('normalizeTaskPriorityForApi maps form priority to backend enum', () => {
+    expect(normalizeTaskPriorityForApi('high')).toBe('HIGH')
+    expect(normalizeTaskPriorityForApi('MEDIUM')).toBe('MEDIUM')
+    expect(normalizeTaskPriorityForApi(null)).toBeUndefined()
+  })
+
   it('taskFormDtoToBackend maps form fields to backend names', () => {
     const result = taskFormDtoToBackend({
       name: 'T1', content: '# md', status: 'TODO', priority: 'high',
@@ -313,7 +320,7 @@ describe('task DTO mapper', () => {
     })
     expect(result).toEqual({
       title: 'T1', content: '# md', status: 'TODO',
-      priority: 'high', dueDate: '2026-06-01',
+      priority: 'HIGH', dueDate: '2026-06-01',
     })
     expect(result).not.toHaveProperty('owner')
     expect(result).not.toHaveProperty('name')
@@ -335,6 +342,21 @@ describe('task DTO mapper', () => {
       id: 7, name: 'T2', content: 'c', status: 'COMPLETED',
       priority: 'medium', deadline: '2026-05-15',
       owner: '李宗', deliverables: [{ id: 1 }], hasDeliverable: true,
+    })
+  })
+
+  it('taskBackendToCard normalizes project task view dto status', () => {
+    const legacyDoneStatus = ['do', 'ne'].join('')
+    const result = taskBackendToCard({
+      id: 8, name: '项目任务', content: 'md', status: legacyDoneStatus,
+      priority: 'high', dueDate: '2026-05-16',
+      owner: '张经理',
+    })
+    expect(result).toMatchObject({
+      id: 8,
+      name: '项目任务',
+      status: 'COMPLETED',
+      owner: '张经理',
     })
   })
 

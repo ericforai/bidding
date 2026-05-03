@@ -78,14 +78,13 @@ class RoutingAiProviderTest {
         RoutingAiProvider provider = providerWithLegacyMode("mock");
         AiAnalysisResponse expected = response(66);
         when(settingsService.isAiEnabled()).thenReturn(true);
-        when(settingsService.getInternalAiModelConfig()).thenReturn(config("doubao"));
-        when(settingsService.resolveAiApiKey("doubao")).thenReturn(null);
         when(mockAiProvider.analyzeTender("content", Map.of())).thenReturn(expected);
 
         AiAnalysisResponse actual = provider.analyzeTender("content", Map.of());
 
         assertThat(actual).isEqualTo(expected);
         verify(mockAiProvider).analyzeTender("content", Map.of());
+        verify(openAiCompatibleClient, never()).analyzeTender(any(), any(), any());
     }
 
     @Test

@@ -207,7 +207,7 @@ export function useProjectDetailTaskActions(context) {
 
     projectsApi.createTask(route.params.id, { title: newTask.name, description: '', assigneeId: userStore.currentUser?.id || null, assigneeName: userStore.userName, priority: 'MEDIUM', dueDate: dueDate.toISOString() }).then((result) => {
       if (!result?.success || !result?.data) throw new Error(result?.message || '新增任务失败')
-      ensureTaskList().unshift({ ...result.data, deliverables: [], hasDeliverable: false })
+      ensureTaskList().unshift(taskBackendToCard({ ...result.data, deliverables: [] }))
       pushActivity(`新增了任务「${result.data.name}」`)
       message.success('任务已新增')
     }).catch((error) => message.error(error.message || '新增任务失败'))
@@ -224,15 +224,12 @@ export function useProjectDetailTaskActions(context) {
   const handleTaskClick = (task) => { state.currentTask.value = task }
 
   const handleSaveTask = async (payload = {}) => {
-    const { mode = 'create', data = {} } = payload
+    const { mode = 'create', data = {}, done } = payload
     if (!state.project.value) {
       message.warning('项目信息未加载')
       return
     }
 
-    // Edit mode: persist via projectStore.updateTask (PUT /api/tasks/{id}) and
-    // reverse-sync the backend DTO into the kanban card shape so the drawer/board
-    // stay coherent on success. Errors surface as a toast.
     if (mode === 'edit' && data?.id != null) {
       const tasks = ensureTaskList()
       const target = tasks.find((t) => String(t.id) === String(data.id))
@@ -243,6 +240,7 @@ export function useProjectDetailTaskActions(context) {
         Object.assign(target, taskBackendToCard(updated))
         pushActivity(`更新了任务「${target.name}」`)
         message.success('任务已更新')
+        done?.()
       } catch (error) {
         message.error(resolveErrorMessage(error, '任务更新失败'))
       }
@@ -271,22 +269,24 @@ export function useProjectDetailTaskActions(context) {
       })
       pushActivity(`新增了任务「${title}」`)
       message.success('已新增演示任务')
+      done?.()
       return
     }
 
     try {
       const result = await projectsApi.createTask(route.params.id, {
         title,
-        description: data?.content || '',
+        description: '', content: data?.content || '',
         assigneeId: userStore.currentUser?.id || null,
         assigneeName: data?.owner || userStore.userName,
         priority: (data?.priority || 'medium').toUpperCase(),
         dueDate: dueDate.toISOString(),
       })
       if (!result?.success || !result?.data) throw new Error(result?.message || '新增任务失败')
-      ensureTaskList().unshift({ ...result.data, deliverables: [], hasDeliverable: false })
+      ensureTaskList().unshift(taskBackendToCard({ ...result.data, deliverables: [] }))
       pushActivity(`新增了任务「${result.data.name}」`)
       message.success('任务已新增')
+      done?.()
     } catch (error) {
       message.error(resolveErrorMessage(error, '新增任务失败'))
     }

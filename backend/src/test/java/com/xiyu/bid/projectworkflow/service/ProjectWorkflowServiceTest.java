@@ -146,11 +146,13 @@ class ProjectWorkflowServiceTest {
 
         ProjectTaskViewDTO task = service.createProjectTask(1001L, ProjectTaskCreateRequest.builder()
                 .title(" 启动后补充任务 ")
+                .content("# 标题\n- 保留 Markdown")
                 .priority(ProjectTaskCreateRequest.Priority.MEDIUM)
                 .build());
 
         assertThat(task.getId()).isEqualTo(3002L);
         assertThat(task.getName()).isEqualTo("启动后补充任务");
+        assertThat(task.getContent()).isEqualTo("# 标题\n- 保留 Markdown");
     }
 
     @Test

@@ -48,6 +48,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProjectWorkflowController {
 
+    private static final int MAX_TASK_CONTENT_CHARS = 20_000;
+
     private final ProjectWorkflowService projectWorkflowService;
     private final ProjectTaskBreakdownService projectTaskBreakdownService;
     private final TaskDeliverableService taskDeliverableService;
@@ -228,6 +230,9 @@ public class ProjectWorkflowController {
         request.setTitle(InputSanitizer.sanitizeString(request.getTitle(), 200));
         if (request.getDescription() != null) {
             request.setDescription(InputSanitizer.sanitizeString(request.getDescription(), 2000));
+        }
+        if (request.getContent() != null) {
+            request.setContent(InputSanitizer.sanitizeMarkdown(request.getContent(), MAX_TASK_CONTENT_CHARS));
         }
         if (request.getAssigneeName() != null) {
             request.setAssigneeName(InputSanitizer.sanitizeString(request.getAssigneeName(), 100));

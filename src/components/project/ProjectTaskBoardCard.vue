@@ -93,7 +93,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, getCurrentInstance, ref } from 'vue'
 import { DocumentChecked, List, Plus } from '@element-plus/icons-vue'
 import TaskBoard from '@/components/common/TaskBoard.vue'
 import TaskForm from '@/components/project/TaskForm.vue'
@@ -137,6 +137,7 @@ const drawerVisible = ref(false)
 const drawerMode = ref('create')
 const editingTask = ref({})
 const taskFormRef = ref(null)
+const instance = getCurrentInstance()
 
 const drawerTitle = computed(() => {
   if (drawerMode.value === 'edit') return '编辑任务'
@@ -157,12 +158,6 @@ function openEdit(task) {
 }
 
 function handleAddTaskClick() {
-  // Drawer save is now the single creation point; we intentionally do NOT
-  // emit `add-task` here — the legacy parent handler would immediately
-  // create a placeholder task via the API and append it to the board,
-  // which combined with the drawer save produced a duplicate task.
-  // `add-task` stays in defineEmits for backward compatibility with parents
-  // that still bind `@add-task` (it is now a no-op binding).
   openCreate()
 }
 
@@ -181,8 +176,9 @@ async function handleSaveTask() {
     ? form.submit()
     : { valid: true, data: { ...editingTask.value } }
   if (!result || result.valid === false) return
-  emit('save-task', { mode: drawerMode.value, data: result.data })
-  drawerVisible.value = false
+  const done = () => { drawerVisible.value = false }
+  emit('save-task', { mode: drawerMode.value, data: result.data, done })
+  if (!instance?.vnode.props?.onSaveTask) done()
 }
 
 defineExpose({

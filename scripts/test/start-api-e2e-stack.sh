@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Input: E2E environment defaults, local pid/state files, and current health state
-# Output: a ready Playwright API-backed E2E stack or a single actionable startup failure
+# Output: a ready mock-AI API-backed E2E stack or a single actionable startup failure
 # Pos: scripts/test/ - Playwright and API-backed test baseline helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -102,6 +102,11 @@ cleanup_port_listener "$BACKEND_PORT"
 cleanup_port_listener "$FRONTEND_PORT"
 rm -f "$BACKEND_PID_FILE" "$FRONTEND_PID_FILE"
 
+if is_http_ready "$UAT_API_BASE_URL/actuator/health"; then
+  printf 'Backend health is still reachable after cleanup; refusing to reuse a non-managed service on %s.\n' "$UAT_API_BASE_URL" >&2
+  exit 1
+fi
+
 if ! is_http_ready "$UAT_API_BASE_URL/actuator/health"; then
   printf '==> Building frontend assets for API mode\n'
   cd "$ROOT_DIR"
@@ -121,7 +126,7 @@ if ! is_http_ready "$UAT_API_BASE_URL/actuator/health"; then
   VOLCENGINE_API_KEY="" \
   JWT_SECRET="$JWT_SECRET" \
   CORS_ALLOWED_ORIGINS="$CORS_ALLOWED_ORIGINS" \
-  mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT} --spring.flyway.enabled=false --spring.jpa.hibernate.ddl-auto=update --management.health.redis.enabled=false" \
+  mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=${BACKEND_PORT} --spring.flyway.enabled=false --spring.jpa.hibernate.ddl-auto=update --management.health.redis.enabled=false --ai.provider=mock" \
     > "$BACKEND_LOG_FILE" 2>&1 < /dev/null &
   echo $! > "$BACKEND_PID_FILE"
 

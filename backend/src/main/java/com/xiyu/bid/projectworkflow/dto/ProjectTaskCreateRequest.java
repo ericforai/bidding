@@ -27,6 +27,8 @@ public class ProjectTaskCreateRequest {
 
     private String description;
 
+    private String content;
+
     private Long assigneeId;
 
     private String assigneeName;
