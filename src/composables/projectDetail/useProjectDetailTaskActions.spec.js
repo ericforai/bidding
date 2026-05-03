@@ -115,6 +115,48 @@ describe('useProjectDetailTaskActions', () => {
     }))
   })
 
+  it('API 项目新增任务后把表单附件上传为任务交付物', async () => {
+    const file = new File(['附件内容'], '任务附件.docx', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
+    const createTask = vi.fn().mockResolvedValue({
+      success: true,
+      data: { id: 603, name: '准备附件任务', status: 'TODO' },
+    })
+    const addDeliverable = vi.fn().mockResolvedValue({ id: 901, name: '任务附件.docx', url: '/files/901' })
+    const state = {
+      project: ref({ id: 12, name: '测试项目', tasks: [] }),
+      activities: ref([]),
+      scoreDraftDialogVisible: ref(false),
+      currentTask: ref(null),
+      taskDialogVisible: ref(false),
+    }
+
+    const { handleSaveTask } = useProjectDetailTaskActions({
+      route: { params: { id: '12' } },
+      userStore: { userName: '测试用户', currentUser: { id: 9 } },
+      projectStore: { addDeliverable },
+      projectsApi: { createTask },
+      isApiProject: ref(true),
+      message: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
+      state,
+      workflow: {},
+    })
+
+    await handleSaveTask({
+      mode: 'create',
+      data: { name: '准备附件任务', priority: 'medium', attachments: [file] },
+    })
+
+    expect(addDeliverable).toHaveBeenCalledWith('12', 603, expect.objectContaining({
+      name: '任务附件.docx',
+      deliverableType: 'DOCUMENT',
+      file,
+      uploaderId: 9,
+      uploaderName: '测试用户',
+    }))
+    expect(state.project.value.tasks[0].deliverables).toEqual([expect.objectContaining({ id: 901 })])
+    expect(state.project.value.tasks[0].hasDeliverable).toBe(true)
+  })
+
   it('API 项目点击拆解任务调用后端拆解接口并写入任务，不打开评分弹窗', async () => {
     const success = vi.fn()
     const error = vi.fn()

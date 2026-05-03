@@ -1,7 +1,7 @@
 import { ElMessageBox } from 'element-plus'
 import { taskTemplates } from './constants.js'
 import { normalizeProjectTaskList, openScoreDraftDialogWhenTenderSourceMissing } from './projectDetailTaskGeneration.js'
-import { createTaskAssigneePayload } from './taskAssigneePayload.js'
+import { createTaskAssigneePayload, uploadTaskAttachments } from './taskAssigneePayload.js'
 import { normalizeTaskStatusForApi, taskFormDtoToBackend, taskBackendToCard } from '@/views/Project/project-utils'
 export function useProjectDetailTaskActions(context) {
   const { route, userStore, projectStore, projectsApi, tenderBreakdownApi = projectsApi, isApiProject, message, state, workflow } = context
@@ -103,15 +103,10 @@ export function useProjectDetailTaskActions(context) {
     pushActivity(`根据评分标准生成了 ${tasks.length} 个正式任务`)
   }
 
-  const handleOpenScoreDraftDecompose = () => {
-    state.scoreDraftDialogVisible.value = true
-  }
+  const handleOpenScoreDraftDecompose = () => { state.scoreDraftDialogVisible.value = true }
 
   const handleOpenTenderBreakdown = async () => {
-    if (!state.project.value) {
-      message.warning('项目信息未加载')
-      return
-    }
+    if (!state.project.value) { message.warning('项目信息未加载'); return }
     if (!isApiProject.value) {
       message.warning('当前项目不支持解析招标文件')
       return
@@ -222,10 +217,7 @@ export function useProjectDetailTaskActions(context) {
 
   const handleSaveTask = async (payload = {}) => {
     const { mode = 'create', data = {}, done } = payload
-    if (!state.project.value) {
-      message.warning('项目信息未加载')
-      return
-    }
+    if (!state.project.value) { message.warning('项目信息未加载'); return }
 
     if (mode === 'edit' && data?.id != null) {
       const tasks = ensureTaskList()
@@ -235,6 +227,7 @@ export function useProjectDetailTaskActions(context) {
         const dto = taskFormDtoToBackend(data)
         const updated = await projectStore.updateTask(state.project.value.id, target.id, dto)
         Object.assign(target, taskBackendToCard(updated))
+        await uploadTaskAttachments(target, data.attachments, { projectStore, projectId: route.params.id, userStore })
         pushActivity(`更新了任务「${target.name}」`)
         message.success('任务已更新')
         done?.()
@@ -279,7 +272,9 @@ export function useProjectDetailTaskActions(context) {
         dueDate: dueDate.toISOString(),
       })
       if (!result?.success || !result?.data) throw new Error(result?.message || '新增任务失败')
-      ensureTaskList().unshift(taskBackendToCard({ ...result.data, deliverables: [] }))
+      const createdTask = taskBackendToCard({ ...result.data, deliverables: [] })
+      await uploadTaskAttachments(createdTask, data.attachments, { projectStore, projectId: route.params.id, userStore })
+      ensureTaskList().unshift(createdTask)
       pushActivity(`新增了任务「${result.data.name}」`)
       message.success('任务已新增')
       done?.()
