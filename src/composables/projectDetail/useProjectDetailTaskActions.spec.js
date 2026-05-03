@@ -394,6 +394,57 @@ describe('useProjectDetailTaskActions', () => {
     expect(success).not.toHaveBeenCalled()
   })
 
+  it('API 项目缺少标书拆解来源但已有评分草稿时打开评分确认弹窗', async () => {
+    const success = vi.fn()
+    const error = vi.fn()
+    const warning = vi.fn()
+    const decomposeTasks = vi.fn().mockRejectedValue({
+      message: 'Request failed with status code 400',
+      response: {
+        data: {
+          message: '未找到可用于拆解任务的标书拆解结果',
+        },
+      },
+    })
+    const getScoreDrafts = vi.fn().mockResolvedValue({
+      success: true,
+      data: [
+        {
+          id: 2101,
+          status: 'DRAFT',
+          generatedTaskTitle: '准备商务响应文件',
+        },
+      ],
+    })
+    const state = {
+      project: ref({ id: 12, name: '测试项目', tasks: [] }),
+      activities: ref([]),
+      scoreDraftDialogVisible: ref(false),
+      currentTask: ref(null),
+      taskDialogVisible: ref(false),
+    }
+
+    const { handleGenerateTasks } = useProjectDetailTaskActions({
+      route: { params: { id: '12' } },
+      userStore: { userName: '测试用户', currentUser: { id: 9 } },
+      projectStore: {},
+      projectsApi: { decomposeTasks, getScoreDrafts },
+      isApiProject: ref(true),
+      message: { success, error, warning },
+      state,
+      workflow: {},
+    })
+
+    await handleGenerateTasks()
+
+    expect(decomposeTasks).toHaveBeenCalledWith('12')
+    expect(getScoreDrafts).toHaveBeenCalledWith('12')
+    expect(state.scoreDraftDialogVisible.value).toBe(true)
+    expect(warning).toHaveBeenCalledWith('已找到评分草稿，请在评分标准拆解中确认后生成正式任务')
+    expect(error).not.toHaveBeenCalled()
+    expect(success).not.toHaveBeenCalled()
+  })
+
   it('API 项目切换任务状态为已取消时向后端传递 CANCELLED 枚举', async () => {
     const success = vi.fn()
     const error = vi.fn()

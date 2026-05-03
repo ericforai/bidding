@@ -1,5 +1,6 @@
 import { ElMessageBox } from 'element-plus'
 import { taskTemplates } from './constants.js'
+import { normalizeProjectTaskList, openScoreDraftDialogWhenTenderSourceMissing } from './projectDetailTaskGeneration.js'
 import { normalizeTaskStatusForApi, taskFormDtoToBackend, taskBackendToCard } from '@/views/Project/project-utils'
 
 export function useProjectDetailTaskActions(context) {
@@ -14,11 +15,6 @@ export function useProjectDetailTaskActions(context) {
     }
     return state.project.value.tasks
   }
-  const normalizeTaskList = (tasks = []) => tasks.map((task) => ({
-    ...task,
-    deliverables: Array.isArray(task.deliverables) ? task.deliverables : [],
-    hasDeliverable: Boolean(task.hasDeliverable),
-  }))
   const resolveErrorMessage = (error, fallback) => error?.response?.data?.message || error?.message || fallback
   const resolveTenderBreakdownReadinessMessage = (readiness = {}) => (
     readiness.message
@@ -82,10 +78,11 @@ export function useProjectDetailTaskActions(context) {
         const result = await projectsApi.decomposeTasks(route.params.id)
         const tasks = Array.isArray(result?.data) ? result.data : result?.data?.tasks
         if (!result?.success || !Array.isArray(tasks)) throw new Error(result?.message || '任务拆解失败')
-        state.project.value.tasks = normalizeTaskList(tasks)
+        state.project.value.tasks = normalizeProjectTaskList(tasks)
         pushActivity(`自动拆解生成了 ${state.project.value.tasks.length} 个任务`)
         message.success(`已拆解生成 ${state.project.value.tasks.length} 个任务`)
       } catch (error) {
+        if (await openScoreDraftDialogWhenTenderSourceMissing({ error, projectsApi, projectId: route.params.id, state, message, resolveErrorMessage })) return
         message.error(resolveErrorMessage(error, '任务拆解失败'))
       }
       return
@@ -102,7 +99,7 @@ export function useProjectDetailTaskActions(context) {
 
   const handleScoreDraftGenerated = (tasks) => {
     if (!state.project.value) return
-    state.project.value.tasks = normalizeTaskList(tasks)
+    state.project.value.tasks = normalizeProjectTaskList(tasks)
     pushActivity(`根据评分标准生成了 ${tasks.length} 个正式任务`)
   }
 
