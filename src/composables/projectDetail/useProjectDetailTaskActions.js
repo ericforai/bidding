@@ -1,6 +1,6 @@
 import { ElMessageBox } from 'element-plus'
 import { taskTemplates } from './constants.js'
-import { normalizeTaskStatusForApi } from '@/views/Project/project-utils'
+import { normalizeTaskStatusForApi, taskFormDtoToBackend, taskBackendToCard } from '@/views/Project/project-utils'
 
 export function useProjectDetailTaskActions(context) {
   const { route, userStore, projectStore, projectsApi, tenderBreakdownApi = projectsApi, isApiProject, message, state, workflow } = context
@@ -230,17 +230,21 @@ export function useProjectDetailTaskActions(context) {
       return
     }
 
-    // Edit mode: merge the submitted fields into the existing task in-place. The
-    // backend currently only exposes updateTaskStatus; we patch the client-side
-    // view optimistically so the drawer save flow is responsive, and leave the
-    // dedicated update endpoint to a later wiring step.
+    // Edit mode: persist via projectStore.updateTask (PUT /api/tasks/{id}) and
+    // reverse-sync the backend DTO into the kanban card shape so the drawer/board
+    // stay coherent on success. Errors surface as a toast.
     if (mode === 'edit' && data?.id != null) {
       const tasks = ensureTaskList()
       const target = tasks.find((t) => String(t.id) === String(data.id))
-      if (target) {
-        Object.assign(target, data)
-        pushActivity(`更新了任务「${data.name || target.name}」`)
+      if (!target) return
+      try {
+        const dto = taskFormDtoToBackend(data)
+        const updated = await projectStore.updateTask(state.project.value.id, target.id, dto)
+        Object.assign(target, taskBackendToCard(updated))
+        pushActivity(`更新了任务「${target.name}」`)
         message.success('任务已更新')
+      } catch (error) {
+        message.error(resolveErrorMessage(error, '任务更新失败'))
       }
       return
     }
