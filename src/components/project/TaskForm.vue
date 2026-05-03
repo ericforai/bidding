@@ -38,12 +38,24 @@
 
       <el-alert v-if="validationMessage" type="warning" :closable="false" :title="validationMessage" />
     </el-form>
+
+    <template v-if="extendedFieldSchema.length > 0">
+      <el-divider>扩展字段</el-divider>
+      <DynamicFormRenderer
+        ref="extFormRef"
+        :fields="extendedFieldSchema"
+        v-model="localValue.extendedFields"
+        :disabled="readonly"
+      />
+    </template>
   </div>
 </template>
 
 <script setup>
 import { computed, reactive, ref, watch, onMounted } from 'vue'
 import { taskStatusDictApi } from '@/api/modules/taskStatusDict.js'
+import { useProjectStore } from '@/stores/project'
+import DynamicFormRenderer from '@/components/common/DynamicFormRenderer.vue'
 
 const props = defineProps({
   modelValue: { type: Object, default: () => ({}) },
@@ -51,20 +63,41 @@ const props = defineProps({
 })
 const emit = defineEmits(['submit', 'update:modelValue'])
 
+const projectStore = useProjectStore()
+
 const localValue = reactive({ ...props.modelValue })
+if (!localValue.extendedFields) {
+  localValue.extendedFields = {}
+}
 const statuses = ref([])
 const loadingStatuses = ref(false)
 const validationMessage = ref('')
+const extFormRef = ref(null)
 const readonly = computed(() => props.mode === 'view')
+
+const extendedFieldSchema = computed(() =>
+  (projectStore.taskExtendedFields || []).map((f) => ({
+    key: f.key,
+    label: f.label,
+    type: f.fieldType, // already lowercase from backend
+    required: f.required,
+    placeholder: f.placeholder,
+    options: f.options, // already parsed array
+  }))
+)
 
 watch(() => props.modelValue, (v) => {
   Object.keys(localValue).forEach((k) => delete localValue[k])
   Object.assign(localValue, v || {})
+  if (!localValue.extendedFields) {
+    localValue.extendedFields = {}
+  }
 }, { deep: true })
 
 watch(localValue, () => emit('update:modelValue', { ...localValue }), { deep: true })
 
 onMounted(async () => {
+  projectStore.loadTaskExtendedFields()
   loadingStatuses.value = true
   try {
     const res = await taskStatusDictApi.list()
@@ -92,6 +125,13 @@ function validate() {
 function submit() {
   const msg = validate()
   if (msg) return { valid: false, message: msg }
+  // Extended fields — if any, validate via DynamicFormRenderer
+  if (extendedFieldSchema.value.length > 0) {
+    const extRes = extFormRef.value?.submit?.()
+    if (extRes && extRes.valid === false) {
+      return extRes // propagate {valid, message} from extended form
+    }
+  }
   emit('submit', { ...localValue })
   return { valid: true, data: { ...localValue } }
 }
