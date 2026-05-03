@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Input: E2E environment defaults, local pid/state files, and current health state
-# Output: a ready mock-AI API-backed E2E stack or a single actionable startup failure
+# Input: E2E environment defaults, local pid/state files, listener ports, and current health state
+# Output: a ready mock-AI API-backed E2E stack or a single actionable startup/port-cleanup failure
 # Pos: scripts/test/ - Playwright and API-backed test baseline helpers
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
@@ -22,6 +22,11 @@ is_http_ready() {
 is_pid_alive() {
   local pid_file="$1"
   [[ -f "$pid_file" ]] && kill -0 "$(cat "$pid_file")" >/dev/null 2>&1
+}
+
+is_port_listening() {
+  local port="$1"
+  lsof -tiTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1
 }
 
 is_managed_stack_ready() {
@@ -46,6 +51,22 @@ cleanup_port_listener() {
   fi
 }
 
+require_port_clear() {
+  local port="$1"
+  local name="$2"
+
+  for _ in {1..10}; do
+    if ! is_port_listening "$port"; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  printf '%s port %s is still occupied after cleanup; refusing to reuse a non-managed service.\n' "$name" "$port" >&2
+  lsof -nP -iTCP:"$port" -sTCP:LISTEN >&2 || true
+  return 1
+}
+
 wait_for_health() {
   local url="$1"
   local pid_file="$2"
@@ -53,10 +74,6 @@ wait_for_health() {
   local name="$4"
 
   for _ in {1..90}; do
-    if is_http_ready "$url"; then
-      return 0
-    fi
-
     if [[ -n "$pid_file" ]] && [[ -f "$pid_file" ]] && ! is_pid_alive "$pid_file"; then
       printf '%s failed before becoming healthy.\n' "$name" >&2
       if [[ -f "$log_file" ]]; then
@@ -66,12 +83,46 @@ wait_for_health() {
       return 1
     fi
 
+    if is_http_ready "$url"; then
+      return 0
+    fi
+
     sleep 2
   done
 
   printf '%s did not become healthy in time.\n' "$name" >&2
   if [[ -f "$log_file" ]]; then
     printf -- '--- %s log tail ---\n' "$name" >&2
+    tail -n 80 "$log_file" >&2 || true
+  fi
+  return 1
+}
+
+wait_for_backend_ready() {
+  local url="$1"
+  local pid_file="$2"
+  local log_file="$3"
+
+  for _ in {1..90}; do
+    if [[ -f "$pid_file" ]] && ! is_pid_alive "$pid_file"; then
+      printf 'Backend failed before becoming healthy.\n' >&2
+      if [[ -f "$log_file" ]]; then
+        printf -- '--- Backend log tail ---\n' >&2
+        tail -n 80 "$log_file" >&2 || true
+      fi
+      return 1
+    fi
+
+    if [[ -f "$log_file" ]] && grep -q "Tomcat started on port $BACKEND_PORT" "$log_file" && is_http_ready "$url"; then
+      return 0
+    fi
+
+    sleep 2
+  done
+
+  printf 'Backend did not become healthy in time.\n' >&2
+  if [[ -f "$log_file" ]]; then
+    printf -- '--- Backend log tail ---\n' >&2
     tail -n 80 "$log_file" >&2 || true
   fi
   return 1
@@ -100,6 +151,8 @@ printf 'Preparing lightweight Playwright API-backed E2E stack\n'
 rm -f "$MARKER_FILE"
 cleanup_port_listener "$BACKEND_PORT"
 cleanup_port_listener "$FRONTEND_PORT"
+require_port_clear "$BACKEND_PORT" "Backend"
+require_port_clear "$FRONTEND_PORT" "Frontend"
 rm -f "$BACKEND_PID_FILE" "$FRONTEND_PID_FILE"
 
 if is_http_ready "$UAT_API_BASE_URL/actuator/health"; then
@@ -131,7 +184,7 @@ if ! is_http_ready "$UAT_API_BASE_URL/actuator/health"; then
   echo $! > "$BACKEND_PID_FILE"
 
   printf '==> Waiting for backend health\n'
-  wait_for_health "$UAT_API_BASE_URL/actuator/health" "$BACKEND_PID_FILE" "$BACKEND_LOG_FILE" "Backend"
+  wait_for_backend_ready "$UAT_API_BASE_URL/actuator/health" "$BACKEND_PID_FILE" "$BACKEND_LOG_FILE"
 
   printf '==> Seeding default Playwright users\n'
   seed_default_user "xiaowang" "小王" "xiaowang@example.com" "STAFF"

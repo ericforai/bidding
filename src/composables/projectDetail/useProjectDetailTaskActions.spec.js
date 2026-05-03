@@ -423,6 +423,7 @@ describe('useProjectDetailTaskActions', () => {
     await handleTaskStatusChange(state.project.value.tasks[0], 'cancelled')
 
     expect(updateTaskStatus).toHaveBeenCalledWith('12', 42, 'CANCELLED')
+    expect(state.project.value.tasks[0].status).toBe('CANCELLED')
     expect(error).not.toHaveBeenCalled()
   })
 
