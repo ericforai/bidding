@@ -1,3 +1,8 @@
+// Input: taskStatusDictAdminApi module with mocked HTTP client
+// Output: admin CRUD + reorder endpoint contract coverage
+// Pos: src/api/modules/ - API module unit tests
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('../client.js', () => ({
