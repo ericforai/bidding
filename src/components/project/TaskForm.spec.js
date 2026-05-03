@@ -1,7 +1,17 @@
 import { mount, flushPromises } from '@vue/test-utils'
-import { describe, it, expect, vi } from 'vitest'
-import { reactive } from 'vue'
+import { afterEach, describe, it, expect, vi } from 'vitest'
+import { defineComponent, nextTick, reactive, ref } from 'vue'
 import TaskForm from './TaskForm.vue'
+
+const getTaskAssignmentCandidatesMock = vi.hoisted(() => vi.fn().mockResolvedValue([
+  { userId: 9, name: '测试用户', deptCode: 'BID', deptName: '投标管理部', roleCode: 'staff', roleName: '销售' },
+  { userId: 10, name: '张经理', deptCode: 'BID', deptName: '投标管理部', roleCode: 'manager', roleName: '经理' },
+]))
+
+const defaultAssignmentCandidates = [
+  { userId: 9, name: '测试用户', deptCode: 'BID', deptName: '投标管理部', roleCode: 'staff', roleName: '销售' },
+  { userId: 10, name: '张经理', deptCode: 'BID', deptName: '投标管理部', roleCode: 'manager', roleName: '经理' },
+]
 
 vi.mock('@/api/modules/taskStatusDict.js', () => ({
   taskStatusDictApi: {
@@ -11,6 +21,26 @@ vi.mock('@/api/modules/taskStatusDict.js', () => ({
       { code: 'COMPLETED', name: '已完成', category: 'CLOSED', color: '#67c23a', sortOrder: 40, initial: false, terminal: true },
     ]})
   }
+}))
+
+vi.mock('@/api/modules/users.js', () => ({
+  usersApi: {
+    getTaskAssignmentCandidates: getTaskAssignmentCandidatesMock,
+  },
+}))
+
+vi.mock('@/stores/user', () => ({
+  useUserStore: () => ({
+    userName: '测试用户',
+    currentUser: {
+      id: 9,
+      name: '测试用户',
+      departmentCode: 'BID',
+      departmentName: '投标管理部',
+      roleCode: 'staff',
+      roleName: '销售',
+    },
+  }),
 }))
 
 // Mutable mock store so individual tests can set taskExtendedFields before mounting.
@@ -27,6 +57,11 @@ vi.mock('@/stores/project', () => ({
 function setExtendedFields(list) {
   mockStoreState.taskExtendedFields = list
   mockStoreState.taskExtendedFieldsLoaded = true
+}
+
+async function flushAssigneeLoad() {
+  await vi.advanceTimersByTimeAsync(0)
+  await flushPromises()
 }
 
 // Local stubs: keep labels visible in text() and thread the :disabled prop through el-form.
@@ -56,9 +91,9 @@ const globalStubs = {
     template: '<input class="el-input-number-stub" :value="modelValue" @input="$emit(\'update:modelValue\', Number($event.target.value))" />',
   },
   ElSelect: {
-    props: ['modelValue', 'loading'],
-    emits: ['update:modelValue'],
-    template: '<select class="el-select-stub" :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><slot /></select>',
+    props: ['modelValue', 'loading', 'filterable', 'remote', 'remoteMethod', 'placeholder'],
+    emits: ['update:modelValue', 'change'],
+    template: '<select class="el-select-stub" v-bind="$attrs" :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value); $emit(\'change\', $event.target.value)"><slot /></select>',
   },
   ElOption: {
     props: ['label', 'value'],
@@ -71,14 +106,28 @@ const globalStubs = {
   ElDivider: {
     template: '<div class="el-divider-stub"><slot /></div>',
   },
+  ElButton: {
+    template: '<button type="button"><slot /></button>',
+  },
+  ElUpload: {
+    template: '<div class="el-upload-stub"><slot /><slot name="tip" /></div>',
+  },
 }
 
 describe('TaskForm', () => {
   beforeEach(() => {
+    vi.useFakeTimers()
     // Reset extended fields before each test — avoids leakage across cases.
     mockStoreState.taskExtendedFields = []
     mockStoreState.taskExtendedFieldsLoaded = false
     mockStoreState.loadTaskExtendedFields.mockClear()
+    getTaskAssignmentCandidatesMock.mockReset()
+    getTaskAssignmentCandidatesMock.mockResolvedValue(defaultAssignmentCandidates)
+  })
+
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
   })
 
   it('renders system fields', async () => {
@@ -128,6 +177,47 @@ describe('TaskForm', () => {
     expect(last?.status).toBe('TODO')
   })
 
+  it('defaults owner to the current creator and keeps organization fields on create', async () => {
+    const wrapper = mount(TaskForm, {
+      props: { mode: 'create', modelValue: { name: 'X' } },
+      global: { stubs: globalStubs },
+    })
+    await flushAssigneeLoad()
+
+    const r = wrapper.vm.submit()
+
+    expect(getTaskAssignmentCandidatesMock).toHaveBeenCalledWith()
+    expect(r.valid).toBe(true)
+    expect(r.data).toMatchObject({
+      assigneeId: 9,
+      owner: '测试用户',
+      assignee: '测试用户',
+      department: '投标管理部',
+      assigneeDeptCode: 'BID',
+      assigneeRoleCode: 'staff',
+    })
+  })
+
+  it('changing the owner selects a real colleague instead of free text', async () => {
+    const wrapper = mount(TaskForm, {
+      props: { mode: 'create', modelValue: { name: 'X' } },
+      global: { stubs: globalStubs },
+    })
+    await flushAssigneeLoad()
+
+    await wrapper.find('[data-test="task-owner-select"]').setValue('10')
+    const r = wrapper.vm.submit()
+
+    expect(r.data).toMatchObject({
+      assigneeId: 10,
+      owner: '张经理',
+      assignee: '张经理',
+      department: '投标管理部',
+      assigneeDeptCode: 'BID',
+      assigneeRoleCode: 'manager',
+    })
+  })
+
   it('preserves modelValue.status when provided (edit mode)', async () => {
     const wrapper = mount(TaskForm, {
       props: { mode: 'edit', modelValue: { name: 'X', status: 'IN_PROGRESS' } },
@@ -136,6 +226,69 @@ describe('TaskForm', () => {
     await flushPromises()
     const r = wrapper.vm.submit()
     expect(r.data.status).toBe('IN_PROGRESS')
+  })
+
+  it('seeds edit owner from task data before async candidates finish', async () => {
+    getTaskAssignmentCandidatesMock.mockImplementationOnce(() => new Promise(() => {}))
+    const wrapper = mount(TaskForm, {
+      props: {
+        mode: 'edit',
+        modelValue: {
+          name: 'X',
+          assigneeId: 28,
+          owner: 'ERI-92 E2E',
+          assignee: 'ERI-92 E2E',
+          assigneeDeptName: '投标管理部',
+          assigneeRoleName: '管理员',
+        },
+      },
+      global: { stubs: globalStubs },
+    })
+    await flushPromises()
+
+    const r = wrapper.vm.submit()
+
+    expect(getTaskAssignmentCandidatesMock).not.toHaveBeenCalled()
+    expect(r.data).toMatchObject({
+      assigneeId: 28,
+      owner: 'ERI-92 E2E',
+      assignee: 'ERI-92 E2E',
+      department: '投标管理部',
+      roleName: '管理员',
+    })
+  })
+
+  it('does not enter a v-model echo loop when normalizing owner fields', async () => {
+    getTaskAssignmentCandidatesMock.mockImplementationOnce(() => new Promise(() => {}))
+    const Parent = defineComponent({
+      components: { TaskForm },
+      setup() {
+        const model = ref({
+          name: 'X',
+          assigneeId: 28,
+          owner: 'ERI-92 E2E',
+          assignee: 'ERI-92 E2E',
+          assigneeDeptName: '投标管理部',
+          assigneeRoleName: '管理员',
+        })
+        const updates = ref(0)
+        const onUpdate = (value) => {
+          updates.value += 1
+          model.value = value
+        }
+        return { model, updates, onUpdate }
+      },
+      template: '<TaskForm :model-value="model" mode="edit" @update:modelValue="onUpdate" />',
+    })
+
+    const wrapper = mount(Parent, {
+      global: { stubs: globalStubs },
+    })
+    await flushPromises()
+    await nextTick()
+
+    expect(wrapper.vm.updates).toBeLessThanOrEqual(2)
+    expect(wrapper.vm.model.owner).toBe('ERI-92 E2E')
   })
 
   it('view mode disables the form', async () => {

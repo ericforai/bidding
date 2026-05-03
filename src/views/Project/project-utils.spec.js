@@ -316,11 +316,18 @@ describe('task DTO mapper', () => {
   it('taskFormDtoToBackend maps form fields to backend names', () => {
     const result = taskFormDtoToBackend({
       name: 'T1', content: '# md', status: 'TODO', priority: 'high',
-      deadline: '2026-06-01', owner: '张三',
+      deadline: '2026-06-01', owner: '张三', assigneeId: 9,
+      assigneeDeptCode: 'BID', assigneeDeptName: '投标管理部',
+      assigneeRoleCode: 'staff', assigneeRoleName: '销售',
+      extendedFields: { chapter: '扩展值ABC' },
     })
     expect(result).toEqual({
       title: 'T1', content: '# md', status: 'TODO',
       priority: 'HIGH', dueDate: '2026-06-01',
+      assigneeId: 9, assigneeName: '张三',
+      assigneeDeptCode: 'BID', assigneeDeptName: '投标管理部',
+      assigneeRoleCode: 'staff', assigneeRoleName: '销售',
+      extendedFields: { chapter: '扩展值ABC' },
     })
     expect(result).not.toHaveProperty('owner')
     expect(result).not.toHaveProperty('name')
@@ -336,12 +343,21 @@ describe('task DTO mapper', () => {
     const result = taskBackendToCard({
       id: 7, title: 'T2', content: 'c', status: 'COMPLETED',
       priority: 'medium', dueDate: '2026-05-15',
-      assigneeName: '李宗', deliverables: [{ id: 1 }],
+      assigneeId: 9, assigneeName: '李宗',
+      assigneeDeptCode: 'BID', assigneeDeptName: '投标管理部',
+      assigneeRoleCode: 'staff', assigneeRoleName: '销售',
+      extendedFields: { chapter: '扩展值ABC' },
+      deliverables: [{ id: 1 }],
     })
     expect(result).toEqual({
       id: 7, name: 'T2', content: 'c', status: 'COMPLETED',
       priority: 'medium', deadline: '2026-05-15',
-      owner: '李宗', deliverables: [{ id: 1 }], hasDeliverable: true,
+      owner: '李宗', assignee: '李宗', assigneeId: 9,
+      department: '投标管理部', roleName: '销售',
+      assigneeDeptCode: 'BID', assigneeDeptName: '投标管理部',
+      assigneeRoleCode: 'staff', assigneeRoleName: '销售',
+      extendedFields: { chapter: '扩展值ABC' },
+      deliverables: [{ id: 1 }], hasDeliverable: true,
     })
   })
 
@@ -365,5 +381,7 @@ describe('task DTO mapper', () => {
     expect(result.deliverables).toEqual([])
     expect(result.hasDeliverable).toBe(false)
     expect(result.owner).toBe('')
+    expect(result.assigneeId).toBeNull()
+    expect(result.extendedFields).toEqual({})
   })
 })

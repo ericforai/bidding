@@ -40,6 +40,7 @@ describe('useProjectDetailTaskActions', () => {
       data: {
         name: '编写技术响应',
         content: '# 技术响应\n- 保留列表',
+        extendedFields: { chapter: '扩展值ABC' },
         owner: '测试用户',
         priority: 'high',
         deadline: '2026-06-01',
@@ -50,6 +51,7 @@ describe('useProjectDetailTaskActions', () => {
       title: '编写技术响应',
       description: '',
       content: '# 技术响应\n- 保留列表',
+      extendedFields: { chapter: '扩展值ABC' },
       priority: 'HIGH',
     }))
     expect(state.project.value.tasks[0]).toEqual(expect.objectContaining({
@@ -57,6 +59,60 @@ describe('useProjectDetailTaskActions', () => {
       content: '# 技术响应\n- 保留列表',
     }))
     expect(message.success).toHaveBeenCalledWith('任务已新增')
+  })
+
+  it('API 项目新增任务时使用选中的组织人员作为真实 assignee', async () => {
+    const createTask = vi.fn().mockResolvedValue({
+      success: true,
+      data: {
+        id: 602,
+        name: '准备商务文件',
+        assigneeId: 10,
+        owner: '张经理',
+        status: 'TODO',
+      },
+    })
+    const state = {
+      project: ref({ id: 12, name: '测试项目', tasks: [] }),
+      activities: ref([]),
+      scoreDraftDialogVisible: ref(false),
+      currentTask: ref(null),
+      taskDialogVisible: ref(false),
+    }
+
+    const { handleSaveTask } = useProjectDetailTaskActions({
+      route: { params: { id: '12' } },
+      userStore: { userName: '测试用户', currentUser: { id: 9 } },
+      projectStore: {},
+      projectsApi: { createTask },
+      isApiProject: ref(true),
+      message: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
+      state,
+      workflow: {},
+    })
+
+    await handleSaveTask({
+      mode: 'create',
+      data: {
+        name: '准备商务文件',
+        owner: '张经理',
+        assigneeId: 10,
+        assigneeDeptCode: 'BID',
+        assigneeDeptName: '投标管理部',
+        assigneeRoleCode: 'manager',
+        assigneeRoleName: '经理',
+        priority: 'medium',
+      },
+    })
+
+    expect(createTask).toHaveBeenCalledWith('12', expect.objectContaining({
+      assigneeId: 10,
+      assigneeName: '张经理',
+      assigneeDeptCode: 'BID',
+      assigneeDeptName: '投标管理部',
+      assigneeRoleCode: 'manager',
+      assigneeRoleName: '经理',
+    }))
   })
 
   it('API 项目点击拆解任务调用后端拆解接口并写入任务，不打开评分弹窗', async () => {

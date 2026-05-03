@@ -30,6 +30,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -65,10 +67,12 @@ public class ProjectWorkflowController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<ProjectTaskViewDTO>> createProjectTask(
             @PathVariable Long projectId,
-            @Valid @RequestBody ProjectTaskCreateRequest request) {
+            @Valid @RequestBody ProjectTaskCreateRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
         sanitizeTaskRequest(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Project task created successfully", projectWorkflowService.createProjectTask(projectId, request)));
+                .body(ApiResponse.success("Project task created successfully",
+                        projectWorkflowService.createProjectTask(projectId, request, currentUsername(userDetails))));
     }
 
     @PostMapping("/tasks/decompose")
@@ -237,6 +241,10 @@ public class ProjectWorkflowController {
         if (request.getAssigneeName() != null) {
             request.setAssigneeName(InputSanitizer.sanitizeString(request.getAssigneeName(), 100));
         }
+    }
+
+    private String currentUsername(UserDetails userDetails) {
+        return userDetails == null ? null : userDetails.getUsername();
     }
 
     private void sanitizeReminderRequest(ProjectReminderCreateRequest request) {

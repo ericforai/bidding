@@ -21,6 +21,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -69,10 +71,39 @@ class TaskDeliverableContractTest {
         mockMvc.perform(post("/api/projects/1/tasks/10/deliverables")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new TaskDeliverableCreateRequest("技术方案", "TECHNICAL", null, null))))
+                                new TaskDeliverableCreateRequest("技术方案", "TECHNICAL", null, null, null))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.name").value("技术方案"));
+    }
+
+    @Test
+    void createTaskDeliverable_ShouldAcceptUploadedFileUrl() throws Exception {
+        var dto = TaskDeliverableDTO.builder()
+                .id(1L)
+                .taskId(10L)
+                .name("技术方案")
+                .url("project-documents://1/task/10/技术方案.docx")
+                .version(1)
+                .build();
+        when(taskDeliverableService.createDeliverable(any(), any(), any(), any())).thenReturn(dto);
+
+        mockMvc.perform(post("/api/projects/1/tasks/10/deliverables")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "技术方案",
+                                  "deliverableType": "TECHNICAL",
+                                  "url": "project-documents://1/task/10/技术方案.docx"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.url").value("project-documents://1/task/10/技术方案.docx"));
+
+        var captor = org.mockito.ArgumentCaptor.forClass(TaskDeliverableCreateRequest.class);
+        verify(taskDeliverableService).createDeliverable(eq(1L), eq(10L), captor.capture(), any());
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getUrl())
+                .isEqualTo("project-documents://1/task/10/技术方案.docx");
     }
 
     @Test

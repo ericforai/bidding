@@ -151,4 +151,20 @@ describe('ProjectTaskBoardCard', () => {
     expect(emitted[0][0]).toEqual(expect.objectContaining({ mode: 'create', data: expect.objectContaining({ name: 'New' }) }))
     expect(wrapper.vm.drawerVisible).toBe(false)
   })
+
+  it('forwards saved deliverable payload from TaskBoard without dropping the task id', async () => {
+    const wrapper = mount(ProjectTaskBoardCard, {
+      props: {
+        canManageProjectTasks: true,
+        tasks: [{ id: 31, name: 'T', status: 'TODO' }],
+        projectId: 12,
+      },
+      global: { stubs: baseStubs },
+    })
+
+    wrapper.findComponent({ name: 'TaskBoard' }).vm.$emit('add-deliverable', 31, { id: 501, name: '附件.docx' })
+    await flushPromises()
+
+    expect(wrapper.emitted('add-deliverable')?.[0]).toEqual([31, { id: 501, name: '附件.docx' }])
+  })
 })

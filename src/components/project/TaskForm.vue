@@ -15,7 +15,27 @@
       </el-form-item>
 
       <el-form-item label="负责人">
-        <el-input v-model="localValue.owner" placeholder="请输入负责人" />
+        <el-select
+          v-model="localValue.assigneeId"
+          data-test="task-owner-select"
+          filterable
+          style="width: 100%"
+          placeholder="请选择负责人"
+          :loading="loadingAssignees"
+          @change="handleAssigneeChange"
+        >
+          <el-option
+            v-for="person in assigneeOptions"
+            :key="person.userId"
+            :label="assigneeLabel(person)"
+            :value="person.userId"
+          >
+            <div class="assignee-option">
+              <span>{{ person.name }}</span>
+              <small>{{ person.deptName || '未配置部门' }} · {{ person.roleName || '未配置角色' }}</small>
+            </div>
+          </el-option>
+        </el-select>
       </el-form-item>
 
       <el-form-item label="截止日期">
@@ -52,10 +72,12 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch, onMounted } from 'vue'
+import { computed, nextTick, reactive, ref, watch, onMounted } from 'vue'
 import { taskStatusDictApi } from '@/api/modules/taskStatusDict.js'
 import { useProjectStore } from '@/stores/project'
+import { useUserStore } from '@/stores/user'
 import DynamicFormRenderer from '@/components/common/DynamicFormRenderer.vue'
+import { useTaskAssigneeOptions } from './useTaskAssigneeOptions.js'
 
 const props = defineProps({
   modelValue: { type: Object, default: () => ({}) },
@@ -64,6 +86,7 @@ const props = defineProps({
 const emit = defineEmits(['submit', 'update:modelValue'])
 
 const projectStore = useProjectStore()
+const userStore = useUserStore()
 
 const localValue = reactive({ ...props.modelValue })
 if (!localValue.extendedFields) {
@@ -74,6 +97,9 @@ const loadingStatuses = ref(false)
 const validationMessage = ref('')
 const extFormRef = ref(null)
 const readonly = computed(() => props.mode === 'view')
+let syncingFromModel = false
+const { assigneeOptions, loadingAssignees, loadAssignees, ensureSelectedAssignee, handleAssigneeChange, assigneeLabel } =
+  useTaskAssigneeOptions({ localValue, isCreateMode: () => props.mode === 'create', userStore })
 
 const extendedFieldSchema = computed(() =>
   (projectStore.taskExtendedFields || []).map((f) => ({
@@ -87,17 +113,34 @@ const extendedFieldSchema = computed(() =>
 )
 
 watch(() => props.modelValue, (v) => {
+  syncingFromModel = true
   Object.keys(localValue).forEach((k) => delete localValue[k])
   Object.assign(localValue, v || {})
   if (!localValue.extendedFields) {
     localValue.extendedFields = {}
   }
+  ensureSelectedAssignee()
+  nextTick(() => {
+    syncingFromModel = false
+  })
+})
+
+watch(localValue, () => {
+  if (!syncingFromModel) {
+    emit('update:modelValue', { ...localValue })
+  }
 }, { deep: true })
 
-watch(localValue, () => emit('update:modelValue', { ...localValue }), { deep: true })
-
-onMounted(async () => {
+onMounted(() => {
   projectStore.loadTaskExtendedFields()
+  ensureSelectedAssignee()
+  setTimeout(() => {
+    loadAssignees()
+  }, 0)
+  loadStatuses()
+})
+
+async function loadStatuses() {
   loadingStatuses.value = true
   try {
     const res = await taskStatusDictApi.list()
@@ -111,7 +154,7 @@ onMounted(async () => {
   } finally {
     loadingStatuses.value = false
   }
-})
+}
 
 function validate() {
   if (!localValue.name || !String(localValue.name).trim()) {
@@ -141,4 +184,16 @@ defineExpose({ submit, validate })
 
 <style scoped>
 .task-form { width: 100%; }
+
+.assignee-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.assignee-option small {
+  color: #909399;
+  font-size: 12px;
+}
 </style>

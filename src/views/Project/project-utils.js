@@ -185,7 +185,8 @@ export function normalizeTaskStatusFromApi(backendStatus) {
  * 把 TaskForm.vue 表单字段（前端命名）转成后端 TaskDTO 字段。
  *  - name → title
  *  - deadline → dueDate
- *  - owner 暂时丢弃（assignee_id 接通留给后续）
+ *  - owner / assigneeId → assigneeName / assigneeId
+ *  - extendedFields → extendedFields
  *  - undefined 字段不写入，保留 PATCH 语义
  */
 export function taskFormDtoToBackend(form = {}) {
@@ -195,6 +196,13 @@ export function taskFormDtoToBackend(form = {}) {
   if (form.status !== undefined) dto.status = normalizeTaskStatusForApi(form.status)
   if (form.priority !== undefined) dto.priority = normalizeTaskPriorityForApi(form.priority)
   if (form.deadline !== undefined) dto.dueDate = form.deadline
+  if (form.assigneeId !== undefined) dto.assigneeId = form.assigneeId
+  if (form.owner !== undefined) dto.assigneeName = form.owner
+  if (form.assigneeDeptCode !== undefined) dto.assigneeDeptCode = form.assigneeDeptCode
+  if (form.assigneeDeptName !== undefined) dto.assigneeDeptName = form.assigneeDeptName
+  if (form.assigneeRoleCode !== undefined) dto.assigneeRoleCode = form.assigneeRoleCode
+  if (form.assigneeRoleName !== undefined) dto.assigneeRoleName = form.assigneeRoleName
+  if (form.extendedFields !== undefined) dto.extendedFields = form.extendedFields
   return dto
 }
 
@@ -203,6 +211,7 @@ export function taskFormDtoToBackend(form = {}) {
  */
 export function taskBackendToCard(dto = {}) {
   const deliverables = Array.isArray(dto.deliverables) ? dto.deliverables : []
+  const assigneeName = dto.assigneeName ?? dto.owner ?? dto.assignee ?? ''
   return {
     id: dto.id,
     name: dto.title ?? dto.name ?? '',
@@ -210,7 +219,16 @@ export function taskBackendToCard(dto = {}) {
     status: normalizeTaskStatusFromApi(dto.status),
     priority: dto.priority,
     deadline: dto.dueDate ?? '',
-    owner: dto.assigneeName ?? dto.owner ?? dto.assignee ?? '',
+    owner: assigneeName,
+    assignee: assigneeName,
+    assigneeId: dto.assigneeId ?? null,
+    department: dto.assigneeDeptName ?? dto.department ?? '',
+    roleName: dto.assigneeRoleName ?? dto.roleName ?? '',
+    assigneeDeptCode: dto.assigneeDeptCode ?? '',
+    assigneeDeptName: dto.assigneeDeptName ?? dto.department ?? '',
+    assigneeRoleCode: dto.assigneeRoleCode ?? '',
+    assigneeRoleName: dto.assigneeRoleName ?? dto.roleName ?? '',
+    extendedFields: dto.extendedFields || {},
     deliverables,
     hasDeliverable: deliverables.length > 0,
   }

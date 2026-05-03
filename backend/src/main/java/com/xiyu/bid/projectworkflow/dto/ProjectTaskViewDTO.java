@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @Builder
@@ -23,6 +24,7 @@ public class ProjectTaskViewDTO {
      * task drawer can round-trip Markdown across page reloads.
      */
     private String content;
+    private Map<String, Object> extendedFields;
     private Long assigneeId;
     private String assigneeDeptCode;
     private String assigneeRoleCode;

@@ -1,8 +1,8 @@
 import { ElMessageBox } from 'element-plus'
 import { taskTemplates } from './constants.js'
 import { normalizeProjectTaskList, openScoreDraftDialogWhenTenderSourceMissing } from './projectDetailTaskGeneration.js'
+import { createTaskAssigneePayload } from './taskAssigneePayload.js'
 import { normalizeTaskStatusForApi, taskFormDtoToBackend, taskBackendToCard } from '@/views/Project/project-utils'
-
 export function useProjectDetailTaskActions(context) {
   const { route, userStore, projectStore, projectsApi, tenderBreakdownApi = projectsApi, isApiProject, message, state, workflow } = context
   const pushActivity = (action) => state.activities.value.unshift({ id: Date.now(), user: userStore.userName, action, time: new Date().toLocaleString('zh-CN', { hour12: false }) })
@@ -244,8 +244,6 @@ export function useProjectDetailTaskActions(context) {
       return
     }
 
-    // Create mode: for API projects reuse createTask; for demo projects push
-    // the record locally.
     const title = data?.name || `新增任务 ${(state.project.value.tasks?.length || 0) + 1}`
     const dueDate = data?.deadline ? new Date(data.deadline) : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
 
@@ -261,6 +259,7 @@ export function useProjectDetailTaskActions(context) {
         priority: data?.priority || 'medium',
         status: data?.status || 'todo',
         content: data?.content || '',
+        extendedFields: data?.extendedFields || {},
         deliverables: [],
         hasDeliverable: false,
       })
@@ -274,8 +273,8 @@ export function useProjectDetailTaskActions(context) {
       const result = await projectsApi.createTask(route.params.id, {
         title,
         description: '', content: data?.content || '',
-        assigneeId: userStore.currentUser?.id || null,
-        assigneeName: data?.owner || userStore.userName,
+        extendedFields: data?.extendedFields || {},
+        ...createTaskAssigneePayload(data, userStore),
         priority: (data?.priority || 'medium').toUpperCase(),
         dueDate: dueDate.toISOString(),
       })
@@ -311,7 +310,8 @@ export function useProjectDetailTaskActions(context) {
     const task = state.project.value?.tasks?.find((item) => item.id === taskId)
     if (!task) return
     task.deliverables = task.deliverables || []
-    task.deliverables.push(deliverable)
+    const exists = deliverable?.id != null && task.deliverables.some((item) => String(item.id) === String(deliverable.id))
+    if (!exists) task.deliverables.push(deliverable)
     task.hasDeliverable = true
     pushActivity(`为任务"${task.name}"上传了交付物: ${deliverable.name}`)
     message.success('交付物已添加')

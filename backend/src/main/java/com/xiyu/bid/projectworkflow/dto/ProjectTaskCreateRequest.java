@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @Builder
@@ -28,6 +29,8 @@ public class ProjectTaskCreateRequest {
     private String description;
 
     private String content;
+
+    private Map<String, Object> extendedFields;
 
     private Long assigneeId;
 

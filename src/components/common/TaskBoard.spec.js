@@ -16,15 +16,24 @@ const mockStatuses = [
 ]
 
 const loadTaskStatusesMock = vi.fn()
+const addDeliverableMock = vi.hoisted(() => vi.fn())
+const removeDeliverableMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/stores/project', () => ({
   useProjectStore: () => ({
     taskStatuses: mockStatuses,
     taskStatusesLoaded: true,
     loadTaskStatuses: loadTaskStatusesMock,
-    addDeliverable: vi.fn(),
-    removeDeliverable: vi.fn(),
+    addDeliverable: addDeliverableMock,
+    removeDeliverable: removeDeliverableMock,
     submitToBidDocument: vi.fn(),
+  }),
+}))
+
+vi.mock('@/stores/user', () => ({
+  useUserStore: () => ({
+    userName: '测试用户',
+    currentUser: { id: 9 },
   }),
 }))
 
@@ -73,6 +82,8 @@ describe('TaskBoard (dynamic columns)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     loadTaskStatusesMock.mockClear()
+    addDeliverableMock.mockReset()
+    removeDeliverableMock.mockReset()
   })
 
   it('renders one column per enabled status from the dict', async () => {
@@ -113,6 +124,37 @@ describe('TaskBoard (dynamic columns)', () => {
     const items = wrapper.findAllComponents({ name: 'ElDropdownItem' })
     // At least 5 status transitions + 1 "上传交付物" = 6
     expect(items.length).toBeGreaterThanOrEqual(5)
+  })
+
+  it('uploads the selected file through projectStore and emits the saved deliverable', async () => {
+    const file = new File(['技术方案'], '技术方案.docx', {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    })
+    const saved = {
+      id: 501,
+      name: '技术方案.docx',
+      deliverableType: 'TECHNICAL',
+      url: 'project-documents://12/技术方案.docx',
+    }
+    addDeliverableMock.mockResolvedValue(saved)
+    const task = { id: 31, name: '编写技术方案', status: 'TODO' }
+    const wrapper = mountBoard({ projectId: '12', tasks: [task] })
+    await flushPromises()
+
+    wrapper.vm.handleUploadDeliverable(task)
+    wrapper.vm.deliverableForm.name = '技术方案.docx'
+    wrapper.vm.deliverableForm.type = 'technical'
+    wrapper.vm.handleFileChange({ raw: file })
+    await wrapper.vm.handleSaveDeliverable()
+
+    expect(addDeliverableMock).toHaveBeenCalledWith('12', 31, expect.objectContaining({
+      name: '技术方案.docx',
+      deliverableType: 'TECHNICAL',
+      file,
+      uploaderId: 9,
+      uploaderName: '测试用户',
+    }))
+    expect(wrapper.emitted('add-deliverable')?.[0]).toEqual([31, saved])
   })
 })
 

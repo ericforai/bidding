@@ -66,6 +66,7 @@ public class TaskDeliverableService {
                 .deliverableType(sanitizedType)
                 .size(request.getSize() != null ? InputSanitizer.sanitizeString(request.getSize(), 50) : null)
                 .fileType(request.getFileType() != null ? InputSanitizer.sanitizeString(request.getFileType(), 100) : null)
+                .url(request.getUrl() != null ? InputSanitizer.sanitizeString(request.getUrl(), 500) : null)
                 .build();
 
         var entity = TaskDeliverableAssembler.toEntity(

@@ -67,7 +67,8 @@ class ProjectTaskBreakdownServiceTest {
         ProjectTaskWorkflowService taskWorkflowService = new ProjectTaskWorkflowService(
                 guardService,
                 taskRepository,
-                userRepository
+                userRepository,
+                new com.fasterxml.jackson.databind.ObjectMapper()
         );
         ProjectTaskBreakdownSourceReader sourceReader = new ProjectTaskBreakdownSourceReader(
                 requirementSourceGateway,

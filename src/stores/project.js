@@ -83,6 +83,17 @@ function buildExpenseSummary(expenses = []) {
   })
 }
 
+function formatFileSize(file) {
+  const bytes = Number(file?.size || 0)
+  const kb = Math.max(1, Math.round(bytes / 1024))
+  return kb < 1024 ? `${kb}KB` : `${Math.round(kb / 1024)}MB`
+}
+
+function findTaskInProject(project, taskId) {
+  if (!project || !Array.isArray(project.tasks)) return null
+  return project.tasks.find((task) => String(task.id) === String(taskId)) || null
+}
+
 export const useProjectStore = defineStore('project', {
   state: () => ({
     projects: [],
@@ -279,6 +290,70 @@ export const useProjectStore = defineStore('project', {
     invalidateTaskExtendedFields() {
       this.taskExtendedFields = []
       this.taskExtendedFieldsLoaded = false
+    },
+
+    async addDeliverable(projectId, taskId, data = {}) {
+      const file = data.file || null
+      let uploadedDocument = null
+
+      if (file) {
+        const formData = new FormData()
+        formData.set('file', file)
+        formData.set('name', data.name || file.name || '任务附件')
+        formData.set('size', data.size || formatFileSize(file))
+        formData.set('fileType', data.fileType || file.type || '')
+        formData.set('documentCategory', 'TASK_DELIVERABLE')
+        formData.set('linkedEntityType', 'TASK')
+        formData.set('linkedEntityId', String(taskId))
+        if (data.uploaderId != null) {
+          formData.set('uploaderId', String(data.uploaderId))
+        }
+        if (data.uploaderName) {
+          formData.set('uploaderName', data.uploaderName)
+        }
+        const uploadResult = await projectsApi.uploadDocument(projectId, formData)
+        if (!uploadResult?.success || !uploadResult?.data) {
+          throw new Error(uploadResult?.message || '上传任务附件失败')
+        }
+        uploadedDocument = uploadResult.data
+      }
+
+      const payload = {
+        name: data.name || uploadedDocument?.name || file?.name || '任务附件',
+        deliverableType: data.deliverableType || 'DOCUMENT',
+        size: uploadedDocument?.size || data.size || (file ? formatFileSize(file) : null),
+        fileType: uploadedDocument?.fileType || data.fileType || file?.type || null,
+        url: uploadedDocument?.fileUrl || data.url || null,
+      }
+      const result = await projectsApi.createTaskDeliverable(projectId, taskId, payload)
+      if (!result?.success || !result?.data) {
+        throw new Error(result?.message || '保存任务交付物失败')
+      }
+
+      const saved = result.data
+      const task = findTaskInProject(this.currentProject, taskId)
+      if (task) {
+        task.deliverables = Array.isArray(task.deliverables) ? task.deliverables : []
+        const exists = task.deliverables.some((item) => String(item.id) === String(saved.id))
+        if (!exists) {
+          task.deliverables.unshift(saved)
+        }
+        task.hasDeliverable = task.deliverables.length > 0
+      }
+      return saved
+    },
+
+    async removeDeliverable(projectId, taskId, deliverableId) {
+      const result = await projectsApi.deleteTaskDeliverable(projectId, taskId, deliverableId)
+      if (!result?.success) {
+        throw new Error(result?.message || '删除任务交付物失败')
+      }
+      const task = findTaskInProject(this.currentProject, taskId)
+      if (task && Array.isArray(task.deliverables)) {
+        task.deliverables = task.deliverables.filter((item) => String(item.id) !== String(deliverableId))
+        task.hasDeliverable = task.deliverables.length > 0
+      }
+      return result
     }
   }
 })

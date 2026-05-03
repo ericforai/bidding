@@ -3,6 +3,7 @@ package com.xiyu.bid.projectworkflow.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Task;
+import com.xiyu.bid.entity.User;
 import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftGenerateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectScoreDraftUpdateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectTaskCreateRequest;
@@ -64,7 +65,8 @@ class ProjectWorkflowServiceTest {
         ProjectTaskWorkflowService projectTaskWorkflowService = new ProjectTaskWorkflowService(
                 guardService,
                 taskRepository,
-                userRepository
+                userRepository,
+                objectMapper
         );
         ProjectDocumentWorkflowService projectDocumentWorkflowService = new ProjectDocumentWorkflowService(
                 guardService,
@@ -147,12 +149,47 @@ class ProjectWorkflowServiceTest {
         ProjectTaskViewDTO task = service.createProjectTask(1001L, ProjectTaskCreateRequest.builder()
                 .title(" 启动后补充任务 ")
                 .content("# 标题\n- 保留 Markdown")
+                .extendedFields(java.util.Map.of("chapter", "扩展值ABC"))
                 .priority(ProjectTaskCreateRequest.Priority.MEDIUM)
                 .build());
 
         assertThat(task.getId()).isEqualTo(3002L);
         assertThat(task.getName()).isEqualTo("启动后补充任务");
         assertThat(task.getContent()).isEqualTo("# 标题\n- 保留 Markdown");
+        assertThat(task.getExtendedFields()).containsEntry("chapter", "扩展值ABC");
+    }
+
+    @Test
+    void createProjectTask_ShouldDefaultAssigneeToCreatorWhenRequestHasNoAssignee() {
+        when(projectRepository.findById(1001L)).thenReturn(Optional.of(Project.builder()
+                .id(1001L)
+                .status(Project.Status.INITIATED)
+                .build()));
+        when(userRepository.findByUsername("creator")).thenReturn(Optional.of(User.builder()
+                .id(9L)
+                .username("creator")
+                .fullName("测试用户")
+                .email("creator@example.com")
+                .password("pw")
+                .role(User.Role.STAFF)
+                .departmentCode("BID")
+                .departmentName("投标管理部")
+                .build()));
+        when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> {
+            Task task = invocation.getArgument(0);
+            task.setId(3003L);
+            return task;
+        });
+
+        ProjectTaskViewDTO task = service.createProjectTask(1001L, ProjectTaskCreateRequest.builder()
+                .title("默认责任人")
+                .priority(ProjectTaskCreateRequest.Priority.MEDIUM)
+                .build(), "creator");
+
+        assertThat(task.getAssigneeId()).isEqualTo(9L);
+        assertThat(task.getOwner()).isEqualTo("测试用户");
+        assertThat(task.getDepartment()).isEqualTo("投标管理部");
+        assertThat(task.getRoleName()).isEqualTo("员工");
     }
 
     @Test
