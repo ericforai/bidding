@@ -83,6 +83,7 @@ class ProjectTaskWorkflowService {
                 .projectId(task.getProjectId())
                 .name(task.getTitle())
                 .description(task.getDescription())
+                .content(task.getContent())
                 .assigneeId(task.getAssigneeId())
                 .assigneeDeptCode(task.getAssigneeDeptCode())
                 .assigneeRoleCode(task.getAssigneeRoleCode())
