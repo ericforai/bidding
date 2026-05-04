@@ -11,6 +11,8 @@ import com.xiyu.bid.projectworkflow.dto.ProjectTaskViewDTO;
 import com.xiyu.bid.projectworkflow.entity.ProjectScoreDraft;
 import com.xiyu.bid.repository.TaskRepository;
 import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.task.service.TaskHistoryRecorder;
+import com.xiyu.bid.task.service.TaskSnapshots;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +34,7 @@ class ProjectTaskWorkflowService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final TaskHistoryRecorder taskHistoryRecorder;
 
     List<ProjectTaskViewDTO> getProjectTasks(Long projectId) {
         guardService.requireProject(projectId);
@@ -65,11 +68,19 @@ class ProjectTaskWorkflowService {
         return toTaskView(taskRepository.save(task), assigneeUser != null ? assigneeUser.getFullName() : request.getAssigneeName());
     }
 
-    ProjectTaskViewDTO updateProjectTaskStatus(Long projectId, Long taskId, ProjectTaskStatusUpdateRequest request) {
+    ProjectTaskViewDTO updateProjectTaskStatus(
+            Long projectId,
+            Long taskId,
+            ProjectTaskStatusUpdateRequest request,
+            String actorUsername
+    ) {
         guardService.requireWorkflowMutationProject(projectId);
         Task task = guardService.requireTask(projectId, taskId);
+        Task before = TaskSnapshots.copy(task);
         task.setStatus(toEntityStatus(request.getStatus()));
-        return toTaskView(taskRepository.save(task));
+        Task saved = taskRepository.save(task);
+        taskHistoryRecorder.recordUpdate(before, saved, actorUsername);
+        return toTaskView(saved);
     }
 
     ProjectTaskViewDTO createTaskFromDraft(ProjectScoreDraft draft) {

@@ -45,6 +45,7 @@ import { taskStatusDictApi } from './modules/taskStatusDict.js'
 import { taskStatusDictAdminApi } from './modules/taskStatusDictAdmin.js'
 import { taskExtendedFieldApi } from './modules/taskExtendedField.js'
 import { taskExtendedFieldAdminApi } from './modules/taskExtendedFieldAdmin.js'
+import { taskActivityApi } from './modules/taskActivity.js'
 
 export {
   httpClient,
@@ -77,7 +78,8 @@ export {
   taskStatusDictApi,
   taskStatusDictAdminApi,
   taskExtendedFieldApi,
-  taskExtendedFieldAdminApi
+  taskExtendedFieldAdminApi,
+  taskActivityApi
 }
 
 export default {
@@ -105,5 +107,6 @@ export default {
   taskStatusDict: () => Promise.resolve(taskStatusDictApi),
   taskStatusDictAdmin: () => Promise.resolve(taskStatusDictAdminApi),
   taskExtendedField: () => Promise.resolve(taskExtendedFieldApi),
-  taskExtendedFieldAdmin: () => Promise.resolve(taskExtendedFieldAdminApi)
+  taskExtendedFieldAdmin: () => Promise.resolve(taskExtendedFieldAdminApi),
+  taskActivity: () => Promise.resolve(taskActivityApi)
 }

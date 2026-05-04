@@ -1,91 +1,99 @@
 <template>
   <div class="task-form">
-    <el-form :model="localValue" label-width="110px" :disabled="readonly">
-      <el-form-item label="任务名称" required>
-        <el-input v-model="localValue.name" placeholder="请输入任务名称" />
-      </el-form-item>
+    <el-tabs v-model="activeTab" class="task-form-tabs">
+      <el-tab-pane label="详情" name="detail">
+        <el-form :model="localValue" label-width="110px" :disabled="readonly">
+          <el-form-item label="任务名称" required>
+            <el-input v-model="localValue.name" placeholder="请输入任务名称" />
+          </el-form-item>
 
-      <el-form-item label="详细描述">
-        <el-input
-          v-model="localValue.content"
-          type="textarea"
-          :rows="6"
-          placeholder="支持 Markdown：# 标题、- 列表、**加粗** 等"
-        />
-      </el-form-item>
+          <el-form-item label="详细描述">
+            <el-input
+              v-model="localValue.content"
+              type="textarea"
+              :rows="6"
+              placeholder="支持 Markdown：# 标题、- 列表、**加粗** 等"
+            />
+          </el-form-item>
 
-      <el-form-item label="任务附件">
-        <el-upload
-          data-test="task-attachment-upload"
-          :auto-upload="false"
-          :file-list="attachmentFileList"
-          :disabled="readonly"
-          accept=".doc,.docx,.pdf,.xls,.xlsx"
-          multiple
-          @change="handleAttachmentChange"
-          @remove="handleAttachmentRemove"
-        >
-          <el-button :icon="Upload" :disabled="readonly">添加附件</el-button>
-          <template #tip>
-            <div class="attachment-tip">保存任务后上传到该任务</div>
-          </template>
-        </el-upload>
-      </el-form-item>
+          <el-form-item label="任务附件">
+            <el-upload
+              data-test="task-attachment-upload"
+              :auto-upload="false"
+              :file-list="attachmentFileList"
+              :disabled="readonly"
+              accept=".doc,.docx,.pdf,.xls,.xlsx"
+              multiple
+              @change="handleAttachmentChange"
+              @remove="handleAttachmentRemove"
+            >
+              <el-button :icon="Upload" :disabled="readonly">添加附件</el-button>
+              <template #tip>
+                <div class="attachment-tip">保存任务后上传到该任务</div>
+              </template>
+            </el-upload>
+          </el-form-item>
 
-      <el-form-item label="负责人">
-        <el-select
-          v-model="localValue.assigneeId"
-          data-test="task-owner-select"
-          filterable
-          style="width: 100%"
-          placeholder="请选择负责人"
-          :loading="loadingAssignees"
-          @change="handleAssigneeChange"
-        >
-          <el-option
-            v-for="person in assigneeOptions"
-            :key="person.userId"
-            :label="assigneeLabel(person)"
-            :value="person.userId"
-          >
-            <div class="assignee-option">
-              <span>{{ person.name }}</span>
-              <small>{{ person.deptName || '未配置部门' }} · {{ person.roleName || '未配置角色' }}</small>
-            </div>
-          </el-option>
-        </el-select>
-      </el-form-item>
+          <el-form-item label="负责人">
+            <el-select
+              v-model="localValue.assigneeId"
+              data-test="task-owner-select"
+              filterable
+              style="width: 100%"
+              placeholder="请选择负责人"
+              :loading="loadingAssignees"
+              @change="handleAssigneeChange"
+            >
+              <el-option
+                v-for="person in assigneeOptions"
+                :key="person.userId"
+                :label="assigneeLabel(person)"
+                :value="person.userId"
+              >
+                <div class="assignee-option">
+                  <span>{{ person.name }}</span>
+                  <small>{{ person.deptName || '未配置部门' }} · {{ person.roleName || '未配置角色' }}</small>
+                </div>
+              </el-option>
+            </el-select>
+          </el-form-item>
 
-      <el-form-item label="截止日期">
-        <el-date-picker v-model="localValue.deadline" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
-      </el-form-item>
+          <el-form-item label="截止日期">
+            <el-date-picker v-model="localValue.deadline" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+          </el-form-item>
 
-      <el-form-item label="优先级">
-        <el-select v-model="localValue.priority" style="width: 100%">
-          <el-option label="高" value="high" />
-          <el-option label="中" value="medium" />
-          <el-option label="低" value="low" />
-        </el-select>
-      </el-form-item>
+          <el-form-item label="优先级">
+            <el-select v-model="localValue.priority" style="width: 100%">
+              <el-option label="高" value="high" />
+              <el-option label="中" value="medium" />
+              <el-option label="低" value="low" />
+            </el-select>
+          </el-form-item>
 
-      <el-form-item label="状态">
-        <el-select v-model="localValue.status" style="width: 100%" :loading="loadingStatuses">
-          <el-option v-for="s in statuses" :key="s.code" :label="s.name" :value="s.code" />
-        </el-select>
-      </el-form-item>
+          <el-form-item label="状态">
+            <el-select v-model="localValue.status" style="width: 100%" :loading="loadingStatuses">
+              <el-option v-for="s in statuses" :key="s.code" :label="s.name" :value="s.code" />
+            </el-select>
+          </el-form-item>
 
-      <el-alert v-if="validationMessage" type="warning" :closable="false" :title="validationMessage" />
-    </el-form>
+          <el-alert v-if="validationMessage" type="warning" :closable="false" :title="validationMessage" />
+        </el-form>
 
-    <template v-if="extendedFieldSchema.length > 0">
-      <el-divider>扩展字段</el-divider>
-      <DynamicFormRenderer
-        ref="extFormRef"
-        :fields="extendedFieldSchema"
-        v-model="localValue.extendedFields"
-        :disabled="readonly"
-      />
-    </template>
+        <template v-if="extendedFieldSchema.length > 0">
+          <el-divider>扩展字段</el-divider>
+          <DynamicFormRenderer
+            ref="extFormRef"
+            :fields="extendedFieldSchema"
+            v-model="localValue.extendedFields"
+            :disabled="readonly"
+          />
+        </template>
+      </el-tab-pane>
+
+      <el-tab-pane v-if="localValue.id" label="动态" name="activity">
+        <TaskActivityPanel :task-id="localValue.id" :readonly="readonly" />
+      </el-tab-pane>
+    </el-tabs>
   </div>
 </template>
 
@@ -96,6 +104,7 @@ import { taskStatusDictApi } from '@/api/modules/taskStatusDict.js'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
 import DynamicFormRenderer from '@/components/common/DynamicFormRenderer.vue'
+import TaskActivityPanel from '@/components/project/TaskActivityPanel.vue'
 import { useTaskAssigneeOptions } from './useTaskAssigneeOptions.js'
 
 const props = defineProps({
@@ -118,6 +127,7 @@ const statuses = ref([])
 const loadingStatuses = ref(false)
 const validationMessage = ref('')
 const extFormRef = ref(null)
+const activeTab = ref('detail')
 const readonly = computed(() => props.mode === 'view')
 const attachmentFileList = computed(() => localValue.attachments.map((file, index) => ({
   name: file?.name || `附件${index + 1}`,

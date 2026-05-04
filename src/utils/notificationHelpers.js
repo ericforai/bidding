@@ -59,6 +59,14 @@ export const formatNotificationTime = (dateStr) => {
 }
 
 export const resolveNotificationRoute = (item) => {
+  if (item?.sourceEntityType === 'TASK') {
+    const payload = parseNotificationPayload(item.payloadJson)
+    const projectId = Number(payload.projectId)
+    const taskId = Number(item.sourceEntityId)
+    if (!Number.isFinite(projectId) || projectId <= 0) return null
+    if (!Number.isFinite(taskId) || taskId <= 0) return null
+    return `/project/${projectId}?taskId=${taskId}`
+  }
   const prefix = NOTIFICATION_ENTITY_ROUTE_MAP[item?.sourceEntityType]
   if (!prefix || item?.sourceEntityId == null) return null
   const safeId = Number(item.sourceEntityId)

@@ -39,6 +39,9 @@ class TaskServiceProjectAccessTest {
     @Mock
     private RoleProfileService roleProfileService;
 
+    @Mock
+    private TaskHistoryRecorder taskHistoryRecorder;
+
     private TaskService taskService;
 
     @BeforeEach
@@ -49,7 +52,13 @@ class TaskServiceProjectAccessTest {
                 projectAccessScopeService,
                 roleProfileService
         );
-        taskService = new TaskService(taskRepository, projectAccessScopeService, assignmentSupport, new ObjectMapper());
+        taskService = new TaskService(
+                taskRepository,
+                projectAccessScopeService,
+                assignmentSupport,
+                new TaskDtoMapper(new ObjectMapper()),
+                taskHistoryRecorder
+        );
     }
 
     @Test

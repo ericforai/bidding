@@ -17,6 +17,7 @@ import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TaskRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.service.ProjectAccessScopeService;
+import com.xiyu.bid.task.service.TaskHistoryRecorder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -66,7 +67,8 @@ class ProjectWorkflowServiceTest {
                 guardService,
                 taskRepository,
                 userRepository,
-                objectMapper
+                objectMapper,
+                mock(TaskHistoryRecorder.class)
         );
         ProjectDocumentWorkflowService projectDocumentWorkflowService = new ProjectDocumentWorkflowService(
                 guardService,

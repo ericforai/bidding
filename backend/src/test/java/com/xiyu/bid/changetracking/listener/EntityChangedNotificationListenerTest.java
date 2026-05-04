@@ -134,4 +134,33 @@ class EntityChangedNotificationListenerTest {
         verify(notificationService).createNotification(captor.capture(), eq(1L));
         assertThat(captor.getValue().title()).contains("合同草稿A");
     }
+
+    @Test
+    void onEntityChanged_ShouldUseTaskUpdateTypeAndCarryMetadata_ForTaskEvents() {
+        Subscription taskSubscriber = Subscription.builder()
+            .userId(2L)
+            .targetEntityType("TASK")
+            .targetEntityId(99L)
+            .build();
+        when(subscriptionRepository.findByTargetEntityTypeAndTargetEntityId("TASK", 99L))
+            .thenReturn(List.of(taskSubscriber));
+        when(notificationService.createNotification(any(), any())).thenReturn(DispatchResult.valid());
+
+        listener.onEntityChanged(new EntityChangedEvent(
+            "TASK",
+            99L,
+            1L,
+            Map.of("title", "准备商务标"),
+            Map.of("title", "准备商务标 V2"),
+            "准备商务标 V2",
+            Map.of("projectId", 10L)
+        ));
+
+        ArgumentCaptor<CreateNotificationRequest> captor =
+            ArgumentCaptor.forClass(CreateNotificationRequest.class);
+        verify(notificationService).createNotification(captor.capture(), eq(1L));
+        CreateNotificationRequest request = captor.getValue();
+        assertThat(request.type()).isEqualTo("TASK_UPDATE");
+        assertThat(request.payload()).containsEntry("projectId", 10L);
+    }
 }

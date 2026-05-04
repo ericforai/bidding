@@ -49,6 +49,9 @@ class TaskContentPersistenceTest {
     @Mock
     private RoleProfileService roleProfileService;
 
+    @Mock
+    private TaskHistoryRecorder taskHistoryRecorder;
+
     private TaskService taskService;
 
     @BeforeEach
@@ -59,7 +62,13 @@ class TaskContentPersistenceTest {
                 projectAccessScopeService,
                 roleProfileService
         );
-        taskService = new TaskService(taskRepository, projectAccessScopeService, assignmentSupport, new ObjectMapper());
+        taskService = new TaskService(
+                taskRepository,
+                projectAccessScopeService,
+                assignmentSupport,
+                new TaskDtoMapper(new ObjectMapper()),
+                taskHistoryRecorder
+        );
     }
 
     @Test

@@ -27,6 +27,7 @@
 | `resources.js` | API 模块 | 平台账号、BAR、证书、资源能力调用 |
 | `settings.js` | API 模块 | 系统设置页的数据权限与组织树读写 |
 | `taskStatusDict.js` | API 模块 | 项目任务状态字典查询（启用状态列表），供动态任务看板驱动列配置 |
+| `taskActivity.js` | API 模块 | 任务评论与历史动态真实 API，供 TaskForm 动态 Tab 读取和发表评论 |
 | `taskExtendedField.js` | API 模块 | 项目任务扩展字段 schema 读取（启用字段列表），供 TaskForm 动态渲染 |
 | `taskExtendedFieldAdmin.js` | API 模块 | 管理员对任务扩展字段 schema 的 CRUD、启停与排序调用 |
 | `tenders.js` | API 模块 | 标讯列表、详情、入项、上传任务和人工录入文档识别调用 |
@@ -48,3 +49,4 @@
 - 2026-05-01: 新增 `taskStatusDict.js`，接入启用状态的任务状态字典查询 API，供动态任务看板按后端字典驱动列配置。
 - 2026-05-03: 新增 `taskExtendedField.js` 与 `taskExtendedFieldAdmin.js`，接入任务扩展字段 schema 的公开读取与管理员 CRUD/启停/排序 API，供 TaskForm 动态渲染扩展字段。
 - 2026-05-03: `users.js` 接入 `/api/tasks/assignment-candidates`，任务负责人改为从组织归属候选人中选择，不再手写姓名。
+- 2026-05-04: 新增 `taskActivity.js`，接入 `/api/tasks/{id}/activity` 与 `/api/tasks/{id}/comments`，任务动态仅走真实后端 API。

@@ -57,7 +57,16 @@ public class ProjectWorkflowService {
             Long taskId,
             ProjectTaskStatusUpdateRequest request
     ) {
-        return projectTaskWorkflowService.updateProjectTaskStatus(projectId, taskId, request);
+        return updateProjectTaskStatus(projectId, taskId, request, null);
+    }
+
+    public ProjectTaskViewDTO updateProjectTaskStatus(
+            Long projectId,
+            Long taskId,
+            ProjectTaskStatusUpdateRequest request,
+            String actorUsername
+    ) {
+        return projectTaskWorkflowService.updateProjectTaskStatus(projectId, taskId, request, actorUsername);
     }
 
     @Transactional(readOnly = true)
