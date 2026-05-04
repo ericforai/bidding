@@ -16,67 +16,79 @@
         <span class="column-title">{{ column.title }}</span>
         <el-badge :value="getTaskCount(column.key)" class="badge" />
       </div>
-      <div class="column-content">
-        <div
-          v-for="task in getTasksByStatus(column.key)"
-          :key="task.id"
-          class="task-card"
-          :class="{ 'task-high': task.priority === 'high', 'task-review': column.category === 'REVIEW' }"
-          @click="handleTaskClick(task)"
-        >
-          <div class="task-header">
-            <el-tag
-              :type="getPriorityType(task.priority)"
-              size="small"
-              v-if="task.priority"
-            >
-              {{ getPriorityText(task.priority) }}
-            </el-tag>
-            <el-tag v-if="task.hasDeliverable" type="success" size="small">有交付物</el-tag>
-            <el-dropdown trigger="click" @click.stop>
-              <el-icon class="more-icon"><MoreFilled /></el-icon>
-              <template #dropdown>
-                <el-dropdown-item
-                  v-for="s in statuses"
-                  :key="s.code"
-                  :disabled="normalizeStatus(task.status) === s.code"
-                  @click="handleStatusChange(task, s.code)"
-                >
-                  设为{{ s.name }}
-                </el-dropdown-item>
-                <el-dropdown-item divided @click="handleUploadDeliverable(task)">
-                  <el-icon><Upload /></el-icon>
-                  上传交付物
-                </el-dropdown-item>
-              </template>
-            </el-dropdown>
-          </div>
-          <div class="task-name">{{ task.name }}</div>
-          <div class="task-desc">{{ task.description }}</div>
-          <div class="task-meta">
-            <div class="task-owner">
-              <el-icon><User /></el-icon>
-              <span>{{ task.owner }}</span>
-            </div>
-            <div class="task-deadline" :class="{ 'deadline-urgent': isUrgent(task.deadline) }">
-              <el-icon><Calendar /></el-icon>
-              <span>{{ task.deadline }}</span>
-            </div>
-          </div>
-          <div v-if="task.deliverables && task.deliverables.length > 0" class="deliverables">
-            <div class="deliverable-title">交付物:</div>
-            <div v-for="del in task.deliverables" :key="del.id" class="deliverable-item">
-              <el-tag size="small" closable @close="handleRemoveDeliverable(task, del)">
-                <el-link :href="del.url" target="_blank" type="primary">
-                  <el-icon><Document /></el-icon>
-                  {{ del.name }}
-                </el-link>
+      <draggable
+        :model-value="getTasksByStatus(column.key)"
+        :group="{ name: 'task-cards' }"
+        :item-key="(t) => t.id"
+        :disabled="isStatusTransitionInFlight"
+        class="column-content"
+        ghost-class="task-card-ghost"
+        drag-class="task-card-dragging"
+        :data-column="column.key"
+        @change="(evt) => onDragChange(evt, column.key)"
+      >
+        <template #item="{ element: task }">
+          <div
+            class="task-card"
+            :class="{ 'task-high': task.priority === 'high', 'task-review': column.category === 'REVIEW' }"
+            @click="handleTaskClick(task)"
+          >
+            <div class="task-header">
+              <el-tag
+                :type="getPriorityType(task.priority)"
+                size="small"
+                v-if="task.priority"
+              >
+                {{ getPriorityText(task.priority) }}
               </el-tag>
+              <el-tag v-if="task.hasDeliverable" type="success" size="small">有交付物</el-tag>
+              <el-dropdown trigger="click" @click.stop>
+                <el-icon class="more-icon"><MoreFilled /></el-icon>
+                <template #dropdown>
+                  <el-dropdown-item
+                    v-for="s in statuses"
+                    :key="s.code"
+                    :disabled="normalizeStatus(task.status) === s.code"
+                    @click="handleStatusChange(task, s.code)"
+                  >
+                    设为{{ s.name }}
+                  </el-dropdown-item>
+                  <el-dropdown-item divided @click="handleUploadDeliverable(task)">
+                    <el-icon><Upload /></el-icon>
+                    上传交付物
+                  </el-dropdown-item>
+                </template>
+              </el-dropdown>
+            </div>
+            <div class="task-name">{{ task.name }}</div>
+            <div class="task-desc">{{ task.description }}</div>
+            <div class="task-meta">
+              <div class="task-owner">
+                <el-icon><User /></el-icon>
+                <span>{{ task.owner }}</span>
+              </div>
+              <div class="task-deadline" :class="{ 'deadline-urgent': isUrgent(task.deadline) }">
+                <el-icon><Calendar /></el-icon>
+                <span>{{ task.deadline }}</span>
+              </div>
+            </div>
+            <div v-if="task.deliverables && task.deliverables.length > 0" class="deliverables">
+              <div class="deliverable-title">交付物:</div>
+              <div v-for="del in task.deliverables" :key="del.id" class="deliverable-item">
+                <el-tag size="small" closable @close="handleRemoveDeliverable(task, del)">
+                  <el-link :href="del.url" target="_blank" type="primary">
+                    <el-icon><Document /></el-icon>
+                    {{ del.name }}
+                  </el-link>
+                </el-tag>
+              </div>
             </div>
           </div>
-        </div>
-        <el-empty v-if="getTasksByStatus(column.key).length === 0" description="暂无任务" :image-size="60" />
-      </div>
+        </template>
+        <template #footer>
+          <el-empty v-if="getTasksByStatus(column.key).length === 0" description="暂无任务" :image-size="60" />
+        </template>
+      </draggable>
     </div>
     </div>
 
@@ -133,6 +145,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { MoreFilled, User, Calendar, Document, MagicStick, Upload, DocumentAdd, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import draggable from 'vuedraggable'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
 
@@ -260,6 +273,16 @@ const handleTaskClick = (task) => {
 
 const handleStatusChange = (task, newStatus) => {
   emit('status-change', task, newStatus)
+}
+
+const isStatusTransitionInFlight = ref(false)
+
+const onDragChange = (evt, targetColumnKey) => {
+  if (!evt?.added) return
+  const task = evt.added.element
+  if (!task) return
+  if (normalizeStatus(task.status) === targetColumnKey) return
+  emit('status-change', task, targetColumnKey)
 }
 
 const handleUploadDeliverable = (task) => {
@@ -412,6 +435,19 @@ const handleSubmitToDocument = async () => {
 
 .task-card:hover {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.task-card-ghost {
+  opacity: 0.5;
+  background: #eef5ff !important;
+  border: 1px dashed #409eff !important;
+}
+
+.task-card-dragging {
+  opacity: 0.9;
+  transform: rotate(2deg);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2) !important;
+  cursor: grabbing;
 }
 
 .task-high {

@@ -2,7 +2,8 @@
 // Output: regression coverage for seeded columns, content persistence, sanitizer, progress updates,
 //         N1 reload-loop + control-char round-trip persistence proofs,
 //         D1 admin-side task-status-dict create flow via /settings panel,
-//         and N4-E1 admin-defines-extended-field → TaskForm value persists across reload
+//         N4-E1 admin-defines-extended-field → TaskForm value persists across reload,
+//         and N5 drag-to-change-status: cross-column drop triggers PATCH /status
 // Pos: e2e/ - Playwright end-to-end coverage
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -404,5 +405,62 @@ test.describe('Task board customization core flow', () => {
 
     await editDrawer2.locator('[data-test="task-drawer-cancel"]').click()
     await expect(editDrawer2).toBeHidden()
+  })
+
+  // N5: drag-to-change-status real reality check. A card dragged from the TODO
+  // column into the "已完成" column must:
+  //   1. Trigger a PATCH /api/projects/{id}/tasks/{taskId}/status request
+  //   2. Update the total progress tag to 100% (single-task project, terminal)
+  //   3. Persist — backend list call after the drop shows status in [COMPLETED, DONE]
+  // SortableJS support in Playwright is uneven; if locator.dragTo produces a
+  // cross-column change event we trust it, otherwise the tailing backend
+  // assertion will still fail loudly and we add a skip reason rather than
+  // masking a real regression.
+  test('drag card across columns triggers status PATCH and progress update', async ({ page }) => {
+    const { session, projectId } = await bootstrapProject(page, 'N5-拖拽改状态')
+
+    await createProjectTaskFixture(session, projectId, 'N5 拖拽测试任务')
+    await page.reload()
+    await expect(page.getByText('任务看板').first()).toBeVisible()
+
+    const card = page.locator('.column-content .task-card').filter({ hasText: 'N5 拖拽测试任务' }).first()
+    await expect(card).toBeVisible({ timeout: 10000 })
+
+    // Target column: the COMPLETED column is terminal in the seeded dict; its
+    // column-content is where the card must end up.
+    const completedColumn = page.locator('.board-column').filter({ hasText: '已完成' }).locator('.column-content').first()
+    await expect(completedColumn).toBeVisible()
+
+    const progressTag = page.locator('.el-tag').filter({ hasText: /^总进度:/ }).first()
+    await expect(progressTag).toBeVisible()
+
+    // Playwright's dragTo synthesizes pointerdown/move/up events; SortableJS
+    // listens for them. Race the PATCH response so we don't block indefinitely
+    // if the drag synthesis doesn't trigger the onChange handler in this env.
+    await Promise.race([
+      Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes(`/api/projects/${projectId}/tasks/`) &&
+            response.url().endsWith('/status') &&
+            response.request().method() === 'PATCH' &&
+            response.ok(),
+          { timeout: 15000 },
+        ),
+        card.dragTo(completedColumn),
+      ]),
+      page.waitForTimeout(20000),
+    ])
+
+    // Backend source of truth — this is the real gate. If the drag didn't
+    // fire onChange, this assertion fails and we know drag-on-CI is broken.
+    const tasksPayload = await authedJson(`/api/projects/${projectId}/tasks`, session.token)
+    expect(tasksPayload?.success).toBeTruthy()
+    const persisted = (tasksPayload?.data || []).find((t) => t.name === 'N5 拖拽测试任务')
+    expect(persisted).toBeTruthy()
+    expect(String(persisted.status || '').toUpperCase()).toMatch(/COMPLETED|DONE/)
+
+    // UI progress follows the terminal transition.
+    await expect(progressTag).toContainText('100%')
   })
 })
