@@ -25,12 +25,14 @@
         ghost-class="task-card-ghost"
         drag-class="task-card-dragging"
         :data-column="column.key"
+        @mouseup="handleMouseDrop(column.key)"
         @change="(evt) => onDragChange(evt, column.key)"
       >
         <template #item="{ element: task }">
           <div
             class="task-card"
             :class="{ 'task-high': task.priority === 'high', 'task-review': column.category === 'REVIEW' }"
+            @mousedown="handleMouseDragStart(task, $event)"
             @click="handleTaskClick(task)"
           >
             <div class="task-header">
@@ -148,6 +150,7 @@ import { ElMessage } from 'element-plus'
 import draggable from 'vuedraggable'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
+import { useTaskBoardDrag } from './useTaskBoardDrag'
 
 const props = defineProps({
   tasks: {
@@ -275,15 +278,12 @@ const handleStatusChange = (task, newStatus) => {
   emit('status-change', task, newStatus)
 }
 
-const isStatusTransitionInFlight = ref(false)
-
-const onDragChange = (evt, targetColumnKey) => {
-  if (!evt?.added) return
-  const task = evt.added.element
-  if (!task) return
-  if (normalizeStatus(task.status) === targetColumnKey) return
-  emit('status-change', task, targetColumnKey)
-}
+const {
+  isStatusTransitionInFlight, onDragChange, handleMouseDragStart, handleMouseDrop,
+} = useTaskBoardDrag({
+  normalizeStatus,
+  emitStatusChange: handleStatusChange,
+})
 
 const handleUploadDeliverable = (task) => {
   currentTask.value = task

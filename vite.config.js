@@ -34,7 +34,7 @@ export default defineConfig({
           if (id.includes('echarts')) {
             return 'echarts'
           }
-          if (id.includes('vue-router') || id.includes('/vue/') || id.includes('pinia')) {
+          if (id.includes('vue-router') || id.includes('/vue/') || id.includes('pinia') || id.includes('vuedraggable')) {
             return 'vue-vendor'
           }
           return 'vendor'

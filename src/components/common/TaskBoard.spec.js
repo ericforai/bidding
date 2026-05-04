@@ -183,6 +183,32 @@ describe('TaskBoard (drag to change status)', () => {
     expect(emitted[0]).toEqual([task, 'IN_PROGRESS'])
   })
 
+  it('emits status-change through mouse drag fallback after movement threshold', async () => {
+    const task = { id: 37, name: 'T', status: 'TODO', priority: 'medium' }
+    const wrapper = mountBoard({ projectId: '12', tasks: [task] })
+    await flushPromises()
+
+    wrapper.vm.handleMouseDragStart(task, { button: 0, clientX: 10, clientY: 10 })
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 40, clientY: 10 }))
+    wrapper.vm.handleMouseDrop('COMPLETED')
+    await flushPromises()
+
+    expect(wrapper.emitted('status-change')?.[0]).toEqual([task, 'COMPLETED'])
+  })
+
+  it('ignores mouse drop when pointer movement stays under drag threshold', async () => {
+    const task = { id: 38, name: 'T', status: 'TODO', priority: 'medium' }
+    const wrapper = mountBoard({ projectId: '12', tasks: [task] })
+    await flushPromises()
+
+    wrapper.vm.handleMouseDragStart(task, { button: 0, clientX: 10, clientY: 10 })
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 12, clientY: 12 }))
+    wrapper.vm.handleMouseDrop('COMPLETED')
+    await flushPromises()
+
+    expect(wrapper.emitted('status-change')).toBeFalsy()
+  })
+
   it('ignores same-column moves (no status-change emit)', async () => {
     const task = { id: 32, name: 'T', status: 'TODO' }
     const wrapper = mountBoard({ projectId: '12', tasks: [task] })
