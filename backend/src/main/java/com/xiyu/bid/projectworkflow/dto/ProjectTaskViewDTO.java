@@ -24,6 +24,12 @@ public class ProjectTaskViewDTO {
      * task drawer can round-trip Markdown across page reloads.
      */
     private String content;
+    /**
+     * Admin-defined extended field key/value pairs persisted to
+     * {@code tasks.extended_fields_json TEXT} (V103). Mirrors
+     * {@link com.xiyu.bid.task.dto.TaskDTO#getExtendedFields()} so TaskForm
+     * can prefill custom field values when reopening a task post-reload.
+     */
     private Map<String, Object> extendedFields;
     private Long assigneeId;
     private String assigneeDeptCode;

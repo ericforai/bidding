@@ -30,6 +30,11 @@ public class ProjectTaskCreateRequest {
 
     private String content;
 
+    /**
+     * Admin-defined extended field key/value pairs. Persisted as JSON to
+     * {@code tasks.extended_fields_json TEXT} (V103). Schema lives in
+     * {@code task_extended_field}.
+     */
     private Map<String, Object> extendedFields;
 
     private Long assigneeId;
