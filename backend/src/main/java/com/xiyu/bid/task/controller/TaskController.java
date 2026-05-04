@@ -6,10 +6,13 @@ package com.xiyu.bid.task.controller;
 
 import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.task.dto.TaskActivityDTO;
 import com.xiyu.bid.task.dto.TaskAssignmentCandidateDTO;
 import com.xiyu.bid.task.dto.TaskAssignmentRequest;
+import com.xiyu.bid.task.dto.TaskCommentCreateRequest;
 import com.xiyu.bid.task.dto.TaskDTO;
 import com.xiyu.bid.task.dto.TeamTaskWorkloadDTO;
+import com.xiyu.bid.task.service.TaskActivityService;
 import com.xiyu.bid.task.service.TaskService;
 import com.xiyu.bid.util.InputSanitizer;
 import jakarta.validation.Valid;
@@ -41,6 +44,7 @@ import java.util.List;
 public class TaskController {
 
     private final TaskService taskService;
+    private final TaskActivityService taskActivityService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
@@ -70,9 +74,12 @@ public class TaskController {
     @PutMapping("/{id:\\d+}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "UPDATE", entityType = "Task", description = "更新任务")
-    public ResponseEntity<ApiResponse<TaskDTO>> updateTask(@PathVariable Long id, @Valid @RequestBody TaskDTO taskDTO) {
+    public ResponseEntity<ApiResponse<TaskDTO>> updateTask(
+            @PathVariable Long id,
+            @Valid @RequestBody TaskDTO taskDTO,
+            @AuthenticationPrincipal UserDetails userDetails) {
         sanitizeTaskDTO(taskDTO);
-        TaskDTO updatedTask = taskService.updateTask(id, taskDTO);
+        TaskDTO updatedTask = taskService.updateTask(id, taskDTO, currentUsername(userDetails));
         return ResponseEntity.ok(ApiResponse.success("Task updated successfully", updatedTask));
     }
 
@@ -105,9 +112,35 @@ public class TaskController {
     @PatchMapping("/{id:\\d+}/status")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @Auditable(action = "UPDATE", entityType = "Task", description = "更新任务状态")
-    public ResponseEntity<ApiResponse<TaskDTO>> updateTaskStatus(@PathVariable Long id, @RequestBody com.xiyu.bid.entity.Task.Status status) {
-        TaskDTO updatedTask = taskService.updateTaskStatus(id, status);
+    public ResponseEntity<ApiResponse<TaskDTO>> updateTaskStatus(
+            @PathVariable Long id,
+            @RequestBody com.xiyu.bid.entity.Task.Status status,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        TaskDTO updatedTask = taskService.updateTaskStatus(id, status, currentUsername(userDetails));
         return ResponseEntity.ok(ApiResponse.success("Task status updated successfully", updatedTask));
+    }
+
+    @GetMapping("/{id:\\d+}/activity")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "READ", entityType = "Task", description = "获取任务动态")
+    public ResponseEntity<ApiResponse<List<TaskActivityDTO>>> getTaskActivity(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("Task activity retrieved successfully",
+                taskActivityService.getActivity(id)));
+    }
+
+    @PostMapping("/{id:\\d+}/comments")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Auditable(action = "CREATE", entityType = "TaskComment", description = "创建任务评论")
+    public ResponseEntity<ApiResponse<TaskActivityDTO>> createTaskComment(
+            @PathVariable Long id,
+            @Valid @RequestBody TaskCommentCreateRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        TaskCommentCreateRequest sanitized = new TaskCommentCreateRequest(
+                InputSanitizer.sanitizeMarkdown(request.content(), MAX_COMMENT_CHARS)
+        );
+        TaskActivityDTO created = taskActivityService.createComment(id, sanitized, currentUsername(userDetails));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Task comment created successfully", created));
     }
 
     @PatchMapping("/{id:\\d+}/assign")
@@ -168,6 +201,7 @@ public class TaskController {
      * 前端亦是友好、可在编辑器中强制提示的上限。</p>
      */
     private static final int MAX_CONTENT_CHARS = 20_000;
+    private static final int MAX_COMMENT_CHARS = 5_000;
 
     private void sanitizeTaskDTO(TaskDTO dto) {
         if (dto.getTitle() != null) dto.setTitle(InputSanitizer.sanitizeString(dto.getTitle(), 200));
@@ -177,5 +211,9 @@ public class TaskController {
         // 使用 sanitizeMarkdown 以保留 \t \n \r（普通 sanitizeString 会剥离所有 0x00-0x1F
         // 控制字符并 trim，会破坏标题、列表、代码块等 Markdown 结构）。
         if (dto.getContent() != null) dto.setContent(InputSanitizer.sanitizeMarkdown(dto.getContent(), MAX_CONTENT_CHARS));
+    }
+
+    private String currentUsername(UserDetails userDetails) {
+        return userDetails == null ? null : userDetails.getUsername();
     }
 }

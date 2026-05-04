@@ -88,9 +88,10 @@ public class ProjectWorkflowController {
     public ResponseEntity<ApiResponse<ProjectTaskViewDTO>> updateProjectTaskStatus(
             @PathVariable Long projectId,
             @PathVariable Long taskId,
-            @Valid @RequestBody ProjectTaskStatusUpdateRequest request) {
+            @Valid @RequestBody ProjectTaskStatusUpdateRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(ApiResponse.success("Project task status updated successfully",
-                projectWorkflowService.updateProjectTaskStatus(projectId, taskId, request)));
+                projectWorkflowService.updateProjectTaskStatus(projectId, taskId, request, currentUsername(userDetails))));
     }
 
     @GetMapping("/reminders")

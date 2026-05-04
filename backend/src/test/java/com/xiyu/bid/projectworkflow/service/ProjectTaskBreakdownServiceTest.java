@@ -14,6 +14,7 @@ import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TaskRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.service.ProjectAccessScopeService;
+import com.xiyu.bid.task.service.TaskHistoryRecorder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,7 +69,8 @@ class ProjectTaskBreakdownServiceTest {
                 guardService,
                 taskRepository,
                 userRepository,
-                new com.fasterxml.jackson.databind.ObjectMapper()
+                new com.fasterxml.jackson.databind.ObjectMapper(),
+                mock(TaskHistoryRecorder.class)
         );
         ProjectTaskBreakdownSourceReader sourceReader = new ProjectTaskBreakdownSourceReader(
                 requirementSourceGateway,

@@ -106,6 +106,15 @@ const globalStubs = {
   ElDivider: {
     template: '<div class="el-divider-stub"><slot /></div>',
   },
+  ElTabs: {
+    props: ['modelValue'],
+    emits: ['update:modelValue'],
+    template: '<div class="el-tabs-stub"><slot /></div>',
+  },
+  ElTabPane: {
+    props: ['label', 'name'],
+    template: '<section class="el-tab-pane-stub"><h3>{{ label }}</h3><slot /></section>',
+  },
   ElButton: {
     template: '<button type="button"><slot /></button>',
   },
@@ -114,6 +123,11 @@ const globalStubs = {
     props: ['fileList', 'autoUpload', 'disabled', 'accept'],
     emits: ['change', 'remove'],
     template: '<div class="el-upload-stub" data-test="task-attachment-upload"><slot /><slot name="tip" /></div>',
+  },
+  TaskActivityPanel: {
+    name: 'TaskActivityPanel',
+    props: ['taskId', 'readonly'],
+    template: '<div class="task-activity-panel-stub">动态 {{ taskId }}</div>',
   },
 }
 
@@ -318,6 +332,19 @@ describe('TaskForm', () => {
     await flushPromises()
     const form = wrapper.findComponent({ name: 'ElForm' })
     expect(form.props('disabled')).toBe(true)
+  })
+
+  it('renders activity tab for existing tasks', async () => {
+    const wrapper = mount(TaskForm, {
+      props: { mode: 'edit', modelValue: { id: 99, name: 'X' } },
+      global: { stubs: globalStubs },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('动态')
+    const panel = wrapper.findComponent({ name: 'TaskActivityPanel' })
+    expect(panel.exists()).toBe(true)
+    expect(panel.props('taskId')).toBe(99)
   })
 
   it('does not render extended fields section when store has none', async () => {

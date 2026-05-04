@@ -4,9 +4,6 @@
 // 维护声明: 仅维护任务 CRUD 与项目数据权限编排；人员分配和团队工作量留在 TaskAssignmentSupport。
 package com.xiyu.bid.task.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.exception.ResourceNotFoundException;
@@ -23,31 +20,29 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
 @Service
 public class TaskService {
 
-    private static final TypeReference<Map<String, Object>> EXTENDED_FIELDS_TYPE =
-            new TypeReference<Map<String, Object>>() {};
-
     private final TaskRepository taskRepository;
     private final ProjectAccessScopeService projectAccessScopeService;
     private final TaskAssignmentSupport assignmentSupport;
-    private final ObjectMapper objectMapper;
+    private final TaskDtoMapper taskDtoMapper;
+    private final TaskHistoryRecorder taskHistoryRecorder;
 
     public TaskService(TaskRepository taskRepository,
                        ProjectAccessScopeService projectAccessScopeService,
                        TaskAssignmentSupport assignmentSupport,
-                       ObjectMapper objectMapper) {
+                       TaskDtoMapper taskDtoMapper,
+                       TaskHistoryRecorder taskHistoryRecorder) {
         this.taskRepository = taskRepository;
         this.projectAccessScopeService = projectAccessScopeService;
         this.assignmentSupport = assignmentSupport;
-        this.objectMapper = objectMapper;
+        this.taskDtoMapper = taskDtoMapper;
+        this.taskHistoryRecorder = taskHistoryRecorder;
     }
 
     @Transactional
@@ -71,16 +66,16 @@ public class TaskService {
                 .status(taskDTO.getStatus() != null ? taskDTO.getStatus() : Task.Status.TODO)
                 .priority(taskDTO.getPriority() != null ? taskDTO.getPriority() : Task.Priority.MEDIUM)
                 .dueDate(taskDTO.getDueDate())
-                .extendedFieldsJson(serializeExtendedFields(taskDTO.getExtendedFields()))
+                .extendedFieldsJson(taskDtoMapper.serializeExtendedFields(taskDTO.getExtendedFields()))
                 .build());
         log.info("Task created successfully with id: {}", savedTask.getId());
-        return toDTO(savedTask);
+        return taskDtoMapper.toDTO(savedTask);
     }
 
     @Transactional(readOnly = true)
     public List<TaskDTO> getAllTasks() {
         log.debug("Fetching all tasks");
-        return toDTOs(visibleTasks(taskRepository.findAll()));
+        return taskDtoMapper.toDTOs(visibleTasks(taskRepository.findAll()));
     }
 
     @Transactional(readOnly = true)
@@ -88,14 +83,20 @@ public class TaskService {
         log.debug("Fetching task by id: {}", id);
         Task task = findTask(id);
         assertCanAccessProject(task.getProjectId());
-        return toDTO(task);
+        return taskDtoMapper.toDTO(task);
     }
 
     @Transactional
     public TaskDTO updateTask(Long id, TaskDTO taskDTO) {
+        return updateTask(id, taskDTO, null);
+    }
+
+    @Transactional
+    public TaskDTO updateTask(Long id, TaskDTO taskDTO, String actorUsername) {
         log.info("Updating task: {}", id);
         Task task = findTask(id);
         assertCanAccessProject(task.getProjectId());
+        Task before = TaskSnapshots.copy(task);
         if (taskDTO.getTitle() != null) {
             task.setTitle(taskDTO.getTitle());
         }
@@ -118,9 +119,11 @@ public class TaskService {
             task.setDueDate(taskDTO.getDueDate());
         }
         if (taskDTO.getExtendedFields() != null) {
-            task.setExtendedFieldsJson(serializeExtendedFields(taskDTO.getExtendedFields()));
+            task.setExtendedFieldsJson(taskDtoMapper.serializeExtendedFields(taskDTO.getExtendedFields()));
         }
-        return toDTO(taskRepository.save(task));
+        Task saved = taskRepository.save(task);
+        taskHistoryRecorder.recordUpdate(before, saved, actorUsername);
+        return taskDtoMapper.toDTO(saved);
     }
 
     @Transactional
@@ -136,13 +139,13 @@ public class TaskService {
     public List<TaskDTO> getTasksByProjectId(Long projectId) {
         log.debug("Fetching tasks for project: {}", projectId);
         assertCanAccessProject(projectId);
-        return toDTOs(taskRepository.findByProjectId(projectId));
+        return taskDtoMapper.toDTOs(taskRepository.findByProjectId(projectId));
     }
 
     @Transactional(readOnly = true)
     public List<TaskDTO> getTasksByAssigneeId(Long assigneeId) {
         log.debug("Fetching tasks for assignee: {}", assigneeId);
-        return toDTOs(visibleTasks(taskRepository.findByAssigneeId(assigneeId)));
+        return taskDtoMapper.toDTOs(visibleTasks(taskRepository.findByAssigneeId(assigneeId)));
     }
 
     @Transactional(readOnly = true)
@@ -159,16 +162,24 @@ public class TaskService {
     @Transactional(readOnly = true)
     public List<TaskDTO> getTasksByStatus(Task.Status status) {
         log.debug("Fetching tasks with status: {}", status);
-        return toDTOs(visibleTasks(taskRepository.findByStatus(status)));
+        return taskDtoMapper.toDTOs(visibleTasks(taskRepository.findByStatus(status)));
     }
 
     @Transactional
     public TaskDTO updateTaskStatus(Long id, Task.Status status) {
+        return updateTaskStatus(id, status, null);
+    }
+
+    @Transactional
+    public TaskDTO updateTaskStatus(Long id, Task.Status status, String actorUsername) {
         log.info("Updating task {} status to: {}", id, status);
         Task task = findTask(id);
         assertCanAccessProject(task.getProjectId());
+        Task before = TaskSnapshots.copy(task);
         task.setStatus(status);
-        return toDTO(taskRepository.save(task));
+        Task saved = taskRepository.save(task);
+        taskHistoryRecorder.recordUpdate(before, saved, actorUsername);
+        return taskDtoMapper.toDTO(saved);
     }
 
     @Transactional
@@ -177,8 +188,11 @@ public class TaskService {
         Task task = findTask(id);
         assertCanAccessProject(task.getProjectId());
         User currentUser = assignmentSupport.resolveEnabledUserByUsername(username);
+        Task before = TaskSnapshots.copy(task);
         assignmentSupport.applyAssignment(task, assignmentSupport.resolveAssignmentSnapshot(request, currentUser));
-        return toDTO(taskRepository.save(task));
+        Task saved = taskRepository.save(task);
+        taskHistoryRecorder.recordUpdate(before, saved, username);
+        return taskDtoMapper.toDTO(saved);
     }
 
     @Transactional(readOnly = true)
@@ -194,13 +208,13 @@ public class TaskService {
     @Transactional(readOnly = true)
     public List<TaskDTO> getUpcomingTasks(LocalDateTime beforeDate) {
         log.debug("Fetching tasks due before: {}", beforeDate);
-        return toDTOs(visibleTasks(taskRepository.findByDueDateBefore(beforeDate)));
+        return taskDtoMapper.toDTOs(visibleTasks(taskRepository.findByDueDateBefore(beforeDate)));
     }
 
     @Transactional(readOnly = true)
     public List<TaskDTO> getOverdueTasks() {
         log.debug("Fetching overdue tasks");
-        return toDTOs(visibleTasks(taskRepository.findByDueDateBeforeAndStatusNot(LocalDateTime.now(), Task.Status.COMPLETED)));
+        return taskDtoMapper.toDTOs(visibleTasks(taskRepository.findByDueDateBeforeAndStatusNot(LocalDateTime.now(), Task.Status.COMPLETED)));
     }
 
     public Long countProjectTasks(Long projectId) {
@@ -232,55 +246,6 @@ public class TaskService {
         }
     }
 
-    private List<TaskDTO> toDTOs(List<Task> tasks) {
-        return tasks.stream().map(this::toDTO).toList();
-    }
-
-    private TaskDTO toDTO(Task task) {
-        return TaskDTO.builder()
-                .id(task.getId())
-                .projectId(task.getProjectId())
-                .title(task.getTitle())
-                .description(task.getDescription())
-                .content(task.getContent())
-                .assigneeId(task.getAssigneeId())
-                .assigneeDeptCode(task.getAssigneeDeptCode())
-                .assigneeDeptName(task.getAssigneeDeptName())
-                .assigneeRoleCode(task.getAssigneeRoleCode())
-                .assigneeRoleName(task.getAssigneeRoleName())
-                .status(task.getStatus())
-                .priority(task.getPriority())
-                .dueDate(task.getDueDate())
-                .createdAt(task.getCreatedAt())
-                .updatedAt(task.getUpdatedAt())
-                .extendedFields(deserializeExtendedFields(task))
-                .build();
-    }
-
-    private String serializeExtendedFields(Map<String, Object> extendedFields) {
-        if (extendedFields == null) {
-            return null;
-        }
-        try {
-            return objectMapper.writeValueAsString(extendedFields);
-        } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("扩展字段序列化失败: " + e.getMessage(), e);
-        }
-    }
-
-    private Map<String, Object> deserializeExtendedFields(Task task) {
-        String json = task.getExtendedFieldsJson();
-        if (json == null || json.isBlank()) {
-            return Collections.emptyMap();
-        }
-        try {
-            return objectMapper.readValue(json, EXTENDED_FIELDS_TYPE);
-        } catch (JsonProcessingException e) {
-            log.warn("Failed to parse extendedFieldsJson for task {}: {}", task.getId(), e.getMessage());
-            return Collections.emptyMap();
-        }
-    }
-
     private static TaskAssignmentRequest assignmentRequestFrom(TaskDTO taskDTO) {
         return TaskAssignmentRequest.builder()
                 .assigneeId(taskDTO.getAssigneeId())
@@ -300,4 +265,5 @@ public class TaskService {
     private static boolean hasText(String value) {
         return value != null && !value.isBlank();
     }
+
 }

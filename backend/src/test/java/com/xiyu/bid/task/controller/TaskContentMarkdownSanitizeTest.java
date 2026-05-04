@@ -4,6 +4,7 @@ import com.xiyu.bid.auth.JwtAuthenticationFilter;
 import com.xiyu.bid.config.RateLimitFilter;
 import com.xiyu.bid.config.SecurityConfig;
 import com.xiyu.bid.task.dto.TaskDTO;
+import com.xiyu.bid.task.service.TaskActivityService;
 import com.xiyu.bid.task.service.TaskService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -45,6 +46,9 @@ class TaskContentMarkdownSanitizeTest {
 
     @MockBean
     private TaskService taskService;
+
+    @MockBean
+    private TaskActivityService taskActivityService;
 
     @Test
     @WithMockUser(roles = "STAFF")

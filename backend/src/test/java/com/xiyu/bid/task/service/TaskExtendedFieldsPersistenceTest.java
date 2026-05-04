@@ -49,6 +49,9 @@ class TaskExtendedFieldsPersistenceTest {
     @Mock
     private RoleProfileService roleProfileService;
 
+    @Mock
+    private TaskHistoryRecorder taskHistoryRecorder;
+
     private TaskService taskService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -61,7 +64,13 @@ class TaskExtendedFieldsPersistenceTest {
                 projectAccessScopeService,
                 roleProfileService
         );
-        taskService = new TaskService(taskRepository, projectAccessScopeService, assignmentSupport, objectMapper);
+        taskService = new TaskService(
+                taskRepository,
+                projectAccessScopeService,
+                assignmentSupport,
+                new TaskDtoMapper(objectMapper),
+                taskHistoryRecorder
+        );
     }
 
     @Test
