@@ -69,6 +69,12 @@ const globalStubs = {
   },
   ElOption: { props: ['label', 'value'], template: '<option :value="value">{{ label }}</option>' },
   ElUpload: { template: '<div class="el-upload-stub"><slot /><slot name="tip" /></div>' },
+  draggable: {
+    name: 'draggable',
+    props: ['modelValue', 'group', 'itemKey', 'disabled'],
+    emits: ['change', 'update:modelValue'],
+    template: '<div class="vuedraggable-stub"><template v-for="(item, idx) in modelValue" :key="itemKey ? itemKey(item) : idx"><slot name="item" :element="item" :index="idx" /></template><slot name="footer" /></div>',
+  },
 }
 
 function mountBoard(props = {}) {
@@ -155,6 +161,61 @@ describe('TaskBoard (dynamic columns)', () => {
       uploaderName: '测试用户',
     }))
     expect(wrapper.emitted('add-deliverable')?.[0]).toEqual([31, saved])
+  })
+})
+
+describe('TaskBoard (drag to change status)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    loadTaskStatusesMock.mockClear()
+  })
+
+  it('emits status-change with target column code when task is dropped in another column', async () => {
+    const task = { id: 31, name: 'T', status: 'TODO', priority: 'medium' }
+    const wrapper = mountBoard({ projectId: '12', tasks: [task] })
+    await flushPromises()
+
+    wrapper.vm.onDragChange({ added: { element: task, newIndex: 0 } }, 'IN_PROGRESS')
+    await flushPromises()
+
+    const emitted = wrapper.emitted('status-change')
+    expect(emitted).toBeTruthy()
+    expect(emitted[0]).toEqual([task, 'IN_PROGRESS'])
+  })
+
+  it('ignores same-column moves (no status-change emit)', async () => {
+    const task = { id: 32, name: 'T', status: 'TODO' }
+    const wrapper = mountBoard({ projectId: '12', tasks: [task] })
+    await flushPromises()
+
+    wrapper.vm.onDragChange({ added: { element: task, newIndex: 0 } }, 'TODO')
+    await flushPromises()
+
+    expect(wrapper.emitted('status-change')).toBeFalsy()
+  })
+
+  it('ignores non-added drag events (moved/removed)', async () => {
+    const task = { id: 33, name: 'T', status: 'TODO' }
+    const wrapper = mountBoard({ projectId: '12', tasks: [task] })
+    await flushPromises()
+
+    wrapper.vm.onDragChange({ moved: { element: task } }, 'IN_PROGRESS')
+    wrapper.vm.onDragChange({ removed: { element: task } }, 'IN_PROGRESS')
+    await flushPromises()
+
+    expect(wrapper.emitted('status-change')).toBeFalsy()
+  })
+
+  it('normalizes legacy lowercase status on source task before comparing to target column', async () => {
+    const legacyLower = 'TODO'.toLowerCase()
+    const task = { id: 34, name: 'T', status: legacyLower }
+    const wrapper = mountBoard({ projectId: '12', tasks: [task] })
+    await flushPromises()
+
+    wrapper.vm.onDragChange({ added: { element: task, newIndex: 0 } }, 'TODO')
+    await flushPromises()
+
+    expect(wrapper.emitted('status-change')).toBeFalsy()
   })
 })
 
