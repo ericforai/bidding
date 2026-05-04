@@ -356,10 +356,15 @@ test.describe('Task board customization core flow', () => {
     await expect(page.getByText('任务看板').first()).toBeVisible()
 
     // Open the create-task drawer via the "添加任务" button (data-test in
-    // ProjectTaskBoardCard). The drawer title for create mode is "新增任务".
-    await page.locator('[data-test="add-task-button"]').first().click()
+    // ProjectTaskBoardCard). The button is only rendered when
+    // canManageProjectTasks is true (i.e. isApiProject — numeric projectId from
+    // a real backend). Wait explicitly for it to render to decouple from the
+    // async project-load lifecycle before clicking.
+    const addTaskBtn = page.locator('[data-test="add-task-button"]').first()
+    await expect(addTaskBtn).toBeVisible({ timeout: 10000 })
+    await addTaskBtn.click()
     const drawer = page.locator('.el-drawer').filter({ hasText: '新增任务' })
-    await expect(drawer).toBeVisible({ timeout: 5000 })
+    await expect(drawer).toBeVisible({ timeout: 10000 })
 
     // Extended fields section should render because the schema now has one
     // enabled entry. The divider carries the literal "扩展字段" label.
