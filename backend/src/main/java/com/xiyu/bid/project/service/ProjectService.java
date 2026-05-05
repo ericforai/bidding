@@ -77,6 +77,8 @@ public class ProjectService {
     public ProjectDTO createProject(ProjectDTO projectDTO) {
         log.debug("Creating new project: {}", projectDTO.getName());
         ProjectDTO normalized = validateAndNormalizeProjectDTO(projectDTO, true);
+        Project existingProject = ExistingTenderProjectSelector.selectAccessible(projectRepository, projectAccessScopeService, normalized.getTenderId());
+        if (existingProject != null) return convertToDTO(existingProject);
         Project project = convertToEntity(normalized);
         Project savedProject = projectRepository.save(project);
         log.info("Created project with id: {}", savedProject.getId());
@@ -379,14 +381,12 @@ public class ProjectService {
     private long countProjectsByStatus(List<Project> projects, Project.Status status) {
         return projects.stream().filter(project -> project.getStatus() == status).count();
     }
-
     private List<ProjectDTO> mergeDemoProjectsIfNeeded(List<ProjectDTO> projects) {
         if (!demoModeService.isEnabled()) {
             return projects;
         }
         return demoFusionService.mergeByKey(projects, demoDataProvider.getDemoProjects(), ProjectDTO::getId);
     }
-
     private boolean isDemoEntityId(Long id) {
         return demoModeService.isEnabled() && id != null && id < 0;
     }
