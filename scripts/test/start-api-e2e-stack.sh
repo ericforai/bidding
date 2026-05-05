@@ -6,6 +6,18 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+# Provide test-only placeholder values for secrets that rehearsal-env.sh
+# now requires via ${VAR:?...}. The e2e stack uses an in-memory backend
+# (`--spring.flyway.enabled=false --ai.provider=mock`) so these placeholders
+# are never used to access real systems; CI may still override any of them.
+export MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-e2e-test-mysql-root}"
+export PLATFORM_ENCRYPTION_KEY="${PLATFORM_ENCRYPTION_KEY:-e2e-test-platform-encryption-key-32}"
+export UAT_TEST_PASSWORD="${UAT_TEST_PASSWORD:-e2e-test-uat-pass}"
+export ADMIN_PASSWORD="${ADMIN_PASSWORD:-e2e-test-admin-pass}"
+export DB_PASSWORD="${DB_PASSWORD:-e2e-test-db-pass}"
+export JWT_SECRET="${JWT_SECRET:-e2e-test-jwt-secret-32-chars-padding-min}"
+
 source "$ROOT_DIR/scripts/release/rehearsal-env.sh"
 
 MARKER_FILE="$STATE_DIR/playwright-api-stack.started"

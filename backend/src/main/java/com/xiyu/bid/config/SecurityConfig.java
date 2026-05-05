@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -56,6 +57,7 @@ public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RateLimitFilter rateLimitFilter;
+    private final Environment environment;
 
     @Value("${cors.allowed-origins:http://localhost:1314,http://127.0.0.1:1314,http://localhost:5173,http://localhost:5174,http://localhost:3000}")
     private String[] corsAllowedOrigins;
@@ -76,8 +78,10 @@ public class SecurityConfig {
             "/api/integrations/oa/weaver/callback",
             "/actuator/health",
             "/actuator/health/**",
-            "/actuator/info",
-            "/error",
+            "/error"
+    };
+
+    private static final String[] DEV_ONLY_WHITE_LIST = {
             "/h2-console/**",
             "/v3/api-docs",
             "/v3/api-docs/**",
@@ -86,20 +90,57 @@ public class SecurityConfig {
             "/swagger-ui/**"
     };
 
+    /**
+     * Decides whether dev-only tooling endpoints (h2-console, swagger, api-docs) are
+     * exposed anonymously. Mirrors the prod-like profile taxonomy enforced by the
+     * dev-tooling shell guards (e.g. {@code backend/start.sh},
+     * {@code scripts/dev-services.sh}): prod, production,
+     * staging, stg, release, live, uat, canary all count as prod-like and disable
+     * the dev allowlist regardless of any other profile (including dev/e2e).
+     *
+     * <p>Extracted as a static helper so the gate can be unit-tested without
+     * booting a {@link SecurityFilterChain}.
+     */
+    static boolean shouldAllowDevTooling(String[] activeProfiles) {
+        if (activeProfiles == null) {
+            return false;
+        }
+        java.util.List<String> profiles = Arrays.asList(activeProfiles);
+        boolean isProdLike = profiles.stream().anyMatch(p -> {
+            if (p == null) {
+                return false;
+            }
+            String v = p.toLowerCase();
+            return v.equals("prod") || v.equals("production")
+                    || v.equals("staging") || v.equals("stg")
+                    || v.equals("release") || v.equals("live")
+                    || v.equals("uat") || v.equals("canary");
+        });
+        if (isProdLike) {
+            return false;
+        }
+        return profiles.contains("dev") || profiles.contains("e2e");
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        boolean devToolingAllowed = shouldAllowDevTooling(environment.getActiveProfiles());
+
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(WHITE_LIST_URL).permitAll()
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/manager/**").hasAnyRole("ADMIN", "MANAGER")
-                        .anyRequest().authenticated()
-                )
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers(WHITE_LIST_URL).permitAll();
+                    if (devToolingAllowed) {
+                        auth.requestMatchers(DEV_ONLY_WHITE_LIST).permitAll();
+                    }
+                    auth.requestMatchers("/api/admin/**").hasRole("ADMIN")
+                            .requestMatchers("/api/manager/**").hasAnyRole("ADMIN", "MANAGER")
+                            .anyRequest().authenticated();
+                })
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

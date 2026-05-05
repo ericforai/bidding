@@ -5,6 +5,51 @@
 # 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 set -euo pipefail
 
+# --- DEV-ONLY GUARD ---------------------------------------------
+# This script bakes in convenience defaults for JWT/DB credentials.
+# The guard fires only for subcommands that bring up containers / propagate
+# those secrets to running processes (up/dev). Read-only / teardown
+# subcommands (status/logs/stop) load the variable defaults harmlessly
+# without forwarding them, so they remain safe to run without an opt-in.
+_env_lower() { echo "${1:-}" | tr '[:upper:]' '[:lower:]'; }
+_is_nonprod_value() {
+  case "$(_env_lower "$1")" in
+    *prod*|*production*|*staging*|*stg*|*release*|*live*|*uat*|*canary*) return 1;;
+    *) return 0;;
+  esac
+}
+_dev_guard_subcommand_requires_opt_in() {
+  # No-args defaults to `up` per the dispatcher (line further below); treat
+  # that as a mutating invocation so the empty-args path can't bypass the
+  # guard. Any positional arg matching a mutating subcommand also fires it.
+  if [[ $# -eq 0 ]]; then
+    return 0
+  fi
+  for a in "$@"; do
+    case "$a" in
+      up|dev|env)
+        return 0
+        ;;
+    esac
+  done
+  return 1
+}
+if _dev_guard_subcommand_requires_opt_in "$@"; then
+  _all_clean=0
+  for v in "${SPRING_PROFILES_ACTIVE:-}" "${XIYU_ENV:-}" "${NODE_ENV:-}" "${ENV:-}" "${ENVIRONMENT:-}"; do
+    if ! _is_nonprod_value "$v"; then
+      _all_clean=1
+    fi
+  done
+  if [[ "$_all_clean" == "1" ]] || [[ "${XIYU_DEV_CONFIRMED:-}" != "1" ]]; then
+    echo "ERROR: $(basename "$0") is dev-only tooling and must not run in production-adjacent environments." >&2
+    echo "       Detected: SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-} XIYU_ENV=${XIYU_ENV:-} NODE_ENV=${NODE_ENV:-} ENV=${ENV:-} ENVIRONMENT=${ENVIRONMENT:-}" >&2
+    echo "       To run locally, set XIYU_DEV_CONFIRMED=1 and ensure no prod-like env vars are set." >&2
+    exit 1
+  fi
+fi
+# ----------------------------------------------------------------
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUNTIME_DIR="$ROOT_DIR/.runtime/local-docker"
 ENV_FILE="$RUNTIME_DIR/local-docker.env"

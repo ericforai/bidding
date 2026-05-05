@@ -22,13 +22,14 @@ class ActuatorSecurityIntegrationTest {
     private MockMvc mockMvc;
 
     @Test
-    void healthAndInfoRemainPublic() throws Exception {
+    void healthRemainsPublicAndInfoRequiresAuth() throws Exception {
         mockMvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.valueOf("application/vnd.spring-boot.actuator.v3+json")));
 
+        // /actuator/info must NOT be anonymously accessible (defense-in-depth against prod over-exposure).
         mockMvc.perform(get("/actuator/info"))
-                .andExpect(status().isOk());
+                .andExpect(status().is4xxClientError());
     }
 
     @Test

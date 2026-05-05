@@ -8,6 +8,17 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ENV_SCRIPT="$ROOT_DIR/scripts/release/rehearsal-env.sh"
 
+# Provide placeholder secrets so rehearsal-env.sh fail-fast guards (`${VAR:?...}`)
+# do not abort the contract test. The contract test exercises non-secret defaults
+# (ports, hostnames, container names) — secret values are unexercised here, but
+# must be present so sourcing the script succeeds.
+export DB_PASSWORD="${DB_PASSWORD:-rehearsal-test-db-password}"
+export MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-rehearsal-test-root-password}"
+export JWT_SECRET="${JWT_SECRET:-rehearsal-test-jwt-secret-32-chars-minimum-padding}"
+export PLATFORM_ENCRYPTION_KEY="${PLATFORM_ENCRYPTION_KEY:-rehearsal-test-platform-key-32}"
+export UAT_TEST_PASSWORD="${UAT_TEST_PASSWORD:-rehearsal-test-uat}"
+export ADMIN_PASSWORD="${ADMIN_PASSWORD:-rehearsal-test-admin}"
+
 set +e
 PORT_ERR_OUTPUT="$(env REDIS_PORT=70000 bash -lc "source '$ENV_SCRIPT'" 2>&1)"
 PORT_EXIT=$?
