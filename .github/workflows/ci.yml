@@ -42,7 +42,7 @@ jobs:
             base="${PUSH_BEFORE_SHA:-}"
             if [[ -z "$base" || "$base" == "0000000000000000000000000000000000000000" ]]; then
               if [[ -n "${DEFAULT_BRANCH:-}" ]]; then
-                git fetch --no-tags --depth=1 origin "${DEFAULT_BRANCH}"
+                git fetch --no-tags origin "${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
                 base="$(git merge-base HEAD "origin/${DEFAULT_BRANCH}")"
               else
                 base="$(git rev-parse HEAD~1)"
@@ -87,7 +87,7 @@ jobs:
             base="${PUSH_BEFORE_SHA:-}"
             if [[ -z "$base" || "$base" == "0000000000000000000000000000000000000000" ]]; then
               if [[ -n "${DEFAULT_BRANCH:-}" ]]; then
-                git fetch --no-tags --depth=1 origin "${DEFAULT_BRANCH}"
+                git fetch --no-tags origin "${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
                 base="$(git merge-base HEAD "origin/${DEFAULT_BRANCH}")"
               else
                 base="$(git rev-parse HEAD~1)"
