@@ -19,6 +19,23 @@ function normalizeTags(tags) {
   return []
 }
 
+function generateIdempotencyKey() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `idem-${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+function withIdempotencyKey(config = {}) {
+  return {
+    ...config,
+    headers: {
+      ...(config.headers || {}),
+      'Idempotency-Key': generateIdempotencyKey()
+    }
+  }
+}
+
 function normalizeTenderRecord(tender = {}) {
   return {
     ...tender,
@@ -55,7 +72,7 @@ export const tendersApi = {
   },
 
   async create(data) {
-    return httpClient.post('/api/tenders', data)
+    return httpClient.post('/api/tenders', data, withIdempotencyKey())
   },
 
   async parseTenderIntakeDocument(file, { entityId = 'manual-tender' } = {}) {

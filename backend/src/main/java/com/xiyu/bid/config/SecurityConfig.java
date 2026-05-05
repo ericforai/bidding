@@ -6,6 +6,7 @@ package com.xiyu.bid.config;
 
 import com.xiyu.bid.auth.JwtAuthenticationFilter;
 import com.xiyu.bid.auth.UserDetailsServiceImpl;
+import com.xiyu.bid.idempotency.IdempotencyFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -57,6 +58,7 @@ public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RateLimitFilter rateLimitFilter;
+    private final IdempotencyFilter idempotencyFilter;
     private final Environment environment;
 
     @Value("${cors.allowed-origins:http://localhost:1314,http://127.0.0.1:1314,http://localhost:5173,http://localhost:5174,http://localhost:3000}")
@@ -143,7 +145,8 @@ public class SecurityConfig {
                 })
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(idempotencyFilter, JwtAuthenticationFilter.class);
 
         // H2 Console
         http.headers(headers -> headers
