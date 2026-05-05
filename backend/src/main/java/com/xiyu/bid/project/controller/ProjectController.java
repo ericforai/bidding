@@ -11,11 +11,14 @@ import com.xiyu.bid.project.service.ProjectService;
 import com.xiyu.bid.util.InputSanitizer;
 import com.xiyu.bid.annotation.DataScope;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,6 +35,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/projects")
 @RequiredArgsConstructor
+@Validated
 @Slf4j
 public class ProjectController {
 
@@ -40,9 +44,17 @@ public class ProjectController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     @DataScope(deptAlias = "department_id", userAlias = "manager_id")
-    public ResponseEntity<ApiResponse<List<ProjectDTO>>> getAllProjects() {
-        log.info("GET /api/projects - Fetching all projects");
+    public ResponseEntity<ApiResponse<List<ProjectDTO>>> getAllProjects(
+            @RequestParam(required = false) @Min(value = 0, message = "page 必须 >= 0") @Max(value = 100000, message = "page 超出上限") Integer page,
+            @RequestParam(required = false) @Min(value = 1, message = "size 必须 >= 1") @Max(value = 200, message = "size 必须 <= 200") Integer size) {
+        log.info("GET /api/projects - Fetching all projects (page={}, size={})", page, size);
         List<ProjectDTO> projects = projectService.getAllProjects();
+        if (size != null) {
+            long fromLong = (page == null ? 0L : (long) page) * (long) size;
+            int fromIndex = (int) Math.min(fromLong, (long) projects.size());
+            int toIndex = Math.min(fromIndex + size, projects.size());
+            projects = projects.subList(fromIndex, toIndex);
+        }
         return ResponseEntity.ok(ApiResponse.success("Successfully retrieved projects", projects));
     }
 

@@ -145,10 +145,6 @@ public class OpenAiBidAgentConfigurationResolver {
             if (propertyValue.isPresent()) {
                 return propertyValue;
             }
-            Optional<String> envValue = usableValue(System.getenv(keyName));
-            if (envValue.isPresent()) {
-                return envValue;
-            }
         }
         return Optional.empty();
     }

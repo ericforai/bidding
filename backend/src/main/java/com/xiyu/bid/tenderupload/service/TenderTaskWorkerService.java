@@ -35,7 +35,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 @Service
-@ConditionalOnProperty(prefix = "app.tender-processing", name = "worker-enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "app.tender-processing", name = "worker-enabled", havingValue = "true", matchIfMissing = false)
 @RequiredArgsConstructor
 @Slf4j
 public class TenderTaskWorkerService {

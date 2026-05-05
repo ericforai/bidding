@@ -123,26 +123,28 @@
           </el-form-item>
         </el-form>
 
-        <div class="test-accounts">
-          <div class="test-header">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 16v-4"/>
-              <path d="M12 8h.01"/>
-            </svg>
-            <span>登录提示</span>
+        <template v-if="showDevAccounts">
+          <div class="test-accounts">
+            <div class="test-header">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 16v-4"/>
+                <path d="M12 8h.01"/>
+              </svg>
+              <span>登录提示</span>
+            </div>
+            <div class="account-list">
+              <span
+                v-for="account in displayAccounts"
+                :key="account"
+                class="account-tag"
+              >
+                {{ account }}
+              </span>
+            </div>
+            <p class="test-hint">{{ accountHint }}</p>
           </div>
-          <div class="account-list">
-            <span
-              v-for="account in displayAccounts"
-              :key="account"
-              class="account-tag"
-            >
-              {{ account }}
-            </span>
-          </div>
-          <p class="test-hint">{{ accountHint }}</p>
-        </div>
+        </template>
       </div>
     </div>
   </div>
@@ -177,13 +179,21 @@ const loginRules = {
   ]
 }
 
-const displayAccounts = computed(() => [
-  '普通员工: staff / Test@123',
-  '管理者: manager / Test@123',
-  '管理员: admin / XiyuAdmin2026!'
-])
+const showDevAccounts = import.meta.env.DEV
 
-const accountHint = computed(() => '本地测试账号已按员工、经理、管理员权限划分')
+const displayAccounts = computed(() => (
+  import.meta.env.DEV
+    ? [
+        '普通员工: staff / Test@123',
+        '管理者: manager / Test@123',
+        '管理员: admin / XiyuAdmin2026!'
+      ]
+    : []
+))
+
+const accountHint = computed(() => (
+  import.meta.env.DEV ? '本地测试账号已按员工、经理、管理员权限划分' : ''
+))
 
 const handleLogin = async () => {
   if (!loginFormRef.value) return

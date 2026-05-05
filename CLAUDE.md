@@ -19,17 +19,22 @@
 
 ### 启动
 
+> **Dev-only guard**：`backend/start.sh`、`scripts/dev-services.sh`、`scripts/dev-services-launchd.sh`、`scripts/local-docker-stack.sh`、`scripts/release/rehearsal-env.sh` 均内置 dev-only 双层守卫。
+> 必须显式导出 `XIYU_DEV_CONFIRMED=1` 才能运行，且任一 `SPRING_PROFILES_ACTIVE` / `XIYU_ENV` / `NODE_ENV` / `ENV` / `ENVIRONMENT` 含有 `prod*`、`production`、`staging`、`stg`、`release`、`live`、`uat`、`canary` 等信号时均会拒绝执行。
+> 本地跑：`export XIYU_DEV_CONFIRMED=1` 再调用脚本；生产部署不得走这些脚本。
+
 ```bash
 # 推荐：一键联调
 cd /Users/user/xiyu/xiyu-bid-poc
+export XIYU_DEV_CONFIRMED=1
 npm run dev:all
 ```
 
 ```bash
 # 手动方式：后端
 cd /Users/user/xiyu/xiyu-bid-poc/backend
-# 推荐：使用 start.sh（已内置默认环境变量）
-./start.sh
+# 推荐：使用 start.sh（已内置默认环境变量，需 XIYU_DEV_CONFIRMED=1）
+XIYU_DEV_CONFIRMED=1 ./start.sh
 
 # 或直接使用 mvn（需手动传入必需环境变量）
 JWT_SECRET="xiyu-bid-poc-local-dev-secret-key-please-change-in-prod-32bytes-min" \

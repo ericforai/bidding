@@ -68,7 +68,15 @@ class ProductionSecurityPropertiesTest {
         Properties properties = factoryBean.getObject();
 
         assertThat(properties).isNotNull();
-        assertThat(properties.getProperty("spring.profiles.active")).isEqualTo("${SPRING_PROFILES_ACTIVE:dev,mysql}");
+        // Security: spring.profiles.active must fail closed when SPRING_PROFILES_ACTIVE is unset.
+        // The default MUST NOT be "dev,mysql" — that would silently activate dev tooling
+        // (h2-console, swagger, dev-only dataset seeders) on hosts that omit the env var.
+        // Operators must explicitly opt-in by setting SPRING_PROFILES_ACTIVE.
+        assertThat(properties.getProperty("spring.profiles.active")).isEqualTo("${SPRING_PROFILES_ACTIVE:}");
+        assertThat(properties.getProperty("spring.profiles.active"))
+                .as("spring.profiles.active default must not silently activate dev profile")
+                .doesNotContain("dev")
+                .doesNotContain("mysql");
         assertThat(properties.getProperty("spring.datasource.url")).contains("jdbc:mysql://");
         assertThat(properties.getProperty("spring.datasource.driver-class-name")).isEqualTo("com.mysql.cj.jdbc.Driver");
         assertThat(properties.getProperty("spring.jpa.properties.hibernate.dialect"))
