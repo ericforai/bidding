@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -28,9 +27,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class BidUploadedTenderDocumentReuseAppService {
 
-    private static final String DOCUMENT_CATEGORY = "TENDER_FILE";
-    private static final String LINKED_ENTITY_TYPE = "TENDER";
     private static final String REUSE_UPLOADED_SUCCESS_MESSAGE = "已复用项目已上传的招标文件";
+    private final TenderDocumentReuseSourceSelector reuseSourceSelector = new TenderDocumentReuseSourceSelector();
 
     private final ProjectAccessScopeService projectAccessScopeService;
     private final ProjectRepository projectRepository;
@@ -50,12 +48,15 @@ public class BidUploadedTenderDocumentReuseAppService {
         projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
         Project project = requireProject(projectId);
         Tender tender = requireTender(project.getTenderId());
-        return projectDocumentRepository.findByProjectIdOrderByCreatedAtDesc(projectId).stream()
-                .filter(document -> isReusableTenderSource(document, tender.getId()))
-                .map(document -> parseUploadedDocument(projectId, tender, document))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .findFirst();
+        Optional<BidTenderDocumentParseDTO> uploadedDocumentResult = reuseSourceSelector
+                .firstReusableProjectDocument(
+                        projectDocumentRepository.findByProjectIdOrderByCreatedAtDesc(projectId),
+                        tender.getId()
+                )
+                .flatMap(document -> parseUploadedDocument(projectId, tender, document));
+        return uploadedDocumentResult.isPresent()
+                ? uploadedDocumentResult
+                : parseTenderSourceDocument(projectId, tender);
     }
 
     private Optional<BidTenderDocumentParseDTO> parseUploadedDocument(
@@ -64,17 +65,24 @@ public class BidUploadedTenderDocumentReuseAppService {
             ProjectDocument document
     ) {
         return documentStorage.loadByFileUrl(document.getFileUrl())
-                .map(loadedDocument -> parseLoadedDocument(projectId, tender, document, loadedDocument));
+                .map(loadedDocument -> parseLoadedDocument(projectId, tender, document, loadedDocument, false));
+    }
+
+    private Optional<BidTenderDocumentParseDTO> parseTenderSourceDocument(Long projectId, Tender tender) {
+        return reuseSourceSelector.tenderSourceDocument(projectId, tender)
+                .flatMap(document -> documentStorage.loadByFileUrl(document.getFileUrl())
+                        .map(loadedDocument -> parseLoadedDocument(projectId, tender, document, loadedDocument, true)));
     }
 
     private BidTenderDocumentParseDTO parseLoadedDocument(
             Long projectId,
             Tender tender,
             ProjectDocument document,
-            LoadedTenderDocument loadedDocument
+            LoadedTenderDocument loadedDocument,
+            boolean saveProjectDocument
     ) {
         String fileName = firstNonBlank(document.getName(), "招标文件");
-        String contentType = contentTypeOf(document);
+        String contentType = reuseSourceSelector.contentTypeOf(document);
         ExtractedTenderDocument extracted = textExtractor.extract(fileName, contentType, loadedDocument.content());
         TenderRequirementProfile profile = documentAnalyzer.analyze(new TenderDocumentAnalysisInput(
                 projectId,
@@ -83,41 +91,46 @@ public class BidUploadedTenderDocumentReuseAppService {
                 extracted.text(),
                 extracted.structuredMetadata()
         ));
-        BidTenderDocumentSnapshot snapshot = persistParsedSnapshot(
+        PersistedReuseDocument persisted = persistParsedSnapshot(
                 projectId,
                 tender,
                 document,
                 loadedDocument.storedDocument(),
                 extracted,
-                profile
+                profile,
+                saveProjectDocument
         );
-        return buildResult(document, tender.getId(), snapshot, extracted.textLength(), profile);
+        return buildResult(persisted.document(), tender.getId(), persisted.snapshot(), extracted.textLength(), profile);
     }
 
-    private BidTenderDocumentSnapshot persistParsedSnapshot(
+    private PersistedReuseDocument persistParsedSnapshot(
             Long projectId,
             Tender tender,
             ProjectDocument document,
             StoredTenderDocument storedDocument,
             ExtractedTenderDocument extracted,
-            TenderRequirementProfile profile
+            TenderRequirementProfile profile,
+            boolean saveProjectDocument
     ) {
         return Objects.requireNonNull(transactionTemplate.execute(status -> {
+            ProjectDocument persistedDocument = saveProjectDocument
+                    ? projectDocumentRepository.save(document)
+                    : document;
             String profileJson = jsonCodec.toJson(profile);
             BidTenderDocumentSnapshot snapshot = documentSnapshotRepository.save(entityFactory.buildSnapshot(
                     projectId,
                     tender.getId(),
-                    document,
+                    persistedDocument,
                     storedDocument,
                     extracted,
                     profile,
                     profileJson
             ));
-            List<BidRequirementItem> items = entityFactory.buildItems(projectId, tender.getId(), document.getId(), profile);
+            List<BidRequirementItem> items = entityFactory.buildItems(projectId, tender.getId(), persistedDocument.getId(), profile);
             requirementItemRepository.saveAll(items);
             snapshotUpdater.apply(tender, profile);
             tenderRepository.save(tender);
-            return snapshot;
+            return new PersistedReuseDocument(persistedDocument, snapshot);
         }));
     }
 
@@ -148,33 +161,6 @@ public class BidUploadedTenderDocumentReuseAppService {
                 .build();
     }
 
-    private boolean isReusableTenderSource(ProjectDocument document, Long tenderId) {
-        if (document == null || document.getFileUrl() == null || document.getFileUrl().isBlank()) {
-            return false;
-        }
-        boolean linkedTender = LINKED_ENTITY_TYPE.equals(trimToNull(document.getLinkedEntityType()))
-                && Objects.equals(tenderId, document.getLinkedEntityId());
-        boolean categoryTender = DOCUMENT_CATEGORY.equals(trimToNull(document.getDocumentCategory()));
-        return linkedTender || categoryTender || nameLooksLikeTender(document.getName());
-    }
-
-    private boolean nameLooksLikeTender(String name) {
-        String normalized = trimToNull(name);
-        if (normalized == null) {
-            return false;
-        }
-        String lowerName = normalized.toLowerCase(Locale.ROOT);
-        return lowerName.contains("招标")
-                || lowerName.contains("标书")
-                || lowerName.contains("tender")
-                || lowerName.contains("bid");
-    }
-
-    private String contentTypeOf(ProjectDocument document) {
-        String fileType = trimToNull(document.getFileType());
-        return fileType != null && fileType.contains("/") ? fileType : null;
-    }
-
     private Project requireProject(Long projectId) {
         return projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", String.valueOf(projectId)));
@@ -196,5 +182,8 @@ public class BidUploadedTenderDocumentReuseAppService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private record PersistedReuseDocument(ProjectDocument document, BidTenderDocumentSnapshot snapshot) {
     }
 }

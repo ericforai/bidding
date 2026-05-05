@@ -123,12 +123,10 @@ export function useProjectDetailTaskActions(context) {
           return
         }
       } catch (error) {
-        if (isNotFoundResponse(error)) {
-          state.tenderBreakdownDialogVisible.value = true
+        if (!isNotFoundResponse(error)) {
+          message.error(resolveErrorMessage(error, '读取已解析招标文件失败'))
           return
         }
-        message.error(resolveErrorMessage(error, '读取已解析招标文件失败'))
-        return
       }
     }
     try {
@@ -136,9 +134,10 @@ export function useProjectDetailTaskActions(context) {
         return
       }
     } catch (error) {
-      if (isNotFoundResponse(error)) return
-      message.error(resolveErrorMessage(error, '复用已上传招标文件失败'))
-      return
+      if (!isNotFoundResponse(error)) {
+        message.error(resolveErrorMessage(error, '复用已上传招标文件失败'))
+        return
+      }
     }
     state.tenderBreakdownDialogVisible.value = true
   }

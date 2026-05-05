@@ -354,13 +354,27 @@ describe('useProjectDetailTaskActions', () => {
     expect(success).toHaveBeenCalledWith('已复用项目已上传的招标文件「已上传招标文件.docx」，可直接拆解任务或生成标书初稿')
   })
 
-  it('最新解析快照接口暂不可用时不展示 404 错误并回退到上传弹窗', async () => {
+  it('最新解析快照接口暂不可用时继续尝试复用已上传招标文件', async () => {
+    const success = vi.fn()
     const error = vi.fn()
     const getLatestTenderBreakdown = vi.fn().mockRejectedValue({
       response: {
         status: 404,
         data: {
           message: 'No static resource api/projects/12/tender-breakdown/latest.',
+        },
+      },
+    })
+    const getTenderBreakdownReadiness = vi.fn().mockResolvedValue({
+      success: true,
+      data: { ready: true },
+    })
+    const parseUploadedTenderBreakdown = vi.fn().mockResolvedValue({
+      success: true,
+      data: {
+        document: {
+          name: '已上传招标文件.docx',
+          snapshotId: 701,
         },
       },
     })
@@ -374,7 +388,54 @@ describe('useProjectDetailTaskActions', () => {
       route: { params: { id: 12 } },
       userStore: { userName: '小王' },
       projectStore: {},
-      projectsApi: { getLatestTenderBreakdown },
+      projectsApi: { getLatestTenderBreakdown, getTenderBreakdownReadiness, parseUploadedTenderBreakdown },
+      isApiProject: { value: true },
+      message: { success, error, warning: vi.fn() },
+      state,
+      workflow: {},
+    })
+
+    await handleOpenTenderBreakdown()
+
+    expect(getLatestTenderBreakdown).toHaveBeenCalledWith(12)
+    expect(getTenderBreakdownReadiness).toHaveBeenCalledWith(12)
+    expect(parseUploadedTenderBreakdown).toHaveBeenCalledWith(12)
+    expect(state.tenderBreakdownDialogVisible.value).toBe(false)
+    expect(success).toHaveBeenCalledWith('已复用项目已上传的招标文件「已上传招标文件.docx」，可直接拆解任务或生成标书初稿')
+    expect(error).not.toHaveBeenCalled()
+  })
+
+  it('已上传招标文件复用接口暂不可用时回退到上传弹窗', async () => {
+    const error = vi.fn()
+    const projectsApi = {
+      getLatestTenderBreakdown: vi.fn().mockResolvedValue({
+        success: true,
+        data: null,
+      }),
+      getTenderBreakdownReadiness: vi.fn().mockResolvedValue({
+        success: true,
+        data: { ready: true },
+      }),
+      parseUploadedTenderBreakdown: vi.fn().mockRejectedValue({
+        response: {
+          status: 404,
+          data: {
+            message: 'No static resource api/projects/12/tender-breakdown/reuse-uploaded.',
+          },
+        },
+      }),
+    }
+    const state = {
+      project: { value: { id: 12, tasks: [] } },
+      activities: { value: [] },
+      tenderBreakdownDialogVisible: { value: false },
+      tenderBreakdownParsing: { value: false },
+    }
+    const { handleOpenTenderBreakdown } = useProjectDetailTaskActions({
+      route: { params: { id: 12 } },
+      userStore: { userName: '小王' },
+      projectStore: {},
+      projectsApi,
       isApiProject: { value: true },
       message: { success: vi.fn(), error, warning: vi.fn() },
       state,
@@ -383,7 +444,7 @@ describe('useProjectDetailTaskActions', () => {
 
     await handleOpenTenderBreakdown()
 
-    expect(getLatestTenderBreakdown).toHaveBeenCalledWith(12)
+    expect(projectsApi.parseUploadedTenderBreakdown).toHaveBeenCalledWith(12)
     expect(state.tenderBreakdownDialogVisible.value).toBe(true)
     expect(error).not.toHaveBeenCalled()
   })

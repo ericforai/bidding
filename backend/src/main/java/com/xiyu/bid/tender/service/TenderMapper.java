@@ -28,6 +28,9 @@ public class TenderMapper {
                 .deadline(tender.getDeadline())
                 .contactName(tender.getContactName())
                 .contactPhone(tender.getContactPhone())
+                .sourceDocumentName(tender.getSourceDocumentName())
+                .sourceDocumentFileType(tender.getSourceDocumentFileType())
+                .sourceDocumentFileUrl(tender.getSourceDocumentFileUrl())
                 .description(tender.getDescription())
                 .tags(decodeTags(tender.getTags()))
                 .status(tender.getStatus())
@@ -56,6 +59,9 @@ public class TenderMapper {
                 .deadline(request.getDeadline())
                 .contactName(request.getContactName())
                 .contactPhone(request.getContactPhone())
+                .sourceDocumentName(request.getSourceDocumentName())
+                .sourceDocumentFileType(request.getSourceDocumentFileType())
+                .sourceDocumentFileUrl(request.getSourceDocumentFileUrl())
                 .description(request.getDescription())
                 .tags(request.getTags())
                 .status(request.getStatus())
@@ -83,6 +89,9 @@ public class TenderMapper {
                 .deadline(dto.getDeadline())
                 .contactName(dto.getContactName())
                 .contactPhone(dto.getContactPhone())
+                .sourceDocumentName(dto.getSourceDocumentName())
+                .sourceDocumentFileType(dto.getSourceDocumentFileType())
+                .sourceDocumentFileUrl(dto.getSourceDocumentFileUrl())
                 .description(dto.getDescription())
                 .tags(encodeTags(dto.getTags()))
                 .aiScore(dto.getAiScore())
@@ -110,6 +119,9 @@ public class TenderMapper {
         if (dto.getDeadline() != null) target.setDeadline(dto.getDeadline());
         if (dto.getContactName() != null) target.setContactName(dto.getContactName());
         if (dto.getContactPhone() != null) target.setContactPhone(dto.getContactPhone());
+        if (dto.getSourceDocumentName() != null) target.setSourceDocumentName(dto.getSourceDocumentName());
+        if (dto.getSourceDocumentFileType() != null) target.setSourceDocumentFileType(dto.getSourceDocumentFileType());
+        if (dto.getSourceDocumentFileUrl() != null) target.setSourceDocumentFileUrl(dto.getSourceDocumentFileUrl());
         if (dto.getDescription() != null) target.setDescription(dto.getDescription());
         if (dto.getTags() != null) target.setTags(encodeTags(dto.getTags()));
         if (dto.getStatus() != null) target.setStatus(dto.getStatus());

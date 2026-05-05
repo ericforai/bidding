@@ -151,6 +151,15 @@ public class Tender {
     @Column(name = "contact_phone", length = 50)
     private String contactPhone;
 
+    @Column(name = "source_document_name", length = 255)
+    private String sourceDocumentName;
+
+    @Column(name = "source_document_file_type", length = 100)
+    private String sourceDocumentFileType;
+
+    @Column(name = "source_document_file_url", length = 1000)
+    private String sourceDocumentFileUrl;
+
     /**
      * 标讯描述
      */
