@@ -82,13 +82,14 @@ class AuthControllerTest {
     @Test
     void logout_ShouldReturnSuccessResponseAndClearCookie() throws Exception {
         mockMvc.perform(post("/api/auth/logout")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-jwt")
                         .cookie(new jakarta.servlet.http.Cookie("refresh_token", "refresh-token")))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("Max-Age=0")))
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Logout successful"));
 
-        verify(authService).logout("refresh-token");
+        verify(authService).logout("access-jwt", "refresh-token");
     }
 
     @Test
@@ -133,7 +134,7 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("Max-Age=0")));
 
-        verify(authService).logout(isNull());
+        verify(authService).logout(isNull(), isNull());
     }
 
     private LoginRequest loginRequest(String username, String password) {

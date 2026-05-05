@@ -100,10 +100,22 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request) {
-        authService.logout(extractRefreshToken(request));
+        authService.logout(extractAccessToken(request), extractRefreshToken(request));
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, clearRefreshCookie().toString())
                 .body(ApiResponse.success("Logout successful", null));
+    }
+
+    private String extractAccessToken(HttpServletRequest request) {
+        String header = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (header == null) {
+            return null;
+        }
+        String trimmed = header.trim();
+        if (trimmed.startsWith("Bearer ")) {
+            return trimmed.substring(7).trim();
+        }
+        return null;
     }
 
     @PostMapping("/refresh")

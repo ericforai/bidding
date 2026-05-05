@@ -78,7 +78,13 @@ describe('tendersApi', () => {
 
     await tendersApi.create(payload)
 
-    expect(httpClient.post).toHaveBeenCalledWith('/api/tenders', payload)
+    expect(httpClient.post).toHaveBeenCalledWith(
+      '/api/tenders',
+      payload,
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'Idempotency-Key': expect.any(String) })
+      })
+    )
   })
 
   it('parseTenderIntakeDocument(): uploads manual intake documents through doc-insight', async () => {

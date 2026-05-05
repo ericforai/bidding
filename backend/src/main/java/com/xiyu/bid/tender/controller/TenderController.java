@@ -10,6 +10,7 @@ import com.xiyu.bid.demo.service.DemoDataProvider;
 import com.xiyu.bid.demo.service.DemoFusionService;
 import com.xiyu.bid.demo.service.DemoModeService;
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.idempotency.Idempotent;
 import com.xiyu.bid.tender.dto.TenderRequest;
 import com.xiyu.bid.tender.dto.TenderDTO;
 import com.xiyu.bid.tender.service.TenderCommandService;
@@ -81,6 +82,7 @@ public class TenderController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Idempotent
     public ResponseEntity<ApiResponse<TenderDTO>> createTender(@Valid @RequestBody TenderRequest tenderRequest) {
         log.info("POST /api/tenders - Creating new tender: {}", tenderRequest.getTitle());
         sanitizeTenderRequest(tenderRequest);

@@ -16,6 +16,7 @@ import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.RefreshSessionRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.auth.JwtUtil;
+import com.xiyu.bid.auth.TokenRevocationService;
 import com.xiyu.bid.util.PasswordValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.UUID;
@@ -49,6 +51,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     private final RoleProfileService roleProfileService;
+    private final TokenRevocationService tokenRevocationService;
 
     @Value("${jwt.refresh-expiration:604800000}")
     private long refreshExpiration;
@@ -159,7 +162,8 @@ public class AuthService {
     }
 
     @Transactional
-    public void logout(String refreshToken) {
+    public void logout(String accessToken, String refreshToken) {
+        revokeAccessToken(accessToken);
         if (refreshToken == null || refreshToken.isBlank()) {
             return;
         }
@@ -171,6 +175,24 @@ public class AuthService {
                     refreshSessionRepository.save(session);
                     log.info("Refresh session revoked for user: {}", session.getUser().getUsername());
                 });
+    }
+
+    @Transactional
+    public void logout(String refreshToken) {
+        logout(null, refreshToken);
+    }
+
+    private void revokeAccessToken(String accessToken) {
+        if (accessToken == null || accessToken.isBlank()) {
+            return;
+        }
+        String jti = jwtUtil.extractJti(accessToken);
+        if (jti == null) {
+            return;
+        }
+        Instant expiresAt = jwtUtil.extractExpirationInstant(accessToken);
+        tokenRevocationService.revoke(jti, expiresAt);
+        log.info("Access token revoked (jti={})", jti);
     }
 
     @Transactional

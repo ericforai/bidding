@@ -2,6 +2,7 @@ package com.xiyu.bid.service;
 
 import com.xiyu.bid.admin.service.DataScopeConfigService;
 import com.xiyu.bid.auth.JwtUtil;
+import com.xiyu.bid.auth.TokenRevocationService;
 import com.xiyu.bid.dto.AuthSessionResult;
 import com.xiyu.bid.dto.LoginRequest;
 import com.xiyu.bid.entity.RefreshSession;
@@ -21,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,6 +58,9 @@ class AuthServiceTest {
     @Mock
     private RoleProfileService roleProfileService;
 
+    @Mock
+    private TokenRevocationService tokenRevocationService;
+
     private AuthService authService;
 
     @BeforeEach
@@ -68,7 +73,8 @@ class AuthServiceTest {
                 passwordEncoder,
                 jwtUtil,
                 authenticationManager,
-                roleProfileService
+                roleProfileService,
+                tokenRevocationService
         );
         ReflectionTestUtils.setField(authService, "refreshExpiration", 7 * 24 * 60 * 60 * 1000L);
     }
@@ -145,6 +151,34 @@ class AuthServiceTest {
 
         verify(refreshSessionRepository).save(session);
         assertThat(session.getRevokedAt()).isNotNull();
+    }
+
+    @Test
+    void logout_ShouldRevokeAccessTokenWhenJtiPresent() {
+        RefreshSession session = RefreshSession.builder()
+                .user(buildUser())
+                .tokenHash("existing-hash")
+                .expiresAt(LocalDateTime.now().plusHours(1))
+                .build();
+
+        when(refreshSessionRepository.findByTokenHash(any())).thenReturn(Optional.of(session));
+        Instant exp = Instant.now().plusSeconds(3600);
+        when(jwtUtil.extractJti("access-jwt")).thenReturn("jti-123");
+        when(jwtUtil.extractExpirationInstant("access-jwt")).thenReturn(exp);
+
+        authService.logout("access-jwt", "raw-refresh-token");
+
+        verify(tokenRevocationService).revoke("jti-123", exp);
+        verify(refreshSessionRepository).save(session);
+    }
+
+    @Test
+    void logout_ShouldSkipAccessRevocationWhenJtiAbsent() {
+        when(jwtUtil.extractJti("legacy-token")).thenReturn(null);
+
+        authService.logout("legacy-token", null);
+
+        verify(tokenRevocationService, never()).revoke(any(), any());
     }
 
     private User buildUser() {
