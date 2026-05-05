@@ -3,6 +3,7 @@ package com.xiyu.bid.biddraftagent.infrastructure.tenderdocument;
 import com.xiyu.bid.biddraftagent.application.LoadedTenderDocument;
 import com.xiyu.bid.biddraftagent.application.StoredTenderDocument;
 import com.xiyu.bid.biddraftagent.application.TenderDocumentStorage;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -23,13 +24,25 @@ import java.util.Optional;
 public class LocalTenderDocumentStorage implements TenderDocumentStorage {
 
     private static final String FILE_URL_PREFIX = "bid-agent://tender-documents/";
+    private static final String DOC_INSIGHT_FILE_URL_PREFIX = "doc-insight://";
 
     private final Path uploadRoot;
+    private final Path docInsightUploadRoot;
 
-    public LocalTenderDocumentStorage(@Value("${app.bid-agent.upload-dir:}") String configuredUploadDir) {
+    @Autowired
+    public LocalTenderDocumentStorage(
+            @Value("${app.bid-agent.upload-dir:}") String configuredUploadDir,
+            @Value("${app.doc-insight.upload-dir:}") String configuredDocInsightUploadDir) {
         this.uploadRoot = configuredUploadDir == null || configuredUploadDir.isBlank()
                 ? Path.of(System.getProperty("java.io.tmpdir"), "xiyu-bid-agent-uploads")
                 : Path.of(configuredUploadDir);
+        this.docInsightUploadRoot = configuredDocInsightUploadDir == null || configuredDocInsightUploadDir.isBlank()
+                ? Path.of(System.getProperty("java.io.tmpdir"), "xiyu-doc-insight-uploads")
+                : Path.of(configuredDocInsightUploadDir);
+    }
+
+    LocalTenderDocumentStorage(String configuredUploadDir) {
+        this(configuredUploadDir, "");
     }
 
     @Override
@@ -53,14 +66,24 @@ public class LocalTenderDocumentStorage implements TenderDocumentStorage {
 
     @Override
     public Optional<LoadedTenderDocument> loadByFileUrl(String fileUrl) {
-        if (fileUrl == null || !fileUrl.startsWith(FILE_URL_PREFIX)) {
+        if (fileUrl == null) {
             return Optional.empty();
         }
-        String relativePath = fileUrl.substring(FILE_URL_PREFIX.length());
+        if (fileUrl.startsWith(DOC_INSIGHT_FILE_URL_PREFIX)) {
+            return loadFromRoot(fileUrl, DOC_INSIGHT_FILE_URL_PREFIX, docInsightUploadRoot);
+        }
+        if (!fileUrl.startsWith(FILE_URL_PREFIX)) {
+            return Optional.empty();
+        }
+        return loadFromRoot(fileUrl, FILE_URL_PREFIX, uploadRoot);
+    }
+
+    private Optional<LoadedTenderDocument> loadFromRoot(String fileUrl, String prefix, Path configuredRoot) {
+        String relativePath = fileUrl.substring(prefix.length());
         if (relativePath.isBlank() || relativePath.contains("..")) {
             return Optional.empty();
         }
-        Path root = uploadRoot.toAbsolutePath().normalize();
+        Path root = configuredRoot.toAbsolutePath().normalize();
         Path targetPath = root.resolve(relativePath).normalize();
         if (!targetPath.startsWith(root) || !Files.isRegularFile(targetPath)) {
             return Optional.empty();

@@ -123,6 +123,9 @@ export function createManualTenderForm() {
     description: '',
     tags: [],
     attachments: [],
+    sourceDocumentName: '',
+    sourceDocumentFileType: '',
+    sourceDocumentFileUrl: '',
   }
 }
 

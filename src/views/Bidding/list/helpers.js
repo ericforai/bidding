@@ -99,6 +99,9 @@ export function buildManualTenderPayload(form = {}) {
     contactPhone: form.phone,
     description: form.description,
     tags: Array.isArray(form.tags) ? form.tags : [],
+    sourceDocumentName: form.sourceDocumentName || '',
+    sourceDocumentFileType: form.sourceDocumentFileType || '',
+    sourceDocumentFileUrl: form.sourceDocumentFileUrl || '',
     status: 'PENDING',
   }
 }

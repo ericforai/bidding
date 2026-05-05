@@ -32,6 +32,9 @@ public class TenderDTO {
     private LocalDateTime deadline;
     private String contactName;
     private String contactPhone;
+    private String sourceDocumentName;
+    private String sourceDocumentFileType;
+    private String sourceDocumentFileUrl;
     private String description;
     private List<String> tags;
     private Tender.Status status;

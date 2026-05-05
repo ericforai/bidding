@@ -37,6 +37,7 @@ describe('useManualTenderCreate', () => {
     tendersApi.parseTenderIntakeDocument.mockResolvedValue({
       success: true,
       data: {
+        documentId: 'doc-insight://TENDER_INTAKE/manual-tender/hash-招标文件.pdf',
         extractedData: {
           tenderTitle: '西域智能仓储采购项目',
           budget: '1200000',
@@ -63,6 +64,9 @@ describe('useManualTenderCreate', () => {
       contact: '李经理',
       description: '仓储自动化设备采购',
       tags: ['公开招标', '智能仓储'],
+      sourceDocumentName: '招标文件.pdf',
+      sourceDocumentFileType: 'application/pdf',
+      sourceDocumentFileUrl: 'doc-insight://TENDER_INTAKE/manual-tender/hash-招标文件.pdf',
     })
     expect(workflow.manualForm.value.deadline).toEqual(new Date('2026-06-01T17:00:00'))
     expect(ElMessage.success).toHaveBeenCalledWith('DeepSeek/AI 已识别附件内容，可继续编辑后保存')
@@ -114,6 +118,9 @@ describe('useManualTenderCreate', () => {
       phone: '',
       description: '框架协议供应商引入，无明确采购预算。',
       tags: ['框架协议'],
+      sourceDocumentName: '框架协议招标文件.docx',
+      sourceDocumentFileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      sourceDocumentFileUrl: 'doc-insight://TENDER_INTAKE/manual-tender/hash-框架协议招标文件.docx',
     }
 
     await expect(workflow.saveManualTender()).resolves.toBe(true)
@@ -125,6 +132,9 @@ describe('useManualTenderCreate', () => {
         region: '北京',
         industry: '电商',
         purchaserName: '南方工业科技贸易有限公司',
+        sourceDocumentName: '框架协议招标文件.docx',
+        sourceDocumentFileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        sourceDocumentFileUrl: 'doc-insight://TENDER_INTAKE/manual-tender/hash-框架协议招标文件.docx',
         status: 'PENDING',
       }),
     )

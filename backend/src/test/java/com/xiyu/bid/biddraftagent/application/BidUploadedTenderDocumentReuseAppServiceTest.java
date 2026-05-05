@@ -154,6 +154,67 @@ class BidUploadedTenderDocumentReuseAppServiceTest {
         verify(textExtractor, never()).extract(any(), any(), any());
     }
 
+    @Test
+    void parseLatestUploadedTenderDocument_shouldReuseTenderSourceDocumentWhenProjectHasNoDocuments() {
+        allowTransactionCallbacks();
+        Project project = Project.builder().id(11L).tenderId(22L).build();
+        Tender tender = Tender.builder()
+                .id(22L)
+                .title(" ")
+                .description(" ")
+                .tags(" ")
+                .sourceDocumentName("首次上传招标文件.pdf")
+                .sourceDocumentFileType("application/pdf")
+                .sourceDocumentFileUrl("doc-insight://TENDER_INTAKE/manual-tender/hash-首次上传招标文件.pdf")
+                .build();
+        byte[] content = "资格要求：提供资质证书".getBytes(StandardCharsets.UTF_8);
+        TenderRequirementProfile profile = sampleProfile();
+
+        when(projectRepository.findById(11L)).thenReturn(Optional.of(project));
+        when(tenderRepository.findById(22L)).thenReturn(Optional.of(tender));
+        when(projectDocumentRepository.findByProjectIdOrderByCreatedAtDesc(11L)).thenReturn(List.of());
+        when(projectDocumentRepository.save(any(ProjectDocument.class))).thenAnswer(invocation -> {
+            ProjectDocument saved = invocation.getArgument(0);
+            saved.setId(801L);
+            return saved;
+        });
+        when(documentStorage.loadByFileUrl("doc-insight://TENDER_INTAKE/manual-tender/hash-首次上传招标文件.pdf"))
+                .thenReturn(Optional.of(new LoadedTenderDocument(
+                        new StoredTenderDocument(
+                                "doc-insight://TENDER_INTAKE/manual-tender/hash-首次上传招标文件.pdf",
+                                "/tmp/hash-首次上传招标文件.pdf",
+                                "abc"
+                        ),
+                        content
+                )));
+        when(textExtractor.extract("首次上传招标文件.pdf", "application/pdf", content))
+                .thenReturn(new ExtractedTenderDocument("首次上传招标文件.pdf", "application/pdf", "抽取正文", 4, "test-extractor"));
+        when(documentAnalyzer.analyze(any())).thenReturn(profile);
+        when(documentSnapshotRepository.save(any())).thenAnswer(invocation -> {
+            BidTenderDocumentSnapshot snapshot = invocation.getArgument(0);
+            snapshot.setId(901L);
+            return snapshot;
+        });
+        when(requirementItemRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = appService.parseLatestUploadedTenderDocument(11L);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getDocument().getId()).isEqualTo(801L);
+        assertThat(result.get().getDocument().getSnapshotId()).isEqualTo(901L);
+        assertThat(result.get().getDocument().getFileUrl())
+                .isEqualTo("doc-insight://TENDER_INTAKE/manual-tender/hash-首次上传招标文件.pdf");
+        ArgumentCaptor<ProjectDocument> documentCaptor = ArgumentCaptor.forClass(ProjectDocument.class);
+        verify(projectDocumentRepository).save(documentCaptor.capture());
+        assertThat(documentCaptor.getValue()).satisfies(document -> {
+            assertThat(document.getProjectId()).isEqualTo(11L);
+            assertThat(document.getDocumentCategory()).isEqualTo("TENDER_FILE");
+            assertThat(document.getLinkedEntityType()).isEqualTo("TENDER");
+            assertThat(document.getLinkedEntityId()).isEqualTo(22L);
+            assertThat(document.getFileUrl()).isEqualTo("doc-insight://TENDER_INTAKE/manual-tender/hash-首次上传招标文件.pdf");
+        });
+    }
+
     @SuppressWarnings({"rawtypes", "unchecked"})
     private void allowTransactionCallbacks() {
         when(transactionTemplate.execute(any(TransactionCallback.class))).thenAnswer(invocation -> {

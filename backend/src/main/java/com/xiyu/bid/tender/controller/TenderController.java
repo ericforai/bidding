@@ -185,6 +185,9 @@ public class TenderController {
         if (request.getPurchaserHash() != null) request.setPurchaserHash(InputSanitizer.sanitizeString(request.getPurchaserHash(), 64));
         if (request.getContactName() != null) request.setContactName(InputSanitizer.sanitizeString(request.getContactName(), 100));
         if (request.getContactPhone() != null) request.setContactPhone(InputSanitizer.sanitizeString(request.getContactPhone(), 50));
+        if (request.getSourceDocumentName() != null) request.setSourceDocumentName(InputSanitizer.sanitizeString(request.getSourceDocumentName(), 255));
+        if (request.getSourceDocumentFileType() != null) request.setSourceDocumentFileType(InputSanitizer.sanitizeString(request.getSourceDocumentFileType(), 100));
+        if (request.getSourceDocumentFileUrl() != null) request.setSourceDocumentFileUrl(InputSanitizer.sanitizeString(request.getSourceDocumentFileUrl(), 1000));
         if (request.getDescription() != null) request.setDescription(InputSanitizer.sanitizeString(request.getDescription(), 5000));
         if (request.getTags() != null) {
             request.setTags(request.getTags().stream()
