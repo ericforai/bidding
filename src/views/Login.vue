@@ -123,39 +123,22 @@
           </el-form-item>
         </el-form>
 
-        <template v-if="showDevAccounts">
-          <div class="test-accounts">
-            <div class="test-header">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 16v-4"/>
-                <path d="M12 8h.01"/>
-              </svg>
-              <span>登录提示</span>
-            </div>
-            <div class="account-list">
-              <span
-                v-for="account in displayAccounts"
-                :key="account"
-                class="account-tag"
-              >
-                {{ account }}
-              </span>
-            </div>
-            <p class="test-hint">{{ accountHint }}</p>
-          </div>
-        </template>
+        <LoginDevAccountsHint v-if="LoginDevAccountsHint" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, reactive } from 'vue'
+import { defineAsyncComponent, ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+
+const LoginDevAccountsHint = import.meta.env.DEV
+  ? defineAsyncComponent(() => import('@/components/common/LoginDevAccountsHint.vue'))
+  : null
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -178,22 +161,6 @@ const loginRules = {
     { min: 3, message: '密码长度不能少于3位', trigger: 'blur' }
   ]
 }
-
-const showDevAccounts = import.meta.env.DEV
-
-const displayAccounts = computed(() => (
-  import.meta.env.DEV
-    ? [
-        '普通员工: staff / Test@123',
-        '管理者: manager / Test@123',
-        '管理员: admin / XiyuAdmin2026!'
-      ]
-    : []
-))
-
-const accountHint = computed(() => (
-  import.meta.env.DEV ? '本地测试账号已按员工、经理、管理员权限划分' : ''
-))
 
 const handleLogin = async () => {
   if (!loginFormRef.value) return
@@ -493,53 +460,6 @@ const handleLogin = async () => {
 .login-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(3, 105, 161, 0.25);
-}
-
-/* 测试账号 */
-.test-accounts {
-  padding: 20px;
-  background: linear-gradient(135deg, rgba(3, 105, 161, 0.05) 0%, rgba(3, 105, 161, 0.02) 100%);
-  border: 1px solid rgba(3, 105, 161, 0.1);
-  border-radius: 12px;
-}
-
-.test-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  color: #0369A1;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.test-header svg {
-  width: 16px;
-  height: 16px;
-}
-
-.account-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.account-tag {
-  display: inline-block;
-  padding: 4px 12px;
-  background: #fff;
-  border: 1px solid rgba(3, 105, 161, 0.2);
-  border-radius: 16px;
-  font-size: 12px;
-  color: #0369A1;
-  font-weight: 500;
-}
-
-.test-hint {
-  font-size: 12px;
-  color: #64748b;
-  margin: 0;
 }
 
 /* ==================== 响应式设计 ==================== */
