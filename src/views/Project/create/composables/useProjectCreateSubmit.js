@@ -43,6 +43,7 @@ export function useProjectCreateSubmit({
   }
 
   async function handleSubmit() {
+    if (submitting.value) return
     submitting.value = true
     try {
       const createdProject = await createProjectBase()
@@ -59,6 +60,7 @@ export function useProjectCreateSubmit({
   }
 
   async function handleCreateAndDecompose() {
+    if (decomposing.value) return
     decomposing.value = true
     try {
       const createdProject = await createProjectBase()
