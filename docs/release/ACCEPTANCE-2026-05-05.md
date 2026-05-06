@@ -145,7 +145,7 @@ curl -s http://127.0.0.1:18081/actuator/health -w " %{http_code}\n"   # 200
 
 | 编号 | 项 | 优先级 | 落点 |
 |---|---|---|---|
-| F-1 | `/actuator/health/readiness` 加 dataSource indicator | P2 | 下个 sprint |
+| F-1 | `/actuator/health/readiness` 加 dataSource indicator | P2 | ✅ 已完成（2026-05-06，PR #172） |
 | F-2 | ESLint 160 个 vue/no-mutating-props | P3 | 技术债批次 |
-| F-3 | Flyway down 脚本补全 | P2 | DBA + 后端 owner 共担 |
+| F-3 | Flyway down 脚本补全 | P2 | ✅ 已完成（2026-05-06，PR #173，由 `FlywayRollbackScriptCoverageTest` 守护） |
 | F-4 | 状态机 fuzz 专项 | P3 | ✅ 已完成（2026-05-06，288 用例，详见 §E） |

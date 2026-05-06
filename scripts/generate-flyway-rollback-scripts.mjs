@@ -2,11 +2,14 @@
 // Input: Flyway SQL migrations under backend/src/main/resources/db/migration*
 // Output: generated rollback scripts under backend/src/main/resources/db/rollback*
 // Pos: Flyway 历史迁移 down 脚本补齐工具
-// 维护声明: 新增或修改 Flyway migration 时，必须同步运行本脚本并复核生成的 rollback 注释。
+// 维护声明: 新增或修改 Flyway migration 时，必须同步运行本脚本（npm run db:generate-rollback）并复核生成的 rollback 注释。
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const root = path.resolve('backend/src/main/resources/db')
+const scriptDir = path.dirname(fileURLToPath(import.meta.url))
+const repoRoot = path.resolve(scriptDir, '..')
+const root = path.join(repoRoot, 'backend/src/main/resources/db')
 
 const migrationSets = [
   { source: 'migration', target: 'rollback/migration', dialect: 'postgres' },
@@ -42,7 +45,10 @@ function compareMigrationFileNames(left, right) {
 }
 
 function rollbackFileName(fileName) {
-  return fileName.replace(/^[BV]/, 'U')
+  // Versioned migrations (V*) become U*; baseline migrations (B*) become UB*
+  // so a Vn / Bn pair never collides on the same Un prefix in the rollback dir.
+  if (fileName.startsWith('B')) return `U${fileName}`
+  return fileName.replace(/^V/, 'U')
 }
 
 function buildRollbackSql({ source, fileName, sourceSql, dialect }) {
