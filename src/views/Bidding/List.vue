@@ -12,7 +12,7 @@
     />
 
     <TenderSearchCard
-      :model-value="searchForm"
+      v-model="searchForm"
       @search="handleSearch"
       @reset="handleReset"
     />
@@ -144,7 +144,7 @@
     <RecordsDialog v-model="distribution.showRecordDialog.value" :records="distribution.distributeRecords.value" />
     <SourceConfigDialog
       v-model="sourceConfig.showSourceConfig.value"
-      :source-config="sourceConfig.sourceConfig.value"
+      v-model:source-config="sourceConfig.sourceConfig.value"
       :saving="sourceConfig.savingConfig.value"
       :testing="sourceConfig.testingConnection.value"
       @save="sourceConfig.saveSourceConfig"

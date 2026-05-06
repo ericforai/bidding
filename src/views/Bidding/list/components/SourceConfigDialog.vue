@@ -1,9 +1,8 @@
 <template>
   <el-dialog
-    :model-value="modelValue"
+    v-model="modelValue"
     title="外部标讯源配置"
     width="640px"
-    @update:model-value="$emit('update:modelValue', $event)"
   >
     <el-form :model="sourceConfig" label-width="120px">
       <el-form-item label="标讯源平台">
@@ -45,7 +44,7 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="$emit('update:modelValue', false)">取消</el-button>
+      <el-button @click="modelValue = false">取消</el-button>
       <el-button :loading="testing" @click="$emit('test')">测试连接</el-button>
       <el-button type="primary" :loading="saving" @click="$emit('save')">保存配置</el-button>
     </template>
@@ -55,9 +54,9 @@
 <script setup>
 import { REGION_OPTIONS, SOURCE_KEYWORD_OPTIONS, SOURCE_PLATFORM_OPTIONS } from '../constants.js'
 
+const modelValue = defineModel({ type: Boolean, default: false })
+const sourceConfig = defineModel('sourceConfig', { type: Object, required: true })
 defineProps({
-  modelValue: { type: Boolean, default: false },
-  sourceConfig: { type: Object, required: true },
   saving: { type: Boolean, default: false },
   testing: { type: Boolean, default: false },
   sourcePlatforms: { type: Array, default: () => SOURCE_PLATFORM_OPTIONS },
@@ -65,5 +64,5 @@ defineProps({
   regionOptions: { type: Array, default: () => REGION_OPTIONS },
 })
 
-defineEmits(['update:modelValue', 'save', 'test'])
+defineEmits(['save', 'test'])
 </script>

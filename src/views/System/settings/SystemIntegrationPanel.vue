@@ -24,7 +24,7 @@
       />
 
       <WeaverIntegrationCard
-        :form="oaForm"
+        v-model:form="oaForm"
         :secret-configured="oaSecretConfigured"
         :loading="oaLoading"
         :saving="oaSaving"
