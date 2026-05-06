@@ -57,8 +57,8 @@
 import { ZoomIn, ZoomOut, Document } from '@element-plus/icons-vue'
 import KnowledgeFloatPanel from './KnowledgeFloatPanel.vue'
 
+defineModel('currentSection', { type: Object, default: null })
 defineProps({
-  currentSection: { type: Object, default: null },
   zoomLevel: { type: Number, default: 100 },
   baseFontSize: { type: Number, default: 14 },
   sources: { type: Array, default: () => [] },

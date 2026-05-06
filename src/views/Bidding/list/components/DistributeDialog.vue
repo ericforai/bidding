@@ -1,10 +1,9 @@
 <template>
   <el-dialog
-    :model-value="modelValue"
+    v-model="modelValue"
     title="标讯分发"
     width="860px"
     :close-on-click-modal="false"
-    @update:model-value="$emit('update:modelValue', $event)"
     @close="$emit('reset')"
   >
     <div class="dialog-grid">
@@ -59,7 +58,7 @@
       </section>
     </div>
     <template #footer>
-      <el-button @click="$emit('update:modelValue', false)">取消</el-button>
+      <el-button @click="modelValue = false">取消</el-button>
       <el-button type="primary" :loading="loading" @click="$emit('submit')">
         确认分发 {{ selectedTenders.length }} 条标讯
       </el-button>
@@ -70,16 +69,16 @@
 <script setup>
 import { ASSIGN_RULES } from '../constants.js'
 
+const modelValue = defineModel({ type: Boolean, default: false })
+defineModel('form', { type: Object, required: true })
 defineProps({
-  modelValue: { type: Boolean, default: false },
   selectedTenders: { type: Array, default: () => [] },
   candidates: { type: Array, default: () => [] },
   preview: { type: Array, default: () => [] },
-  form: { type: Object, required: true },
   loading: { type: Boolean, default: false },
   loadingCandidates: { type: Boolean, default: false },
   assignRules: { type: Array, default: () => ASSIGN_RULES },
 })
 
-defineEmits(['update:modelValue', 'reset', 'submit'])
+defineEmits(['reset', 'submit'])
 </script>

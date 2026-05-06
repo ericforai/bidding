@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="modelValue" title="上传资质文件" width="600px" @close="$emit('update:modelValue', false)">
+  <el-dialog v-model="modelValue" title="上传资质文件" width="600px">
     <el-form :model="form" label-width="100px">
       <el-form-item label="资质名称" required>
         <el-input v-model="form.name" placeholder="请输入资质名称" />
@@ -63,7 +63,7 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="$emit('update:modelValue', false)">取消</el-button>
+      <el-button @click="modelValue = false">取消</el-button>
       <el-button type="primary" @click="$emit('confirm')">确认上传</el-button>
     </template>
   </el-dialog>
@@ -72,18 +72,10 @@
 <script setup>
 import { Upload } from '@element-plus/icons-vue'
 
-const emit = defineEmits(['confirm', 'file-change', 'update:modelValue'])
+const modelValue = defineModel({ type: Boolean, default: false })
+const form = defineModel('form', { type: Object, required: true })
 
-defineProps({
-  form: {
-    type: Object,
-    required: true
-  },
-  modelValue: {
-    type: Boolean,
-    default: false
-  }
-})
+const emit = defineEmits(['confirm', 'file-change'])
 
 function handleFileChange(file) {
   emit('file-change', file?.raw || null)

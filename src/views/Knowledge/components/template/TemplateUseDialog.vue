@@ -1,9 +1,8 @@
 <template>
   <el-dialog
-    :model-value="visible"
+    v-model="visible"
     title="使用模板"
     width="620px"
-    @update:model-value="$emit('update:visible', $event)"
   >
     <div v-if="template" class="use-template-content">
       <el-alert
@@ -63,7 +62,7 @@
     </div>
 
     <template #footer>
-      <el-button @click="$emit('update:visible', false)">取消</el-button>
+      <el-button @click="visible = false">取消</el-button>
       <el-button type="primary" :icon="Check" @click="$emit('confirm')">确认使用</el-button>
     </template>
   </el-dialog>
@@ -73,14 +72,14 @@
 import { Check } from '@element-plus/icons-vue'
 import { getProjectStatusLabel, getProjectStatusType, USE_TEMPLATE_DOC_TYPE_OPTIONS } from './templateLibraryHelpers.js'
 
+const visible = defineModel('visible', { type: Boolean, default: false })
+defineModel('form', { type: Object, required: true })
 defineProps({
-  visible: { type: Boolean, default: false },
   template: { type: Object, default: null },
-  form: { type: Object, required: true },
   projects: { type: Array, default: () => [] }
 })
 
-defineEmits(['update:visible', 'confirm'])
+defineEmits(['confirm'])
 
 const docTypeOptions = USE_TEMPLATE_DOC_TYPE_OPTIONS
 </script>

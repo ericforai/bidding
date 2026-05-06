@@ -114,12 +114,12 @@
 <script setup>
 import { Check, Connection } from '@element-plus/icons-vue'
 
+defineModel('systemConfig', { type: Object, required: true })
+defineModel('aiModelConfig', { type: Object, required: true })
 defineProps({
   loading: { type: Boolean, default: false },
   saving: { type: Boolean, default: false },
   testingProvider: { type: String, default: '' },
-  systemConfig: { type: Object, required: true },
-  aiModelConfig: { type: Object, required: true },
   save: { type: Function, required: true },
   testProvider: { type: Function, required: true },
 })

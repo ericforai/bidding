@@ -49,8 +49,8 @@
 import { RefreshLeft, Search } from '@element-plus/icons-vue'
 import { INDUSTRY_OPTIONS, REGION_OPTIONS, SOURCE_OPTIONS } from '../constants.js'
 
+const modelValue = defineModel({ type: Object, required: true })
 defineProps({
-  modelValue: { type: Object, required: true },
   regions: { type: Array, default: () => REGION_OPTIONS },
   industries: { type: Array, default: () => INDUSTRY_OPTIONS },
   sourceOptions: { type: Array, default: () => SOURCE_OPTIONS },

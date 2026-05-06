@@ -38,7 +38,7 @@
       </el-tree>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px">
+    <el-dialog v-model="showDialog" :title="dialogTitle" width="500px">
       <el-form :model="sectionForm" label-width="80px">
         <el-form-item label="章节名称">
           <el-input v-model="sectionForm.name" placeholder="请输入章节名称" />
@@ -51,7 +51,7 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button @click="showDialog = false">取消</el-button>
         <el-button type="primary" @click="$emit('confirm-section')">确定</el-button>
       </template>
     </el-dialog>
@@ -59,26 +59,25 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { Plus, MoreFilled } from '@element-plus/icons-vue'
 
-const props = defineProps({
+const showDialog = defineModel('showDialog', { type: Boolean, default: false })
+defineModel('sectionForm', { type: Object, required: true })
+defineProps({
   sectionTreeData: { type: Array, required: true },
-  showDialog: { type: Boolean, default: false },
   dialogTitle: { type: String, default: '添加章节' },
-  sectionForm: { type: Object, required: true },
   getSectionIcon: { type: Function, required: true },
   checkAllowDrag: { type: Function, required: true },
   checkAllowDrop: { type: Function, required: true }
 })
 
-const emit = defineEmits([
+defineEmits([
   'add-section',
   'node-click',
   'node-drop',
   'node-command',
-  'confirm-section',
-  'update:showDialog'
+  'confirm-section'
 ])
 
 const treeProps = {
@@ -87,17 +86,6 @@ const treeProps = {
 }
 
 const sectionTreeRef = ref(null)
-const dialogVisible = ref(props.showDialog)
-
-watch(() => props.showDialog, (val) => {
-  dialogVisible.value = val
-})
-
-watch(dialogVisible, (val) => {
-  if (val !== props.showDialog) {
-    emit('update:showDialog', val)
-  }
-})
 
 defineExpose({ sectionTreeRef })
 </script>

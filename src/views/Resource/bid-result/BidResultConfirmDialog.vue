@@ -7,7 +7,7 @@
     </div>
 
     <BidResultFormFields
-      :form="form"
+      v-model:form="form"
       :projects="projects"
       :show-project-selector="!form.projectId"
       @add-competitor="$emit('add-competitor')"
@@ -24,16 +24,13 @@
 <script setup>
 import BidResultFormFields from './BidResultFormFields.vue'
 
+const form = defineModel('form', { type: Object, required: true })
 defineProps({
   visible: Boolean,
   saving: Boolean,
   fetchRecord: {
     type: Object,
     default: null
-  },
-  form: {
-    type: Object,
-    required: true
   },
   projects: {
     type: Array,

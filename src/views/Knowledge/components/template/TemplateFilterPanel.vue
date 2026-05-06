@@ -111,8 +111,8 @@ const LegacyClearIcon = {
   }
 }
 
+defineModel('filters', { type: Object, required: true })
 defineProps({
-  filters: { type: Object, required: true },
   allTags: { type: Array, default: () => [] },
   productTypeOptions: { type: Array, default: () => [] },
   industryOptions: { type: Array, default: () => [] },
