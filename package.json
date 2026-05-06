@@ -54,6 +54,7 @@
     "wiki:ingest": "node scripts/wiki-ingest.mjs",
     "wiki:build": "node scripts/wiki-build.mjs",
     "wiki:check": "node scripts/wiki-check.mjs",
+    "db:generate-rollback": "node scripts/generate-flyway-rollback-scripts.mjs",
     "build": "npm run check:version-sync && npm run check:front-data-boundaries && npm run check:doc-governance && npm run check:task-status-literal && vite build",
     "build:api": "vite build --mode api",
     "preview": "vite preview",

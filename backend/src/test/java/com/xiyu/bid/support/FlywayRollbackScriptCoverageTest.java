@@ -68,6 +68,12 @@ class FlywayRollbackScriptCoverageTest {
     }
 
     private String rollbackFileName(String migrationFileName) {
-        return migrationFileName.replaceFirst("^[BV]", "U");
+        // Versioned migrations (V*) become U*; baseline migrations (B*) become
+        // UB* so a Vn / Bn pair never collides on the same Un prefix in the
+        // rollback dir. Mirrors scripts/generate-flyway-rollback-scripts.mjs.
+        if (migrationFileName.startsWith("B")) {
+            return "U" + migrationFileName;
+        }
+        return migrationFileName.replaceFirst("^V", "U");
     }
 }

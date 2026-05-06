@@ -46,16 +46,28 @@ curl -fsS http://127.0.0.1:8080/actuator/health/readiness
 
 **首要原则**：**生产环境严禁 `flyway clean`**。`application-prod.yml` 已设 `baseline-on-migrate: false`，禁止自动 baseline。
 
+> **rollback 脚本来源**：每个 up migration 均有配套 down 脚本。
+> - Postgres/H2：`backend/src/main/resources/db/rollback/migration/U<NN>__*.sql`
+> - MySQL：`backend/src/main/resources/db/rollback/migration-mysql/U<NN>__*.sql`
+> - 基线（baseline）脚本使用 `UB<NN>__*.sql` 前缀，区别于常规 `U<NN>__*.sql`。
+>
+> 脚本由 `scripts/generate-flyway-rollback-scripts.mjs` 生成（`npm run db:generate-rollback`），并由后端测试 `FlywayRollbackScriptCoverageTest` 在 CI 中强制校验"每个 up 必有 down"。新增 migration 时先写 up，再跑生成器，**必须人工复核** rollback 中标记为 `Manual rollback required` / `Data rollback required` 的语句。
+
 ### 3.1 迁移失败但部分应用
 
 1. `flyway info -url=<DB_URL> -user=<user> -password=<pwd>`，定位 `Pending`/`Failed` 的版本号。
-2. 如果当次失败的迁移有显式 down 脚本（位于 `backend/src/main/resources/db/migration-mysql-rollback/V<NN>__down.sql`），执行该脚本将 schema 回退到该版本之前。
-3. 执行 `flyway repair`，把失败行从 `flyway_schema_history` 中清理。
-4. 重启后端验证。
+2. 取对应 rollback 脚本（MySQL 用 `db/rollback/migration-mysql/U<NN>__*.sql`，Postgres 用 `db/rollback/migration/U<NN>__*.sql`），**复核**是否含 `Manual rollback required` / `Data rollback required` 注释。
+3. 执行该脚本将 schema 回退到该版本之前（含手工补偿数据时由 DBA 决策）。
+4. 执行 `flyway repair`，把失败行从 `flyway_schema_history` 中清理。
+5. 重启后端验证 `/actuator/health/readiness` 返回 `UP`。
 
-### 3.2 没有 down 脚本的迁移
+### 3.2 需要整库恢复的场景（baseline 或大规模数据迁移）
 
-> **目前仓库 `db/migration-mysql/` 下大部分迁移没有配套 down 脚本**——这是已知技术债，列入 `TECHNICAL_DEBT.md` 跟踪。
+rollback 脚本遇到下列情况时会包含 `Data rollback required` / `Manual rollback required` 注释——此时不要盲跑脚本，走整库恢复：
+
+- 基线迁移 `UB<NN>__*`（不保证可回退到基线之前的版本）
+- `INSERT / UPDATE / DELETE` 语句（历史值不在 migration history 里）
+- `ALTER COLUMN` / `DROP COLUMN`（数据已丢失或类型已改）
 
 应急路径：
 1. `mysqldump` 出当前 DB 全量备份（防止下一步出问题）。
@@ -65,7 +77,7 @@ curl -fsS http://127.0.0.1:8080/actuator/health/readiness
    gunzip < db-backups/xiyu_bid-<git_tag>.sql.gz | mysql -u root -p xiyu_bid
    ```
 3. 跑后端 jar 的上一版（不要跑新版，否则 Flyway 又会推到新版本）。
-4. 事后由 DBA + 后端 owner 一起补 down 脚本，进 `migration-mysql-rollback/`。
+4. 事后 DBA + 后端 owner 复盘：看是哪类迁移缺少可机械回退的 down 脚本，必要时把人工补偿步骤沉淀到 runbook。
 
 ### 3.3 应急下线（破坏性）
 
