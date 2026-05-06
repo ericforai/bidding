@@ -39,28 +39,25 @@
 </template>
 
 <script setup>
-const props = defineProps({
+const form = defineModel('form', { type: Object, required: true })
+defineProps({
   visible: Boolean,
   saving: Boolean,
   target: {
     type: Object,
     default: null
-  },
-  form: {
-    type: Object,
-    required: true
   }
 })
 
 defineEmits(['close', 'submit'])
 
 const handleChange = (file, fileList) => {
-  props.form.file = file.raw || file
-  props.form.fileList = fileList.slice(-1)
+  form.value.file = file.raw || file
+  form.value.fileList = fileList.slice(-1)
 }
 
 const handleRemove = () => {
-  props.form.file = null
-  props.form.fileList = []
+  form.value.file = null
+  form.value.fileList = []
 }
 </script>

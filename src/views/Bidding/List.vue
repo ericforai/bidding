@@ -126,7 +126,7 @@
       :selected-tenders="selection.selectedTenders.value"
       :candidates="distribution.candidates.value"
       :preview="distribution.distributionPreview.value"
-      :form="distribution.distributeForm.value"
+      v-model:form="distribution.distributeForm.value"
       :loading="distribution.distributeLoading.value"
       :loading-candidates="distribution.loadingCandidates.value"
       @reset="distribution.resetDistributeForm"
@@ -134,7 +134,7 @@
     />
     <AssignDialog
       v-model="distribution.showAssignDialog.value"
-      :form="distribution.assignForm.value"
+      v-model:form="distribution.assignForm.value"
       :candidates="distribution.candidates.value"
       :loading="distribution.assignLoading.value"
       :loading-candidates="distribution.loadingCandidates.value"
@@ -153,7 +153,7 @@
     <ManualTenderDialog
       v-model="manualCreate.showManualAdd.value"
       :ref="(instance) => { manualCreate.manualFormRef.value = instance }"
-      :form="manualCreate.manualForm.value"
+      v-model:form="manualCreate.manualForm.value"
       :saving="manualCreate.savingManual.value"
       :parsing-document="manualCreate.parsingManualDocument.value"
       @reset="manualCreate.resetManualForm"

@@ -70,11 +70,8 @@ import { computed } from 'vue'
 
 import BidResultCompetitorEditor from './BidResultCompetitorEditor.vue'
 
-const props = defineProps({
-  form: {
-    type: Object,
-    required: true
-  },
+const form = defineModel('form', { type: Object, required: true })
+defineProps({
   projects: {
     type: Array,
     default: () => []
@@ -87,19 +84,19 @@ const props = defineProps({
 
 const emit = defineEmits(['add-competitor', 'remove-competitor'])
 
-const attachmentLabel = computed(() => (props.form.result === 'won' ? '中标通知书' : '分析报告'))
+const attachmentLabel = computed(() => (form.value.result === 'won' ? '中标通知书' : '分析报告'))
 
 const handleResultChange = (value) => {
-  props.form.attachmentType = value === 'won' ? 'WIN_NOTICE' : 'LOSS_REPORT'
+  form.value.attachmentType = value === 'won' ? 'WIN_NOTICE' : 'LOSS_REPORT'
 }
 
 const handleAttachmentChange = (file, fileList) => {
-  props.form.attachmentFile = file.raw || file
-  props.form.attachmentFiles = fileList.slice(-1)
+  form.value.attachmentFile = file.raw || file
+  form.value.attachmentFiles = fileList.slice(-1)
 }
 
 const handleAttachmentRemove = () => {
-  props.form.attachmentFile = null
-  props.form.attachmentFiles = []
+  form.value.attachmentFile = null
+  form.value.attachmentFiles = []
 }
 </script>

@@ -1,10 +1,9 @@
 <template>
   <el-dialog
-    :model-value="visible"
+    v-model="visible"
     :title="mode === 'create' ? '新建模板' : '编辑模板'"
     width="720px"
     destroy-on-close
-    @update:model-value="$emit('update:visible', $event)"
   >
     <el-alert
       v-if="submitError"
@@ -63,7 +62,7 @@
     </el-form>
 
     <template #footer>
-      <el-button @click="$emit('update:visible', false)">取消</el-button>
+      <el-button @click="visible = false">取消</el-button>
       <el-button type="primary" :loading="submitting" @click="$emit('submit')">
         {{ mode === 'create' ? '创建模板' : '保存' }}
       </el-button>
@@ -72,10 +71,10 @@
 </template>
 
 <script setup>
+const visible = defineModel('visible', { type: Boolean, default: false })
+const form = defineModel('form', { type: Object, required: true })
 defineProps({
-  visible: { type: Boolean, default: false },
   mode: { type: String, default: 'create' },
-  form: { type: Object, required: true },
   errors: {
     type: Object,
     default: () => ({
@@ -93,7 +92,7 @@ defineProps({
   submitting: { type: Boolean, default: false }
 })
 
-defineEmits(['update:visible', 'submit'])
+defineEmits(['submit'])
 </script>
 
 <style scoped>

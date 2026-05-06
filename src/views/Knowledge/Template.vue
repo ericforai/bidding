@@ -13,7 +13,7 @@
     </div>
 
     <TemplateFilterPanel
-      :filters="filters"
+      v-model:filters="filters"
       :all-tags="allTags"
       :product-type-options="PRODUCT_TYPE_OPTIONS"
       :industry-options="INDUSTRY_OPTIONS"
@@ -94,7 +94,7 @@
     <TemplateUseDialog
       v-model:visible="useTemplateDialogVisible"
       :template="selectedTemplate"
-      :form="useTemplateForm"
+      v-model:form="useTemplateForm"
       :projects="inProgressProjects"
       @confirm="confirmUseTemplate"
     />
@@ -102,7 +102,7 @@
     <TemplateUpsertDialog
       v-model:visible="upsertDialogVisible"
       :mode="upsertMode"
-      :form="templateForm"
+      v-model:form="templateForm"
       :errors="templateFormErrors"
       :submit-error="submitError"
       :category-options="categoryOptions"

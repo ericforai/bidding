@@ -54,7 +54,7 @@
         :regions="regions"
         :industries="industries"
         :status-options="statusOptions"
-        :filters="filters"
+        v-model:filters="filters"
         :loading="loading"
         :demo-enabled="customerOpportunityDemoEnabled"
         :row-class-name="rowClass"

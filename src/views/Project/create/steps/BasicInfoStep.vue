@@ -169,8 +169,8 @@ import { ref } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
-const props = defineProps({
-  basicForm: { type: Object, required: true },
+const basicForm = defineModel('basicForm', { type: Object, required: true })
+defineProps({
   competitorAnalysis: { type: Array, required: true },
   platformOptions: { type: Array, default: () => [] },
   userList: { type: Array, default: () => [] },

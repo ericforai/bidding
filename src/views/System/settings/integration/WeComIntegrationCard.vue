@@ -112,8 +112,8 @@
 </template>
 
 <script setup>
+defineModel('form', { type: Object, required: true })
 defineProps({
-  form: { type: Object, required: true },
   secretConfigured: { type: Boolean, default: false },
   testResult: { type: Object, default: null },
   testSendResult: { type: Object, default: null },

@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="modelValue" title="资质借阅申请" width="560px" @close="$emit('update:modelValue', false)">
+  <el-dialog v-model="modelValue" title="资质借阅申请" width="560px">
     <el-alert
       v-if="featurePlaceholder"
       type="warning"
@@ -11,7 +11,7 @@
     />
     <DynamicWorkflowForm ref="dynamicFormRef" :schema="schema" :model-value="form" @update:model-value="updateForm" />
     <template #footer>
-      <el-button @click="$emit('update:modelValue', false)">取消</el-button>
+      <el-button @click="modelValue = false">取消</el-button>
       <el-button type="primary" @click="submit">提交 OA 审批</el-button>
     </template>
   </el-dialog>
@@ -22,18 +22,12 @@ import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import DynamicWorkflowForm from '@/components/common/DynamicWorkflowForm.vue'
 
-const props = defineProps({
+const modelValue = defineModel({ type: Boolean, default: false })
+const form = defineModel('form', { type: Object, required: true })
+defineProps({
   featurePlaceholder: {
     type: Object,
     default: null
-  },
-  form: {
-    type: Object,
-    required: true
-  },
-  modelValue: {
-    type: Boolean,
-    default: false
   },
   qualification: {
     type: Object,
@@ -45,11 +39,11 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['confirm', 'update:modelValue'])
+const emit = defineEmits(['confirm'])
 const dynamicFormRef = ref(null)
 
 function updateForm(value) {
-  Object.assign(props.form, value)
+  Object.assign(form.value, value)
 }
 
 function submit() {

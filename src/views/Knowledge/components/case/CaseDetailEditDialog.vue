@@ -1,9 +1,8 @@
 <template>
   <el-dialog
-    :model-value="modelValue"
+    v-model="modelValue"
     title="编辑案例"
     width="720px"
-    @update:model-value="$emit('update:modelValue', $event)"
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
       <el-form-item label="案例标题" prop="title">
@@ -73,7 +72,7 @@
     </el-form>
 
     <template #footer>
-      <el-button @click="$emit('update:modelValue', false)">取消</el-button>
+      <el-button @click="modelValue = false">取消</el-button>
       <el-button type="primary" :loading="saving" @click="handleSave">保存修改</el-button>
     </template>
   </el-dialog>
@@ -83,22 +82,16 @@
 import { computed, ref } from 'vue'
 import { caseCommonTags, caseIndustryOptions, createCaseEditRules } from './caseMeta.js'
 
-const props = defineProps({
-  form: {
-    type: Object,
-    required: true
-  },
-  modelValue: {
-    type: Boolean,
-    default: false
-  },
+const modelValue = defineModel({ type: Boolean, default: false })
+const form = defineModel('form', { type: Object, required: true })
+defineProps({
   saving: {
     type: Boolean,
     default: false
   }
 })
 
-const emit = defineEmits(['save', 'update:modelValue'])
+const emit = defineEmits(['save'])
 
 const formRef = ref(null)
 const rules = createCaseEditRules()
@@ -106,9 +99,9 @@ const industries = caseIndustryOptions
 const tagOptions = caseCommonTags
 
 const highlightText = computed({
-  get: () => Array.isArray(props.form.highlights) ? props.form.highlights.join('\n') : '',
+  get: () => Array.isArray(form.value.highlights) ? form.value.highlights.join('\n') : '',
   set: (value) => {
-    props.form.highlights = String(value || '')
+    form.value.highlights = String(value || '')
       .split('\n')
       .map(item => item.trim())
       .filter(Boolean)

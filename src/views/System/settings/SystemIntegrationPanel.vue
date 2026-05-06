@@ -13,7 +13,7 @@
 
     <div class="integration-stack">
       <WeComIntegrationCard
-        :form="form"
+        v-model:form="form"
         :secret-configured="secretConfigured"
         :test-result="testResult"
         :loading="loading"

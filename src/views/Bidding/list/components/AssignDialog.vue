@@ -1,9 +1,8 @@
 <template>
   <el-dialog
-    :model-value="modelValue"
+    v-model="modelValue"
     title="指派标讯"
     width="520px"
-    @update:model-value="$emit('update:modelValue', $event)"
     @close="$emit('reset')"
   >
     <el-form :model="form" label-width="100px">
@@ -34,20 +33,20 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="$emit('update:modelValue', false)">取消</el-button>
+      <el-button @click="modelValue = false">取消</el-button>
       <el-button type="primary" :loading="loading" @click="$emit('submit')">确认指派</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup>
+const modelValue = defineModel({ type: Boolean, default: false })
+defineModel('form', { type: Object, required: true })
 defineProps({
-  modelValue: { type: Boolean, default: false },
-  form: { type: Object, required: true },
   candidates: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
   loadingCandidates: { type: Boolean, default: false },
 })
 
-defineEmits(['update:modelValue', 'reset', 'submit'])
+defineEmits(['reset', 'submit'])
 </script>

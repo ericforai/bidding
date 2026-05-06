@@ -19,7 +19,7 @@
         <div v-show="currentStep === 0" class="step-panel">
           <BasicInfoStep
             ref="basicStepRef"
-            :basic-form="basicForm"
+            v-model:basic-form="basicForm"
             :competitor-analysis="competitorAnalysis"
             :platform-options="platformOptions"
             :user-list="userList"
@@ -31,7 +31,7 @@
         </div>
 
         <div v-show="currentStep === 1" class="step-panel">
-          <DetailStep ref="detailStepRef" :detail-form="detailForm" />
+          <DetailStep ref="detailStepRef" v-model:detail-form="detailForm" />
         </div>
 
         <div v-show="currentStep === 2" class="step-panel">
