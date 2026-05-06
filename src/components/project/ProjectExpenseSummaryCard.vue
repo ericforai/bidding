@@ -81,7 +81,7 @@ import { Coin } from '@element-plus/icons-vue'
 
 defineEmits(['manage'])
 
-const props = defineProps({
+defineProps({
   expenses: {
     type: Array,
     default: () => [],

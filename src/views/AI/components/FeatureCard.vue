@@ -146,9 +146,7 @@ const handleToggle = (val) => {
 }
 
 const handleConfigure = () => {
-  console.log('[FeatureCard] handleConfigure called, featureId:', props.feature.id)
   emit('configure', props.feature.id)
-  console.log('[FeatureCard] emit done')
 }
 </script>
 

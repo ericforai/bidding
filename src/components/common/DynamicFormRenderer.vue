@@ -143,7 +143,6 @@ async function uploadAttachment(field, request) {
   if (!file) return null
   const attachment = await props.uploadFn(field, request)
   if (attachment && !attachment.fileName && !attachment.fileUrl && !attachment.storagePath) {
-    // eslint-disable-next-line no-console
     console.warn(
       '[DynamicFormRenderer] uploadFn returned an attachment without fileName/fileUrl/storagePath; ' +
       'dedupe and remove handlers key on these fields. See UploadFn typedef.'

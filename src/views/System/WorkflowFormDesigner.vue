@@ -142,7 +142,6 @@ const {
   deleteField,
   draft,
   fieldTypes,
-  loadTemplateVersions,
   loadTemplates,
   move,
   newTemplate,

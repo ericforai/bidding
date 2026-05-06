@@ -87,29 +87,25 @@ export const useBarStore = defineStore('bar', {
         }
 
         const sites = Array.isArray(response.data) ? response.data : []
-        if (true) {
-          const withCertificates = await Promise.all(sites.map(async (site) => {
-            const accountsResponse = await resourcesApi.barSiteAccounts.getList(site.id)
-            const certificatesResponse = await resourcesApi.certificates.getList(site.id)
-            const verificationResponse = await resourcesApi.barSites.getVerificationRecords(site.id)
-            const verifications = verificationResponse?.success && Array.isArray(verificationResponse.data)
-              ? verificationResponse.data
-              : []
-            const accounts = accountsResponse?.success && Array.isArray(accountsResponse.data)
-              ? accountsResponse.data
-              : []
-            return {
-              ...site,
-              accounts,
-              uks: certificatesResponse?.success && Array.isArray(certificatesResponse.data)
-                ? certificatesResponse.data
-                : [],
-              lastVerifyTime: verifications[0]?.verifiedAt || site.lastVerifyTime }
-          }))
-          this.sites = withCertificates
-        } else {
-          this.sites = sites
-        }
+        const withCertificates = await Promise.all(sites.map(async (site) => {
+          const accountsResponse = await resourcesApi.barSiteAccounts.getList(site.id)
+          const certificatesResponse = await resourcesApi.certificates.getList(site.id)
+          const verificationResponse = await resourcesApi.barSites.getVerificationRecords(site.id)
+          const verifications = verificationResponse?.success && Array.isArray(verificationResponse.data)
+            ? verificationResponse.data
+            : []
+          const accounts = accountsResponse?.success && Array.isArray(accountsResponse.data)
+            ? accountsResponse.data
+            : []
+          return {
+            ...site,
+            accounts,
+            uks: certificatesResponse?.success && Array.isArray(certificatesResponse.data)
+              ? certificatesResponse.data
+              : [],
+            lastVerifyTime: verifications[0]?.verifiedAt || site.lastVerifyTime }
+        }))
+        this.sites = withCertificates
         return { success: true, data: this.sites }
       } finally {
         this.loading = false
@@ -129,7 +125,7 @@ export const useBarStore = defineStore('bar', {
       }
 
       let site = response.data
-      if (site && true) {
+      if (site) {
         const [accountsResponse, certificatesResponse, verificationResponse, sopResponse, attachmentsResponse] = await Promise.all([
           resourcesApi.barSiteAccounts.getList(id),
           resourcesApi.certificates.getList(id),
@@ -242,171 +238,52 @@ export const useBarStore = defineStore('bar', {
     },
 
     async addAccount(siteId, accountData) {
-      if (true) {
-        const response = await resourcesApi.barSiteAccounts.create(siteId, accountData)
-        if (response?.success) {
-          await this.getSiteById(siteId)
-        }
-        return response
+      const response = await resourcesApi.barSiteAccounts.create(siteId, accountData)
+      if (response?.success) {
+        await this.getSiteById(siteId)
       }
-
-      const site = this.sites.find((item) => String(item.id) === String(siteId))
-      if (!site) return { success: false, message: '站点不存在' }
-
-      const newAccount = {
-        id: `A${Date.now()}`,
-        status: 'active',
-        ...accountData }
-      site.accounts = Array.isArray(site.accounts) ? site.accounts : []
-      site.accounts.push(newAccount)
-      this.updateSiteRisk(siteId)
-      return { success: true, data: newAccount }
+      return response
     },
 
     async updateAccount(siteId, accountId, data) {
-      if (true) {
-        const response = await resourcesApi.barSiteAccounts.update(siteId, accountId, data)
-        if (response?.success) {
-          await this.getSiteById(siteId)
-        }
-        return response
+      const response = await resourcesApi.barSiteAccounts.update(siteId, accountId, data)
+      if (response?.success) {
+        await this.getSiteById(siteId)
       }
-
-      const site = this.sites.find((item) => String(item.id) === String(siteId))
-      const account = site?.accounts?.find((item) => String(item.id) === String(accountId))
-      if (!account) return { success: false, message: '账号不存在' }
-
-      Object.assign(account, data)
-      this.updateSiteRisk(siteId)
-      return { success: true, data: account }
+      return response
     },
 
     async deleteAccount(siteId, accountId) {
-      if (true) {
-        const response = await resourcesApi.barSiteAccounts.delete(siteId, accountId)
-        if (response?.success) {
-          await this.getSiteById(siteId)
-        }
-        return response
+      const response = await resourcesApi.barSiteAccounts.delete(siteId, accountId)
+      if (response?.success) {
+        await this.getSiteById(siteId)
       }
-
-      const site = this.sites.find((item) => String(item.id) === String(siteId))
-      if (!site?.accounts) return { success: false, message: '账号不存在' }
-
-      const index = site.accounts.findIndex((item) => String(item.id) === String(accountId))
-      if (index === -1) return { success: false, message: '账号不存在' }
-
-      site.accounts.splice(index, 1)
-      this.updateSiteRisk(siteId)
-      return { success: true }
+      return response
     },
 
     async addUk(siteId, ukData) {
-      if (true) {
-        return resourcesApi.certificates.create(siteId, ukDataToPayload(ukData))
-      }
-
-      const site = this.sites.find((item) => String(item.id) === String(siteId))
-      if (!site) return { success: false, message: '站点不存在' }
-
-      const newUk = {
-        id: `UK${Date.now()}`,
-        status: 'available',
-        ...ukData }
-      site.uks = Array.isArray(site.uks) ? site.uks : []
-      site.uks.push(newUk)
-      this.updateSiteRisk(siteId)
-      return { success: true, data: newUk }
+      return resourcesApi.certificates.create(siteId, ukDataToPayload(ukData))
     },
 
     async updateUk(siteId, ukId, data) {
-      if (true) {
-        return resourcesApi.certificates.update(siteId, ukId, ukDataToPayload(data))
-      }
-
-      const site = this.sites.find((item) => String(item.id) === String(siteId))
-      const uk = site?.uks?.find((item) => String(item.id) === String(ukId))
-      if (!uk) return { success: false, message: 'UK 不存在' }
-
-      Object.assign(uk, data)
-      this.updateSiteRisk(siteId)
-      return { success: true, data: uk }
+      return resourcesApi.certificates.update(siteId, ukId, ukDataToPayload(data))
     },
 
     async deleteUk(siteId, ukId) {
-      if (true) {
-        return resourcesApi.certificates.delete(siteId, ukId)
-      }
-
-      const site = this.sites.find((item) => String(item.id) === String(siteId))
-      if (!site?.uks) return { success: false, message: 'UK 不存在' }
-
-      const index = site.uks.findIndex((item) => String(item.id) === String(ukId))
-      if (index === -1) return { success: false, message: 'UK 不存在' }
-
-      site.uks.splice(index, 1)
-      this.updateSiteRisk(siteId)
-      return { success: true }
+      return resourcesApi.certificates.delete(siteId, ukId)
     },
 
     async borrowUk(siteId, ukId, borrowData) {
-      if (true) {
-        return resourcesApi.certificates.borrow(siteId, ukId, {
-          borrower: borrowData.borrower,
-          projectId: borrowData.projectId ? Number(borrowData.projectId) : null,
-          purpose: borrowData.purpose,
-          remark: borrowData.remark,
-          expectedReturnDate: borrowData.returnDate })
-      }
-
-      const site = this.sites.find((item) => String(item.id) === String(siteId))
-      const uk = site?.uks?.find((item) => String(item.id) === String(ukId))
-      if (!uk) return { success: false, message: 'UK 不存在' }
-
-      uk.status = 'borrowed'
-      uk.borrower = borrowData.borrower
-      uk.borrowProject = borrowData.project
-      uk.borrowPurpose = borrowData.purpose
-      uk.borrowTime = new Date().toISOString()
-      uk.expectedReturn = borrowData.returnDate
-
-      site.auditLog = Array.isArray(site.auditLog) ? site.auditLog : []
-      site.auditLog.unshift({
-        time: new Date().toLocaleString('zh-CN'),
-        user: borrowData.borrower,
-        action: `借用 ${uk.type} (${uk.serialNo})` })
-
-      this.updateSiteRisk(siteId)
-      return { success: true, data: uk }
+      return resourcesApi.certificates.borrow(siteId, ukId, {
+        borrower: borrowData.borrower,
+        projectId: borrowData.projectId ? Number(borrowData.projectId) : null,
+        purpose: borrowData.purpose,
+        remark: borrowData.remark,
+        expectedReturnDate: borrowData.returnDate })
     },
 
     async returnUk(siteId, ukId) {
-      if (true) {
-        return resourcesApi.certificates.return(siteId, ukId, {})
-      }
-
-      const site = this.sites.find((item) => String(item.id) === String(siteId))
-      const uk = site?.uks?.find((item) => String(item.id) === String(ukId))
-      if (!uk || uk.status !== 'borrowed') {
-        return { success: false, message: 'UK 当前不可归还' }
-      }
-
-      const borrower = uk.borrower
-      uk.status = 'available'
-      delete uk.borrower
-      delete uk.borrowProject
-      delete uk.borrowPurpose
-      delete uk.borrowTime
-      delete uk.expectedReturn
-
-      site.auditLog = Array.isArray(site.auditLog) ? site.auditLog : []
-      site.auditLog.unshift({
-        time: new Date().toLocaleString('zh-CN'),
-        user: borrower,
-        action: `归还 ${uk.type} (${uk.serialNo})` })
-
-      this.updateSiteRisk(siteId)
-      return { success: true, data: uk }
+      return resourcesApi.certificates.return(siteId, ukId, {})
     },
 
     async updateSiteStatus(siteId, status) {
@@ -447,24 +324,6 @@ export const useBarStore = defineStore('bar', {
         await this.getSiteById(siteId)
       }
       return response
-    },
-
-    updateSiteRisk(siteId) {
-      const site = this.sites.find((item) => String(item.id) === String(siteId))
-      if (!site) return
-
-      const accounts = Array.isArray(site.accounts) ? site.accounts : []
-      const uks = Array.isArray(site.uks) ? site.uks : []
-
-      const ukRisk = uks.some((uk) => {
-        if (!uk.expiryDate) return false
-        const daysLeft = Math.ceil((new Date(uk.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))
-        return daysLeft <= 30
-      })
-
-      const accountRisk = accounts.some((account) => account.phone && !account.phone.includes('****'))
-      site.hasRisk = ukRisk || accountRisk
-      site.riskLevel = site.hasRisk ? 'high' : 'low'
     } } })
 
 function ukDataToPayload(data) {

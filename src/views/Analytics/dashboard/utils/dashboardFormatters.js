@@ -87,7 +87,7 @@ export function getTrendClass(direction) {
   return direction === 'trend-up' ? 'positive' : 'negative'
 }
 
-export function formatMetricCell(column, value, row = {}, metricDrawerType = '') {
+export function formatMetricCell(column, value, _row = {}, metricDrawerType = '') {
   if (value == null || value === '') return '-'
 
   if (column.type === 'amount') return formatMetricAmount(value)

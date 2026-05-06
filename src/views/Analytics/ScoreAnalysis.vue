@@ -114,7 +114,6 @@ function calculateScore() {
   const totalScore = dimensions.reduce((sum, d) => sum + d.score * d.weight, 0) / totalWeight
 
   const lowCount = dimensions.filter(d => d.score < 40).length
-  const highCount = dimensions.filter(d => d.score >= 80).length
 
   let riskLevel = 'LOW'
   if (totalScore < 50 || lowCount >= 2) riskLevel = 'HIGH'

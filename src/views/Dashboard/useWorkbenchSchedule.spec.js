@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 const { getScheduleOverview } = vi.hoisted(() => ({

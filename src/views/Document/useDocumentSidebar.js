@@ -76,7 +76,9 @@ export function useDocumentSidebar({
           name: result.data.name || projectInfo.value.name
         }
       }
-    } catch (error) {}
+    } catch {
+      // 静默兜底：项目详情拉取失败不阻塞侧边栏渲染。
+    }
   }
 
   async function ensureEditorStructure(projectId) {

@@ -9,13 +9,6 @@
  */
 import httpClient from '../client.js'
 
-function formatChange(change) {
-  if (change == null) return '--'
-  const numeric = Number(change)
-  if (Number.isNaN(numeric)) return '--'
-  return `${numeric >= 0 ? '+' : ''}${numeric.toFixed(1)}%`
-}
-
 function normalizeTrendItem(item) {
   return {
     month: item?.period || '-',
@@ -254,7 +247,7 @@ export const todosApi = {
       data: [] })
   },
 
-  async complete(id) {
+  async complete(_id) {
     return Promise.resolve({
       success: false,
       message: 'Todo endpoints are not implemented on the backend yet' })

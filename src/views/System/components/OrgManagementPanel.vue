@@ -22,7 +22,7 @@
             highlight-current
             @node-click="handleNodeClick"
           >
-            <template #default="{ node, data }">
+            <template #default="{ data }">
               <span class="custom-tree-node">
                 <span class="node-label">
                   <el-icon v-if="data.children && data.children.length"><OfficeBuilding /></el-icon>
@@ -103,7 +103,7 @@
                   </template>
                 </el-table-column>
                 <el-table-column label="操作" width="100">
-                  <template #default="{ row }">
+                  <template #default>
                     <el-button link type="primary" size="small">更换部门</el-button>
                   </template>
                 </el-table-column>
@@ -121,7 +121,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Delete, OfficeBuilding, Folder } from '@element-plus/icons-vue'
+import { Plus, OfficeBuilding, Folder } from '@element-plus/icons-vue'
 
 const props = defineProps({
   depts: { type: Array, required: true },

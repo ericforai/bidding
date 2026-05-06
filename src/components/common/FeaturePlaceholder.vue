@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-const props = defineProps({
+defineProps({
   title: { type: String, default: '功能暂未接入' },
   message: { type: String, default: '' },
   hint: { type: String, default: '' },

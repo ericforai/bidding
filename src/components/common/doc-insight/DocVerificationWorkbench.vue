@@ -62,7 +62,7 @@ const props = defineProps({
   markdown: { type: String, default: '' }
 })
 
-const emit = defineEmits(['cancel', 'confirm'])
+defineEmits(['cancel', 'confirm'])
 
 const localData = ref({ ...props.data })
 const mdContainer = ref(null)

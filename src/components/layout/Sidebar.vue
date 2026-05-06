@@ -146,13 +146,8 @@ const checkMobile = () => {
 
 // 菜单选择后关闭抽屉
 const handleMenuSelect = (index) => {
-  console.log('[Sidebar] Menu selected:', index)
-  console.log('[Sidebar] Current route:', route.path)
-  console.log('[Sidebar] Target route exists:', router.hasRoute('AICenter'))
-
   // 手动导航到 /ai-center
   if (index === '/ai-center' || index.includes('ai-center')) {
-    console.log('[Sidebar] Navigating to /ai-center')
     router.push('/ai-center')
   }
 
