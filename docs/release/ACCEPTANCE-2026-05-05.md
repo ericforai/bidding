@@ -76,7 +76,21 @@ id1=3 id2=3 — PASS
 | TaskTransitionPolicy | `backend/src/main/java/.../task/...` | 同上 |
 | FormInstanceStatusPolicy | 同 | 同上 |
 
-**结论**：状态机均显式 enum，未发现 free-form 字符串赋值。深度状态机注入 fuzz 留作下次专项。
+**结论**：状态机均显式 enum，未发现 free-form 字符串赋值。
+
+**F-4 状态机 fuzz 专项已完成**（2026-05-06）：补充 4 份穷举 + 随机注入测试套件，共新增 288 个用例，覆盖：
+- 全 enum × enum 矩阵（与权威 spec 镜像比对，policy 偏离立即红）
+- 终态汇集不变量（BIDDED / COMPLETED / OA_REJECTED+OA_FAILED+BUSINESS_APPLIED 无外向迁移）
+- 自迁移策略差异锁定（Tender/Task 允许；Form 不允许）
+- null 输入永不返回 true（policy 各自的 fail-safe 行为已明确）
+- 种子固定的随机注入与随机生命周期：attempts 单调递增、retry≤maxRetries 后必入 DLQ、错误信息恒定 ≤ 900 字符且非空白
+- 决定性（同入参重复 16 次结果一致）
+
+测试文件：
+- `backend/src/test/java/com/xiyu/bid/batch/core/TenderStatusTransitionPolicyFuzzTest.java`
+- `backend/src/test/java/com/xiyu/bid/task/core/TaskTransitionPolicyFuzzTest.java`
+- `backend/src/test/java/com/xiyu/bid/workflowform/domain/FormInstanceStatusPolicyFuzzTest.java`
+- `backend/src/test/java/com/xiyu/bid/tenderupload/service/TenderTaskStateMachineFuzzTest.java`
 
 ## 验收口径
 
@@ -134,4 +148,4 @@ curl -s http://127.0.0.1:18081/actuator/health -w " %{http_code}\n"   # 200
 | F-1 | `/actuator/health/readiness` 加 dataSource indicator | P2 | 下个 sprint |
 | F-2 | ESLint 160 个 vue/no-mutating-props | P3 | 技术债批次 |
 | F-3 | Flyway down 脚本补全 | P2 | DBA + 后端 owner 共担 |
-| F-4 | 状态机 fuzz 专项 | P3 | 季度任务 |
+| F-4 | 状态机 fuzz 专项 | P3 | ✅ 已完成（2026-05-06，288 用例，详见 §E） |

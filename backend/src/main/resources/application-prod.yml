@@ -49,6 +49,9 @@ management:
       show-details: never
       probes:
         enabled: true
+      group:
+        readiness:
+          include: readinessState,db
 
 jwt:
   secret: ${JWT_SECRET}
