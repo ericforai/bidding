@@ -120,8 +120,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import {
-  Loading, TrendCharts, Guide, ChatDotRound, Download,
-  Warning, InfoFilled, StarFilled, Operation
+  Loading, TrendCharts, Guide, ChatDotRound, Download
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { aiApi } from '@/api'

@@ -47,7 +47,9 @@ export function useProjectDetailDocuments(context) {
       }
       if (Array.isArray(project.value?.documents)) project.value.documents = project.value.documents.filter((item) => String(item.id) !== String(doc.id))
       context.message.success('删除成功')
-    } catch {}
+    } catch {
+      // 用户在 confirm 中点击了取消；无需处理。
+    }
   }
   const handleCreateDocument = async (docName, size = '1.2MB') => {
     const formData = new FormData()

@@ -10,27 +10,6 @@
 import httpClient from '../client.js'
 import { qualificationsApi } from './qualification.js'
 
-const DAY_IN_MS = 24 * 60 * 60 * 1000
-
-const qualificationTypeMap = {
-  enterprise: 'CONSTRUCTION',
-  personnel: 'DESIGN',
-  product: 'SERVICE',
-  industry: 'OTHER',
-  '企业资质': 'enterprise',
-  '软件能力': 'product',
-  '安全资质': 'industry',
-  CONSTRUCTION: 'enterprise',
-  DESIGN: 'personnel',
-  SERVICE: 'product',
-  OTHER: 'industry' }
-
-const qualificationLevelMap = {
-  enterprise: 'FIRST',
-  personnel: 'SECOND',
-  product: 'THIRD',
-  industry: 'OTHER' }
-
 const caseIndustryMap = {
   government: 'INFRASTRUCTURE',
   finance: 'OTHER',
@@ -80,28 +59,6 @@ function isNumericId(id) {
   return /^\d+$/.test(String(id))
 }
 
-function getDateValue(date) {
-  return date ? new Date(date) : null
-}
-
-function calculateRemainingDays(expiryDate) {
-  const expiry = getDateValue(expiryDate)
-  if (!expiry) return null
-  return Math.ceil((expiry.getTime() - Date.now()) / DAY_IN_MS)
-}
-
-function mapQualificationStatus(expiryDate, explicitStatus) {
-  if (explicitStatus) {
-    return explicitStatus
-  }
-
-  const remainingDays = calculateRemainingDays(expiryDate)
-  if (remainingDays == null) return 'valid'
-  if (remainingDays < 0) return 'expired'
-  if (remainingDays <= 30) return 'expiring'
-  return 'valid'
-}
-
 function formatDate(date) {
   if (!date) return ''
   return String(date).slice(0, 10)
@@ -110,34 +67,6 @@ function formatDate(date) {
 function formatCasePeriod(projectDate) {
   const date = formatDate(projectDate)
   return date ? `${date} - ${date}` : ''
-}
-
-function normalizeQualification(item) {
-  const expiryDate = item?.expiryDate || item?.expiry
-  const remainingDays = item?.remainingDays ?? calculateRemainingDays(expiryDate)
-
-  return {
-    id: item?.id,
-    name: item?.name || '未命名资质',
-    type: qualificationTypeMap[item?.type] || 'industry',
-    certificateNo: item?.certificateNo || '-',
-    issueDate: formatDate(item?.issueDate),
-    expiryDate: formatDate(expiryDate),
-    issuer: item?.issuer || '-',
-    status: mapQualificationStatus(expiryDate, item?.status),
-    remainingDays: remainingDays ?? 0,
-    fileUrl: item?.fileUrl || '',
-    level: item?.level || qualificationLevelMap[qualificationTypeMap[item?.type] || item?.type] || 'OTHER' }
-}
-
-function buildQualificationPayload(data = {}) {
-  return {
-    name: data.name,
-    type: qualificationTypeMap[data.type] || 'OTHER',
-    level: qualificationLevelMap[data.type] || data.level || 'OTHER',
-    issueDate: data.issueDate || null,
-    expiryDate: data.expiryDate || null,
-    fileUrl: data.fileUrl || '' }
 }
 
 function normalizeCase(item) {
@@ -237,21 +166,6 @@ function buildTemplatePayload(data = {}) {
     fileSize: data.fileSize || '',
     tags: Array.isArray(data.tags) ? data.tags : [],
     createdBy: data.createdBy ?? null }
-}
-
-function filterQualifications(items, params = {}) {
-  return items.filter((item) => {
-    if (params.name && !String(item.name || '').toLowerCase().includes(String(params.name).toLowerCase())) {
-      return false
-    }
-    if (params.type && item.type !== params.type) {
-      return false
-    }
-    if (params.status && item.status !== params.status) {
-      return false
-    }
-    return true
-  })
 }
 
 function normalizeCaseNumber(value) {
@@ -402,18 +316,6 @@ function filterTemplates(items, params = {}) {
     }
     return true
   })
-}
-
-async function fetchAndFilter(path, params, normalizer, filterFn) {
-  const response = await httpClient.get(path)
-  const normalized = Array.isArray(response?.data) ? response.data.map(normalizer) : []
-  const filtered = filterFn(normalized, params)
-  const data = filtered
-
-  return {
-    ...response,
-    data,
-    total: data.length }
 }
 
 function invalidIdMessage(entityName) {

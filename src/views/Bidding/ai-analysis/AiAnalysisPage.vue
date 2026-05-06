@@ -215,7 +215,6 @@ const {
   matchScoreError,
   progressColors,
   dimensionDetails,
-  getScoreColor,
   getScoreLevelClass,
   getDimensionTagType,
   getPriorityTagType,

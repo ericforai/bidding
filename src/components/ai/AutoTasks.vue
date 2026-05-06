@@ -332,9 +332,8 @@ const handleComplete = (row) => {
   }, 500)
 }
 
-const handleSnooze = (row) => {
+const handleSnooze = (_row) => {
   // 延期逻辑
-  console.log('Snooze:', row)
 }
 
 const handleClose = () => {

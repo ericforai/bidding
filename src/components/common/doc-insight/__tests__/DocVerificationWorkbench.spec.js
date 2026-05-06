@@ -4,7 +4,7 @@
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import DocVerificationWorkbench from '../DocVerificationWorkbench.vue'
 

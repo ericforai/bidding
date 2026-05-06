@@ -181,14 +181,13 @@ const getCategoryTagType = (category) => {
 }
 
 // 从知识库补齐证据
-const fillFromKnowledge = (row) => {
+const fillFromKnowledge = (_row) => {
   // 触发事件，由父组件处理
-  console.log('从知识库补齐:', row)
   // 实际项目中可以调用 emit
 }
 
 // 定义 emit（供父组件监听）
-const emit = defineEmits(['fill-from-knowledge'])
+defineEmits(['fill-from-knowledge'])
 </script>
 
 <style scoped>

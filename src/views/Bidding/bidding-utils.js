@@ -189,7 +189,6 @@ export function normalizeBatchResult(response) {
 
   const data = response.data || response
   const success = data.success !== false
-  const total = data.totalCount || 0
   const succeeded = data.successCount || 0
   const failed = data.failureCount || 0
 

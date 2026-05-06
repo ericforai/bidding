@@ -13,8 +13,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-
 const props = defineProps({
   layout: { type: Object, default: () => ({ columns: [] }) },
   registry: { type: Object, required: true },

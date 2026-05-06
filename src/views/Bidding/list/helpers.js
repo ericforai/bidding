@@ -40,7 +40,8 @@ export function buildPermissionFlags(role) {
 
 export function sanitizeSourceConfigForStorage(config = {}) {
   const merged = { ...DEFAULT_SOURCE_CONFIG, ...config }
-  const { apiKey, ...safeConfig } = merged
+  // Intentionally drop the API key before persisting — it must never land in storage.
+  const { apiKey: _apiKey, ...safeConfig } = merged
   return {
     ...safeConfig,
     platforms: Array.isArray(safeConfig.platforms) ? safeConfig.platforms : [],

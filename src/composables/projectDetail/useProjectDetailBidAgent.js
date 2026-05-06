@@ -131,7 +131,7 @@ export function useProjectDetailBidAgent(context) {
     }
   }
 
-  const confirmWorkbench = async (confirmedProfile) => {
+  const confirmWorkbench = async (_confirmedProfile) => {
     showWorkbench.value = false
     drawerVisible.value = true
     

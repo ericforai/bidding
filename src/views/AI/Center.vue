@@ -77,41 +77,12 @@
 </template>
 
 <script setup>
-import { ref, computed, markRaw } from 'vue'
+import { ref } from 'vue'
 import { Document, RefreshLeft, Download } from '@element-plus/icons-vue'
-import {
-  TrendCharts,
-  Aim,
-  View,
-  TrendCharts as TrendUp,
-  MagicStick,
-  Lock,
-  Document as DocumentIcon,
-  User,
-  Setting as SettingIcon
-} from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import FeatureCard from './components/FeatureCard.vue'
 import ConfigDialog from '@/components/ai/ConfigDialog.vue'
-import { aiConfigs, getConfigById } from '@/config/ai-prompts'
-
-// 图标映射表
-const iconMap = {
-  'analysis': markRaw(TrendCharts),
-  'score': markRaw(Aim),
-  'intel': markRaw(View),
-  'roi': markRaw(TrendUp),
-  'assembly': markRaw(MagicStick),
-  'compliance': markRaw(Lock),
-  'version': markRaw(DocumentIcon),
-  'collab': markRaw(User),
-  'tasks': markRaw(SettingIcon)
-}
-
-// 获取图标组件
-const getIconComponent = (iconName) => {
-  return iconMap[iconName] || iconMap['analysis']
-}
+import { getConfigById } from '@/config/ai-prompts'
 
 // Tab 切换
 const activeTab = ref('prepare')
@@ -230,14 +201,11 @@ const handleToggle = (featureId, enabled) => {
 
 // 处理配置按钮点击
 const handleConfigure = (featureId) => {
-  console.log('[Center] handleConfigure called, featureId:', featureId)
   currentConfigId.value = featureId
   const config = getConfigById(featureId)
-  console.log('[Center] config from getConfigById:', config)
   if (config) {
     currentConfigData.value = config
     showConfigDialog.value = true
-    console.log('[Center] Opening dialog, showConfigDialog:', showConfigDialog.value)
   } else {
     // 使用本地功能数据作为后备
     const allFeatures = [
@@ -266,14 +234,12 @@ const handleConfigure = (featureId) => {
 }
 
 // 保存配置
-const handleSaveConfig = ({ id, config }) => {
-  console.log('Save config:', id, config)
+const handleSaveConfig = () => {
   ElMessage.success('配置保存成功')
 }
 
 // 测试配置
-const handleTestConfig = ({ id, config }) => {
-  console.log('Test config:', id, config)
+const handleTestConfig = () => {
   ElMessage.info('正在测试配置...')
   setTimeout(() => {
     ElMessage.success('测试运行完成')
@@ -306,12 +272,6 @@ const handleReset = async () => {
 
 // 导出配置
 const handleExport = () => {
-  const config = {
-    prepare: prepareFeatures.value.map(f => ({ id: f.id, enabled: f.enabled })),
-    compile: compileFeatures.value.map(f => ({ id: f.id, enabled: f.enabled })),
-    collab: collabFeatures.value.map(f => ({ id: f.id, enabled: f.enabled }))
-  }
-  console.log('Export config:', config)
   ElMessage.success('配置导出成功')
 }
 </script>

@@ -16,7 +16,6 @@ import { resetAuthStoreSession, syncAuthStoreSession } from './authStoreBridge.j
 import router from '@/router/index.js'
 
 let refreshPromise = null
-let authFailureHandled = false
 
 const syncRefreshedSession = async (refreshResult) => {
   if (!refreshResult?.success || !refreshResult?.data?.user) {
@@ -70,8 +69,7 @@ const handleAuthFailure = async () => {
   }
   
   handleAuthFailure._lastAlert = Date.now()
-  console.log('[DEBUG] handleAuthFailure triggered')
-  
+
   // Use a fallback for ElMessage in tests if needed
   try {
     ElMessage.error('登录已过期，请重新登录')
@@ -90,8 +88,7 @@ const handleAuthFailure = async () => {
   // Always attempt redirect after session clear
   setTimeout(() => {
     const currentPath = router.currentRoute.value.path
-    console.log('[DEBUG] redirecting from:', currentPath)
-    
+
     if (currentPath !== '/login') {
       router.push('/login').catch((navError) => {
         if (navError.name !== 'NavigationDuplicated' && 
@@ -129,7 +126,6 @@ httpClient.interceptors.request.use(
 // 响应拦截器
 httpClient.interceptors.response.use(
   (response) => {
-    authFailureHandled = false
     // 后端返回的统一格式: { success: true, data: ..., message: ... }
     return response.data
   },

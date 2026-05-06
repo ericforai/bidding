@@ -64,7 +64,7 @@ describe('useProjectDetailBidAgent', () => {
     const file = new File(['招标正文'], '招标文件.docx')
 
     agent.selectTenderFile(file)
-    const result = await agent.importTenderDocument()
+    await agent.importTenderDocument()
 
     expect(apiMocks.importTenderDocument).toHaveBeenCalledWith(12, expect.any(FormData))
     expect(agent.showWorkbench.value).toBe(true)

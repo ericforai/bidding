@@ -128,7 +128,7 @@ import { useNotifications } from '@/composables/useNotifications'
 import NotificationPanel from '@/components/common/NotificationPanel.vue'
 import { hasMenuAccessForRole } from '@/api/modules/settings'
 
-const props = defineProps({
+defineProps({
   collapse: {
     type: Boolean,
     default: false
