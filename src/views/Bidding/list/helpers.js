@@ -79,6 +79,15 @@ export function formatLocalDateTime(value) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 
+export function formatManualTenderDeadline(value) {
+  const date = value instanceof Date ? new Date(value.getTime()) : new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  if (date.getHours() === 0 && date.getMinutes() === 0 && date.getSeconds() === 0 && date.getMilliseconds() === 0) {
+    date.setHours(23, 59, 59, 0)
+  }
+  return formatLocalDateTime(date)
+}
+
 export function formatLocalDate(value = new Date()) {
   const date = value instanceof Date ? value : new Date(value)
   if (Number.isNaN(date.getTime())) return null
@@ -92,7 +101,7 @@ export function buildManualTenderPayload(form = {}) {
     budget: form.budget,
     region: form.region,
     industry: form.industry,
-    deadline: formatLocalDateTime(form.deadline),
+    deadline: formatManualTenderDeadline(form.deadline),
     publishDate: formatLocalDate(),
     source: 'manual',
     purchaserName: form.purchaser,

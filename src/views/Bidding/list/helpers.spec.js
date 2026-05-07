@@ -144,6 +144,35 @@ describe('bidding list helpers', () => {
     })
   })
 
+  it('sends date-only manual tender deadlines at end of day', () => {
+    const payload = buildManualTenderPayload({
+      title: '当天截止标讯',
+      budget: 1000,
+      region: '上海',
+      industry: '政府',
+      deadline: new Date('2026-05-07T00:00:00'),
+    })
+
+    expect(payload.deadline).toBe('2026-05-07T23:59:59')
+  })
+
+  it('keeps AI parsed date-only deadlines compatible with manual tender save', () => {
+    const normalized = normalizeManualTenderParseResult({
+      extractedData: {
+        deadline: '2026-05-07',
+      },
+    })
+    const payload = buildManualTenderPayload({
+      title: '识别回填当天截止标讯',
+      budget: 1000,
+      region: '上海',
+      industry: '政府',
+      deadline: normalized.deadline,
+    })
+
+    expect(payload.deadline).toBe('2026-05-07T23:59:59')
+  })
+
   it('converts parsed 万元 budgets to yuan before manual form backfill', () => {
     const normalized = normalizeManualTenderParseResult({
       extractedData: {
