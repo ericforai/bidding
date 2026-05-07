@@ -22,6 +22,32 @@ class OrganizationEventNoticeParserTest {
     }
 
     @Test
+    @DisplayName("accepts optional parentId and millisecond event time from event bus")
+    void parse_acceptsOptionalParentIdAndEpochMillis() {
+        OrganizationEventNoticeParseResult result = OrganizationEventNoticeParser.parse(new OrganizationEventNoticeFields(
+                "t509415008096264192", "s509415010981044224", "", "oss", "BaseOssUser",
+                "1730884403101", "720518523", "", "720518523"
+        ));
+
+        assertThat(result.valid()).isTrue();
+        assertThat(result.notice().parentId()).isEmpty();
+        assertThat(result.notice().key()).isEqualTo("720518523");
+        assertThat(result.notice().subjectId()).isEqualTo("720518523");
+    }
+
+    @Test
+    @DisplayName("accepts null parentId as optional event bus field")
+    void parse_acceptsNullParentId() {
+        OrganizationEventNoticeParseResult result = OrganizationEventNoticeParser.parse(new OrganizationEventNoticeFields(
+                "t509415008096264192", "s509415010981044224", null, "oss", "BaseOssUser",
+                "1730884403101", "720518523", "", "720518523"
+        ));
+
+        assertThat(result.valid()).isTrue();
+        assertThat(result.notice().parentId()).isEmpty();
+    }
+
+    @Test
     @DisplayName("rejects missing topic-specific data id")
     void parse_rejectsMissingUserId() {
         OrganizationEventNoticeParseResult result = OrganizationEventNoticeParser.parse(new OrganizationEventNoticeFields(

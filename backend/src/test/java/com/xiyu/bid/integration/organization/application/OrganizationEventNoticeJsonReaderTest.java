@@ -34,6 +34,28 @@ class OrganizationEventNoticeJsonReaderTest {
     }
 
     @Test
+    @DisplayName("parses numeric event bus fields and optional parentId")
+    void parse_numericEventBusFields() {
+        OrganizationEventNoticeParseResult result = reader.parse("""
+                {
+                  "traceId": "t509415008096264192",
+                  "spanId": "s509415010981044224",
+                  "data": {"deptId": 3730158, "id": 3600},
+                  "eventSource": "oss",
+                  "eventTopic": "BaseOssDept",
+                  "time": 1730884403101,
+                  "key": 3730158
+                }
+                """);
+
+        assertThat(result.valid()).isTrue();
+        assertThat(result.notice().topic()).isEqualTo(OrganizationEventType.DEPARTMENT_NOTICE);
+        assertThat(result.notice().key()).isEqualTo("3730158");
+        assertThat(result.notice().subjectId()).isEqualTo("3730158");
+        assertThat(result.notice().parentId()).isEmpty();
+    }
+
+    @Test
     @DisplayName("rejects malformed JSON without throwing")
     void parse_malformedJson_returnsInvalid() {
         OrganizationEventNoticeParseResult result = reader.parse("{\"eventTopic\":\"BaseOssUser\"");
