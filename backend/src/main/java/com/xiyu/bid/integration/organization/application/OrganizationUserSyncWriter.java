@@ -28,8 +28,8 @@ public class OrganizationUserSyncWriter {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public User upsert(String sourceApp, String eventKey, OrganizationUserSnapshot snapshot) {
+        validateRequiredContact(snapshot);
         User user = userRepository.findByExternalOrgSourceAppAndExternalOrgUserId(sourceApp, snapshot.externalUserId())
-                .or(() -> userRepository.findByUsername(fallbackUsername(snapshot)))
                 .orElseGet(User::new);
         OrganizationUserSyncPlan plan = OrganizationSyncPolicy.planUserSync(
                 snapshot,
@@ -53,6 +53,26 @@ public class OrganizationUserSyncWriter {
         return userRepository.save(user);
     }
 
+    private void validateRequiredContact(OrganizationUserSnapshot snapshot) {
+        if (snapshot.email() == null || snapshot.email().isBlank()) {
+            throw new IllegalArgumentException("组织架构用户邮箱不能为空");
+        }
+        if (snapshot.phone() == null || snapshot.phone().isBlank()) {
+            throw new IllegalArgumentException("组织架构用户手机号不能为空");
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void disableByExternalId(String sourceApp, String eventKey, String externalUserId) {
+        userRepository.findByExternalOrgSourceAppAndExternalOrgUserId(sourceApp, externalUserId)
+                .ifPresent(user -> {
+                    user.setEnabled(false);
+                    user.setLastOrgEventKey(eventKey);
+                    user.setLastOrgSyncedAt(LocalDateTime.now());
+                    userRepository.save(user);
+                });
+    }
+
     private void applyRole(User user, String roleCode) {
         RoleProfile roleProfile = roleProfileRepository.findByCodeIgnoreCase(roleCode)
                 .or(() -> roleProfileRepository.findByCodeIgnoreCase(RoleProfileCatalog.STAFF_CODE))
@@ -65,9 +85,4 @@ public class OrganizationUserSyncWriter {
         return values.stream().map(value -> value.trim().toLowerCase(Locale.ROOT)).collect(java.util.stream.Collectors.toSet());
     }
 
-    private String fallbackUsername(OrganizationUserSnapshot snapshot) {
-        return (snapshot.username() == null || snapshot.username().isBlank())
-                ? snapshot.externalUserId().trim().toLowerCase(Locale.ROOT)
-                : snapshot.username().trim().toLowerCase(Locale.ROOT);
-    }
 }

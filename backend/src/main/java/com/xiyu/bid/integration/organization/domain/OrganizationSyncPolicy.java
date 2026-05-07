@@ -49,7 +49,7 @@ public final class OrganizationSyncPolicy {
     ) {
         String username = firstPresent(incoming.username(), incoming.externalUserId());
         String fullName = firstPresent(incoming.fullName(), username);
-        String email = firstPresent(incoming.email(), username + "@external-org.local");
+        String email = blankToEmpty(incoming.email());
         String roleCode = planRoleCode(incoming.externalRoleCode(), existingRoleCode, adminRoleCodes, managerRoleCodes);
         return new OrganizationUserSyncPlan(
                 normalize(username),

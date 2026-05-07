@@ -43,6 +43,22 @@ class OrganizationEventInboxServiceTest {
     }
 
     @Test
+    @DisplayName("reserve stores millisecond event time from event bus")
+    void reserve_storesEpochMillisEventTime() {
+        when(repository.saveAndFlush(any(OrganizationEventLogEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        OrganizationEventInboxService service = new OrganizationEventInboxService(repository);
+
+        service.reserve(new OrganizationEventNotice(
+                "trace-1", "span-1", "", "oss",
+                OrganizationEventType.USER_NOTICE, "1730884403101", "720518523", "720518523"
+        ), "{}");
+
+        ArgumentCaptor<OrganizationEventLogEntity> saved = ArgumentCaptor.forClass(OrganizationEventLogEntity.class);
+        verify(repository).saveAndFlush(saved.capture());
+        assertThat(saved.getValue().getEventTime()).isNotNull();
+    }
+
+    @Test
     @DisplayName("duplicate unique key returns false")
     void reserve_duplicate_returnsFalse() {
         when(repository.saveAndFlush(any(OrganizationEventLogEntity.class)))

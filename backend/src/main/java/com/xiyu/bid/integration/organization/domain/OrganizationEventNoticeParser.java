@@ -19,7 +19,6 @@ public final class OrganizationEventNoticeParser {
         String missing = firstMissing(
                 fields.traceId(),
                 fields.spanId(),
-                fields.parentId(),
                 fields.eventSource(),
                 fields.time(),
                 fields.key(),
@@ -31,7 +30,7 @@ public final class OrganizationEventNoticeParser {
         return OrganizationEventNoticeParseResult.ok(new OrganizationEventNotice(
                 fields.traceId().trim(),
                 fields.spanId().trim(),
-                fields.parentId().trim(),
+                trim(fields.parentId()),
                 fields.eventSource().trim(),
                 topic,
                 fields.time().trim(),
@@ -43,7 +42,6 @@ public final class OrganizationEventNoticeParser {
     private static String firstMissing(
             String traceId,
             String spanId,
-            String parentId,
             String eventSource,
             String time,
             String key,
@@ -54,9 +52,6 @@ public final class OrganizationEventNoticeParser {
         }
         if (isBlank(spanId)) {
             return "spanId";
-        }
-        if (isBlank(parentId)) {
-            return "parentId";
         }
         if (isBlank(eventSource)) {
             return "eventSource";
@@ -72,5 +67,9 @@ public final class OrganizationEventNoticeParser {
 
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private static String trim(String value) {
+        return value == null ? "" : value.trim();
     }
 }

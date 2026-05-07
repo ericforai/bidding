@@ -22,7 +22,6 @@ public class OrganizationDepartmentSyncWriter {
         OrganizationDepartmentSyncPlan plan = OrganizationSyncPolicy.planDepartmentSync(snapshot);
         OrganizationDepartmentEntity department = departmentRepository
                 .findBySourceAppAndExternalDeptId(sourceApp, plan.externalDeptId())
-                .or(() -> departmentRepository.findById(plan.departmentCode()))
                 .orElseGet(OrganizationDepartmentEntity::new);
         department.setDepartmentCode(plan.departmentCode());
         department.setExternalDeptId(plan.externalDeptId());
@@ -34,5 +33,16 @@ public class OrganizationDepartmentSyncWriter {
         department.setLastSyncedAt(LocalDateTime.now());
         department.setEnabled(plan.enabled());
         return departmentRepository.save(department);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void disableByExternalId(String sourceApp, String eventKey, String externalDeptId) {
+        departmentRepository.findBySourceAppAndExternalDeptId(sourceApp, externalDeptId)
+                .ifPresent(department -> {
+                    department.setEnabled(false);
+                    department.setLastEventKey(eventKey);
+                    department.setLastSyncedAt(LocalDateTime.now());
+                    departmentRepository.save(department);
+                });
     }
 }

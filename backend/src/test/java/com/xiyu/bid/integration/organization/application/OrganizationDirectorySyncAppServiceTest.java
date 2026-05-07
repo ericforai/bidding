@@ -69,12 +69,34 @@ class OrganizationDirectorySyncAppServiceTest {
     }
 
     @Test
-    @DisplayName("missing master data keeps event failed for retry")
-    void receiveWebhook_missingMasterData_returns500() {
+    @DisplayName("master data gateway exception keeps event failed for retry")
+    void receiveWebhook_gatewayException_returns500() {
+        gateway.throwOnUserFetch = true;
+
         OrganizationEventWebhookResponse response = service.receiveWebhook(request("BaseOssUser", "userId", "10001"));
 
         assertThat(response.code()).isEqualTo("500");
         assertThat(inbox.status).isEqualTo(OrganizationEventStatus.FAILED);
+    }
+
+    @Test
+    @DisplayName("missing user master data disables local user by immutable userId")
+    void receiveWebhook_missingUserMasterData_disablesLocalUser() {
+        OrganizationEventWebhookResponse response = service.receiveWebhook(request("BaseOssUser", "userId", "720518523"));
+
+        assertThat(response.code()).isEqualTo("200");
+        assertThat(userWriter.disabledExternalUserId).isEqualTo("720518523");
+        assertThat(inbox.status).isEqualTo(OrganizationEventStatus.PROCESSED);
+    }
+
+    @Test
+    @DisplayName("missing department master data disables local department by immutable deptId")
+    void receiveWebhook_missingDepartmentMasterData_disablesLocalDepartment() {
+        OrganizationEventWebhookResponse response = service.receiveWebhook(request("BaseOssDept", "deptId", "3730158"));
+
+        assertThat(response.code()).isEqualTo("200");
+        assertThat(departmentWriter.disabledExternalDeptId).isEqualTo("3730158");
+        assertThat(inbox.status).isEqualTo(OrganizationEventStatus.PROCESSED);
     }
 
     @Test
@@ -116,6 +138,7 @@ class OrganizationDirectorySyncAppServiceTest {
         Optional<OrganizationDepartmentSnapshot> department = Optional.empty();
         String fetchedUserId;
         String fetchedDeptId;
+        boolean throwOnUserFetch;
 
         public Optional<OrganizationDepartmentSnapshot> fetchDepartmentByDeptId(String deptId) {
             fetchedDeptId = deptId;
@@ -123,6 +146,9 @@ class OrganizationDirectorySyncAppServiceTest {
         }
 
         public Optional<OrganizationUserSnapshot> fetchUserByUserId(String userId) {
+            if (throwOnUserFetch) {
+                throw new IllegalStateException("gateway down");
+            }
             fetchedUserId = userId;
             return user;
         }
@@ -169,6 +195,7 @@ class OrganizationDirectorySyncAppServiceTest {
 
     static class FakeDepartmentWriter extends OrganizationDepartmentSyncWriter {
         OrganizationDepartmentSnapshot snapshot;
+        String disabledExternalDeptId;
 
         FakeDepartmentWriter() {
             super(null);
@@ -182,10 +209,15 @@ class OrganizationDirectorySyncAppServiceTest {
             this.snapshot = snapshot;
             return new com.xiyu.bid.integration.organization.infrastructure.persistence.entity.OrganizationDepartmentEntity();
         }
+
+        public void disableByExternalId(String sourceApp, String eventKey, String externalDeptId) {
+            this.disabledExternalDeptId = externalDeptId;
+        }
     }
 
     static class FakeUserWriter extends OrganizationUserSyncWriter {
         OrganizationUserSnapshot snapshot;
+        String disabledExternalUserId;
 
         FakeUserWriter() {
             super(null, null, new OrganizationIntegrationProperties());
@@ -194,6 +226,10 @@ class OrganizationDirectorySyncAppServiceTest {
         public com.xiyu.bid.entity.User upsert(String sourceApp, String eventKey, OrganizationUserSnapshot snapshot) {
             this.snapshot = snapshot;
             return new com.xiyu.bid.entity.User();
+        }
+
+        public void disableByExternalId(String sourceApp, String eventKey, String externalUserId) {
+            this.disabledExternalUserId = externalUserId;
         }
     }
 }

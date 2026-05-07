@@ -39,6 +39,6 @@ public class OrganizationEventNoticeJsonReader {
 
     private String text(JsonNode node, String field) {
         JsonNode value = node.path(field);
-        return value.isTextual() ? value.asText().trim() : "";
+        return value.isValueNode() && !value.isNull() ? value.asText().trim() : "";
     }
 }
