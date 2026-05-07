@@ -26,7 +26,7 @@ backlinks:
   - implementation/sow-2026-v1-4
 created: 2026-04-15
 updated: 2026-05-07
-health_checked: 2026-05-07
+health_checked: 2026-05-08
 ---
 # 需求追溯
 

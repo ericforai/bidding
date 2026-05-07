@@ -1,12 +1,12 @@
-# Extract: 泊冉投标系统与西域对接技术相关内容.md
+# Extract: 西域投标系统对接技术规格书.md
 
-- source_path: .wiki/sources/technical/泊冉投标系统与西域对接技术相关内容.md
+- source_path: .wiki/sources/technical/西域投标系统对接技术规格书.md
 - source_type: markdown
 - topic: technical
-- generated_at: 2026-05-07T12:37:25.953Z
+- generated_at: 2026-05-07T23:29:33.432Z
 - status: extracted
 - confidence: 1
-# 泊冉投标系统与西域对接技术相关内容
+# 西域投标系统对接技术规格书
 
 ## 组织架构事件订阅与接口同步接入文档
 

@@ -12,7 +12,7 @@ backlinks:
   - integration-oa-crm
 created: 2026-04-28
 updated: 2026-05-07
-health_checked: 2026-05-07
+health_checked: 2026-05-08
 ---
 # 组织架构对接 - 客户事件库 SDK 方案
 
@@ -100,4 +100,4 @@ backend/src/main/java/com/xiyu/bid/integration/organization/
 
 - [[architecture]] §5 API 集成层
 - [[integration-oa-crm]] OA 与 CRM 集成规范
-- `.wiki/sources/technical/西域投标管理平台与西域对接技术相关内容.md` (原始文档)
+- `.wiki/sources/technical/泊冉投标系统与西域对接技术相关内容.md` (原始文档)

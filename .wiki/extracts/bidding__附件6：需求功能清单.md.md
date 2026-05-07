@@ -3,7 +3,7 @@
 - source_path: .wiki/sources/bidding/附件6：需求功能清单.md
 - source_type: markdown
 - topic: bidding
-- generated_at: 2026-05-07T13:02:04.183Z
+- generated_at: 2026-05-07T23:29:33.327Z
 - status: extracted
 - confidence: 1
 ## 工作表1

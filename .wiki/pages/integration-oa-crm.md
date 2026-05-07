@@ -10,7 +10,7 @@ backlinks:
   - integration-organization-event-sdk
 created: 2026-05-07
 updated: 2026-05-07
-health_checked: 2026-05-07
+health_checked: 2026-05-08
 ---
 # OA 与 CRM 对接规范
 
