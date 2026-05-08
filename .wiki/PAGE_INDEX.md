@@ -30,7 +30,7 @@
 |---|---|---:|---|---:|
 | [_index](pages/_index.md) | 西域投标管理平台知识库 | 3 | 2026-05-08 | 1 |
 | [agent-sop-quickref](pages/agent-sop-quickref.md) | Agent 开发 SOP 快速参考 | 3 | 2026-04-26 | 1 |
-| [deployment](pages/deployment.md) | 部署与上线 | 10 | 2026-05-07 | 15 |
+| [deployment](pages/deployment.md) | 部署与上线 | 10 | 2026-05-08 | 15 |
 | [overview](pages/overview.md) | 项目综述 | 7 | 2026-05-07 | 4 |
 | [team-and-timeline](pages/team-and-timeline.md) | 团队与排期 | 5 | 2026-05-07 | 9 |
 
