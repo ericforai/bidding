@@ -1,6 +1,7 @@
 <template>
   <el-main class="main-content">
     <ProjectBasicInfoCard :project="ctx.project" />
+    <ProjectStageTimeline v-if="ctx.project?.id" :project-id="ctx.project.id" />
     <ProjectApprovalStatusCard :approval-history="ctx.approvalHistory" :project-status="ctx.project?.status" :can-approve-current="ctx.canApproveCurrent" @quick-approve="ctx.handleQuickApprove" @quick-reject="ctx.handleQuickReject" />
     <ProjectExpenseSummaryCard :expenses="ctx.projectExpenses" :summary="ctx.expenseSummary" :loading="ctx.expenseLoading" :error="ctx.expenseError" @manage="ctx.goToExpensePage" />
     <ProjectTaskBoardCard :tasks="ctx.project?.tasks || []" :project-id="ctx.project?.id" :can-manage-project-tasks="ctx.canManageProjectTasks" :is-demo-mode="ctx.isDemoMode" @add-task="ctx.handleAddTask" @reset-tasks="ctx.handleResetTasks" @task-click="ctx.handleTaskClick" @save-task="ctx.handleSaveTask" @status-change="ctx.handleTaskStatusChange" @generate-tasks="ctx.handleGenerateTasks" @tender-breakdown="ctx.handleOpenTenderBreakdown" @score-draft-decompose="ctx.handleOpenScoreDraftDecompose" @add-deliverable="ctx.handleAddDeliverable" @remove-deliverable="ctx.handleRemoveDeliverable" @submit-to-document="ctx.handleSubmitToDocument" />
@@ -19,6 +20,7 @@ import ProjectCollaborationCard from '@/components/project/ProjectCollaborationC
 import ProjectExpenseSummaryCard from '@/components/project/ProjectExpenseSummaryCard.vue'
 import ProjectTaskBoardCard from '@/components/project/ProjectTaskBoardCard.vue'
 import ProjectDetailWorkflowCard from '@/components/project/detail/ProjectDetailWorkflowCard.vue'
+import ProjectStageTimeline from '@/components/project/stage/ProjectStageTimeline.vue'
 
 const ctx = useProjectDetailContext()
 </script>
