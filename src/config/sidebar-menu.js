@@ -25,11 +25,6 @@ export const sidebarMenuConfig = [
         path: '/project',
         name: 'ProjectList',
         meta: { title: '项目列表', permissionKeys: ['project', 'project-list'] }
-      },
-      {
-        path: '/project/create',
-        name: 'ProjectCreate',
-        meta: { title: '创建项目', permissionKeys: ['project', 'project-create'] }
       }
     ]
   },
