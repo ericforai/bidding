@@ -12,11 +12,12 @@
           :auto-upload="false"
           :show-file-list="false"
           :on-change="handleFileChange"
-          accept=".doc,.docx"
+          accept=".doc,.docx,.xls,.xlsx,.pdf"
         >
           <el-button type="primary">选择评分文件</el-button>
         </el-upload>
         <span class="file-name">{{ selectedFile?.name || '未选择文件' }}</span>
+        <span class="upload-tip">支持 doc、docx、xls、xlsx、文本型 pdf</span>
         <el-button type="success" :disabled="!selectedFile" :loading="parsing" @click="handleParse">
           解析评分标准
         </el-button>
@@ -295,32 +296,12 @@ function handleClose() {
 </script>
 
 <style scoped>
-.score-draft-dialog {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.file-name {
-  color: #606266;
-  font-size: 13px;
-}
-
-.summary {
-  display: flex;
-  gap: 8px;
-}
-
-.rule-text {
-  white-space: pre-wrap;
-  line-height: 1.5;
-}
+.score-draft-dialog { display: flex; flex-direction: column; gap: 16px; }
+.toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.file-name { color: #606266; font-size: 13px; }
+.upload-tip { color: #909399; font-size: 12px; }
+.summary { display: flex; gap: 8px; }
+.rule-text { white-space: pre-wrap; line-height: 1.5; }
 
 .deliverables-text,
 .source-text {

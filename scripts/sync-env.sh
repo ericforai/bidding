@@ -31,8 +31,14 @@ FILES=(
 
 for file in "${FILES[@]}"; do
   if [ -f "$ROOT_DIR/$file" ]; then
-    cp "$ROOT_DIR/$file" "$TARGET_DIR/$file"
-    echo "Copied $file to $TARGET_DIR"
+    source_file="$ROOT_DIR/$file"
+    target_file="$TARGET_DIR/$file"
+    if [ "$source_file" = "$target_file" ]; then
+      echo "Skipped $file; source and target are the same file"
+    else
+      cp "$source_file" "$target_file"
+      echo "Copied $file to $TARGET_DIR"
+    fi
   else
     echo "Warning: $file not found in $ROOT_DIR"
   fi

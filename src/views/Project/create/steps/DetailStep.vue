@@ -61,9 +61,7 @@
 <script setup>
 import { ref } from 'vue'
 
-defineProps({
-  detailForm: { type: Object, required: true }
-})
+defineModel('detailForm', { type: Object, required: true })
 
 const formRef = ref(null)
 

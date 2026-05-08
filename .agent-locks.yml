@@ -1,0 +1,9 @@
+version: 1
+locks:
+  - path: "AGENTS.md"
+    scope: "file"
+    owner: "fix"
+    branch: "fix/business-logic-bugs-17546769948228793856"
+    task: "resolve-conflicts"
+    expiresAt: "2026-05-09T12:00:00.000Z"
+    reason: "Resolving merge conflicts from main"

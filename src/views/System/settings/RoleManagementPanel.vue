@@ -1,5 +1,5 @@
 <!-- Input: user data, system roles, department options, and action handlers
-Output: presentational Role Management panel for administrative settings
+Output: presentational Role Management panel with grouped menu permission editing
 Pos: src/views/System/settings/ - System settings panels
 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。 -->
 <template>
@@ -75,15 +75,31 @@ Pos: src/views/System/settings/ - System settings panels
           </el-select>
         </el-form-item>
         <el-form-item label="菜单权限">
-          <el-checkbox-group v-model="form.menuPermissions">
-            <el-checkbox
-              v-for="opt in menuOptions"
-              :key="opt.value"
-              :label="opt.value"
+          <div class="permission-tree">
+            <div
+              v-for="group in menuGroups"
+              :key="group.value"
+              class="permission-group"
             >
-              {{ opt.label }}
-            </el-checkbox>
-          </el-checkbox-group>
+              <el-checkbox
+                :model-value="isGroupChecked(group)"
+                :indeterminate="isGroupIndeterminate(group)"
+                @change="(checked) => handleGroupChange(group, checked)"
+              >
+                {{ group.label }}
+              </el-checkbox>
+              <div v-if="group.children.length" class="permission-children">
+                <el-checkbox
+                  v-for="child in group.children"
+                  :key="child.value"
+                  :model-value="hasPermission(child.value)"
+                  @change="(checked) => handleChildChange(group, child, checked)"
+                >
+                  {{ child.label }}
+                </el-checkbox>
+              </div>
+            </div>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -98,7 +114,14 @@ Pos: src/views/System/settings/ - System settings panels
 import { ref } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { roleMenuOptions } from '@/config/sidebar-menu'
+import { roleMenuGroups, roleMenuOptions } from '@/config/sidebar-menu'
+import {
+  isRolePermissionGroupChecked,
+  isRolePermissionGroupIndeterminate,
+  normalizeRoleMenuPermissions,
+  setRolePermissionChild,
+  setRolePermissionGroup
+} from './role-menu-permission-tree'
 
 const props = defineProps({
   roles: { type: Array, default: () => [] },
@@ -112,6 +135,7 @@ const dialogVisible = ref(false)
 const saving = ref(false)
 const form = ref(emptyForm())
 
+const menuGroups = roleMenuGroups
 const menuOptions = roleMenuOptions
 
 function emptyForm() {
@@ -138,16 +162,33 @@ const handleAddRole = () => {
 const handleEditRole = (role) => {
   form.value = {
     ...role,
-    menuPermissions: Array.isArray(role.menuPermissions) ? [...role.menuPermissions] : []
+    menuPermissions: normalizeRoleMenuPermissions(Array.isArray(role.menuPermissions) ? [...role.menuPermissions] : [])
   }
   dialogVisible.value = true
+}
+
+const hasPermission = (value) => form.value.menuPermissions.includes(value)
+
+const isGroupChecked = (group) => isRolePermissionGroupChecked(form.value.menuPermissions, group)
+
+const isGroupIndeterminate = (group) => isRolePermissionGroupIndeterminate(form.value.menuPermissions, group)
+
+const handleGroupChange = (group, checked) => {
+  form.value.menuPermissions = setRolePermissionGroup(form.value.menuPermissions, group, Boolean(checked))
+}
+
+const handleChildChange = (group, child, checked) => {
+  form.value.menuPermissions = setRolePermissionChild(form.value.menuPermissions, group, child, Boolean(checked))
 }
 
 const saveRole = async () => {
   if (!form.value.name.trim()) return ElMessage.warning('请填写角色名称')
   saving.value = true
   try {
-    await props.saveHandler({ ...form.value })
+    await props.saveHandler({
+      ...form.value,
+      menuPermissions: normalizeRoleMenuPermissions(form.value.menuPermissions)
+    })
     dialogVisible.value = false
   } catch (error) {
     ElMessage.error(error?.message || '保存角色失败')
@@ -187,5 +228,24 @@ const saveRole = async () => {
 }
 .role-form {
   padding-right: 20px;
+}
+.permission-tree {
+  width: 100%;
+  display: grid;
+  gap: 12px;
+}
+.permission-group {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+.permission-group:last-child {
+  border-bottom: 0;
+}
+.permission-children {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin-top: 8px;
+  padding-left: 24px;
 }
 </style>

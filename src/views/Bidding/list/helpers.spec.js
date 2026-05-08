@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  buildManualTenderPayload,
   buildPermissionFlags,
   formatBudgetWan,
   normalizeManualTenderParseResult,
@@ -117,6 +118,59 @@ describe('bidding list helpers', () => {
       description: '升级仓储系统与配套设备',
       tags: ['公开招标', '数字化'],
     })
+  })
+
+  it('keeps parsed source document metadata in manual tender create payload', () => {
+    const payload = buildManualTenderPayload({
+      title: '带附件标讯',
+      budget: null,
+      region: '上海',
+      industry: '数据中心',
+      deadline: new Date('2026-06-01T17:00:00'),
+      purchaser: '西域采购中心',
+      contact: '王经理',
+      phone: '13800138000',
+      description: '附件已由 doc-insight 解析',
+      tags: ['公开招标'],
+      sourceDocumentName: '招标文件.pdf',
+      sourceDocumentFileType: 'application/pdf',
+      sourceDocumentFileUrl: 'doc-insight://TENDER_INTAKE/manual-tender/hash-招标文件.pdf',
+    })
+
+    expect(payload).toMatchObject({
+      sourceDocumentName: '招标文件.pdf',
+      sourceDocumentFileType: 'application/pdf',
+      sourceDocumentFileUrl: 'doc-insight://TENDER_INTAKE/manual-tender/hash-招标文件.pdf',
+    })
+  })
+
+  it('sends date-only manual tender deadlines at end of day', () => {
+    const payload = buildManualTenderPayload({
+      title: '当天截止标讯',
+      budget: 1000,
+      region: '上海',
+      industry: '政府',
+      deadline: new Date('2026-05-07T00:00:00'),
+    })
+
+    expect(payload.deadline).toBe('2026-05-07T23:59:59')
+  })
+
+  it('keeps AI parsed date-only deadlines compatible with manual tender save', () => {
+    const normalized = normalizeManualTenderParseResult({
+      extractedData: {
+        deadline: '2026-05-07',
+      },
+    })
+    const payload = buildManualTenderPayload({
+      title: '识别回填当天截止标讯',
+      budget: 1000,
+      region: '上海',
+      industry: '政府',
+      deadline: normalized.deadline,
+    })
+
+    expect(payload.deadline).toBe('2026-05-07T23:59:59')
   })
 
   it('converts parsed 万元 budgets to yuan before manual form backfill', () => {

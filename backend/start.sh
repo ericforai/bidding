@@ -11,6 +11,32 @@ if [ "$JAVA_VERSION" -lt 21 ]; then
     exit 1
 fi
 
+# --- DEV-ONLY GUARD ---------------------------------------------
+# This script bakes in convenience defaults for JWT/DB credentials.
+# Two-layer guard:
+#   (a) require explicit XIYU_DEV_CONFIRMED=1 opt-in
+#   (b) reject any obvious prod/staging signal regardless
+_env_lower() { echo "${1:-}" | tr '[:upper:]' '[:lower:]'; }
+_is_nonprod_value() {
+  case "$(_env_lower "$1")" in
+    *prod*|*production*|*staging*|*stg*|*release*|*live*|*uat*|*canary*) return 1;;
+    *) return 0;;
+  esac
+}
+_all_clean=0
+for v in "${SPRING_PROFILES_ACTIVE:-}" "${XIYU_ENV:-}" "${NODE_ENV:-}" "${ENV:-}" "${ENVIRONMENT:-}"; do
+  if ! _is_nonprod_value "$v"; then
+    _all_clean=1
+  fi
+done
+if [[ "$_all_clean" == "1" ]] || [[ "${XIYU_DEV_CONFIRMED:-}" != "1" ]]; then
+  echo "ERROR: $(basename "$0") is dev-only tooling and must not run in production-adjacent environments." >&2
+  echo "       Detected: SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-} XIYU_ENV=${XIYU_ENV:-} NODE_ENV=${NODE_ENV:-} ENV=${ENV:-} ENVIRONMENT=${ENVIRONMENT:-}" >&2
+  echo "       To run locally, set XIYU_DEV_CONFIRMED=1 and ensure no prod-like env vars are set." >&2
+  exit 1
+fi
+# ----------------------------------------------------------------
+
 # 必需环境变量（允许外部覆盖，未设置则使用本地开发默认值）
 # 生产部署必须通过真实环境变量注入，不得依赖以下默认值
 export JWT_SECRET="${JWT_SECRET:-xiyu-bid-poc-local-dev-secret-key-please-change-in-prod-32bytes-min}"

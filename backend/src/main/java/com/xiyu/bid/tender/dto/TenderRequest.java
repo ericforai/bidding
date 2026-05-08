@@ -64,6 +64,15 @@ public class TenderRequest {
     @Size(max = 50, message = "联系电话长度不能超过50个字符")
     private String contactPhone;
 
+    @Size(max = 255, message = "源附件名称长度不能超过255个字符")
+    private String sourceDocumentName;
+
+    @Size(max = 100, message = "源附件类型长度不能超过100个字符")
+    private String sourceDocumentFileType;
+
+    @Size(max = 1000, message = "源附件地址长度不能超过1000个字符")
+    private String sourceDocumentFileUrl;
+
     @Size(max = 5000, message = "标讯描述长度不能超过5000个字符")
     private String description;
 

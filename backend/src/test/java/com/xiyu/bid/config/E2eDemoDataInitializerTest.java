@@ -4,6 +4,8 @@ import com.xiyu.bid.entity.RoleProfile;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.RoleProfileRepository;
 import com.xiyu.bid.repository.UserRepository;
+import com.xiyu.bid.task.entity.TaskStatusDict;
+import com.xiyu.bid.task.repository.TaskStatusDictRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,7 +28,9 @@ class E2eDemoDataInitializerTest {
         UserRepository userRepository = mock(UserRepository.class);
         PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
         RoleProfileRepository roleProfileRepository = mock(RoleProfileRepository.class);
-        E2eDemoDataInitializer initializer = new E2eDemoDataInitializer(userRepository, roleProfileRepository, passwordEncoder);
+        TaskStatusDictRepository taskStatusDictRepository = mock(TaskStatusDictRepository.class);
+        E2eDemoDataInitializer initializer = new E2eDemoDataInitializer(
+                userRepository, roleProfileRepository, taskStatusDictRepository, passwordEncoder);
 
         when(userRepository.findByUsername(any())).thenReturn(Optional.empty());
         when(roleProfileRepository.findByCodeIgnoreCase(anyString()))
@@ -48,6 +52,29 @@ class E2eDemoDataInitializerTest {
                 .containsOnly("encoded-123456");
         assertThat(savedUsers)
                 .extracting(User::getEnabled)
+                .containsOnly(true);
+    }
+
+    @Test
+    void seedTaskStatuses_ShouldCreateDefaultKanbanColumns() {
+        UserRepository userRepository = mock(UserRepository.class);
+        PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
+        RoleProfileRepository roleProfileRepository = mock(RoleProfileRepository.class);
+        TaskStatusDictRepository taskStatusDictRepository = mock(TaskStatusDictRepository.class);
+        E2eDemoDataInitializer initializer = new E2eDemoDataInitializer(
+                userRepository, roleProfileRepository, taskStatusDictRepository, passwordEncoder);
+
+        when(taskStatusDictRepository.findById(anyString())).thenReturn(Optional.empty());
+
+        initializer.seedTaskStatuses();
+
+        ArgumentCaptor<TaskStatusDict> statusCaptor = ArgumentCaptor.forClass(TaskStatusDict.class);
+        verify(taskStatusDictRepository, times(4)).save(statusCaptor.capture());
+        assertThat(statusCaptor.getAllValues())
+                .extracting(TaskStatusDict::getCode)
+                .containsExactly("TODO", "IN_PROGRESS", "REVIEW", "COMPLETED");
+        assertThat(statusCaptor.getAllValues())
+                .extracting(TaskStatusDict::getEnabled)
                 .containsOnly(true);
     }
 }

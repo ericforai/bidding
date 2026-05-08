@@ -1,0 +1,75 @@
+<template>
+  <div class="test-accounts">
+    <div class="test-header">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 16v-4"/>
+        <path d="M12 8h.01"/>
+      </svg>
+      <span>登录提示</span>
+    </div>
+    <div class="account-list">
+      <span v-for="account in DEV_ACCOUNTS" :key="account" class="account-tag">
+        {{ account }}
+      </span>
+    </div>
+    <p class="test-hint">{{ DEV_HINT }}</p>
+  </div>
+</template>
+
+<script setup>
+const DEV_ACCOUNTS = [
+  '普通员工: staff / Test@123',
+  '管理者: manager / Test@123',
+  '管理员: admin / XiyuAdmin2026!'
+]
+const DEV_HINT = '本地测试账号已按员工、经理、管理员权限划分'
+</script>
+
+<style scoped>
+.test-accounts {
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(3, 105, 161, 0.05) 0%, rgba(3, 105, 161, 0.02) 100%);
+  border: 1px solid rgba(3, 105, 161, 0.1);
+  border-radius: 12px;
+}
+
+.test-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #0369A1;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.test-header svg {
+  width: 16px;
+  height: 16px;
+}
+
+.account-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.account-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #fff;
+  border: 1px solid rgba(3, 105, 161, 0.2);
+  border-radius: 16px;
+  font-size: 12px;
+  color: #0369A1;
+  font-weight: 500;
+}
+
+.test-hint {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+</style>

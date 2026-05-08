@@ -2,6 +2,7 @@ package com.xiyu.bid.biddraftagent.infrastructure.tenderdocument;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.biddraftagent.application.ExtractedTenderDocument;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +36,7 @@ class MarkItDownSidecarTextExtractorTest {
                 restTemplate,
                 new ObjectMapper(),
                 "http://localhost:8000",
+                "",
                 fallbackExtractor
         );
     }
@@ -61,6 +63,36 @@ class MarkItDownSidecarTextExtractorTest {
         assertThat(result.text()).isEqualTo("# Header\nContent");
         assertThat(result.structuredMetadata()).isEqualTo(sidecarResponse);
         assertThat(result.extractorKey()).isEqualTo("markitdown-sidecar");
+    }
+
+    @Test
+    void shouldSendSidecarKeyWhenConfigured() {
+        extractor = new MarkItDownSidecarTextExtractor(
+                restTemplate,
+                new ObjectMapper(),
+                "http://localhost:8000",
+                "test-sidecar-key",
+                fallbackExtractor
+        );
+        String sidecarResponse = """
+                {
+                  "documentId": "test.pdf",
+                  "markdown": "# Header\\nContent",
+                  "sections": [],
+                  "warnings": [],
+                  "converter": "markitdown",
+                  "contentHash": "12345"
+                }
+                """;
+        when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(String.class)))
+                .thenReturn(sidecarResponse);
+
+        extractor.extract("test.pdf", "application/pdf", "dummy-pdf-content".getBytes());
+
+        ArgumentCaptor<HttpEntity> requestCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(restTemplate).postForObject(anyString(), requestCaptor.capture(), eq(String.class));
+        assertThat(requestCaptor.getValue().getHeaders().getFirst("X-Sidecar-Key"))
+                .isEqualTo("test-sidecar-key");
     }
 
     @Test

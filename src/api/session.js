@@ -17,10 +17,6 @@ const getBrowserStorages = () => {
   return [window.localStorage, window.sessionStorage]
 }
 
-const removeLegacyStoredToken = () => {
-  getBrowserStorages().forEach((storage) => storage.removeItem(ACCESS_TOKEN_KEY))
-}
-
 export const setAccessToken = (token, remember = true) => {
   accessToken = token || null
   // 持久化 token 到存储

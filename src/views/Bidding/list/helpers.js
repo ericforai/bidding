@@ -40,7 +40,8 @@ export function buildPermissionFlags(role) {
 
 export function sanitizeSourceConfigForStorage(config = {}) {
   const merged = { ...DEFAULT_SOURCE_CONFIG, ...config }
-  const { apiKey, ...safeConfig } = merged
+  // Intentionally drop the API key before persisting — it must never land in storage.
+  const { apiKey: _apiKey, ...safeConfig } = merged
   return {
     ...safeConfig,
     platforms: Array.isArray(safeConfig.platforms) ? safeConfig.platforms : [],
@@ -78,6 +79,15 @@ export function formatLocalDateTime(value) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 
+export function formatManualTenderDeadline(value) {
+  const date = value instanceof Date ? new Date(value.getTime()) : new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  if (date.getHours() === 0 && date.getMinutes() === 0 && date.getSeconds() === 0 && date.getMilliseconds() === 0) {
+    date.setHours(23, 59, 59, 0)
+  }
+  return formatLocalDateTime(date)
+}
+
 export function formatLocalDate(value = new Date()) {
   const date = value instanceof Date ? value : new Date(value)
   if (Number.isNaN(date.getTime())) return null
@@ -91,7 +101,7 @@ export function buildManualTenderPayload(form = {}) {
     budget: form.budget,
     region: form.region,
     industry: form.industry,
-    deadline: formatLocalDateTime(form.deadline),
+    deadline: formatManualTenderDeadline(form.deadline),
     publishDate: formatLocalDate(),
     source: 'manual',
     purchaserName: form.purchaser,
@@ -99,6 +109,9 @@ export function buildManualTenderPayload(form = {}) {
     contactPhone: form.phone,
     description: form.description,
     tags: Array.isArray(form.tags) ? form.tags : [],
+    sourceDocumentName: form.sourceDocumentName || '',
+    sourceDocumentFileType: form.sourceDocumentFileType || '',
+    sourceDocumentFileUrl: form.sourceDocumentFileUrl || '',
     status: 'PENDING',
   }
 }

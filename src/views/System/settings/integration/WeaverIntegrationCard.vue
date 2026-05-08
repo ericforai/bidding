@@ -53,8 +53,8 @@
 </template>
 
 <script setup>
+const form = defineModel('form', { type: Object, required: true })
 defineProps({
-  form: { type: Object, required: true },
   secretConfigured: { type: Boolean, default: false },
   loading: { type: Boolean, default: false },
   saving: { type: Boolean, default: false },

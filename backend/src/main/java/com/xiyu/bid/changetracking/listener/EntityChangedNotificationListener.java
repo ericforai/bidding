@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -67,12 +68,13 @@ public class EntityChangedNotificationListener {
             return;
         }
 
-        String title = buildTitle(event.entityTitle());
-        Map<String, Object> payload = Map.of("changes", changes);
+        String title = buildTitle(event.entityType(), event.entityTitle());
+        Map<String, Object> payload = new LinkedHashMap<>(event.metadata());
+        payload.put("changes", changes);
 
         notificationService.createNotification(
             new CreateNotificationRequest(
-                NotificationType.DOCUMENT_CHANGE.name(),
+                notificationType(event.entityType()).name(),
                 event.entityType(),
                 event.entityId(),
                 title,
@@ -84,8 +86,21 @@ public class EntityChangedNotificationListener {
         );
     }
 
-    private static String buildTitle(String entityTitle) {
+    private static NotificationType notificationType(String entityType) {
+        if ("TASK".equals(entityType)) {
+            return NotificationType.TASK_UPDATE;
+        }
+        if ("DOCUMENT".equals(entityType)) {
+            return NotificationType.DOCUMENT_CHANGE;
+        }
+        return NotificationType.INFO;
+    }
+
+    private static String buildTitle(String entityType, String entityTitle) {
         String safe = entityTitle == null || entityTitle.isBlank() ? "对象" : entityTitle;
+        if ("TASK".equals(entityType)) {
+            return "任务《" + safe + "》有更新";
+        }
         return "《" + safe + "》有更新";
     }
 }

@@ -59,7 +59,7 @@
       :visible="confirmDialogVisible"
       :saving="confirmSaving"
       :fetch-record="currentFetchRecord"
-      :form="confirmForm"
+      v-model:form="confirmForm"
       :projects="projects"
       @add-competitor="addConfirmCompetitor"
       @remove-competitor="removeConfirmCompetitor"
@@ -80,7 +80,7 @@
       :visible="uploadDialogVisible"
       :saving="uploadSaving"
       :target="currentReminderRecord"
-      :form="uploadForm"
+      v-model:form="uploadForm"
       @close="uploadDialogVisible = false"
       @submit="submitUpload"
     />

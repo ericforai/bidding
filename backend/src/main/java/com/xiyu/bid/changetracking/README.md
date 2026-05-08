@@ -3,7 +3,7 @@
 > 一旦我所属的文件夹有所变化，请更新我。
 
 ## 职责说明
-跨模块变更通知桥梁：业务模块发 `EntityChangedEvent`，本模块监听事务提交后事件，计算字段级 diff，并触发 DOCUMENT_CHANGE 通知给订阅者。
+跨模块变更通知桥梁：业务模块发 `EntityChangedEvent`，本模块监听事务提交后事件，计算字段级 diff，并按实体类型触发 DOCUMENT_CHANGE / TASK_UPDATE 等通知给订阅者。
 
 ## 边界清单
 
@@ -11,8 +11,8 @@
 |------|------|------|
 | `ChangeDiffPolicy.java` | Core Policy | 字段级 diff 纯函数 |
 | `FieldChange.java` | Core DTO | 字段变更 record |
-| `EntityChangedEvent.java` | Event | 实体变更领域事件 |
-| `EntityChangedNotificationListener.java` | Listener | 订阅者扇出 + 通知派发 |
+| `EntityChangedEvent.java` | Event | 实体变更领域事件，可携带通知 payload metadata |
+| `EntityChangedNotificationListener.java` | Listener | 订阅者扇出 + 按实体类型派发通知 |
 
 ## 使用方式
 

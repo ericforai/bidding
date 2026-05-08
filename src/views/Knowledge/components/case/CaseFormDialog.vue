@@ -1,13 +1,12 @@
 <template>
   <el-dialog
-    :model-value="modelValue"
+    v-model="modelValue"
     title="添加案例"
     width="800px"
     class="add-case-dialog"
-    @update:model-value="$emit('update:modelValue', $event)"
     @closed="handleDialogClosed"
   >
-    <el-tabs v-model="tabModel">
+    <el-tabs v-model="activeTab">
       <el-tab-pane label="从项目转案例" name="fromProject">
         <el-form
           ref="caseFormRef"
@@ -283,7 +282,7 @@
     </el-tabs>
 
     <template #footer>
-      <el-button @click="$emit('update:modelValue', false)">取消</el-button>
+      <el-button @click="modelValue = false">取消</el-button>
       <el-button type="primary" @click="handleSave" :loading="saving">保存案例</el-button>
     </template>
   </el-dialog>
@@ -294,23 +293,12 @@ import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { caseCommonTags, formatAmount } from './caseMeta.js'
 
-const props = defineProps({
-  modelValue: {
-    type: Boolean,
-    default: false
-  },
-  activeTab: {
-    type: String,
-    default: 'fromProject'
-  },
-  caseForm: {
-    type: Object,
-    required: true
-  },
-  manualCaseForm: {
-    type: Object,
-    required: true
-  },
+const modelValue = defineModel({ type: Boolean, default: false })
+const activeTab = defineModel('activeTab', { type: String, default: 'fromProject' })
+const caseForm = defineModel('caseForm', { type: Object, required: true })
+const manualCaseForm = defineModel('manualCaseForm', { type: Object, required: true })
+
+defineProps({
   caseFormRules: {
     type: Object,
     required: true
@@ -337,28 +325,21 @@ const emit = defineEmits([
   'attachment-change',
   'attachment-remove',
   'project-change',
-  'save',
-  'update:activeTab',
-  'update:modelValue'
+  'save'
 ])
 
 const caseFormRef = ref(null)
 const manualCaseFormRef = ref(null)
 
-const tabModel = computed({
-  get: () => props.activeTab,
-  set: value => emit('update:activeTab', value)
-})
-
 const tagOptions = computed(() => caseCommonTags)
 
 const handleSave = async () => {
-  const formRef = tabModel.value === 'fromProject' ? caseFormRef.value : manualCaseFormRef.value
+  const formRef = activeTab.value === 'fromProject' ? caseFormRef.value : manualCaseFormRef.value
   if (!formRef) return
 
   try {
     await formRef.validate()
-    emit('save', tabModel.value)
+    emit('save', activeTab.value)
   } catch (error) {
     if (error !== false) {
       ElMessage.warning('请先完善表单信息')
@@ -367,7 +348,7 @@ const handleSave = async () => {
 }
 
 const handleDialogClosed = () => {
-  tabModel.value = 'fromProject'
+  activeTab.value = 'fromProject'
 }
 </script>
 

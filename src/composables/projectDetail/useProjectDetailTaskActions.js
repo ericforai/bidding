@@ -1,8 +1,10 @@
 import { ElMessageBox } from 'element-plus'
 import { taskTemplates } from './constants.js'
-
+import { normalizeProjectTaskList, openScoreDraftDialogWhenTenderSourceMissing } from './projectDetailTaskGeneration.js'
+import { createTaskAssigneePayload, uploadTaskAttachments } from './taskAssigneePayload.js'
+import { normalizeTaskStatusForApi, taskFormDtoToBackend, taskBackendToCard } from '@/views/Project/project-utils'
 export function useProjectDetailTaskActions(context) {
-  const { route, userStore, projectStore, projectsApi, isApiProject, message, state, workflow } = context
+  const { route, userStore, projectStore, projectsApi, tenderBreakdownApi = projectsApi, isApiProject, message, state, workflow } = context
   const pushActivity = (action) => state.activities.value.unshift({ id: Date.now(), user: userStore.userName, action, time: new Date().toLocaleString('zh-CN', { hour12: false }) })
   const ensureTaskList = () => {
     if (!state.project.value) {
@@ -13,16 +15,53 @@ export function useProjectDetailTaskActions(context) {
     }
     return state.project.value.tasks
   }
-  const normalizeTaskList = (tasks = []) => tasks.map((task) => ({
-    ...task,
-    deliverables: Array.isArray(task.deliverables) ? task.deliverables : [],
-    hasDeliverable: Boolean(task.hasDeliverable),
-  }))
   const resolveErrorMessage = (error, fallback) => error?.response?.data?.message || error?.message || fallback
   const resolveTenderBreakdownReadinessMessage = (readiness = {}) => (
     readiness.message
     || 'DeepSeek API Key 未配置。请管理员到系统设置 → AI 模型配置中填写 DeepSeek provider key，或在服务端设置 DEEPSEEK_API_KEY 后重启。'
   )
+  const hasReusableTenderBreakdown = (result = {}) => Boolean(result?.document?.snapshotId)
+  const isNotFoundResponse = (error) => Number(error?.response?.status || error?.status || error?.code) === 404
+  const resolveTenderBreakdownReuseMessage = (result = {}, uploaded = false) => {
+    const documentName = result?.document?.name
+    const sourceText = uploaded ? '项目已上传的招标文件' : '已解析的招标文件'
+    return documentName
+      ? `已复用${sourceText}「${documentName}」，可直接拆解任务或生成标书初稿`
+      : `已复用${sourceText}，可直接拆解任务或生成标书初稿`
+  }
+  const ensureTenderBreakdownReady = async () => {
+    const readinessResult = await tenderBreakdownApi.getTenderBreakdownReadiness(route.params.id)
+    const readiness = readinessResult?.data || {}
+    if (!readinessResult?.success) throw new Error(readinessResult?.message || '无法检查 DeepSeek 配置状态')
+    if (readiness.ready === false) {
+      message.warning(resolveTenderBreakdownReadinessMessage(readiness))
+      return false
+    }
+    return true
+  }
+  const notifyTenderBreakdownReused = (result, uploaded = false) => {
+    const documentName = result?.document?.name || '招标文件'
+    pushActivity(uploaded ? `复用了项目已上传招标文件「${documentName}」` : `复用了已解析招标文件「${documentName}」`)
+    message.success(resolveTenderBreakdownReuseMessage(result, uploaded))
+  }
+  const tryParseUploadedTenderBreakdown = async () => {
+    if (typeof tenderBreakdownApi.parseUploadedTenderBreakdown !== 'function') {
+      return false
+    }
+    const ready = await ensureTenderBreakdownReady()
+    if (!ready) return true
+    state.tenderBreakdownParsing.value = true
+    try {
+      const result = await tenderBreakdownApi.parseUploadedTenderBreakdown(route.params.id)
+      if (result?.success && hasReusableTenderBreakdown(result.data)) {
+        notifyTenderBreakdownReused(result.data, true)
+        return true
+      }
+      return false
+    } finally {
+      state.tenderBreakdownParsing.value = false
+    }
+  }
 
   const getTaskTemplateByProject = (project) => {
     const industry = project?.industry?.toLowerCase() || ''
@@ -39,10 +78,11 @@ export function useProjectDetailTaskActions(context) {
         const result = await projectsApi.decomposeTasks(route.params.id)
         const tasks = Array.isArray(result?.data) ? result.data : result?.data?.tasks
         if (!result?.success || !Array.isArray(tasks)) throw new Error(result?.message || '任务拆解失败')
-        state.project.value.tasks = normalizeTaskList(tasks)
+        state.project.value.tasks = normalizeProjectTaskList(tasks)
         pushActivity(`自动拆解生成了 ${state.project.value.tasks.length} 个任务`)
         message.success(`已拆解生成 ${state.project.value.tasks.length} 个任务`)
       } catch (error) {
+        if (await openScoreDraftDialogWhenTenderSourceMissing({ error, projectsApi, projectId: route.params.id, state, message, resolveErrorMessage })) return
         message.error(resolveErrorMessage(error, '任务拆解失败'))
       }
       return
@@ -51,7 +91,7 @@ export function useProjectDetailTaskActions(context) {
     state.project.value.tasks = getTaskTemplateByProject(state.project.value).map((taskTemplate, index) => {
       const taskDeadline = new Date(deadline)
       taskDeadline.setDate(taskDeadline.getDate() - taskTemplate.deadlineOffset)
-      return { id: `${state.project.value.id}_T${String(index + 1).padStart(3, '0')}`, name: taskTemplate.name, description: taskTemplate.description, owner: taskTemplate.owner, status: 'todo', priority: taskTemplate.priority, deadline: taskDeadline.toISOString().split('T')[0], hasDeliverable: taskTemplate.needsDeliverable, deliverableType: taskTemplate.deliverableType || 'other', deliverables: [] }
+      return { id: `${state.project.value.id}_T${String(index + 1).padStart(3, '0')}`, name: taskTemplate.name, description: taskTemplate.description, owner: taskTemplate.owner, status: 'TODO', priority: taskTemplate.priority, deadline: taskDeadline.toISOString().split('T')[0], hasDeliverable: taskTemplate.needsDeliverable, deliverableType: taskTemplate.deliverableType || 'other', deliverables: [] }
     })
     pushActivity(`根据项目模板自动生成了 ${state.project.value.tasks.length} 个任务`)
     message.success(`已自动生成 ${state.project.value.tasks.length} 个任务`)
@@ -59,15 +99,46 @@ export function useProjectDetailTaskActions(context) {
 
   const handleScoreDraftGenerated = (tasks) => {
     if (!state.project.value) return
-    state.project.value.tasks = normalizeTaskList(tasks)
+    state.project.value.tasks = normalizeProjectTaskList(tasks)
     pushActivity(`根据评分标准生成了 ${tasks.length} 个正式任务`)
   }
 
-  const handleOpenScoreDraftDecompose = () => {
-    state.scoreDraftDialogVisible.value = true
-  }
+  const handleOpenScoreDraftDecompose = () => { state.scoreDraftDialogVisible.value = true }
 
-  const handleOpenTenderBreakdown = () => {
+  const handleOpenTenderBreakdown = async () => {
+    if (!state.project.value) { message.warning('项目信息未加载'); return }
+    if (!isApiProject.value) {
+      message.warning('当前项目不支持解析招标文件')
+      return
+    }
+    if (state.tenderBreakdownParsing.value) {
+      message.warning('正在解析招标文件，请稍候')
+      return
+    }
+    if (typeof tenderBreakdownApi.getLatestTenderBreakdown === 'function') {
+      try {
+        const latestResult = await tenderBreakdownApi.getLatestTenderBreakdown(route.params.id)
+        if (latestResult?.success && hasReusableTenderBreakdown(latestResult.data)) {
+          notifyTenderBreakdownReused(latestResult.data)
+          return
+        }
+      } catch (error) {
+        if (!isNotFoundResponse(error)) {
+          message.error(resolveErrorMessage(error, '读取已解析招标文件失败'))
+          return
+        }
+      }
+    }
+    try {
+      if (await tryParseUploadedTenderBreakdown()) {
+        return
+      }
+    } catch (error) {
+      if (!isNotFoundResponse(error)) {
+        message.error(resolveErrorMessage(error, '复用已上传招标文件失败'))
+        return
+      }
+    }
     state.tenderBreakdownDialogVisible.value = true
   }
 
@@ -90,18 +161,13 @@ export function useProjectDetailTaskActions(context) {
     }
 
     try {
-      const readinessResult = await projectsApi.getTenderBreakdownReadiness(route.params.id)
-      const readiness = readinessResult?.data || {}
-      if (!readinessResult?.success) {
-        throw new Error(readinessResult?.message || '无法检查 DeepSeek 配置状态')
-      }
-      if (readiness.ready === false) {
-        message.warning(resolveTenderBreakdownReadinessMessage(readiness))
+      const ready = await ensureTenderBreakdownReady()
+      if (!ready) {
         return false
       }
 
       state.tenderBreakdownParsing.value = true
-      const result = await projectsApi.parseTenderBreakdown(route.params.id, file)
+      const result = await tenderBreakdownApi.parseTenderBreakdown(route.params.id, file)
       if (!result?.success || !result?.data?.document?.snapshotId) {
         throw new Error(result?.message || '招标文件解析失败')
       }
@@ -120,7 +186,7 @@ export function useProjectDetailTaskActions(context) {
     if (!state.project.value) return
     const nextIndex = (state.project.value.tasks?.length || 0) + 1
     const dueDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-    const newTask = { name: `新增任务 ${nextIndex}`, owner: userStore.userName, assignee: userStore.userName, department: '投标管理部', dueDate: dueDate.toISOString().split('T')[0], priority: 'medium', status: 'todo', deliverables: [], hasDeliverable: false }
+    const newTask = { name: `新增任务 ${nextIndex}`, owner: userStore.userName, assignee: userStore.userName, department: '投标管理部', dueDate: dueDate.toISOString().split('T')[0], priority: 'medium', status: 'TODO', deliverables: [], hasDeliverable: false }
 
     if (!isApiProject.value) {
       state.project.value.tasks = Array.isArray(state.project.value.tasks) ? state.project.value.tasks : []
@@ -132,7 +198,7 @@ export function useProjectDetailTaskActions(context) {
 
     projectsApi.createTask(route.params.id, { title: newTask.name, description: '', assigneeId: userStore.currentUser?.id || null, assigneeName: userStore.userName, priority: 'MEDIUM', dueDate: dueDate.toISOString() }).then((result) => {
       if (!result?.success || !result?.data) throw new Error(result?.message || '新增任务失败')
-      ensureTaskList().unshift({ ...result.data, deliverables: [], hasDeliverable: false })
+      ensureTaskList().unshift(taskBackendToCard({ ...result.data, deliverables: [] }))
       pushActivity(`新增了任务「${result.data.name}」`)
       message.success('任务已新增')
     }).catch((error) => message.error(error.message || '新增任务失败'))
@@ -146,7 +212,75 @@ export function useProjectDetailTaskActions(context) {
     }).catch(() => {})
   }
 
-  const handleTaskClick = (task) => { state.currentTask.value = task; state.taskDialogVisible.value = true }
+  const handleTaskClick = (task) => { state.currentTask.value = task }
+
+  const handleSaveTask = async (payload = {}) => {
+    const { mode = 'create', data = {}, done } = payload
+    if (!state.project.value) { message.warning('项目信息未加载'); return }
+
+    if (mode === 'edit' && data?.id != null) {
+      const tasks = ensureTaskList()
+      const target = tasks.find((t) => String(t.id) === String(data.id))
+      if (!target) return
+      try {
+        const dto = taskFormDtoToBackend(data)
+        const updated = await projectStore.updateTask(state.project.value.id, target.id, dto)
+        Object.assign(target, taskBackendToCard(updated))
+        await uploadTaskAttachments(target, data.attachments, { projectStore, projectId: route.params.id, userStore })
+        pushActivity(`更新了任务「${target.name}」`)
+        message.success('任务已更新')
+        done?.()
+      } catch (error) {
+        message.error(resolveErrorMessage(error, '任务更新失败'))
+      }
+      return
+    }
+
+    const title = data?.name || `新增任务 ${(state.project.value.tasks?.length || 0) + 1}`
+    const dueDate = data?.deadline ? new Date(data.deadline) : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+
+    if (!isApiProject.value) {
+      const list = ensureTaskList()
+      list.unshift({
+        id: `TASK_${Date.now()}`,
+        name: title,
+        owner: data?.owner || userStore.userName,
+        assignee: data?.owner || userStore.userName,
+        department: '投标管理部',
+        dueDate: dueDate.toISOString().split('T')[0],
+        priority: data?.priority || 'medium',
+        status: data?.status || 'todo',
+        content: data?.content || '',
+        extendedFields: data?.extendedFields || {},
+        deliverables: [],
+        hasDeliverable: false,
+      })
+      pushActivity(`新增了任务「${title}」`)
+      message.success('已新增演示任务')
+      done?.()
+      return
+    }
+
+    try {
+      const result = await projectsApi.createTask(route.params.id, {
+        title,
+        description: '', content: data?.content || '',
+        extendedFields: data?.extendedFields || {},
+        ...createTaskAssigneePayload(data, userStore),
+        priority: (data?.priority || 'medium').toUpperCase(),
+        dueDate: dueDate.toISOString(),
+      })
+      if (!result?.success || !result?.data) throw new Error(result?.message || '新增任务失败')
+      const createdTask = taskBackendToCard({ ...result.data, deliverables: [] })
+      await uploadTaskAttachments(createdTask, data.attachments, { projectStore, projectId: route.params.id, userStore })
+      ensureTaskList().unshift(createdTask)
+      pushActivity(`新增了任务「${result.data.name}」`)
+      message.success('任务已新增')
+      done?.()
+    } catch (error) {
+      message.error(resolveErrorMessage(error, '新增任务失败'))
+    }
+  }
   const handleTaskStatusChange = async (task, newStatus) => {
     if (task) {
       task.status = newStatus
@@ -158,9 +292,9 @@ export function useProjectDetailTaskActions(context) {
       return
     }
     try {
-      const result = await projectsApi.updateTaskStatus(route.params.id, task?.id, ({ todo: 'TODO', doing: 'IN_PROGRESS', review: 'REVIEW', done: 'COMPLETED' }[newStatus] || 'TODO'))
+      const result = await projectsApi.updateTaskStatus(route.params.id, task?.id, normalizeTaskStatusForApi(newStatus))
       if (!result?.success || !result?.data) throw new Error(result?.message || '任务状态更新失败')
-      Object.assign(task, result.data)
+      Object.assign(task, taskBackendToCard(result.data))
       message.success('任务状态已更新')
     } catch (error) {
       message.error(error.message || '任务状态更新失败')
@@ -170,7 +304,8 @@ export function useProjectDetailTaskActions(context) {
     const task = state.project.value?.tasks?.find((item) => item.id === taskId)
     if (!task) return
     task.deliverables = task.deliverables || []
-    task.deliverables.push(deliverable)
+    const exists = deliverable?.id != null && task.deliverables.some((item) => String(item.id) === String(deliverable.id))
+    if (!exists) task.deliverables.push(deliverable)
     task.hasDeliverable = true
     pushActivity(`为任务"${task.name}"上传了交付物: ${deliverable.name}`)
     message.success('交付物已添加')
@@ -189,7 +324,7 @@ export function useProjectDetailTaskActions(context) {
     const tasks = state.project.value?.tasks || []
     if (!tasks.length) return
 
-    const allCompleted = tasks.every((task) => task.status === 'done')
+    const allCompleted = tasks.every((task) => projectStore.isTerminalStatus(task.status))
     if (!allCompleted) {
       message.warning('请先完成所有任务后再提交至标书编写流程')
       return
@@ -219,5 +354,5 @@ export function useProjectDetailTaskActions(context) {
     }
   }
 
-  return { handleGenerateTasks, handleScoreDraftGenerated, handleOpenScoreDraftDecompose, handleOpenTenderBreakdown, handleTenderBreakdownUpload, handleAddTask, handleResetTasks, handleTaskClick, handleTaskStatusChange, handleAddDeliverable, handleRemoveDeliverable, handleSubmitToDocument }
+  return { handleGenerateTasks, handleScoreDraftGenerated, handleOpenScoreDraftDecompose, handleOpenTenderBreakdown, handleTenderBreakdownUpload, handleAddTask, handleResetTasks, handleTaskClick, handleSaveTask, handleTaskStatusChange, handleAddDeliverable, handleRemoveDeliverable, handleSubmitToDocument }
 }

@@ -64,7 +64,7 @@ describe('useProjectDetailBidAgent', () => {
     const file = new File(['招标正文'], '招标文件.docx')
 
     agent.selectTenderFile(file)
-    const result = await agent.importTenderDocument()
+    await agent.importTenderDocument()
 
     expect(apiMocks.importTenderDocument).toHaveBeenCalledWith(12, expect.any(FormData))
     expect(agent.showWorkbench.value).toBe(true)
@@ -99,7 +99,7 @@ describe('useProjectDetailBidAgent', () => {
       message: 'Request failed with status code 409',
       response: {
         data: {
-          message: 'ai.openai.api-key must be configured for bid draft generation',
+          message: 'DeepSeek API key must be configured for bid draft generation; set DEEPSEEK_API_KEY or the DeepSeek provider key in system settings',
         },
       },
     })
@@ -109,7 +109,7 @@ describe('useProjectDetailBidAgent', () => {
     const run = await agent.createRun()
 
     expect(run).toBeNull()
-    expect(agent.error.value).toBe('ai.openai.api-key must be configured for bid draft generation')
+    expect(agent.error.value).toBe('DeepSeek API key must be configured for bid draft generation; set DEEPSEEK_API_KEY or the DeepSeek provider key in system settings')
     expect(context.message.error).not.toHaveBeenCalled()
   })
 

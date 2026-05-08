@@ -106,10 +106,27 @@ export function getBannerActionConfig(role) {
 
 export function filterProjectsByRole(projects, { role = 'staff', userName = '', limit = 3 } = {}) {
   const source = Array.isArray(projects) ? projects : []
-  const filtered = role === 'admin'
-    ? source.filter((project) => project?.priority === 'high' || project?.priority === 'urgent')
-    : source.filter((project) => project?.manager === userName)
-  return filtered.slice(0, limit)
+  const activeProjects = source.filter(isActiveProject)
+  const sorted = [...activeProjects].sort((left, right) => {
+    const leftRank = getWorkbenchProjectRank(left, { role, userName })
+    const rightRank = getWorkbenchProjectRank(right, { role, userName })
+    return leftRank - rightRank
+  })
+  return sorted.slice(0, limit)
+}
+
+const ARCHIVED_PROJECT_STATUSES = new Set(['ARCHIVED', '已归档', '已完成'])
+const PRIORITY_RANK = { urgent: 0, high: 1, medium: 2, low: 3 }
+
+function isActiveProject(project) {
+  if (!project) return false
+  return !ARCHIVED_PROJECT_STATUSES.has(String(project.status || '').trim())
+}
+
+function getWorkbenchProjectRank(project, { role, userName }) {
+  const ownerRank = role === 'admin' || project?.manager !== userName ? 1 : 0
+  const priorityRank = PRIORITY_RANK[project?.priority] ?? PRIORITY_RANK.low
+  return ownerRank * 10 + priorityRank
 }
 
 export function getMetricRouteTarget(metricOrKey) {

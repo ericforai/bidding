@@ -59,7 +59,7 @@
     </el-card>
 
     <AssemblyProgressDialog
-      v-model="progressVisible"
+      v-model="showAssemblyProgress"
       :steps="assemblySteps"
       :current-step-index="currentStepIndex"
     />
@@ -67,36 +67,23 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
 import { MagicStick } from '@element-plus/icons-vue'
 import AssemblyProgressDialog from './AssemblyProgressDialog.vue'
 import HistoryLists from './HistoryLists.vue'
 
-const props = defineProps({
+defineModel('assemblyForm', { type: Object, required: true })
+const showAssemblyProgress = defineModel('showAssemblyProgress', { type: Boolean, default: false })
+defineProps({
   assemblyTemplates: { type: Array, default: () => [] },
   assemblyHistory: { type: Array, default: () => [] },
-  assemblyForm: { type: Object, required: true },
   assemblySteps: { type: Array, default: () => [] },
   currentStepIndex: { type: Number, default: 0 },
   isAssembling: { type: Boolean, default: false },
-  showAssemblyProgress: { type: Boolean, default: false },
   exportHistory: { type: Array, default: () => [] },
   archiveHistory: { type: Array, default: () => [] }
 })
 
-const emit = defineEmits(['start-assembly', 'update:showAssemblyProgress'])
-
-const progressVisible = ref(props.showAssemblyProgress)
-
-watch(() => props.showAssemblyProgress, (val) => {
-  progressVisible.value = val
-})
-
-watch(progressVisible, (val) => {
-  if (val !== props.showAssemblyProgress) {
-    emit('update:showAssemblyProgress', val)
-  }
-})
+defineEmits(['start-assembly'])
 </script>
 
 <style scoped>

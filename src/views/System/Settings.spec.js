@@ -110,6 +110,8 @@ const stubs = {
   AiModelSettingsPanel: childStub,
   BidMatchScoringSettingsPanel: childStub,
   SystemIntegrationPanel: childStub,
+  TaskStatusDictPanel: { template: '<div>任务状态字典面板</div>' },
+  TaskExtendedFieldPanel: { template: '<div>任务扩展字段面板</div>' },
   AuditLogPanel: { template: '<div>审计日志面板</div>' },
 }
 
@@ -145,6 +147,38 @@ describe('Settings', () => {
 
   it('does not keep audit log active when a non-privileged role requests the audit tab', () => {
     const wrapper = mountSettings({ role: 'staff', query: { tab: 'audit' } })
+
+    expect(wrapper.find('.settings-tabs').attributes('data-active')).toBe('departments')
+  })
+
+  it('shows task status dict tab only for admin', () => {
+    const adminWrapper = mountSettings({ role: 'admin' })
+    expect(adminWrapper.text()).toContain('任务状态字典')
+    expect(adminWrapper.text()).toContain('任务状态字典面板')
+
+    const managerWrapper = mountSettings({ role: 'manager' })
+    expect(managerWrapper.text()).not.toContain('任务状态字典')
+    expect(managerWrapper.text()).not.toContain('任务状态字典面板')
+  })
+
+  it('redirects task-status-dict query tab away for non-admin', () => {
+    const wrapper = mountSettings({ role: 'staff', query: { tab: 'task-status-dict' } })
+
+    expect(wrapper.find('.settings-tabs').attributes('data-active')).toBe('departments')
+  })
+
+  it('shows task extended fields tab only for admin', () => {
+    const adminWrapper = mountSettings({ role: 'admin' })
+    expect(adminWrapper.text()).toContain('任务扩展字段')
+    expect(adminWrapper.text()).toContain('任务扩展字段面板')
+
+    const managerWrapper = mountSettings({ role: 'manager' })
+    expect(managerWrapper.text()).not.toContain('任务扩展字段')
+    expect(managerWrapper.text()).not.toContain('任务扩展字段面板')
+  })
+
+  it('redirects task-extended-fields query tab away for non-admin', () => {
+    const wrapper = mountSettings({ role: 'staff', query: { tab: 'task-extended-fields' } })
 
     expect(wrapper.find('.settings-tabs').attributes('data-active')).toBe('departments')
   })

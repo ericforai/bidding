@@ -61,6 +61,7 @@
               <el-tooltip :content="winProbabilityView.tooltip" placement="top">
                 <span class="win-probability-label">{{ winProbabilityView.label }}</span>
               </el-tooltip>
+              <span class="win-probability-source">按真实匹配评分换算</span>
             </div>
           </el-descriptions-item>
         </el-descriptions>
@@ -153,7 +154,14 @@
           </div>
         </template>
 
-        <div class="cases-list">
+        <div v-if="relatedCasesLoading" class="cases-list">
+          <el-skeleton :rows="3" animated />
+        </div>
+        <el-empty
+          v-else-if="relatedCases.length === 0"
+          description="暂无真实案例推荐"
+        />
+        <div v-else class="cases-list">
           <div v-for="caseItem in relatedCases" :key="caseItem.id" class="case-item" @click="handleViewCase(caseItem.id)">
             <div class="case-icon">
               <el-icon><Document /></el-icon>
@@ -210,6 +218,7 @@ const {
   advantages,
   suggestions,
   relatedCases,
+  relatedCasesLoading,
   getScoreClass,
   getStatusType,
   getStatusText,

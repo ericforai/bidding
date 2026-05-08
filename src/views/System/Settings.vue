@@ -42,6 +42,20 @@
       <el-tab-pane label="接口权限矩阵" name="interface-permissions">
         <InterfacePermissionMatrixPanel />
       </el-tab-pane>
+      <el-tab-pane
+        v-if="isAdmin"
+        label="任务状态字典"
+        name="task-status-dict"
+      >
+        <TaskStatusDictPanel />
+      </el-tab-pane>
+      <el-tab-pane
+        v-if="isAdmin"
+        label="任务扩展字段"
+        name="task-extended-fields"
+      >
+        <TaskExtendedFieldPanel />
+      </el-tab-pane>
       <el-tab-pane label="用户组织归属" name="users">
         <UserOrganizationPanel
           v-loading="loading"
@@ -56,8 +70,8 @@
           :loading="aiLoading"
           :saving="aiSaving"
           :testing-provider="testingProvider"
-          :system-config="systemConfig"
-          :ai-model-config="aiModelConfig"
+          v-model:system-config="systemConfig"
+          v-model:ai-model-config="aiModelConfig"
           :save="saveAiSettings"
           :test-provider="testProvider"
         />
@@ -67,7 +81,7 @@
           :loading="bidScoringLoading"
           :saving="bidScoringSaving"
           :activating="bidScoringActivating"
-          :current-model="bidScoringCurrentModel"
+          v-model:current-model="bidScoringCurrentModel"
           :weight-validation="bidScoringWeightValidation"
           :enabled-dimension-count="enabledBidScoringDimensionCount"
           :save="saveBidScoringSettings"
@@ -102,6 +116,8 @@ import RoleManagementPanel from './settings/RoleManagementPanel.vue'
 import UserOrganizationPanel from './settings/UserOrganizationPanel.vue'
 import AuditLogPanel from './settings/AuditLogPanel.vue'
 import SystemIntegrationPanel from './settings/SystemIntegrationPanel.vue'
+import TaskStatusDictPanel from './settings/TaskStatusDictPanel.vue'
+import TaskExtendedFieldPanel from './settings/TaskExtendedFieldPanel.vue'
 import { useOrganizationSettings } from './settings/useOrganizationSettings'
 import { useAiModelSettings } from './settings/useAiModelSettings'
 import {
@@ -113,10 +129,13 @@ import {
 const route = useRoute()
 const userStore = useUserStore()
 const canViewAuditLogs = computed(() => ['admin', 'auditor'].includes(String(userStore.userRole || '').toLowerCase()))
+const isAdmin = computed(() => String(userStore.userRole || '').toLowerCase() === 'admin')
 const settingsTabNames = new Set([
   'departments',
   'roles',
   'interface-permissions',
+  'task-status-dict',
+  'task-extended-fields',
   'users',
   'ai-models',
   'bid-match-scoring',
@@ -126,6 +145,8 @@ const settingsTabNames = new Set([
 const getRouteTab = () => {
   const tab = typeof route.query.tab === 'string' ? route.query.tab : ''
   if (tab === 'audit' && !canViewAuditLogs.value) return 'departments'
+  if (tab === 'task-status-dict' && !isAdmin.value) return 'departments'
+  if (tab === 'task-extended-fields' && !isAdmin.value) return 'departments'
   return settingsTabNames.has(tab) ? tab : 'departments'
 }
 const activeTab = ref(getRouteTab())
@@ -186,6 +207,15 @@ const loadAll = async () => {
 
 watch(canViewAuditLogs, (allowed) => {
   if (!allowed && activeTab.value === 'audit') {
+    activeTab.value = 'departments'
+  }
+}, { immediate: true })
+
+watch(isAdmin, (allowed) => {
+  if (!allowed && activeTab.value === 'task-status-dict') {
+    activeTab.value = 'departments'
+  }
+  if (!allowed && activeTab.value === 'task-extended-fields') {
     activeTab.value = 'departments'
   }
 }, { immediate: true })

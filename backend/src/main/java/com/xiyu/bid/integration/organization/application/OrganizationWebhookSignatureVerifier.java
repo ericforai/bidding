@@ -17,21 +17,26 @@ public class OrganizationWebhookSignatureVerifier {
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
 
-    private final OrganizationIntegrationProperties properties;
+    private final OrganizationIntegrationSettingsResolver settingsResolver;
 
     public boolean valid(String traceId, String sourceApp, String payload, String signature) {
-        if (blank(properties.getWebhookSecret()) || blank(traceId) || blank(sourceApp) || blank(signature)) {
+        OrganizationIntegrationSettings settings = settingsResolver.resolve();
+        if (blank(settings.webhookSecret()) || blank(traceId) || blank(sourceApp) || blank(signature)) {
             return false;
         }
-        byte[] expected = sign(canonical(traceId, sourceApp, payload));
+        byte[] expected = sign(settings.webhookSecret(), canonical(traceId, sourceApp, payload));
         byte[] provided = decodeHex(signature);
         return provided.length > 0 && MessageDigest.isEqual(expected, provided);
     }
 
-    private byte[] sign(String canonical) {
+    public boolean ipAllowed(String remoteAddress) {
+        return settingsResolver.resolve().ipAllowed(remoteAddress);
+    }
+
+    private byte[] sign(String secret, String canonical) {
         try {
             Mac mac = Mac.getInstance(HMAC_ALGORITHM);
-            mac.init(new SecretKeySpec(properties.getWebhookSecret().getBytes(StandardCharsets.UTF_8), HMAC_ALGORITHM));
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), HMAC_ALGORITHM));
             return mac.doFinal(canonical.getBytes(StandardCharsets.UTF_8));
         } catch (InvalidKeyException | NoSuchAlgorithmException ex) {
             return new byte[0];

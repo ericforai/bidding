@@ -114,6 +114,11 @@
   cursor: help;
 }
 
+.win-probability-source {
+  color: #909399;
+  font-size: 12px;
+}
+
 .deadline-urgent {
   color: #f56c6c;
   font-weight: 600;

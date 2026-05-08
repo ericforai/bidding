@@ -1,6 +1,16 @@
 <template>
   <el-form ref="formRef" :model="taskForm" label-width="120px">
-    <el-divider content-position="left">任务分解</el-divider>
+    <div class="task-step-heading">
+      <el-divider content-position="left">任务分解</el-divider>
+      <el-button
+        type="primary"
+        :icon="Connection"
+        :loading="decomposing"
+        @click="$emit('auto-decompose')"
+      >
+        自动拆解任务
+      </el-button>
+    </div>
 
     <div class="task-list">
       <div v-for="(task, index) in taskForm.tasks" :key="index" class="task-item">
@@ -72,14 +82,15 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Plus, Delete } from '@element-plus/icons-vue'
+import { Connection, Plus, Delete } from '@element-plus/icons-vue'
 
 defineProps({
   taskForm: { type: Object, required: true },
-  userList: { type: Array, default: () => [] }
+  userList: { type: Array, default: () => [] },
+  decomposing: { type: Boolean, default: false }
 })
 
-defineEmits(['add-task', 'remove-task'])
+defineEmits(['add-task', 'remove-task', 'auto-decompose'])
 
 const formRef = ref(null)
 
@@ -92,6 +103,13 @@ defineExpose({ validate })
 
 <style scoped>
 .task-list { margin-bottom: 16px; }
+
+.task-step-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+}
 
 .task-item { margin-bottom: 16px; }
 
@@ -111,6 +129,10 @@ defineExpose({ validate })
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+
+  .task-step-heading {
+    grid-template-columns: 1fr;
   }
 }
 

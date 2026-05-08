@@ -183,6 +183,32 @@ public class InputSanitizer {
     }
 
     /**
+     * 清洗 Markdown 等对空白敏感的文本：
+     * <ul>
+     *   <li>保留 {@code \t}（0x09）、{@code \n}（0x0A）、{@code \r}（0x0D），
+     *       让标题、列表、代码块等 Markdown 结构得以存活；</li>
+     *   <li>仅剥离真正危险的控制字符（0x00-0x08、0x0B、0x0C、0x0E-0x1F、0x7F）；</li>
+     *   <li>不调用 {@link String#trim()}，因为 Markdown 中尾随换行具有语义；</li>
+     *   <li>按字符长度截断（调用方负责协调字符数与字节数，例如 UTF-8 CJK
+     *       场景下 DB 列以字节为单位的容量上限）。</li>
+     * </ul>
+     *
+     * @param input 原始输入
+     * @param maxLen 最大允许字符数
+     * @return 清洗后的字符串；输入为 {@code null} 时原样返回 {@code null}
+     */
+    public static String sanitizeMarkdown(String input, int maxLen) {
+        if (input == null) {
+            return null;
+        }
+        String cleaned = input.replaceAll("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]", "");
+        if (cleaned.length() > maxLen) {
+            cleaned = cleaned.substring(0, maxLen);
+        }
+        return cleaned;
+    }
+
+    /**
      * 验证电子邮件格式
      *
      * @param email 电子邮件地址

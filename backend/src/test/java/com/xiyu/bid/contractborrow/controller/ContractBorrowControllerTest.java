@@ -93,7 +93,7 @@ class ContractBorrowControllerTest {
                                 "西域智算中心",
                                 "投标文件复核",
                                 "原件借阅",
-                                LocalDate.of(2026, 4, 30)
+                                LocalDate.now().plusDays(7)
                         ))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("PENDING_APPROVAL"));
@@ -114,7 +114,7 @@ class ContractBorrowControllerTest {
                                 "西域智算中心",
                                 "",
                                 "原件借阅",
-                                LocalDate.of(2026, 4, 30)
+                                LocalDate.now().plusDays(7)
                         ))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("合同编号不能为空")));

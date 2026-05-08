@@ -46,3 +46,9 @@
 - 新增 Implementation Space 页面：`implementation/{delivery-playbook,milestones,risk-register,weekly-status,acceptance-and-closure}.md`
 - 执行真实增量演示：摄入 `docx + xlsx` 源文件并生成抽取结果与 catalog
 - pre-commit 门禁新增 `npm run wiki:check`
+
+## [2026-04-30] update | 正式上线时间统一为 2026-07-10
+- 变更依据：根据本周与客户达成的一致，正式上线时间统一为 2026-07-10
+- 更新页面：`implementation/sow-2026-v1-4.md`、`implementation/milestones.md`、`team-and-timeline.md`、`overview.md`、`requirements.md`、`contract-constraints.md`、`implementation/document-delivery-ledger.md`、`implementation/attachment4-requirement-task-book.md`
+- 执行口径：当前以 2026-04-27 启动准备、2026-05-07 项目启动会、2026-05-09 首场正式客户访谈、2026-07-10 正式上线为项目里程碑基线
+- 来源同步说明：`.wiki/sources/`、`.wiki/extracts/` 与 `.wiki/pages/` 中涉及正式上线时间的口径已统一为 2026-07-10

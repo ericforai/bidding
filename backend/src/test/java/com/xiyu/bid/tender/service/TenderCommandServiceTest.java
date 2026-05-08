@@ -86,6 +86,9 @@ class TenderCommandServiceTest {
                 .region("上海")
                 .industry("数据中心")
                 .purchaserName("上海西域采购中心")
+                .sourceDocumentName("招标文件.pdf")
+                .sourceDocumentFileType("application/pdf")
+                .sourceDocumentFileUrl("doc-insight://TENDER_INTAKE/manual-tender/hash-招标文件.pdf")
                 .publishDate(LocalDate.of(2026, 4, 21))
                 .deadline(tender.getDeadline())
                 .status(Tender.Status.PENDING)
@@ -108,6 +111,8 @@ class TenderCommandServiceTest {
         assertThat(savedDto.getRegion()).isEqualTo("上海");
         assertThat(savedDto.getIndustry()).isEqualTo("数据中心");
         assertThat(savedDto.getPurchaserHash()).isNotBlank();
+        assertThat(savedDto.getSourceDocumentFileUrl())
+                .isEqualTo("doc-insight://TENDER_INTAKE/manual-tender/hash-招标文件.pdf");
         assertThat(savedDto.getTags()).containsExactly("数据中心", "GPU");
         verify(tenderRepository, times(1)).save(any(Tender.class));
     }

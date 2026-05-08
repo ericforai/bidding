@@ -213,7 +213,7 @@ const {
 })
 
 const {
-  calendarDate, activeCalendarFilter, selectedDateKey, calendarFilters, visibleCalendarEvents,
+  calendarDate, activeCalendarFilter, calendarFilters, visibleCalendarEvents,
   selectedDateEvents, selectedDateLabel, monthCalendarSummary, upcomingCalendarEvents,
   getEventsForDate, calendarCellClass, handleDateClick, getEventTypeTag,
   selectCalendarEventDate, handleCalendarAction, loadScheduleOverview, syncSelectedDate,

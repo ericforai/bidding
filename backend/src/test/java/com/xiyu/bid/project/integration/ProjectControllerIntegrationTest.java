@@ -159,4 +159,29 @@ class ProjectControllerIntegrationTest extends AbstractProjectControllerIntegrat
                 .andExpect(jsonPath("$.data.tagsJson").value("[\"智慧\",\"城市\"]"));
     }
 
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void getAllProjects_ShouldRejectNegativePage() throws Exception {
+        mockMvc.perform(get("/api/projects").param("page", "-1").param("size", "10"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void getAllProjects_ShouldRejectOversizedSize() throws Exception {
+        mockMvc.perform(get("/api/projects").param("size", "99999"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ADMIN"})
+    void getAllProjects_ShouldRejectMaxIntegerPageWithoutOverflow() throws Exception {
+        // Regression: page * size used to overflow int → 500. Now must fail @Max validation → 400.
+        mockMvc.perform(get("/api/projects").param("page", "2147483647").param("size", "200"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
 }

@@ -1,5 +1,5 @@
-// Input: backend FeeDTO, AuditLogItemDTO, task status strings
-// Output: pure normalizer functions for project data transformations
+// Input: backend FeeDTO, AuditLogItemDTO, project/task status strings
+// Output: pure normalizer and display functions for project data transformations
 // Pos: src/views/Project/ - Project module utilities
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -20,6 +20,29 @@ const FEE_STATUS_MAP = {
 }
 
 const TASK_STATUS_TO_API = {
+  // legacy lowercase bridge (for any call site still sending lowercase)
+  todo: 'TODO',
+  doing: 'IN_PROGRESS',
+  review: 'REVIEW',
+  done: 'COMPLETED',
+  cancelled: 'CANCELLED',
+  // identity for uppercase codes (backend canonical form)
+  TODO: 'TODO',
+  IN_PROGRESS: 'IN_PROGRESS',
+  REVIEW: 'REVIEW',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
+}
+
+const TASK_STATUS_FROM_API = {
+  // identity for uppercase codes (canonical)
+  TODO: 'TODO',
+  IN_PROGRESS: 'IN_PROGRESS',
+  REVIEW: 'REVIEW',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+  // legacy lowercase compatibility — backend should no longer return these,
+  // but keeps old data paths deterministic during migration.
   todo: 'TODO',
   doing: 'IN_PROGRESS',
   review: 'REVIEW',
@@ -27,12 +50,45 @@ const TASK_STATUS_TO_API = {
   cancelled: 'CANCELLED'
 }
 
-const TASK_STATUS_FROM_API = {
-  TODO: 'todo',
-  IN_PROGRESS: 'doing',
-  REVIEW: 'review',
-  COMPLETED: 'done',
-  CANCELLED: 'cancelled'
+const TASK_PRIORITY_TO_API = {
+  low: 'LOW',
+  medium: 'MEDIUM',
+  high: 'HIGH',
+  urgent: 'URGENT',
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
+  URGENT: 'URGENT'
+}
+
+const PROJECT_STATUS_TEXT = {
+  INITIATED: '已立项',
+  PREPARING: '编制中',
+  REVIEWING: '评审中',
+  SEALING: '盖章中',
+  BIDDING: '投标中',
+  ARCHIVED: '已归档',
+  drafting: '草稿中',
+  reviewing: '评审中',
+  bidding: '投标中',
+  won: '已中标',
+  lost: '未中标',
+  pending: '待立项'
+}
+
+const PROJECT_STATUS_TYPE = {
+  INITIATED: 'info',
+  PREPARING: 'primary',
+  REVIEWING: 'warning',
+  SEALING: 'warning',
+  BIDDING: 'primary',
+  ARCHIVED: 'success',
+  drafting: 'info',
+  reviewing: 'warning',
+  bidding: 'primary',
+  won: 'success',
+  lost: 'danger',
+  pending: 'info'
 }
 
 const ACTION_TYPE_LABEL = {
@@ -95,6 +151,15 @@ export function normalizeAuditLogForTimeline(auditLog) {
   }
 }
 
+export function getProjectStatusText(status) {
+  if (status == null || status === '') return ''
+  return PROJECT_STATUS_TEXT[status] || status
+}
+
+export function getProjectStatusType(status) {
+  return PROJECT_STATUS_TYPE[status] || 'info'
+}
+
 /**
  * Frontend task status → backend enum
  */
@@ -103,10 +168,68 @@ export function normalizeTaskStatusForApi(frontendStatus) {
   return TASK_STATUS_TO_API[frontendStatus] || frontendStatus
 }
 
+export function normalizeTaskPriorityForApi(frontendPriority) {
+  if (frontendPriority == null) return undefined
+  return TASK_PRIORITY_TO_API[frontendPriority] || frontendPriority
+}
+
 /**
  * Backend task status enum → frontend status
  */
 export function normalizeTaskStatusFromApi(backendStatus) {
   if (backendStatus == null) return undefined
   return TASK_STATUS_FROM_API[backendStatus] || backendStatus
+}
+
+/**
+ * 把 TaskForm.vue 表单字段（前端命名）转成后端 TaskDTO 字段。
+ *  - name → title
+ *  - deadline → dueDate
+ *  - owner / assigneeId → assigneeName / assigneeId
+ *  - extendedFields → extendedFields
+ *  - undefined 字段不写入，保留 PATCH 语义
+ */
+export function taskFormDtoToBackend(form = {}) {
+  const dto = {}
+  if (form.name !== undefined) dto.title = form.name
+  if (form.content !== undefined) dto.content = form.content
+  if (form.status !== undefined) dto.status = normalizeTaskStatusForApi(form.status)
+  if (form.priority !== undefined) dto.priority = normalizeTaskPriorityForApi(form.priority)
+  if (form.deadline !== undefined) dto.dueDate = form.deadline
+  if (form.assigneeId !== undefined) dto.assigneeId = form.assigneeId
+  if (form.owner !== undefined) dto.assigneeName = form.owner
+  if (form.assigneeDeptCode !== undefined) dto.assigneeDeptCode = form.assigneeDeptCode
+  if (form.assigneeDeptName !== undefined) dto.assigneeDeptName = form.assigneeDeptName
+  if (form.assigneeRoleCode !== undefined) dto.assigneeRoleCode = form.assigneeRoleCode
+  if (form.assigneeRoleName !== undefined) dto.assigneeRoleName = form.assigneeRoleName
+  if (form.extendedFields !== undefined) dto.extendedFields = form.extendedFields
+  return dto
+}
+
+/**
+ * 把后端 TaskDTO 转回看板卡片字段（前端命名 + 计算字段）。
+ */
+export function taskBackendToCard(dto = {}) {
+  const deliverables = Array.isArray(dto.deliverables) ? dto.deliverables : []
+  const assigneeName = dto.assigneeName ?? dto.owner ?? dto.assignee ?? ''
+  return {
+    id: dto.id,
+    name: dto.title ?? dto.name ?? '',
+    content: dto.content ?? '',
+    status: normalizeTaskStatusFromApi(dto.status),
+    priority: dto.priority,
+    deadline: dto.dueDate ?? '',
+    owner: assigneeName,
+    assignee: assigneeName,
+    assigneeId: dto.assigneeId ?? null,
+    department: dto.assigneeDeptName ?? dto.department ?? '',
+    roleName: dto.assigneeRoleName ?? dto.roleName ?? '',
+    assigneeDeptCode: dto.assigneeDeptCode ?? '',
+    assigneeDeptName: dto.assigneeDeptName ?? dto.department ?? '',
+    assigneeRoleCode: dto.assigneeRoleCode ?? '',
+    assigneeRoleName: dto.assigneeRoleName ?? dto.roleName ?? '',
+    extendedFields: dto.extendedFields || {},
+    deliverables,
+    hasDeliverable: deliverables.length > 0,
+  }
 }

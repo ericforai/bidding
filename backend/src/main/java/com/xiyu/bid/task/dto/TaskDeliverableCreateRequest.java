@@ -29,4 +29,7 @@ public class TaskDeliverableCreateRequest {
 
     /** MIME type of uploaded file. */
     private String fileType;
+
+    /** Stored download URL returned by the real project document upload path. */
+    private String url;
 }

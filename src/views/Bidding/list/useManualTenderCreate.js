@@ -33,6 +33,14 @@ function applyParsedFields(form, parsedFields) {
   }
 }
 
+function applySourceDocumentMetadata(form, file, parsedResult = {}) {
+  const fileUrl = parsedResult?.documentId || parsedResult?.document?.fileUrl || ''
+  if (!fileUrl) return
+  form.sourceDocumentName = file?.name || parsedResult?.documentName || '招标文件'
+  form.sourceDocumentFileType = file?.type || parsedResult?.contentType || ''
+  form.sourceDocumentFileUrl = fileUrl
+}
+
 function hasGlobalHttpErrorMessage(error) {
   return Boolean(error?.isAxiosError || error?.response || error?.code === 'ECONNABORTED')
 }
@@ -61,6 +69,7 @@ export function useManualTenderCreate({ tendersApi, refreshTenderList, canCreate
         throw new Error(response?.message || '文档自动识别失败')
       }
       applyParsedFields(manualForm.value, normalizeManualTenderParseResult(response.data))
+      applySourceDocumentMetadata(manualForm.value, uploadFile, response.data)
       ElMessage.success('DeepSeek/AI 已识别附件内容，可继续编辑后保存')
     } catch (error) {
       const timedOut = error?.code === 'ECONNABORTED'

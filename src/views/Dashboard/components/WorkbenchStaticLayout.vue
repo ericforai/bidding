@@ -52,7 +52,7 @@
       <TeamTaskList v-if="canViewTeamTask" :members="teamMembers" />
       <ProjectList
         v-if="canViewGlobalProjects"
-        title="全院重点项目"
+        title="项目总览"
         :projects="activeProjects"
         :meta-fields="['manager', 'deadline']"
         :progress-color-resolver="getProgressColor"

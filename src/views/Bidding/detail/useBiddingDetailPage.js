@@ -1,10 +1,11 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { bidMatchScoringApi, tendersApi } from '@/api'
+import { bidMatchScoringApi, knowledgeApi, tendersApi } from '@/api'
 import {
   buildWinProbabilityView,
   formatTenderDisplayField,
+  formatTenderIndustry,
   getTenderDateTimeParts,
   safeTenderUrl,
 } from '../bidding-utils.js'
@@ -19,6 +20,8 @@ export function useBiddingDetailPage() {
   const tender = ref(null)
   const isFollowed = ref(false)
   const matchScore = ref(null)
+  const relatedCases = ref([])
+  const relatedCasesLoading = ref(false)
   const scoreLoading = ref(false)
   const scoreGenerating = ref(false)
   const scoreError = ref('')
@@ -35,7 +38,7 @@ export function useBiddingDetailPage() {
   const scoreEmptyDescription = computed(() => scoreSummary.value.description)
 
   const regionMeta = computed(() => formatTenderDisplayField(tender.value?.region))
-  const industryMeta = computed(() => formatTenderDisplayField(tender.value?.industry))
+  const industryMeta = computed(() => formatTenderIndustry(tender.value?.industry))
   const deadlineParts = computed(() => getTenderDateTimeParts(tender.value?.deadline))
   const winProbabilityView = computed(() => {
     const score = scoreForView.value?.totalScore ?? tender.value?.aiScore ?? 0
@@ -68,56 +71,19 @@ export function useBiddingDetailPage() {
     ]
   })
 
-  const relatedCases = computed(() => {
-    if (!tender.value) return []
-    const caseCatalog = {
-      政府: [
-        {
-          id: 'C001',
-          title: '某省政府OA办公系统',
-          customer: '某省政府',
-          amount: 300,
-          year: 2024,
-          summary: '为省政府打造一体化办公平台，包括公文管理、会议管理、日程管理等核心功能',
-          highlights: ['信创适配', '高并发处理', '移动端支持'],
-        },
-      ],
-      能源: [
-        {
-          id: 'C002',
-          title: '华东电网信息化项目',
-          customer: '华东电网',
-          amount: 800,
-          year: 2024,
-          summary: '电网企业ERP系统升级及数据中台建设',
-          highlights: ['微服务架构', '数据治理', '智能报表'],
-        },
-      ],
-      交通: [
-        {
-          id: 'C003',
-          title: '西部智慧园区项目',
-          customer: '西部某园区',
-          amount: 500,
-          year: 2023,
-          summary: '智慧园区综合管理平台',
-          highlights: ['IoT集成', '3D可视化', '能耗分析'],
-        },
-      ],
-      数据中心: [
-        {
-          id: 'C004',
-          title: '某银行数据中心建设',
-          customer: '某商业银行',
-          amount: 1500,
-          year: 2024,
-          summary: '银行级数据中心基础设施建设',
-          highlights: ['高可用架构', '安全合规', '绿色节能'],
-        },
-      ],
-    }
-    return caseCatalog[tender.value.industry] || caseCatalog.政府
-  })
+  const normalizeCaseIndustryQuery = (industry) => ({
+    政府: 'government',
+    能源: 'energy',
+    交通: 'transport',
+    制造业: 'manufacturing',
+    教育: 'education',
+    医疗: 'healthcare',
+    互联网: 'internet',
+    GOVERNMENT: 'government',
+    ENERGY: 'energy',
+    TRANSPORTATION: 'transport',
+    MANUFACTURING: 'manufacturing',
+  }[String(industry || '').trim()] || undefined)
 
   const getScoreClass = (score) => {
     if (score >= 90) return 'score-excellent'
@@ -184,6 +150,26 @@ export function useBiddingDetailPage() {
     }
   }
 
+  const loadRelatedCases = async () => {
+    if (!tender.value) return
+    relatedCasesLoading.value = true
+    try {
+      const keyword = tender.value.industry || tender.value.purchaserName || tender.value.title || ''
+      const result = await knowledgeApi.cases.getList({
+        keyword,
+        industry: normalizeCaseIndustryQuery(tender.value.industry),
+        page: 1,
+        pageSize: 4,
+        sort: 'recent',
+      })
+      relatedCases.value = result?.success && Array.isArray(result.data) ? result.data : []
+    } catch {
+      relatedCases.value = []
+    } finally {
+      relatedCasesLoading.value = false
+    }
+  }
+
   const handleGenerateMatchScore = async () => {
     const tenderId = tender.value?.id || route.params.id
     if (!tenderId) return
@@ -217,7 +203,7 @@ export function useBiddingDetailPage() {
       const result = await tendersApi.getDetail(tenderId)
       if (!result?.success) throw new Error(result?.message || '获取标讯详情失败')
       tender.value = result.data
-      await loadMatchScore(tenderId)
+      await Promise.all([loadMatchScore(tenderId), loadRelatedCases()])
     } catch (error) {
       ElMessage.error(error?.message || '网络请求失败，请稍后重试')
     }
@@ -246,6 +232,7 @@ export function useBiddingDetailPage() {
     advantages,
     suggestions,
     relatedCases,
+    relatedCasesLoading,
     getScoreClass,
     getStatusType,
     getStatusText,

@@ -18,7 +18,9 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtUtil {
@@ -50,6 +52,7 @@ public class JwtUtil {
         Date expiryDate = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(username)
                 .issuedAt(now)
                 .expiration(expiryDate)
@@ -68,6 +71,23 @@ public class JwtUtil {
 
     public Long extractExpiration(String token) {
         return extractAllClaims(token).getExpiration().getTime();
+    }
+
+    public String extractJti(String token) {
+        try {
+            return extractAllClaims(token).getId();
+        } catch (JwtException | IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    public Instant extractExpirationInstant(String token) {
+        try {
+            Date exp = extractAllClaims(token).getExpiration();
+            return exp == null ? null : exp.toInstant();
+        } catch (JwtException | IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public boolean validateToken(String token, String username) {

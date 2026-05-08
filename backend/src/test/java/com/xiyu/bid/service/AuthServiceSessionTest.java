@@ -2,6 +2,7 @@ package com.xiyu.bid.service;
 
 import com.xiyu.bid.admin.service.DataScopeConfigService;
 import com.xiyu.bid.auth.JwtUtil;
+import com.xiyu.bid.auth.TokenRevocationService;
 import com.xiyu.bid.dto.AuthSessionResult;
 import com.xiyu.bid.dto.LoginRequest;
 import com.xiyu.bid.entity.RefreshSession;
@@ -58,6 +59,9 @@ class AuthServiceSessionTest {
     @Mock
     private RoleProfileService roleProfileService;
 
+    @Mock
+    private TokenRevocationService tokenRevocationService;
+
     private AuthService authService;
     private User user;
 
@@ -71,7 +75,8 @@ class AuthServiceSessionTest {
                 passwordEncoder,
                 jwtUtil,
                 authenticationManager,
-                roleProfileService
+                roleProfileService,
+                tokenRevocationService
         );
         ReflectionTestUtils.setField(authService, "refreshExpiration", 7_200_000L);
 

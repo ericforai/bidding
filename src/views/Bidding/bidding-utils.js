@@ -122,9 +122,48 @@ export function formatTenderDisplayField(value, missingText = '未提取') {
   }
 }
 
+const TENDER_INDUSTRY_LABELS = {
+  ENERGY: '能源',
+  TRANSPORTATION: '交通',
+  MANUFACTURING: '制造业',
+  INFRASTRUCTURE: '基础设施',
+  REAL_ESTATE: '房地产',
+  ENVIRONMENTAL: '环保',
+  GOVERNMENT: '政府',
+  EDUCATION: '教育',
+  MEDICAL: '医疗',
+  INTERNET: '互联网',
+  FINANCE: '金融',
+  OTHER: '其他',
+}
+
+export function formatTenderIndustry(value, missingText = '未提取') {
+  const raw = value == null ? '' : String(value).trim()
+  if (!raw) {
+    return {
+      text: missingText,
+      isMissing: true,
+      tooltip: '真实 API 暂无该字段，未做推断填充'
+    }
+  }
+  const label = TENDER_INDUSTRY_LABELS[raw.toUpperCase()] || raw
+  return { text: label, isMissing: false, tooltip: '' }
+}
+
 export function buildWinProbabilityView(scoreValue) {
   const score = Number(scoreValue)
   const sourceScore = Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 0
+  if (sourceScore <= 0) {
+    return {
+      rate: 0,
+      percent: 0,
+      label: '暂无',
+      sourceScore,
+      hasScore: false,
+      tooltip: '暂无真实匹配评分，无法换算赢面参考'
+    }
+  }
+
   let rate = 1
   if (sourceScore >= 90) rate = 5
   else if (sourceScore >= 80) rate = 4
@@ -137,7 +176,8 @@ export function buildWinProbabilityView(scoreValue) {
     percent,
     label: `${percent}%`,
     sourceScore,
-    tooltip: '由投标匹配评分按星级分档换算，仅作投标概率参考，不是后端直接返回的独立概率'
+    hasScore: true,
+    tooltip: '由真实投标匹配评分按星级分档换算，仅作赢面参考，不是后端直接返回的中标概率'
   }
 }
 
@@ -149,7 +189,6 @@ export function normalizeBatchResult(response) {
 
   const data = response.data || response
   const success = data.success !== false
-  const total = data.totalCount || 0
   const succeeded = data.successCount || 0
   const failed = data.failureCount || 0
 

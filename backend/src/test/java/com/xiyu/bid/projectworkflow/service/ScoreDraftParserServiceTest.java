@@ -2,27 +2,30 @@ package com.xiyu.bid.projectworkflow.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.projectworkflow.parser.ScoreDraftDraftAssembler;
+import com.xiyu.bid.projectworkflow.parser.ScoreDraftDocumentTextExtractor;
 import com.xiyu.bid.projectworkflow.parser.ScoreDraftFileTypePolicy;
 import com.xiyu.bid.projectworkflow.parser.ScoreDraftTextParser;
 import com.xiyu.bid.projectworkflow.parser.WordTextExtractor;
 import com.xiyu.bid.projectworkflow.entity.ProjectScoreDraft;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static com.xiyu.bid.projectworkflow.service.ScoreDraftParserTestFixtures.buildDocx;
+import static com.xiyu.bid.projectworkflow.service.ScoreDraftParserTestFixtures.buildPdf;
+import static com.xiyu.bid.projectworkflow.service.ScoreDraftParserTestFixtures.buildSameLinePdf;
+import static com.xiyu.bid.projectworkflow.service.ScoreDraftParserTestFixtures.buildTableDocx;
+import static com.xiyu.bid.projectworkflow.service.ScoreDraftParserTestFixtures.buildXls;
+import static com.xiyu.bid.projectworkflow.service.ScoreDraftParserTestFixtures.buildXlsx;
 
 class ScoreDraftParserServiceTest {
 
     private final ScoreDraftParserService parserService = new ScoreDraftParserService(
             new ScoreDraftFileTypePolicy(),
-            new WordTextExtractor(),
+            new ScoreDraftDocumentTextExtractor(new WordTextExtractor()),
             new ScoreDraftTextParser(),
             new ScoreDraftDraftAssembler(new ObjectMapper())
     );
@@ -53,17 +56,69 @@ class ScoreDraftParserServiceTest {
     }
 
     @Test
-    void parse_ShouldRejectPdfInput() {
+    void parse_ShouldReadXlsxAndExtractScoreDrafts() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "评分标准.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                buildXlsx()
+        );
+
+        List<ProjectScoreDraft> drafts = parserService.parse(1003L, file);
+
+        assertThat(drafts).hasSize(3);
+        assertThat(drafts).extracting(ProjectScoreDraft::getCategory)
+                .containsExactly("business", "technical", "price");
+    }
+
+    @Test
+    void parse_ShouldReadXlsAndExtractScoreDrafts() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "评分标准.xls",
+                "application/vnd.ms-excel",
+                buildXls()
+        );
+
+        List<ProjectScoreDraft> drafts = parserService.parse(1004L, file);
+
+        assertThat(drafts).hasSize(3);
+        assertThat(drafts).extracting(ProjectScoreDraft::getCategory)
+                .containsExactly("business", "technical", "price");
+    }
+
+    @Test
+    void parse_ShouldReadTextPdfAndExtractScoreDrafts() throws Exception {
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "评分标准.pdf",
                 "application/pdf",
-                "fake".getBytes(StandardCharsets.UTF_8)
+                buildPdf()
         );
 
-        assertThatThrownBy(() -> parserService.parse(1003L, file))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("暂不支持 PDF");
+        List<ProjectScoreDraft> drafts = parserService.parse(1005L, file);
+
+        assertThat(drafts).hasSize(1);
+        assertThat(drafts.get(0).getCategory()).isEqualTo("business");
+        assertThat(drafts.get(0).getScoreItemTitle()).isEqualTo("同类项目业绩");
+    }
+
+    @Test
+    void parse_ShouldReadSameLinePdfTableAndExtractScoreDrafts() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "评分标准.pdf",
+                "application/pdf",
+                buildSameLinePdf()
+        );
+
+        List<ProjectScoreDraft> drafts = parserService.parse(1006L, file);
+
+        assertThat(drafts).hasSize(3);
+        assertThat(drafts).extracting(ProjectScoreDraft::getCategory)
+                .containsExactly("business", "technical", "price");
+        assertThat(drafts).extracting(ProjectScoreDraft::getScoreItemTitle)
+                .containsExactly("同类项目业绩", "整体方案", "品类折扣率");
     }
 
     @Test
@@ -75,50 +130,8 @@ class ScoreDraftParserServiceTest {
                 buildDocx("普通说明文字\n没有评分章节")
         );
 
-        assertThatThrownBy(() -> parserService.parse(1004L, file))
+        assertThatThrownBy(() -> parserService.parse(1007L, file))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("未识别到规整评分标准");
-    }
-
-    private byte[] buildDocx(String content) throws Exception {
-        try (XWPFDocument document = new XWPFDocument();
-             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            for (String line : content.split("\n")) {
-                document.createParagraph().createRun().setText(line);
-            }
-            document.write(outputStream);
-            return outputStream.toByteArray();
-        }
-    }
-
-    private byte[] buildTableDocx() throws Exception {
-        try (XWPFDocument document = new XWPFDocument();
-             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            document.createParagraph().createRun().setText("第三章 评审程序及办法");
-            document.createParagraph().createRun().setText("3.6 商务评分标准（20分）");
-
-            XWPFTable businessTable = document.createTable(2, 4);
-            setRow(businessTable, 0, "序号", "评价项目", "评分标准", "评标分值");
-            setRow(businessTable, 1, "1", "同类项目业绩", "每提供1个同类项目业绩得2分，最高6分。", "6");
-
-            document.createParagraph().createRun().setText("3.7 技术评分标准（50分）");
-            XWPFTable technicalTable = document.createTable(2, 3);
-            setRow(technicalTable, 0, "评分项目", "分数", "评分因素及标准");
-            setRow(technicalTable, 1, "整体方案", "15", "最大程度满足采购文件要求。");
-
-            document.createParagraph().createRun().setText("3.8 价格评分标准（30分）");
-            XWPFTable priceTable = document.createTable(2, 4);
-            setRow(priceTable, 0, "序号", "评价项目", "分值", "评分细则");
-            setRow(priceTable, 1, "1", "品类折扣率", "25", "接受平台的价格管控，确保用户单位享受优惠价格。");
-
-            document.write(outputStream);
-            return outputStream.toByteArray();
-        }
-    }
-
-    private void setRow(XWPFTable table, int rowIndex, String... values) {
-        for (int cellIndex = 0; cellIndex < values.length; cellIndex++) {
-            table.getRow(rowIndex).getCell(cellIndex).setText(values[cellIndex]);
-        }
     }
 }

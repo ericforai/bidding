@@ -49,12 +49,7 @@
 <script setup>
 import { Download, Search, Upload } from '@element-plus/icons-vue'
 
-defineProps({
-  searchForm: {
-    type: Object,
-    required: true
-  }
-})
+defineModel('searchForm', { type: Object, required: true })
 
 defineEmits(['export', 'reset', 'search', 'upload'])
 </script>

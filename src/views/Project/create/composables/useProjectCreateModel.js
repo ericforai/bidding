@@ -6,6 +6,7 @@ import {
   buildProjectPrefillFromTender,
   hasGlobalHttpErrorMessage
 } from '../../createTenderPrefill.js'
+import { buildTaskCreatePayloadsFromRows } from './projectCreateTaskPayloads.js'
 
 const formatDateTime = (value, fallbackTime = '00:00:00') => {
   if (!value) return ''
@@ -55,7 +56,7 @@ export function useProjectCreateModel({ route, userStore, projectStore, router }
 
   const taskForm = reactive({
     tasks: [
-      { name: '', owner: '', deadline: '', priority: 'medium', status: 'todo' }
+      { name: '', owner: '', deadline: '', priority: 'medium', status: 'TODO' }
     ]
   })
 
@@ -79,7 +80,7 @@ export function useProjectCreateModel({ route, userStore, projectStore, router }
       owner: '',
       deadline: '',
       priority: 'medium',
-      status: 'todo'
+      status: 'TODO'
     })
   }
 
@@ -260,6 +261,10 @@ export function useProjectCreateModel({ route, userStore, projectStore, router }
     }
   }
 
+  function buildTaskCreatePayloads() {
+    return buildTaskCreatePayloadsFromRows(taskForm.tasks)
+  }
+
   return {
     basicForm,
     detailForm,
@@ -279,6 +284,7 @@ export function useProjectCreateModel({ route, userStore, projectStore, router }
     loadAvailableTenders,
     loadProjectData,
     resolveApiTenderId,
-    buildApiProjectPayload
+    buildApiProjectPayload,
+    buildTaskCreatePayloads
   }
 }

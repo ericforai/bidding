@@ -5,6 +5,8 @@
 
 import { defineStore } from 'pinia'
 import { httpClient, projectsApi, resourcesApi } from '@/api'
+import { taskStatusDictApi } from '@/api/modules/taskStatusDict.js'
+import { taskExtendedFieldApi } from '@/api/modules/taskExtendedField.js'
 
 function normalizeExpenseDate(value) {
   if (!value) return ''
@@ -81,6 +83,17 @@ function buildExpenseSummary(expenses = []) {
   })
 }
 
+function formatFileSize(file) {
+  const bytes = Number(file?.size || 0)
+  const kb = Math.max(1, Math.round(bytes / 1024))
+  return kb < 1024 ? `${kb}KB` : `${Math.round(kb / 1024)}MB`
+}
+
+function findTaskInProject(project, taskId) {
+  if (!project || !Array.isArray(project.tasks)) return null
+  return project.tasks.find((task) => String(task.id) === String(taskId)) || null
+}
+
 export const useProjectStore = defineStore('project', {
   state: () => ({
     projects: [],
@@ -94,12 +107,25 @@ export const useProjectStore = defineStore('project', {
     },
     expenseLoading: false,
     expenseError: '',
+    taskStatuses: [],
+    taskStatusesLoaded: false,
+    taskExtendedFields: [],
+    taskExtendedFieldsLoaded: false,
   }),
 
   getters: {
     inProgressProjects: (state) => state.projects.filter(p => p.status !== 'won' && p.status !== 'lost'),
     wonProjects: (state) => state.projects.filter(p => p.status === 'won'),
-    findProjectById: (state) => (id) => state.projects.find(p => p.id === id)
+    findProjectById: (state) => (id) => state.projects.find(p => p.id === id),
+    terminalStatusCodes: (state) => new Set(
+      (state.taskStatuses || []).filter((s) => s && s.terminal).map((s) => s.code)
+    ),
+    isTerminalStatus() {
+      return (code) => {
+        if (!code) return false
+        return this.terminalStatusCodes.has(String(code).toUpperCase())
+      }
+    }
   },
 
   actions: {
@@ -201,16 +227,133 @@ export const useProjectStore = defineStore('project', {
       return updatedProject
     },
 
+    async updateTask(projectId, taskId, dto) {
+      const result = await projectsApi.updateTask(taskId, dto)
+      if (!result?.success) {
+        throw new Error(result?.message || '更新任务失败')
+      }
+      const project = this.currentProject
+      if (project && String(project.id) === String(projectId) && Array.isArray(project.tasks)) {
+        const idx = project.tasks.findIndex(t => t.id === taskId)
+        if (idx >= 0) {
+          project.tasks[idx] = { ...project.tasks[idx], ...result.data }
+        }
+      }
+      return result.data
+    },
+
     async updateTaskStatus(projectId, taskId, status) {
       const project = this.projects.find(p => p.id === projectId)
       if (project) {
         const task = project.tasks.find(t => t.id === taskId)
         if (task) {
           task.status = status
-          const doneCount = project.tasks.filter(t => t.status === 'done').length
+          const doneCount = project.tasks.filter(t => this.isTerminalStatus(t.status)).length
           project.progress = Math.round((doneCount / project.tasks.length) * 100)
         }
       }
+    },
+
+    async loadTaskStatuses() {
+      if (this.taskStatusesLoaded) return this.taskStatuses
+      try {
+        const res = await taskStatusDictApi.list()
+        this.taskStatuses = Array.isArray(res?.data) ? res.data : []
+      } catch (err) {
+        console.error('[projectStore] loadTaskStatuses failed', err)
+        this.taskStatuses = []
+      } finally {
+        this.taskStatusesLoaded = true
+      }
+      return this.taskStatuses
+    },
+
+    invalidateTaskStatuses() {
+      this.taskStatuses = []
+      this.taskStatusesLoaded = false
+    },
+
+    async loadTaskExtendedFields() {
+      if (this.taskExtendedFieldsLoaded) return this.taskExtendedFields
+      try {
+        const res = await taskExtendedFieldApi.list()
+        this.taskExtendedFields = Array.isArray(res?.data) ? res.data : []
+      } catch (err) {
+        console.error('[projectStore] loadTaskExtendedFields failed', err)
+        this.taskExtendedFields = []
+      } finally {
+        this.taskExtendedFieldsLoaded = true
+      }
+      return this.taskExtendedFields
+    },
+
+    invalidateTaskExtendedFields() {
+      this.taskExtendedFields = []
+      this.taskExtendedFieldsLoaded = false
+    },
+
+    async addDeliverable(projectId, taskId, data = {}) {
+      const file = data.file || null
+      let uploadedDocument = null
+
+      if (file) {
+        const formData = new FormData()
+        formData.set('file', file)
+        formData.set('name', data.name || file.name || '任务附件')
+        formData.set('size', data.size || formatFileSize(file))
+        formData.set('fileType', data.fileType || file.type || '')
+        formData.set('documentCategory', 'TASK_DELIVERABLE')
+        formData.set('linkedEntityType', 'TASK')
+        formData.set('linkedEntityId', String(taskId))
+        if (data.uploaderId != null) {
+          formData.set('uploaderId', String(data.uploaderId))
+        }
+        if (data.uploaderName) {
+          formData.set('uploaderName', data.uploaderName)
+        }
+        const uploadResult = await projectsApi.uploadDocument(projectId, formData)
+        if (!uploadResult?.success || !uploadResult?.data) {
+          throw new Error(uploadResult?.message || '上传任务附件失败')
+        }
+        uploadedDocument = uploadResult.data
+      }
+
+      const payload = {
+        name: data.name || uploadedDocument?.name || file?.name || '任务附件',
+        deliverableType: data.deliverableType || 'DOCUMENT',
+        size: uploadedDocument?.size || data.size || (file ? formatFileSize(file) : null),
+        fileType: uploadedDocument?.fileType || data.fileType || file?.type || null,
+        url: uploadedDocument?.fileUrl || data.url || null,
+      }
+      const result = await projectsApi.createTaskDeliverable(projectId, taskId, payload)
+      if (!result?.success || !result?.data) {
+        throw new Error(result?.message || '保存任务交付物失败')
+      }
+
+      const saved = result.data
+      const task = findTaskInProject(this.currentProject, taskId)
+      if (task) {
+        task.deliverables = Array.isArray(task.deliverables) ? task.deliverables : []
+        const exists = task.deliverables.some((item) => String(item.id) === String(saved.id))
+        if (!exists) {
+          task.deliverables.unshift(saved)
+        }
+        task.hasDeliverable = task.deliverables.length > 0
+      }
+      return saved
+    },
+
+    async removeDeliverable(projectId, taskId, deliverableId) {
+      const result = await projectsApi.deleteTaskDeliverable(projectId, taskId, deliverableId)
+      if (!result?.success) {
+        throw new Error(result?.message || '删除任务交付物失败')
+      }
+      const task = findTaskInProject(this.currentProject, taskId)
+      if (task && Array.isArray(task.deliverables)) {
+        task.deliverables = task.deliverables.filter((item) => String(item.id) !== String(deliverableId))
+        task.hasDeliverable = task.deliverables.length > 0
+      }
+      return result
     }
   }
 })

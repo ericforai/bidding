@@ -234,6 +234,50 @@ class BidTenderDocumentImportAppServiceTest {
     }
 
     @Test
+    void latestParsedTenderDocument_shouldReturnLatestSnapshotWithoutReadingStoredFile() throws Exception {
+        TenderRequirementProfile profile = sampleProfile();
+        String profileJson = new ObjectMapper().findAndRegisterModules().writeValueAsString(profile);
+        ProjectDocument document = ProjectDocument.builder()
+                .id(501L)
+                .projectId(11L)
+                .name("招标文件.docx")
+                .size("12KB")
+                .fileType("docx")
+                .fileUrl("bid-agent://tender-documents/11/file.docx")
+                .build();
+        BidTenderDocumentSnapshot snapshot = BidTenderDocumentSnapshot.builder()
+                .id(601L)
+                .projectId(11L)
+                .tenderId(22L)
+                .projectDocumentId(501L)
+                .fileName("招标文件.docx")
+                .contentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                .fileUrl("bid-agent://tender-documents/11/file.docx")
+                .storagePath("/tmp/file.docx")
+                .extractedText("抽取正文")
+                .profileJson(profileJson)
+                .extractorKey("test-extractor")
+                .analyzerKey("test-analyzer")
+                .build();
+
+        when(documentSnapshotRepository.findTopByProjectIdOrderByCreatedAtDescIdDesc(11L))
+                .thenReturn(Optional.of(snapshot));
+        when(projectDocumentRepository.findById(501L)).thenReturn(Optional.of(document));
+
+        var result = appService.latestParsedTenderDocument(11L);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().getMessage()).isEqualTo("已复用已解析的招标文件");
+        assertThat(result.get().getDocument().getSnapshotId()).isEqualTo(601L);
+        assertThat(result.get().getDocument().getName()).isEqualTo("招标文件.docx");
+        assertThat(result.get().getRequirementProfile().projectName()).isEqualTo("华东智慧园区改造项目");
+        verify(projectAccessScopeService).assertCurrentUserCanAccessProject(11L);
+        verify(documentStorage, never()).store(any(), any(), any(), any());
+        verify(textExtractor, never()).extract(any(), any(), any());
+        verify(documentAnalyzer, never()).analyze(any());
+    }
+
+    @Test
     void parseTenderDocument_shouldStopBeforeReadingFileWhenProjectAccessDenied() {
         MockMultipartFile file = new MockMultipartFile(
                 "file",

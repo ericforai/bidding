@@ -96,7 +96,7 @@
 
     <CaseDetailEditDialog
       v-model="editDialogVisible"
-      :form="editForm"
+      v-model:form="editForm"
       :saving="saving"
       @save="handleSaveEdit"
     />

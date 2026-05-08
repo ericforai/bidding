@@ -191,7 +191,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, onMounted } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Check, VideoPlay } from '@element-plus/icons-vue'
 
@@ -216,19 +216,10 @@ const emit = defineEmits(['update:modelValue', 'save', 'test'])
 
 // 对话框显示状态
 const dialogVisible = computed({
-  get: () => {
-    console.log('[ConfigDialog] dialogVisible getter, props.modelValue:', props.modelValue)
-    return props.modelValue
-  },
+  get: () => props.modelValue,
   set: (val) => {
-    console.log('[ConfigDialog] dialogVisible setter, val:', val)
     emit('update:modelValue', val)
   }
-})
-
-// 组件挂载日志
-onMounted(() => {
-  console.log('[ConfigDialog] Component mounted, props.modelValue:', props.modelValue)
 })
 
 // 表单数据

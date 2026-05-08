@@ -29,8 +29,8 @@ integration/
         ├── entity/WeComIntegrationEntity.java
         └── repository/WeComIntegrationJpaRepository.java
 └── organization/         # 客户组织架构事件库接入
-    ├── domain/           # 纯核心：事件校验、topic 分类、角色映射、用户同步计划
-    ├── application/      # 应用编排：签名校验、幂等占位、用户/部门落库协调
+    ├── domain/           # 纯核心：事件通知校验、topic 分类、角色映射、同步计划
+    ├── application/      # 应用编排：签名校验、幂等占位、主数据回查、用户/部门落库协调
     ├── controller/       # HTTP 中转入口（/api/integrations/organization/events）
     ├── dto/              # 客户 code/msg/timestamp/data 响应契约
     └── infrastructure/   # 组织部门与事件 inbox 持久化
@@ -39,12 +39,18 @@ integration/
 ## 组织架构事件接入口径
 
 - 纯核心：`organization/domain` 只接收显式输入并返回显式结果，不读写数据库、时间、日志或外部 SDK。
-- 副作用边界：`OrganizationEventWebhookController` 做 HTTP 头转换与 HMAC 签名校验；`OrganizationEventAppService` 做事务编排；`OrganizationEventLogRetentionService` 做事件日志保留清理；JPA repository 负责事件 inbox、部门和用户状态写入。
+- 最新契约：事件库只通知变化，`BaseOssDept` 事件只读取 `data.deptId`，`BaseOssUser` 事件只读取 `data.userId`；事件 `data` 不再作为用户/部门主数据 payload。
+- 回查主数据：应用服务收到事件后必须通过客户组织架构主数据接口按 `deptId` / `userId` 回查详情，再写入平台部门、用户、角色映射和数据权限读模型。
+- 事件字段：事件日志保留 `traceId`、`spanId`、`parentId`、`eventSource`、`eventTopic`、`time`、`key`、`data.deptId` / `data.userId`，用于幂等、追踪和重放。
+- 副作用边界：`OrganizationEventWebhookController` 做 HTTP 头转换与 HMAC 签名校验；`OrganizationEventAppService` 仅保留兼容门面；`OrganizationDirectorySyncAppService` 编排通知解析、幂等、主数据回查和 writer；`OrganizationEventInboxService` 负责事件状态流转；`OrganizationUserSyncWriter`、`OrganizationDepartmentSyncWriter` 负责实体写入；JPA repository 负责事件 inbox、部门和用户状态持久化。
 - 安全边界：webhook 路径虽允许机器请求绕过用户 JWT，但必须携带 `EHSY-TraceID`、`EHSY-SRCAPP`、`EHSY-Signature`；签名使用 `xiyu.integrations.organization.webhook-secret` 做 HMAC-SHA256 校验。
 - 启停开关：`xiyu.integrations.organization.enabled=false` 时，签名通过的事件也会被拒绝并记录为 `REJECTED`，便于生产紧急止血。
 - 幂等策略：事件进入业务处理前先写入 `organization_event_logs` 的 `PROCESSING` 占位；重复事件稳定返回成功且标记 duplicate。
 - 角色策略：未知外部角色默认降级为 `staff`；只有显式配置 allowlist 的外部角色编码才会映射到 `manager/admin`，避免 webhook 自动提权。
 - 保留策略：`xiyu.integrations.organization.event-log-retention-days` 默认 90 天，定时任务按 `received_at` 清理过期事件日志；配置为 `0` 或负数可暂停清理。
+- SDK 口径：客户 `ClientSDK` jar 当前缺失，第一版以端口适配、HTTP 中转接收、HTTP 回查测试和灾备入口为主；后续拿到 jar 后只新增 SDK adapter，并统一委托现有应用服务。
+- 外部待办：等待客户补齐 `ClientSDK` jar/私服、YAPI 字段、生产地址、IP 白名单和鉴权方式。
+- 废弃语义：不得新增或恢复 `org.user.upsert`、`org.department.upsert` 这类直读 payload 的组织主数据语义。
 
 ## 泛微 OA 接入口径
 

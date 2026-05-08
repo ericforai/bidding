@@ -51,8 +51,8 @@ class OrganizationEventWebhookControllerTest {
     @DisplayName("POST returns customer code/msg/timestamp/data envelope")
     void post_returnsCustomerEnvelope() throws Exception {
         OrganizationEventWebhookRequest request = new OrganizationEventWebhookRequest(
-                "org.user.upsert",
-                "{\"userCode\":\"u001\"}"
+                "BaseOssUser",
+                "{\"traceId\":\"trace-1\",\"spanId\":\"span-1\",\"parentId\":\"parent-1\",\"eventSource\":\"customer-org\",\"eventTopic\":\"BaseOssUser\",\"time\":\"2026-04-30T10:15:30+08:00\",\"key\":\"event-1\",\"data\":{\"userId\":\"10001\"}}"
         );
         OrganizationEventWebhookResponse response = new OrganizationEventWebhookResponse(
                 "200",
@@ -60,6 +60,7 @@ class OrganizationEventWebhookControllerTest {
                 1777359048000L,
                 new OrganizationEventWebhookData("event-1", true, false, "PROCESSED")
         );
+        when(signatureVerifier.ipAllowed("127.0.0.1")).thenReturn(true);
         when(signatureVerifier.valid("trace-1", "customer-org", request.eventMessage(), "sig-1")).thenReturn(true);
         when(appService.receiveWebhook(eq(request), eq("trace-1"), eq("customer-org"))).thenReturn(response);
 
@@ -81,9 +82,10 @@ class OrganizationEventWebhookControllerTest {
     @DisplayName("POST rejects requests with missing or invalid signature")
     void post_invalidSignature_returns401() throws Exception {
         OrganizationEventWebhookRequest request = new OrganizationEventWebhookRequest(
-                "org.user.upsert",
-                "{\"userCode\":\"u001\"}"
+                "BaseOssUser",
+                "{\"traceId\":\"trace-1\",\"spanId\":\"span-1\",\"parentId\":\"parent-1\",\"eventSource\":\"customer-org\",\"eventTopic\":\"BaseOssUser\",\"time\":\"2026-04-30T10:15:30+08:00\",\"key\":\"event-1\",\"data\":{\"userId\":\"10001\"}}"
         );
+        when(signatureVerifier.ipAllowed("127.0.0.1")).thenReturn(true);
         when(signatureVerifier.valid("trace-1", "customer-org", request.eventMessage(), null)).thenReturn(false);
 
         mockMvc.perform(post("/api/integrations/organization/events")
@@ -94,5 +96,23 @@ class OrganizationEventWebhookControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("500"))
                 .andExpect(jsonPath("$.msg").value("invalid signature"));
+    }
+
+    @Test
+    @DisplayName("POST rejects requests from non-whitelisted ip before signature validation")
+    void post_ipNotAllowed_returns403() throws Exception {
+        OrganizationEventWebhookRequest request = new OrganizationEventWebhookRequest("BaseOssUser", "{}");
+        when(signatureVerifier.ipAllowed("10.0.0.9")).thenReturn(false);
+
+        mockMvc.perform(post("/api/integrations/organization/events")
+                        .with(servletRequest -> {
+                            servletRequest.setRemoteAddr("10.0.0.9");
+                            return servletRequest;
+                        })
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("500"))
+                .andExpect(jsonPath("$.msg").value("ip not allowed"));
     }
 }

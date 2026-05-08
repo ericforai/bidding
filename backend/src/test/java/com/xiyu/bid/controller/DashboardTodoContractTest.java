@@ -4,6 +4,7 @@ import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.task.dto.TaskAssignmentCandidateDTO;
 import com.xiyu.bid.task.dto.TaskDTO;
 import com.xiyu.bid.task.dto.TeamTaskWorkloadDTO;
+import com.xiyu.bid.task.service.TaskActivityService;
 import com.xiyu.bid.task.service.TaskService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,9 @@ class DashboardTodoContractTest {
 
     @MockBean
     private TaskService taskService;
+
+    @MockBean
+    private TaskActivityService taskActivityService;
 
     @Test
     @WithMockUser(username = "alice", roles = {"STAFF"})
@@ -73,7 +77,7 @@ class DashboardTodoContractTest {
                 .priority(Task.Priority.HIGH)
                 .build();
 
-        when(taskService.updateTaskStatus(101L, Task.Status.COMPLETED)).thenReturn(updatedTask);
+        when(taskService.updateTaskStatus(101L, Task.Status.COMPLETED, "alice")).thenReturn(updatedTask);
 
         mockMvc.perform(patch("/api/tasks/101/status")
                         .contentType(APPLICATION_JSON)
@@ -83,7 +87,7 @@ class DashboardTodoContractTest {
                 .andExpect(jsonPath("$.data.id").value(101))
                 .andExpect(jsonPath("$.data.status").value("COMPLETED"));
 
-        verify(taskService).updateTaskStatus(eq(101L), eq(Task.Status.COMPLETED));
+        verify(taskService).updateTaskStatus(eq(101L), eq(Task.Status.COMPLETED), eq("alice"));
     }
 
     @Test

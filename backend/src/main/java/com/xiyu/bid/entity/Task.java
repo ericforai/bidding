@@ -14,6 +14,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -32,6 +34,8 @@ public class Task {
     private static final int LEN_CODE = 100;
     /** Column length for role code. */
     private static final int LEN_ROLE_CODE = 64;
+    /** Column length for status code. */
+    private static final int LEN_STATUS = 32;
 
     /** Unique identifier. */
     @Id
@@ -49,6 +53,25 @@ public class Task {
     /** Task description. */
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    /**
+     * Task rich content (Markdown text, up to ~64KB via V102 TEXT column).
+     * Stored as raw Markdown; the frontend is responsible for render-time
+     * HTML sanitization (see {@code src/utils/markdown.js}).
+     */
+    @Column(columnDefinition = "TEXT")
+    private String content;
+
+    /**
+     * Task extended fields as a JSON object ({@code {"key":"value", ...}}),
+     * stored in the V103 {@code extended_fields_json} TEXT column.
+     *
+     * <p>Schema of the keys/types is defined in the
+     * {@code task_extended_field} table. The JSON payload is validated
+     * against that schema at the service layer on write.</p>
+     */
+    @Column(name = "extended_fields_json", columnDefinition = "TEXT")
+    private String extendedFieldsJson;
 
     /** Assignee user id. */
     @Column(name = "assignee_id")
@@ -72,7 +95,8 @@ public class Task {
 
     /** Current task status. */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = LEN_STATUS)
     private Status status = Status.TODO;
 
     /** Task priority level. */

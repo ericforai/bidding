@@ -59,7 +59,7 @@ function isGroupSection(section, groupKey) {
 
 export function useDocumentAssembly({
   sectionData,
-  currentSection,
+  currentSection: _currentSection,
   projectInfo,
   documentInfo,
   isRemoteProjectId,

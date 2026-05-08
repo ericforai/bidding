@@ -23,6 +23,7 @@ public class WordTextExtractor {
         return switch (fileType) {
             case DOCX -> extractDocxText(inputStream);
             case DOC -> extractDocText(inputStream);
+            default -> throw new IllegalArgumentException("Word 文本抽取器仅支持 .doc/.docx 文件");
         };
     }
 

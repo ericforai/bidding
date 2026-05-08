@@ -1,7 +1,7 @@
 # AGENTS.md - 项目智能体协作口径
 
 本仓库对应“西域数智化投标管理平台”的交付项目。
-当前目录名、包名和构件名中仍保留 `xiyu-bid-poc`、`bid-poc` 等历史命名，这些属于遗留标识，不代表项目仍按 POC 方式协作或对外表达。
+当前目录名、包名和构件名中仍保留 `xiyu-bid-poc`、`bid-poc` 等历史命名，这些属于遗留标识，不代表项目仍按 POC方式协作或对外表达。
 
 ## Agent Contract
 
@@ -34,89 +34,92 @@
 
 - **唯一支持路径**：前端、后端、E2E、演示环境均以真实后端 API 为唯一事实源。
 - **遗留代码现状**：仓库内仍可见 `frontendDemo` 适配层、`demoPersistence` 等历史遗留；这些内容当前只应被视为清理对象，不允许新增、不允许扩散、不允许恢复为默认路径。
-- **执行要求**：任何新功能、Bug 修复、测试回归、截图演示都必须以 `VITE_API_MODE=api` 和真实后端联调为前提。
+- **执行要求**：任何新功能、Bug 修复、测试回归、截图演示都必须以真实后端联调为前提；前端当前硬编码 `API-only`，`VITE_API_MODE=api` 仅作为部分启动/健康检查脚本的显式环境变量保留，不再代表可切换模式。
 
 ## 当前项目事实
 
 ### 推荐启动方式
 
-**方式一：一键启动（推荐）**
+**方式一：稳定联调启动（推荐）**
 ```bash
+export XIYU_DEV_CONFIRMED=1
+npm run dev:stable:start
+npm run dev:stable:status
+```
+
+说明：
+- `npm run dev:stable:start` / `dev:stable:status` / `dev:stable:logs` 统一走 `scripts/dev-services.sh`
+- 默认拉起文档转换 sidecar、后端 `dev,mysql` 和前端 API-only 开发服务
+- 主目录默认使用前端 `127.0.0.1:1314`、后端 `127.0.0.1:18080`、sidecar `127.0.0.1:8000`、数据库 `xiyu_bid_main`
+- 根目录 `npm run dev:all` / `./start.sh` 仍是兼容入口，会先按当前目录加载 `scripts/dev-env.sh`，再转调同一套稳定启动逻辑
+- 启动脚本会显式注入 `VITE_API_MODE=api` 供健康检查使用，但前端配置本身已固定为 API-only
+- `backend/start.sh`、`scripts/dev-services.sh`、`scripts/dev-services-launchd.sh`、`scripts/local-docker-stack.sh` 等本地脚本带 dev-only guard；本地启动必须显式设置 `XIYU_DEV_CONFIRMED=1`，生产部署不得使用这些脚本
+
+**方式二：一键兼容入口**
+```bash
+export XIYU_DEV_CONFIRMED=1
 npm run dev:all
 ```
 
-说明：根目录 `start.sh` 会尝试拉起后端 `e2e` profile（端口 `18080`）和前端 API 模式开发服务（端口 `1314`）。
-
-**方式二：手动启动**
+**方式三：手动启动**
 ```bash
 # 终端 1：启动后端
 cd /Users/user/xiyu/xiyu-bid-poc/backend
-mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=18080"
+XIYU_DEV_CONFIRMED=1 ./start.sh
 
 # 终端 2：启动前端
 cd /Users/user/xiyu/xiyu-bid-poc
 VITE_API_MODE=api VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --host 127.0.0.1 --port 1314
 ```
 
+补充：
+- 如必须直接运行 `mvn spring-boot:run`，需自行补齐 `JWT_SECRET`、`DB_PASSWORD`、`CORS_ALLOWED_ORIGINS` 等必需环境变量；默认优先使用 `backend/start.sh`
+- 多 Agent worktree 会自动使用专属端口和数据库，例如 Codex worktree 使用前端 `1316`、后端 `18082`、sidecar `8002`、数据库 `xiyu_bid_codex`
+
 ### 技术栈
 
 - **前端**：Vue 3 + Vite 5 + Element Plus + Pinia + Vue Router 4 + Axios + ECharts + Sass
-- **单元测试**：Vitest
-- **端到端测试**：Playwright
-- **后端**：Spring Boot 3.2 + Java 21 + Spring Data JPA + MySQL 8.0 + Redis + Flyway
+- **后端**：Java 21 + Spring Boot 3.3 + JPA (Hibernate) + MySQL 8.0 + Redis 7 + Flyway + ArchUnit
+- **E2E 测试**：Playwright + Node.js (VITE_API_MODE=api)
+- **文档转换**：Python 3.12 + FastAPI + MarkItDown (sidecar 模式)
+- **部署**：Docker + Docker Compose + nginx
 
-### 端口约定
+### 关键路径与文档
 
-| 服务 | 端口 |
-|------|------|
-| 前端 | 1314 |
-| 后端 | 18080 |
+- **项目主页**：[[_index]] (WIKI.md)
+- **需求追溯**：[[requirements]] (pages/requirements.md)
+- **接口文档**：[[api-openapi]] (pages/api-openapi.md)
+- **团队排期**：[[team-and-timeline]] (pages/team-and-timeline.md)
+- **开发规约**：`RULES.md`
+- **任务看板**：`TODO.md` / `CHANGELOG.md`
 
-### 演示账号
+## Agent 行为规范
 
-| 用户名 | 角色 | 说明 |
-|--------|------|------|
-| 小王 | 销售（sales/staff） | 普通业务人员 |
-| 张经理 | 经理（manager） | 部门经理 |
-| 李总 | 管理员（admin） | 系统管理员 |
-
-## 自证要求
-
-在宣布任务完成前，AI 代理必须主动运行与改动范围匹配的验证命令，并在结论中说明结果：
-
-- **前端改动**：优先运行 `npx vitest run <相关测试文件>`；如触及 `src/views` / `src/components` / `src/composables` / `src/api/modules`，再执行 `npm run check:line-budgets`；并至少执行 `npm run check:front-data-boundaries`、`npm run check:doc-governance`、`npm run build`。
-- **后端改动**：运行 `mvn test -Dtest=<相关测试类>`；如涉及架构边界，再运行 `mvn test -Dtest=ArchitectureTest`，并把结果作为常规门禁如实汇报。
-- **纯核心改动**：如新增或修改 `..core..` / `..domain..` 非 Entity 代码，必须运行 `mvn test -Dtest=FPJavaArchitectureTest`。
-- **结构性后端改动**：如新增或扩展受保护模块的 Service，必须运行 `mvn test -Dtest=MaintainabilityArchitectureTest`。
-- **项目权限边界改动**：如新增或修改带 `projectId` 的 Controller、Service、DTO、命令或实体，必须运行 `mvn test -Dtest=ProjectAccessGuardCoverageTest`。
-- **核心链路改动**：运行 `npm run test:e2e`。
-- **禁止取巧**：不得通过删除测试、弱化断言、改写验收口径来掩盖问题。
-
-## 当前已知基线
-
-- `npm run check:front-data-boundaries` 当前可通过。
-- `npm run check:doc-governance` 当前可通过。
-- `npm run build` 当前可通过。
-- `backend` 的 `ArchitectureTest` 已修复并恢复全绿；后续若再次失败，应按新增问题处理，不得再写成“已知存量失败”。
-
----
-
-## 多 Agent 协作 SOP (2026-04-26 落地)
-
-为解决多 Agent 并行开发的冲突与环境污染问题，本项目强制执行以下协作约定：
-
-### 1. 协作身份与品牌
-- **项目全称**：西域数智化投标管理平台 (XiYu Smart Bidding Platform)。
-- **沟通口径**：技术术语、代码实体名保持英文；业务逻辑描述、注释、变更说明使用中文。
-- **Agent 身份**：资深软件工程师，严谨、高效、关注架构边界。
-
-### 2. 开场约定 (Opening Agreement)
+### 1. 任务起始
 Agent 在每次对话开始或切换任务时，必须声明当前环境。
-**格式样例**：
-> `[Gemini] 已就绪 | 工作区: /worktrees/gemini | 分支: agent/gemini-task-name`
+> 当前环境：XiYu Bid POC / Codex Agent Worktree
+> 协作模式：真实 API 单一路径 (API-only)
+> 验证基线：VITE_API_MODE=api + 真实后端联调
 
-### 3. 环境与隔离口径
+### 2. 变更原则
+- **禁止 Mock**：严禁在 `src/mock` 或任何非 API 路径下编写代码。
+- **JPA 优先**：后端存储必须通过 JPA 实体映射到 MySQL，禁止使用内存 Map 模拟。
+- **原子提交**：每次提交应包含功能实现、对应的 `Flyway` 迁移脚本（如涉及库表）、以及至少一个验证成功的测试用例证据。
+
+### 3. 多 Agent 协作 (Worktree)
 - **物理隔离**：各 Agent 必须在 `/Users/user/xiyu/worktrees/` 下的独立 Worktree 工作，严禁在 `main` 基准区修改代码。
 - **资源分配**：每个 Agent 拥有专属的端口（前端 131x / 后端 1808x）和数据库名，互不干扰。
 - **验证责任**：遵循“谁改代码，谁在自己的 Worktree 跑通验证”原则。报告“任务完成”前，必须提供在 Worktree 内部执行 `npm run build` 和 `mvn test` 的成功证据。
+- **协作启动命令**：多 Agent 本地联调优先使用根目录 `npm run agent:morning`（同步基线并拉起 launchd 常驻服务）或 `npm run agent:up` / `agent:restart` / `agent:status` / `agent:logs`；脚本会按当前 worktree 自动映射端口、数据库、Redis DB、sidecar 端口和 launchd label，启动类命令同样需要 `XIYU_DEV_CONFIRMED=1`。
 
+### 4. 文件锁门禁
+- **锁注册表**：仓库根目录 `.agent-locks.yml` 是多 Agent 文件锁的唯一登记入口，支持 `scope: file` 与 `scope: directory`。
+- **加锁规则**：在修改重要核心文件或进行跨模块重构前，Agent 必须检查锁状态。若目标路径已被占用且未过期，必须等待或与 Owner 协商。
+- **自动解锁**：Agent 任务完成后（PR 合入或任务取消），应及时清理锁记录。长期不活跃的锁（默认 24 小时）可被视作失效并强制接管，但在操作前应在对话中明确记录。
+
+## 审计与质量门禁
+
+- **静态扫描**：代码提交前必须通过 `eslint` (前端) 和 `checkstyle/pmd/spotbugs` (后端)。
+- **架构测试**：后端必须通过 `ArchUnit` 门禁，确保包依赖、异常处理和 FP-Java 约束不被破坏。
+- **TDD 覆盖率**：核心业务逻辑的单元测试覆盖率目标为 80% 以上。
+- **E2E 验证**：涉及 UI 交互的变更必须包含对应的 Playwright 脚本验证。

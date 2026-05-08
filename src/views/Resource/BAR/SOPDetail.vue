@@ -131,7 +131,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useBarStore } from '@/stores/bar'
 import {
   Back, Edit, Download, Link, TopRight, Document,
@@ -139,7 +139,6 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
-const router = useRouter()
 const route = useRoute()
 const barStore = useBarStore()
 

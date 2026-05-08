@@ -72,12 +72,13 @@ class SubscriptionPolicyTest {
         assertThat(SubscriptionPolicy.validate(1L, "DOCUMENT", 1L).isValid()).isTrue();
         assertThat(SubscriptionPolicy.validate(1L, "QUALIFICATION", 1L).isValid()).isTrue();
         assertThat(SubscriptionPolicy.validate(1L, "TENDER", 1L).isValid()).isTrue();
+        assertThat(SubscriptionPolicy.validate(1L, "TASK", 1L).isValid()).isTrue();
     }
 
     @Test
     @DisplayName("allowedEntityTypes exposes the whitelist")
     void allowedEntityTypes_ExposesWhitelist() {
         assertThat(SubscriptionPolicy.allowedEntityTypes())
-            .containsExactlyInAnyOrder("PROJECT", "DOCUMENT", "QUALIFICATION", "TENDER");
+            .containsExactlyInAnyOrder("PROJECT", "DOCUMENT", "QUALIFICATION", "TENDER", "TASK");
     }
 }

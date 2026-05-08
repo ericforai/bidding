@@ -41,6 +41,11 @@ import { workbenchApi } from './modules/workbench.js'
 import { bidAgentApi } from './modules/bidAgent.js'
 import { bidMatchScoringApi } from './modules/bidMatchScoring.js'
 import { workflowFormApi } from './modules/workflowForm.js'
+import { taskStatusDictApi } from './modules/taskStatusDict.js'
+import { taskStatusDictAdminApi } from './modules/taskStatusDictAdmin.js'
+import { taskExtendedFieldApi } from './modules/taskExtendedField.js'
+import { taskExtendedFieldAdminApi } from './modules/taskExtendedFieldAdmin.js'
+import { taskActivityApi } from './modules/taskActivity.js'
 
 export {
   httpClient,
@@ -69,7 +74,12 @@ export {
   workbenchApi,
   bidAgentApi,
   bidMatchScoringApi,
-  workflowFormApi
+  workflowFormApi,
+  taskStatusDictApi,
+  taskStatusDictAdminApi,
+  taskExtendedFieldApi,
+  taskExtendedFieldAdminApi,
+  taskActivityApi
 }
 
 export default {
@@ -93,5 +103,10 @@ export default {
   workbench: () => Promise.resolve(workbenchApi),
   bidAgent: () => Promise.resolve(bidAgentApi),
   bidMatchScoring: () => Promise.resolve(bidMatchScoringApi),
-  workflowForm: () => Promise.resolve(workflowFormApi)
+  workflowForm: () => Promise.resolve(workflowFormApi),
+  taskStatusDict: () => Promise.resolve(taskStatusDictApi),
+  taskStatusDictAdmin: () => Promise.resolve(taskStatusDictAdminApi),
+  taskExtendedField: () => Promise.resolve(taskExtendedFieldApi),
+  taskExtendedFieldAdmin: () => Promise.resolve(taskExtendedFieldAdminApi),
+  taskActivity: () => Promise.resolve(taskActivityApi)
 }

@@ -5,6 +5,7 @@ import com.xiyu.bid.entity.RoleProfileCatalog;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.RoleProfileRepository;
 import com.xiyu.bid.repository.UserRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,10 +21,12 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class DefaultAdminInitializer implements ApplicationRunner {
 
+    static final int MIN_ADMIN_PASSWORD_LENGTH = 12;
+
     @Value("${app.bootstrap.admin.username:admin}")
     private String adminUsername;
 
-    @Value("${app.bootstrap.admin.password:XiyuAdmin2026!}")
+    @Value("${app.bootstrap.admin.password}")
     private String adminPassword;
 
     @Value("${app.bootstrap.admin.email:admin@xiyu-local}")
@@ -35,6 +38,27 @@ public class DefaultAdminInitializer implements ApplicationRunner {
     private final UserRepository userRepository;
     private final RoleProfileRepository roleProfileRepository;
     private final PasswordEncoder passwordEncoder;
+
+    /**
+     * Validate the admin password at startup, ALWAYS — independent of whether
+     * {@link #seedDefaultAdmin()} actually runs. Without this, an empty
+     * {@code ADMIN_PASSWORD} env var in prod would silently slide past on a
+     * pre-seeded DB because the seed path is skipped when the admin already
+     * exists. Fail closed at boot so the operator notices immediately.
+     */
+    @PostConstruct
+    void validateAdminPasswordOnStartup() {
+        validateAdminPassword();
+    }
+
+    private void validateAdminPassword() {
+        if (adminPassword == null || adminPassword.length() < MIN_ADMIN_PASSWORD_LENGTH) {
+            throw new IllegalStateException(
+                "app.bootstrap.admin.password must be set and at least " + MIN_ADMIN_PASSWORD_LENGTH + " characters long. "
+                + "In prod, set ADMIN_PASSWORD env var; in dev, configure application-dev.yml."
+            );
+        }
+    }
 
     @Override
     public void run(ApplicationArguments args) {
@@ -48,6 +72,9 @@ public class DefaultAdminInitializer implements ApplicationRunner {
     }
 
     private void seedDefaultAdmin() {
+        // Defense in depth: re-validate even though @PostConstruct already ran,
+        // in case adminPassword was mutated between init and run().
+        validateAdminPassword();
         String roleCode = RoleProfileCatalog.definitionForLegacyRole(User.Role.ADMIN).code();
         RoleProfile profile = roleProfileRepository.findByCodeIgnoreCase(roleCode)
                 .orElseThrow(() -> new IllegalStateException("Required RoleProfile not found: " + roleCode));
@@ -67,7 +94,7 @@ public class DefaultAdminInitializer implements ApplicationRunner {
 
         log.warn("=== DEFAULT ADMIN CREDENTIALS ===");
         log.warn("  Username: {}", adminUsername);
-        log.warn("  Password: {} (CHANGE THIS IN PRODUCTION!)", adminPassword);
+        log.warn("  Password: <see ADMIN_PASSWORD env var or app.bootstrap.admin.password>");
         log.warn("==================================");
     }
 }

@@ -67,11 +67,8 @@
 <script setup>
 import { Search } from '@element-plus/icons-vue'
 
+defineModel('searchForm', { type: Object, required: true })
 defineProps({
-  searchForm: {
-    type: Object,
-    required: true
-  },
   industries: {
     type: Array,
     required: true

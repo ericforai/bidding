@@ -1,0 +1,8 @@
+-- Input: migration/V96__dashboard_layout_tables.sql
+-- Output: rollback script for postgres environments; review data-loss comments before production use.
+-- Pos: Flyway historical down migration coverage for 西域数智化投标管理平台.
+-- 维护声明: source migration changes must update this rollback script in the same branch.
+
+DROP INDEX IF EXISTS idx_sys_dashboard_layout_role_code;
+DROP TABLE IF EXISTS sys_dashboard_widget;
+DROP TABLE IF EXISTS sys_dashboard_layout;

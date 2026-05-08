@@ -6,7 +6,6 @@ export function useProjectDetailTasks(context) {
     activities: context.activities,
     scoreDraftDialogVisible: context.scoreDraftDialogVisible,
     currentTask: context.currentTask,
-    taskDialogVisible: context.taskDialogVisible,
   }
   const workflow = {
     handleInitiateProcess: context.handleInitiateProcess,

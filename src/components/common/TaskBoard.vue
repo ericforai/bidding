@@ -12,80 +12,88 @@
     </div>
     <div class="board-columns-container">
       <div class="board-column" v-for="column in columns" :key="column.key">
-      <div class="column-header" :class="`column-${column.key}`">
+      <div class="column-header" :style="getColumnHeaderStyle(column)">
         <span class="column-title">{{ column.title }}</span>
         <el-badge :value="getTaskCount(column.key)" class="badge" />
       </div>
-      <div class="column-content">
-        <div
-          v-for="task in getTasksByStatus(column.key)"
-          :key="task.id"
-          class="task-card"
-          :class="{ 'task-high': task.priority === 'high', 'task-review': task.status === 'review' }"
-          @click="handleTaskClick(task)"
-        >
-          <div class="task-header">
-            <el-tag
-              :type="getPriorityType(task.priority)"
-              size="small"
-              v-if="task.priority"
-            >
-              {{ getPriorityText(task.priority) }}
-            </el-tag>
-            <el-tag v-if="task.hasDeliverable" type="success" size="small">有交付物</el-tag>
-            <el-dropdown trigger="click" @click.stop>
-              <el-icon class="more-icon"><MoreFilled /></el-icon>
-              <template #dropdown>
-                <el-dropdown-item @click="handleStatusChange(task, 'todo')" :disabled="task.status === 'todo'">
-                  设为待办
-                </el-dropdown-item>
-                <el-dropdown-item @click="handleStatusChange(task, 'doing')" :disabled="task.status === 'doing'">
-                  设为进行中
-                </el-dropdown-item>
-                <el-dropdown-item @click="handleStatusChange(task, 'review')" :disabled="task.status === 'review'">
-                  提交审核
-                </el-dropdown-item>
-                <el-dropdown-item @click="handleStatusChange(task, 'done')" :disabled="task.status === 'done'">
-                  设为已完成
-                </el-dropdown-item>
-                <el-dropdown-item divided @click="handleUploadDeliverable(task)">
-                  <el-icon><Upload /></el-icon>
-                  上传交付物
-                </el-dropdown-item>
-              </template>
-            </el-dropdown>
-          </div>
-          <div class="task-name">{{ task.name }}</div>
-          <div class="task-desc">{{ task.description }}</div>
-          <div class="task-meta">
-            <div class="task-owner">
-              <el-icon><User /></el-icon>
-              <span>{{ task.owner }}</span>
-            </div>
-            <div class="task-deadline" :class="{ 'deadline-urgent': isUrgent(task.deadline) }">
-              <el-icon><Calendar /></el-icon>
-              <span>{{ task.deadline }}</span>
-            </div>
-          </div>
-          <!-- 交付物列表 -->
-          <div v-if="task.deliverables && task.deliverables.length > 0" class="deliverables">
-            <div class="deliverable-title">交付物:</div>
-            <div v-for="del in task.deliverables" :key="del.id" class="deliverable-item">
-              <el-tag size="small" closable @close="handleRemoveDeliverable(task, del)">
-                <el-link :href="del.url" target="_blank" type="primary">
-                  <el-icon><Document /></el-icon>
-                  {{ del.name }}
-                </el-link>
+      <draggable
+        :model-value="getTasksByStatus(column.key)"
+        :group="{ name: 'task-cards' }"
+        :item-key="(t) => t.id"
+        :disabled="isStatusTransitionInFlight"
+        class="column-content"
+        ghost-class="task-card-ghost"
+        drag-class="task-card-dragging"
+        :data-column="column.key"
+        @mouseup="handleMouseDrop(column.key)"
+        @change="(evt) => onDragChange(evt, column.key)"
+      >
+        <template #item="{ element: task }">
+          <div
+            class="task-card"
+            :class="{ 'task-high': task.priority === 'high', 'task-review': column.category === 'REVIEW' }"
+            @mousedown="handleMouseDragStart(task, $event)"
+            @click="handleTaskClick(task)"
+          >
+            <div class="task-header">
+              <el-tag
+                :type="getPriorityType(task.priority)"
+                size="small"
+                v-if="task.priority"
+              >
+                {{ getPriorityText(task.priority) }}
               </el-tag>
+              <el-tag v-if="task.hasDeliverable" type="success" size="small">有交付物</el-tag>
+              <el-dropdown trigger="click" @click.stop>
+                <el-icon class="more-icon"><MoreFilled /></el-icon>
+                <template #dropdown>
+                  <el-dropdown-item
+                    v-for="s in statuses"
+                    :key="s.code"
+                    :disabled="normalizeStatus(task.status) === s.code"
+                    @click="handleStatusChange(task, s.code)"
+                  >
+                    设为{{ s.name }}
+                  </el-dropdown-item>
+                  <el-dropdown-item divided @click="handleUploadDeliverable(task)">
+                    <el-icon><Upload /></el-icon>
+                    上传交付物
+                  </el-dropdown-item>
+                </template>
+              </el-dropdown>
+            </div>
+            <div class="task-name">{{ task.name }}</div>
+            <div class="task-desc">{{ task.description }}</div>
+            <div class="task-meta">
+              <div class="task-owner">
+                <el-icon><User /></el-icon>
+                <span>{{ task.owner }}</span>
+              </div>
+              <div class="task-deadline" :class="{ 'deadline-urgent': isUrgent(task.deadline) }">
+                <el-icon><Calendar /></el-icon>
+                <span>{{ task.deadline }}</span>
+              </div>
+            </div>
+            <div v-if="task.deliverables && task.deliverables.length > 0" class="deliverables">
+              <div class="deliverable-title">交付物:</div>
+              <div v-for="del in task.deliverables" :key="del.id" class="deliverable-item">
+                <el-tag size="small" closable @close="handleRemoveDeliverable(task, del)">
+                  <el-link :href="del.url" target="_blank" type="primary">
+                    <el-icon><Document /></el-icon>
+                    {{ del.name }}
+                  </el-link>
+                </el-tag>
+              </div>
             </div>
           </div>
-        </div>
-        <el-empty v-if="getTasksByStatus(column.key).length === 0" description="暂无任务" :image-size="60" />
-      </div>
+        </template>
+        <template #footer>
+          <el-empty v-if="getTasksByStatus(column.key).length === 0" description="暂无任务" :image-size="60" />
+        </template>
+      </draggable>
     </div>
     </div>
 
-    <!-- 提交至标书编写按钮 -->
     <div class="submit-section" v-if="canSubmitToDocument">
       <el-button type="success" size="large" @click="handleSubmitToDocument" :disabled="!allTasksCompleted">
         <el-icon><DocumentAdd /></el-icon>
@@ -94,7 +102,6 @@
       <div class="submit-tip">所有任务已完成并审核通过，可开始标书编写</div>
     </div>
 
-    <!-- 上传交付物对话框 -->
     <el-dialog v-model="showUploadDialog" title="上传交付物" width="500px">
       <el-form :model="deliverableForm" label-width="80px">
         <el-form-item label="交付物名称">
@@ -137,10 +144,13 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { MoreFilled, User, Calendar, Document, MagicStick, Upload, DocumentAdd, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import draggable from 'vuedraggable'
 import { useProjectStore } from '@/stores/project'
+import { useUserStore } from '@/stores/user'
+import { useTaskBoardDrag } from './useTaskBoardDrag'
 
 const props = defineProps({
   tasks: {
@@ -157,6 +167,7 @@ const props = defineProps({
 const emit = defineEmits(['task-click', 'status-change', 'generate-tasks', 'submit-to-document', 'add-deliverable', 'remove-deliverable'])
 
 const projectStore = useProjectStore()
+const userStore = useUserStore()
 
 const showUploadDialog = ref(false)
 const currentTask = ref(null)
@@ -168,35 +179,69 @@ const deliverableForm = ref({
   file: null
 })
 
-const columns = [
-  { key: 'todo', title: '待办' },
-  { key: 'doing', title: '进行中' },
-  { key: 'review', title: '待审核' },
-  { key: 'done', title: '已完成' }
-]
+const statuses = computed(() => projectStore.taskStatuses)
 
-// 计算进度
+onMounted(() => {
+  if (!projectStore.taskStatusesLoaded) {
+    projectStore.loadTaskStatuses()
+  }
+})
+
+const normalizeStatus = (status) => String(status || '').toUpperCase()
+
+const columns = computed(() => statuses.value.map((s) => ({
+  key: s.code,
+  title: s.name,
+  color: s.color,
+  category: s.category,
+  terminal: s.terminal
+})))
+
+const terminalCodes = computed(() => new Set(
+  statuses.value.filter((s) => s.terminal).map((s) => s.code)
+))
+
 const progress = computed(() => {
   if (props.tasks.length === 0) return 0
-  const completedCount = props.tasks.filter(t => t.status === 'done').length
-  return Math.round((completedCount / props.tasks.length) * 100)
+  const doneCount = props.tasks.filter((t) => terminalCodes.value.has(normalizeStatus(t.status))).length
+  return Math.round((doneCount / props.tasks.length) * 100)
 })
 
-// 所有任务都完成且审核通过
 const allTasksCompleted = computed(() => {
-  return props.tasks.length > 0 && props.tasks.every(t => t.status === 'done')
+  if (props.tasks.length === 0) return false
+  return props.tasks.every((t) => terminalCodes.value.has(normalizeStatus(t.status)))
 })
 
-const canSubmitToDocument = computed(() => {
-  return props.tasks.length > 0 && props.tasks.every(t => t.status === 'done')
-})
+const canSubmitToDocument = computed(() => allTasksCompleted.value)
 
-const getTasksByStatus = (status) => {
-  return props.tasks.filter(t => t.status === status)
+const getTasksByStatus = (code) => {
+  return props.tasks.filter((t) => normalizeStatus(t.status) === code)
 }
 
-const getTaskCount = (status) => {
-  return getTasksByStatus(status).length
+const getTaskCount = (code) => {
+  return getTasksByStatus(code).length
+}
+
+const getColumnHeaderStyle = (column) => {
+  const color = column?.color || '#909399'
+  return {
+    color,
+    background: hexToSoftBackground(color)
+  }
+}
+
+const hexToSoftBackground = (hex) => {
+  if (typeof hex !== 'string' || !/^#([\da-f]{3}|[\da-f]{6})$/i.test(hex)) {
+    return '#f5f7fa'
+  }
+  let normalized = hex.replace('#', '')
+  if (normalized.length === 3) {
+    normalized = normalized.split('').map((c) => c + c).join('')
+  }
+  const r = parseInt(normalized.slice(0, 2), 16)
+  const g = parseInt(normalized.slice(2, 4), 16)
+  const b = parseInt(normalized.slice(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, 0.12)`
 }
 
 const getPriorityType = (priority) => {
@@ -233,6 +278,13 @@ const handleStatusChange = (task, newStatus) => {
   emit('status-change', task, newStatus)
 }
 
+const {
+  isStatusTransitionInFlight, onDragChange, handleMouseDragStart, handleMouseDrop,
+} = useTaskBoardDrag({
+  normalizeStatus,
+  emitStatusChange: handleStatusChange,
+})
+
 const handleUploadDeliverable = (task) => {
   currentTask.value = task
   showUploadDialog.value = true
@@ -263,14 +315,17 @@ const handleSaveDeliverable = async () => {
       other: 'OTHER'
     }
 
-    await projectStore.addDeliverable(props.projectId, currentTask.value.id, {
+    const savedDeliverable = await projectStore.addDeliverable(props.projectId, currentTask.value.id, {
       name: deliverableForm.value.name,
       deliverableType: typeMap[deliverableForm.value.type] || 'DOCUMENT',
       size: deliverableForm.value.file ? `${(deliverableForm.value.file.size / 1024).toFixed(1)}KB` : null,
-      fileType: deliverableForm.value.file?.type || null
+      fileType: deliverableForm.value.file?.type || null,
+      file: deliverableForm.value.file,
+      uploaderId: userStore.currentUser?.id ?? null,
+      uploaderName: userStore.userName,
     })
 
-    emit('add-deliverable', currentTask.value.id, { name: deliverableForm.value.name })
+    emit('add-deliverable', currentTask.value.id, savedDeliverable)
 
     showUploadDialog.value = false
     deliverableForm.value = { name: '', type: 'document', file: null }
@@ -357,26 +412,6 @@ const handleSubmitToDocument = async () => {
   font-weight: 500;
 }
 
-.column-todo .column-header {
-  background: #e8e9eb;
-  color: #606266;
-}
-
-.column-doing .column-header {
-  background: #e1f3ff;
-  color: #409eff;
-}
-
-.column-review .column-header {
-  background: #fff7e6;
-  color: #e6a23c;
-}
-
-.column-done .column-header {
-  background: #e1f9e8;
-  color: #67c23a;
-}
-
 .column-title {
   font-size: 14px;
 }
@@ -400,6 +435,19 @@ const handleSubmitToDocument = async () => {
 
 .task-card:hover {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.task-card-ghost {
+  opacity: 0.5;
+  background: #eef5ff !important;
+  border: 1px dashed #409eff !important;
+}
+
+.task-card-dragging {
+  opacity: 0.9;
+  transform: rotate(2deg);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2) !important;
+  cursor: grabbing;
 }
 
 .task-high {

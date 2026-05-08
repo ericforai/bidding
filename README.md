@@ -103,21 +103,51 @@ npm run dev:stable:status
 ```
 
 说明：
-- `npm run dev:stable:start` 会调用 `scripts/dev-services.sh`，适合日常联调和反复重启
-- `npm run dev:all` 会调用根目录 `start.sh`，适合前台一次性拉起整套服务
-- 后端默认启动到 `127.0.0.1:18080`
-- 前端默认启动到 `127.0.0.1:1314`
+- `npm run dev:stable:start` 会调用 `scripts/dev-services.sh`，统一拉起文档转换 sidecar、后端和前端，适合日常联调和反复重启
+- `npm run dev:all` 是兼容入口，会先按当前目录加载 `scripts/dev-env.sh`，再转调同一套 `scripts/dev-services.sh` 稳定启动逻辑
+- 主目录默认启动到前端 `127.0.0.1:1314`、后端 `127.0.0.1:18080`、sidecar `127.0.0.1:8000`、数据库 `xiyu_bid_main`
+- 多 Agent worktree 会自动使用专属端口和数据库，例如 Codex worktree 使用前端 `1316`、后端 `18082`、sidecar `8002`、数据库 `xiyu_bid_codex`
 - 后端默认使用 `dev,mysql`
-- 启动脚本会自动传入本地 MySQL 默认值：`localhost:3306/xiyu_bid_main`、用户 `xiyu_user`
+- 启动脚本会自动传入本地 MySQL 默认用户 `xiyu_user`
 - 启动脚本会自动识别本机 Redis：优先 `6379`，若仅 Docker 暴露 `16379` 也会自动切换
+- 启动脚本会为文档转换 sidecar 自动生成本地共享密钥，保存到 `.runtime/dev-services/sidecar.shared-key`，并同时注入 sidecar 与后端，不写入源码
 - 前端会以 `VITE_API_MODE=api` 连接真实后端（不新增前端 mock 主入口）
 - 如需覆盖本地连接信息，可在启动前设置 `DB_HOST`、`DB_PORT`、`DB_NAME`、`DB_USERNAME`、`DB_PASSWORD`、`REDIS_HOST`、`REDIS_PORT`
+
+### 新 Mac / 未安装 MySQL 的 Docker 启动方式
+
+如果新电脑已有 Docker Desktop，但没有本机 MySQL，可以直接用项目脚本拉起本地 MySQL 8.0 和 Redis 容器，并把变量写入 `.runtime/local-docker/local-docker.env`：
+
+```bash
+npm install
+npm run dev:docker:start
+```
+
+常用命令：
+
+```bash
+npm run dev:docker:status
+npm run dev:docker:logs
+npm run dev:docker:stop
+```
+
+默认容器变量：
+- MySQL：`127.0.0.1:3306/xiyu_bid_main`，用户 `xiyu_user`，密码 `XiyuDB!2026`
+- Redis：`127.0.0.1:6379/0`
+- 前端：`127.0.0.1:1314`
+- 后端：`127.0.0.1:18080`
+
+如果端口被占用，可显式覆盖：
+
+```bash
+DB_PORT=13306 REDIS_PORT=16379 npm run dev:docker:start
+```
 
 ### 运行模式矩阵
 
 | 场景 | 前端数据来源 | 后端 Profile | 数据行为 |
 | --- | --- | --- | --- |
-| 本地联调（推荐） | 真实 API | `dev,mysql`（`start.sh` 默认） | 连接 MySQL 8.0，仅真实数据库数据，不注入 Demo |
+| 本地联调（推荐） | 真实 API | `dev,mysql`（稳定启动脚本默认） | 连接 MySQL 8.0，仅真实数据库数据，不注入 Demo |
 | 生产真实库 | 真实 API | `prod,mysql`（或等价真实库 profile） | 连接 MySQL 8.0，仅真实数据库数据，不注入 Demo |
 | 自动化 E2E 基线 | 真实 API | `e2e`（测试脚本专用） | API 返回真实数据 + 内存 Demo 融合；Demo 使用负数 ID 且只读 |
 | 历史 mock 资产 | 禁止作为页面主路径 | 不适用 | 仅保留为迁移技术债与参考，不允许新增页面直连 |
@@ -138,6 +168,8 @@ npm run dev:stable:watch:status
 - 以 `dev,mysql` 启动后端
 - 传入本地数据库和 Redis 连接参数
 - 校验前端是否真的是当前工作区对应的 API 模式实例
+- 校验前后端进程是否匹配当前代码指纹和启动参数，避免拉取新代码后复用旧进程
+- 前端启动前重建 Vite 依赖优化缓存，降低分支切换后的 `chunk-*.js` 404 风险
 
 停止服务：
 

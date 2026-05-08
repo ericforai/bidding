@@ -31,8 +31,8 @@ backlinks:
   - requirements
   - team-and-timeline
 created: 2026-04-15
-updated: 2026-04-26
-health_checked: 2026-04-29
+updated: 2026-05-08
+health_checked: 2026-05-08
 ---
 # 部署与上线
 
@@ -329,3 +329,79 @@ CONFIRM_RESTORE=YES bash scripts/release/restore-db.sh <backup-file>
 | 监控指标 | Micrometer + Prometheus：JVM、HTTP 请求、连接池、业务指标 |
 | 日志 | Logback，开发 DEBUG 控制台、生产 INFO 文件 + 结构化日志，AOP 审计切面 |
 | 告警 | 健康异常、5xx 持续、连接池耗尽、内存超阈值 |
+
+### 8.1 客户测试环境 SSH 运维入口
+
+本节记录 2026-05-07 至 2026-05-08 客户正式测试环境部署排障中验证过的连接方式。该环境是客户侧正式测试环境，不能按本地 demo 或临时演示环境处理。
+
+**环境入口：**
+
+| 项 | 当前值 |
+|---|---|
+| 应用访问地址 | `http://172.16.38.78:8080/` |
+| 应用服务器 | `172.16.38.78` |
+| 堡垒机 / Jumpserver | `tops-login.ehsy.com` |
+| 堡垒机账号 | `winbid` |
+| 目标机账号 | `jetty` |
+| RDS | `winbid-01.test.rds.ehsy.com` / 数据库 `winbid` / 账号 `ea_bid` |
+| Redis | `winbid-01.test.redis.ehsy.com` |
+
+密码、Redis 密码、数据库密码、JWT 密钥、管理员初始密码等敏感信息不得写入仓库或 wiki。已授权运维人员应从公司密码管理器、安全渠道或服务器 `/etc/xiyu-bid/backend.env` 获取。
+
+**推荐 SSH 连接方式：**
+
+```bash
+ssh -o HostKeyAlgorithms=+ssh-rsa \
+  -o PubkeyAcceptedAlgorithms=+ssh-rsa \
+  -o StrictHostKeyChecking=accept-new \
+  winbid@tops-login.ehsy.com
+```
+
+堡垒机登录后，在交互菜单中输入：
+
+```text
+/172.16.38.78
+```
+
+命中目标资产后选择 `1`，进入 `jetty@172.16.38.78`。当前验证结果是：先登录堡垒机，再通过菜单选择目标资产是可用路径。
+
+**已验证不可用或不稳定路径：**
+
+| 路径 | 结论 |
+|---|---|
+| `ssh winbid@tops2.ehsy.com` | 连接会在认证前关闭，当前不可作为运维入口 |
+| `ssh -J winbid@tops-login.ehsy.com <user>@172.16.38.78` | 当前账号走的是堡垒机交互菜单，直接 ProxyJump 未验证为可用路径 |
+| `scp` / `sftp` 直接穿透堡垒机 | 当前账号未按文件传输通道配置，不作为发布包上传路径 |
+
+如果后续 IT 开通非交互式跳板、SCP 或 SFTP，应先在本节补充经过验证的新命令，再替换发布流程。
+
+**上机后服务检查：**
+
+```bash
+systemctl is-active nginx xiyu-bid-backend
+curl -fsS http://127.0.0.1:18080/actuator/health
+curl -fsS http://172.16.38.78:8080/actuator/health
+sudo journalctl -u xiyu-bid-backend -n 120 --no-pager
+sudo tail -n 120 /var/log/nginx/access.log
+```
+
+当前部署形态：
+
+| 组件 | 位置 / 端口 |
+|---|---|
+| Nginx | 对外监听 `80` 和 `8080` |
+| 后端服务 | `xiyu-bid-backend`，仅监听 `127.0.0.1:18080` |
+| 前端静态资源 | `/srv/www/xiyu-bid` |
+| 后端 JAR | `/opt/xiyu-bid/shared/backend/app.jar` |
+| 后端环境变量 | `/etc/xiyu-bid/backend.env` |
+| 冒烟报告 | `/opt/xiyu-bid/smoke-reports/` |
+| 当前部署记录 | `/opt/xiyu-bid/deployed-release.json` |
+
+**常见故障判断：**
+
+| 现象 | 优先判断 |
+|---|---|
+| 浏览器看到 Spring Boot Whitelabel / `403` | 请求可能落到了后端根路径或 Nginx 转发配置异常，应先确认 `:8080` 是否由 Nginx 对外提供 |
+| 登录接口返回 `Invalid CORS request` 或 `403` | `CORS_ALLOWED_ORIGINS` 必须包含浏览器实际 Origin，例如 `http://172.16.38.78` 和 `http://172.16.38.78:8080` |
+| 用户反馈打不开，但 Nginx access log 没有新请求 | 优先排查客户网络、VPN、白名单或浏览器访问路径，问题可能还没到达服务器 |
+| 管理员密码不确定 | 不在代码库查找；授权人员在服务器执行 `sudo grep '^ADMIN_PASSWORD=' /etc/xiyu-bid/backend.env` |

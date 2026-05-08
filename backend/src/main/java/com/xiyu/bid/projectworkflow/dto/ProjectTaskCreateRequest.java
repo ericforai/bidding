@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @Builder
@@ -26,6 +27,15 @@ public class ProjectTaskCreateRequest {
     private String title;
 
     private String description;
+
+    private String content;
+
+    /**
+     * Admin-defined extended field key/value pairs. Persisted as JSON to
+     * {@code tasks.extended_fields_json TEXT} (V103). Schema lives in
+     * {@code task_extended_field}.
+     */
+    private Map<String, Object> extendedFields;
 
     private Long assigneeId;
 

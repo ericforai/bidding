@@ -112,11 +112,11 @@
 import { Check, Plus } from '@element-plus/icons-vue'
 import BidMatchRulesEditor from './BidMatchRulesEditor.vue'
 
+defineModel('currentModel', { type: Object, required: true })
 defineProps({
   loading: { type: Boolean, default: false },
   saving: { type: Boolean, default: false },
   activating: { type: Boolean, default: false },
-  currentModel: { type: Object, required: true },
   weightValidation: { type: Object, required: true },
   enabledDimensionCount: { type: Number, default: 0 },
   save: { type: Function, required: true },

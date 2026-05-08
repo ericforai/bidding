@@ -13,7 +13,7 @@ import java.util.Set;
 public final class SubscriptionPolicy {
 
     private static final Set<String> ALLOWED_TYPES =
-        Set.of("PROJECT", "DOCUMENT", "QUALIFICATION", "TENDER");
+        Set.of("PROJECT", "DOCUMENT", "QUALIFICATION", "TENDER", "TASK");
 
     private SubscriptionPolicy() {
     }

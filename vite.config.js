@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
 export default defineConfig({
+  cacheDir: process.env.VITE_CACHE_DIR || 'node_modules/.vite',
   plugins: [vue()],
   resolve: {
     alias: {
@@ -33,7 +34,7 @@ export default defineConfig({
           if (id.includes('echarts')) {
             return 'echarts'
           }
-          if (id.includes('vue-router') || id.includes('/vue/') || id.includes('pinia')) {
+          if (id.includes('vue-router') || id.includes('/vue/') || id.includes('pinia') || id.includes('vuedraggable')) {
             return 'vue-vendor'
           }
           return 'vendor'

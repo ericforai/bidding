@@ -10,6 +10,7 @@ const routeState = {
 const getDetail = vi.fn()
 const getLatestScore = vi.fn()
 const generateScore = vi.fn()
+const getCases = vi.fn()
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: routerPush }),
@@ -19,6 +20,7 @@ vi.mock('vue-router', () => ({
 vi.mock('@/api', () => ({
   tendersApi: { getDetail },
   bidMatchScoringApi: { getLatestScore, generateScore },
+  knowledgeApi: { cases: { getList: getCases } },
 }))
 
 const elMessage = {
@@ -81,6 +83,20 @@ describe('useBiddingDetailPage', () => {
         dimensions: [{ key: 'profit', name: '利润空间', score: 91, weight: 100 }],
       },
     })
+    getCases.mockResolvedValue({
+      success: true,
+      data: [
+        {
+          id: 17,
+          title: '真实电商集采案例',
+          customer: '真实客户',
+          amount: 320,
+          year: 2025,
+          summary: '真实案例摘要',
+          highlights: ['真实沉淀'],
+        },
+      ],
+    })
   })
 
   it('loads tender detail and latest match score', async () => {
@@ -96,6 +112,22 @@ describe('useBiddingDetailPage', () => {
     expect(wrapper.vm.winProbabilityView.label).toBe('80%')
     expect(wrapper.vm.deadlineParts).toMatchObject({ date: '2026-05-31', time: '18:00', hasTime: true })
     expect(wrapper.vm.matchScore.dimensions.map((dimension) => dimension.name)).toEqual(['预算匹配', '交付窗口'])
+    expect(getCases).toHaveBeenCalledWith({
+      keyword: '政府',
+      industry: 'government',
+      page: 1,
+      pageSize: 4,
+      sort: 'recent',
+    })
+    expect(wrapper.vm.relatedCases[0].title).toBe('真实电商集采案例')
+  })
+
+  it('does not fall back to hard-coded related cases when real API has no data', async () => {
+    getCases.mockResolvedValue({ success: true, data: [] })
+    const wrapper = mount(createHarness())
+    await flushPromises()
+
+    expect(wrapper.vm.relatedCases).toEqual([])
   })
 
   it('keeps missing region and industry explicit without inferred values', async () => {

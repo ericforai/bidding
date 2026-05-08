@@ -64,6 +64,7 @@ export function useProjectDetailBoot(context) {
     const projectId = route.params.id
     try {
       await projectStore.getProjectById(projectId)
+      await projectStore.loadTaskStatuses()
       ensureProjectCollections()
       initializeProjectActivities()
       await loadProjectDetailDependencies(projectId)

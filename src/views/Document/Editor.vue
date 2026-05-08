@@ -18,7 +18,7 @@
         v-model:show-dialog="showSectionDialog"
         :section-tree-data="sectionTreeData"
         :dialog-title="sectionDialogTitle"
-        :section-form="sectionForm"
+        v-model:section-form="sectionForm"
         :get-section-icon="getSectionIcon"
         :check-allow-drag="checkAllowDrag"
         :check-allow-drop="checkAllowDrop"
@@ -30,7 +30,7 @@
       />
 
       <EditorCenterPane
-        :current-section="currentSection"
+        v-model:current-section="currentSection"
         :zoom-level="zoomLevel"
         :base-font-size="baseFontSize"
         :sources="currentSectionSources"
@@ -45,7 +45,7 @@
         v-model:show-assembly-progress="showAssemblyProgress"
         :assembly-templates="assemblyTemplates"
         :assembly-history="assemblyHistory"
-        :assembly-form="assemblyForm"
+        v-model:assembly-form="assemblyForm"
         :assembly-steps="assemblySteps"
         :current-step-index="currentStepIndex"
         :is-assembling="isAssembling"

@@ -10,6 +10,7 @@ import com.xiyu.bid.demo.service.DemoDataProvider;
 import com.xiyu.bid.demo.service.DemoFusionService;
 import com.xiyu.bid.demo.service.DemoModeService;
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.idempotency.Idempotent;
 import com.xiyu.bid.tender.dto.TenderRequest;
 import com.xiyu.bid.tender.dto.TenderDTO;
 import com.xiyu.bid.tender.service.TenderCommandService;
@@ -81,6 +82,7 @@ public class TenderController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Idempotent
     public ResponseEntity<ApiResponse<TenderDTO>> createTender(@Valid @RequestBody TenderRequest tenderRequest) {
         log.info("POST /api/tenders - Creating new tender: {}", tenderRequest.getTitle());
         sanitizeTenderRequest(tenderRequest);
@@ -185,6 +187,9 @@ public class TenderController {
         if (request.getPurchaserHash() != null) request.setPurchaserHash(InputSanitizer.sanitizeString(request.getPurchaserHash(), 64));
         if (request.getContactName() != null) request.setContactName(InputSanitizer.sanitizeString(request.getContactName(), 100));
         if (request.getContactPhone() != null) request.setContactPhone(InputSanitizer.sanitizeString(request.getContactPhone(), 50));
+        if (request.getSourceDocumentName() != null) request.setSourceDocumentName(InputSanitizer.sanitizeString(request.getSourceDocumentName(), 255));
+        if (request.getSourceDocumentFileType() != null) request.setSourceDocumentFileType(InputSanitizer.sanitizeString(request.getSourceDocumentFileType(), 100));
+        if (request.getSourceDocumentFileUrl() != null) request.setSourceDocumentFileUrl(InputSanitizer.sanitizeString(request.getSourceDocumentFileUrl(), 1000));
         if (request.getDescription() != null) request.setDescription(InputSanitizer.sanitizeString(request.getDescription(), 5000));
         if (request.getTags() != null) {
             request.setTags(request.getTags().stream()

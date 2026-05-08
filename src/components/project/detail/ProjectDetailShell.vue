@@ -28,6 +28,7 @@ import { computed, markRaw, provide, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { projectsApi } from '@/api'
+import * as projectTenderBreakdownApi from '@/api/modules/projectTenderBreakdown.js'
 import { useProjectStore } from '@/stores/project'
 import { useUserStore } from '@/stores/user'
 import { useBarStore } from '@/stores/bar'
@@ -77,7 +78,17 @@ const navigation = useProjectDetailNavigation({ route, router, project: state.pr
 const documentActions = useProjectDetailDocumentActions({ route, project: state.project, projectExpenses: expenseAggregation.projectExpenses, userStore, projectsApi, isApiProject, message, state })
 const boot = useProjectDetailBoot({ ...baseContext, state, workflow, expenseAggregation, loadProjectWorkflowData: documentActions.loadProjectWorkflowData, demoAutoTasks, demoMobileCard })
 const resultActions = useProjectDetailResultActions({ route, projectStore, message, state, approvalType: state.approvalType, loadApprovalHistory: boot.loadApprovalHistory, navigation })
-const taskActions = useProjectDetailTaskActions({ route, userStore, projectStore, projectsApi, isApiProject, message, state, workflow })
+const taskActions = useProjectDetailTaskActions({
+  route,
+  userStore,
+  projectStore,
+  projectsApi,
+  tenderBreakdownApi: projectTenderBreakdownApi,
+  isApiProject,
+  message,
+  state,
+  workflow,
+})
 
 const loading = state.loading
 const project = state.project

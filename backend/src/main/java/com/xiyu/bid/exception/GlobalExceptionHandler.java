@@ -7,6 +7,7 @@ package com.xiyu.bid.exception;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.docinsight.application.exception.DocumentNotFoundException;
 import com.xiyu.bid.docinsight.application.exception.UnsupportedProfileException;
+import com.openai.errors.UnauthorizedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -214,6 +215,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity
                 .badRequest()
                 .body(ApiResponse.error(400, ex.getMessage()));
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOpenAiUnauthorizedException(
+            UnauthorizedException ex,
+            HttpServletRequest request) {
+        log.warn("AI provider 认证失败 - URI: {}", request.getRequestURI());
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .body(ApiResponse.error(502, "AI provider API Key 无效或已失效，请检查系统设置中的对应 provider key 或服务端环境变量后重启。"));
     }
 
     /**

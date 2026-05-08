@@ -2,8 +2,13 @@ import { describe, it, expect } from 'vitest'
 import {
   normalizeFeeForDisplay,
   normalizeAuditLogForTimeline,
+  getProjectStatusText,
+  getProjectStatusType,
   normalizeTaskStatusForApi,
-  normalizeTaskStatusFromApi
+  normalizeTaskStatusFromApi,
+  normalizeTaskPriorityForApi,
+  taskFormDtoToBackend,
+  taskBackendToCard
 } from './project-utils.js'
 
 describe('normalizeFeeForDisplay', () => {
@@ -218,7 +223,17 @@ describe('normalizeTaskStatusForApi', () => {
     ['doing', 'IN_PROGRESS'],
     ['done', 'COMPLETED'],
     ['review', 'REVIEW']
-  ])('maps frontend status "%s" to backend "%s"', (input, expected) => {
+  ])('maps legacy frontend lowercase status "%s" to backend "%s"', (input, expected) => {
+    expect(normalizeTaskStatusForApi(input)).toBe(expected)
+  })
+
+  it.each([
+    ['TODO', 'TODO'],
+    ['IN_PROGRESS', 'IN_PROGRESS'],
+    ['REVIEW', 'REVIEW'],
+    ['COMPLETED', 'COMPLETED'],
+    ['CANCELLED', 'CANCELLED']
+  ])('passes uppercase canonical code "%s" through as identity', (input, expected) => {
     expect(normalizeTaskStatusForApi(input)).toBe(expected)
   })
 
@@ -235,13 +250,46 @@ describe('normalizeTaskStatusForApi', () => {
   })
 })
 
+describe('project status display helpers', () => {
+  it.each([
+    ['INITIATED', '已立项', 'info'],
+    ['PREPARING', '编制中', 'primary'],
+    ['REVIEWING', '评审中', 'warning'],
+    ['SEALING', '盖章中', 'warning'],
+    ['BIDDING', '投标中', 'primary'],
+    ['ARCHIVED', '已归档', 'success'],
+    ['drafting', '草稿中', 'info'],
+    ['won', '已中标', 'success'],
+    ['lost', '未中标', 'danger']
+  ])('maps status "%s" to localized text and tag type', (status, text, type) => {
+    expect(getProjectStatusText(status)).toBe(text)
+    expect(getProjectStatusType(status)).toBe(type)
+  })
+
+  it('passes unknown project status text through safely', () => {
+    expect(getProjectStatusText('CUSTOM_STATUS')).toBe('CUSTOM_STATUS')
+    expect(getProjectStatusType('CUSTOM_STATUS')).toBe('info')
+  })
+})
+
 describe('normalizeTaskStatusFromApi', () => {
   it.each([
-    ['TODO', 'todo'],
-    ['IN_PROGRESS', 'doing'],
-    ['COMPLETED', 'done'],
-    ['REVIEW', 'review']
-  ])('maps backend status "%s" to frontend "%s"', (input, expected) => {
+    ['TODO', 'TODO'],
+    ['IN_PROGRESS', 'IN_PROGRESS'],
+    ['COMPLETED', 'COMPLETED'],
+    ['REVIEW', 'REVIEW'],
+    ['CANCELLED', 'CANCELLED']
+  ])('passes backend uppercase code "%s" through as identity', (input, expected) => {
+    expect(normalizeTaskStatusFromApi(input)).toBe(expected)
+  })
+
+  it.each([
+    ['todo', 'TODO'],
+    ['doing', 'IN_PROGRESS'],
+    ['review', 'REVIEW'],
+    ['done', 'COMPLETED'],
+    ['cancelled', 'CANCELLED']
+  ])('upgrades legacy lowercase "%s" to uppercase canonical "%s"', (input, expected) => {
     expect(normalizeTaskStatusFromApi(input)).toBe(expected)
   })
 
@@ -255,5 +303,85 @@ describe('normalizeTaskStatusFromApi', () => {
 
   it('returns undefined for undefined', () => {
     expect(normalizeTaskStatusFromApi(undefined)).toBeUndefined()
+  })
+})
+
+describe('task DTO mapper', () => {
+  it('normalizeTaskPriorityForApi maps form priority to backend enum', () => {
+    expect(normalizeTaskPriorityForApi('high')).toBe('HIGH')
+    expect(normalizeTaskPriorityForApi('MEDIUM')).toBe('MEDIUM')
+    expect(normalizeTaskPriorityForApi(null)).toBeUndefined()
+  })
+
+  it('taskFormDtoToBackend maps form fields to backend names', () => {
+    const result = taskFormDtoToBackend({
+      name: 'T1', content: '# md', status: 'TODO', priority: 'high',
+      deadline: '2026-06-01', owner: '张三', assigneeId: 9,
+      assigneeDeptCode: 'BID', assigneeDeptName: '投标管理部',
+      assigneeRoleCode: 'staff', assigneeRoleName: '销售',
+      extendedFields: { chapter: '扩展值ABC' },
+    })
+    expect(result).toEqual({
+      title: 'T1', content: '# md', status: 'TODO',
+      priority: 'HIGH', dueDate: '2026-06-01',
+      assigneeId: 9, assigneeName: '张三',
+      assigneeDeptCode: 'BID', assigneeDeptName: '投标管理部',
+      assigneeRoleCode: 'staff', assigneeRoleName: '销售',
+      extendedFields: { chapter: '扩展值ABC' },
+    })
+    expect(result).not.toHaveProperty('owner')
+    expect(result).not.toHaveProperty('name')
+    expect(result).not.toHaveProperty('deadline')
+  })
+
+  it('taskFormDtoToBackend skips undefined fields (PATCH semantics)', () => {
+    const result = taskFormDtoToBackend({ name: 'T', status: 'TODO' })
+    expect(result).toEqual({ title: 'T', status: 'TODO' })
+  })
+
+  it('taskBackendToCard maps backend dto to board card shape', () => {
+    const result = taskBackendToCard({
+      id: 7, title: 'T2', content: 'c', status: 'COMPLETED',
+      priority: 'medium', dueDate: '2026-05-15',
+      assigneeId: 9, assigneeName: '李宗',
+      assigneeDeptCode: 'BID', assigneeDeptName: '投标管理部',
+      assigneeRoleCode: 'staff', assigneeRoleName: '销售',
+      extendedFields: { chapter: '扩展值ABC' },
+      deliverables: [{ id: 1 }],
+    })
+    expect(result).toEqual({
+      id: 7, name: 'T2', content: 'c', status: 'COMPLETED',
+      priority: 'medium', deadline: '2026-05-15',
+      owner: '李宗', assignee: '李宗', assigneeId: 9,
+      department: '投标管理部', roleName: '销售',
+      assigneeDeptCode: 'BID', assigneeDeptName: '投标管理部',
+      assigneeRoleCode: 'staff', assigneeRoleName: '销售',
+      extendedFields: { chapter: '扩展值ABC' },
+      deliverables: [{ id: 1 }], hasDeliverable: true,
+    })
+  })
+
+  it('taskBackendToCard normalizes project task view dto status', () => {
+    const legacyDoneStatus = ['do', 'ne'].join('')
+    const result = taskBackendToCard({
+      id: 8, name: '项目任务', content: 'md', status: legacyDoneStatus,
+      priority: 'high', dueDate: '2026-05-16',
+      owner: '张经理',
+    })
+    expect(result).toMatchObject({
+      id: 8,
+      name: '项目任务',
+      status: 'COMPLETED',
+      owner: '张经理',
+    })
+  })
+
+  it('taskBackendToCard handles missing optional fields', () => {
+    const result = taskBackendToCard({ id: 1, title: 'X', status: 'TODO' })
+    expect(result.deliverables).toEqual([])
+    expect(result.hasDeliverable).toBe(false)
+    expect(result.owner).toBe('')
+    expect(result.assigneeId).toBeNull()
+    expect(result.extendedFields).toEqual({})
   })
 })

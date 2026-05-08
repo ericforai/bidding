@@ -100,6 +100,14 @@ describe('resolveNotificationRoute', () => {
       .toBe('/project/42')
   })
 
+  it('resolves task route through payload projectId', () => {
+    expect(resolveNotificationRoute({
+      sourceEntityType: 'TASK',
+      sourceEntityId: 99,
+      payloadJson: '{"projectId":42}'
+    })).toBe('/project/42?taskId=99')
+  })
+
   it('rejects non-numeric or negative ids', () => {
     expect(resolveNotificationRoute({ sourceEntityType: 'PROJECT', sourceEntityId: '../admin' }))
       .toBeNull()

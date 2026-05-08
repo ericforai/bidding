@@ -33,7 +33,7 @@ function ensureImplementationPages() {
       title: '实施交付作战包总览',
       body: `# 实施交付作战包总览\n\n本页定义实施顾问/项目经理在项目周期内的核心工作包，并与研发知识页面形成双向追溯。\n\n## 核心工作包\n\n- [[implementation/milestones]]\n- [[implementation/risk-register]]\n- [[implementation/weekly-status]]\n- [[implementation/acceptance-and-closure]]\n\n## 研发追溯入口\n\n- [[architecture]]\n- [[modules]]\n- [[deployment]]\n`,
       sources: [
-        'docs/西域数智化投标管理平台-实施计划书-6月25日上线版.md',
+        'docs/西域数智化投标管理平台-实施计划书-7月10日上线版.md',
         'docs/UAT_PLAN.md',
         'docs/GO_LIVE_CHECKLIST.md',
       ],
@@ -43,7 +43,7 @@ function ensureImplementationPages() {
       title: '实施里程碑与依赖',
       body: `# 实施里程碑与依赖\n\n## 里程碑清单\n\n1. 项目启动与调研\n2. 蓝图设计与方案确认\n3. 系统实现与配置一期\n4. 集成联调与数据初始化\n5. UAT、培训与上线准备\n6. 生产上线与试运行\n\n## 依赖追溯\n\n- 技术依赖：[[deployment]]、[[architecture]]\n- 业务依赖：[[requirements]]、[[business-process]]\n`,
       sources: [
-        'docs/西域数智化投标管理平台-实施计划书-6月25日上线版.md',
+        'docs/西域数智化投标管理平台-实施计划书-7月10日上线版.md',
         'docs/DELIVERY_BLOCKERS_SCHEDULE.md',
       ],
     },

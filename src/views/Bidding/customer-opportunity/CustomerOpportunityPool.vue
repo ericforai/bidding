@@ -87,6 +87,10 @@
 import { Search, User } from '@element-plus/icons-vue'
 import { getScoreClass, getScoreColor } from './customerOpportunityCenter.helpers.js'
 
+defineModel('filters', {
+  type: Object,
+  default: () => ({}),
+})
 defineProps({
   customers: {
     type: Array,
@@ -107,10 +111,6 @@ defineProps({
   statusOptions: {
     type: Array,
     default: () => [],
-  },
-  filters: {
-    type: Object,
-    default: () => ({}),
   },
   loading: {
     type: Boolean,

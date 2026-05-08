@@ -209,9 +209,7 @@ const loadProjects = async () => {
   const response = await projectsApi.getList()
   if (!response?.success) {
     projects.value = []
-    if (true) {
-      ElMessage.warning(response?.message || '项目列表加载失败')
-    }
+    ElMessage.warning(response?.message || '项目列表加载失败')
     return
   }
 

@@ -1,6 +1,6 @@
 // Input: TenderDocumentAnalysisInput (legacy path) or DocumentAnalysisInput (generic doc-insight path)
 // Output: TenderRequirementProfile (legacy) or DocumentAnalysisResult (generic)
-// Pos: biddraftagent/infrastructure/openai (Spring @Service – tender extraction orchestration shell)
+// Pos: biddraftagent/infrastructure/openai (Spring @Service, disabled in e2e profile)
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.biddraftagent.infrastructure.openai;
 
@@ -14,6 +14,7 @@ import com.xiyu.bid.docinsight.domain.DocumentChunk;
 import com.xiyu.bid.docinsight.domain.StructuralDocumentChunker;
 import com.xiyu.bid.docinsight.infrastructure.openai.BaseOpenAiDocumentAnalyzer;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Profile("!e2e")
 @Slf4j
 public class OpenAiTenderDocumentAnalyzer
         extends BaseOpenAiDocumentAnalyzer<TenderRequirementOutput>

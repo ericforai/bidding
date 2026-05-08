@@ -12,8 +12,8 @@
     "backlinks": [
       "_index"
     ],
-    "updated": "2026-04-29",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-08",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/_index.md"
   },
   {
@@ -30,7 +30,7 @@
       "_index"
     ],
     "updated": "2026-04-26",
-    "health_checked": "2026-04-29",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/agent-sop-quickref.md"
   },
   {
@@ -60,7 +60,7 @@
       "requirements"
     ],
     "updated": "2026-04-29",
-    "health_checked": "2026-04-29",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/ai-capabilities.md"
   },
   {
@@ -82,7 +82,7 @@
       "workflow-form-center"
     ],
     "updated": "2026-04-25",
-    "health_checked": "2026-04-29",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/api-openapi.md"
   },
   {
@@ -110,13 +110,15 @@
       "implementation/attachment4-requirement-task-book",
       "implementation/delivery-playbook",
       "implementation/milestones",
+      "integration-oa-crm",
+      "integration-organization-event-sdk",
       "overview",
       "requirements",
       "roles-and-permissions",
       "team-and-timeline"
     ],
-    "updated": "2026-04-26",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-07",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/architecture.md"
   },
   {
@@ -145,7 +147,7 @@
       "workflow-form-center"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-29",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/business-process.md"
   },
   {
@@ -173,8 +175,8 @@
       "requirements",
       "team-and-timeline"
     ],
-    "updated": "2026-04-26",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-07",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/contract-constraints.md"
   },
   {
@@ -192,7 +194,7 @@
       "design-system"
     ],
     "updated": "2026-04-16",
-    "health_checked": "2026-04-29",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/dashboard-gap-analysis.md"
   },
   {
@@ -212,8 +214,8 @@
       "implementation/attachment4-gap-matrix",
       "implementation/attachment4-requirement-task-book"
     ],
-    "updated": "2026-04-26",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-07",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/data-model.md"
   },
   {
@@ -234,7 +236,7 @@
       "workflow-form-center"
     ],
     "updated": "2026-04-25",
-    "health_checked": "2026-04-29",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/data-permission-hardening.md"
   },
   {
@@ -271,8 +273,8 @@
       "requirements",
       "team-and-timeline"
     ],
-    "updated": "2026-04-26",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-08",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/deployment.md"
   },
   {
@@ -291,7 +293,7 @@
       "overview"
     ],
     "updated": "2026-04-22",
-    "health_checked": "2026-04-29",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/design-system.md"
   },
   {
@@ -309,7 +311,7 @@
       "_index"
     ],
     "updated": "2026-04-29",
-    "health_checked": "2026-04-29",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/docinsight-engine.md"
   },
   {
@@ -328,7 +330,7 @@
       "data-model"
     ],
     "updated": "2026-04-15",
-    "health_checked": "2026-04-29",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/glossary.md"
   },
   {
@@ -354,8 +356,8 @@
       "implementation/risk-register",
       "implementation/sow-2026-v1-4"
     ],
-    "updated": "2026-04-26",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-07",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/implementation/acceptance-and-closure.md"
   },
   {
@@ -382,7 +384,7 @@
       "implementation/document-delivery-ledger"
     ],
     "updated": "2026-04-29",
-    "health_checked": "2026-04-29",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/implementation/attachment4-gap-matrix.md"
   },
   {
@@ -399,8 +401,8 @@
       "implementation/attachment4-gap-matrix",
       "requirements"
     ],
-    "updated": "2026-04-25",
-    "health_checked": "2026-04-29",
+    "updated": "2026-04-30",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/implementation/attachment4-requirement-task-book.md"
   },
   {
@@ -423,7 +425,7 @@
       "implementation/document-delivery-ledger"
     ],
     "updated": "2026-04-29",
-    "health_checked": "2026-04-29",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/implementation/attachment6-function-list-trace.md"
   },
   {
@@ -441,8 +443,8 @@
       "implementation/acceptance-and-closure",
       "implementation/sow-2026-v1-4"
     ],
-    "updated": "2026-04-26",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-07",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/implementation/delivery-playbook.md"
   },
   {
@@ -468,8 +470,8 @@
       "implementation/attachment6-function-list-trace",
       "implementation/delivery-playbook"
     ],
-    "updated": "2026-04-29",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-07",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/implementation/document-delivery-ledger.md"
   },
   {
@@ -490,8 +492,8 @@
       "implementation/delivery-playbook",
       "implementation/sow-2026-v1-4"
     ],
-    "updated": "2026-04-26",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-07",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/implementation/milestones.md"
   },
   {
@@ -514,8 +516,8 @@
       "implementation/sow-2026-v1-4",
       "implementation/weekly-status"
     ],
-    "updated": "2026-04-26",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-07",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/implementation/risk-register.md"
   },
   {
@@ -540,8 +542,8 @@
       "requirements",
       "team-and-timeline"
     ],
-    "updated": "2026-04-26",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-07",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/implementation/sow-2026-v1-4.md"
   },
   {
@@ -560,9 +562,25 @@
       "implementation/delivery-playbook",
       "implementation/risk-register"
     ],
-    "updated": "2026-04-26",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-07",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/implementation/weekly-status.md"
+  },
+  {
+    "slug": "integration-oa-crm",
+    "title": "OA 与 CRM 对接规范",
+    "space": "engineering",
+    "category": "integration",
+    "sources": [
+      "README.md"
+    ],
+    "backlinks": [
+      "_index",
+      "integration-organization-event-sdk"
+    ],
+    "updated": "2026-05-07",
+    "health_checked": "2026-05-08",
+    "path": ".wiki/pages/integration-oa-crm.md"
   },
   {
     "slug": "integration-organization-event-sdk",
@@ -571,15 +589,15 @@
     "category": "integration",
     "sources": [
       ".wiki/sources/customer/事件库SDK接入说明方案.doc",
-      ".wiki/extracts/customer__事件库SDK接入说明方案.doc.md",
       "backend/src/main/java/com/xiyu/bid/entity/User.java",
       "backend/src/main/java/com/xiyu/bid/dto/DataScopeConfigPayload.java"
     ],
     "backlinks": [
-      "_index"
+      "_index",
+      "integration-oa-crm"
     ],
-    "updated": "2026-04-28",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-07",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/integration-organization-event-sdk.md"
   },
   {
@@ -600,7 +618,7 @@
       "workflow-form-center"
     ],
     "updated": "2026-04-25",
-    "health_checked": "2026-04-29",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/integration-wecom.md"
   },
   {
@@ -639,7 +657,7 @@
       "workflow-form-center"
     ],
     "updated": "2026-04-29",
-    "health_checked": "2026-04-29",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/modules.md"
   },
   {
@@ -662,8 +680,8 @@
       "implementation/sow-2026-v1-4",
       "team-and-timeline"
     ],
-    "updated": "2026-04-26",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-07",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/overview.md"
   },
   {
@@ -694,8 +712,8 @@
       "implementation/risk-register",
       "implementation/sow-2026-v1-4"
     ],
-    "updated": "2026-04-29",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-07",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/requirements.md"
   },
   {
@@ -718,8 +736,8 @@
       "implementation/attachment6-function-list-trace",
       "overview"
     ],
-    "updated": "2026-04-26",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-07",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/roles-and-permissions.md"
   },
   {
@@ -745,8 +763,8 @@
       "overview",
       "requirements"
     ],
-    "updated": "2026-04-26",
-    "health_checked": "2026-04-29",
+    "updated": "2026-05-07",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/team-and-timeline.md"
   },
   {
@@ -767,7 +785,7 @@
       "modules"
     ],
     "updated": "2026-04-29",
-    "health_checked": "2026-04-29",
+    "health_checked": "2026-05-08",
     "path": ".wiki/pages/workflow-form-center.md"
   }
 ]

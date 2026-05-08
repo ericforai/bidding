@@ -1,26 +1,12 @@
 import { computed } from 'vue'
+import { getProjectStatusText, getProjectStatusType } from '@/views/Project/project-utils.js'
 
 export function useProjectDetailFormatting({ project }) {
   const canSubmit = computed(() => project.value?.status === 'drafting' || project.value?.status === 'reviewing')
   const canRecordResult = computed(() => project.value?.status === 'bidding')
 
-  const getStatusType = (status) => ({
-    drafting: 'info',
-    reviewing: 'warning',
-    bidding: 'primary',
-    won: 'success',
-    lost: 'danger',
-    pending: 'info',
-  }[status] || 'info')
-
-  const getStatusText = (status) => ({
-    drafting: '草稿中',
-    reviewing: '评审中',
-    bidding: '投标中',
-    won: '已中标',
-    lost: '未中标',
-    pending: '待立项',
-  }[status] || status)
+  const getStatusType = (status) => getProjectStatusType(status)
+  const getStatusText = (status) => getProjectStatusText(status)
 
   const getPriorityType = (priority) => ({ high: 'danger', medium: 'warning', low: 'info' }[priority] || 'info')
   const getPriorityText = (priority) => ({ high: '高', medium: '中', low: '低' }[priority] || priority)

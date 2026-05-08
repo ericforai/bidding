@@ -38,6 +38,20 @@ function mountCard(context = makeContext()) {
   return mount(ProjectDetailWorkflowCard, {
     global: {
       provide: { [projectDetailKey]: context },
+      stubs: {
+        ElButton: {
+          emits: ['click'],
+          template: '<button class="el-button" @click="$emit(\'click\')"><slot /></button>',
+        },
+        ElCard: {
+          template: '<section class="el-card"><header><slot name="header" /></header><slot /></section>',
+        },
+        ElEmpty: {
+          props: ['description'],
+          template: '<div class="el-empty" :description="description"><slot /></div>',
+        },
+        ElIcon: { template: '<i><slot /></i>' },
+      },
     },
   })
 }
@@ -50,9 +64,11 @@ describe('ProjectDetailWorkflowCard regression coverage', () => {
     const context = makeContext()
     const wrapper = mountCard(context)
 
-    const empty = wrapper.find('el-empty')
+    const empty = wrapper.find('.el-empty')
     const initiateButton = wrapper.findAll('el-button, button').find((button) => button.text().includes('立即发起'))
 
+    expect(wrapper.find('.workflow-header-actions').text()).toContain('AI 生成初稿')
+    expect(wrapper.find('.workflow-header-actions').text()).toContain('发起流程')
     expect(empty.attributes('description')).toBe('暂未发起标书编制流程')
     expect(initiateButton.exists()).toBe(true)
 

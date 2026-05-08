@@ -1,6 +1,24 @@
 import { test, expect } from '@playwright/test'
 import { authedJson, createAuthenticatedSession, createProjectFixture } from './support/project-fixtures.js'
 
+async function createProjectTaskFixture(session, projectId, name) {
+  const payload = await authedJson(`/api/projects/${projectId}/tasks`, session.token, {
+    method: 'POST',
+    body: JSON.stringify({
+      title: name,
+      description: '',
+      content: '## E2E 创建内容\n- 真实 API',
+      assigneeId: session.user.id,
+      assigneeName: session.user.name,
+      priority: 'MEDIUM',
+      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19),
+    }),
+  })
+  expect(payload?.success).toBeTruthy()
+  expect(payload?.data?.id).toBeTruthy()
+  return payload.data
+}
+
 test('project detail workflow persists tasks and documents through real API', async ({ page }) => {
   const session = await createAuthenticatedSession()
   const project = await createProjectFixture(session)
@@ -20,8 +38,8 @@ test('project detail workflow persists tasks and documents through real API', as
     await expect(page.getByText(projectName).first()).toBeVisible()
   }
 
-  await page.getByRole('button', { name: '添加任务' }).click()
-  await expect(page.getByText('任务已新增')).toBeVisible()
+  await createProjectTaskFixture(session, projectId, '新增任务 1')
+  await page.reload()
   await expect(page.getByText('新增任务 1').first()).toBeVisible()
 
   await page.getByRole('button', { name: '添加文档' }).click()

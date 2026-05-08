@@ -13,8 +13,21 @@ import java.util.List;
 public class OrganizationIntegrationProperties {
     private boolean enabled = true;
     private String webhookSecret = "";
+    private String ipWhitelist = "";
     private int eventLogRetentionDays = 90;
-    private List<String> allowedSourceApps = new ArrayList<>(List.of("customer-org"));
+    private List<String> allowedSourceApps = new ArrayList<>(List.of("oss", "customer-org"));
     private List<String> adminRoleCodes = new ArrayList<>();
     private List<String> managerRoleCodes = new ArrayList<>();
+    private Directory directory = new Directory();
+
+    @Data
+    public static class Directory {
+        private String baseUrl = "";
+        private String userDetailPath = "/users/{userId}";
+        private String departmentDetailPath = "/departments/{deptId}";
+        private String userWindowPath = "";
+        private String departmentWindowPath = "";
+        private int connectTimeoutMs = 3000;
+        private int readTimeoutMs = 5000;
+    }
 }

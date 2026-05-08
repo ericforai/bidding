@@ -102,6 +102,9 @@ export default [
     },
     settings: {
       'import/resolver': {
+        node: {
+          extensions: ['.js', '.jsx', '.mjs', '.ts', '.tsx', '.vue', '.json']
+        },
         alias: {
           map: [['@', './src']],
           extensions: ['.js', '.mjs', '.ts', '.vue', '.json']

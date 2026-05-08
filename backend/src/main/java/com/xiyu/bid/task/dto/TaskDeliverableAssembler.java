@@ -64,6 +64,7 @@ public final class TaskDeliverableAssembler {
                 .deliverableType(type)
                 .size(request.getSize())
                 .fileType(request.getFileType())
+                .storagePath(request.getUrl())
                 .version(nextVersion)
                 .uploaderId(uploaderId)
                 .uploaderName(uploaderName)

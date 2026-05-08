@@ -1,5 +1,4 @@
-import { describe, expect, it } from 'vitest'
-import { hiddenApiMenuNames, roleMenuOptions, sidebarMenuConfig } from './sidebar-menu'
+import { hiddenApiMenuNames, roleMenuGroups, roleMenuOptions, sidebarMenuConfig } from './sidebar-menu'
 
 describe('sidebar-menu config', () => {
   it('keeps role menu options aligned with visible top-level sidebar menus', () => {
@@ -42,5 +41,29 @@ describe('sidebar-menu config', () => {
       }))
     )
     expect(new Set(roleMenuOptions.map((item) => item.value)).size).toBe(roleMenuOptions.length)
+  })
+
+  it('groups workbench secondary permissions under the dashboard menu', () => {
+    const dashboardGroup = roleMenuGroups.find((group) => group.value === 'dashboard')
+
+    expect(roleMenuGroups.map((group) => group.label)).toEqual([
+      '工作台',
+      '标讯中心',
+      '投标项目',
+      '知识库',
+      '资源管理',
+      'AI 智能中心',
+      '数据分析',
+      '系统设置'
+    ])
+    expect(dashboardGroup.children.map((item) => item.label)).toEqual([
+      '快速发起',
+      '标讯列表',
+      '负责项目',
+      '技术任务',
+      '待评审列表',
+      '团队任务',
+      '项目总览'
+    ])
   })
 })

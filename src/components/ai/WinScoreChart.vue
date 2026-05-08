@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed, onBeforeUnmount } from 'vue'
+import { ref, onMounted, watch, onBeforeUnmount } from 'vue'
 import * as echarts from 'echarts'
 
 const props = defineProps({
@@ -21,13 +21,6 @@ const props = defineProps({
 
 const chartRef = ref(null)
 let chartInstance = null
-
-// 根据分数获取颜色
-const getScoreColor = (score) => {
-  if (score >= 71) return '#00AA44' // 绿色
-  if (score >= 41) return '#FF8800' // 橙色
-  return '#DD2200' // 红色
-}
 
 // 获取图表配置
 const getChartOption = () => {

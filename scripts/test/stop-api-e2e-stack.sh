@@ -6,6 +6,16 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+# Test-only placeholders so rehearsal-env.sh's secret fail-fast doesn't block
+# the e2e teardown path; never used to reach real systems.
+export MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-e2e-test-mysql-root}"
+export PLATFORM_ENCRYPTION_KEY="${PLATFORM_ENCRYPTION_KEY:-e2e-test-platform-encryption-key-32}"
+export UAT_TEST_PASSWORD="${UAT_TEST_PASSWORD:-e2e-test-uat-pass}"
+export ADMIN_PASSWORD="${ADMIN_PASSWORD:-e2e-test-admin-pass}"
+export DB_PASSWORD="${DB_PASSWORD:-e2e-test-db-pass}"
+export JWT_SECRET="${JWT_SECRET:-e2e-test-jwt-secret-32-chars-padding-min}"
+
 source "$ROOT_DIR/scripts/release/rehearsal-env.sh"
 
 MARKER_FILE="$STATE_DIR/playwright-api-stack.started"

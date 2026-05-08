@@ -1,0 +1,88 @@
+ALTER TABLE organization_event_logs ADD COLUMN upstream_event_key VARCHAR(128);
+ALTER TABLE organization_event_logs ADD COLUMN span_id VARCHAR(128);
+ALTER TABLE organization_event_logs ADD COLUMN parent_id VARCHAR(128);
+ALTER TABLE organization_event_logs ADD COLUMN event_time TIMESTAMP NULL;
+ALTER TABLE organization_event_logs ADD COLUMN entity_type VARCHAR(32);
+ALTER TABLE organization_event_logs ADD COLUMN external_user_id VARCHAR(128);
+ALTER TABLE organization_event_logs ADD COLUMN external_dept_id VARCHAR(128);
+ALTER TABLE organization_event_logs ADD COLUMN raw_payload TEXT;
+ALTER TABLE organization_event_logs ADD COLUMN retry_count INT NOT NULL DEFAULT 0;
+ALTER TABLE organization_event_logs ADD COLUMN next_retry_at TIMESTAMP NULL;
+ALTER TABLE organization_event_logs ADD COLUMN last_error_code VARCHAR(100);
+
+CREATE INDEX idx_org_event_logs_upstream_key
+  ON organization_event_logs(upstream_event_key);
+
+CREATE INDEX idx_org_event_logs_external_user
+  ON organization_event_logs(source_app, external_user_id);
+
+CREATE INDEX idx_org_event_logs_external_dept
+  ON organization_event_logs(source_app, external_dept_id);
+
+CREATE INDEX idx_org_event_logs_next_retry
+  ON organization_event_logs(status, next_retry_at);
+
+ALTER TABLE organization_departments ADD COLUMN external_dept_id VARCHAR(128);
+ALTER TABLE organization_departments ADD COLUMN parent_external_dept_id VARCHAR(128);
+ALTER TABLE organization_departments ADD COLUMN source_app VARCHAR(100);
+ALTER TABLE organization_departments ADD COLUMN last_event_key VARCHAR(128);
+ALTER TABLE organization_departments ADD COLUMN last_synced_at TIMESTAMP NULL;
+
+CREATE INDEX idx_org_departments_external
+  ON organization_departments(source_app, external_dept_id);
+
+CREATE INDEX idx_org_departments_parent_external
+  ON organization_departments(source_app, parent_external_dept_id);
+
+ALTER TABLE users ADD COLUMN external_org_user_id VARCHAR(128);
+ALTER TABLE users ADD COLUMN external_org_source_app VARCHAR(100);
+ALTER TABLE users ADD COLUMN last_org_event_key VARCHAR(128);
+ALTER TABLE users ADD COLUMN last_org_synced_at TIMESTAMP NULL;
+
+CREATE INDEX idx_users_external_org_user
+  ON users(external_org_source_app, external_org_user_id);
+
+CREATE TABLE IF NOT EXISTS organization_sync_runs (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  run_key VARCHAR(128) NOT NULL UNIQUE,
+  run_type VARCHAR(32) NOT NULL,
+  source_app VARCHAR(100) NOT NULL,
+  status VARCHAR(32) NOT NULL,
+  triggered_by VARCHAR(100),
+  started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  finished_at TIMESTAMP NULL,
+  total_count INT NOT NULL DEFAULT 0,
+  success_count INT NOT NULL DEFAULT 0,
+  failed_count INT NOT NULL DEFAULT 0,
+  last_error_code VARCHAR(100),
+  last_error_message VARCHAR(500),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_org_sync_runs_source_status(source_app, status),
+  INDEX idx_org_sync_runs_started_at(started_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS organization_sync_items (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  run_id BIGINT NOT NULL,
+  entity_type VARCHAR(32) NOT NULL,
+  external_user_id VARCHAR(128),
+  external_dept_id VARCHAR(128),
+  internal_user_id BIGINT,
+  department_code VARCHAR(100),
+  action_type VARCHAR(32) NOT NULL,
+  status VARCHAR(32) NOT NULL,
+  event_key VARCHAR(128),
+  error_code VARCHAR(100),
+  error_message VARCHAR(500),
+  raw_payload TEXT,
+  processed_at TIMESTAMP NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_org_sync_items_run
+    FOREIGN KEY (run_id) REFERENCES organization_sync_runs(id),
+  INDEX idx_org_sync_items_run(run_id),
+  INDEX idx_org_sync_items_run_status(run_id, status),
+  INDEX idx_org_sync_items_external_user(entity_type, external_user_id),
+  INDEX idx_org_sync_items_external_dept(entity_type, external_dept_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

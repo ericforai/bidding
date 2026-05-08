@@ -89,15 +89,15 @@ describe('workbench role model', () => {
 
 describe('workbench project and todo core', () => {
   const projects = [
-    { id: 1, manager: '小王', priority: 'high' },
-    { id: 2, manager: '张经理', priority: 'medium' },
-    { id: 3, manager: '小王', priority: 'urgent' },
-    { id: 4, manager: '李工', priority: 'low' },
+    { id: 1, manager: '小王', priority: 'high', status: '编制中' },
+    { id: 2, manager: '张经理', priority: 'medium', status: '评审中' },
+    { id: 3, manager: '小王', priority: 'urgent', status: '已归档' },
+    { id: 4, manager: '李工', priority: 'low', status: '投标中' },
   ]
 
-  it('filters projects by role and limit', () => {
-    expect(filterProjectsByRole(projects, { role: 'admin' }).map((item) => item.id)).toEqual([1, 3])
-    expect(filterProjectsByRole(projects, { role: 'manager', userName: '小王', limit: 1 })).toEqual([projects[0]])
+  it('filters visible active projects by role priority and limit', () => {
+    expect(filterProjectsByRole(projects, { role: 'admin' }).map((item) => item.id)).toEqual([1, 2, 4])
+    expect(filterProjectsByRole(projects, { role: 'manager', userName: '小王', limit: 2 }).map((item) => item.id)).toEqual([1, 2])
     expect(filterProjectsByRole(null, { role: 'admin' })).toEqual([])
   })
 

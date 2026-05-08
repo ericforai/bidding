@@ -1,9 +1,8 @@
 <template>
   <el-dialog
-    :model-value="modelValue"
+    v-model="modelValue"
     title="人工录入标讯"
     width="720px"
-    @update:model-value="$emit('update:modelValue', $event)"
     @close="$emit('reset')"
   >
     <el-form ref="innerFormRef" :model="form" :rules="rules" label-width="100px">
@@ -89,7 +88,7 @@
       </el-row>
     </el-form>
     <template #footer>
-      <el-button @click="$emit('update:modelValue', false)">取消</el-button>
+      <el-button @click="modelValue = false">取消</el-button>
       <el-button type="primary" :loading="saving" @click="$emit('submit')">保存入库</el-button>
     </template>
   </el-dialog>
@@ -100,9 +99,9 @@ import { ref } from 'vue'
 import { Upload } from '@element-plus/icons-vue'
 import { INDUSTRY_OPTIONS, MANUAL_FORM_RULES, REGION_OPTIONS } from '../constants.js'
 
-const props = defineProps({
-  modelValue: { type: Boolean, default: false },
-  form: { type: Object, required: true },
+const modelValue = defineModel({ type: Boolean, default: false })
+const form = defineModel('form', { type: Object, required: true })
+defineProps({
   rules: { type: Object, default: () => MANUAL_FORM_RULES },
   saving: { type: Boolean, default: false },
   parsingDocument: { type: Boolean, default: false },
@@ -110,7 +109,7 @@ const props = defineProps({
   industries: { type: Array, default: () => INDUSTRY_OPTIONS },
 })
 
-const emit = defineEmits(['update:modelValue', 'reset', 'submit', 'file-change'])
+const emit = defineEmits(['reset', 'submit', 'file-change'])
 
 const innerFormRef = ref(null)
 

@@ -1,7 +1,7 @@
 <template>
   <div class="qualification-container">
     <QualificationSearchCard
-      :search-form="searchForm"
+      v-model:search-form="searchForm"
       @export="handleExportList"
       @reset="handleReset"
       @search="handleSearch"
@@ -34,7 +34,7 @@
 
     <QualificationUploadDialog
       v-model="uploadDialogVisible"
-      :form="uploadForm"
+      v-model:form="uploadForm"
       @confirm="handleConfirmUpload"
       @file-change="handleFileChange"
     />
@@ -48,7 +48,7 @@
     <QualificationBorrowDialog
       v-model="borrowDialogVisible"
       :feature-placeholder="borrowFeaturePlaceholder"
-      :form="borrowForm"
+      v-model:form="borrowForm"
       :qualification="currentQualification"
       :schema="borrowFormSchema"
       @confirm="handleConfirmBorrow"
