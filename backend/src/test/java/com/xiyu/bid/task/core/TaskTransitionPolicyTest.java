@@ -121,4 +121,52 @@ class TaskTransitionPolicyTest {
         var suggested = TaskTransitionPolicy.computeAutoStatusOnDeliverable(null, 0);
         assertThat(suggested).isEqualTo(TaskTransitionPolicy.TaskStatus.TODO);
     }
+
+    // ---- PRD §3.2.2 退回待办（REVIEW -> TODO）必须带 reviewComment ----
+
+    @Test
+    void reviewToTodo_WithoutComment_Denied() {
+        var r = TaskTransitionPolicy.validateTransition(
+                TaskTransitionPolicy.TaskStatus.REVIEW,
+                TaskTransitionPolicy.TaskStatus.TODO,
+                null);
+        assertThat(r.allowed()).isFalse();
+        assertThat(r.reason()).contains("reviewComment");
+    }
+
+    @Test
+    void reviewToTodo_BlankComment_Denied() {
+        var r = TaskTransitionPolicy.validateTransition(
+                TaskTransitionPolicy.TaskStatus.REVIEW,
+                TaskTransitionPolicy.TaskStatus.TODO,
+                "   ");
+        assertThat(r.allowed()).isFalse();
+    }
+
+    @Test
+    void reviewToTodo_WithReason_Allowed() {
+        var r = TaskTransitionPolicy.validateTransition(
+                TaskTransitionPolicy.TaskStatus.REVIEW,
+                TaskTransitionPolicy.TaskStatus.TODO,
+                "需要补充财务数据");
+        assertThat(r.allowed()).isTrue();
+    }
+
+    @Test
+    void reviewToTodo_NewPathAllowedInBaseValidator() {
+        // legacy 2-arg signature now allows REVIEW -> TODO (reviewer enforces reason)
+        var r = TaskTransitionPolicy.validateTransition(
+                TaskTransitionPolicy.TaskStatus.REVIEW,
+                TaskTransitionPolicy.TaskStatus.TODO);
+        assertThat(r.allowed()).isTrue();
+    }
+
+    @Test
+    void reviewToCompleted_DoesNotRequireComment() {
+        var r = TaskTransitionPolicy.validateTransition(
+                TaskTransitionPolicy.TaskStatus.REVIEW,
+                TaskTransitionPolicy.TaskStatus.COMPLETED,
+                null);
+        assertThat(r.allowed()).isTrue();
+    }
 }
