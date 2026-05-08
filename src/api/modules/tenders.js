@@ -87,6 +87,11 @@ export const tendersApi = {
     })
   },
 
+  async parseTenderIntakeText(text, { entityId = 'manual-tender' } = {}) {
+    const file = new File([String(text || '')], '粘贴标讯文本.txt', { type: 'text/plain' })
+    return tendersApi.parseTenderIntakeDocument(file, { entityId })
+  },
+
   async update(id, data) {
     if (!isNumericId(id)) {
       return {

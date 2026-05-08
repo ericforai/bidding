@@ -41,6 +41,8 @@ import java.util.Locale;
     @Index(name = "idx_tender_region_normalized", columnList = "region_normalized"),
     @Index(name = "idx_tender_industry_normalized", columnList = "industry_normalized"),
     @Index(name = "idx_tender_purchaser_hash_normalized", columnList = "purchaser_hash_normalized"),
+    @Index(name = "idx_tender_customer_type", columnList = "customer_type"),
+    @Index(name = "idx_tender_priority", columnList = "priority"),
     @Index(name = "idx_tender_status_region_industry_normalized",
             columnList = "status, region_normalized, industry_normalized")
 })
@@ -98,6 +100,12 @@ public class Tender {
     private String industry;
 
     /**
+     * 招标机构
+     */
+    @Column(name = "tender_agency", length = 255)
+    private String tenderAgency;
+
+    /**
      * 采购单位名称
      */
     @Column(name = "purchaser_name", length = 255)
@@ -140,6 +148,12 @@ public class Tender {
     private LocalDateTime deadline;
 
     /**
+     * 开标时间
+     */
+    @Column(name = "bid_opening_time")
+    private LocalDateTime bidOpeningTime;
+
+    /**
      * 联系人姓名
      */
     @Column(name = "contact_name", length = 100)
@@ -159,6 +173,12 @@ public class Tender {
 
     @Column(name = "source_document_file_url", length = 1000)
     private String sourceDocumentFileUrl;
+
+    @Column(name = "customer_type", length = 100)
+    private String customerType;
+
+    @Column(name = "priority", length = 10)
+    private String priority;
 
     /**
      * 标讯描述
@@ -232,6 +252,9 @@ public class Tender {
                 nullToBlank(title),
                 nullToBlank(description),
                 nullToBlank(purchaserName),
+                nullToBlank(tenderAgency),
+                nullToBlank(customerType),
+                nullToBlank(priority),
                 nullToBlank(tags),
                 nullToBlank(region),
                 nullToBlank(industry),

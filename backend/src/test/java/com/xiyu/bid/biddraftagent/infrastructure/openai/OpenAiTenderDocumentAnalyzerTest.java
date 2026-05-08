@@ -269,10 +269,16 @@ class OpenAiTenderDocumentAnalyzerTest {
         TenderRequirementOutput output = new TenderRequirementOutput();
         output.tenderTitle = "西域MRO测试项目";
         output.budget = "1200000";
+        output.tenderAgency = "上海招标代理有限公司";
+        output.bidOpeningTime = "2026-06-03T10:00:00";
+        output.contactName = "李经理";
+        output.contactPhone = "13800138000";
+        output.customerType = "KA 客户";
+        output.priority = "A";
         when(structuredOutputService.request(anyString(), eq(TenderRequirementOutput.class), any(), anyString()))
                 .thenReturn(output);
 
-        analyzer.analyze(input);
+        var result = analyzer.analyze(input);
 
         ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
         verify(structuredOutputService).request(promptCaptor.capture(), any(), any(), anyString());
@@ -280,7 +286,13 @@ class OpenAiTenderDocumentAnalyzerTest {
 
         assertThat(prompt).contains("人工录入标讯表单");
         assertThat(prompt).contains("只抽取这些字段");
-        assertThat(prompt).contains("标讯标题").contains("预算金额").contains("采购单位");
+        assertThat(prompt).contains("标讯标题").contains("预算金额").contains("招标机构")
+                .contains("业主单位").contains("客户类型").contains("优先级");
+        assertThat(result.extractedData()).containsEntry("tenderAgency", "上海招标代理有限公司")
+                .containsEntry("bidOpeningTime", "2026-06-03T10:00:00")
+                .containsEntry("contactPhone", "13800138000")
+                .containsEntry("customerType", "KA 客户")
+                .containsEntry("priority", "A");
         assertThat(prompt).doesNotContain("requirementItems 必须逐条列出");
         assertThat(prompt.substring(prompt.indexOf("<candidate_text>")))
                 .doesNotContain("评分办法");

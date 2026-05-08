@@ -57,6 +57,7 @@ vi.mock('./list/useTenderListPage.js', () => ({
       parsingManualDocument: ref(false),
       resetManualForm: vi.fn(),
       handleFileChange: vi.fn(),
+      handlePastedTextParse: vi.fn(),
       saveManualTender: vi.fn(),
     },
     marketInsight: {

@@ -67,13 +67,17 @@ class TenderCommandServiceTest {
                 .budget(new BigDecimal("1500000.00"))
                 .region("上海")
                 .industry("数据中心")
+                .tenderAgency("上海招标代理有限公司")
                 .purchaserName("上海西域采购中心")
                 .purchaserHash("hash-shanghai-xiyu")
                 .publishDate(LocalDate.of(2026, 4, 21))
                 .deadline(LocalDateTime.now().plusDays(20))
+                .bidOpeningTime(LocalDateTime.now().plusDays(22))
                 .status(Tender.Status.PENDING)
                 .contactName("王经理")
                 .contactPhone("13800138000")
+                .customerType("KA 客户")
+                .priority("A")
                 .description("采购 GPU 服务器")
                 .tags("数据中心,GPU")
                 .build();
@@ -85,12 +89,16 @@ class TenderCommandServiceTest {
                 .budget(new BigDecimal("1500000.00"))
                 .region("上海")
                 .industry("数据中心")
+                .tenderAgency("上海招标代理有限公司")
                 .purchaserName("上海西域采购中心")
                 .sourceDocumentName("招标文件.pdf")
                 .sourceDocumentFileType("application/pdf")
                 .sourceDocumentFileUrl("doc-insight://TENDER_INTAKE/manual-tender/hash-招标文件.pdf")
                 .publishDate(LocalDate.of(2026, 4, 21))
                 .deadline(tender.getDeadline())
+                .bidOpeningTime(tender.getBidOpeningTime())
+                .customerType("KA 客户")
+                .priority("A")
                 .status(Tender.Status.PENDING)
                 .tags(java.util.List.of("数据中心", "GPU"))
                 .build();
@@ -110,6 +118,10 @@ class TenderCommandServiceTest {
         assertThat(savedDto.getTitle()).isEqualTo(tenderDTO.getTitle());
         assertThat(savedDto.getRegion()).isEqualTo("上海");
         assertThat(savedDto.getIndustry()).isEqualTo("数据中心");
+        assertThat(savedDto.getTenderAgency()).isEqualTo("上海招标代理有限公司");
+        assertThat(savedDto.getBidOpeningTime()).isEqualTo(tender.getBidOpeningTime());
+        assertThat(savedDto.getCustomerType()).isEqualTo("KA 客户");
+        assertThat(savedDto.getPriority()).isEqualTo("A");
         assertThat(savedDto.getPurchaserHash()).isNotBlank();
         assertThat(savedDto.getSourceDocumentFileUrl())
                 .isEqualTo("doc-insight://TENDER_INTAKE/manual-tender/hash-招标文件.pdf");
@@ -210,6 +222,10 @@ class TenderCommandServiceTest {
         verify(aiService, times(1)).analyzeTender(eq(1L), org.mockito.ArgumentMatchers.argThat(context ->
                 context.containsKey("region")
                         && context.containsKey("industry")
+                        && context.containsKey("tenderAgency")
+                        && context.containsKey("bidOpeningTime")
+                        && context.containsKey("customerType")
+                        && context.containsKey("priority")
                         && context.containsKey("purchaserName")
                         && context.containsKey("description")
         ));

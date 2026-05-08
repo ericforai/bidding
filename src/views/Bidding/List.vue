@@ -158,6 +158,7 @@
       :parsing-document="manualCreate.parsingManualDocument.value"
       @reset="manualCreate.resetManualForm"
       @file-change="manualCreate.handleFileChange"
+      @parse-pasted-text="manualCreate.handlePastedTextParse"
       @submit="manualCreate.saveManualTender"
     />
     <FetchResultDialog v-model="sourceConfig.fetchResult.value.visible" :result="sourceConfig.fetchResult.value" />
