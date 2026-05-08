@@ -13,16 +13,31 @@ public final class RoleProfileCatalog {
     public static final String QUICK_START_PERMISSION = "dashboard.quickStart";
     public static final String AI_CENTER_PERMISSION = "ai-center";
 
-    private static final Map<String, SeedDefinition> DEFINITIONS = Map.of(
-            ADMIN_CODE, new SeedDefinition(ADMIN_CODE, "管理员", "系统管理员，拥有所有权限", true, "all", List.of("all")),
-            AUDITOR_CODE, new SeedDefinition(AUDITOR_CODE, "审计员", "审计人员，可查看全量审计日志和个人操作日志", true, "all",
-                    List.of("dashboard", "operation-logs", "audit-logs")),
-            MANAGER_CODE, new SeedDefinition(MANAGER_CODE, "经理", "部门经理，可查看项目、知识库、资源与分析数据", true, "dept",
+    // PRD §2 角色：销售/业务负责人、投标负责人、投标部门管理员、任务执行人
+    public static final String SALES_CODE = "sales";
+    public static final String BID_LEAD_CODE = "bid_lead";
+    public static final String BID_ADMIN_CODE = "bid_admin";
+    public static final String TASK_EXECUTOR_CODE = "task_executor";
+
+    private static final Map<String, SeedDefinition> DEFINITIONS = Map.ofEntries(
+            Map.entry(ADMIN_CODE, new SeedDefinition(ADMIN_CODE, "管理员", "系统管理员，拥有所有权限", true, "all", List.of("all"))),
+            Map.entry(AUDITOR_CODE, new SeedDefinition(AUDITOR_CODE, "审计员", "审计人员，可查看全量审计日志和个人操作日志", true, "all",
+                    List.of("dashboard", "operation-logs", "audit-logs"))),
+            Map.entry(MANAGER_CODE, new SeedDefinition(MANAGER_CODE, "经理", "部门经理，可查看项目、知识库、资源与分析数据", true, "dept",
                     List.of("dashboard", "operation-logs", "bidding", "project", "knowledge", "resource",
-                            AI_CENTER_PERMISSION, "analytics", "settings")),
-            STAFF_CODE, new SeedDefinition(STAFF_CODE, "员工", "业务人员，可查看工作台、标讯、项目、知识库与资源", true, "self",
+                            AI_CENTER_PERMISSION, "analytics", "settings"))),
+            Map.entry(STAFF_CODE, new SeedDefinition(STAFF_CODE, "员工", "业务人员，可查看工作台、标讯、项目、知识库与资源", true, "self",
                     List.of("dashboard", "operation-logs", QUICK_START_PERMISSION, "bidding", "project", "knowledge",
-                            "resource", AI_CENTER_PERMISSION))
+                            "resource", AI_CENTER_PERMISSION))),
+            Map.entry(SALES_CODE, new SeedDefinition(SALES_CODE, "销售/业务负责人", "立项发起人，维护客户与开标信息", true, "self",
+                    List.of("dashboard", "bidding", "project", "knowledge"))),
+            Map.entry(BID_LEAD_CODE, new SeedDefinition(BID_LEAD_CODE, "投标负责人", "标书编制与评标推进负责人", true, "self",
+                    List.of("dashboard", "bidding", "project", "knowledge", "resource"))),
+            Map.entry(BID_ADMIN_CODE, new SeedDefinition(BID_ADMIN_CODE, "投标部门管理员", "复盘审核与结项闸门审批", true, "dept",
+                    List.of("dashboard", "operation-logs", "bidding", "project", "knowledge", "resource",
+                            "analytics", "settings"))),
+            Map.entry(TASK_EXECUTOR_CODE, new SeedDefinition(TASK_EXECUTOR_CODE, "任务执行人", "标书任务承接与执行", true, "self",
+                    List.of("dashboard", "project", "knowledge")))
     );
 
     private RoleProfileCatalog() {
@@ -33,7 +48,11 @@ public final class RoleProfileCatalog {
                 DEFINITIONS.get(ADMIN_CODE),
                 DEFINITIONS.get(AUDITOR_CODE),
                 DEFINITIONS.get(MANAGER_CODE),
-                DEFINITIONS.get(STAFF_CODE)
+                DEFINITIONS.get(STAFF_CODE),
+                DEFINITIONS.get(SALES_CODE),
+                DEFINITIONS.get(BID_LEAD_CODE),
+                DEFINITIONS.get(BID_ADMIN_CODE),
+                DEFINITIONS.get(TASK_EXECUTOR_CODE)
         );
     }
 
