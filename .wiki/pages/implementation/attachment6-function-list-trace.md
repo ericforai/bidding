@@ -17,7 +17,7 @@ backlinks:
   - implementation/document-delivery-ledger
 created: 2026-04-26
 updated: 2026-04-29
-health_checked: 2026-05-07
+health_checked: 2026-05-08
 ---
 # 附件6需求功能清单追溯
 

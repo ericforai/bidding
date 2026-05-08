@@ -22,13 +22,15 @@ backlinks:
   - implementation/attachment4-requirement-task-book
   - implementation/delivery-playbook
   - implementation/milestones
+  - integration-oa-crm
+  - integration-organization-event-sdk
   - overview
   - requirements
   - roles-and-permissions
   - team-and-timeline
 created: 2026-04-15
-updated: 2026-04-26
-health_checked: 2026-05-07
+updated: 2026-05-07
+health_checked: 2026-05-08
 ---
 # 架构合成
 

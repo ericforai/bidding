@@ -14,6 +14,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -27,7 +28,6 @@ class OrganizationDepartmentSyncWriterTest {
     @DisplayName("upsert keeps external department id and internal department code separately")
     void upsert_mapsExternalDepartmentIdSeparately() {
         when(repository.findBySourceAppAndExternalDeptId("customer-org", "D001")).thenReturn(Optional.empty());
-        when(repository.findById("sales")).thenReturn(Optional.empty());
         when(repository.save(any(OrganizationDepartmentEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         OrganizationDepartmentSyncWriter writer = new OrganizationDepartmentSyncWriter(repository);
 
@@ -38,5 +38,26 @@ class OrganizationDepartmentSyncWriterTest {
         assertThat(saved.getValue().getDepartmentCode()).isEqualTo("sales");
         assertThat(saved.getValue().getExternalDeptId()).isEqualTo("D001");
         assertThat(saved.getValue().getLastEventKey()).isEqualTo("event-key");
+        verify(repository, never()).findById("sales");
+    }
+
+    @Test
+    @DisplayName("disable marks existing department inactive by immutable external department id")
+    void disable_marksExistingDepartmentInactiveByExternalId() {
+        OrganizationDepartmentEntity existing = new OrganizationDepartmentEntity();
+        existing.setEnabled(true);
+        existing.setExternalDeptId("3730158");
+        existing.setSourceApp("oss");
+        when(repository.findBySourceAppAndExternalDeptId("oss", "3730158")).thenReturn(Optional.of(existing));
+        when(repository.save(any(OrganizationDepartmentEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        OrganizationDepartmentSyncWriter writer = new OrganizationDepartmentSyncWriter(repository);
+
+        writer.disableByExternalId("oss", "event-key", "3730158");
+
+        ArgumentCaptor<OrganizationDepartmentEntity> saved = ArgumentCaptor.forClass(OrganizationDepartmentEntity.class);
+        verify(repository).save(saved.capture());
+        assertThat(saved.getValue().getEnabled()).isFalse();
+        assertThat(saved.getValue().getLastEventKey()).isEqualTo("event-key");
+        assertThat(saved.getValue().getLastSyncedAt()).isNotNull();
     }
 }

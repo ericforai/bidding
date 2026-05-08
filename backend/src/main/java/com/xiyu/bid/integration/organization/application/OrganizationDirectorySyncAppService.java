@@ -70,7 +70,7 @@ public class OrganizationDirectorySyncAppService {
                         inboxService.markProcessed(eventKey);
                         return response("200", "success", eventKey, true, false, OrganizationEventStatus.PROCESSED);
                     })
-                    .orElseGet(() -> failLookup(eventKey, "DEPARTMENT_NOT_FOUND"));
+                    .orElseGet(() -> disableLocalDepartment(notice, eventKey));
         }
         return directoryGateway.fetchUserByUserId(notice.subjectId())
                 .map(snapshot -> {
@@ -78,12 +78,19 @@ public class OrganizationDirectorySyncAppService {
                     inboxService.markProcessed(eventKey);
                     return response("200", "success", eventKey, true, false, OrganizationEventStatus.PROCESSED);
                 })
-                .orElseGet(() -> failLookup(eventKey, "USER_NOT_FOUND"));
+                .orElseGet(() -> disableLocalUser(notice, eventKey));
     }
 
-    private OrganizationEventWebhookResponse failLookup(String eventKey, String errorCode) {
-        inboxService.markFailed(eventKey, "组织架构主数据接口未返回数据", errorCode);
-        return response("500", "组织架构主数据接口未返回数据", eventKey, false, false, OrganizationEventStatus.FAILED);
+    private OrganizationEventWebhookResponse disableLocalDepartment(OrganizationEventNotice notice, String eventKey) {
+        departmentWriter.disableByExternalId(notice.eventSource(), eventKey, notice.subjectId());
+        inboxService.markProcessed(eventKey);
+        return response("200", "success", eventKey, true, false, OrganizationEventStatus.PROCESSED);
+    }
+
+    private OrganizationEventWebhookResponse disableLocalUser(OrganizationEventNotice notice, String eventKey) {
+        userWriter.disableByExternalId(notice.eventSource(), eventKey, notice.subjectId());
+        inboxService.markProcessed(eventKey);
+        return response("200", "success", eventKey, true, false, OrganizationEventStatus.PROCESSED);
     }
 
     private boolean requestTopicMatchesPayload(OrganizationEventWebhookRequest request, OrganizationEventNotice notice) {

@@ -11,8 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 
 @Service
@@ -103,8 +105,15 @@ public class OrganizationEventInboxService {
     }
 
     private LocalDateTime parseEventTime(String eventTime) {
+        if (eventTime == null || eventTime.isBlank()) {
+            return null;
+        }
+        String trimmed = eventTime.trim();
+        if (trimmed.chars().allMatch(Character::isDigit)) {
+            return LocalDateTime.ofInstant(Instant.ofEpochMilli(Long.parseLong(trimmed)), ZoneId.systemDefault());
+        }
         try {
-            return OffsetDateTime.parse(eventTime).toLocalDateTime();
+            return OffsetDateTime.parse(trimmed).toLocalDateTime();
         } catch (DateTimeParseException ex) {
             return null;
         }

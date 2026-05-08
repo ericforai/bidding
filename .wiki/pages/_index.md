@@ -8,9 +8,9 @@ sources:
   - .wiki/INDEX.md
   - .wiki/PAGE_INDEX.md
 backlinks:
-created: 2026-04-29
-updated: 2026-04-29
-health_checked: 2026-05-07
+created: 2026-05-08
+updated: 2026-05-08
+health_checked: 2026-05-08
 ---
 # 西域投标管理平台知识库
 
@@ -39,6 +39,7 @@ health_checked: 2026-05-07
 - [[design-system]] — 设计系统基线
 - [[docinsight-engine]] — DocInsight 文档智能引擎
 - [[glossary]] — 术语表
+- [[integration-oa-crm]] — OA 与 CRM 对接规范
 - [[integration-organization-event-sdk]] — 组织架构对接 - 客户事件库 SDK 方案
 - [[integration-wecom]] — 系统集成中心 - 企业微信
 - [[modules]] — 模块目录
@@ -67,3 +68,4 @@ health_checked: 2026-05-07
 1. `npm run wiki:ingest`
 2. `npm run wiki:build`
 3. `npm run wiki:check`
+
