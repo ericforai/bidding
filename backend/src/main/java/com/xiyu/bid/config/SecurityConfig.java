@@ -197,6 +197,7 @@ public class SecurityConfig {
             "Content-Type",
             "Accept",
             "X-Requested-With",
+            "Idempotency-Key",
             "EHSY-TraceID",
             "EHSY-SRCAPP",
             "EHSY-Signature"
