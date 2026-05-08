@@ -30,14 +30,19 @@ public final class RoleProfileCatalog {
                     List.of("dashboard", "operation-logs", QUICK_START_PERMISSION, "bidding", "project", "knowledge",
                             "resource", AI_CENTER_PERMISSION))),
             Map.entry(SALES_CODE, new SeedDefinition(SALES_CODE, "销售/业务负责人", "立项发起人，维护客户与开标信息", true, "self",
-                    List.of("dashboard", "bidding", "project", "knowledge"))),
+                    List.of("dashboard", "bidding", "project", "knowledge",
+                            "project.create", "project.view", "deposit.return.fill"))),
             Map.entry(BID_LEAD_CODE, new SeedDefinition(BID_LEAD_CODE, "投标负责人", "标书编制与评标推进负责人", true, "self",
-                    List.of("dashboard", "bidding", "project", "knowledge", "resource"))),
+                    List.of("dashboard", "bidding", "project", "knowledge", "resource",
+                            "task.assign", "evaluation.update", "result.register",
+                            "retrospective.submit", "closure.request"))),
             Map.entry(BID_ADMIN_CODE, new SeedDefinition(BID_ADMIN_CODE, "投标部门管理员", "复盘审核与结项闸门审批", true, "dept",
                     List.of("dashboard", "operation-logs", "bidding", "project", "knowledge", "resource",
-                            "analytics", "settings"))),
+                            "analytics", "settings",
+                            "task.review", "retrospective.review", "closure.review", "lead.assign"))),
             Map.entry(TASK_EXECUTOR_CODE, new SeedDefinition(TASK_EXECUTOR_CODE, "任务执行人", "标书任务承接与执行", true, "self",
-                    List.of("dashboard", "project", "knowledge")))
+                    List.of("dashboard", "project", "knowledge",
+                            "task.view.own", "task.handle.own")))
     );
 
     private RoleProfileCatalog() {

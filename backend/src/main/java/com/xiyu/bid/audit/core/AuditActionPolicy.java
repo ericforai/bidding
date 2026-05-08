@@ -38,7 +38,14 @@ public final class AuditActionPolicy {
             "REGENERATE",
             "ASSEMBLE",
             "LOGIN",
-            "LOGOUT"
+            "LOGOUT",
+            // PRD §5.3 投标全生命周期事件 (TenderLifecycleAuditAction)
+            "SUBMITTED",
+            "TRANSITIONED",
+            "CHANGED",
+            "REGISTERED",
+            "REVIEWED",
+            "CLOSED"
     );
 
     public boolean shouldRecord(String action) {
