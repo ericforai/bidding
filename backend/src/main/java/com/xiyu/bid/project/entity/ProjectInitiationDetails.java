@@ -1,8 +1,8 @@
 // Input: project_initiation_details 表行
 // Output: JPA 实体 - WS-A 立项
-// Pos: entity/ - 持久化模型
+// Pos: project/entity/ - 持久化模型
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
-package com.xiyu.bid.entity;
+package com.xiyu.bid.project.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -6,7 +6,7 @@ package com.xiyu.bid.project.service;
 
 import com.xiyu.bid.annotation.Auditable;
 import com.xiyu.bid.entity.Project;
-import com.xiyu.bid.entity.ProjectEvaluation;
+import com.xiyu.bid.project.entity.ProjectEvaluation;
 import com.xiyu.bid.exception.ResourceNotFoundException;
 import com.xiyu.bid.project.core.EvaluationStateTransitionPolicy;
 import com.xiyu.bid.project.core.EvaluationSubStage;
