@@ -12,7 +12,7 @@ backlinks:
   - _index
 created: 2026-04-28
 updated: 2026-04-30
-health_checked: 2026-04-30
+health_checked: 2026-05-08
 ---
 # 组织架构对接 - 客户事件库 SDK 方案
 

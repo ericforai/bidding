@@ -34,29 +34,47 @@
 
 - **唯一支持路径**：前端、后端、E2E、演示环境均以真实后端 API 为唯一事实源。
 - **遗留代码现状**：仓库内仍可见 `frontendDemo` 适配层、`demoPersistence` 等历史遗留；这些内容当前只应被视为清理对象，不允许新增、不允许扩散、不允许恢复为默认路径。
-- **执行要求**：任何新功能、Bug 修复、测试回归、截图演示都必须以 `VITE_API_MODE=api` 和真实后端联调为前提。
+- **执行要求**：任何新功能、Bug 修复、测试回归、截图演示都必须以真实后端联调为前提；前端当前硬编码 `API-only`，`VITE_API_MODE=api` 仅作为部分启动/健康检查脚本的显式环境变量保留，不再代表可切换模式。
 
 ## 当前项目事实
 
 ### 推荐启动方式
 
-**方式一：一键启动（推荐）**
+**方式一：稳定联调启动（推荐）**
 ```bash
+export XIYU_DEV_CONFIRMED=1
+npm run dev:stable:start
+npm run dev:stable:status
+```
+
+说明：
+- `npm run dev:stable:start` / `dev:stable:status` / `dev:stable:logs` 统一走 `scripts/dev-services.sh`
+- 默认拉起文档转换 sidecar、后端 `dev,mysql` 和前端 API-only 开发服务
+- 主目录默认使用前端 `127.0.0.1:1314`、后端 `127.0.0.1:18080`、sidecar `127.0.0.1:8000`、数据库 `xiyu_bid_main`
+- 根目录 `npm run dev:all` / `./start.sh` 仍是兼容入口，会先按当前目录加载 `scripts/dev-env.sh`，再转调同一套稳定启动逻辑
+- 启动脚本会显式注入 `VITE_API_MODE=api` 供健康检查使用，但前端配置本身已固定为 API-only
+- `backend/start.sh`、`scripts/dev-services.sh`、`scripts/dev-services-launchd.sh`、`scripts/local-docker-stack.sh` 等本地脚本带 dev-only guard；本地启动必须显式设置 `XIYU_DEV_CONFIRMED=1`，生产部署不得使用这些脚本
+
+**方式二：一键兼容入口**
+```bash
+export XIYU_DEV_CONFIRMED=1
 npm run dev:all
 ```
 
-说明：根目录 `start.sh` 会尝试拉起后端 `e2e` profile（端口 `18080`）和前端 API 模式开发服务（端口 `1314`）。
-
-**方式二：手动启动**
+**方式三：手动启动**
 ```bash
 # 终端 1：启动后端
 cd /Users/user/xiyu/xiyu-bid-poc/backend
-mvn spring-boot:run -Dspring-boot.run.arguments="--server.port=18080"
+XIYU_DEV_CONFIRMED=1 ./start.sh
 
 # 终端 2：启动前端
 cd /Users/user/xiyu/xiyu-bid-poc
 VITE_API_MODE=api VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --host 127.0.0.1 --port 1314
 ```
+
+补充：
+- 如必须直接运行 `mvn spring-boot:run`，需自行补齐 `JWT_SECRET`、`DB_PASSWORD`、`CORS_ALLOWED_ORIGINS` 等必需环境变量；默认优先使用 `backend/start.sh`
+- 多 Agent worktree 会自动使用专属端口和数据库，例如 Codex worktree 使用前端 `1316`、后端 `18082`、sidecar `8002`、数据库 `xiyu_bid_codex`
 
 ### 技术栈
 
@@ -119,6 +137,7 @@ Agent 在每次对话开始或切换任务时，必须声明当前环境。
 - **物理隔离**：各 Agent 必须在 `/Users/user/xiyu/worktrees/` 下的独立 Worktree 工作，严禁在 `main` 基准区修改代码。
 - **资源分配**：每个 Agent 拥有专属的端口（前端 131x / 后端 1808x）和数据库名，互不干扰。
 - **验证责任**：遵循“谁改代码，谁在自己的 Worktree 跑通验证”原则。报告“任务完成”前，必须提供在 Worktree 内部执行 `npm run build` 和 `mvn test` 的成功证据。
+- **协作启动命令**：多 Agent 本地联调优先使用根目录 `npm run agent:morning`（同步基线并拉起 launchd 常驻服务）或 `npm run agent:up` / `agent:restart` / `agent:status` / `agent:logs`；脚本会按当前 worktree 自动映射端口、数据库、Redis DB、sidecar 端口和 launchd label，启动类命令同样需要 `XIYU_DEV_CONFIRMED=1`。
 
 ### 4. 文件锁门禁
 - **锁注册表**：仓库根目录 `.agent-locks.yml` 是多 Agent 文件锁的唯一登记入口，支持 `scope: file` 与 `scope: directory`。
