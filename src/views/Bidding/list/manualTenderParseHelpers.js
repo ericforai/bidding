@@ -58,11 +58,15 @@ export function normalizeManualTenderParseResult(result = {}) {
   return {
     title: firstText(data.tenderTitle, data.title, data.projectName),
     budget: normalizeBudgetYuan(data.budget),
-    region: firstText(data.region),
-    industry: firstText(data.industry),
+    region: firstText(data.headquartersLocation, data.region),
+    tenderAgency: firstText(data.tenderAgency, data.agencyName),
+    bidOpeningTime: normalizeDeadline(firstText(data.bidOpeningTime, data.openingTime)),
+    customerType: firstText(data.customerType),
+    priority: firstText(data.priority),
     deadline: normalizeDeadline(data.deadline),
     purchaser: firstText(data.purchaserName, data.purchaser),
     contact: firstText(data.contactName, data.contactPerson, data.contact),
+    phone: firstText(data.contactPhone, data.phone, data.contactEmail, data.email),
     description: firstText(data.description, data.tenderScope),
     tags: normalizeTags(data.tags),
   }

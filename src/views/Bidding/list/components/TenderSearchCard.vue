@@ -8,14 +8,9 @@
           </template>
         </el-input>
       </el-form-item>
-      <el-form-item label="地区" class="search-field">
-        <el-select v-model="modelValue.region" placeholder="全部地区" clearable class="filter-select">
+      <el-form-item label="总部所在地" class="search-field">
+        <el-select v-model="modelValue.region" placeholder="全部总部所在地" clearable class="filter-select">
           <el-option v-for="item in regions" :key="item" :label="item" :value="item" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="行业" class="search-field">
-        <el-select v-model="modelValue.industry" placeholder="全部行业" clearable class="filter-select">
-          <el-option v-for="item in industries" :key="item" :label="item" :value="item" />
         </el-select>
       </el-form-item>
       <el-form-item label="状态" class="search-field">
@@ -47,12 +42,11 @@
 
 <script setup>
 import { RefreshLeft, Search } from '@element-plus/icons-vue'
-import { INDUSTRY_OPTIONS, REGION_OPTIONS, SOURCE_OPTIONS } from '../constants.js'
+import { REGION_OPTIONS, SOURCE_OPTIONS } from '../constants.js'
 
 const modelValue = defineModel({ type: Object, required: true })
 defineProps({
   regions: { type: Array, default: () => REGION_OPTIONS },
-  industries: { type: Array, default: () => INDUSTRY_OPTIONS },
   sourceOptions: { type: Array, default: () => SOURCE_OPTIONS },
 })
 

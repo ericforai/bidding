@@ -77,7 +77,6 @@ export function useTenderListPage() {
     await biddingStore.getTenders({
       keyword: searchForm.value.keyword || undefined,
       region: searchForm.value.region || undefined,
-      industry: searchForm.value.industry || undefined,
       status: searchForm.value.status || undefined,
       source: searchForm.value.source || undefined,
     })
@@ -132,7 +131,6 @@ export function useTenderListPage() {
     exportExcel(ExportType.TENDERS, {
       keyword: searchForm.value.keyword || undefined,
       region: searchForm.value.region || undefined,
-      industry: searchForm.value.industry || undefined,
       status: searchForm.value.status || undefined,
       source: searchForm.value.source || undefined,
     }, '标讯列表导出成功')

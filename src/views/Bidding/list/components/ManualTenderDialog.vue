@@ -2,7 +2,7 @@
   <el-dialog
     v-model="modelValue"
     title="人工录入标讯"
-    width="720px"
+    width="860px"
     @close="$emit('reset')"
   >
     <el-form ref="innerFormRef" :model="form" :rules="rules" label-width="100px">
@@ -25,32 +25,59 @@
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="地区" prop="region">
-            <el-select v-model="form.region" placeholder="选择地区" class="full-width">
+          <el-form-item label="总部所在地" prop="region">
+            <el-select v-model="form.region" placeholder="选择总部所在地" class="full-width">
               <el-option v-for="region in regions" :key="region" :label="region" :value="region" />
             </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="行业分类" prop="industry">
-            <el-select v-model="form.industry" placeholder="选择行业" class="full-width">
-              <el-option v-for="industry in industries" :key="industry" :label="industry" :value="industry" />
+          <el-form-item label="招标机构" prop="tenderAgency">
+            <el-input v-model="form.tenderAgency" placeholder="招标代理/招标机构名称" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="业主单位" prop="purchaser">
+            <el-input v-model="form.purchaser" placeholder="招标人/采购人名称" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="报名截止时间" prop="deadline">
+            <el-date-picker v-model="form.deadline" type="datetime" placeholder="选择报名截止时间" class="full-width" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="开标时间" prop="bidOpeningTime">
+            <el-date-picker v-model="form.bidOpeningTime" type="datetime" placeholder="选择开标时间" class="full-width" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="客户类型" prop="customerType">
+            <el-select v-model="form.customerType" placeholder="选择客户类型" class="full-width">
+              <el-option v-for="type in customerTypes" :key="type" :label="type" :value="type" />
             </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="截止日期" prop="deadline">
-            <el-date-picker v-model="form.deadline" type="date" placeholder="选择截止日期" class="full-width" />
+          <el-form-item label="优先级" prop="priority">
+            <el-select v-model="form.priority" placeholder="选择优先级" class="full-width">
+              <el-option v-for="item in priorities" :key="item.value" :label="item.label" :value="item.value">
+                <div class="priority-option">
+                  <span>{{ item.label }} · {{ item.desc }}</span>
+                  <small>{{ item.standard }}</small>
+                </div>
+              </el-option>
+            </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="采购单位">
-            <el-input v-model="form.purchaser" placeholder="采购单位名称" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="联系人">
+          <el-form-item label="联系人" prop="contact">
             <el-input v-model="form.contact" placeholder="联系人姓名" />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="联系方式" prop="phone">
+            <el-input v-model="form.phone" placeholder="手机号/座机/邮箱" />
           </el-form-item>
         </el-col>
         <el-col :span="24">
@@ -83,6 +110,29 @@
                 {{ parsingDocument ? 'DeepSeek/AI 解析中...' : '将文件拖到此处，或点击选择附件' }}
               </div>
             </el-upload>
+            <div class="paste-recognition">
+              <el-input
+                v-model="form.pastedText"
+                type="textarea"
+                :rows="4"
+                maxlength="20000"
+                show-word-limit
+                placeholder="粘贴招标公告正文，识别后自动回填字段"
+                :disabled="parsingDocument"
+              />
+              <div class="paste-actions">
+                <el-button
+                  type="primary"
+                  plain
+                  :icon="DocumentCopy"
+                  :loading="parsingDocument"
+                  :disabled="!form.pastedText?.trim()"
+                  @click="$emit('parse-pasted-text')"
+                >
+                  识别粘贴文字
+                </el-button>
+              </div>
+            </div>
           </el-form-item>
         </el-col>
       </el-row>
@@ -96,8 +146,13 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Upload } from '@element-plus/icons-vue'
-import { INDUSTRY_OPTIONS, MANUAL_FORM_RULES, REGION_OPTIONS } from '../constants.js'
+import { DocumentCopy, Upload } from '@element-plus/icons-vue'
+import {
+  CUSTOMER_TYPE_OPTIONS,
+  MANUAL_FORM_RULES,
+  PRIORITY_OPTIONS,
+  REGION_OPTIONS,
+} from '../constants.js'
 
 const modelValue = defineModel({ type: Boolean, default: false })
 const form = defineModel('form', { type: Object, required: true })
@@ -106,10 +161,11 @@ defineProps({
   saving: { type: Boolean, default: false },
   parsingDocument: { type: Boolean, default: false },
   regions: { type: Array, default: () => REGION_OPTIONS },
-  industries: { type: Array, default: () => INDUSTRY_OPTIONS },
+  customerTypes: { type: Array, default: () => CUSTOMER_TYPE_OPTIONS },
+  priorities: { type: Array, default: () => PRIORITY_OPTIONS },
 })
 
-const emit = defineEmits(['reset', 'submit', 'file-change'])
+const emit = defineEmits(['reset', 'submit', 'file-change', 'parse-pasted-text'])
 
 const innerFormRef = ref(null)
 
@@ -172,5 +228,33 @@ defineExpose({
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.priority-option {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.25;
+}
+
+.priority-option small {
+  max-width: 420px;
+  overflow: hidden;
+  color: #6b7280;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.paste-recognition {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.paste-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
 }
 </style>

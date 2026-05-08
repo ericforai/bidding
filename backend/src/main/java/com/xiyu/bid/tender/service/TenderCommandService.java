@@ -109,10 +109,14 @@ public class TenderCommandService {
         Map<String, Object> context = new LinkedHashMap<>();
         putIfPresent(context, "budget", tender.getBudget());
         putIfPresent(context, "deadline", tender.getDeadline());
+        putIfPresent(context, "bidOpeningTime", tender.getBidOpeningTime());
         putIfPresent(context, "source", tender.getSource());
         putIfPresent(context, "region", tender.getRegion());
         putIfPresent(context, "industry", tender.getIndustry());
+        putIfPresent(context, "tenderAgency", tender.getTenderAgency());
         putIfPresent(context, "purchaserName", tender.getPurchaserName());
+        putIfPresent(context, "customerType", tender.getCustomerType());
+        putIfPresent(context, "priority", tender.getPriority());
         putIfPresent(context, "publishDate", tender.getPublishDate());
         putIfPresent(context, "description", tender.getDescription());
         putIfPresent(context, "tags", tender.getTags());

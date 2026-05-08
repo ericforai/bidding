@@ -33,7 +33,6 @@
                 {{ getSourceText(row.source) }}
               </el-tag>
               <span v-if="row.region" class="meta-item">{{ row.region }}</span>
-              <span v-if="row.industry" class="meta-item">{{ row.industry }}</span>
               <span v-if="row.deadline" class="meta-item">截止 {{ row.deadline }}</span>
             </div>
           </div>

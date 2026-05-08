@@ -183,6 +183,7 @@ public class TenderController {
         if (request.getSource() != null) request.setSource(InputSanitizer.sanitizeString(request.getSource(), 200));
         if (request.getRegion() != null) request.setRegion(InputSanitizer.sanitizeString(request.getRegion(), 100));
         if (request.getIndustry() != null) request.setIndustry(InputSanitizer.sanitizeString(request.getIndustry(), 100));
+        if (request.getTenderAgency() != null) request.setTenderAgency(InputSanitizer.sanitizeString(request.getTenderAgency(), 255));
         if (request.getPurchaserName() != null) request.setPurchaserName(InputSanitizer.sanitizeString(request.getPurchaserName(), 255));
         if (request.getPurchaserHash() != null) request.setPurchaserHash(InputSanitizer.sanitizeString(request.getPurchaserHash(), 64));
         if (request.getContactName() != null) request.setContactName(InputSanitizer.sanitizeString(request.getContactName(), 100));
@@ -190,6 +191,8 @@ public class TenderController {
         if (request.getSourceDocumentName() != null) request.setSourceDocumentName(InputSanitizer.sanitizeString(request.getSourceDocumentName(), 255));
         if (request.getSourceDocumentFileType() != null) request.setSourceDocumentFileType(InputSanitizer.sanitizeString(request.getSourceDocumentFileType(), 100));
         if (request.getSourceDocumentFileUrl() != null) request.setSourceDocumentFileUrl(InputSanitizer.sanitizeString(request.getSourceDocumentFileUrl(), 1000));
+        if (request.getCustomerType() != null) request.setCustomerType(InputSanitizer.sanitizeString(request.getCustomerType(), 100));
+        if (request.getPriority() != null) request.setPriority(InputSanitizer.sanitizeString(request.getPriority(), 10));
         if (request.getDescription() != null) request.setDescription(InputSanitizer.sanitizeString(request.getDescription(), 5000));
         if (request.getTags() != null) {
             request.setTags(request.getTags().stream()

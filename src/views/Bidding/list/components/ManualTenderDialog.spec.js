@@ -13,13 +13,18 @@ function createForm(overrides = {}) {
     title: '',
     budget: null,
     region: '',
-    industry: '',
+    tenderAgency: '',
+    bidOpeningTime: '',
+    customerType: '',
+    priority: '',
     deadline: '',
     purchaser: '',
     contact: '',
+    phone: '',
     description: '',
     tags: [],
     attachments: [],
+    pastedText: '',
     ...overrides,
   }
 }
@@ -58,6 +63,27 @@ describe('ManualTenderDialog', () => {
 
     expect(wrapper.text()).toContain('预算金额（元）')
     expect(wrapper.text()).toContain('采购预算/最高限价，单位元；框架协议可留空')
+  })
+
+  it('uses the governed manual tender fields and removes industry classification', () => {
+    const wrapper = mountDialog()
+
+    expect(wrapper.text()).toContain('总部所在地')
+    expect(wrapper.text()).toContain('招标机构')
+    expect(wrapper.text()).toContain('业主单位')
+    expect(wrapper.text()).toContain('报名截止时间')
+    expect(wrapper.text()).toContain('开标时间')
+    expect(wrapper.text()).toContain('客户类型')
+    expect(wrapper.text()).toContain('优先级')
+    expect(wrapper.text()).toContain('联系方式')
+    expect(wrapper.text()).not.toContain('行业分类')
+  })
+
+  it('shows pasted text recognition in the attachment area', () => {
+    const wrapper = mountDialog()
+
+    expect(wrapper.find('.paste-recognition').exists()).toBe(true)
+    expect(wrapper.text()).toContain('识别粘贴文字')
   })
 
   it('keeps the attachment upload area under the form width after files are selected', () => {

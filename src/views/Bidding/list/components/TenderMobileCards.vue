@@ -7,8 +7,7 @@
       </div>
       <div class="mobile-card-body">
         <div><span>预算</span><strong>{{ formatBudgetWan(row.budget) }}万元</strong></div>
-        <div><span>地区</span><strong>{{ row.region }}</strong></div>
-        <div><span>行业</span><strong>{{ row.industry }}</strong></div>
+        <div><span>总部所在地</span><strong>{{ row.region }}</strong></div>
         <div>
           <span>来源</span>
           <el-tag v-if="row.source" :type="getSourceTagType(row.source)" size="small">
