@@ -22,7 +22,7 @@ backlinks:
   - requirements
   - team-and-timeline
 created: 2026-04-23
-updated: 2026-05-07
+updated: 2026-05-08
 health_checked: 2026-05-08
 ---
 # 合同约束
