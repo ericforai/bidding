@@ -8,9 +8,9 @@ sources:
   - .wiki/INDEX.md
   - .wiki/PAGE_INDEX.md
 backlinks:
-created: 2026-04-29
-updated: 2026-04-29
-health_checked: 2026-04-29
+created: 2026-05-08
+updated: 2026-05-08
+health_checked: 2026-05-08
 ---
 # 西域投标管理平台知识库
 
@@ -67,3 +67,4 @@ health_checked: 2026-04-29
 1. `npm run wiki:ingest`
 2. `npm run wiki:build`
 3. `npm run wiki:check`
+

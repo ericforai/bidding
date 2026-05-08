@@ -20,8 +20,8 @@ backlinks:
   - implementation/attachment6-function-list-trace
   - implementation/document-delivery-ledger
 created: 2026-04-26
-updated: 2026-04-29
-health_checked: 2026-04-29
+updated: 2026-05-08
+health_checked: 2026-05-08
 ---
 # 附件4客户要求差距矩阵
 
