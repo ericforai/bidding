@@ -630,6 +630,7 @@ button[class*="icon"]:not(.el-button),
   color: #374151;
   font-size: 13px;
   letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
 /* ==================== Link Styles ==================== */
