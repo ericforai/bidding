@@ -11,9 +11,12 @@ import com.xiyu.bid.demo.service.DemoFusionService;
 import com.xiyu.bid.demo.service.DemoModeService;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.idempotency.Idempotent;
+import com.xiyu.bid.tender.dto.TenderImportResultDTO;
 import com.xiyu.bid.tender.dto.TenderRequest;
 import com.xiyu.bid.tender.dto.TenderDTO;
 import com.xiyu.bid.tender.service.TenderCommandService;
+import com.xiyu.bid.tender.service.TenderImportRollbackException;
+import com.xiyu.bid.tender.service.TenderImportService;
 import com.xiyu.bid.tender.service.TenderMapper;
 import com.xiyu.bid.tender.service.TenderQueryService;
 import com.xiyu.bid.tender.service.TenderSearchCriteria;
@@ -22,7 +25,9 @@ import com.xiyu.bid.annotation.DataScope;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -33,7 +38,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import java.util.List;
 import java.util.Map;
@@ -48,6 +58,7 @@ public class TenderController {
     private final TenderQueryService tenderQueryService;
     private final TenderCommandService tenderCommandService;
     private final TenderMapper tenderMapper;
+    private final TenderImportService tenderImportService;
     private final AiDeepCapabilityService aiDeepCapabilityService;
     private final DemoModeService demoModeService;
     private final DemoDataProvider demoDataProvider;
@@ -89,6 +100,37 @@ public class TenderController {
         TenderDTO tenderDTO = tenderMapper.toDTO(tenderRequest);
         TenderDTO createdTender = tenderCommandService.createTender(tenderDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tender created successfully", createdTender));
+    }
+
+    @GetMapping("/import-template")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<byte[]> downloadImportTemplate() {
+        log.info("GET /api/tenders/import-template - Generating bulk import template");
+        byte[] body = tenderImportService.generateTemplate();
+        String filename = URLEncoder.encode("标讯批量导入模板.xlsx", StandardCharsets.UTF_8).replace("+", "%20");
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"tender-import-template.xlsx\"; filename*=UTF-8''" + filename)
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(body);
+    }
+
+    @PostMapping(path = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Idempotent
+    public ResponseEntity<ApiResponse<TenderImportResultDTO>> importTenders(@RequestParam("file") MultipartFile file) {
+        log.info("POST /api/tenders/import - Importing tenders, originalName={}, size={}",
+                file == null ? null : file.getOriginalFilename(),
+                file == null ? 0 : file.getSize());
+        try {
+            TenderImportResultDTO result = tenderImportService.importFromExcel(file);
+            String message = "成功导入 " + result.getSuccessCount() + " 条标讯";
+            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(message, result));
+        } catch (TenderImportRollbackException ex) {
+            log.info("标讯批量导入校验未通过，已整批回滚 failureCount={}",
+                    ex.getResult() == null ? 0 : ex.getResult().getFailureCount());
+            return ResponseEntity.ok(ApiResponse.success("导入未通过校验，请按错误列表修正后重试", ex.getResult()));
+        }
     }
 
     @PutMapping("/{id}")

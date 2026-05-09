@@ -75,6 +75,22 @@ export const tendersApi = {
     return httpClient.post('/api/tenders', data, withIdempotencyKey())
   },
 
+  async downloadImportTemplate() {
+    return httpClient.get('/api/tenders/import-template', {
+      responseType: 'blob',
+      timeout: 60000
+    })
+  },
+
+  async bulkImport(file) {
+    const formData = new FormData()
+    formData.set('file', file, file?.name || 'tender-import.xlsx')
+    return httpClient.post('/api/tenders/import', formData, withIdempotencyKey({
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000
+    }))
+  },
+
   async parseTenderIntakeDocument(file, { entityId = 'manual-tender' } = {}) {
     const formData = new FormData()
     formData.set('profile', 'TENDER_INTAKE')

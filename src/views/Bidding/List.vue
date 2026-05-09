@@ -9,6 +9,8 @@
       @open-source-config="openSourceConfig"
       @sync-external="sourceConfig.syncExternalTenders"
       @open-manual-add="openManualAdd"
+      @download-import-template="bulkImport.downloadImportTemplate"
+      @open-bulk-import="bulkImport.openBulkImport"
     />
 
     <TenderSearchCard
@@ -150,6 +152,17 @@
       @save="sourceConfig.saveSourceConfig"
       @test="sourceConfig.testConnection"
     />
+    <BulkImportDialog
+      v-model="bulkImport.showBulkImport.value"
+      :selected-file="bulkImport.selectedFile.value"
+      :result="bulkImport.importResult.value"
+      :template-downloading="bulkImport.templateDownloading.value"
+      :importing="bulkImport.importing.value"
+      @reset="bulkImport.resetImport"
+      @download-template="bulkImport.downloadImportTemplate"
+      @file-change="bulkImport.handleFileChange"
+      @submit="bulkImport.submitBulkImport"
+    />
     <ManualTenderDialog
       v-model="manualCreate.showManualAdd.value"
       :ref="(instance) => { manualCreate.manualFormRef.value = instance }"
@@ -182,6 +195,7 @@ import AiParsingDialog from './list/components/AiParsingDialog.vue'
 import AiRecommendSection from './list/components/AiRecommendSection.vue'
 import AssignDialog from './list/components/AssignDialog.vue'
 import BiddingPageHeader from './list/components/BiddingPageHeader.vue'
+import BulkImportDialog from './list/components/BulkImportDialog.vue'
 import DistributeDialog from './list/components/DistributeDialog.vue'
 import FetchResultDialog from './list/components/FetchResultDialog.vue'
 import ManualTenderDialog from './list/components/ManualTenderDialog.vue'
@@ -218,6 +232,7 @@ const {
   selection,
   sourceConfig,
   manualCreate,
+  bulkImport,
   marketInsight,
   batchActions,
   distribution,
