@@ -55,7 +55,7 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="244" align="center" fixed="right">
+      <el-table-column label="操作" width="320" align="center" fixed="right">
         <template #default="{ row = {} } = {}">
           <TenderActionMenu
             :row="row"

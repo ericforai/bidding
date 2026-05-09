@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('element-plus', () => ({
   ElButton: { props: ['icon'], template: '<button><slot /></button>' },
@@ -8,6 +8,14 @@ vi.mock('element-plus', () => ({
   ElDropdownMenu: { template: '<div><slot /></div>' },
   ElTooltip: { template: '<div><slot /></div>' },
 }))
+
+const mockDisconnect = vi.fn()
+const mockObserve = vi.fn()
+
+vi.stubGlobal('ResizeObserver', vi.fn().mockImplementation(() => ({
+  observe: mockObserve,
+  disconnect: mockDisconnect,
+})))
 
 import TenderActionMenu from './TenderActionMenu.vue'
 
@@ -42,6 +50,11 @@ function mountMenu(props = {}) {
     },
   })
 }
+
+beforeEach(() => {
+  mockDisconnect.mockClear()
+  mockObserve.mockClear()
+})
 
 afterEach(() => {
   document.body.innerHTML = ''
