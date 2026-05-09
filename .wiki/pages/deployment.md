@@ -31,8 +31,8 @@ backlinks:
   - requirements
   - team-and-timeline
 created: 2026-04-15
-updated: 2026-05-08
-health_checked: 2026-05-08
+updated: 2026-05-09
+health_checked: 2026-05-09
 ---
 # 部署与上线
 
@@ -381,9 +381,15 @@ ssh -o HostKeyAlgorithms=+ssh-rsa \
 systemctl is-active nginx xiyu-bid-backend
 curl -fsS http://127.0.0.1:18080/actuator/health
 curl -fsS http://172.16.38.78:8080/actuator/health
+curl -i --max-time 8 http://172.16.38.78:8080/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -H 'Origin: http://172.16.38.78:8080' \
+  --data '{"username":"admin","password":"invalid-probe"}'
 sudo journalctl -u xiyu-bid-backend -n 120 --no-pager
 sudo tail -n 120 /var/log/nginx/access.log
 ```
+
+登录接口探活使用错误密码时，预期结果是 HTTP `401` 且返回 `用户名或密码错误`；这说明 Nginx、后端、CORS 和登录 API 链路均已打通。若返回空响应、CORS 错误或请求没有进入 Nginx 日志，应继续按下方故障判断排查。
 
 当前部署形态：
 
@@ -397,11 +403,36 @@ sudo tail -n 120 /var/log/nginx/access.log
 | 冒烟报告 | `/opt/xiyu-bid/smoke-reports/` |
 | 当前部署记录 | `/opt/xiyu-bid/deployed-release.json` |
 
+**2026-05-09 登录故障复盘：**
+
+现象：`http://172.16.38.78:8080/login` 页面可打开，但登录失败；浏览器控制台出现 `/api/auth/login net::ERR_EMPTY_RESPONSE`，同时有 `refresh.js` 连接 `ws://localhost:8081/` 的报错。
+
+排查结论：
+
+- 服务器内部 `nginx` 和 `xiyu-bid-backend` 均为 `active`，`127.0.0.1:18080/actuator/health` 与 `127.0.0.1:8080/actuator/health` 均返回 `UP`。
+- Nginx 入口 `http://172.16.38.78:8080/api/auth/login` 在服务器本机返回正常业务 `401 用户名或密码错误`，说明后端登录链路可用。
+- 当次部署记录 `/opt/xiyu-bid/deployed-release.json` 中 `packageMetadata.apiBaseUrl` 为 `http://172.16.38.78`，但浏览器入口是 `http://172.16.38.78:8080/`。前端包因此可能把登录请求打到 80 端口，而不是 8080 入口。
+- 线上静态目录 `/srv/www/xiyu-bid` 未包含 `refresh.js`、`@vite/client`、`localhost:8081` 或 WebSocket HMR 字符串；若浏览器仍看到 `refresh.js`，优先判断为浏览器缓存或旧开发页面残留。
+
+修复动作：
+
+- 将线上主入口 JS 中 `VITE_API_BASE_URL:"http://172.16.38.78"` 修正为 `VITE_API_BASE_URL:"http://172.16.38.78:8080"`。
+- 为避免浏览器继续使用旧 JS，将入口文件从 `/assets/index-ChBnRZZw.js` 缓存破除为 `/assets/index-hotfix-202605091246.js`，并更新 `/srv/www/xiyu-bid/index.html` 引用。
+- 在 `/opt/xiyu-bid/deployed-release.json` 记录 hotfix 信息，便于后续正式发布覆盖前追溯。
+
+后续发布要求：
+
+- 面向该客户测试环境打包时，`PRODUCTION_API_BASE_URL` / `VITE_API_BASE_URL` 必须显式设置为 `http://172.16.38.78:8080`，不得省略端口。
+- 正式替换热修时，应重新生成完整发布包并通过 `remote-deploy.sh` 激活，不要长期依赖手工改压缩后的静态 JS。
+- 用户侧报 `refresh.js` 或 `ws://localhost:8081/` 时，先让用户用无痕窗口访问 `http://172.16.38.78:8080/login?hotfix=<timestamp>`；若无痕窗口正常，问题是浏览器缓存，不是服务器服务状态。
+
 **常见故障判断：**
 
 | 现象 | 优先判断 |
 |---|---|
 | 浏览器看到 Spring Boot Whitelabel / `403` | 请求可能落到了后端根路径或 Nginx 转发配置异常，应先确认 `:8080` 是否由 Nginx 对外提供 |
+| 登录请求打到 `http://172.16.38.78/api/auth/login` 或浏览器报 `/api/auth/login net::ERR_EMPTY_RESPONSE` | 先检查前端包中的 `VITE_API_BASE_URL` 是否省略 `:8080`；服务器上可用 `grep -R 'VITE_API_BASE_URL' /srv/www/xiyu-bid/assets/*.js` 验证 |
+| 控制台出现 `refresh.js`、`@vite/client` 或 `ws://localhost:8081/` | 当前生产静态目录不应包含 Vite HMR 脚本；优先判断浏览器缓存了旧开发页面或旧 JS，用无痕窗口和带时间戳的登录 URL 复测 |
 | 登录接口返回 `Invalid CORS request` 或 `403` | `CORS_ALLOWED_ORIGINS` 必须包含浏览器实际 Origin，例如 `http://172.16.38.78` 和 `http://172.16.38.78:8080` |
 | 用户反馈打不开，但 Nginx access log 没有新请求 | 优先排查客户网络、VPN、白名单或浏览器访问路径，问题可能还没到达服务器 |
 | 管理员密码不确定 | 不在代码库查找；授权人员在服务器执行 `sudo grep '^ADMIN_PASSWORD=' /etc/xiyu-bid/backend.env` |
