@@ -44,7 +44,8 @@ import java.util.Locale;
     @Index(name = "idx_tender_customer_type", columnList = "customer_type"),
     @Index(name = "idx_tender_priority", columnList = "priority"),
     @Index(name = "idx_tender_status_region_industry_normalized",
-            columnList = "status, region_normalized, industry_normalized")
+            columnList = "status, region_normalized, industry_normalized"),
+    @Index(name = "idx_tender_source_type", columnList = "source_type")
 })
 @Getter
 @Setter
@@ -81,21 +82,12 @@ public class Tender {
     @Column(name = "original_url", length = 1000)
     private String originalUrl;
 
-    /**
-     * 预算金额
-     */
     @Column(precision = 19, scale = 2)
     private BigDecimal budget;
 
-    /**
-     * 所属地区
-     */
     @Column(length = 100)
     private String region;
 
-    /**
-     * 所属行业
-     */
     @Column(length = 100)
     private String industry;
 
@@ -135,27 +127,15 @@ public class Tender {
     @Column(name = "search_text_normalized", columnDefinition = "text")
     private String searchTextNormalized;
 
-    /**
-     * 发布日期
-     */
     @Column(name = "publish_date")
     private LocalDate publishDate;
 
-    /**
-     * 截止日期
-     */
     @Column(name = "deadline")
     private LocalDateTime deadline;
 
-    /**
-     * 开标时间
-     */
     @Column(name = "bid_opening_time")
     private LocalDateTime bidOpeningTime;
 
-    /**
-     * 联系人姓名
-     */
     @Column(name = "contact_name", length = 100)
     private String contactName;
 
@@ -212,6 +192,14 @@ public class Tender {
     @Enumerated(EnumType.STRING)
     @Column(name = "risk_level", length = 20)
     private Tender.RiskLevel riskLevel;
+
+    /**
+     * 标讯来源类型
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_type", length = 20)
+    @Builder.Default
+    private Tender.SourceType sourceType = Tender.SourceType.MANUAL;
 
     /**
      * 创建时间
@@ -287,5 +275,13 @@ public class Tender {
         LOW,      // 低风险
         MEDIUM,   // 中风险
         HIGH      // 高风险
+    }
+
+    /**
+     * 标讯来源类型枚举
+     */
+    public enum SourceType {
+        MANUAL,   // 人工录入
+        EXTERNAL  // 外部获取
     }
 }

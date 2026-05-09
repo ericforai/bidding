@@ -90,6 +90,9 @@ public class TenderCommandService {
         if (tenderDTO.getStatus() == null) {
             tenderDTO.setStatus(Tender.Status.PENDING);
         }
+        if (tenderDTO.getSourceType() == null) {
+            tenderDTO.setSourceType(Tender.SourceType.MANUAL);
+        }
         if (tenderDTO.getPublishDate() == null) {
             tenderDTO.setPublishDate(LocalDate.now());
         }

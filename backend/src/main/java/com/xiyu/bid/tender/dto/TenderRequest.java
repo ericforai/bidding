@@ -98,6 +98,8 @@ public class TenderRequest {
 
     private Tender.RiskLevel riskLevel;
 
+    private Tender.SourceType sourceType;
+
     @Size(max = 2000, message = "原始链接长度不能超过2000个字符")
     private String originalUrl;
 

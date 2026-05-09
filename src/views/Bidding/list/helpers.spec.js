@@ -3,6 +3,8 @@ import {
   buildManualTenderPayload,
   buildPermissionFlags,
   formatBudgetWan,
+  getSourceTypeTagType,
+  getSourceTypeText,
   normalizeManualTenderParseResult,
   restoreSourceConfig,
   safeTenderUrl,
@@ -207,5 +209,18 @@ describe('bidding list helpers', () => {
     })
 
     expect(normalized.budget).toBe(3286000)
+  })
+
+  it('returns correct tag type for source type', () => {
+    expect(getSourceTypeTagType('MANUAL')).toBe('warning')
+    expect(getSourceTypeTagType('EXTERNAL')).toBe('success')
+    expect(getSourceTypeTagType('UNKNOWN')).toBe('info')
+  })
+
+  it('returns correct display text for source type', () => {
+    expect(getSourceTypeText('MANUAL')).toBe('人工录入')
+    expect(getSourceTypeText('EXTERNAL')).toBe('外部获取')
+    expect(getSourceTypeText('UNKNOWN')).toBe('UNKNOWN')
+    expect(getSourceTypeText(null)).toBe('未知')
   })
 })

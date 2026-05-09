@@ -72,9 +72,14 @@ export const PRIORITY_OPTIONS = [
 ]
 
 export const SOURCE_OPTIONS = [
-  { label: '内部', value: 'internal' },
-  { label: '外部获取', value: 'external' },
-  { label: '人工录入', value: 'manual' },
+  { label: '外部获取', value: 'EXTERNAL' },
+  { label: '人工录入', value: 'MANUAL' },
+]
+
+export const SOURCE_TYPE_OPTIONS = [
+  { label: '全部来源', value: '' },
+  { label: '外部获取', value: 'EXTERNAL' },
+  { label: '人工录入', value: 'MANUAL' },
 ]
 
 export const SOURCE_PLATFORM_OPTIONS = ['中国政府采购网', '各省招标网', '第三方商机服务', '企业招标平台']
@@ -114,6 +119,7 @@ export const DEFAULT_SEARCH_FORM = Object.freeze({
   region: '',
   status: '',
   source: '',
+  sourceType: '',
 })
 
 export const DEFAULT_SOURCE_CONFIG = Object.freeze({

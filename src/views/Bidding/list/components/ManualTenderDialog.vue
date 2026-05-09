@@ -95,6 +95,32 @@
           </el-form-item>
         </el-col>
         <el-col :span="24">
+          <el-form-item label="粘贴识别">
+            <div class="paste-recognition-hint">[粘贴识别]或文字输入，系统将智能拆分回填标讯信息</div>
+            <el-input
+              v-model="form.pastedText"
+              type="textarea"
+              :rows="4"
+              maxlength="20000"
+              show-word-limit
+              placeholder="直接粘贴招标公告正文，系统将自动识别并回填字段"
+              :disabled="parsingDocument"
+            />
+            <div class="paste-actions">
+              <el-button
+                type="primary"
+                plain
+                :icon="DocumentCopy"
+                :loading="parsingDocument"
+                :disabled="!form.pastedText?.trim()"
+                @click="$emit('parse-pasted-text')"
+              >
+                识别粘贴文字
+              </el-button>
+            </div>
+          </el-form-item>
+        </el-col>
+        <el-col :span="24">
           <el-form-item label="附件">
             <el-upload
               class="manual-tender-upload"
@@ -110,29 +136,6 @@
                 {{ parsingDocument ? 'DeepSeek/AI 解析中...' : '将文件拖到此处，或点击选择附件' }}
               </div>
             </el-upload>
-            <div class="paste-recognition">
-              <el-input
-                v-model="form.pastedText"
-                type="textarea"
-                :rows="4"
-                maxlength="20000"
-                show-word-limit
-                placeholder="粘贴招标公告正文，识别后自动回填字段"
-                :disabled="parsingDocument"
-              />
-              <div class="paste-actions">
-                <el-button
-                  type="primary"
-                  plain
-                  :icon="DocumentCopy"
-                  :loading="parsingDocument"
-                  :disabled="!form.pastedText?.trim()"
-                  @click="$emit('parse-pasted-text')"
-                >
-                  识别粘贴文字
-                </el-button>
-              </div>
-            </div>
           </el-form-item>
         </el-col>
       </el-row>
@@ -247,9 +250,11 @@ defineExpose({
   white-space: nowrap;
 }
 
-.paste-recognition {
-  width: 100%;
-  margin-top: 12px;
+.paste-recognition-hint {
+  margin-bottom: 8px;
+  color: #909399;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .paste-actions {

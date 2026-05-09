@@ -29,6 +29,9 @@ public final class TenderSpecification {
                 predicates.add(criteriaBuilder.equal(root.get("status"), safeCriteria.getStatus()));
             }
             addStringEquals(predicates, criteriaBuilder, root.get("sourceNormalized"), safeCriteria.getSource());
+            if (safeCriteria.getSourceType() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("sourceType"), safeCriteria.getSourceType()));
+            }
             addStringEquals(predicates, criteriaBuilder, root.get("regionNormalized"), safeCriteria.getRegion());
             addStringEquals(predicates, criteriaBuilder, root.get("industryNormalized"), safeCriteria.getIndustry());
             addStringContains(
