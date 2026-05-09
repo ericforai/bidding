@@ -21,6 +21,7 @@ import {
   TENDER_STATUSES,
 } from '../bidding-utils-status.js'
 import { useManualTenderCreate } from './useManualTenderCreate.js'
+import { useTenderBulkImport } from './useTenderBulkImport.js'
 import { useMarketInsight } from './useMarketInsight.js'
 import { useTenderBatchActions } from './useTenderBatchActions.js'
 import { useTenderDistribution } from './useTenderDistribution.js'
@@ -89,6 +90,7 @@ export function useTenderListPage() {
     canSyncExternalSource,
   })
   const manualCreate = useManualTenderCreate({ tendersApi, refreshTenderList, canCreateTender })
+  const bulkImport = useTenderBulkImport({ tendersApi, refreshTenderList, canCreateTender })
   const marketInsight = useMarketInsight()
   const batchActions = useTenderBatchActions({
     batchTendersApi,
@@ -210,6 +212,7 @@ export function useTenderListPage() {
     selection,
     sourceConfig,
     manualCreate,
+    bulkImport,
     marketInsight,
     batchActions,
     distribution,
