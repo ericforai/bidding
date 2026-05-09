@@ -6,6 +6,7 @@ package com.xiyu.bid.project.service;
 
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Task;
+import com.xiyu.bid.project.core.ProjectStage;
 import com.xiyu.bid.project.dto.ProjectLeadAssignmentRequest;
 import com.xiyu.bid.project.entity.ProjectLeadAssignment;
 import com.xiyu.bid.project.repository.ProjectLeadAssignmentRepository;
@@ -34,16 +35,18 @@ class ProjectDraftingServiceTest {
     @Mock ProjectLeadAssignmentRepository leadRepo;
     @Mock ProjectRepository projectRepository;
     @Mock TaskRepository taskRepository;
+    @Mock ProjectStageService projectStageService;
 
     ProjectDraftingService service;
 
     @BeforeEach
     void setUp() {
-        service = new ProjectDraftingService(leadRepo, projectRepository, taskRepository);
+        service = new ProjectDraftingService(leadRepo, projectRepository, taskRepository, projectStageService);
         lenient().when(projectRepository.findById(1L))
                 .thenReturn(Optional.of(Project.builder().id(1L).build()));
         lenient().when(leadRepo.save(any(ProjectLeadAssignment.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(projectStageService.currentStage(1L)).thenReturn(ProjectStage.DRAFTING);
     }
 
     @Test
@@ -103,6 +106,15 @@ class ProjectDraftingServiceTest {
         when(leadRepo.findByProjectId(1L)).thenReturn(Optional.empty());
         var view = service.gateAdvanceToEvaluation(1L, 99L);
         assertThat(view.getGateReady()).isTrue();
+    }
+
+    @Test
+    void assignLeads_atClosedStage_throws423() {
+        when(projectStageService.currentStage(1L)).thenReturn(ProjectStage.CLOSED);
+        assertThatThrownBy(() -> service.assignLeads(1L,
+                ProjectLeadAssignmentRequest.builder().primaryLeadUserId(10L).build(), 99L))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting("statusCode").isEqualTo(HttpStatus.LOCKED);
     }
 
     @Test

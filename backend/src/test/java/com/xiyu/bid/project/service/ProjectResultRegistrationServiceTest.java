@@ -6,6 +6,8 @@ package com.xiyu.bid.project.service;
 
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.project.core.BidResultType;
+import com.xiyu.bid.project.core.ProjectStage;
+import com.xiyu.bid.project.core.ProjectStageTransitionPolicy;
 import com.xiyu.bid.project.dto.ResultRegistrationRequest;
 import com.xiyu.bid.project.entity.ProjectResult;
 import com.xiyu.bid.project.repository.ProjectResultRepository;
@@ -23,8 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,16 +37,19 @@ class ProjectResultRegistrationServiceTest {
 
     private ProjectResultRepository repo;
     private ProjectRepository projectRepo;
+    private ProjectStageService stageService;
     private ProjectResultRegistrationService service;
 
     @BeforeEach
     void setup() {
         repo = mock(ProjectResultRepository.class);
         projectRepo = mock(ProjectRepository.class);
-        service = new ProjectResultRegistrationService(repo, projectRepo);
+        stageService = mock(ProjectStageService.class);
+        service = new ProjectResultRegistrationService(repo, projectRepo, stageService);
         Project p = new Project();
         p.setId(1L);
         when(projectRepo.findById(1L)).thenReturn(Optional.of(p));
+        lenient().when(stageService.currentStage(1L)).thenReturn(ProjectStage.RESULT_PENDING);
     }
 
     @Test
@@ -65,6 +73,58 @@ class ProjectResultRegistrationServiceTest {
         assertNotNull(dto.getRegisteredAt());
         assertEquals(7L, dto.getRegisteredBy());
         verify(repo).save(any(ProjectResult.class));
+    }
+
+    @Test
+    void register_atResultPending_advancesToRetrospective() {
+        when(repo.findByProjectId(1L)).thenReturn(Optional.empty());
+        when(repo.save(any())).thenAnswer(inv -> {
+            ProjectResult e = inv.getArgument(0);
+            e.setId(101L);
+            return e;
+        });
+        when(stageService.currentStage(1L)).thenReturn(ProjectStage.RESULT_PENDING);
+        var req = ResultRegistrationRequest.builder()
+                .resultType(BidResultType.WON)
+                .awardAmount(new BigDecimal("100"))
+                .evidenceFileIds(List.of(1L))
+                .build();
+        service.register(1L, req, 7L);
+        verify(stageService, times(1)).requestTransition(eq(1L),
+                eq(ProjectStage.RETROSPECTIVE), any(ProjectStageTransitionPolicy.GateInputs.class));
+    }
+
+    @Test
+    void register_notAtResultPending_doesNotAdvance() {
+        when(repo.findByProjectId(1L)).thenReturn(Optional.empty());
+        when(repo.save(any())).thenAnswer(inv -> {
+            ProjectResult e = inv.getArgument(0);
+            e.setId(102L);
+            return e;
+        });
+        // 已被外部推进至 RETROSPECTIVE：不应再触发 stage transition
+        when(stageService.currentStage(1L)).thenReturn(ProjectStage.RETROSPECTIVE);
+        var req = ResultRegistrationRequest.builder()
+                .resultType(BidResultType.WON)
+                .awardAmount(new BigDecimal("100"))
+                .evidenceFileIds(List.of(1L))
+                .build();
+        service.register(1L, req, 7L);
+        verify(stageService, never()).requestTransition(any(), any(), any());
+    }
+
+    @Test
+    void register_atClosedStage_throws423() {
+        when(stageService.currentStage(1L)).thenReturn(ProjectStage.CLOSED);
+        var req = ResultRegistrationRequest.builder()
+                .resultType(BidResultType.WON)
+                .awardAmount(new BigDecimal("100"))
+                .evidenceFileIds(List.of(1L))
+                .build();
+        var ex = assertThrows(ResponseStatusException.class,
+                () -> service.register(1L, req, 7L));
+        assertEquals(423, ex.getStatusCode().value());
+        verify(repo, never()).save(any());
     }
 
     @Test
@@ -127,5 +187,16 @@ class ProjectResultRegistrationServiceTest {
     void getByProject_missing_emptyOptional() {
         when(repo.findByProjectId(1L)).thenReturn(Optional.empty());
         assertTrue(service.getByProject(1L).isEmpty());
+    }
+
+    @Test
+    void getByProject_corruptedCsv_returnsEmptyEvidenceList() {
+        ProjectResult e = ProjectResult.builder()
+                .id(34L).projectId(1L).resultType("WON")
+                .evidenceDocIds("1,foo,2") // 含非数字
+                .createdBy(99L).build();
+        when(repo.findByProjectId(1L)).thenReturn(Optional.of(e));
+        var dto = service.getByProject(1L).orElseThrow();
+        assertTrue(dto.getEvidenceFileIds().isEmpty(), "脏 CSV 应返回空 list 而不是抛异常");
     }
 }

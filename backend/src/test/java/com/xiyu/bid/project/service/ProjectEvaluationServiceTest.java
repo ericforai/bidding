@@ -163,4 +163,47 @@ class ProjectEvaluationServiceTest {
                 () -> service.attachEvidence(1L, req, 7L));
         assertEquals(422, ex.getStatusCode().value());
     }
+
+    /** H6: 一票否决 — 任意 fileId 不属于 project，整批拒绝；先校验后写入，无副作用。 */
+    @Test
+    void attachEvidence_oneForeignFileId_rejectsEntireBatch_noSideEffects() {
+        ProjectEvaluation existing = ProjectEvaluation.builder()
+                .id(10L).projectId(1L).subStage("IN_PROGRESS").build();
+        when(repo.findByProjectId(1L)).thenReturn(Optional.of(existing));
+        ProjectDocument ok = ProjectDocument.builder().id(50L).projectId(1L).build();
+        ProjectDocument foreign = ProjectDocument.builder().id(51L).projectId(99L).build();
+        when(docRepo.findById(50L)).thenReturn(Optional.of(ok));
+        when(docRepo.findById(51L)).thenReturn(Optional.of(foreign));
+        var req = EvaluationEvidenceAttachRequest.builder()
+                .fileIds(List.of(50L, 51L)).build();
+        var ex = assertThrows(ResponseStatusException.class,
+                () -> service.attachEvidence(1L, req, 7L));
+        assertEquals(422, ex.getStatusCode().value());
+        // 第一个合法 doc 不应被 save
+        verify(docRepo, never()).save(any(ProjectDocument.class));
+        // 评估实体也不应在校验失败后被新写
+        verify(repo, never()).save(any(ProjectEvaluation.class));
+    }
+
+    @Test
+    void transitionSubStage_atClosedStage_throws423() {
+        when(stageService.currentStage(1L)).thenReturn(ProjectStage.CLOSED);
+        var req = EvaluationSubStageUpdateRequest.builder()
+                .targetSubStage(EvaluationSubStage.AWAITING_BOARD).build();
+        var ex = assertThrows(ResponseStatusException.class,
+                () -> service.transitionSubStage(1L, req, 7L));
+        assertEquals(423, ex.getStatusCode().value());
+        verify(repo, never()).save(any());
+    }
+
+    @Test
+    void attachEvidence_atClosedStage_throws423() {
+        when(stageService.currentStage(1L)).thenReturn(ProjectStage.CLOSED);
+        var req = EvaluationEvidenceAttachRequest.builder()
+                .fileIds(List.of(50L)).build();
+        var ex = assertThrows(ResponseStatusException.class,
+                () -> service.attachEvidence(1L, req, 7L));
+        assertEquals(423, ex.getStatusCode().value());
+        verify(repo, never()).save(any());
+    }
 }

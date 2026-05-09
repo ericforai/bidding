@@ -117,4 +117,26 @@ class ProjectRetrospectiveServiceTest {
                         RetrospectiveReviewRequest.builder().approve(true).build(), 7L));
         assertEquals(409, ex.getStatusCode().value());
     }
+
+    @Test
+    void submit_atClosedStage_throws423() {
+        when(stageService.currentStage(1L)).thenReturn(ProjectStage.CLOSED);
+        var req = RetrospectiveSubmitRequest.builder()
+                .resultType(BidResultType.WON)
+                .summary("亮点").winFactors("优势").improvementActions("建议").build();
+        var ex = assertThrows(ResponseStatusException.class,
+                () -> service.submit(1L, req, 99L));
+        assertEquals(423, ex.getStatusCode().value());
+        verify(repo, never()).save(any());
+    }
+
+    @Test
+    void review_atClosedStage_throws423() {
+        when(stageService.currentStage(1L)).thenReturn(ProjectStage.CLOSED);
+        var ex = assertThrows(ResponseStatusException.class,
+                () -> service.review(1L,
+                        RetrospectiveReviewRequest.builder().approve(true).build(), 7L));
+        assertEquals(423, ex.getStatusCode().value());
+        verify(repo, never()).save(any());
+    }
 }

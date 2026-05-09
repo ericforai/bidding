@@ -1,5 +1,5 @@
 // Input: 子状态切换 / 证据附加 / 查询 入参 + 当前用户
-// Output: EvaluationDTO；策略校验+持久化+审计；ANNOUNCED 时推进 Project.stage→RESULT_PENDING
+// Output: EvaluationDTO；策略校验+持久化+审计；ANNOUNCED 时推进 Project.stage→RESULT_PENDING；§3.6 CLOSED 全字段锁定
 // Pos: project/service/ - 编排层（不含纯规则）
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.project.service;
@@ -10,6 +10,7 @@ import com.xiyu.bid.project.entity.ProjectEvaluation;
 import com.xiyu.bid.exception.ResourceNotFoundException;
 import com.xiyu.bid.project.core.EvaluationStateTransitionPolicy;
 import com.xiyu.bid.project.core.EvaluationSubStage;
+import com.xiyu.bid.project.core.ProjectFieldLockPolicy;
 import com.xiyu.bid.project.core.ProjectStage;
 import com.xiyu.bid.project.core.ProjectStageTransitionPolicy;
 import com.xiyu.bid.project.dto.EvaluationDTO;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,6 +49,13 @@ public class ProjectEvaluationService {
             description = "切换评标子状态")
     public EvaluationDTO transitionSubStage(Long projectId, EvaluationSubStageUpdateRequest req, Long userId) {
         mustGetProject(projectId);
+        // §3.6 全字段锁定 — CLOSED 阶段拒绝写入。
+        ProjectStage projectStage = projectStageService.currentStage(projectId);
+        var lockDecision = ProjectFieldLockPolicy.assertWritable(projectStage, "evaluation");
+        if (!lockDecision.allowed()) {
+            var deny = (ProjectFieldLockPolicy.Decision.Deny) lockDecision;
+            throw new ResponseStatusException(HttpStatus.LOCKED, deny.reason());
+        }
         ProjectEvaluation entity = repository.findByProjectId(projectId)
                 .orElseGet(() -> initEntity(projectId, userId));
         EvaluationSubStage current = parseSubStage(entity.getSubStage());
@@ -73,12 +82,15 @@ public class ProjectEvaluationService {
             description = "附加评标证据文档")
     public EvaluationDTO attachEvidence(Long projectId, EvaluationEvidenceAttachRequest req, Long userId) {
         mustGetProject(projectId);
-        ProjectEvaluation entity = repository.findByProjectId(projectId)
-                .orElseGet(() -> initEntity(projectId, userId));
-        if (entity.getId() == null) {
-            entity = repository.save(entity);
+        // §3.6 全字段锁定 — CLOSED 阶段拒绝写入。
+        ProjectStage projectStage = projectStageService.currentStage(projectId);
+        var lockDecision = ProjectFieldLockPolicy.assertWritable(projectStage, "evaluation");
+        if (!lockDecision.allowed()) {
+            var deny = (ProjectFieldLockPolicy.Decision.Deny) lockDecision;
+            throw new ResponseStatusException(HttpStatus.LOCKED, deny.reason());
         }
-        Long evalId = entity.getId();
+        // H6: 先收集 + 校验所有 fileIds 归属，再做任何写入。一票否决，无副作用。
+        List<ProjectDocument> docs = new ArrayList<>();
         for (Long fileId : req.getFileIds()) {
             ProjectDocument doc = projectDocumentRepository.findById(fileId)
                     .orElseThrow(() -> new ResourceNotFoundException("ProjectDocument", String.valueOf(fileId)));
@@ -86,6 +98,16 @@ public class ProjectEvaluationService {
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                         "文档 " + fileId + " 不属于项目 " + projectId);
             }
+            docs.add(doc);
+        }
+        // 校验通过后，先 save evaluation 拿 id，再批量更新 doc linked_entity。
+        ProjectEvaluation entity = repository.findByProjectId(projectId)
+                .orElseGet(() -> initEntity(projectId, userId));
+        if (entity.getId() == null) {
+            entity = repository.save(entity);
+        }
+        Long evalId = entity.getId();
+        for (ProjectDocument doc : docs) {
             doc.setLinkedEntityType(LINKED_ENTITY_TYPE);
             doc.setLinkedEntityId(evalId);
             projectDocumentRepository.save(doc);

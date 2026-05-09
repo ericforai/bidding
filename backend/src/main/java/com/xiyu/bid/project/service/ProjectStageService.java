@@ -88,7 +88,9 @@ public class ProjectStageService {
         try {
             return ProjectStage.valueOf(code);
         } catch (IllegalArgumentException ex) {
-            return ProjectStage.INITIATED;
+            // H3: 非空但不在枚举里的值是数据腐败 — 静默回落会掩盖坏数据。
+            log.warn("Project.stage 列含未知枚举值 '{}'，疑似数据腐败/未迁移历史数据", code);
+            throw new IllegalStateException("Project.stage 含未知枚举值: " + code);
         }
     }
 }

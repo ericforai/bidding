@@ -9,6 +9,7 @@ import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.project.entity.ProjectRetrospective;
 import com.xiyu.bid.exception.ResourceNotFoundException;
 import com.xiyu.bid.project.core.BidResultType;
+import com.xiyu.bid.project.core.ProjectFieldLockPolicy;
 import com.xiyu.bid.project.core.ProjectStage;
 import com.xiyu.bid.project.core.ProjectStageTransitionPolicy;
 import com.xiyu.bid.project.core.RetrospectiveFieldPolicy;
@@ -41,6 +42,13 @@ public class ProjectRetrospectiveService {
     @Auditable(action = "SUBMIT_RETROSPECTIVE", entityType = "ProjectRetrospective", description = "提交项目复盘")
     public RetrospectiveDTO submit(Long projectId, RetrospectiveSubmitRequest req, Long currentUserId) {
         Project project = mustGetProject(projectId);
+        // §3.6 全字段锁定 — CLOSED 阶段拒绝写入。
+        ProjectStage stage = projectStageService.currentStage(projectId);
+        var lockDecision = ProjectFieldLockPolicy.assertWritable(stage, "retrospective");
+        if (!lockDecision.allowed()) {
+            var deny = (ProjectFieldLockPolicy.Decision.Deny) lockDecision;
+            throw new ResponseStatusException(HttpStatus.LOCKED, deny.reason());
+        }
         BidResultType rt = req.getResultType();
         var input = new RetrospectiveFieldPolicy.RetrospectiveInput(
                 req.getSummary(), req.getWinFactors(), req.getLossReasons(),
@@ -62,8 +70,8 @@ public class ProjectRetrospectiveService {
         entity.setUpdatedBy(currentUserId);
         ProjectRetrospective saved = repository.save(entity);
         // §5.4: 复盘提交后推进 RESULT_PENDING → RETROSPECTIVE（幂等跳过）
-        ProjectStage stage = projectStageService.currentStage(projectId);
-        if (stage == ProjectStage.RESULT_PENDING) {
+        ProjectStage afterSaveStage = projectStageService.currentStage(projectId);
+        if (afterSaveStage == ProjectStage.RESULT_PENDING) {
             projectStageService.requestTransition(projectId, ProjectStage.RETROSPECTIVE,
                     ProjectStageTransitionPolicy.GateInputs.EMPTY);
         }
@@ -74,6 +82,13 @@ public class ProjectRetrospectiveService {
     @Auditable(action = "REVIEW_RETROSPECTIVE", entityType = "ProjectRetrospective", description = "审核项目复盘")
     public RetrospectiveDTO review(Long projectId, RetrospectiveReviewRequest req, Long reviewerId) {
         Project project = mustGetProject(projectId);
+        // §3.6 全字段锁定 — CLOSED 阶段拒绝写入。
+        ProjectStage stage = projectStageService.currentStage(projectId);
+        var lockDecision = ProjectFieldLockPolicy.assertWritable(stage, "retrospective");
+        if (!lockDecision.allowed()) {
+            var deny = (ProjectFieldLockPolicy.Decision.Deny) lockDecision;
+            throw new ResponseStatusException(HttpStatus.LOCKED, deny.reason());
+        }
         ProjectRetrospective entity = repository.findByProjectId(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("ProjectRetrospective", String.valueOf(projectId)));
         if (!ProjectRetrospective.ReviewStatus.PENDING_REVIEW.name().equals(entity.getReviewStatus())) {

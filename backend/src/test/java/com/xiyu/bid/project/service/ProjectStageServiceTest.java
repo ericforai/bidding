@@ -154,4 +154,13 @@ class ProjectStageServiceTest {
         mockProjectAtStage(ProjectStage.CLOSED);
         assertTrue(service.allowedNext(PID).isEmpty());
     }
+
+    @Test
+    void currentStage_unknownEnumValue_throwsIllegalState() {
+        Project p = new Project();
+        p.setId(PID);
+        p.setStage("BOGUS_STAGE");
+        when(projectRepo.findById(PID)).thenReturn(Optional.of(p));
+        assertThrows(IllegalStateException.class, () -> service.currentStage(PID));
+    }
 }

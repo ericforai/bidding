@@ -37,6 +37,9 @@ public final class ProjectStageTransitionPolicy {
             return new Decision.Deny("非法跳转：" + current + "→" + requested + "，仅允许线性顺推到 " + expectedNext);
         }
         // gateInputs 仅提供给将来扩展（如保证金/任务全完成），此处不强校验，由 shell 层拼装。
+        // TODO(PRD §3.2.3/§3.6): 把 ProjectClosureGatePolicy + AllTasksCompletedPolicy 的判断
+        // 从 shell 上提到这里集中决策，让 stage 推进闸门成为单一真源（pure rule + GateInputs 携带证据）。
+        // 这是一个重构，当前 fix 范围之外。
         Objects.requireNonNull(gateInputs, "gateInputs 不能为空");
         return Decision.ALLOW;
     }

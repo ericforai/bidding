@@ -182,4 +182,52 @@ class ProjectClosureServiceTest {
         org.junit.jupiter.api.Assertions.assertFalse(dto.isCanClose());
         assertTrue(Boolean.TRUE.equals(dto.getAlreadyClosed()));
     }
+
+    // ---------- C3: 部分退回不能误判 RETURNED ----------
+
+    private Fee bondWithId(Long id, Fee.Status status) {
+        return Fee.builder()
+                .id(id).projectId(PID).feeType(Fee.FeeType.BID_BOND)
+                .amount(new BigDecimal("50000")).status(status)
+                .feeDate(LocalDateTime.now()).returnDate(status == Fee.Status.RETURNED ? WHEN : null)
+                .build();
+    }
+
+    @Test
+    void preview_partiallyReturnedDeposit_isNotReturned_notRETURNED() {
+        // 2 个 BID_BOND fee；只有 1 个已 RETURNED → 整体应视作 NOT_RETURNED
+        when(feeRepo.findByProjectId(PID)).thenReturn(List.of(
+                bondWithId(11L, Fee.Status.RETURNED),
+                bondWithId(12L, Fee.Status.PAID)));
+        var dto = service.preview(PID);
+        assertEquals("NOT_RETURNED", dto.getDepositReturnStatus());
+        assertTrue(dto.getBlockingReasons().contains("保证金未退回"));
+    }
+
+    @Test
+    void submit_partiallyReturnedDeposit_throws409_保证金未退回() {
+        when(feeRepo.findByProjectId(PID)).thenReturn(List.of(
+                bondWithId(11L, Fee.Status.RETURNED),
+                bondWithId(12L, Fee.Status.PAID)));
+        var req = ClosureSubmitRequest.builder().build();
+        var ex = assertThrows(ResponseStatusException.class,
+                () -> service.submitClosure(PID, req, UID));
+        assertEquals(409, ex.getStatusCode().value());
+        assertTrue(ex.getReason() != null && ex.getReason().contains("保证金未退回"));
+        verify(closureRepo, never()).save(any());
+    }
+
+    // ---------- H1: 显式 depositReturned=false 必须强制 NOT_RETURNED ----------
+
+    @Test
+    void submit_explicitDepositReturnedFalse_overridesFeesRETURNED_blocks409() {
+        // fees 派生 RETURNED，但用户提交时显式声明 depositReturned=false → 必须按未退回拒绝
+        when(feeRepo.findByProjectId(PID)).thenReturn(List.of(bond(Fee.Status.RETURNED)));
+        var req = ClosureSubmitRequest.builder().depositReturned(false).build();
+        var ex = assertThrows(ResponseStatusException.class,
+                () -> service.submitClosure(PID, req, UID));
+        assertEquals(409, ex.getStatusCode().value());
+        assertTrue(ex.getReason() != null && ex.getReason().contains("保证金未退回"));
+        verify(closureRepo, never()).save(any());
+    }
 }

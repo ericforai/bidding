@@ -1,5 +1,5 @@
-// Input: 项目 id、leads 请求、当前用户；依赖 ProjectLeadAssignmentRepository + TaskRepository
-// Output: ProjectDraftingViewDto；纯编排，核心规则委托给 AllTasksCompletedPolicy
+// Input: 项目 id、leads 请求、当前用户；依赖 ProjectLeadAssignmentRepository + TaskRepository + ProjectStageService
+// Output: ProjectDraftingViewDto；纯编排，核心规则委托给 AllTasksCompletedPolicy；§3.6 CLOSED 全字段锁定
 // Pos: project/service/ - 编排层
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.project.service;
@@ -9,6 +9,8 @@ import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.exception.ResourceNotFoundException;
 import com.xiyu.bid.project.core.AllTasksCompletedPolicy;
+import com.xiyu.bid.project.core.ProjectFieldLockPolicy;
+import com.xiyu.bid.project.core.ProjectStage;
 import com.xiyu.bid.project.dto.ProjectDraftingViewDto;
 import com.xiyu.bid.project.dto.ProjectLeadAssignmentRequest;
 import com.xiyu.bid.project.entity.ProjectLeadAssignment;
@@ -38,12 +40,20 @@ public class ProjectDraftingService {
     private final ProjectLeadAssignmentRepository leadRepo;
     private final ProjectRepository projectRepository;
     private final TaskRepository taskRepository;
+    private final ProjectStageService projectStageService;
 
     @Auditable(action = "ASSIGN_PROJECT_LEADS", entityType = "ProjectLeadAssignment",
             description = "分配主/副投标负责人")
     public ProjectDraftingViewDto assignLeads(
             Long projectId, ProjectLeadAssignmentRequest req, Long currentUserId) {
         mustGetProject(projectId);
+        // §3.6 全字段锁定 — CLOSED 阶段拒绝写入。
+        ProjectStage stage = projectStageService.currentStage(projectId);
+        var lockDecision = ProjectFieldLockPolicy.assertWritable(stage, "leads");
+        if (!lockDecision.allowed()) {
+            var deny = (ProjectFieldLockPolicy.Decision.Deny) lockDecision;
+            throw new ResponseStatusException(HttpStatus.LOCKED, deny.reason());
+        }
         if (req == null || req.getPrimaryLeadUserId() == null) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                     "主投标负责人不能为空");
