@@ -67,6 +67,13 @@ public class Project {
     private Project.Status status = Project.Status.INITIATED;
 
     /**
+     * PRD §5.4 6 阶段 FSM stage（V99 schema 新增列；保存为 ProjectStage 名称字符串）。
+     */
+    @Column(name = "stage", nullable = false, length = 32)
+    @Builder.Default
+    private String stage = "INITIATED";
+
+    /**
      * 项目经理ID
      */
     @Column(name = "manager_id", nullable = false)

@@ -1,5 +1,6 @@
 package com.xiyu.bid.projectworkflow.service;
 
+import com.xiyu.bid.projectworkflow.core.UploadValidationPolicy;
 import com.xiyu.bid.projectworkflow.dto.ProjectDocumentCreateRequest;
 import com.xiyu.bid.projectworkflow.dto.ProjectDocumentDTO;
 import lombok.RequiredArgsConstructor;
@@ -41,8 +42,16 @@ class ProjectDocumentUploadWorkflowService {
     }
 
     private void validateUpload(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
+        if (file == null) {
             throw new IllegalArgumentException("请上传项目文档");
+        }
+        UploadValidationPolicy.ValidationResult result = UploadValidationPolicy.validate(
+                file.getOriginalFilename(),
+                file.getContentType(),
+                file.isEmpty() ? 0L : file.getSize()
+        );
+        if (!result.valid()) {
+            throw new IllegalArgumentException(result.message());
         }
     }
 

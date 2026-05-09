@@ -21,8 +21,10 @@ public final class TaskTransitionPolicy {
                 Set.of(TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED));
         map.put(TaskStatus.IN_PROGRESS,
                 Set.of(TaskStatus.REVIEW, TaskStatus.CANCELLED));
+        // PRD §3.2.2: REVIEW 可以前进到 COMPLETED，回退到 IN_PROGRESS（继续工作），
+        // 或退回到 TODO（驳回；要求 reviewComment）。
         map.put(TaskStatus.REVIEW,
-                Set.of(TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS));
+                Set.of(TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS, TaskStatus.TODO));
         map.put(TaskStatus.COMPLETED, Set.of());
         map.put(TaskStatus.CANCELLED,
                 Set.of(TaskStatus.TODO, TaskStatus.IN_PROGRESS));
@@ -53,6 +55,31 @@ public final class TaskTransitionPolicy {
             return TransitionResult.denied(
                     "不允许从 %s 切换到 %s"
                     + ", 合法目标: " + allowed);
+        }
+        return TransitionResult.ok();
+    }
+
+    /**
+     * Validate transition with optional reviewComment.
+     * PRD §3.2.2: REVIEW → TODO（退回待办）必须携带非空 reviewComment。
+     *
+     * @param current        current task status
+     * @param target         target task status
+     * @param reviewComment  reviewer comment (required for REVIEW→TODO rejection)
+     * @return TransitionResult
+     */
+    public static TransitionResult validateTransition(
+            final TaskStatus current, final TaskStatus target,
+            final String reviewComment) {
+        TransitionResult base = validateTransition(current, target);
+        if (!base.allowed()) {
+            return base;
+        }
+        if (current == TaskStatus.REVIEW && target == TaskStatus.TODO) {
+            if (reviewComment == null || reviewComment.isBlank()) {
+                return TransitionResult.denied(
+                        "退回待办必须填写 reviewComment（驳回原因）");
+            }
         }
         return TransitionResult.ok();
     }
