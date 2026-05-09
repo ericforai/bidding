@@ -3,9 +3,9 @@
 -- 既有 projects.status 保留兼容；stage 为新阶段口径。
 
 ALTER TABLE projects
-    ADD COLUMN IF NOT EXISTS stage VARCHAR(32) NOT NULL DEFAULT 'INITIATED';
+    ADD COLUMN stage VARCHAR(32) NOT NULL DEFAULT 'INITIATED';
 
-CREATE INDEX IF NOT EXISTS idx_projects_stage ON projects(stage);
+CREATE INDEX idx_projects_stage ON projects(stage);
 
 -- §3.1 立项详情（1:1 扩展 projects，避免破坏 entity/Project.java）
 CREATE TABLE IF NOT EXISTS project_initiation_details (
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS project_initiation_details (
     updated_by BIGINT,
     CONSTRAINT uk_initiation_project UNIQUE (project_id)
 );
-CREATE INDEX IF NOT EXISTS idx_initiation_project ON project_initiation_details(project_id);
+CREATE INDEX idx_initiation_project ON project_initiation_details(project_id);
 
 -- §3.3 评标
 CREATE TABLE IF NOT EXISTS project_evaluation (
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS project_evaluation (
     updated_by BIGINT,
     CONSTRAINT uk_evaluation_project UNIQUE (project_id)
 );
-CREATE INDEX IF NOT EXISTS idx_evaluation_project ON project_evaluation(project_id);
+CREATE INDEX idx_evaluation_project ON project_evaluation(project_id);
 
 -- §3.4 结果确认
 CREATE TABLE IF NOT EXISTS project_result (
@@ -63,8 +63,8 @@ CREATE TABLE IF NOT EXISTS project_result (
     updated_by BIGINT,
     CONSTRAINT uk_result_project UNIQUE (project_id)
 );
-CREATE INDEX IF NOT EXISTS idx_result_project ON project_result(project_id);
-CREATE INDEX IF NOT EXISTS idx_result_type ON project_result(result_type);
+CREATE INDEX idx_result_project ON project_result(project_id);
+CREATE INDEX idx_result_type ON project_result(result_type);
 
 -- §3.5 复盘
 CREATE TABLE IF NOT EXISTS project_retrospective (
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS project_retrospective (
     updated_by BIGINT,
     CONSTRAINT uk_retrospective_project UNIQUE (project_id)
 );
-CREATE INDEX IF NOT EXISTS idx_retrospective_project ON project_retrospective(project_id);
+CREATE INDEX idx_retrospective_project ON project_retrospective(project_id);
 
 -- §3.6 结项（含 stage_locked 全字段锁定标记）
 CREATE TABLE IF NOT EXISTS project_closure (
@@ -103,5 +103,5 @@ CREATE TABLE IF NOT EXISTS project_closure (
     updated_by BIGINT,
     CONSTRAINT uk_closure_project UNIQUE (project_id)
 );
-CREATE INDEX IF NOT EXISTS idx_closure_project ON project_closure(project_id);
-CREATE INDEX IF NOT EXISTS idx_closure_locked ON project_closure(stage_locked);
+CREATE INDEX idx_closure_project ON project_closure(project_id);
+CREATE INDEX idx_closure_locked ON project_closure(stage_locked);

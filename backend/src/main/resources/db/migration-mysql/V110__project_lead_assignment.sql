@@ -12,5 +12,5 @@ CREATE TABLE IF NOT EXISTS project_lead_assignment (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uk_lead_assignment_project UNIQUE (project_id)
 );
-CREATE INDEX IF NOT EXISTS idx_lead_assignment_project ON project_lead_assignment(project_id);
-CREATE INDEX IF NOT EXISTS idx_lead_assignment_primary ON project_lead_assignment(primary_lead_user_id);
+CREATE INDEX idx_lead_assignment_project ON project_lead_assignment(project_id);
+CREATE INDEX idx_lead_assignment_primary ON project_lead_assignment(primary_lead_user_id);
