@@ -7,6 +7,7 @@ package com.xiyu.bid.project.service;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.fees.entity.Fee;
 import com.xiyu.bid.fees.repository.FeeRepository;
+import com.xiyu.bid.project.core.ProjectStage;
 import com.xiyu.bid.project.dto.ClosureSubmitRequest;
 import com.xiyu.bid.project.entity.ProjectClosure;
 import com.xiyu.bid.project.repository.ProjectClosureRepository;
@@ -26,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -36,6 +38,7 @@ class ProjectClosureServiceTest {
     private ProjectClosureRepository closureRepo;
     private FeeRepository feeRepo;
     private ProjectRepository projectRepo;
+    private ProjectStageService stageService;
     private ProjectClosureService service;
 
     private static final Long PID = 1L;
@@ -48,13 +51,15 @@ class ProjectClosureServiceTest {
         closureRepo = mock(ProjectClosureRepository.class);
         feeRepo = mock(FeeRepository.class);
         projectRepo = mock(ProjectRepository.class);
-        service = new ProjectClosureService(closureRepo, feeRepo, projectRepo);
+        stageService = mock(ProjectStageService.class);
+        service = new ProjectClosureService(closureRepo, feeRepo, projectRepo, stageService);
         Project p = new Project();
         p.setId(PID);
         when(projectRepo.findById(PID)).thenReturn(Optional.of(p));
         when(closureRepo.findByProjectId(PID)).thenReturn(Optional.empty());
         when(closureRepo.existsByProjectIdAndStageLockedTrue(PID)).thenReturn(false);
         when(closureRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(stageService.currentStage(PID)).thenReturn(ProjectStage.RETROSPECTIVE);
     }
 
     private Fee bond(Fee.Status status) {

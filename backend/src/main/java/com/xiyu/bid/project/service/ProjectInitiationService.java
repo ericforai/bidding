@@ -9,6 +9,9 @@ import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.project.entity.ProjectInitiationDetails;
 import com.xiyu.bid.exception.ResourceNotFoundException;
 import com.xiyu.bid.project.core.InitiationFieldPolicy;
+import com.xiyu.bid.project.core.ProjectFieldLockPolicy;
+import com.xiyu.bid.project.core.ProjectStage;
+import com.xiyu.bid.project.core.ProjectStageTransitionPolicy;
 import com.xiyu.bid.project.dto.InitiationDto;
 import com.xiyu.bid.project.dto.InitiationViewDto;
 import com.xiyu.bid.project.repository.ProjectInitiationDetailsRepository;
@@ -33,6 +36,7 @@ public class ProjectInitiationService {
 
     private final ProjectInitiationDetailsRepository repository;
     private final ProjectRepository projectRepository;
+    private final ProjectStageService projectStageService;
 
     @Auditable(action = "SUBMIT_INITIATION", entityType = "ProjectInitiationDetails", description = "提交项目立项")
     public InitiationViewDto submit(Long projectId, InitiationDto req, Long currentUserId) {
@@ -53,6 +57,12 @@ public class ProjectInitiationService {
         entity.setLocked(Boolean.TRUE); // §3.1.2 提交后即锁定
         entity.setUpdatedBy(currentUserId);
         ProjectInitiationDetails saved = repository.save(entity);
+        // §5.4: 立项提交后推进 INITIATED → DRAFTING（已推进则幂等跳过）
+        ProjectStage current = projectStageService.currentStage(projectId);
+        if (current == ProjectStage.INITIATED) {
+            projectStageService.requestTransition(projectId, ProjectStage.DRAFTING,
+                    ProjectStageTransitionPolicy.GateInputs.EMPTY);
+        }
         log.info("Initiation submitted project={} user={}", projectId, currentUserId);
         return toView(saved);
     }
@@ -60,6 +70,13 @@ public class ProjectInitiationService {
     @Auditable(action = "UPDATE_INITIATION", entityType = "ProjectInitiationDetails", description = "更新项目立项")
     public InitiationViewDto update(Long projectId, InitiationDto req, Long currentUserId) {
         mustGetProject(projectId);
+        // §3.6 全字段锁定 — CLOSED 阶段拒绝写入。
+        ProjectStage stage = projectStageService.currentStage(projectId);
+        var lockDecision0 = ProjectFieldLockPolicy.assertWritable(stage, "initiation");
+        if (!lockDecision0.allowed()) {
+            var deny = (ProjectFieldLockPolicy.Decision.Deny) lockDecision0;
+            throw new ResponseStatusException(HttpStatus.LOCKED, deny.reason());
+        }
         ProjectInitiationDetails existing = repository.findByProjectId(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("ProjectInitiationDetails", String.valueOf(projectId)));
         boolean lockedAlready = Boolean.TRUE.equals(existing.getLocked());

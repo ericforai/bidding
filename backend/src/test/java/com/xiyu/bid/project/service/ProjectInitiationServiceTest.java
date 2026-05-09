@@ -36,15 +36,18 @@ class ProjectInitiationServiceTest {
 
     @Mock ProjectInitiationDetailsRepository repo;
     @Mock ProjectRepository projectRepository;
+    @Mock ProjectStageService projectStageService;
 
     ProjectInitiationService service;
 
     @BeforeEach
     void setUp() {
-        service = new ProjectInitiationService(repo, projectRepository);
+        service = new ProjectInitiationService(repo, projectRepository, projectStageService);
         lenient().when(projectRepository.findById(1L)).thenReturn(Optional.of(Project.builder().id(1L).build()));
         lenient().when(repo.save(any(ProjectInitiationDetails.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(projectStageService.currentStage(1L))
+                .thenReturn(com.xiyu.bid.project.core.ProjectStage.INITIATED);
     }
 
     private InitiationDto fullDto() {

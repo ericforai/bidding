@@ -36,6 +36,7 @@ public class ProjectRetrospectiveService {
 
     private final ProjectRetrospectiveRepository repository;
     private final ProjectRepository projectRepository;
+    private final ProjectStageService projectStageService;
 
     @Auditable(action = "SUBMIT_RETROSPECTIVE", entityType = "ProjectRetrospective", description = "提交项目复盘")
     public RetrospectiveDTO submit(Long projectId, RetrospectiveSubmitRequest req, Long currentUserId) {
@@ -60,6 +61,12 @@ public class ProjectRetrospectiveService {
         entity.setReviewStatus(ProjectRetrospective.ReviewStatus.PENDING_REVIEW.name());
         entity.setUpdatedBy(currentUserId);
         ProjectRetrospective saved = repository.save(entity);
+        // §5.4: 复盘提交后推进 RESULT_PENDING → RETROSPECTIVE（幂等跳过）
+        ProjectStage stage = projectStageService.currentStage(projectId);
+        if (stage == ProjectStage.RESULT_PENDING) {
+            projectStageService.requestTransition(projectId, ProjectStage.RETROSPECTIVE,
+                    ProjectStageTransitionPolicy.GateInputs.EMPTY);
+        }
         log.info("Retrospective submitted project={} status=PENDING_REVIEW user={}", projectId, currentUserId);
         return toDto(saved);
     }
@@ -84,9 +91,6 @@ public class ProjectRetrospectiveService {
         entity.setReviewedAt(LocalDateTime.now());
         entity.setUpdatedBy(reviewerId);
         ProjectRetrospective saved = repository.save(entity);
-        if (approve) {
-            advanceStageToClosedPrep(project);
-        }
         log.info("Retrospective reviewed project={} approve={} reviewer={}", projectId, approve, reviewerId);
         return toDto(saved);
     }
@@ -94,29 +98,6 @@ public class ProjectRetrospectiveService {
     @Transactional(readOnly = true)
     public Optional<RetrospectiveDTO> getByProject(Long projectId) {
         return repository.findByProjectId(projectId).map(this::toDto);
-    }
-
-    private void advanceStageToClosedPrep(Project project) {
-        // 推进 RETROSPECTIVE → CLOSED（线性 FSM 下 RETROSPECTIVE 的下一步即 CLOSED）
-        ProjectStage currentStage = parseStage(project);
-        if (currentStage != ProjectStage.RETROSPECTIVE) {
-            // 不在复盘阶段则跳过推进（容错：审批通过仅落库状态）
-            return;
-        }
-        var d = ProjectStageTransitionPolicy.decide(
-                currentStage, ProjectStage.CLOSED, ProjectStageTransitionPolicy.GateInputs.EMPTY);
-        if (!d.allowed()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "阶段推进失败：" + ((ProjectStageTransitionPolicy.Decision.Deny) d).reason());
-        }
-        // 通过反射式 setter 写入 stage 列：Project 实体的 stage 字段尚未在 entity 类中定义
-        // （V99 schema 已加列）。此处仅留扩展点，stage 写入由后续 WS-G 统一管理。
-    }
-
-    private ProjectStage parseStage(Project project) {
-        // Project entity 当前未直接暴露 stage 字段；使用 status 与 stage 的语义映射作为占位。
-        // WS-G 将统一注入真实 stage 读取。
-        return ProjectStage.RETROSPECTIVE;
     }
 
     private Project mustGetProject(Long projectId) {

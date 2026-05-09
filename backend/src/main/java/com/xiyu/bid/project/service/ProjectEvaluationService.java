@@ -19,8 +19,6 @@ import com.xiyu.bid.project.repository.ProjectEvaluationRepository;
 import com.xiyu.bid.projectworkflow.entity.ProjectDocument;
 import com.xiyu.bid.projectworkflow.repository.ProjectDocumentRepository;
 import com.xiyu.bid.repository.ProjectRepository;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -43,9 +41,7 @@ public class ProjectEvaluationService {
     private final ProjectEvaluationRepository repository;
     private final ProjectRepository projectRepository;
     private final ProjectDocumentRepository projectDocumentRepository;
-
-    @PersistenceContext
-    private EntityManager entityManager;
+    private final ProjectStageService projectStageService;
 
     @Auditable(action = "TRANSITION_EVALUATION_SUB_STAGE", entityType = "ProjectEvaluation",
             description = "切换评标子状态")
@@ -107,20 +103,12 @@ public class ProjectEvaluationService {
     }
 
     private void advanceProjectStageToResultPending(Long projectId) {
-        var d = ProjectStageTransitionPolicy.decide(
-                ProjectStage.EVALUATING, ProjectStage.RESULT_PENDING,
-                ProjectStageTransitionPolicy.GateInputs.EMPTY);
-        if (!d.allowed()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "阶段推进失败：" + ((ProjectStageTransitionPolicy.Decision.Deny) d).reason());
+        ProjectStage current = projectStageService.currentStage(projectId);
+        if (current != ProjectStage.EVALUATING) {
+            return; // 已被外部推进或当前不在评标阶段，幂等跳过
         }
-        // V99 已在 projects 表新增 stage 列；Project 实体尚未暴露字段。使用原生更新写入。
-        entityManager.createNativeQuery(
-                        "UPDATE projects SET stage = :s WHERE id = :id AND stage = :prev")
-                .setParameter("s", ProjectStage.RESULT_PENDING.name())
-                .setParameter("prev", ProjectStage.EVALUATING.name())
-                .setParameter("id", projectId)
-                .executeUpdate();
+        projectStageService.requestTransition(projectId, ProjectStage.RESULT_PENDING,
+                ProjectStageTransitionPolicy.GateInputs.EMPTY);
     }
 
     private void applyTimestamps(ProjectEvaluation entity, EvaluationSubStage target) {

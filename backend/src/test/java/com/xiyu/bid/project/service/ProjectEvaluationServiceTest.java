@@ -1,4 +1,4 @@
-// Input: Mockito 桩仓库
+// Input: Mockito 桩仓库 + ProjectStageService
 // Output: 子状态切换 happy / 拒绝 / ANNOUNCED 自动推进 stage 行为断言
 // Pos: backend test source
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
@@ -7,17 +7,16 @@ package com.xiyu.bid.project.service;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.project.entity.ProjectEvaluation;
 import com.xiyu.bid.project.core.EvaluationSubStage;
+import com.xiyu.bid.project.core.ProjectStage;
+import com.xiyu.bid.project.core.ProjectStageTransitionPolicy;
 import com.xiyu.bid.project.dto.EvaluationEvidenceAttachRequest;
 import com.xiyu.bid.project.dto.EvaluationSubStageUpdateRequest;
 import com.xiyu.bid.project.repository.ProjectEvaluationRepository;
 import com.xiyu.bid.projectworkflow.entity.ProjectDocument;
 import com.xiyu.bid.projectworkflow.repository.ProjectDocumentRepository;
 import com.xiyu.bid.repository.ProjectRepository;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -26,7 +25,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -39,8 +38,7 @@ class ProjectEvaluationServiceTest {
     private ProjectEvaluationRepository repo;
     private ProjectRepository projectRepo;
     private ProjectDocumentRepository docRepo;
-    private EntityManager entityManager;
-    private Query nativeQuery;
+    private ProjectStageService stageService;
     private ProjectEvaluationService service;
 
     @BeforeEach
@@ -48,13 +46,8 @@ class ProjectEvaluationServiceTest {
         repo = mock(ProjectEvaluationRepository.class);
         projectRepo = mock(ProjectRepository.class);
         docRepo = mock(ProjectDocumentRepository.class);
-        entityManager = mock(EntityManager.class);
-        nativeQuery = mock(Query.class);
-        lenient().when(entityManager.createNativeQuery(anyString())).thenReturn(nativeQuery);
-        lenient().when(nativeQuery.setParameter(anyString(), any())).thenReturn(nativeQuery);
-        lenient().when(nativeQuery.executeUpdate()).thenReturn(1);
-        service = new ProjectEvaluationService(repo, projectRepo, docRepo);
-        ReflectionTestUtils.setField(service, "entityManager", entityManager);
+        stageService = mock(ProjectStageService.class);
+        service = new ProjectEvaluationService(repo, projectRepo, docRepo, stageService);
         Project p = new Project();
         p.setId(1L);
         when(projectRepo.findById(1L)).thenReturn(Optional.of(p));
@@ -65,6 +58,7 @@ class ProjectEvaluationServiceTest {
             if (e.getId() == null) e.setId(100L);
             return e;
         });
+        lenient().when(stageService.currentStage(1L)).thenReturn(ProjectStage.EVALUATING);
     }
 
     @Test
@@ -76,7 +70,7 @@ class ProjectEvaluationServiceTest {
                 .targetSubStage(EvaluationSubStage.AWAITING_BOARD).build();
         var dto = service.transitionSubStage(1L, req, 7L);
         assertEquals("AWAITING_BOARD", dto.getSubStage());
-        verify(entityManager, never()).createNativeQuery(anyString());
+        verify(stageService, never()).requestTransition(any(), any(), any());
     }
 
     @Test
@@ -113,8 +107,22 @@ class ProjectEvaluationServiceTest {
                 .targetSubStage(EvaluationSubStage.ANNOUNCED).build();
         var dto = service.transitionSubStage(1L, req, 7L);
         assertEquals("ANNOUNCED", dto.getSubStage());
-        verify(entityManager, times(1)).createNativeQuery(anyString());
-        verify(nativeQuery).executeUpdate();
+        verify(stageService, times(1)).requestTransition(eq(1L),
+                eq(ProjectStage.RESULT_PENDING), any(ProjectStageTransitionPolicy.GateInputs.class));
+    }
+
+    @Test
+    void transition_announced_idempotent_whenStageAlreadyAdvanced() {
+        // 已被外部推进至 RESULT_PENDING；本次 announce 不再触发 stage transition
+        when(stageService.currentStage(1L)).thenReturn(ProjectStage.RESULT_PENDING);
+        ProjectEvaluation existing = ProjectEvaluation.builder()
+                .id(10L).projectId(1L).subStage("AWAITING_BOARD").build();
+        when(repo.findByProjectId(1L)).thenReturn(Optional.of(existing));
+        var req = EvaluationSubStageUpdateRequest.builder()
+                .targetSubStage(EvaluationSubStage.ANNOUNCED).build();
+        var dto = service.transitionSubStage(1L, req, 7L);
+        assertEquals("ANNOUNCED", dto.getSubStage());
+        verify(stageService, never()).requestTransition(any(), any(), any());
     }
 
     @Test

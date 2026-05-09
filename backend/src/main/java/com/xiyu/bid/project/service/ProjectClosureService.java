@@ -13,6 +13,8 @@ import com.xiyu.bid.project.core.ProjectClosureGatePolicy;
 import com.xiyu.bid.project.core.ProjectClosureGatePolicy.ClosureInput;
 import com.xiyu.bid.project.core.ProjectClosureGatePolicy.DepositReturnStatus;
 import com.xiyu.bid.project.core.ProjectClosureGatePolicy.DepositSnapshot;
+import com.xiyu.bid.project.core.ProjectStage;
+import com.xiyu.bid.project.core.ProjectStageTransitionPolicy;
 import com.xiyu.bid.project.dto.ClosureDTO;
 import com.xiyu.bid.project.dto.ClosurePreviewDTO;
 import com.xiyu.bid.project.dto.ClosureSubmitRequest;
@@ -40,6 +42,7 @@ public class ProjectClosureService {
     private final ProjectClosureRepository closureRepository;
     private final FeeRepository feeRepository;
     private final ProjectRepository projectRepository;
+    private final ProjectStageService projectStageService;
 
     /**
      * GET preview: 返回保证金快照 + 是否可结项 + 阻断原因。
@@ -106,6 +109,12 @@ public class ProjectClosureService {
         entity.setUpdatedBy(userId);
         ProjectClosure saved = closureRepository.save(entity);
 
+        // §5.4: 结项后推进 RETROSPECTIVE → CLOSED（已是 CLOSED 则幂等跳过）
+        ProjectStage current = projectStageService.currentStage(projectId);
+        if (current == ProjectStage.RETROSPECTIVE) {
+            projectStageService.requestTransition(projectId, ProjectStage.CLOSED,
+                    ProjectStageTransitionPolicy.GateInputs.EMPTY);
+        }
         log.info("Project closed: projectId={} userId={}", projectId, userId);
         return toDto(saved);
     }

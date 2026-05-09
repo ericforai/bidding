@@ -7,6 +7,7 @@ package com.xiyu.bid.project.service;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.project.entity.ProjectRetrospective;
 import com.xiyu.bid.project.core.BidResultType;
+import com.xiyu.bid.project.core.ProjectStage;
 import com.xiyu.bid.project.dto.RetrospectiveReviewRequest;
 import com.xiyu.bid.project.dto.RetrospectiveSubmitRequest;
 import com.xiyu.bid.project.repository.ProjectRetrospectiveRepository;
@@ -20,6 +21,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -29,16 +31,19 @@ class ProjectRetrospectiveServiceTest {
 
     private ProjectRetrospectiveRepository repo;
     private ProjectRepository projectRepo;
+    private ProjectStageService stageService;
     private ProjectRetrospectiveService service;
 
     @BeforeEach
     void setup() {
         repo = mock(ProjectRetrospectiveRepository.class);
         projectRepo = mock(ProjectRepository.class);
-        service = new ProjectRetrospectiveService(repo, projectRepo);
+        stageService = mock(ProjectStageService.class);
+        service = new ProjectRetrospectiveService(repo, projectRepo, stageService);
         Project p = new Project();
         p.setId(1L);
         when(projectRepo.findById(1L)).thenReturn(Optional.of(p));
+        lenient().when(stageService.currentStage(1L)).thenReturn(ProjectStage.RESULT_PENDING);
     }
 
     @Test
