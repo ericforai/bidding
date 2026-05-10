@@ -237,11 +237,34 @@ export function normalizeAiRisks(risks) {
 
 /**
  * Frontend status (lowercase) → Backend enum (uppercase)
+ * Unknown values (not in status constants or aliases) pass through unchanged.
  */
 export function toBackendStatus(frontendStatus) {
   if (frontendStatus == null) {
     return frontendStatus
   }
 
-  return toBackendTenderStatus(frontendStatus)
+  const rawValue = String(frontendStatus).trim()
+  const upperValue = rawValue.toUpperCase()
+
+  // If already a valid backend enum, return as-is
+  if (['PENDING_ASSIGNMENT', 'TRACKING', 'EVALUATED', 'BIDDING', 'WON', 'LOST', 'ABANDONED'].includes(upperValue)) {
+    return upperValue
+  }
+
+  // Try to normalize via aliases (pending, tracking, 已投标, etc.)
+  const normalized = toBackendTenderStatus(frontendStatus)
+  if (normalized !== 'PENDING_ASSIGNMENT') {
+    return normalized
+  }
+
+  // If normalized to PENDING_ASSIGNMENT, check if input was a known pending alias
+  const lowerValue = rawValue.toLowerCase()
+  const knownPendingAliases = ['new', 'pending', 'pending_assignment', '待处理', '待分配']
+  if (knownPendingAliases.includes(lowerValue)) {
+    return 'PENDING_ASSIGNMENT'
+  }
+
+  // Unknown value - pass through unchanged
+  return rawValue
 }
