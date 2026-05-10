@@ -9,7 +9,7 @@
     <ElTooltip v-if="shouldShowParticipateButton" content="参与投标" placement="top">
       <ElButton size="small" :icon="Document" aria-label="参与投标" @click="$emit('participate', row.id)" />
     </ElTooltip>
-    <ElDropdown v-if="hasActionMenu" trigger="click">
+    <ElDropdown v-if="hasMoreActions" trigger="click">
       <ElButton size="small" :icon="MoreFilled" aria-label="更多操作" />
       <template #dropdown>
         <ElDropdownMenu>

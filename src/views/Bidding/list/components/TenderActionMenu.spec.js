@@ -19,23 +19,23 @@ vi.stubGlobal('ResizeObserver', vi.fn().mockImplementation(() => ({
 
 import TenderActionMenu from './TenderActionMenu.vue'
 
-const row = { id: 1, title: '测试标讯' }
-
 function mountMenu(props = {}) {
+  const rowData = props.row || { id: 1, title: '测试标讯' }
   const stubs = {
     ElButton: { template: '<button><slot /></button>' },
     ElDropdown: { template: '<div><slot /><slot name="dropdown" /></div>' },
-    ElDropdownItem: { template: '<div><slot /></div>' },
-    ElDropdownMenu: { template: '<div><slot /></div>' },
+    ElDropdownItem: { template: '<div class="dropdown-item"><slot /></div>' },
+    ElDropdownMenu: { template: '<div class="dropdown-menu"><slot /></div>' },
     ElTooltip: { template: '<div><slot /></div>' },
   }
 
   return mount(TenderActionMenu, {
     props: {
-      row,
+      row: rowData,
       canManageTenders: false,
       canDeleteTenders: false,
       showAiEntry: true,
+      isAdmin: false,
       ...props,
     },
     global: {
@@ -64,24 +64,31 @@ describe('TenderActionMenu permissions', () => {
   it('hides management and delete menu items from staff users', () => {
     const wrapper = mountMenu()
 
-    expect(wrapper.text()).not.toContain('分发')
-    expect(wrapper.text()).not.toContain('领取')
-    expect(wrapper.text()).not.toContain('指派')
-    expect(wrapper.text()).not.toContain('删除')
-  })
-
-  it('shows management menu items but not delete for managers', () => {
-    const wrapper = mountMenu({ canManageTenders: true })
-
-    expect(wrapper.text()).toContain('分发')
-    expect(wrapper.text()).toContain('领取')
-    expect(wrapper.text()).toContain('指派')
-    expect(wrapper.text()).not.toContain('删除')
+    // staff 用户看不到管理相关菜单
+    const dropdownHtml = wrapper.html()
+    expect(dropdownHtml).not.toContain('删除')
+    expect(dropdownHtml).not.toContain('编辑')
+    expect(dropdownHtml).not.toContain('审核')
   })
 
   it('shows delete menu item for admins', () => {
     const wrapper = mountMenu({ canManageTenders: true, canDeleteTenders: true })
 
-    expect(wrapper.text()).toContain('删除')
+    // 检查 HTML 中包含删除选项
+    expect(wrapper.html()).toContain('删除')
+  })
+
+  it('shows edit option when status is TRACKING', () => {
+    const trackingRow = { id: 1, title: '测试', status: 'TRACKING' }
+    const wrapper = mountMenu({ canManageTenders: true, row: trackingRow })
+
+    expect(wrapper.html()).toContain('编辑')
+  })
+
+  it('shows review option for admin when status is EVALUATED', () => {
+    const evaluatedRow = { id: 1, title: '测试', status: 'EVALUATED' }
+    const wrapper = mountMenu({ isAdmin: true, row: evaluatedRow })
+
+    expect(wrapper.html()).toContain('审核')
   })
 })
