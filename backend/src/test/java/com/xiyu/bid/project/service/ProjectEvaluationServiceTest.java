@@ -12,7 +12,9 @@ import com.xiyu.bid.project.core.ProjectStageTransitionPolicy;
 import com.xiyu.bid.project.dto.EvaluationEvidenceAttachRequest;
 import com.xiyu.bid.project.dto.EvaluationFormUpdateRequest;
 import com.xiyu.bid.project.dto.EvaluationSubStageUpdateRequest;
+import com.xiyu.bid.project.dto.ProjectAbandonBidRequest;
 import com.xiyu.bid.project.repository.ProjectEvaluationRepository;
+import com.xiyu.bid.projectworkflow.entity.ProjectDocument;
 import com.xiyu.bid.projectworkflow.entity.ProjectDocument;
 import com.xiyu.bid.projectworkflow.repository.ProjectDocumentRepository;
 import com.xiyu.bid.repository.ProjectRepository;
@@ -226,5 +228,41 @@ class ProjectEvaluationServiceTest {
                 () -> service.attachEvidence(1L, req, 7L));
         assertEquals(423, ex.getStatusCode().value());
         verify(repo, never()).save(any());
+    }
+
+    @Test
+    void abandonBid_happy() {
+        ProjectEvaluation existing = ProjectEvaluation.builder()
+                .id(10L).projectId(1L).subStage("AWAITING_BOARD").build();
+        when(repo.findByProjectId(1L)).thenReturn(Optional.of(existing));
+        var req = ProjectAbandonBidRequest.builder().reason("竞争对手报价更低").build();
+        var dto = service.abandonBid(1L, req, 7L);
+        assertEquals("ANNOUNCED", dto.getSubStage());
+        assertEquals("竞争对手报价更低", dto.getNotes());
+        verify(stageService, times(1)).requestTransition(eq(1L),
+                eq(ProjectStage.RESULT_PENDING), any(ProjectStageTransitionPolicy.GateInputs.class));
+    }
+
+    @Test
+    void abandonBid_atClosedStage_throws423() {
+        when(stageService.currentStage(1L)).thenReturn(ProjectStage.CLOSED);
+        var req = ProjectAbandonBidRequest.builder().reason("原因").build();
+        var ex = assertThrows(ResponseStatusException.class,
+                () -> service.abandonBid(1L, req, 7L));
+        assertEquals(423, ex.getStatusCode().value());
+        verify(repo, never()).save(any());
+    }
+
+    @Test
+    void abandonBid_idempotent_whenStageAlreadyAdvanced() {
+        // 弃标成功推进 stage 后，再次调用应为幂等跳过
+        when(stageService.currentStage(1L)).thenReturn(ProjectStage.RESULT_PENDING);
+        ProjectEvaluation existing = ProjectEvaluation.builder()
+                .id(10L).projectId(1L).subStage("ANNOUNCED").build();
+        when(repo.findByProjectId(1L)).thenReturn(Optional.of(existing));
+        var req = ProjectAbandonBidRequest.builder().reason("原因").build();
+        var dto = service.abandonBid(1L, req, 7L);
+        assertEquals("ANNOUNCED", dto.getSubStage());
+        verify(stageService, never()).requestTransition(any(), any(), any());
     }
 }

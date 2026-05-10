@@ -24,9 +24,11 @@ import java.math.BigDecimal;
 public class EvaluationFormUpdateRequest {
 
     @NotBlank(message = "项目背景不能为空")
+    @Size(max = 4096, message = "项目背景最大4096字符")
     private String background;
 
     @NotBlank(message = "竞争对手情况不能为空")
+    @Size(max = 4096, message = "竞争对手情况最大4096字符")
     private String competitors;
 
     @NotBlank(message = "项目合同周期不能为空")

@@ -17,6 +17,7 @@ import com.xiyu.bid.project.dto.EvaluationDTO;
 import com.xiyu.bid.project.dto.EvaluationEvidenceAttachRequest;
 import com.xiyu.bid.project.dto.EvaluationFormUpdateRequest;
 import com.xiyu.bid.project.dto.EvaluationSubStageUpdateRequest;
+import com.xiyu.bid.project.dto.ProjectAbandonBidRequest;
 import com.xiyu.bid.project.repository.ProjectEvaluationRepository;
 import com.xiyu.bid.projectworkflow.entity.ProjectDocument;
 import com.xiyu.bid.projectworkflow.repository.ProjectDocumentRepository;
@@ -147,6 +148,28 @@ public class ProjectEvaluationService {
         entity.setUpdatedBy(userId);
         ProjectEvaluation saved = repository.save(entity);
         log.info("Evaluation form updated project={} user={}", projectId, userId);
+        return toDto(saved);
+    }
+
+    @Auditable(action = "ABANDON_BID", entityType = "ProjectEvaluation",
+            description = "提交弃标申请")
+    public EvaluationDTO abandonBid(Long projectId, ProjectAbandonBidRequest req, Long userId) {
+        mustGetProject(projectId);
+        ProjectStage projectStage = projectStageService.currentStage(projectId);
+        var lockDecision = ProjectFieldLockPolicy.assertWritable(projectStage, "evaluation");
+        if (!lockDecision.allowed()) {
+            var deny = (ProjectFieldLockPolicy.Decision.Deny) lockDecision;
+            throw new ResponseStatusException(HttpStatus.LOCKED, deny.reason());
+        }
+        ProjectEvaluation entity = repository.findByProjectId(projectId)
+                .orElseGet(() -> initEntity(projectId, userId));
+        entity.setNotes(req.getReason());
+        entity.setSubStage(EvaluationSubStage.ANNOUNCED.name());
+        entity.setAnnouncedAt(LocalDateTime.now());
+        entity.setUpdatedBy(userId);
+        ProjectEvaluation saved = repository.save(entity);
+        advanceProjectStageToResultPending(projectId);
+        log.info("Bid abandoned for project={} reason={} user={}", projectId, req.getReason(), userId);
         return toDto(saved);
     }
 
