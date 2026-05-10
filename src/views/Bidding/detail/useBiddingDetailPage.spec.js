@@ -8,6 +8,8 @@ const routeState = {
 }
 
 const getDetail = vi.fn()
+const participate = vi.fn()
+const abandon = vi.fn()
 const getLatestScore = vi.fn()
 const generateScore = vi.fn()
 const getCases = vi.fn()
@@ -18,7 +20,7 @@ vi.mock('vue-router', () => ({
 }))
 
 vi.mock('@/api', () => ({
-  tendersApi: { getDetail },
+  tendersApi: { getDetail, participate, abandon },
   bidMatchScoringApi: { getLatestScore, generateScore },
   knowledgeApi: { cases: { getList: getCases } },
 }))
@@ -29,8 +31,14 @@ const elMessage = {
   error: vi.fn(),
 }
 
+const elMessageBox = {
+  confirm: vi.fn(),
+  prompt: vi.fn(),
+}
+
 vi.mock('element-plus', () => ({
   ElMessage: elMessage,
+  ElMessageBox: elMessageBox,
 }))
 
 const { useBiddingDetailPage } = await import('./useBiddingDetailPage.js')
@@ -218,13 +226,19 @@ describe('useBiddingDetailPage', () => {
   })
 
   it('navigates to project create with selected tender', async () => {
+    elMessageBox.confirm.mockResolvedValue()
+    participate.mockResolvedValue({
+      success: true,
+      data: { accepted: true, message: '投标成功' },
+    })
     const wrapper = mount(createHarness())
     await flushPromises()
 
-    wrapper.vm.handleParticipate()
-    expect(routerPush).toHaveBeenCalledWith({
-      path: '/project/create',
-      query: { tenderId: '9001' },
-    })
+    await wrapper.vm.handleParticipate()
+    await flushPromises()
+
+    expect(elMessageBox.confirm).toHaveBeenCalled()
+    expect(participate).toHaveBeenCalledWith('9001')
+    expect(elMessage.success).toHaveBeenCalledWith('投标成功')
   })
 })
