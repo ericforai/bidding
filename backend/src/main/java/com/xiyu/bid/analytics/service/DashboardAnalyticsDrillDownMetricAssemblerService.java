@@ -144,9 +144,12 @@ class DashboardAnalyticsDrillDownMetricAssemblerService {
 
     String translateTenderStatus(String status) {
         return switch (normalizeFilterValue(status)) {
-            case "PENDING" -> "待处理";
+            case "PENDING_ASSIGNMENT" -> "待分配";
             case "TRACKING" -> "跟踪中";
-            case "BIDDED" -> "已投标";
+            case "EVALUATED" -> "已评估";
+            case "BIDDING" -> "投标中";
+            case "WON" -> "已中标";
+            case "LOST" -> "未中标";
             case "ABANDONED" -> "已放弃";
             default -> status;
         };

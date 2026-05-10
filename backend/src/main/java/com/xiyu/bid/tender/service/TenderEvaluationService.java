@@ -127,8 +127,8 @@ public class TenderEvaluationService {
 
         // 更新标讯状态
         if (request.approved()) {
-            statusTransitionPolicy.assertTransition(tender.getStatus(), Tender.Status.BIDDED);
-            tender.setStatus(Tender.Status.BIDDED);
+            statusTransitionPolicy.assertTransition(tender.getStatus(), Tender.Status.BIDDING);
+            tender.setStatus(Tender.Status.BIDDING);
         } else {
             // 弃标
             statusTransitionPolicy.assertTransition(tender.getStatus(), Tender.Status.ABANDONED);
@@ -155,8 +155,8 @@ public class TenderEvaluationService {
         Tender tender = tenderRepository.findById(tenderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tender", tenderId.toString()));
 
-        // 验证状态是 BIDDED
-        if (tender.getStatus() != Tender.Status.BIDDED) {
+        // 验证状态是 BIDDING
+        if (tender.getStatus() != Tender.Status.BIDDING) {
             throw new IllegalStateException("标讯状态不是已投标，无法创建立项待办");
         }
 
