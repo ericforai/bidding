@@ -18,7 +18,7 @@ CREATE TABLE tender_evaluations (
     evaluator_id BIGINT COMMENT '评估人ID',
     evaluator_name VARCHAR(100) COMMENT '评估人姓名',
     evaluated_at DATETIME COMMENT '评估时间',
-    review_status VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT '审核状态: PENDING/PROCESSING/APPROVED/REJECTED',
+    review_status ENUM('PENDING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING' COMMENT '审核状态: PENDING/APPROVED/REJECTED',
     reviewer_id BIGINT COMMENT '审核人ID',
     reviewer_name VARCHAR(100) COMMENT '审核人姓名',
     reviewed_at DATETIME COMMENT '审核时间',
