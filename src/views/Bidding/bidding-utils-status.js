@@ -6,6 +6,7 @@
 export const TENDER_STATUSES = Object.freeze({
   PENDING: 'PENDING',
   TRACKING: 'TRACKING',
+  EVALUATED: 'EVALUATED',
   BIDDED: 'BIDDED',
   ABANDONED: 'ABANDONED'
 })
@@ -20,6 +21,11 @@ const TENDER_STATUS_META = Object.freeze({
     label: '跟踪中',
     tagType: 'warning',
     badgeClass: 'tracking'
+  },
+  [TENDER_STATUSES.EVALUATED]: {
+    label: '已评估',
+    tagType: 'primary',
+    badgeClass: 'evaluated'
   },
   [TENDER_STATUSES.BIDDED]: {
     label: '已投标',
@@ -40,11 +46,13 @@ const LEGACY_STATUS_ALIASES = Object.freeze({
   following: TENDER_STATUSES.TRACKING,
   quoting: TENDER_STATUSES.TRACKING,
   tracking: TENDER_STATUSES.TRACKING,
+  evaluated: TENDER_STATUSES.EVALUATED,
   bidding: TENDER_STATUSES.BIDDED,
   bidded: TENDER_STATUSES.BIDDED,
   abandoned: TENDER_STATUSES.ABANDONED,
   '待处理': TENDER_STATUSES.PENDING,
   '跟踪中': TENDER_STATUSES.TRACKING,
+  '已评估': TENDER_STATUSES.EVALUATED,
   '已投标': TENDER_STATUSES.BIDDED,
   '已放弃': TENDER_STATUSES.ABANDONED
 })

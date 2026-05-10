@@ -40,9 +40,14 @@ export function useTenderListPage() {
   const showParsingDialog = ref(false)
   const parseProgress = ref(0)
   const parsingTenderId = ref(null)
+  const evaluationDialogVisible = ref(false)
+  const reviewDialogVisible = ref(false)
+  const currentTenderId = ref(null)
+  const currentTenderTitle = ref('')
   let parseTimer = null
 
   const userRole = computed(() => resolveUserRole(userStore))
+  const isAdmin = computed(() => userRole.value === 'ADMIN')
   const permissions = computed(() => buildPermissionFlags(userRole.value))
   const canManageTenders = computed(() => permissions.value.canManageTenders)
   const canCreateTender = computed(() => permissions.value.canCreateTender)
@@ -70,6 +75,7 @@ export function useTenderListPage() {
     all: tenders.value.length,
     pending: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.PENDING)).length,
     tracking: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.TRACKING)).length,
+    evaluated: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.EVALUATED)).length,
     bidded: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.BIDDED)).length,
     abandoned: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.ABANDONED)).length,
   }))
@@ -186,6 +192,26 @@ export function useTenderListPage() {
     }, 250)
   }
 
+  const handleEdit = (row) => {
+    currentTenderId.value = row.id
+    currentTenderTitle.value = row.title
+    evaluationDialogVisible.value = true
+  }
+
+  const handleReview = (row) => {
+    currentTenderId.value = row.id
+    currentTenderTitle.value = row.title
+    reviewDialogVisible.value = true
+  }
+
+  const handleEvaluationSuccess = () => {
+    refreshTenderList()
+  }
+
+  const handleReviewSuccess = () => {
+    refreshTenderList()
+  }
+
   onMounted(async () => {
     checkMobile()
     window.addEventListener('resize', checkMobile)
@@ -208,6 +234,7 @@ export function useTenderListPage() {
     displayTenders,
     statusCounts,
     userRole,
+    isAdmin,
     canManageTenders,
     canCreateTender,
     canDeleteTenders,
@@ -216,6 +243,10 @@ export function useTenderListPage() {
     showTenderAiEntry,
     showParsingDialog,
     parseProgress,
+    evaluationDialogVisible,
+    reviewDialogVisible,
+    currentTenderId,
+    currentTenderTitle,
     selection,
     sourceConfig,
     manualCreate,
@@ -233,5 +264,9 @@ export function useTenderListPage() {
     openManualAdd,
     openSourceConfig,
     handleAIAnalysis,
+    handleEdit,
+    handleReview,
+    handleEvaluationSuccess,
+    handleReviewSuccess,
   }
 }

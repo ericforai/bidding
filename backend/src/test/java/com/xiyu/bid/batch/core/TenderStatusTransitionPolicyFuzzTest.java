@@ -130,7 +130,8 @@ class TenderStatusTransitionPolicyFuzzTest {
         }
         return switch (from) {
             case PENDING -> to == Tender.Status.TRACKING || to == Tender.Status.ABANDONED;
-            case TRACKING -> to == Tender.Status.PENDING || to == Tender.Status.BIDDED || to == Tender.Status.ABANDONED;
+            case TRACKING -> to == Tender.Status.EVALUATED || to == Tender.Status.ABANDONED;
+            case EVALUATED -> to == Tender.Status.BIDDED || to == Tender.Status.ABANDONED;
             case BIDDED -> false;
             case ABANDONED -> to == Tender.Status.PENDING;
         };

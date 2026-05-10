@@ -25,14 +25,20 @@
         <el-button type="primary" size="small" @click="$emit('view-detail', row.id)">查看详情</el-button>
         <el-button v-if="showAiEntry" type="success" size="small" @click="$emit('ai-analysis', row.id)">AI分析</el-button>
         <el-button size="small" @click="$emit('participate', row.id)">参与投标</el-button>
-        <el-dropdown v-if="canManageTenders || canDeleteTenders" trigger="click">
+        <el-dropdown v-if="canManageTenders || canDeleteTenders || isAdmin" trigger="click">
           <el-button size="small">更多</el-button>
           <template #dropdown>
             <el-dropdown-menu>
+              <template v-if="row.status === 'TRACKING'">
+                <el-dropdown-item @click="$emit('edit', row)">编辑</el-dropdown-item>
+              </template>
+              <template v-if="isAdmin && row.status === 'EVALUATED'">
+                <el-dropdown-item @click="$emit('review', row)">审核</el-dropdown-item>
+              </template>
               <template v-if="canManageTenders">
-                <el-dropdown-item @click="$emit('claim', row)">领取</el-dropdown-item>
-                <el-dropdown-item @click="$emit('assign', row)">指派</el-dropdown-item>
+                <el-dropdown-item @click="$emit('distribute', row)">分发</el-dropdown-item>
                 <el-dropdown-item @click="$emit('status-change', row, 'TRACKING')">设为跟踪中</el-dropdown-item>
+                <el-dropdown-item @click="$emit('status-change', row, 'PENDING')">恢复待处理</el-dropdown-item>
                 <el-dropdown-item @click="$emit('status-change', row, 'BIDDED')">标记为已投标</el-dropdown-item>
               </template>
               <el-dropdown-item v-if="canDeleteTenders" divided @click="$emit('delete', row)">删除</el-dropdown-item>
@@ -53,7 +59,8 @@ defineProps({
   canManageTenders: { type: Boolean, default: false },
   canDeleteTenders: { type: Boolean, default: false },
   showAiEntry: { type: Boolean, default: true },
+  isAdmin: { type: Boolean, default: false },
 })
 
-defineEmits(['view-detail', 'ai-analysis', 'participate', 'claim', 'assign', 'status-change', 'delete'])
+defineEmits(['view-detail', 'ai-analysis', 'participate', 'distribute', 'edit', 'review', 'status-change', 'delete'])
 </script>

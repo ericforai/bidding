@@ -9,7 +9,7 @@
     <ElTooltip v-if="shouldShowParticipateButton" content="参与投标" placement="top">
       <ElButton size="small" :icon="Document" aria-label="参与投标" @click="$emit('participate', row.id)" />
     </ElTooltip>
-    <ElDropdown v-if="canManageTenders || canDeleteTenders" trigger="click">
+    <ElDropdown v-if="hasActionMenu" trigger="click">
       <ElButton size="small" :icon="MoreFilled" aria-label="更多操作" />
       <template #dropdown>
         <ElDropdownMenu>
@@ -19,13 +19,19 @@
           <template v-if="!shouldShowParticipateButton">
             <ElDropdownItem @click="$emit('participate', row)">参与投标</ElDropdownItem>
           </template>
-          <ElDropdownItem divided @click="$emit('distribute', row)">分发</ElDropdownItem>
-          <ElDropdownItem @click="$emit('claim', row)">领取</ElDropdownItem>
-          <ElDropdownItem @click="$emit('assign', row)">指派</ElDropdownItem>
-          <ElDropdownItem @click="$emit('status-change', row, 'TRACKING')">设为跟踪中</ElDropdownItem>
-          <ElDropdownItem @click="$emit('status-change', row, 'PENDING')">恢复待处理</ElDropdownItem>
-          <ElDropdownItem @click="$emit('status-change', row, 'BIDDED')">标记为已投标</ElDropdownItem>
-          <ElDropdownItem @click="$emit('status-change', row, 'ABANDONED')">标记为已放弃</ElDropdownItem>
+          <!-- 项目经理：状态=TRACKING时显示编辑按钮 -->
+          <ElDropdownItem v-if="canEdit && row.status === 'TRACKING'" @click="$emit('edit', row)">
+            编辑
+          </ElDropdownItem>
+          <!-- 管理员：状态=EVALUATED时显示审核按钮 -->
+          <ElDropdownItem v-if="isAdmin && row.status === 'EVALUATED'" @click="$emit('review', row)">
+            审核
+          </ElDropdownItem>
+          <ElDropdownItem v-if="canManageTenders" divided @click="$emit('distribute', row)">分发</ElDropdownItem>
+          <ElDropdownItem v-if="canManageTenders" @click="$emit('status-change', row, 'TRACKING')">设为跟踪中</ElDropdownItem>
+          <ElDropdownItem v-if="canManageTenders" @click="$emit('status-change', row, 'PENDING')">恢复待处理</ElDropdownItem>
+          <ElDropdownItem v-if="canManageTenders" @click="$emit('status-change', row, 'BIDDED')">标记为已投标</ElDropdownItem>
+          <ElDropdownItem v-if="canManageTenders" @click="$emit('status-change', row, 'ABANDONED')">标记为已放弃</ElDropdownItem>
           <ElDropdownItem v-if="canDeleteTenders" divided class="danger-item" @click="$emit('delete', row)">
             删除
           </ElDropdownItem>
@@ -45,6 +51,7 @@ const props = defineProps({
   canManageTenders: { type: Boolean, default: false },
   canDeleteTenders: { type: Boolean, default: false },
   showAiEntry: { type: Boolean, default: true },
+  isAdmin: { type: Boolean, default: false },
 })
 
 defineEmits([
@@ -52,8 +59,8 @@ defineEmits([
   'ai-analysis',
   'participate',
   'distribute',
-  'claim',
-  'assign',
+  'edit',
+  'review',
   'status-change',
   'delete',
 ])
@@ -61,7 +68,12 @@ defineEmits([
 const containerWidth = ref(320)
 const resizeObserver = ref(null)
 
-const hasMoreActions = computed(() => props.canManageTenders || props.canDeleteTenders)
+const hasMoreActions = computed(() => props.canManageTenders || props.canDeleteTenders || props.canEdit || props.isAdmin)
+
+const canEdit = computed(() => {
+  // 项目经理可以编辑自己跟踪的标讯
+  return props.row.status === 'TRACKING'
+})
 
 const shouldShowAiButton = computed(() => {
   const width = containerWidth.value

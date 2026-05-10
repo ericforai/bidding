@@ -19,8 +19,18 @@ class TenderStatusTransitionPolicyTest {
     }
 
     @Test
-    void shouldAllowTrackingToBidded() {
-        assertTrue(policy.canTransition(Tender.Status.TRACKING, Tender.Status.BIDDED));
+    void shouldAllowTrackingToEvaluated() {
+        assertTrue(policy.canTransition(Tender.Status.TRACKING, Tender.Status.EVALUATED));
+    }
+
+    @Test
+    void shouldAllowEvaluatedToBidded() {
+        assertTrue(policy.canTransition(Tender.Status.EVALUATED, Tender.Status.BIDDED));
+    }
+
+    @Test
+    void shouldRejectTrackingToBidded() {
+        assertFalse(policy.canTransition(Tender.Status.TRACKING, Tender.Status.BIDDED));
     }
 
     @Test

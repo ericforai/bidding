@@ -62,12 +62,13 @@
             :can-manage-tenders="canManageTenders"
             :can-delete-tenders="canDeleteTenders"
             :show-ai-entry="showAiEntry"
+            :is-admin="isAdmin"
             @view-detail="$emit('view-detail', $event)"
             @ai-analysis="$emit('ai-analysis', $event)"
             @participate="$emit('participate', $event)"
             @distribute="$emit('distribute', $event)"
-            @claim="$emit('claim', $event)"
-            @assign="$emit('assign', $event)"
+            @edit="$emit('edit', $event)"
+            @review="$emit('review', $event)"
             @status-change="(target, status) => $emit('status-change', target, status)"
             @delete="$emit('delete', $event)"
           />
@@ -89,6 +90,7 @@ defineProps({
   canManageTenders: { type: Boolean, default: false },
   canDeleteTenders: { type: Boolean, default: false },
   showAiEntry: { type: Boolean, default: true },
+  isAdmin: { type: Boolean, default: false },
 })
 
 defineEmits([
@@ -97,8 +99,8 @@ defineEmits([
   'ai-analysis',
   'participate',
   'distribute',
-  'claim',
-  'assign',
+  'edit',
+  'review',
   'status-change',
   'delete',
 ])

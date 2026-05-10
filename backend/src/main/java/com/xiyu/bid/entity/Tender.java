@@ -192,6 +192,12 @@ public class Tender {
     private Tender.Status status = Tender.Status.PENDING;
 
     /**
+     * 弃标原因
+     */
+    @Column(name = "abandonment_reason", length = 1000)
+    private String abandonmentReason;
+
+    /**
      * AI评分（0-100）
      */
     @Column(name = "ai_score")
@@ -275,6 +281,7 @@ public class Tender {
     public enum Status {
         PENDING,      // 待处理
         TRACKING,     // 跟踪中
+        EVALUATED,    // 已评估
         BIDDED,       // 已投标
         ABANDONED     // 已放弃
     }
