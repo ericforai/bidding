@@ -105,16 +105,16 @@
           <el-button
             type="primary"
             size="large"
-            :disabled="tender.status === 'BIDDED' || tender.status === 'ABANDONED'"
+            :disabled="tender.status === 'BIDDING' || tender.status === 'WON' || tender.status === 'LOST' || tender.status === 'ABANDONED'"
             @click="handleParticipate"
           >
             <el-icon><DocumentAdd /></el-icon>
-            {{ tender.status === 'BIDDED' ? '已投标' : tender.status === 'ABANDONED' ? '已弃标' : '投标' }}
+            {{ tender.status === 'BIDDING' ? '投标中' : tender.status === 'WON' ? '已中标' : tender.status === 'LOST' ? '未中标' : tender.status === 'ABANDONED' ? '已弃标' : '投标' }}
           </el-button>
           <el-button
             type="danger"
             size="large"
-            :disabled="tender.status === 'ABANDONED' || tender.status === 'BIDDED'"
+            :disabled="tender.status === 'ABANDONED' || tender.status === 'WON' || tender.status === 'LOST'"
             @click="handleAbandon"
           >
             <el-icon><CircleClose /></el-icon>
