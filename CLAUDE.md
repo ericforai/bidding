@@ -14,6 +14,16 @@
 - 仓库名、包名、构件名中的 `xiyu-bid-poc`、`bid-poc` 属于历史遗留。
 - 当前项目按真实 API 交付模式协作，Mock 模式已于 2026-04-30 退役（`mock.js`、`mock-adapters/`、`.env.mock` 均已删除）。
 - 如仍在其它文档或评论中看到 `frontendDemo` / `demoPersistence` / `isMockMode` 字样，视为过期表述，不代表仓库真实状态。
+- **数据库**：仅支持 MySQL 8.0。迁移脚本统一放在 `migration-mysql/` 目录，`migration/` 目录已废弃并删除。
+
+### 数据库迁移规范
+
+- **迁移脚本位置**：`backend/src/main/resources/db/migration-mysql/`
+- **命名规范**：
+  - 基线版本：`B{version}_*.sql`（如 `B73__full_schema_baseline.sql`）
+  - 增量版本：`V{version}_*.sql`（如 `V114__tender_source_type.sql`）
+- **版本号**：必须大于已有最大版本号
+- **回滚脚本**：放在 `db/rollback/` 目录，与迁移脚本版本对应
 
 ## 推荐命令
 
