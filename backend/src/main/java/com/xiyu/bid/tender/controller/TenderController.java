@@ -14,6 +14,8 @@ import com.xiyu.bid.idempotency.Idempotent;
 import com.xiyu.bid.tender.dto.TenderImportResultDTO;
 import com.xiyu.bid.tender.dto.TenderRequest;
 import com.xiyu.bid.tender.dto.TenderDTO;
+import com.xiyu.bid.tender.dto.TenderAbandonRequest;
+import com.xiyu.bid.tender.dto.TenderBidResponse;
 import com.xiyu.bid.tender.service.TenderCommandService;
 import com.xiyu.bid.tender.service.TenderImportRollbackException;
 import com.xiyu.bid.tender.service.TenderImportService;
@@ -23,6 +25,7 @@ import com.xiyu.bid.tender.service.TenderSearchCriteria;
 import com.xiyu.bid.util.InputSanitizer;
 import com.xiyu.bid.annotation.DataScope;
 import jakarta.validation.Valid;
+import com.xiyu.bid.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -30,6 +33,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -63,6 +68,8 @@ public class TenderController {
     private final DemoModeService demoModeService;
     private final DemoDataProvider demoDataProvider;
     private final DemoFusionService demoFusionService;
+    private final AuthService authService;
+    private final TenderRequestSanitizer sanitizer = new TenderRequestSanitizer();
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
@@ -162,6 +169,31 @@ public class TenderController {
         return ResponseEntity.ok(ApiResponse.success("Tender analyzed successfully", analyzedTender));
     }
 
+    @PostMapping("/{id}/participate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<TenderBidResponse>> participateBid(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        log.info("POST /api/tenders/{}/participate - Participating bid", id);
+        rejectDemoMutation(id);
+        Long userId = resolveUserId(userDetails);
+        TenderBidResponse response = tenderCommandService.participateBid(id, userId);
+        return ResponseEntity.ok(ApiResponse.success(response.getMessage(), response));
+    }
+
+    @PostMapping("/{id}/abandon")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<TenderBidResponse>> abandonBid(
+            @PathVariable Long id,
+            @Valid @RequestBody TenderAbandonRequest req,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        log.info("POST /api/tenders/{}/abandon - Abandoning tender", id);
+        rejectDemoMutation(id);
+        Long userId = resolveUserId(userDetails);
+        TenderBidResponse response = tenderCommandService.abandonBid(id, req, userId);
+        return ResponseEntity.ok(ApiResponse.success(response.getMessage(), response));
+    }
+
     @GetMapping("/{id}/ai-analysis")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     public ResponseEntity<ApiResponse<TenderAiAnalysisDTO>> getTenderAiAnalysis(@PathVariable Long id) {
@@ -221,39 +253,11 @@ public class TenderController {
     }
 
     private void sanitizeTenderRequest(TenderRequest request) {
-        if (request.getTitle() != null) request.setTitle(InputSanitizer.sanitizeString(request.getTitle(), 500));
-        if (request.getSource() != null) request.setSource(InputSanitizer.sanitizeString(request.getSource(), 200));
-        if (request.getRegion() != null) request.setRegion(InputSanitizer.sanitizeString(request.getRegion(), 100));
-        if (request.getIndustry() != null) request.setIndustry(InputSanitizer.sanitizeString(request.getIndustry(), 100));
-        if (request.getTenderAgency() != null) request.setTenderAgency(InputSanitizer.sanitizeString(request.getTenderAgency(), 255));
-        if (request.getPurchaserName() != null) request.setPurchaserName(InputSanitizer.sanitizeString(request.getPurchaserName(), 255));
-        if (request.getPurchaserHash() != null) request.setPurchaserHash(InputSanitizer.sanitizeString(request.getPurchaserHash(), 64));
-        if (request.getContactName() != null) request.setContactName(InputSanitizer.sanitizeString(request.getContactName(), 100));
-        if (request.getContactPhone() != null) request.setContactPhone(InputSanitizer.sanitizeString(request.getContactPhone(), 50));
-        if (request.getSourceDocumentName() != null) request.setSourceDocumentName(InputSanitizer.sanitizeString(request.getSourceDocumentName(), 255));
-        if (request.getSourceDocumentFileType() != null) request.setSourceDocumentFileType(InputSanitizer.sanitizeString(request.getSourceDocumentFileType(), 100));
-        if (request.getSourceDocumentFileUrl() != null) request.setSourceDocumentFileUrl(InputSanitizer.sanitizeString(request.getSourceDocumentFileUrl(), 1000));
-        if (request.getCustomerType() != null) request.setCustomerType(InputSanitizer.sanitizeString(request.getCustomerType(), 100));
-        if (request.getPriority() != null) request.setPriority(InputSanitizer.sanitizeString(request.getPriority(), 10));
-        if (request.getDescription() != null) request.setDescription(InputSanitizer.sanitizeString(request.getDescription(), 5000));
-        if (request.getTags() != null) {
-            request.setTags(request.getTags().stream()
-                    .map(tag -> InputSanitizer.sanitizeString(tag, 100))
-                    .filter(tag -> !tag.isBlank())
-                    .toList());
-        }
+        sanitizer.sanitize(request);
     }
 
     private void sanitizeTenderSearchCriteria(TenderSearchCriteria criteria) {
-        if (criteria == null) return;
-        if (criteria.getKeyword() != null) criteria.setKeyword(InputSanitizer.sanitizeString(criteria.getKeyword(), 200));
-        if (criteria.getSource() != null) criteria.setSource(InputSanitizer.sanitizeString(criteria.getSource(), 200));
-        if (criteria.getRegion() != null) criteria.setRegion(InputSanitizer.sanitizeString(criteria.getRegion(), 100));
-        if (criteria.getIndustry() != null) criteria.setIndustry(InputSanitizer.sanitizeString(criteria.getIndustry(), 100));
-        if (criteria.getPurchaserName() != null) criteria.setPurchaserName(InputSanitizer.sanitizeString(criteria.getPurchaserName(), 255));
-        if (criteria.getPurchaserHash() != null) criteria.setPurchaserHash(InputSanitizer.sanitizeString(criteria.getPurchaserHash(), 64));
-        if (criteria.getCustomerType() != null) criteria.setCustomerType(InputSanitizer.sanitizeString(criteria.getCustomerType(), 100));
-        if (criteria.getPriority() != null) criteria.setPriority(InputSanitizer.sanitizeString(criteria.getPriority(), 10));
+        sanitizer.sanitizeCriteria(criteria);
     }
 
     private boolean isDemoEntityId(Long id) {
@@ -264,5 +268,13 @@ public class TenderController {
         if (isDemoEntityId(id)) {
             throw new IllegalArgumentException("Demo records are read-only in e2e mode");
         }
+    }
+
+    private Long resolveUserId(UserDetails userDetails) {
+        if (userDetails == null || userDetails.getUsername() == null || userDetails.getUsername().isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.UNAUTHORIZED, "无法识别当前用户");
+        }
+        return authService.resolveUserIdByUsername(userDetails.getUsername().trim());
     }
 }

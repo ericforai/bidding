@@ -2,9 +2,14 @@ package com.xiyu.bid.tender.service;
 
 import com.xiyu.bid.ai.service.AiService;
 import com.xiyu.bid.annotation.Auditable;
+import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.exception.ResourceNotFoundException;
 import com.xiyu.bid.repository.TenderRepository;
+import com.xiyu.bid.task.dto.TaskDTO;
+import com.xiyu.bid.task.service.TaskService;
+import com.xiyu.bid.tender.dto.TenderAbandonRequest;
+import com.xiyu.bid.tender.dto.TenderBidResponse;
 import com.xiyu.bid.tender.dto.TenderDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -34,6 +40,7 @@ public class TenderCommandService {
     private final TenderMapper tenderMapper;
     private final TenderProjectAccessGuard accessGuard;
     private final com.xiyu.bid.batch.core.TenderStatusTransitionPolicy statusTransitionPolicy;
+    private final TaskService taskService;
 
     public TenderDTO createTender(TenderDTO tenderDTO) {
         log.debug("Creating new tender: {}", tenderDTO.getTitle());
@@ -159,5 +166,78 @@ public class TenderCommandService {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 not available", e);
         }
+    }
+
+    @Transactional
+    @Auditable(action = "BID", entityType = "Tender", description = "投标标讯")
+    public TenderBidResponse participateBid(Long tenderId, Long userId) {
+        Tender tender = tenderRepository.findById(tenderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tender", tenderId.toString()));
+        accessGuard.assertCanAccessTender(tender);
+
+        if (tender.getStatus() == Tender.Status.BIDDING) {
+            return TenderBidResponse.builder()
+                    .accepted(false)
+                    .message("该标讯已投标")
+                    .build();
+        }
+        if (tender.getStatus() == Tender.Status.ABANDONED) {
+            return TenderBidResponse.builder()
+                    .accepted(false)
+                    .message("该标讯已放弃，无法投标")
+                    .build();
+        }
+
+        tender.setStatus(Tender.Status.BIDDING);
+        tenderRepository.save(tender);
+
+        TaskDTO todo = TaskDTO.builder()
+                .projectId(tenderId)
+                .title("【待立项】" + tender.getTitle())
+                .description("标讯「" + tender.getTitle() + "」已投标，需进行项目立项。预算：" + tender.getBudget() + "万元。")
+                .status(Task.Status.TODO)
+                .priority(Task.Priority.HIGH)
+                .assigneeId(userId)
+                .dueDate(LocalDateTime.now().plusDays(7))
+                .build();
+        TaskDTO createdTodo = taskService.createTask(todo);
+
+        log.info("Tender {} participated, created todo {} for user {}", tenderId, createdTodo.getId(), userId);
+        return TenderBidResponse.builder()
+                .accepted(true)
+                .message("投标成功，已生成项目立项待办")
+                .projectId(tenderId)
+                .todoId(createdTodo.getId())
+                .todoTitle(createdTodo.getTitle())
+                .build();
+    }
+
+    @Transactional
+    @Auditable(action = "ABANDON", entityType = "Tender", description = "弃标标讯")
+    public TenderBidResponse abandonBid(Long tenderId, TenderAbandonRequest req, Long userId) {
+        Tender tender = tenderRepository.findById(tenderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tender", tenderId.toString()));
+        accessGuard.assertCanAccessTender(tender);
+
+        if (tender.getStatus() == Tender.Status.ABANDONED) {
+            return TenderBidResponse.builder()
+                    .accepted(false)
+                    .message("该标讯已放弃")
+                    .build();
+        }
+        if (tender.getStatus() == Tender.Status.BIDDING) {
+            return TenderBidResponse.builder()
+                    .accepted(false)
+                    .message("该标讯已投标，无法弃标")
+                    .build();
+        }
+
+        tender.setStatus(Tender.Status.ABANDONED);
+        tenderRepository.save(tender);
+        log.info("Tender {} abandoned by user {}, reason: {}", tenderId, userId, req.getReason());
+        return TenderBidResponse.builder()
+                .accepted(true)
+                .message("已放弃该标讯")
+                .build();
     }
 }
