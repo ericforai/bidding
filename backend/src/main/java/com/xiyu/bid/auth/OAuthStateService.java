@@ -1,10 +1,13 @@
 package com.xiyu.bid.auth;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -15,28 +18,60 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class OAuthStateService {
 
+    /** Redis template for distributed state storage. */
     private final StringRedisTemplate redisTemplate;
-    private final ConcurrentHashMap<String, java.time.Instant> localMap = new ConcurrentHashMap<>();
 
-    public OAuthStateService(@org.springframework.beans.factory.annotation.Autowired(required = false) StringRedisTemplate redisTemplate) {
-        this.redisTemplate = redisTemplate;
-    }
+    /** Local fallback map for environments without Redis. */
+    private final ConcurrentHashMap<String, Instant> localMap =
+            new ConcurrentHashMap<>();
+
+    /** Redis key prefix for OAuth states. */
     private static final String REDIS_PREFIX = "oauth_state:";
+
+    /** Time-to-live for state tokens. */
     private static final Duration TTL = Duration.ofMinutes(10);
 
-    public void storeState(String state) {
-        if (redisTemplate != null) {
-            try {
-                redisTemplate.opsForValue().set(REDIS_PREFIX + state, "true", TTL);
-                return;
-            } catch (Exception e) {
-                log.warn("Failed to store OAuth state in Redis, falling back to local map", e);
-            }
-        }
-        localMap.put(state, java.time.Instant.now());
+    /** Delay for local map cleanup task. */
+    private static final long CLEAN_DELAY = 60000;
+
+    /**
+     * Constructor for OAuthStateService.
+     *
+     * @param redisTemplateParam Optional Redis template
+     */
+    public OAuthStateService(
+            @Autowired(required = false)
+            final StringRedisTemplate redisTemplateParam
+    ) {
+        this.redisTemplate = redisTemplateParam;
     }
 
-    public boolean validateAndRemoveState(String state) {
+    /**
+     * Stores a state token with a 10-minute expiration.
+     *
+     * @param state CSRF state token to store
+     */
+    public void storeState(final String state) {
+        if (redisTemplate != null) {
+            try {
+                redisTemplate.opsForValue().set(REDIS_PREFIX + state, "true",
+                        TTL);
+                return;
+            } catch (Exception e) {
+                log.warn("Failed to store OAuth state in Redis, falling back",
+                        e);
+            }
+        }
+        localMap.put(state, Instant.now());
+    }
+
+    /**
+     * Validates and removes a state token.
+     *
+     * @param state CSRF state token to validate
+     * @return true if state is valid and not expired
+     */
+    public boolean validateAndRemoveState(final String state) {
         if (state == null || state.isBlank()) {
             return false;
         }
@@ -46,39 +81,41 @@ public class OAuthStateService {
                 Boolean deleted = redisTemplate.delete(REDIS_PREFIX + state);
                 return Boolean.TRUE.equals(deleted);
             } catch (Exception e) {
-                log.warn("Failed to validate OAuth state from Redis, checking local map", e);
+                log.warn("Failed to validate OAuth state, checking map",
+                        e);
             }
         }
-        
-        java.time.Instant timestamp = localMap.remove(state);
+
+        Instant timestamp = localMap.remove(state);
         if (timestamp == null) {
             return false;
         }
-        
-        return java.time.Duration.between(timestamp, java.time.Instant.now()).compareTo(TTL) <= 0;
+
+        return Duration.between(timestamp, Instant.now())
+                .compareTo(TTL) <= 0;
     }
 
     /**
      * Periodically clean expired states from local map.
      */
-    @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 60000) // Every minute
+    @Scheduled(fixedDelay = CLEAN_DELAY)
     public void cleanExpiredLocalStates() {
         if (localMap.isEmpty()) {
             return;
         }
-        
-        java.time.Instant now = java.time.Instant.now();
+
+        Instant now = Instant.now();
         int removedCount = 0;
-        
+
         var iterator = localMap.entrySet().iterator();
         while (iterator.hasNext()) {
             var entry = iterator.next();
-            if (java.time.Duration.between(entry.getValue(), now).compareTo(TTL) > 0) {
+            if (Duration.between(entry.getValue(), now).compareTo(TTL) > 0) {
                 iterator.remove();
                 removedCount++;
             }
         }
-        
+
         if (removedCount > 0) {
             log.debug("Cleaned up {} expired local OAuth states", removedCount);
         }

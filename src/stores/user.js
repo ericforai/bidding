@@ -87,12 +87,7 @@ export const useUserStore = defineStore('user', {
     },
 
     async loginByWeCom(code, state) {
-      let result
-      try {
-        result = await authApi.loginByWeCom(code, state)
-      } catch (error) {
-        throw error // Handle WeCom specific errors (like 40101) in UI
-      }
+      const result = await authApi.loginByWeCom(code, state)
 
       if (!result?.success || !result?.data?.user || !result?.data?.token) {
         throw new Error(result?.message || '企业微信登录失败')

@@ -1,10 +1,9 @@
 package com.xiyu.bid.integration.controller;
 
+import com.xiyu.bid.auth.OAuthStateService;
 import com.xiyu.bid.dto.ApiResponse;
-import com.xiyu.bid.dto.AuthResponse;
 import com.xiyu.bid.dto.AuthSessionResult;
 import com.xiyu.bid.integration.application.WeComAuthAppService;
-import com.xiyu.bid.integration.domain.WeComApiErrCode;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,78 +18,110 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Controller to handle WeCom OAuth2 authentication requests.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/auth/wecom")
 @RequiredArgsConstructor
 public class WeComAuthController {
 
-    private final WeComAuthAppService weComAuthAppService;
-    private final com.xiyu.bid.auth.OAuthStateService oAuthStateService;
+    /** Error code for unbound WeCom account. */
+    private static final int ERR_NOT_BOUND = 40101;
 
+    /** Internal business logic for WeCom auth. */
+    private final WeComAuthAppService weComAuthAppService;
+
+    /** State management for CSRF protection. */
+    private final OAuthStateService oAuthStateService;
+
+    /** Cookie name for refresh token. */
     @Value("${app.auth.refresh-cookie-name:refresh_token}")
     private String refreshCookieName;
 
+    /** Whether refresh cookie should be secure. */
     @Value("${app.auth.refresh-cookie-secure:false}")
     private boolean refreshCookieSecure;
 
+    /** SameSite attribute for refresh cookie. */
     @Value("${app.auth.refresh-cookie-same-site:Lax}")
     private String refreshCookieSameSite;
 
+    /** Expiration time for refresh token in ms. */
     @Value("${jwt.refresh-expiration:604800000}")
     private long refreshExpiration;
 
     /**
-     * Entry point to get the WeCom login URL (not implemented in this task but good to have).
-     * For now, the frontend handles the redirect URL construction.
+     * Entry point to get the WeCom login parameters.
+     *
+     * @return ResponseEntity with appid, agentid and state
      */
     @GetMapping("/authorize-params")
-    public ResponseEntity<ApiResponse<java.util.Map<String, String>>> getAuthorizeParams() {
+    public ResponseEntity<ApiResponse<Map<String, String>>>
+    getAuthorizeParams() {
         String state = UUID.randomUUID().toString().replace("-", "");
         oAuthStateService.storeState(state);
-        
-        java.util.Map<String, String> params = weComAuthAppService.getAuthorizeParams(state);
-        return ResponseEntity.ok(ApiResponse.success("Auth params generated", params));
+
+        Map<String, String> params =
+                weComAuthAppService.getAuthorizeParams(state);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Auth params generated", params));
     }
 
     /**
      * OAuth2 callback endpoint.
+     *
+     * @param code WeCom OAuth2 code
+     * @param state CSRF state token
+     * @param response HttpServletResponse to set cookies
+     * @return ResponseEntity with AuthResponse
      */
     @GetMapping("/callback")
     public ResponseEntity<ApiResponse<?>> callback(
-            @RequestParam("code") String code,
-            @RequestParam("state") String state,
-            HttpServletResponse response
+            @RequestParam("code")
+            final String code,
+            @RequestParam("state")
+            final String state,
+            final HttpServletResponse response
     ) {
-        log.info("Received WeCom OAuth2 callback: code={}, state={}", code, state);
+        log.info("Received WeCom OAuth2 callback: code={}, state={}",
+                code, state);
 
         // 1. Validate state (CSRF protection)
         if (!oAuthStateService.validateAndRemoveState(state)) {
             log.warn("OAuth2 callback state validation failed: {}", state);
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error(403, "INVALID_STATE"));
+                    .body(ApiResponse.error(HttpStatus.FORBIDDEN.value(),
+                            "INVALID_STATE"));
         }
-        
+
         // 2. Perform login
-        var loginResultOpt = weComAuthAppService.loginByWeCom(code);
+        var loginResultOpt =
+                weComAuthAppService.loginByWeCom(code);
 
         if (loginResultOpt.isPresent()) {
             AuthSessionResult result = loginResultOpt.get();
-            ResponseCookie cookie = buildRefreshCookie(result.getRefreshToken(), true);
+            ResponseCookie cookie = buildRefreshCookie(
+                    result.getRefreshToken(), true);
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                    .body(ApiResponse.success("WeCom login successful", result.getAuthResponse()));
+                    .body(ApiResponse.success("WeCom login successful",
+                            result.getAuthResponse()));
         } else {
-            // If user not found or mapping failed, return specific status for frontend to handle binding
+            // User not found, return specific status for binding
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error(40101, "WECOM_NOT_BOUND"));
+                    .body(ApiResponse.error(ERR_NOT_BOUND, "WECOM_NOT_BOUND"));
         }
     }
 
-    private ResponseCookie buildRefreshCookie(String refreshToken, boolean persistent) {
-        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(refreshCookieName, refreshToken)
+    private ResponseCookie buildRefreshCookie(final String refreshToken,
+                                              final boolean persistent) {
+        ResponseCookie.ResponseCookieBuilder builder =
+                ResponseCookie.from(refreshCookieName, refreshToken)
                 .httpOnly(true)
                 .secure(refreshCookieSecure)
                 .sameSite(refreshCookieSameSite)

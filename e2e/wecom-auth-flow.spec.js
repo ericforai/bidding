@@ -28,7 +28,6 @@ test.describe('WeCom OAuth2 SSO Flow', () => {
 
     // Click and check if it tries to redirect
     // We use a mock to avoid actual redirect out of the app
-    const redirectPromise = page.waitForRequest(req => req.url().includes('open.work.weixin.qq.com'))
     
     // In our implementation, we change window.location.href
     // Playwright will follow it unless we catch it or check the URL

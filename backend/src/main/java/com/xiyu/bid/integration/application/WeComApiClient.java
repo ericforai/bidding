@@ -38,8 +38,8 @@ public class WeComApiClient {
     public record WeComUserInfoResponse(
             int errcode,
             String errmsg,
-            String UserId,
-            String OpenId,
+            String userId,
+            String openId,
             String user_ticket,
             int expires_in
     ) {
