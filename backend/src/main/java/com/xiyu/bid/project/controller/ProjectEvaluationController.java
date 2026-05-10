@@ -7,6 +7,7 @@ package com.xiyu.bid.project.controller;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.project.dto.EvaluationDTO;
 import com.xiyu.bid.project.dto.EvaluationEvidenceAttachRequest;
+import com.xiyu.bid.project.dto.EvaluationFormUpdateRequest;
 import com.xiyu.bid.project.dto.EvaluationSubStageUpdateRequest;
 import com.xiyu.bid.project.service.ProjectEvaluationService;
 import com.xiyu.bid.service.AuthService;
@@ -59,6 +60,18 @@ public class ProjectEvaluationController {
         EvaluationDTO dto = service.attachEvidence(projectId, req, userId);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Evidence attached", dto));
+    }
+
+    /** 填写项目评估表单：BID_LEAD（映射 MANAGER/ADMIN）。 */
+    @PatchMapping("/form")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    public ResponseEntity<ApiResponse<EvaluationDTO>> updateForm(
+            @PathVariable Long projectId,
+            @Valid @RequestBody EvaluationFormUpdateRequest req,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = currentUserId(userDetails);
+        EvaluationDTO dto = service.updateEvaluationForm(projectId, req, userId);
+        return ResponseEntity.ok(ApiResponse.success("评估表单已保存", dto));
     }
 
     @GetMapping

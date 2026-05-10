@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -28,4 +29,11 @@ public class EvaluationDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Long updatedBy;
+    private String background;
+    private String competitors;
+    private String contractPeriod;
+    private Integer shortlistedBidders;
+    private BigDecimal platformFee;
+    private String previousBid;
+    private Boolean recommendation;
 }
