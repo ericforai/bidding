@@ -8,9 +8,9 @@ sources:
   - .wiki/INDEX.md
   - .wiki/PAGE_INDEX.md
 backlinks:
-created: 2026-05-08
-updated: 2026-05-08
-health_checked: 2026-05-08
+created: 2026-05-07
+updated: 2026-05-07
+health_checked: 2026-05-07
 ---
 # 西域投标管理平台知识库
 
@@ -42,7 +42,6 @@ health_checked: 2026-05-08
 - [[integration-oa-crm]] — OA 与 CRM 对接规范
 - [[integration-organization-event-sdk]] — 组织架构对接 - 客户事件库 SDK 方案
 - [[integration-wecom]] — 系统集成中心 - 企业微信
-- [[lessons-learned]] — 工程经验总结
 - [[modules]] — 模块目录
 - [[overview]] — 项目综述
 - [[requirements]] — 需求追溯

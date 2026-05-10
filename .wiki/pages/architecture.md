@@ -30,7 +30,7 @@ backlinks:
   - team-and-timeline
 created: 2026-04-15
 updated: 2026-05-07
-health_checked: 2026-05-08
+health_checked: 2026-05-07
 ---
 # 架构合成
 
