@@ -5,14 +5,16 @@ category: integration
 tags: [integration, organization, event-sdk, event-bus, data-scope]
 sources:
   - .wiki/sources/customer/事件库SDK接入说明方案.doc
+  - .wiki/sources/technical/泊冉投标系统与西域对接技术相关内容.md
+  - .wiki/extracts/technical__泊冉投标系统与西域对接技术相关内容.md.md
   - backend/src/main/java/com/xiyu/bid/entity/User.java
   - backend/src/main/java/com/xiyu/bid/dto/DataScopeConfigPayload.java
 backlinks:
   - _index
   - integration-oa-crm
 created: 2026-04-28
-updated: 2026-05-08
-health_checked: 2026-05-08
+updated: 2026-05-07
+health_checked: 2026-05-07
 ---
 # 组织架构对接 - 客户事件库 SDK 方案
 

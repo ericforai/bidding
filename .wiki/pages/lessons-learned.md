@@ -5,6 +5,7 @@ category: guide
 tags: [经验总结, 数据库迁移, PostgreSQL, MySQL, Flyway]
 sources:
   - CLAUDE.md
+  - 本次任务 cursor/tender-source-tag-20260509
   - conductor/tracks/tender_source_tag_20260509/index.md
 backlinks:
   - _index
@@ -14,7 +15,7 @@ health_checked: 2026-05-10
 ---
 # 工程经验总结
 
-> 记录 `cursor/migration-cleanup-20260510` 分支开发中积累的经验教训，聚焦 PostgreSQL → MySQL 迁移目录清理。
+> 记录本次 `cursor/tender-source-tag-20260509` 分支开发中积累的经验教训。
 
 ---
 

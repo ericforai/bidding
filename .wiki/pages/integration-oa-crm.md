@@ -4,13 +4,13 @@ space: engineering
 category: integration
 tags: [integration, oa, crm, workflow, api]
 sources:
-  - README.md
+  - .wiki/sources/technical/泊冉投标系统与西域对接技术相关内容.md
+  - .wiki/extracts/technical__泊冉投标系统与西域对接技术相关内容.md.md
 backlinks:
-  - _index
   - integration-organization-event-sdk
 created: 2026-05-07
 updated: 2026-05-07
-health_checked: 2026-05-08
+health_checked: 2026-05-07
 ---
 # OA 与 CRM 对接规范
 

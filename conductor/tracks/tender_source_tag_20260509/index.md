@@ -73,3 +73,22 @@
 - `src/views/Bidding/list/components/TenderSearchCard.vue` - 使用 sourceType 筛选
 - `src/views/Bidding/list/useTenderListPage.js` - 传递 sourceType 参数
 - `src/views/Bidding/list/helpers.spec.js` - 新增测试用例
+
+## 清理收口 (2026-05-10)
+
+### 废弃目录清理
+- [x] 删除废弃的 `db/migration/` 目录（PostgreSQL 迁移，75 个文件）
+- [x] 保留活跃的 `db/migration-mysql/` 目录（MySQL 迁移）
+
+### 文档更新
+- [x] 更新 `CLAUDE.md` 数据库迁移规范
+- [x] 创建 `.wiki/pages/lessons-learned.md` 工程经验总结
+
+### CI 配置确认
+- [x] 确认 CI 配置只测试 MySQL (`FlywayMysqlContainerTest`)
+- [x] 确认无 PostgreSQL 相关测试引用
+
+### 经验教训
+1. **废弃即删除**：PostgreSQL 支持移除后应及时清理 `migration/` 目录
+2. **CI 即技术栈声明**：CI 配置必须与项目实际技术栈严格一致
+3. **配置与目录同步**：flyway.locations 配置变更后需验证对应目录状态
