@@ -45,6 +45,9 @@ export const projectLifecycleApi = {
   attachEvaluationEvidence(id, payload) {
     return httpClient.post(`${base(id)}/evaluation/evidence`, payload)
   },
+  updateEvaluationForm(id, payload) {
+    return httpClient.patch(`${base(id)}/evaluation/form`, payload)
+  },
 
   // WS-D result
   getResult(id) {

@@ -61,6 +61,27 @@ public class ProjectEvaluation {
     @Column(name = "updated_by")
     private Long updatedBy;
 
+    @Column(columnDefinition = "TEXT")
+    private String background;
+
+    @Column(columnDefinition = "TEXT")
+    private String competitors;
+
+    @Column(name = "contract_period", length = 64)
+    private String contractPeriod;
+
+    @Column(name = "shortlisted_bidders")
+    private Integer shortlistedBidders;
+
+    @Column(name = "platform_fee", precision = 14, scale = 2)
+    private java.math.BigDecimal platformFee;
+
+    @Column(name = "previous_bid", columnDefinition = "TEXT")
+    private String previousBid;
+
+    @Column
+    private Boolean recommendation;
+
     @PrePersist
     void onCreate() {
         LocalDateTime now = LocalDateTime.now();
