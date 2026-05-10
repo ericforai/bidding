@@ -267,7 +267,7 @@ public class TenderController {
     }
 
     private <T> String getField(T obj, java.util.function.BiConsumer<T, String> setter) {
-        try { return (String) setter.getClass().getDeclaredMethods()[0].invoke(obj); } catch { return null; }
+        try { return (String) setter.getClass().getDeclaredMethods()[0].invoke(obj); } catch (Exception e) { return null; }
     }
 
     private String sanitize(String v, int len) { return v != null ? InputSanitizer.sanitizeString(v, len) : null; }
