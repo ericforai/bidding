@@ -166,6 +166,46 @@ export const tendersApi = {
     return httpClient.get(`/api/tenders/tasks/${taskId}`)
   },
 
+  async getEvaluation(tenderId) {
+    if (!isNumericId(tenderId)) {
+      return {
+        success: false,
+        message: '当前后端仅支持数字型标讯 ID'
+      }
+    }
+    return httpClient.get(`/api/tenders/${tenderId}/evaluation`)
+  },
+
+  async submitEvaluation(tenderId, data) {
+    if (!isNumericId(tenderId)) {
+      return {
+        success: false,
+        message: '当前后端仅支持数字型标讯 ID'
+      }
+    }
+    return httpClient.post(`/api/tenders/${tenderId}/evaluation`, data)
+  },
+
+  async reviewTender(tenderId, data) {
+    if (!isNumericId(tenderId)) {
+      return {
+        success: false,
+        message: '当前后端仅支持数字型标讯 ID'
+      }
+    }
+    return httpClient.post(`/api/tenders/${tenderId}/review`, data)
+  },
+
+  async proceedToBid(tenderId) {
+    if (!isNumericId(tenderId)) {
+      return {
+        success: false,
+        message: '当前后端仅支持数字型标讯 ID'
+      }
+    }
+    return httpClient.post(`/api/tenders/${tenderId}/bid`)
+  },
+
   async participate(id) {
     return httpClient.post(`/api/tenders/${id}/participate`)
   },

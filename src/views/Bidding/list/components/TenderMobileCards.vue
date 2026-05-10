@@ -25,10 +25,16 @@
         <el-button type="primary" size="small" @click="$emit('view-detail', row.id)">查看详情</el-button>
         <el-button v-if="showAiEntry" type="success" size="small" @click="$emit('ai-analysis', row.id)">AI分析</el-button>
         <el-button size="small" @click="$emit('participate', row.id)">参与投标</el-button>
-        <el-dropdown v-if="canManageTenders || canDeleteTenders" trigger="click">
+        <el-dropdown v-if="canManageTenders || canDeleteTenders || isAdmin" trigger="click">
           <el-button size="small">更多</el-button>
           <template #dropdown>
             <el-dropdown-menu>
+              <template v-if="row.status === 'TRACKING'">
+                <el-dropdown-item @click="$emit('edit', row)">编辑</el-dropdown-item>
+              </template>
+              <template v-if="isAdmin && row.status === 'EVALUATED'">
+                <el-dropdown-item @click="$emit('review', row)">审核</el-dropdown-item>
+              </template>
               <template v-if="canManageTenders">
                 <template v-if="row.status === 'PENDING_ASSIGNMENT'">
                   <el-dropdown-item @click="$emit('claim', row)">领取</el-dropdown-item>
@@ -60,6 +66,7 @@ defineProps({
   canManageTenders: { type: Boolean, default: false },
   canDeleteTenders: { type: Boolean, default: false },
   showAiEntry: { type: Boolean, default: true },
+  isAdmin: { type: Boolean, default: false },
 })
 
 defineEmits(['view-detail', 'ai-analysis', 'participate', 'claim', 'assign', 'status-change', 'delete'])

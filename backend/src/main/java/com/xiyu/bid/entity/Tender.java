@@ -89,24 +89,14 @@ public class Tender {
     @Column(length = 100)
     private String industry;
 
-    /**
-     * 招标机构
-     */
     @Column(name = "tender_agency", length = 255)
     private String tenderAgency;
 
-    /**
-     * 采购单位名称
-     */
     @Column(name = "purchaser_name", length = 255)
     private String purchaserName;
 
-    /**
-     * 采购单位稳定哈希
-     */
     @Column(name = "purchaser_hash", length = 64)
     private String purchaserHash;
-
     @Column(name = "source_normalized", length = 200)
     private String sourceNormalized;
 
@@ -134,24 +124,14 @@ public class Tender {
     @Column(name = "bid_opening_time")
     private LocalDateTime bidOpeningTime;
 
-    /**
-     * 报名截止时间
-     */
     @Column(name = "registration_deadline", nullable = true)
     private LocalDateTime registrationDeadline;
 
-    /**
-     * 联系人姓名
-     */
     @Column(name = "contact_name", length = 100)
     private String contactName;
 
-    /**
-     * 联系电话
-     */
     @Column(name = "contact_phone", length = 50)
     private String contactPhone;
-
     @Column(name = "source_document_name", length = 255)
     private String sourceDocumentName;
 
@@ -167,56 +147,35 @@ public class Tender {
     @Column(name = "priority", length = 10)
     private String priority;
 
-    /**
-     * 标讯描述
-     */
     @Column(columnDefinition = "text")
     private String description;
 
-    /**
-     * 标签，使用逗号分隔存储
-     */
     @Column(columnDefinition = "text")
     private String tags;
 
-    /**
-     * 状态
-     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
     private Tender.Status status = Tender.Status.PENDING_ASSIGNMENT;
 
-    /**
-     * AI评分（0-100）
-     */
+    @Column(name = "abandonment_reason", length = 1000)
+    private String abandonmentReason;
+
     @Column(name = "ai_score")
     private Integer aiScore;
 
-    /**
-     * 风险等级
-     */
     @Enumerated(EnumType.STRING)
     @Column(name = "risk_level", length = 20)
     private Tender.RiskLevel riskLevel;
 
-    /**
-     * 标讯来源类型
-     */
     @Enumerated(EnumType.STRING)
     @Column(name = "source_type", length = 20)
     @Builder.Default
     private Tender.SourceType sourceType = Tender.SourceType.MANUAL;
 
-    /**
-     * 创建时间
-     */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    /**
-     * 更新时间
-     */
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 

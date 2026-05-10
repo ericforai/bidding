@@ -12,7 +12,7 @@
     <ElTooltip v-if="row.status === 'EVALUATED'" content="参与投标" placement="top">
       <ElButton size="small" :icon="Document" aria-label="参与投标" @click="$emit('participate', row.id)" />
     </ElTooltip>
-    <ElDropdown v-if="canManageTenders || canDeleteTenders" trigger="click">
+    <ElDropdown v-if="hasMoreActions" trigger="click">
       <ElButton size="small" :icon="MoreFilled" aria-label="更多操作" />
       <template #dropdown>
         <ElDropdownMenu>
@@ -52,13 +52,13 @@ const props = defineProps({
   canManageTenders: { type: Boolean, default: false },
   canDeleteTenders: { type: Boolean, default: false },
   showAiEntry: { type: Boolean, default: true },
+  isAdmin: { type: Boolean, default: false },
 })
 
 defineEmits([
   'view-detail',
   'ai-analysis',
   'participate',
-  'distribute',
   'claim',
   'assign',
   'evaluate',
@@ -69,7 +69,12 @@ defineEmits([
 const containerWidth = ref(320)
 const resizeObserver = ref(null)
 
-const hasMoreActions = computed(() => props.canManageTenders || props.canDeleteTenders)
+const hasMoreActions = computed(() => props.canManageTenders || props.canDeleteTenders || props.canEdit || props.isAdmin)
+
+const canEdit = computed(() => {
+  // 项目经理可以编辑自己跟踪的标讯
+  return props.row.status === 'TRACKING'
+})
 
 const shouldShowAiButton = computed(() => {
   const width = containerWidth.value
