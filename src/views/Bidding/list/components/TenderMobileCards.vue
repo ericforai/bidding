@@ -36,10 +36,17 @@
                 <el-dropdown-item @click="$emit('review', row)">审核</el-dropdown-item>
               </template>
               <template v-if="canManageTenders">
-                <el-dropdown-item @click="$emit('distribute', row)">分发</el-dropdown-item>
-                <el-dropdown-item @click="$emit('status-change', row, 'TRACKING')">设为跟踪中</el-dropdown-item>
-                <el-dropdown-item @click="$emit('status-change', row, 'PENDING')">恢复待处理</el-dropdown-item>
-                <el-dropdown-item @click="$emit('status-change', row, 'BIDDED')">标记为已投标</el-dropdown-item>
+                <template v-if="row.status === 'PENDING_ASSIGNMENT'">
+                  <el-dropdown-item @click="$emit('claim', row)">领取</el-dropdown-item>
+                  <el-dropdown-item @click="$emit('assign', row)">指派</el-dropdown-item>
+                </template>
+                <el-dropdown-item v-if="row.status === 'TRACKING'" @click="$emit('status-change', row, 'EVALUATED')">标记为已评估</el-dropdown-item>
+                <el-dropdown-item v-if="row.status === 'EVALUATED'" @click="$emit('status-change', row, 'BIDDING')">立即投标</el-dropdown-item>
+                <template v-if="row.status === 'BIDDING'">
+                  <el-dropdown-item @click="$emit('status-change', row, 'WON')">登记中标</el-dropdown-item>
+                  <el-dropdown-item @click="$emit('status-change', row, 'LOST')">登记未中标</el-dropdown-item>
+                </template>
+                <el-dropdown-item divided @click="$emit('status-change', row, 'ABANDONED')">标记为已放弃</el-dropdown-item>
               </template>
               <el-dropdown-item v-if="canDeleteTenders" divided @click="$emit('delete', row)">删除</el-dropdown-item>
             </el-dropdown-menu>
@@ -62,5 +69,5 @@ defineProps({
   isAdmin: { type: Boolean, default: false },
 })
 
-defineEmits(['view-detail', 'ai-analysis', 'participate', 'distribute', 'edit', 'review', 'status-change', 'delete'])
+defineEmits(['view-detail', 'ai-analysis', 'participate', 'claim', 'assign', 'status-change', 'delete'])
 </script>

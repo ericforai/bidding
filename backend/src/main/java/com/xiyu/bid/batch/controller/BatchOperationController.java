@@ -268,7 +268,7 @@ public class BatchOperationController {
     }
 
     @PatchMapping("/tenders/status")
-    @PreAuthorize(ADMIN_MANAGER_EXPR)
+    @PreAuthorize("@tenderAbandonAuthorizer.canUpdate(authentication, #request)")
     public ResponseEntity<ApiResponse<BatchOperationResponse>> batchUpdateTenderStatus(
             @Valid @RequestBody BatchTenderStatusUpdateRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
