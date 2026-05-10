@@ -12,5 +12,5 @@
 
 ## 3. Testing & Verification
 - [x] 3.1 编写 `WeComOAuthService` 单元测试（FP-Java 约束下）
-- [ ] 3.2 编写端到端测试用例：模拟 OAuth2 回调流程
+- [x] 3.2 编写端到端测试用例：模拟 OAuth2 回调流程
 - [x] 3.3 验证 state 校验失败时的错误响应

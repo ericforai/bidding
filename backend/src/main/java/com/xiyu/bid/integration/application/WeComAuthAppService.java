@@ -22,6 +22,7 @@ public class WeComAuthAppService {
     private final WeComOAuthService weComOAuthService;
     private final UserRepository userRepository;
     private final AuthService authService;
+    private final com.xiyu.bid.integration.infrastructure.persistence.repository.WeComIntegrationJpaRepository integrationRepository;
 
     /**
      * Attempts to login a user via WeCom OAuth2 code.
@@ -62,5 +63,22 @@ public class WeComAuthAppService {
             // 4. Return login result if user found
             return userOpt.map(authService::loginWithoutPassword);
         });
+    }
+
+    /**
+     * Gets the authorization parameters for the frontend to construct the WeCom login URL.
+     */
+    public java.util.Map<String, String> getAuthorizeParams(String state) {
+        var entityOpt = integrationRepository.findById(1L);
+        if (entityOpt.isEmpty()) {
+            log.error("WeCom integration settings not found (ID=1)");
+            return java.util.Map.of("state", state);
+        }
+        var entity = entityOpt.get();
+        return java.util.Map.of(
+                "appid", entity.getCorpId(),
+                "agentid", entity.getAgentId(),
+                "state", state
+        );
     }
 }

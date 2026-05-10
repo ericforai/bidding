@@ -50,9 +50,9 @@ public class WeComAuthController {
     public ResponseEntity<ApiResponse<java.util.Map<String, String>>> getAuthorizeParams() {
         String state = UUID.randomUUID().toString().replace("-", "");
         oAuthStateService.storeState(state);
-        return ResponseEntity.ok(ApiResponse.success("Auth params generated", java.util.Map.of(
-                "state", state
-        )));
+        
+        java.util.Map<String, String> params = weComAuthAppService.getAuthorizeParams(state);
+        return ResponseEntity.ok(ApiResponse.success("Auth params generated", params));
     }
 
     /**
