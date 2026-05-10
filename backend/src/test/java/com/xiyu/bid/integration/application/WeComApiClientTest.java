@@ -117,6 +117,41 @@ class WeComApiClientTest {
         server.verify();
     }
 
+    @Test
+    @DisplayName("requestUserInfo success → returns UserId and OpenId")
+    void requestUserInfo_success() {
+        server.expect(requestToUriTemplate(BASE_URL + "/cgi-bin/user/getuserinfo?access_token={t}&code={c}",
+                        "mytoken", "mycode"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(
+                        "{\"errcode\":0,\"errmsg\":\"ok\",\"UserId\":\"U123\",\"OpenId\":\"O123\",\"user_ticket\":\"T123\",\"expires_in\":7200}",
+                        MediaType.APPLICATION_JSON));
+
+        WeComApiClient.WeComUserInfoResponse response = client.requestUserInfo("mytoken", "mycode");
+
+        assertThat(response.errcode()).isEqualTo(0);
+        assertThat(response.UserId()).isEqualTo("U123");
+        assertThat(response.user_ticket()).isEqualTo("T123");
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("requestUserDetail success → returns mobile and email")
+    void requestUserDetail_success() {
+        server.expect(requestToUriTemplate(BASE_URL + "/cgi-bin/user/getuserdetail?access_token={t}", "mytoken"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess(
+                        "{\"errcode\":0,\"errmsg\":\"ok\",\"userid\":\"U123\",\"name\":\"Name\",\"mobile\":\"13800138000\"}",
+                        MediaType.APPLICATION_JSON));
+
+        WeComApiClient.WeComUserDetailResponse response = client.requestUserDetail("mytoken", "T123");
+
+        assertThat(response.errcode()).isEqualTo(0);
+        assertThat(response.userid()).isEqualTo("U123");
+        assertThat(response.mobile()).isEqualTo("13800138000");
+        server.verify();
+    }
+
     /**
      * Test-only subclass that accepts a pre-built RestTemplate so we can wrap it
      * with MockRestServiceServer without needing Spring context.

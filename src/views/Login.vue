@@ -121,6 +121,21 @@
               {{ loading ? '登录中...' : '登录' }}
             </el-button>
           </el-form-item>
+
+          <div class="social-login">
+            <div class="divider">
+              <span>其他登录方式</span>
+            </div>
+            <el-button
+              class="wecom-button"
+              @click="handleWeComLogin"
+            >
+              <template #icon>
+                <img src="/wecom-icon.png" alt="WeCom" class="wecom-icon-img">
+              </template>
+              企业微信登录
+            </el-button>
+          </div>
         </el-form>
 
         <LoginDevAccountsHint v-if="LoginDevAccountsHint" />
@@ -139,6 +154,9 @@ import { useUserStore } from '@/stores/user'
 const LoginDevAccountsHint = import.meta.env.DEV
   ? defineAsyncComponent(() => import('@/components/common/LoginDevAccountsHint.vue'))
   : null
+
+import { onMounted } from 'vue'
+import { authApi } from '@/api/modules/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -181,6 +199,48 @@ const handleLogin = async () => {
     loading.value = false
   }
 }
+
+const handleWeComLogin = async () => {
+  try {
+    const { data } = await authApi.getWeComAuthorizeParams()
+    const { state } = data
+    // In a real environment, we would redirect to WeCom OAuth page
+    // Here we simulate the redirect
+    const redirectUri = encodeURIComponent(window.location.origin + '/login')
+    // Placeholder corpId and agentId - these would typically be returned by the backend or configured
+    const appId = 'wwed7823456789' 
+    const wecomUrl = `https://open.work.weixin.qq.com/wwopen/sso/qrConnect?appid=${appId}&agentid=1000002&redirect_uri=${redirectUri}&state=${state}`
+    
+    window.location.href = wecomUrl
+  } catch (error) {
+    ElMessage.error('无法启动企业微信登录，请联系管理员')
+  }
+}
+
+onMounted(async () => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const code = urlParams.get('code')
+  const state = urlParams.get('state')
+
+  if (code && state) {
+    loading.value = true
+    try {
+      await authApi.loginByWeCom(code, state)
+      ElMessage.success('企业微信登录成功')
+      router.push('/dashboard')
+    } catch (error) {
+      if (error?.response?.data?.code === 40101) {
+        ElMessage.warning('您的企业微信账号尚未绑定系统账号，请先手动登录一次进行绑定')
+      } else {
+        ElMessage.error(error?.message || '企业微信登录失败')
+      }
+      // Clean URL params
+      router.replace('/login')
+    } finally {
+      loading.value = false
+    }
+  }
+})
 </script>
 
 <style scoped>
@@ -460,6 +520,57 @@ const handleLogin = async () => {
 .login-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(3, 105, 161, 0.25);
+}
+
+/* ==================== 第三方登录 ==================== */
+.social-login {
+  margin-top: 32px;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.divider span {
+  padding: 0 16px;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.wecom-button {
+  width: 100%;
+  height: 44px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.wecom-button:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0F172A;
+}
+
+.wecom-icon-img {
+  width: 20px;
+  height: 20px;
 }
 
 /* ==================== 响应式设计 ==================== */
