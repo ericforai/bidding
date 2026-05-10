@@ -39,6 +39,8 @@ public class ScoreAnalysisService {
     private final ScoreAnalysisRepository scoreAnalysisRepository;
     private final DimensionScoreRepository dimensionScoreRepository;
     private final ProjectAccessScopeService projectAccessScopeService;
+    private final com.xiyu.bid.tender.service.TenderCommandService tenderCommandService;
+
     /**
      * 创建评分分析
      * @param request 创建请求
@@ -52,10 +54,14 @@ public class ScoreAnalysisService {
     @Transactional
     public ApiResponse<ScoreAnalysisDTO> createAnalysis(ScoreAnalysisCreateRequest request) {
         try {
-            projectAccessScopeService.assertCurrentUserCanAccessProject(request.getProjectId());
+            if (request.getProjectId() != null) {
+                projectAccessScopeService.assertCurrentUserCanAccessProject(request.getProjectId());
+            }
+
             // 创建评分分析主记录
             ScoreAnalysis analysis = ScoreAnalysis.builder()
                     .projectId(request.getProjectId())
+                    .tenderId(request.getTenderId())
                     .analysisDate(LocalDateTime.now())
                     .analystId(request.getAnalystId())
                     .isAiGenerated(request.getIsAiGenerated() != null ? request.getIsAiGenerated() : false)
@@ -70,6 +76,16 @@ public class ScoreAnalysisService {
             }
 
             ScoreAnalysis savedAnalysis = scoreAnalysisRepository.save(analysis);
+
+            // 如果关联了标讯，且当前是标讯评估，更新标讯状态为已评估
+            if (request.getTenderId() != null) {
+                try {
+                    tenderCommandService.updateStatus(request.getTenderId(), com.xiyu.bid.entity.Tender.Status.EVALUATED);
+                } catch (Exception e) {
+                    log.warn("更新标讯状态失败, tenderId: {}, error: {}", request.getTenderId(), e.getMessage());
+                    // 评分分析本身仍成功，不回滚
+                }
+            }
 
             // 保存维度分数
             if (request.getDimensions() != null && !request.getDimensions().isEmpty()) {
@@ -335,6 +351,7 @@ public class ScoreAnalysisService {
         return ScoreAnalysisDTO.builder()
                 .id(analysis.getId())
                 .projectId(analysis.getProjectId())
+                .tenderId(analysis.getTenderId())
                 .analysisDate(analysis.getAnalysisDate())
                 .overallScore(analysis.getOverallScore())
                 .riskLevel(analysis.getRiskLevel())

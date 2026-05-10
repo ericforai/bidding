@@ -132,7 +132,7 @@ export function useTenderBatchActions({
       const result = await batchTendersApi.batchUpdateStatus([row.id], normalizedStatus)
       showBatchOperationFeedback(result, '状态更新成功')
       await refreshTenderList()
-      if (result.success && normalizedStatus === TENDER_STATUSES.BIDDED) {
+      if (result.success && normalizedStatus === TENDER_STATUSES.BIDDING) {
         router.push({ path: '/project/create', query: { tenderId: row.id } })
       }
     } catch (error) {

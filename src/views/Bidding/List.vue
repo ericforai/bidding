@@ -59,10 +59,12 @@
             </el-button>
             <el-radio-group v-model="viewMode" size="small">
               <el-radio-button value="all">全部 ({{ statusCounts.all }})</el-radio-button>
-              <el-radio-button value="PENDING">待处理 ({{ statusCounts.pending }})</el-radio-button>
+              <el-radio-button value="PENDING_ASSIGNMENT">待分配 ({{ statusCounts.pendingAssignment }})</el-radio-button>
               <el-radio-button value="TRACKING">跟踪中 ({{ statusCounts.tracking }})</el-radio-button>
               <el-radio-button value="EVALUATED">已评估 ({{ statusCounts.evaluated }})</el-radio-button>
-              <el-radio-button value="BIDDED">已投标 ({{ statusCounts.bidded }})</el-radio-button>
+              <el-radio-button value="BIDDING">投标中 ({{ statusCounts.bidding }})</el-radio-button>
+              <el-radio-button value="WON">已中标 ({{ statusCounts.won }})</el-radio-button>
+              <el-radio-button value="LOST">未中标 ({{ statusCounts.lost }})</el-radio-button>
               <el-radio-button value="ABANDONED">已放弃 ({{ statusCounts.abandoned }})</el-radio-button>
             </el-radio-group>
           </div>
@@ -94,8 +96,14 @@
         @ai-analysis="handleAIAnalysis"
         @participate="handleParticipate"
         @distribute="distribution.openSingleDistribute"
+<<<<<<< HEAD
         @edit="handleEdit"
         @review="handleReview"
+=======
+        @claim="batchActions.handleSingleClaim"
+        @assign="distribution.openAssignDialog"
+        @evaluate="handleEvaluate"
+>>>>>>> f81cb78d (feat: upgrade tender lifecycle status flow with expanded states and evaluation integration)
         @status-change="batchActions.handleUpdateStatus"
         @delete="batchActions.handleDeleteTender"
       />

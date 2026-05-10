@@ -18,9 +18,9 @@ import {
 
 describe('normalizeTenderStatus', () => {
   it.each([
-    ['PENDING', '待处理'],
+    ['PENDING_ASSIGNMENT', '待处理'],
     ['TRACKING', '跟踪中'],
-    ['BIDDED', '已投标'],
+    ['BIDDING', '已投标'],
     ['ABANDONED', '已放弃']
   ])('maps backend status "%s" to "%s"', (input, expected) => {
     expect(normalizeTenderStatus(input)).toBe(expected)
@@ -61,7 +61,7 @@ describe('normalizeTenderForCreate', () => {
       source: '中国招标网',
       budget: 500000,
       deadline: '2026-06-01',
-      status: 'PENDING',
+      status: 'PENDING_ASSIGNMENT',
       aiScore: 85,
       riskLevel: 'HIGH',
       originalUrl: 'https://example.com/tender/1',
@@ -76,7 +76,7 @@ describe('normalizeTenderForCreate', () => {
       source: '人工录入',
       budget: 0,
       deadline: null,
-      status: 'PENDING',
+      status: 'PENDING_ASSIGNMENT',
       aiScore: 0,
       riskLevel: null,
       originalUrl: '',
@@ -90,7 +90,7 @@ describe('normalizeTenderForCreate', () => {
     expect(result.source).toBe('人工录入')
     expect(result.budget).toBe(0)
     expect(result.deadline).toBeNull()
-    expect(result.status).toBe('PENDING')
+    expect(result.status).toBe('PENDING_ASSIGNMENT')
     expect(result.aiScore).toBe(0)
     expect(result.riskLevel).toBeNull()
     expect(result.originalUrl).toBe('')
@@ -149,7 +149,7 @@ describe('buildTenderUpdatePayload', () => {
 
   it('includes all supported fields when all are present', () => {
     const changes = {
-      status: 'BIDDED',
+      status: 'BIDDING',
       title: '完整更新',
       budget: 300000,
       deadline: '2026-07-01',
@@ -442,21 +442,21 @@ describe('normalizeAiRisks', () => {
 
 describe('toBackendStatus', () => {
   it.each([
-    ['new', 'PENDING'],
-    ['pending', 'PENDING'],
+    ['new', 'PENDING_ASSIGNMENT'],
+    ['pending', 'PENDING_ASSIGNMENT'],
     ['following', 'TRACKING'],
     ['tracking', 'TRACKING'],
-    ['bidding', 'BIDDED'],
-    ['bidded', 'BIDDED'],
+    ['bidding', 'BIDDING'],
+    ['bidded', 'BIDDING'],
     ['abandoned', 'ABANDONED']
   ])('maps English frontend status "%s" to backend "%s"', (input, expected) => {
     expect(toBackendStatus(input)).toBe(expected)
   })
 
   it.each([
-    ['待处理', 'PENDING'],
+    ['待处理', 'PENDING_ASSIGNMENT'],
     ['跟踪中', 'TRACKING'],
-    ['已投标', 'BIDDED'],
+    ['已投标', 'BIDDING'],
     ['已放弃', 'ABANDONED']
   ])('maps Chinese text "%s" to backend "%s"', (input, expected) => {
     expect(toBackendStatus(input)).toBe(expected)

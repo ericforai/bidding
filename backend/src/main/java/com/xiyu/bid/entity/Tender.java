@@ -160,7 +160,7 @@ public class Tender {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
-    private Tender.Status status = Tender.Status.PENDING;
+    private Tender.Status status = Tender.Status.PENDING_ASSIGNMENT;
 
     @Column(name = "abandonment_reason", length = 1000)
     private String abandonmentReason;
@@ -232,11 +232,13 @@ public class Tender {
      * 标讯状态枚举
      */
     public enum Status {
-        PENDING,      // 待处理
-        TRACKING,     // 跟踪中
-        EVALUATED,    // 已评估
-        BIDDED,       // 已投标
-        ABANDONED     // 已放弃
+        PENDING_ASSIGNMENT, // 待分配
+        TRACKING,           // 跟踪中
+        EVALUATED,          // 已评估
+        BIDDING,            // 投标中
+        WON,                // 已中标
+        LOST,               // 未中标
+        ABANDONED           // 已放弃
     }
 
     /**

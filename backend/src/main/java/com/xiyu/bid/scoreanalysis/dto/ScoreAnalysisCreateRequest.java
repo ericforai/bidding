@@ -21,8 +21,12 @@ public class ScoreAnalysisCreateRequest {
     /**
      * 关联的项目ID
      */
-    @NotNull(message = "项目ID不能为空")
     private Long projectId;
+
+    /**
+     * 关联的标讯ID
+     */
+    private Long tenderId;
 
     /**
      * 分析人ID

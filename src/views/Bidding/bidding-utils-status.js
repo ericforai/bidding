@@ -4,16 +4,18 @@
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
 export const TENDER_STATUSES = Object.freeze({
-  PENDING: 'PENDING',
+  PENDING_ASSIGNMENT: 'PENDING_ASSIGNMENT',
   TRACKING: 'TRACKING',
   EVALUATED: 'EVALUATED',
-  BIDDED: 'BIDDED',
+  BIDDING: 'BIDDING',
+  WON: 'WON',
+  LOST: 'LOST',
   ABANDONED: 'ABANDONED'
 })
 
 const TENDER_STATUS_META = Object.freeze({
-  [TENDER_STATUSES.PENDING]: {
-    label: '待处理',
+  [TENDER_STATUSES.PENDING_ASSIGNMENT]: {
+    label: '待分配',
     tagType: 'info',
     badgeClass: 'pending'
   },
@@ -27,39 +29,51 @@ const TENDER_STATUS_META = Object.freeze({
     tagType: 'primary',
     badgeClass: 'evaluated'
   },
-  [TENDER_STATUSES.BIDDED]: {
-    label: '已投标',
+  [TENDER_STATUSES.BIDDING]: {
+    label: '投标中',
     tagType: 'success',
-    badgeClass: 'bidded'
+    badgeClass: 'bidding'
+  },
+  [TENDER_STATUSES.WON]: {
+    label: '已中标',
+    tagType: 'success',
+    badgeClass: 'won'
+  },
+  [TENDER_STATUSES.LOST]: {
+    label: '未中标',
+    tagType: 'danger',
+    badgeClass: 'lost'
   },
   [TENDER_STATUSES.ABANDONED]: {
     label: '已放弃',
-    tagType: 'danger',
+    tagType: 'info',
     badgeClass: 'abandoned'
   }
 })
 
 const LEGACY_STATUS_ALIASES = Object.freeze({
-  new: TENDER_STATUSES.PENDING,
-  pending: TENDER_STATUSES.PENDING,
-  contacted: TENDER_STATUSES.TRACKING,
-  following: TENDER_STATUSES.TRACKING,
-  quoting: TENDER_STATUSES.TRACKING,
+  pending: TENDER_STATUSES.PENDING_ASSIGNMENT,
+  pending_assignment: TENDER_STATUSES.PENDING_ASSIGNMENT,
   tracking: TENDER_STATUSES.TRACKING,
   evaluated: TENDER_STATUSES.EVALUATED,
-  bidding: TENDER_STATUSES.BIDDED,
-  bidded: TENDER_STATUSES.BIDDED,
+  bidding: TENDER_STATUSES.BIDDING,
+  bidded: TENDER_STATUSES.BIDDING,
+  won: TENDER_STATUSES.WON,
+  lost: TENDER_STATUSES.LOST,
   abandoned: TENDER_STATUSES.ABANDONED,
-  '待处理': TENDER_STATUSES.PENDING,
+  '待分配': TENDER_STATUSES.PENDING_ASSIGNMENT,
+  '待处理': TENDER_STATUSES.PENDING_ASSIGNMENT,
   '跟踪中': TENDER_STATUSES.TRACKING,
   '已评估': TENDER_STATUSES.EVALUATED,
-  '已投标': TENDER_STATUSES.BIDDED,
+  '投标中': TENDER_STATUSES.BIDDING,
+  '已中标': TENDER_STATUSES.WON,
+  '未中标': TENDER_STATUSES.LOST,
   '已放弃': TENDER_STATUSES.ABANDONED
 })
 
 export function normalizeTenderStatusCode(status) {
   if (!status) {
-    return TENDER_STATUSES.PENDING
+    return TENDER_STATUSES.PENDING_ASSIGNMENT
   }
 
   const normalizedValue = String(status).trim()
@@ -68,7 +82,7 @@ export function normalizeTenderStatusCode(status) {
     return upperValue
   }
 
-  return LEGACY_STATUS_ALIASES[normalizedValue.toLowerCase()] || TENDER_STATUSES.PENDING
+  return LEGACY_STATUS_ALIASES[normalizedValue.toLowerCase()] || TENDER_STATUSES.PENDING_ASSIGNMENT
 }
 
 export function normalizeTenderRecord(tender = {}) {
