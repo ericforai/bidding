@@ -49,11 +49,7 @@ import java.util.Locale;
             columnList = "status, region_normalized, industry_normalized"),
     @Index(name = "idx_tender_source_type", columnList = "source_type")
 })
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 public class Tender {
 
     @Id
