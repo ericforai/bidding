@@ -87,7 +87,7 @@ describe('TenderActionMenu permissions', () => {
 
   it('shows bid result options when status is BIDDING', () => {
     const biddingRow = { id: 1, title: '测试', status: 'BIDDING' }
-    const wrapper = mountMenu({ row: biddingRow })
+    const wrapper = mountMenu({ canManageTenders: true, row: biddingRow })
 
     expect(wrapper.html()).toContain('登记中标')
     expect(wrapper.html()).toContain('登记未中标')
