@@ -1,61 +1,141 @@
 <template>
-  <el-card class="stage-view" shadow="never">
-    <template #header>评标 (Evaluation)</template>
-    <el-descriptions :column="2" border size="small">
-      <el-descriptions-item label="当前子阶段">{{ view?.subStage || '-' }}</el-descriptions-item>
-      <el-descriptions-item label="结果是否已公示">{{ view?.announced ? '是' : '否' }}</el-descriptions-item>
-    </el-descriptions>
-    <el-divider />
-    <div class="row">
-      <el-select v-model="targetSubStage" placeholder="切换至子阶段" style="width: 220px">
-        <el-option label="评标进行中" value="IN_PROGRESS" />
-        <el-option label="待定标" value="AWAITING_BOARD" />
-        <el-option label="结果已公示" value="ANNOUNCED" />
-      </el-select>
-      <el-button type="primary" :loading="transitioning" @click="transition">切换子阶段</el-button>
+  <div class="evaluation-stage">
+    <div class="action-bar">
+      <el-button type="primary" :loading="submitting" @click="handleSubmit">提交</el-button>
+      <el-button type="success" @click="handleBid">投标</el-button>
+      <el-button type="danger" @click="handleAbandon">弃标</el-button>
     </div>
+
     <el-divider />
-    <div class="row">
-      <el-input
-        v-model.number="evidenceDocumentId"
-        type="number"
-        placeholder="凭证文档 ID"
-        style="width: 220px"
+
+    <div class="main-content">
+      <div class="form-section">
+        <EvaluationForm
+          ref="formRef"
+          v-model="formData"
+          :saving="saving"
+          @save="handleSave"
+          @reset="handleReset"
+        />
+      </div>
+
+      <EvaluationStatusPanel
+        :view="view"
+        :transitioning="transitioning"
+        v-model:targetSubStage="targetSubStage"
+        @transition="handleTransition"
       />
-      <el-button :loading="attaching" @click="attachEvidence">附加证据</el-button>
     </div>
-  </el-card>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { projectLifecycleApi } from '@/api/modules/projectLifecycle.js'
+import EvaluationForm from './components/EvaluationForm.vue'
+import EvaluationStatusPanel from './components/EvaluationStatusPanel.vue'
 
-const props = defineProps({ projectId: { type: [String, Number], required: true } })
+const props = defineProps({
+  projectId: { type: [String, Number], required: true }
+})
 
+const formRef = ref(null)
 const view = ref(null)
 const targetSubStage = ref('')
+const saving = ref(false)
+const submitting = ref(false)
 const transitioning = ref(false)
-const evidenceDocumentId = ref(null)
-const attaching = ref(false)
+
+const formData = reactive({
+  background: '',
+  competitors: '',
+  contractPeriod: '',
+  shortlistedBidders: null,
+  platformFee: null,
+  previousBid: '',
+  recommendation: null
+})
+
+function buildPayload() {
+  return {
+    background: formData.background,
+    competitors: formData.competitors,
+    contractPeriod: formData.contractPeriod,
+    shortlistedBidders: formData.shortlistedBidders,
+    platformFee: formData.platformFee,
+    previousBid: formData.previousBid || null,
+    recommendation: formData.recommendation
+  }
+}
 
 async function load() {
   try {
     const r = await projectLifecycleApi.getEvaluation(props.projectId)
     view.value = r?.data || r
+    syncFormData()
   } catch (e) {
-    console.warn(e)
+    console.warn('加载评估数据失败', e)
   }
 }
 
-async function transition() {
+function syncFormData() {
+  if (!view.value) return
+  formData.background = view.value.background || ''
+  formData.competitors = view.value.competitors || ''
+  formData.contractPeriod = view.value.contractPeriod || ''
+  formData.shortlistedBidders = view.value.shortlistedBidders ?? null
+  formData.platformFee = view.value.platformFee ?? null
+  formData.previousBid = view.value.previousBid || ''
+  formData.recommendation = view.value.recommendation ?? null
+}
+
+async function handleSave() {
+  try {
+    await formRef.value?.validate()
+    saving.value = true
+    const r = await projectLifecycleApi.updateEvaluationForm(props.projectId, buildPayload())
+    view.value = r?.data || r
+    ElMessage.success('表单已保存')
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || '保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+function handleReset() {
+  formRef.value?.resetFields()
+  syncFormData()
+}
+
+async function handleSubmit() {
+  submitting.value = true
+  try {
+    await formRef.value?.validate()
+    await projectLifecycleApi.updateEvaluationForm(props.projectId, buildPayload())
+    await load()
+    ElMessage.success('提交成功')
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || '提交失败')
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function handleBid() {
+  ElMessage.info('投标功能开发中')
+}
+
+async function handleAbandon() {
+  ElMessage.info('弃标功能开发中')
+}
+
+async function handleTransition() {
   if (!targetSubStage.value) return ElMessage.warning('请选择子阶段')
   transitioning.value = true
   try {
-    await projectLifecycleApi.transitionEvaluationSubStage(props.projectId, {
-      target: targetSubStage.value,
-    })
+    await projectLifecycleApi.transitionEvaluationSubStage(props.projectId, { target: targetSubStage.value })
     ElMessage.success('子阶段已切换')
     await load()
   } catch (e) {
@@ -65,25 +145,37 @@ async function transition() {
   }
 }
 
-async function attachEvidence() {
-  if (!evidenceDocumentId.value) return ElMessage.warning('请输入文档 ID')
-  attaching.value = true
-  try {
-    await projectLifecycleApi.attachEvaluationEvidence(props.projectId, {
-      documentId: evidenceDocumentId.value,
-    })
-    ElMessage.success('证据已附加')
-    await load()
-  } catch (e) {
-    ElMessage.error(e?.response?.data?.message || '附加失败')
-  } finally {
-    attaching.value = false
-  }
-}
-
 onMounted(load)
 </script>
 
 <style scoped>
-.row { display: flex; gap: 12px; align-items: center; }
+.evaluation-stage {
+  padding: 16px;
+}
+
+.action-bar {
+  display: flex;
+  gap: 12px;
+}
+
+.main-content {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.form-section {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .main-content {
+    flex-direction: column;
+  }
+
+  .evaluation-status {
+    width: 100%;
+  }
+}
 </style>

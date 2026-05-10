@@ -10,6 +10,7 @@ import com.xiyu.bid.project.core.EvaluationSubStage;
 import com.xiyu.bid.project.core.ProjectStage;
 import com.xiyu.bid.project.core.ProjectStageTransitionPolicy;
 import com.xiyu.bid.project.dto.EvaluationEvidenceAttachRequest;
+import com.xiyu.bid.project.dto.EvaluationFormUpdateRequest;
 import com.xiyu.bid.project.dto.EvaluationSubStageUpdateRequest;
 import com.xiyu.bid.project.repository.ProjectEvaluationRepository;
 import com.xiyu.bid.projectworkflow.entity.ProjectDocument;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -133,6 +135,25 @@ class ProjectEvaluationServiceTest {
         var dto = service.transitionSubStage(1L, req, 7L);
         assertEquals("AWAITING_BOARD", dto.getSubStage());
         verify(repo).save(any(ProjectEvaluation.class));
+    }
+
+    @Test
+    void updateEvaluationForm_happy() {
+        ProjectEvaluation existing = ProjectEvaluation.builder()
+                .id(10L).projectId(1L).subStage("IN_PROGRESS").build();
+        when(repo.findByProjectId(1L)).thenReturn(Optional.of(existing));
+        var req = EvaluationFormUpdateRequest.builder()
+                .background("测试背景")
+                .competitors("竞争对手A、B")
+                .contractPeriod("12个月")
+                .shortlistedBidders(5)
+                .platformFee(new BigDecimal("10000.00"))
+                .previousBid("上一轮报价100万")
+                .recommendation(true)
+                .build();
+        var dto = service.updateEvaluationForm(1L, req, 7L);
+        assertEquals("测试背景", dto.getBackground());
+        verify(repo).save(any());
     }
 
     @Test

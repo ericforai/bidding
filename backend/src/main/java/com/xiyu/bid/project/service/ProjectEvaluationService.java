@@ -15,6 +15,7 @@ import com.xiyu.bid.project.core.ProjectStage;
 import com.xiyu.bid.project.core.ProjectStageTransitionPolicy;
 import com.xiyu.bid.project.dto.EvaluationDTO;
 import com.xiyu.bid.project.dto.EvaluationEvidenceAttachRequest;
+import com.xiyu.bid.project.dto.EvaluationFormUpdateRequest;
 import com.xiyu.bid.project.dto.EvaluationSubStageUpdateRequest;
 import com.xiyu.bid.project.repository.ProjectEvaluationRepository;
 import com.xiyu.bid.projectworkflow.entity.ProjectDocument;
@@ -124,6 +125,31 @@ public class ProjectEvaluationService {
         return repository.findByProjectId(projectId).map(this::toDto);
     }
 
+    @Auditable(action = "UPDATE_EVALUATION_FORM", entityType = "ProjectEvaluation",
+            description = "填写项目评估表单")
+    public EvaluationDTO updateEvaluationForm(Long projectId, EvaluationFormUpdateRequest req, Long userId) {
+        mustGetProject(projectId);
+        ProjectStage projectStage = projectStageService.currentStage(projectId);
+        var lockDecision = ProjectFieldLockPolicy.assertWritable(projectStage, "evaluation");
+        if (!lockDecision.allowed()) {
+            var deny = (ProjectFieldLockPolicy.Decision.Deny) lockDecision;
+            throw new ResponseStatusException(HttpStatus.LOCKED, deny.reason());
+        }
+        ProjectEvaluation entity = repository.findByProjectId(projectId)
+                .orElseGet(() -> initEntity(projectId, userId));
+        entity.setBackground(req.getBackground());
+        entity.setCompetitors(req.getCompetitors());
+        entity.setContractPeriod(req.getContractPeriod());
+        entity.setShortlistedBidders(req.getShortlistedBidders());
+        entity.setPlatformFee(req.getPlatformFee());
+        entity.setPreviousBid(req.getPreviousBid());
+        entity.setRecommendation(req.getRecommendation());
+        entity.setUpdatedBy(userId);
+        ProjectEvaluation saved = repository.save(entity);
+        log.info("Evaluation form updated project={} user={}", projectId, userId);
+        return toDto(saved);
+    }
+
     private void advanceProjectStageToResultPending(Long projectId) {
         ProjectStage current = projectStageService.currentStage(projectId);
         if (current != ProjectStage.EVALUATING) {
@@ -182,6 +208,13 @@ public class ProjectEvaluationService {
                 .createdAt(e.getCreatedAt())
                 .updatedAt(e.getUpdatedAt())
                 .updatedBy(e.getUpdatedBy())
+                .background(e.getBackground())
+                .competitors(e.getCompetitors())
+                .contractPeriod(e.getContractPeriod())
+                .shortlistedBidders(e.getShortlistedBidders())
+                .platformFee(e.getPlatformFee())
+                .previousBid(e.getPreviousBid())
+                .recommendation(e.getRecommendation())
                 .build();
     }
 }
