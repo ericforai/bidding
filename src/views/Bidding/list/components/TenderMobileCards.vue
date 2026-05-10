@@ -10,8 +10,8 @@
         <div><span>总部所在地</span><strong>{{ row.region }}</strong></div>
         <div>
           <span>来源</span>
-          <el-tag v-if="row.source" :type="getSourceTagType(row.source)" size="small">
-            {{ getSourceText(row.source) }}
+          <el-tag v-if="row.sourceType" :type="getSourceTypeTagType(row.sourceType)" size="small">
+            {{ getSourceTypeText(row.sourceType) }}
           </el-tag>
         </div>
         <div>
@@ -45,7 +45,7 @@
 </template>
 
 <script setup>
-import { formatBudgetWan, getSourceTagType, getSourceText } from '../helpers.js'
+import { formatBudgetWan, getSourceTypeTagType, getSourceTypeText } from '../helpers.js'
 import { getTenderStatusTagType, getTenderStatusText } from '../../bidding-utils-status.js'
 
 defineProps({

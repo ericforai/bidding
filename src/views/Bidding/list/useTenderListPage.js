@@ -79,7 +79,7 @@ export function useTenderListPage() {
       keyword: searchForm.value.keyword || undefined,
       region: searchForm.value.region || undefined,
       status: searchForm.value.status || undefined,
-      source: searchForm.value.source || undefined,
+      sourceType: searchForm.value.sourceType || undefined,
     })
   }
 
@@ -134,7 +134,7 @@ export function useTenderListPage() {
       keyword: searchForm.value.keyword || undefined,
       region: searchForm.value.region || undefined,
       status: searchForm.value.status || undefined,
-      source: searchForm.value.source || undefined,
+      sourceType: searchForm.value.sourceType || undefined,
     }, '标讯列表导出成功')
   }
 

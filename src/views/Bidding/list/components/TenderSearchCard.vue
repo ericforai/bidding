@@ -22,7 +22,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="来源" class="search-field">
-        <el-select v-model="modelValue.source" placeholder="全部来源" clearable class="filter-select">
+        <el-select v-model="modelValue.sourceType" placeholder="全部来源" clearable class="filter-select">
           <el-option v-for="item in sourceOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-form-item>
@@ -42,12 +42,12 @@
 
 <script setup>
 import { RefreshLeft, Search } from '@element-plus/icons-vue'
-import { REGION_OPTIONS, SOURCE_OPTIONS } from '../constants.js'
+import { REGION_OPTIONS, SOURCE_TYPE_OPTIONS } from '../constants.js'
 
 const modelValue = defineModel({ type: Object, required: true })
 defineProps({
   regions: { type: Array, default: () => REGION_OPTIONS },
-  sourceOptions: { type: Array, default: () => SOURCE_OPTIONS },
+  sourceOptions: { type: Array, default: () => SOURCE_TYPE_OPTIONS },
 })
 
 defineEmits(['search', 'reset'])

@@ -20,6 +20,7 @@ public class TenderSearchCriteria {
     private String keyword;
     private Tender.Status status;
     private String source;
+    private Tender.SourceType sourceType;
     private String region;
     private String industry;
     private String purchaserName;

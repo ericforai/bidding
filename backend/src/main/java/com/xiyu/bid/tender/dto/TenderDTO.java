@@ -44,6 +44,7 @@ public class TenderDTO {
     private Tender.Status status;
     private Integer aiScore;
     private Tender.RiskLevel riskLevel;
+    private Tender.SourceType sourceType;
     private String originalUrl;
     private String externalId;
     private LocalDateTime createdAt;

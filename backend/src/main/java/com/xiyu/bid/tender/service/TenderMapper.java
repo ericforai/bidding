@@ -40,6 +40,7 @@ public class TenderMapper {
                 .status(tender.getStatus())
                 .aiScore(tender.getAiScore())
                 .riskLevel(tender.getRiskLevel())
+                .sourceType(tender.getSourceType())
                 .originalUrl(tender.getOriginalUrl())
                 .externalId(tender.getExternalId())
                 .createdAt(tender.getCreatedAt())
@@ -75,6 +76,7 @@ public class TenderMapper {
                 .status(request.getStatus())
                 .aiScore(request.getAiScore())
                 .riskLevel(request.getRiskLevel())
+                .sourceType(request.getSourceType())
                 .originalUrl(request.getOriginalUrl())
                 .externalId(request.getExternalId())
                 .build();
@@ -108,6 +110,7 @@ public class TenderMapper {
                 .tags(encodeTags(dto.getTags()))
                 .aiScore(dto.getAiScore())
                 .riskLevel(dto.getRiskLevel())
+                .sourceType(dto.getSourceType())
                 .originalUrl(dto.getOriginalUrl())
                 .externalId(dto.getExternalId());
         if (dto.getStatus() != null) {
@@ -143,6 +146,7 @@ public class TenderMapper {
         if (dto.getStatus() != null) target.setStatus(dto.getStatus());
         if (dto.getAiScore() != null) target.setAiScore(dto.getAiScore());
         if (dto.getRiskLevel() != null) target.setRiskLevel(dto.getRiskLevel());
+        if (dto.getSourceType() != null) target.setSourceType(dto.getSourceType());
         if (dto.getOriginalUrl() != null) target.setOriginalUrl(dto.getOriginalUrl());
         if (dto.getExternalId() != null) target.setExternalId(dto.getExternalId());
     }

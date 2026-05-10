@@ -82,7 +82,7 @@ describe('ManualTenderDialog', () => {
   it('shows pasted text recognition in the attachment area', () => {
     const wrapper = mountDialog()
 
-    expect(wrapper.find('.paste-recognition').exists()).toBe(true)
+    expect(wrapper.find('.paste-recognition-hint').exists()).toBe(true)
     expect(wrapper.text()).toContain('识别粘贴文字')
   })
 
