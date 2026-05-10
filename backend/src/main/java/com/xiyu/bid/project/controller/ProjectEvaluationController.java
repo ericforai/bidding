@@ -9,6 +9,7 @@ import com.xiyu.bid.project.dto.EvaluationDTO;
 import com.xiyu.bid.project.dto.EvaluationEvidenceAttachRequest;
 import com.xiyu.bid.project.dto.EvaluationFormUpdateRequest;
 import com.xiyu.bid.project.dto.EvaluationSubStageUpdateRequest;
+import com.xiyu.bid.project.dto.ProjectAbandonBidRequest;
 import com.xiyu.bid.project.service.ProjectEvaluationService;
 import com.xiyu.bid.service.AuthService;
 import jakarta.validation.Valid;
@@ -80,6 +81,18 @@ public class ProjectEvaluationController {
         EvaluationDTO dto = service.getByProject(projectId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "评标尚未开始"));
         return ResponseEntity.ok(ApiResponse.success("ok", dto));
+    }
+
+    /** 弃标申请：BID_LEAD（映射 MANAGER）。 */
+    @PostMapping("/abandon")
+    @PreAuthorize("hasAnyRole('MANAGER')")
+    public ResponseEntity<ApiResponse<EvaluationDTO>> abandonBid(
+            @PathVariable Long projectId,
+            @Valid @RequestBody ProjectAbandonBidRequest req,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = currentUserId(userDetails);
+        EvaluationDTO dto = service.abandonBid(projectId, req, userId);
+        return ResponseEntity.ok(ApiResponse.success("弃标申请已提交", dto));
     }
 
     private Long currentUserId(UserDetails userDetails) {
