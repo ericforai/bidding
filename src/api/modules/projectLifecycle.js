@@ -48,6 +48,12 @@ export const projectLifecycleApi = {
   updateEvaluationForm(id, payload) {
     return httpClient.patch(`${base(id)}/evaluation/form`, payload)
   },
+  abandonBid(id, payload) {
+    return httpClient.post(`${base(id)}/evaluation/abandon`, payload)
+  },
+  submitToBid(id) {
+    return httpClient.post(`${base(id)}/submit-to-bid-document`)
+  },
 
   // WS-D result
   getResult(id) {
