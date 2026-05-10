@@ -34,7 +34,7 @@ class DashboardAnalyticsOutcomeComputationService {
     }
 
     String deriveOutcome(Tender.Status status, ProjectSnapshotAggregate project) {
-        if (status == Tender.Status.BIDDED && project != null) {
+        if (status == Tender.Status.WON && project != null) {
             return "WON";
         }
         if (status == Tender.Status.ABANDONED) {

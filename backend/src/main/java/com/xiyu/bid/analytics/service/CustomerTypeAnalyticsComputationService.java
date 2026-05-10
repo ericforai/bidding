@@ -74,7 +74,7 @@ class CustomerTypeAnalyticsComputationService {
     }
 
     String deriveOutcome(CustomerTypeProjectRow row) {
-        if (row.tenderStatus() == Tender.Status.BIDDED) {
+        if (row.tenderStatus() == Tender.Status.WON) {
             return "WON";
         }
         if (row.tenderStatus() == Tender.Status.ABANDONED || row.projectStatus() == Project.Status.ARCHIVED) {
@@ -84,7 +84,7 @@ class CustomerTypeAnalyticsComputationService {
     }
 
     boolean isWon(CustomerTypeProjectRow row) {
-        return row.tenderStatus() == Tender.Status.BIDDED;
+        return row.tenderStatus() == Tender.Status.WON;
     }
 
     private String normalizeFilterValue(String value) {

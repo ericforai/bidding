@@ -24,7 +24,7 @@ export function normalizeTenderForCreate(formData) {
     source: formData.source || '人工录入',
     budget: formData.budget != null ? Number(formData.budget) : 0,
     deadline: formData.deadline || null,
-    status: 'PENDING',
+    status: 'PENDING_ASSIGNMENT',
     aiScore: formData.aiScore != null ? Number(formData.aiScore) : 0,
     riskLevel: formData.riskLevel || null,
     originalUrl: formData.originalUrl || '',
@@ -237,18 +237,34 @@ export function normalizeAiRisks(risks) {
 
 /**
  * Frontend status (lowercase) → Backend enum (uppercase)
+ * Unknown values (not in status constants or aliases) pass through unchanged.
  */
 export function toBackendStatus(frontendStatus) {
   if (frontendStatus == null) {
     return frontendStatus
   }
 
-  const normalized = toBackendTenderStatus(frontendStatus)
   const rawValue = String(frontendStatus).trim()
-  return normalized === 'PENDING' && rawValue.toUpperCase() !== 'PENDING'
-    && rawValue.toLowerCase() !== 'new'
-    && rawValue.toLowerCase() !== 'pending'
-    && rawValue !== '待处理'
-    ? frontendStatus
-    : normalized
+  const upperValue = rawValue.toUpperCase()
+
+  // If already a valid backend enum, return as-is
+  if (['PENDING_ASSIGNMENT', 'TRACKING', 'EVALUATED', 'BIDDING', 'WON', 'LOST', 'ABANDONED'].includes(upperValue)) {
+    return upperValue
+  }
+
+  // Try to normalize via aliases (pending, tracking, 已投标, etc.)
+  const normalized = toBackendTenderStatus(frontendStatus)
+  if (normalized !== 'PENDING_ASSIGNMENT') {
+    return normalized
+  }
+
+  // If normalized to PENDING_ASSIGNMENT, check if input was a known pending alias
+  const lowerValue = rawValue.toLowerCase()
+  const knownPendingAliases = ['new', 'pending', 'pending_assignment', '待处理', '待分配']
+  if (knownPendingAliases.includes(lowerValue)) {
+    return 'PENDING_ASSIGNMENT'
+  }
+
+  // Unknown value - pass through unchanged
+  return rawValue
 }

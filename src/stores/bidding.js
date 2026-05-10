@@ -19,9 +19,9 @@ export const useBiddingStore = defineStore('bidding', {
   }),
 
   getters: {
-    newTenders: (state) => state.tenders.filter(t => t.status === TENDER_STATUSES.PENDING),
+    newTenders: (state) => state.tenders.filter(t => t.status === TENDER_STATUSES.PENDING_ASSIGNMENT),
     followingTenders: (state) => state.tenders.filter(t => t.status === TENDER_STATUSES.TRACKING),
-    biddingTenders: (state) => state.tenders.filter(t => t.status === TENDER_STATUSES.BIDDED),
+    biddingTenders: (state) => state.tenders.filter(t => t.status === TENDER_STATUSES.BIDDING),
     highPriorityTenders: (state) => state.tenders.filter(t => t.aiScore >= 85),
     urgentTodos: (state) => state.todos.filter(t => t.priority === 'high'),
     todayEvents: (state) => {

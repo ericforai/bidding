@@ -49,11 +49,7 @@ import java.util.Locale;
             columnList = "status, region_normalized, industry_normalized"),
     @Index(name = "idx_tender_source_type", columnList = "source_type")
 })
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 public class Tender {
 
     @Id
@@ -189,7 +185,7 @@ public class Tender {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
-    private Tender.Status status = Tender.Status.PENDING;
+    private Tender.Status status = Tender.Status.PENDING_ASSIGNMENT;
 
     /**
      * AI评分（0-100）
@@ -273,10 +269,13 @@ public class Tender {
      * 标讯状态枚举
      */
     public enum Status {
-        PENDING,      // 待处理
-        TRACKING,     // 跟踪中
-        BIDDED,       // 已投标
-        ABANDONED     // 已放弃
+        PENDING_ASSIGNMENT, // 待分配
+        TRACKING,           // 跟踪中
+        EVALUATED,          // 已评估
+        BIDDING,            // 投标中
+        WON,                // 已中标
+        LOST,               // 未中标
+        ABANDONED           // 已放弃
     }
 
     /**

@@ -140,7 +140,7 @@ class ExcelExportServiceExecutionTest extends AbstractExcelExportServiceTest {
         Tender unlinkedTender = Tender.builder()
                 .id(3L)
                 .title("未关联项目标讯")
-                .status(Tender.Status.PENDING)
+                .status(Tender.Status.PENDING_ASSIGNMENT)
                 .build();
         Page<Tender> page = new PageImpl<>(List.of(testTender, unlinkedTender), PageRequest.of(0, 1000), 2);
         when(projectAccessScopeService.currentUserHasAdminAccess()).thenReturn(false);
@@ -248,7 +248,7 @@ class ExcelExportServiceExecutionTest extends AbstractExcelExportServiceTest {
                         .title("标讯 " + i)
                         .source("测试来源")
                         .budget(new BigDecimal("1000000.00"))
-                        .status(Tender.Status.PENDING)
+                        .status(Tender.Status.PENDING_ASSIGNMENT)
                         .build())
                 .toList();
         when(tenderRepository.findAll(any(org.springframework.data.domain.Pageable.class)))

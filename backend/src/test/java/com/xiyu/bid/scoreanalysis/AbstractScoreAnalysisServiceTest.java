@@ -1,13 +1,16 @@
 package com.xiyu.bid.scoreanalysis;
 
+import com.xiyu.bid.scoreanalysis.core.ScoreAnalysisCalculationPolicy;
 import com.xiyu.bid.scoreanalysis.dto.DimensionScoreDTO;
 import com.xiyu.bid.scoreanalysis.dto.ScoreAnalysisCreateRequest;
 import com.xiyu.bid.scoreanalysis.entity.DimensionScore;
 import com.xiyu.bid.scoreanalysis.entity.ScoreAnalysis;
 import com.xiyu.bid.scoreanalysis.repository.DimensionScoreRepository;
 import com.xiyu.bid.scoreanalysis.repository.ScoreAnalysisRepository;
+import com.xiyu.bid.scoreanalysis.service.ScoreAnalysisQueryService;
 import com.xiyu.bid.scoreanalysis.service.ScoreAnalysisService;
 import com.xiyu.bid.service.ProjectAccessScopeService;
+import com.xiyu.bid.tender.service.TenderCommandService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -30,17 +33,27 @@ abstract class AbstractScoreAnalysisServiceTest {
     @Mock
     protected ProjectAccessScopeService projectAccessScopeService;
 
+    @Mock
+    protected TenderCommandService tenderCommandService;
+
     protected ScoreAnalysisService scoreAnalysisService;
+    protected ScoreAnalysisCalculationPolicy calculationPolicy;
+    protected ScoreAnalysisQueryService queryService;
     protected ScoreAnalysis testAnalysis;
     protected DimensionScore testDimension;
     protected ScoreAnalysisCreateRequest createRequest;
 
     @BeforeEach
     void setUpScoreAnalysisFixture() {
+        calculationPolicy = new ScoreAnalysisCalculationPolicy();
+        queryService = new ScoreAnalysisQueryService(scoreAnalysisRepository, dimensionScoreRepository, projectAccessScopeService);
         scoreAnalysisService = new ScoreAnalysisService(
                 scoreAnalysisRepository,
                 dimensionScoreRepository,
-                projectAccessScopeService
+                projectAccessScopeService,
+                tenderCommandService,
+                calculationPolicy,
+                queryService
         );
 
         testDimension = DimensionScore.builder()

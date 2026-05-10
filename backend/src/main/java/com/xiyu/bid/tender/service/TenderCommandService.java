@@ -33,6 +33,7 @@ public class TenderCommandService {
     private final AiService aiService;
     private final TenderMapper tenderMapper;
     private final TenderProjectAccessGuard accessGuard;
+    private final com.xiyu.bid.batch.core.TenderStatusTransitionPolicy statusTransitionPolicy;
 
     public TenderDTO createTender(TenderDTO tenderDTO) {
         log.debug("Creating new tender: {}", tenderDTO.getTitle());
@@ -40,6 +41,20 @@ public class TenderCommandService {
         Tender savedTender = tenderRepository.save(tender);
         log.info("Created tender with id: {}", savedTender.getId());
         return tenderMapper.toDTO(savedTender);
+    }
+
+    public TenderDTO updateStatus(Long id, Tender.Status targetStatus) {
+        log.debug("Updating tender status, id: {}, target: {}", id, targetStatus);
+        Tender tender = tenderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Tender", id.toString()));
+        accessGuard.assertCanAccessTender(tender);
+
+        statusTransitionPolicy.assertTransition(tender.getStatus(), targetStatus);
+
+        tender.setStatus(targetStatus);
+        Tender updatedTender = tenderRepository.save(tender);
+        log.info("Updated tender status, id: {}, status: {}", id, targetStatus);
+        return tenderMapper.toDTO(updatedTender);
     }
 
     public TenderDTO updateTender(Long id, TenderDTO tenderDTO) {
@@ -88,7 +103,7 @@ public class TenderCommandService {
 
     private TenderDTO withCommandDefaults(TenderDTO tenderDTO) {
         if (tenderDTO.getStatus() == null) {
-            tenderDTO.setStatus(Tender.Status.PENDING);
+            tenderDTO.setStatus(Tender.Status.PENDING_ASSIGNMENT);
         }
         if (tenderDTO.getSourceType() == null) {
             tenderDTO.setSourceType(Tender.SourceType.MANUAL);

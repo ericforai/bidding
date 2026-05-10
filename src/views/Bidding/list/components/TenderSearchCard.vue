@@ -13,8 +13,13 @@
       </el-form-item>
       <el-form-item label="状态" class="search-field">
         <el-select v-model="modelValue.status" placeholder="全部状态" clearable class="filter-select">
-          <el-option label="待处理" value="PENDING" /><el-option label="跟踪中" value="TRACKING" />
-          <el-option label="已投标" value="BIDDED" /><el-option label="已放弃" value="ABANDONED" />
+          <el-option label="待分配" value="PENDING_ASSIGNMENT" />
+          <el-option label="跟踪中" value="TRACKING" />
+          <el-option label="已评估" value="EVALUATED" />
+          <el-option label="投标中" value="BIDDING" />
+          <el-option label="已中标" value="WON" />
+          <el-option label="未中标" value="LOST" />
+          <el-option label="已放弃" value="ABANDONED" />
         </el-select>
       </el-form-item>
       <el-form-item label="来源" class="search-field">

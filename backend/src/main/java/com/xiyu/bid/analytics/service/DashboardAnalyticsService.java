@@ -119,7 +119,7 @@ public class DashboardAnalyticsService {
                 .map(DashboardAnalyticsRepository.TenderSummaryRow::budget)
                 .filter(java.util.Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        long wonCount = matchedTenders.stream().filter(tender -> tender.status() == Tender.Status.BIDDED).count();
+        long wonCount = matchedTenders.stream().filter(tender -> tender.status() == Tender.Status.WON).count();
         long totalParticipation = matchedTenders.size();
 
         return assemblerService.assembleBasicDrillDownResponse(

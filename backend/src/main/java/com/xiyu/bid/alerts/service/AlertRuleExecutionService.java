@@ -45,7 +45,7 @@ public class AlertRuleExecutionService {
         int thresholdDays = rule.getThreshold().intValue();
 
         for (Tender tender : tenderRepository.findAll().stream()
-                .filter(t -> t.getStatus() == Tender.Status.PENDING || t.getStatus() == Tender.Status.TRACKING)
+                .filter(t -> t.getStatus() == Tender.Status.PENDING_ASSIGNMENT || t.getStatus() == Tender.Status.TRACKING)
                 .toList()) {
             if (tender.getDeadline() == null) {
                 continue;

@@ -121,7 +121,15 @@ export function formatMetricCell(column, value, _row = {}, metricDrawerType = ''
 
 export function getMetricStatusTagType(value, type) {
   if (type === 'revenue') {
-    return { PENDING: 'info', TRACKING: 'warning', BIDDED: 'success', ABANDONED: 'danger' }[value] || 'info'
+    return {
+      PENDING_ASSIGNMENT: 'info',
+      TRACKING: 'warning',
+      EVALUATED: 'primary',
+      BIDDING: 'success',
+      WON: 'success',
+      LOST: 'danger',
+      ABANDONED: 'info'
+    }[value] || 'info'
   }
   if (type === 'projects') {
     return {
