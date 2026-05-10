@@ -34,4 +34,18 @@ public interface ScoreAnalysisRepository extends JpaRepository<ScoreAnalysis, Lo
      * @return 评分分析列表（按日期倒序）
      */
     List<ScoreAnalysis> findByProjectIdOrderByAnalysisDateDesc(Long projectId);
+
+    /**
+     * 根据标讯ID查找最新的评分分析
+     * @param tenderId 标讯ID
+     * @return 最新的评分分析
+     */
+    Optional<ScoreAnalysis> findFirstByTenderIdOrderByAnalysisDateDesc(Long tenderId);
+
+    /**
+     * 根据标讯ID查找所有评分分析，按日期倒序排列
+     * @param tenderId 标讯ID
+     * @return 评分分析列表（按日期倒序）
+     */
+    List<ScoreAnalysis> findByTenderIdOrderByAnalysisDateDesc(Long tenderId);
 }

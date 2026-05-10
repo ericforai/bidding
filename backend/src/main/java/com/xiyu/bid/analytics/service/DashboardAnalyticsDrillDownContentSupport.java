@@ -97,7 +97,7 @@ class DashboardAnalyticsDrillDownContentSupport {
         return filteredProjects.stream()
                 .map(project -> tenderById.get(project.tenderId()))
                 .filter(Objects::nonNull)
-                .filter(tender -> tender.status() == com.xiyu.bid.entity.Tender.Status.BIDDED)
+                .filter(tender -> tender.status() == com.xiyu.bid.entity.Tender.Status.WON)
                 .count();
     }
 }

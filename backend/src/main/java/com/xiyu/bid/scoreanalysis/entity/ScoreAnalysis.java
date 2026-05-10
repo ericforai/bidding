@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "score_analyses", indexes = {
     @Index(name = "idx_score_analysis_project", columnList = "project_id"),
+    @Index(name = "idx_score_analysis_tender", columnList = "tender_id"),
     @Index(name = "idx_score_analysis_date", columnList = "analysis_date"),
     @Index(name = "idx_score_analysis_risk", columnList = "risk_level")
 })
@@ -32,8 +33,14 @@ public class ScoreAnalysis {
     /**
      * 关联的项目ID
      */
-    @Column(name = "project_id", nullable = false)
+    @Column(name = "project_id")
     private Long projectId;
+
+    /**
+     * 关联的标讯ID
+     */
+    @Column(name = "tender_id")
+    private Long tenderId;
 
     /**
      * 分析日期

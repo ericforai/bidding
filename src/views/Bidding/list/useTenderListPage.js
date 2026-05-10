@@ -68,9 +68,12 @@ export function useTenderListPage() {
 
   const statusCounts = computed(() => ({
     all: tenders.value.length,
-    pending: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.PENDING)).length,
+    pendingAssignment: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.PENDING_ASSIGNMENT)).length,
     tracking: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.TRACKING)).length,
-    bidded: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.BIDDED)).length,
+    evaluated: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.EVALUATED)).length,
+    bidding: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.BIDDING)).length,
+    won: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.WON)).length,
+    lost: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.LOST)).length,
     abandoned: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.ABANDONED)).length,
   }))
 
@@ -151,6 +154,11 @@ export function useTenderListPage() {
     router.push({ path: '/project/create', query: { tenderId: id } })
   }
 
+  const handleEvaluate = (id) => {
+    // Redirect to score analysis page with tenderId
+    router.push({ path: '/analytics/score-analysis', query: { tenderId: id, action: 'create' } })
+  }
+
   const handleViewAllRecommend = () => {
     searchForm.value = { ...DEFAULT_SEARCH_FORM }
     viewMode.value = 'all'
@@ -228,6 +236,7 @@ export function useTenderListPage() {
     handleExport,
     handleViewDetail,
     handleParticipate,
+    handleEvaluate,
     handleViewAllRecommend,
     handleOpenCustomerOpportunityCenter,
     openManualAdd,

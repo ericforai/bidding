@@ -68,9 +68,12 @@ public class TenderQueryService {
         log.debug("Fetching tender statistics");
         List<Tender> visibleTenders = accessGuard.filterVisibleTenders(tenderRepository.findAll());
         return Map.of(
-                Tender.Status.PENDING, countStatus(visibleTenders, Tender.Status.PENDING),
+                Tender.Status.PENDING_ASSIGNMENT, countStatus(visibleTenders, Tender.Status.PENDING_ASSIGNMENT),
                 Tender.Status.TRACKING, countStatus(visibleTenders, Tender.Status.TRACKING),
-                Tender.Status.BIDDED, countStatus(visibleTenders, Tender.Status.BIDDED),
+                Tender.Status.EVALUATED, countStatus(visibleTenders, Tender.Status.EVALUATED),
+                Tender.Status.BIDDING, countStatus(visibleTenders, Tender.Status.BIDDING),
+                Tender.Status.WON, countStatus(visibleTenders, Tender.Status.WON),
+                Tender.Status.LOST, countStatus(visibleTenders, Tender.Status.LOST),
                 Tender.Status.ABANDONED, countStatus(visibleTenders, Tender.Status.ABANDONED)
         );
     }
