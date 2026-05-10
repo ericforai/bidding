@@ -247,7 +247,18 @@ function handleReset() {
 async function handleSubmit() {
   submitting.value = true
   try {
-    await handleSave()
+    await formRef.value?.validate()
+    const payload = {
+      background: formData.background,
+      competitors: formData.competitors,
+      contractPeriod: formData.contractPeriod,
+      shortlistedBidders: formData.shortlistedBidders,
+      platformFee: formData.platformFee,
+      previousBid: formData.previousBid || null,
+      recommendation: formData.recommendation
+    }
+    const r = await projectLifecycleApi.updateEvaluationForm(props.projectId, payload)
+    view.value = r?.data || r
     ElMessage.success('提交成功')
   } catch (e) {
     ElMessage.error(e?.response?.data?.message || '提交失败')
