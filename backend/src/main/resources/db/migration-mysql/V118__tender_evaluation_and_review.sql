@@ -1,4 +1,4 @@
--- V116__tender_evaluation_and_review.sql
+-- V118__tender_evaluation_and_review.sql
 -- 标讯评估与审核功能
 -- 1. tenders 表添加 abandonment_reason 字段
 -- 2. 创建 tender_evaluations 表

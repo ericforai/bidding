@@ -1,5 +1,5 @@
--- Rollback: V116__tender_evaluation_and_review.sql
--- Input: migration-mysql/V116__tender_evaluation_and_review.sql
+-- Rollback: V118__tender_evaluation_and_review.sql
+-- Input: migration-mysql/V118__tender_evaluation_and_review.sql
 -- Output: rollback for mysql environments; review data-loss comments before production use.
 
 -- 警告：数据丢失风险
