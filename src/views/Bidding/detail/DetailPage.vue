@@ -104,7 +104,11 @@
         <div class="action-buttons">
           <el-button type="primary" size="large" @click="handleParticipate">
             <el-icon><DocumentAdd /></el-icon>
-            立即投标
+            投标
+          </el-button>
+          <el-button type="danger" size="large" @click="handleAbandon">
+            <el-icon><CircleClose /></el-icon>
+            弃标
           </el-button>
           <el-button
             v-if="tender && safeTenderUrl(tender.originalUrl)"
@@ -230,7 +234,7 @@
 </template>
 
 <script setup>
-import { ArrowRight, Briefcase, CircleCheckFilled, Document, DocumentAdd, Link, MagicStick, Share, Star, StarFilled } from '@element-plus/icons-vue'
+import { ArrowRight, Briefcase, CircleCheckFilled, CircleClose, Document, DocumentAdd, Link, MagicStick, Share, Star, StarFilled } from '@element-plus/icons-vue'
 import { formatBudgetWan, formatTenderDate, safeTenderUrl } from '../bidding-utils.js'
 import MatchScorePanel from '../match-scoring/MatchScorePanel.vue'
 import { useBiddingDetailPage } from './useBiddingDetailPage.js'
@@ -266,5 +270,6 @@ const {
   loadMatchScore,
   handleGenerateMatchScore,
   handleConfigureMatchScore,
+  handleAbandon,
 } = useBiddingDetailPage()
 </script>

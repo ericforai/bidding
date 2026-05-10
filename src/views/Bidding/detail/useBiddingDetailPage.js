@@ -1,6 +1,6 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { bidMatchScoringApi, knowledgeApi, tendersApi } from '@/api'
 import {
   buildWinProbabilityView,
@@ -103,12 +103,19 @@ export function useBiddingDetailPage() {
     return ''
   }
 
-  const handleParticipate = () => {
-    ElMessage.success('正在跳转到项目创建页...')
-    router.push({
-      path: '/project/create',
-      query: { tenderId: tender.value.id },
-    })
+  const handleParticipate = async () => {
+    if (!tender.value) return
+    try {
+      const result = await tendersApi.participate(tender.value.id)
+      if (result?.success && result?.data?.accepted) {
+        ElMessage.success(result.data.message || '投标成功')
+        await loadTenderDetail()
+      } else {
+        ElMessage.warning(result?.data?.message || '投标失败')
+      }
+    } catch (e) {
+      ElMessage.error(e?.response?.data?.message || '投标失败')
+    }
   }
 
   const handleFollow = () => {
@@ -134,6 +141,39 @@ export function useBiddingDetailPage() {
       path: '/knowledge/case/detail',
       query: { id: caseId },
     })
+  }
+
+  const handleAbandon = async () => {
+    if (!tender.value) return
+    try {
+      const { value: reason } = await ElMessageBox.prompt(
+        '请填写弃标原因（必填）',
+        '弃标确认',
+        {
+          confirmButtonText: '确认弃标',
+          cancelButtonText: '取消',
+          inputType: 'textarea',
+          inputPlaceholder: '请输入弃标原因...',
+          inputErrorMessage: '弃标原因不能为空',
+          distinguishCancelAndClose: true
+        }
+      )
+      if (!reason || !reason.trim()) {
+        ElMessage.warning('弃标原因不能为空')
+        return
+      }
+      const result = await tendersApi.abandon(tender.value.id, { reason: reason.trim() })
+      if (result?.success && result?.data?.accepted) {
+        ElMessage.success(result.data.message || '已放弃该标讯')
+        await loadTenderDetail()
+      } else {
+        ElMessage.warning(result?.data?.message || '弃标失败')
+      }
+    } catch (e) {
+      if (e !== 'cancel' && e !== 'close') {
+        ElMessage.error(e?.response?.data?.message || '弃标失败')
+      }
+    }
   }
 
   const loadMatchScore = async (tenderId) => {
@@ -245,5 +285,6 @@ export function useBiddingDetailPage() {
     loadMatchScore,
     handleGenerateMatchScore,
     handleConfigureMatchScore,
+    handleAbandon,
   }
 }
