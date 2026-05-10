@@ -204,6 +204,14 @@ export const tendersApi = {
       }
     }
     return httpClient.post(`/api/tenders/${tenderId}/bid`)
+  },
+
+  async participate(id) {
+    return httpClient.post(`/api/tenders/${id}/participate`)
+  },
+
+  async abandon(id, data) {
+    return httpClient.post(`/api/tenders/${id}/abandon`, data)
   }
 }
 

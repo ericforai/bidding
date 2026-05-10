@@ -14,6 +14,8 @@ import com.xiyu.bid.idempotency.Idempotent;
 import com.xiyu.bid.tender.dto.TenderImportResultDTO;
 import com.xiyu.bid.tender.dto.TenderRequest;
 import com.xiyu.bid.tender.dto.TenderDTO;
+import com.xiyu.bid.tender.dto.TenderAbandonRequest;
+import com.xiyu.bid.tender.dto.TenderBidResponse;
 import com.xiyu.bid.tender.service.TenderCommandService;
 import com.xiyu.bid.tender.service.TenderImportRollbackException;
 import com.xiyu.bid.tender.service.TenderImportService;
@@ -23,6 +25,8 @@ import com.xiyu.bid.tender.service.TenderSearchCriteria;
 import com.xiyu.bid.util.InputSanitizer;
 import com.xiyu.bid.annotation.DataScope;
 import jakarta.validation.Valid;
+import com.xiyu.bid.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -30,6 +34,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -63,6 +69,7 @@ public class TenderController {
     private final DemoModeService demoModeService;
     private final DemoDataProvider demoDataProvider;
     private final DemoFusionService demoFusionService;
+    private final AuthService authService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
@@ -160,6 +167,30 @@ public class TenderController {
         rejectDemoMutation(id);
         TenderDTO analyzedTender = tenderCommandService.analyzeTender(id);
         return ResponseEntity.ok(ApiResponse.success("Tender analyzed successfully", analyzedTender));
+    }
+
+    @PostMapping("/{id}/participate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<TenderBidResponse>> participateBid(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        log.info("POST /api/tenders/{}/participate - Participating bid", id);
+        rejectDemoMutation(id);
+        Long userId = resolveUserId(userDetails);
+        TenderBidResponse response = tenderCommandService.participateBid(id, userId);
+        return ResponseEntity.ok(ApiResponse.success(response.getMessage(), response));
+    }
+
+    @PostMapping("/{id}/abandon")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<TenderBidResponse>> abandonBid(
+            @PathVariable Long id,
+            @Valid @RequestBody TenderAbandonRequest req,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        log.info("POST /api/tenders/{}/abandon - Abandoning tender", id);
+        rejectDemoMutation(id);
+        TenderBidResponse response = tenderCommandService.abandonBid(id, req);
+        return ResponseEntity.ok(ApiResponse.success(response.getMessage(), response));
     }
 
     @GetMapping("/{id}/ai-analysis")
@@ -264,5 +295,13 @@ public class TenderController {
         if (isDemoEntityId(id)) {
             throw new IllegalArgumentException("Demo records are read-only in e2e mode");
         }
+    }
+
+    private Long resolveUserId(UserDetails userDetails) {
+        if (userDetails == null || userDetails.getUsername() == null || userDetails.getUsername().isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.UNAUTHORIZED, "无法识别当前用户");
+        }
+        return authService.resolveUserIdByUsername(userDetails.getUsername().trim());
     }
 }

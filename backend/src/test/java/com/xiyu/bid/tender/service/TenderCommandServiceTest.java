@@ -9,7 +9,12 @@ import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TenderRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.service.ProjectAccessScopeService;
+import com.xiyu.bid.task.dto.TaskDTO;
+import com.xiyu.bid.task.service.TaskService;
 import com.xiyu.bid.tender.dto.TenderDTO;
+import com.xiyu.bid.tender.dto.TenderAbandonRequest;
+import com.xiyu.bid.tender.dto.TenderBidResponse;
+import com.xiyu.bid.entity.Task;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -56,6 +61,9 @@ class TenderCommandServiceTest {
     @Mock
     private AiService aiService;
 
+    @Mock
+    private TaskService taskService;
+
     private TenderCommandService tenderCommandService;
     private TenderQueryService tenderQueryService;
     private com.xiyu.bid.batch.core.TenderStatusTransitionPolicy statusTransitionPolicy;
@@ -67,7 +75,7 @@ class TenderCommandServiceTest {
         TenderMapper tenderMapper = new TenderMapper();
         TenderProjectAccessGuard accessGuard = new TenderProjectAccessGuard(projectRepository, projectAccessScopeService);
         statusTransitionPolicy = new com.xiyu.bid.batch.core.TenderStatusTransitionPolicy();
-        tenderCommandService = new TenderCommandService(tenderRepository, aiService, tenderMapper, accessGuard, statusTransitionPolicy);
+        tenderCommandService = new TenderCommandService(tenderRepository, aiService, tenderMapper, accessGuard, statusTransitionPolicy, taskService);
         tenderQueryService = new TenderQueryService(tenderRepository, tenderMapper, accessGuard,
                 projectRepository, userRepository, tenderAssignmentRecordRepository);
 
@@ -256,5 +264,66 @@ class TenderCommandServiceTest {
         when(aiService.analyzeTender(eq(1L), anyMap())).thenReturn(failedFuture);
 
         assertThrows(RuntimeException.class, () -> tenderCommandService.analyzeTender(1L));
+    }
+
+    // ========== 投标/弃标 测试用例 ==========
+
+    @Test
+    @DisplayName("投标 - 成功投标并创建待办")
+    void participateBid_Success() {
+        Tender pendingTender = Tender.builder()
+                .id(1L).title("测试标讯").budget(new BigDecimal("100.00")).status(Tender.Status.PENDING_ASSIGNMENT).build();
+        TaskDTO createdTask = TaskDTO.builder().id(100L).title("【待立项】测试标讯").status(Task.Status.TODO).build();
+
+        when(tenderRepository.findById(1L)).thenReturn(Optional.of(pendingTender));
+        when(tenderRepository.save(any(Tender.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(taskService.createTask(any(TaskDTO.class))).thenReturn(createdTask);
+
+        TenderBidResponse response = tenderCommandService.participateBid(1L, 10L);
+
+        assertThat(response.isAccepted()).isTrue();
+        assertThat(response.getMessage()).isEqualTo("投标成功，已生成项目立项待办");
+        assertThat(response.getTodoId()).isEqualTo(100L);
+        verify(taskService).createTask(org.mockito.ArgumentMatchers.argThat(task ->
+                task.getTitle().contains("【待立项】") && task.getAssigneeId() == 10L
+        ));
+    }
+
+    @Test
+    @DisplayName("投标 - 已投标状态返回失败")
+    void participateBid_AlreadyBidded() {
+        Tender biddenTender = Tender.builder().id(1L).title("测试标讯").status(Tender.Status.BIDDED).build();
+        when(tenderRepository.findById(1L)).thenReturn(Optional.of(biddenTender));
+
+        TenderBidResponse response = tenderCommandService.participateBid(1L, 10L);
+
+        assertThat(response.isAccepted()).isFalse();
+        assertThat(response.getMessage()).isEqualTo("该标讯已投标");
+        verify(taskService, never()).createTask(any());
+    }
+
+    @Test
+    @DisplayName("弃标 - 成功弃标")
+    void abandonBid_Success() {
+        Tender trackingTender = Tender.builder().id(1L).title("测试标讯").status(Tender.Status.TRACKING).build();
+        when(tenderRepository.findById(1L)).thenReturn(Optional.of(trackingTender));
+        when(tenderRepository.save(any(Tender.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        TenderBidResponse response = tenderCommandService.abandonBid(1L, TenderAbandonRequest.builder().reason("预算超出").build(), 10L);
+
+        assertThat(response.isAccepted()).isTrue();
+        verify(tenderRepository).save(org.mockito.ArgumentMatchers.argThat(t -> t.getStatus() == Tender.Status.ABANDONED));
+    }
+
+    @Test
+    @DisplayName("弃标 - 已弃标状态返回失败")
+    void abandonBid_AlreadyAbandoned() {
+        Tender abandonedTender = Tender.builder().id(1L).title("测试标讯").status(Tender.Status.ABANDONED).build();
+        when(tenderRepository.findById(1L)).thenReturn(Optional.of(abandonedTender));
+
+        TenderBidResponse response = tenderCommandService.abandonBid(1L, TenderAbandonRequest.builder().reason("test").build(), 10L);
+
+        assertThat(response.isAccepted()).isFalse();
+        verify(tenderRepository, never()).save(any());
     }
 }
