@@ -46,6 +46,8 @@ public class TenderMapper {
                 .externalId(tender.getExternalId())
                 .createdAt(tender.getCreatedAt())
                 .updatedAt(tender.getUpdatedAt())
+                .projectManagerName(null)
+                .assigneeName(null)
                 .build();
     }
 

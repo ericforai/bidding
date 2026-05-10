@@ -1,8 +1,14 @@
 package com.xiyu.bid.tender.service;
 
+import com.xiyu.bid.batch.entity.TenderAssignmentRecord;
+import com.xiyu.bid.batch.repository.TenderAssignmentRecordRepository;
+import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
+import com.xiyu.bid.entity.User;
 import com.xiyu.bid.exception.ResourceNotFoundException;
+import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TenderRepository;
+import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.tender.dto.TenderDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +29,9 @@ public class TenderQueryService {
     private final TenderRepository tenderRepository;
     private final TenderMapper tenderMapper;
     private final TenderProjectAccessGuard accessGuard;
+    private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
+    private final TenderAssignmentRecordRepository tenderAssignmentRecordRepository;
 
     public List<TenderDTO> searchTenders(TenderSearchCriteria criteria) {
         log.debug("Searching tenders with criteria: {}", criteria);
@@ -34,7 +45,9 @@ public class TenderQueryService {
         Tender tender = tenderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tender", id.toString()));
         accessGuard.assertCanAccessTender(tender);
-        return tenderMapper.toDTO(tender);
+        TenderDTO dto = tenderMapper.toDTO(tender);
+        enrichAssignmentInfo(dto, id);
+        return dto;
     }
 
     public List<TenderDTO> getTendersByStatus(Tender.Status status) {
@@ -64,5 +77,84 @@ public class TenderQueryService {
 
     private long countStatus(List<Tender> tenders, Tender.Status status) {
         return tenders.stream().filter(tender -> tender.getStatus() == status).count();
+    }
+
+    private void enrichAssignmentInfo(TenderDTO dto, Long tenderId) {
+        projectRepository.findByTenderId(tenderId).stream()
+                .findFirst()
+                .ifPresent(project -> enrichProjectManager(dto, project));
+
+        enrichAssignee(dto, tenderId);
+    }
+
+    private void enrichProjectManager(TenderDTO dto, Project project) {
+        if (project.getManagerId() == null) return;
+        userRepository.findById(project.getManagerId())
+                .ifPresent(manager -> dto.setProjectManagerName(manager.getFullName()));
+    }
+
+    private void enrichAssignee(TenderDTO dto, Long tenderId) {
+        tenderAssignmentRecordRepository.findByTenderIdOrderByAssignedAtDesc(tenderId).stream()
+                .findFirst()
+                .flatMap(record -> userRepository.findById(record.getAssigneeId()))
+                .map(User::getFullName)
+                .ifPresent(dto::setAssigneeName);
+    }
+
+    /**
+     * 批量补充分配信息（用于列表查询场景）
+     * 将 N+1 查询优化为 4 次固定查询
+     */
+    public void enrichAssignmentInfoBatch(List<TenderDTO> dtos) {
+        if (dtos == null || dtos.isEmpty()) return;
+
+        Set<Long> tenderIds = dtos.stream().map(TenderDTO::getId).collect(Collectors.toSet());
+
+        Map<Long, String> managerNames = fetchManagerNames(tenderIds);
+        Map<Long, String> assigneeNames = fetchAssigneeNames(tenderIds);
+
+        for (TenderDTO dto : dtos) {
+            dto.setProjectManagerName(managerNames.get(dto.getId()));
+            dto.setAssigneeName(assigneeNames.get(dto.getId()));
+        }
+    }
+
+    private Map<Long, String> fetchManagerNames(Set<Long> tenderIds) {
+        Map<Long, Long> tenderToManager = projectRepository.findByTenderIdIn(tenderIds).stream()
+                .filter(p -> p.getManagerId() != null)
+                .collect(Collectors.toMap(Project::getTenderId, Project::getManagerId));
+
+        if (tenderToManager.isEmpty()) return Map.of();
+
+        Set<Long> managerIds = Set.copyOf(tenderToManager.values());
+        Map<Long, String> idToName = userRepository.findByIdIn(managerIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getFullName));
+
+        return tenderToManager.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> idToName.getOrDefault(e.getValue(), null)
+                ));
+    }
+
+    private Map<Long, String> fetchAssigneeNames(Set<Long> tenderIds) {
+        Map<Long, Long> tenderToAssignee = tenderAssignmentRecordRepository
+                .findLatestByTenderIds(tenderIds).stream()
+                .collect(Collectors.toMap(
+                        TenderAssignmentRecord::getTenderId,
+                        TenderAssignmentRecord::getAssigneeId
+                ));
+
+        if (tenderToAssignee.isEmpty()) return Map.of();
+
+        Set<Long> assigneeIds = Set.copyOf(tenderToAssignee.values());
+        Map<Long, String> idToName = userRepository.findByIdIn(assigneeIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getFullName));
+
+        return tenderToAssignee.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> idToName.getOrDefault(e.getValue(), null)
+                ));
     }
 }

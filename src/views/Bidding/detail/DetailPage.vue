@@ -27,20 +27,43 @@
         </template>
 
         <el-descriptions :column="3" border>
+          <el-descriptions-item label="标题" :span="3">
+            {{ tender.title }}
+          </el-descriptions-item>
           <el-descriptions-item label="预算金额">
             <span class="amount-text">{{ formatBudgetWan(tender.budget) }}万元</span>
           </el-descriptions-item>
-          <el-descriptions-item label="所属地区">
+          <el-descriptions-item label="总部所在地">
             <el-tooltip v-if="regionMeta.isMissing" :content="regionMeta.tooltip" placement="top">
               <span class="field-missing">{{ regionMeta.text }}</span>
             </el-tooltip>
             <span v-else>{{ regionMeta.text }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="招标机构">
+            {{ tender.tenderAgency || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="业主单位">
+            {{ tender.purchaserName || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="报名截止时间">
+            <span v-if="tender.registrationDeadline">{{ formatTenderDate(tender.registrationDeadline) }}</span>
+            <span v-else>-</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="开标时间">
+            <span v-if="tender.bidOpeningTime">{{ formatTenderDate(tender.bidOpeningTime) }}</span>
+            <span v-else>-</span>
           </el-descriptions-item>
           <el-descriptions-item label="所属行业">
             <el-tooltip v-if="industryMeta.isMissing" :content="industryMeta.tooltip" placement="top">
               <span class="field-missing">{{ industryMeta.text }}</span>
             </el-tooltip>
             <span v-else>{{ industryMeta.text }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="联系人">
+            {{ tender.contactName || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="联系方式">
+            {{ tender.contactPhone || '-' }}
           </el-descriptions-item>
           <el-descriptions-item label="发布日期">{{ formatTenderDate(tender.publishDate || tender.date) }}</el-descriptions-item>
           <el-descriptions-item label="截止日期">
@@ -52,8 +75,20 @@
               </template>
             </span>
           </el-descriptions-item>
+          <el-descriptions-item label="客户类型">
+            {{ tender.customerType || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="优先级">
+            {{ tender.priority || '-' }}
+          </el-descriptions-item>
           <el-descriptions-item label="当前状态">
             <el-tag :type="getStatusType(tender.status)" size="small">{{ getStatusText(tender.status) }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="项目经理">
+            {{ tender.projectManagerName || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="分配人">
+            {{ tender.assigneeName || '-' }}
           </el-descriptions-item>
           <el-descriptions-item label="中标概率" :span="3">
             <div class="win-probability-display">
