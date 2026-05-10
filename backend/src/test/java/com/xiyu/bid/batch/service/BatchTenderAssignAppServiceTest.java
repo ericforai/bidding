@@ -61,7 +61,7 @@ class BatchTenderAssignAppServiceTest {
     void shouldAssignTrackingTendersAndPersistAssignmentRecords() {
         User assignee = User.builder().id(9L).fullName("销售甲").build();
         User currentUser = User.builder().id(1L).fullName("经理乙").build();
-        Tender pending = Tender.builder().id(1L).status(Tender.Status.PENDING).build();
+        Tender pending = Tender.builder().id(1L).status(Tender.Status.PENDING_ASSIGNMENT).build();
         Tender tracking = Tender.builder().id(2L).status(Tender.Status.TRACKING).build();
 
         when(userRepository.findById(9L)).thenReturn(Optional.of(assignee));
@@ -84,7 +84,7 @@ class BatchTenderAssignAppServiceTest {
     @Test
     void shouldRejectAssigningBiddedTenderBackToTracking() {
         User assignee = User.builder().id(9L).fullName("销售甲").build();
-        Tender bidded = Tender.builder().id(1L).status(Tender.Status.BIDDED).build();
+        Tender bidded = Tender.builder().id(1L).status(Tender.Status.WON).build();
 
         when(userRepository.findById(9L)).thenReturn(Optional.of(assignee));
         when(tenderRepository.findById(1L)).thenReturn(Optional.of(bidded));
@@ -104,7 +104,7 @@ class BatchTenderAssignAppServiceTest {
     void shouldRejectTenderLinkedToProjectOutsideDataScope() {
         User assignee = User.builder().id(9L).fullName("销售甲").build();
         User currentUser = User.builder().id(1L).fullName("经理乙").build();
-        Tender pending = Tender.builder().id(1L).status(Tender.Status.PENDING).build();
+        Tender pending = Tender.builder().id(1L).status(Tender.Status.PENDING_ASSIGNMENT).build();
         Project project = Project.builder().id(10L).tenderId(1L).build();
 
         when(userRepository.findById(9L)).thenReturn(Optional.of(assignee));

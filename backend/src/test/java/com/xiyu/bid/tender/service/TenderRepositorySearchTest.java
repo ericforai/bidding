@@ -30,7 +30,7 @@ class TenderRepositorySearchTest {
                 .source("外部标讯聚合平台")
                 .budget(new BigDecimal("5000000.00"))
                 .deadline(LocalDateTime.of(2026, 5, 8, 18, 0))
-                .status(Tender.Status.PENDING)
+                .status(Tender.Status.PENDING_ASSIGNMENT)
                 .aiScore(91)
                 .riskLevel(Tender.RiskLevel.LOW)
                 .region("上海")
@@ -65,7 +65,7 @@ class TenderRepositorySearchTest {
 
         TenderSearchCriteria criteria = TenderSearchCriteria.builder()
                 .keyword("GPU")
-                .status(Tender.Status.PENDING)
+                .status(Tender.Status.PENDING_ASSIGNMENT)
                 .source("外部标讯聚合平台")
                 .region("上海")
                 .industry("数据中心")
