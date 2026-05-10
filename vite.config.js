@@ -43,11 +43,13 @@ export default defineConfig({
     }
   },
   server: {
+    host: '0.0.0.0',
     port: 1314,
     strictPort: true,
     open: true
   },
   preview: {
+    host: '0.0.0.0',
     port: 1314,
     strictPort: true
   },
