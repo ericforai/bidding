@@ -51,8 +51,8 @@ class BatchTenderStatusAppServiceTest {
 
     @Test
     void shouldReturnPartialFailureWhenTransitionIsInvalid() {
-        Tender pending = Tender.builder().id(1L).status(Tender.Status.PENDING).build();
-        Tender bidded = Tender.builder().id(2L).status(Tender.Status.BIDDED).build();
+        Tender pending = Tender.builder().id(1L).status(Tender.Status.PENDING_ASSIGNMENT).build();
+        Tender bidded = Tender.builder().id(2L).status(Tender.Status.BIDDING).build();
         when(tenderRepository.findById(1L)).thenReturn(Optional.of(pending));
         when(tenderRepository.findById(2L)).thenReturn(Optional.of(bidded));
         when(tenderRepository.saveAll(anyList())).thenReturn(List.of(pending));
@@ -88,7 +88,7 @@ class BatchTenderStatusAppServiceTest {
 
     @Test
     void shouldRejectTenderLinkedToProjectOutsideDataScope() {
-        Tender pending = Tender.builder().id(1L).status(Tender.Status.PENDING).build();
+        Tender pending = Tender.builder().id(1L).status(Tender.Status.PENDING_ASSIGNMENT).build();
         Project project = Project.builder().id(10L).tenderId(1L).build();
         when(tenderRepository.findById(1L)).thenReturn(Optional.of(pending));
         when(projectRepository.findByTenderId(1L)).thenReturn(List.of(project));

@@ -61,12 +61,12 @@ class TenderStatusTransitionPolicyFuzzTest {
 
     @ParameterizedTest
     @EnumSource(Tender.Status.class)
-    void biddedIsTerminalSink(Tender.Status other) {
-        if (other == Tender.Status.BIDDED) {
+    void biddingIsTerminalSink(Tender.Status other) {
+        if (other == Tender.Status.BIDDING) {
             return;
         }
-        assertFalse(policy.canTransition(Tender.Status.BIDDED, other),
-                () -> "BIDDED is terminal; BIDDED -> " + other + " must be rejected");
+        assertFalse(policy.canTransition(Tender.Status.BIDDING, other),
+                () -> "BIDDING is terminal; BIDDING -> " + other + " must be rejected");
     }
 
     @Test
@@ -92,7 +92,7 @@ class TenderStatusTransitionPolicyFuzzTest {
     void randomWalkFromPendingStaysInsideLegalGraph() {
         Random rng = new Random(FUZZ_SEED);
         Tender.Status[] universe = Tender.Status.values();
-        Tender.Status current = Tender.Status.PENDING;
+        Tender.Status current = Tender.Status.PENDING_ASSIGNMENT;
 
         for (int i = 0; i < FUZZ_ITERATIONS; i++) {
             Tender.Status candidate = universe[rng.nextInt(universe.length)];
@@ -129,11 +129,11 @@ class TenderStatusTransitionPolicyFuzzTest {
             return true;
         }
         return switch (from) {
-            case PENDING -> to == Tender.Status.TRACKING || to == Tender.Status.ABANDONED;
-            case TRACKING -> to == Tender.Status.EVALUATED || to == Tender.Status.ABANDONED;
-            case EVALUATED -> to == Tender.Status.BIDDED || to == Tender.Status.ABANDONED;
-            case BIDDED -> false;
-            case ABANDONED -> to == Tender.Status.PENDING;
+            case PENDING_ASSIGNMENT -> to == Tender.Status.TRACKING || to == Tender.Status.ABANDONED;
+            case TRACKING -> to == Tender.Status.PENDING_ASSIGNMENT || to == Tender.Status.EVALUATED || to == Tender.Status.ABANDONED;
+            case EVALUATED -> to == Tender.Status.BIDDING || to == Tender.Status.ABANDONED;
+            case BIDDING -> to == Tender.Status.WON || to == Tender.Status.LOST || to == Tender.Status.ABANDONED;
+            case WON, LOST, ABANDONED -> false;
         };
     }
 }

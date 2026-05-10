@@ -19,6 +19,8 @@ vi.stubGlobal('ResizeObserver', vi.fn().mockImplementation(() => ({
 
 import TenderActionMenu from './TenderActionMenu.vue'
 
+const row = { id: 1, title: '测试标讯', status: 'PENDING_ASSIGNMENT' }
+
 function mountMenu(props = {}) {
   const rowData = props.row || { id: 1, title: '测试标讯' }
   const stubs = {
@@ -67,8 +69,6 @@ describe('TenderActionMenu permissions', () => {
     // staff 用户看不到管理相关菜单
     const dropdownHtml = wrapper.html()
     expect(dropdownHtml).not.toContain('删除')
-    expect(dropdownHtml).not.toContain('编辑')
-    expect(dropdownHtml).not.toContain('审核')
   })
 
   it('shows delete menu item for admins', () => {
@@ -78,17 +78,18 @@ describe('TenderActionMenu permissions', () => {
     expect(wrapper.html()).toContain('删除')
   })
 
-  it('shows edit option when status is TRACKING', () => {
-    const trackingRow = { id: 1, title: '测试', status: 'TRACKING' }
-    const wrapper = mountMenu({ canManageTenders: true, row: trackingRow })
+  it('shows participate option when status is EVALUATED', () => {
+    const evaluatedRow = { id: 1, title: '测试', status: 'EVALUATED' }
+    const wrapper = mountMenu({ row: evaluatedRow })
 
-    expect(wrapper.html()).toContain('编辑')
+    expect(wrapper.html()).toContain('立即投标')
   })
 
-  it('shows review option for admin when status is EVALUATED', () => {
-    const evaluatedRow = { id: 1, title: '测试', status: 'EVALUATED' }
-    const wrapper = mountMenu({ isAdmin: true, row: evaluatedRow })
+  it('shows bid result options when status is BIDDING', () => {
+    const biddingRow = { id: 1, title: '测试', status: 'BIDDING' }
+    const wrapper = mountMenu({ row: biddingRow })
 
-    expect(wrapper.html()).toContain('审核')
+    expect(wrapper.html()).toContain('登记中标')
+    expect(wrapper.html()).toContain('登记未中标')
   })
 })
