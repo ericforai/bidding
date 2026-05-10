@@ -27,9 +27,6 @@ export function useBiddingDetailPage() {
   const { scoreForView, scoreSummary, matchScoreState, scoreEmptyText, scoreEmptyDescription } =
     useMatchScoreState(matchScore, scoreLoading, scoreGenerating, scoreError)
 
-  const { handleParticipate, handleAbandon, handleViewOriginal } =
-    useTenderActions(tender, loadTenderDetail)
-
   const regionMeta = computed(() => formatTenderDisplayField(tender.value?.region))
   const industryMeta = computed(() => formatTenderIndustry(tender.value?.industry))
   const deadlineParts = computed(() => getTenderDateTimeParts(tender.value?.deadline))
@@ -129,6 +126,9 @@ export function useBiddingDetailPage() {
       await Promise.all([loadMatchScore(tenderId), loadRelatedCases()])
     } catch (error) { ElMessage.error(error?.message || '网络请求失败，请稍后重试') }
   }
+
+  const { handleParticipate, handleAbandon, handleViewOriginal } =
+    useTenderActions(tender, loadTenderDetail)
 
   onMounted(async () => await loadTenderDetail())
 
