@@ -242,62 +242,42 @@ public class TenderController {
         return ResponseEntity.ok(ApiResponse.success("Successfully retrieved statistics", statistics));
     }
 
-    private void sanitizeTenderRequest(TenderRequest request) {
-        if (request == null) return;
-        request.setTitle(sanitize(request.getTitle(), 500));
-        request.setSource(sanitize(request.getSource(), 200));
-        request.setRegion(sanitize(request.getRegion(), 100));
-        request.setIndustry(sanitize(request.getIndustry(), 100));
-        request.setTenderAgency(sanitize(request.getTenderAgency(), 255));
-        request.setPurchaserName(sanitize(request.getPurchaserName(), 255));
-        request.setPurchaserHash(sanitize(request.getPurchaserHash(), 64));
-        request.setContactName(sanitize(request.getContactName(), 100));
-        request.setContactPhone(sanitize(request.getContactPhone(), 50));
-        request.setSourceDocumentName(sanitize(request.getSourceDocumentName(), 255));
-        request.setSourceDocumentFileType(sanitize(request.getSourceDocumentFileType(), 100));
-        request.setSourceDocumentFileUrl(sanitize(request.getSourceDocumentFileUrl(), 1000));
-        request.setCustomerType(sanitize(request.getCustomerType(), 100));
-        request.setPriority(sanitize(request.getPriority(), 10));
-        request.setDescription(sanitize(request.getDescription(), 5000));
-        if (request.getTags() != null) {
-            request.setTags(request.getTags().stream()
-                    .map(tag -> sanitize(tag, 100))
-                    .filter(tag -> !tag.isBlank())
-                    .toList());
-        }
+    private void sanitizeTenderRequest(TenderRequest r) {
+        if (r == null) return;
+        sanitize(r, 500, TenderRequest::setTitle, TenderRequest::setSource, TenderRequest::setRegion,
+            TenderRequest::setIndustry, TenderRequest::setTenderAgency, TenderRequest::setPurchaserName,
+            TenderRequest::setPurchaserHash, TenderRequest::setContactName, TenderRequest::setContactPhone,
+            TenderRequest::setSourceDocumentName, TenderRequest::setSourceDocumentFileType,
+            TenderRequest::setSourceDocumentFileUrl, TenderRequest::setCustomerType,
+            TenderRequest::setPriority, TenderRequest::setDescription);
+        if (r.getTags() != null) r.setTags(r.getTags().stream().map(t -> sanitize(t, 100)).filter(t -> !t.isBlank()).toList());
     }
 
-    private void sanitizeTenderSearchCriteria(TenderSearchCriteria criteria) {
-        if (criteria == null) return;
-        criteria.setKeyword(sanitize(criteria.getKeyword(), 200));
-        criteria.setSource(sanitize(criteria.getSource(), 200));
-        criteria.setRegion(sanitize(criteria.getRegion(), 100));
-        criteria.setIndustry(sanitize(criteria.getIndustry(), 100));
-        criteria.setPurchaserName(sanitize(criteria.getPurchaserName(), 255));
-        criteria.setPurchaserHash(sanitize(criteria.getPurchaserHash(), 64));
-        criteria.setCustomerType(sanitize(criteria.getCustomerType(), 100));
-        criteria.setPriority(sanitize(criteria.getPriority(), 10));
+    private void sanitizeTenderSearchCriteria(TenderSearchCriteria c) {
+        if (c == null) return;
+        sanitize(c, 200, TenderSearchCriteria::setKeyword, TenderSearchCriteria::setSource,
+            TenderSearchCriteria::setRegion, TenderSearchCriteria::setIndustry,
+            TenderSearchCriteria::setPurchaserName, TenderSearchCriteria::setPurchaserHash,
+            TenderSearchCriteria::setCustomerType, TenderSearchCriteria::setPriority);
     }
 
-    private String sanitize(String value, int maxLength) {
-        return value != null ? InputSanitizer.sanitizeString(value, maxLength) : null;
+    @SafeVarargs
+    private <T> void sanitize(T obj, int len, java.util.function.BiConsumer<T, String>... setters) {
+        for (var s : setters) s.accept(obj, sanitize(getField(obj, s), len));
     }
 
-    private boolean isDemoEntityId(Long id) {
-        return demoModeService.isEnabled() && id != null && id < 0;
+    private <T> String getField(T obj, java.util.function.BiConsumer<T, String> setter) {
+        try { return (String) setter.getClass().getDeclaredMethods()[0].invoke(obj); } catch { return null; }
     }
 
-    private void rejectDemoMutation(Long id) {
-        if (isDemoEntityId(id)) {
-            throw new IllegalArgumentException("Demo records are read-only in e2e mode");
-        }
-    }
+    private String sanitize(String v, int len) { return v != null ? InputSanitizer.sanitizeString(v, len) : null; }
 
-    private Long resolveUserId(UserDetails userDetails) {
-        if (userDetails == null || userDetails.getUsername() == null || userDetails.getUsername().isBlank()) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                    org.springframework.http.HttpStatus.UNAUTHORIZED, "无法识别当前用户");
-        }
-        return authService.resolveUserIdByUsername(userDetails.getUsername().trim());
+    private boolean isDemoEntityId(Long id) { return demoModeService.isEnabled() && id != null && id < 0; }
+
+    private void rejectDemoMutation(Long id) { if (isDemoEntityId(id)) throw new IllegalArgumentException("Demo records are read-only in e2e mode"); }
+
+    private Long resolveUserId(UserDetails u) {
+        if (u == null || u.getUsername() == null || u.getUsername().isBlank()) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "无法识别当前用户");
+        return authService.resolveUserIdByUsername(u.getUsername().trim());
     }
 }
