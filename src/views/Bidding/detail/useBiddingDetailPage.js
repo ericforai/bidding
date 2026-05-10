@@ -106,6 +106,19 @@ export function useBiddingDetailPage() {
   const handleParticipate = async () => {
     if (!tender.value) return
     try {
+      await ElMessageBox.confirm(
+        '确认要投标此标讯吗？投标后将生成项目立项待办。',
+        '确认投标',
+        {
+          confirmButtonText: '确认投标',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      )
+    } catch {
+      return
+    }
+    try {
       const result = await tendersApi.participate(tender.value.id)
       if (result?.success && result?.data?.accepted) {
         ElMessage.success(result.data.message || '投标成功')

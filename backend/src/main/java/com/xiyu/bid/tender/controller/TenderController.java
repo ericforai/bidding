@@ -189,7 +189,8 @@ public class TenderController {
             @AuthenticationPrincipal UserDetails userDetails) {
         log.info("POST /api/tenders/{}/abandon - Abandoning tender", id);
         rejectDemoMutation(id);
-        TenderBidResponse response = tenderCommandService.abandonBid(id, req);
+        Long userId = resolveUserId(userDetails);
+        TenderBidResponse response = tenderCommandService.abandonBid(id, req, userId);
         return ResponseEntity.ok(ApiResponse.success(response.getMessage(), response));
     }
 
