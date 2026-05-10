@@ -24,9 +24,7 @@ import com.xiyu.bid.tender.service.TenderQueryService;
 import com.xiyu.bid.tender.service.TenderSearchCriteria;
 import com.xiyu.bid.util.InputSanitizer;
 import com.xiyu.bid.annotation.DataScope;
-import jakarta.validation.Valid;
 import com.xiyu.bid.service.AuthService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -127,12 +125,10 @@ public class TenderController {
     @Idempotent
     public ResponseEntity<ApiResponse<TenderImportResultDTO>> importTenders(@RequestParam("file") MultipartFile file) {
         log.info("POST /api/tenders/import - Importing tenders, originalName={}, size={}",
-                file == null ? null : file.getOriginalFilename(),
-                file == null ? 0 : file.getSize());
+                file == null ? null : file.getOriginalFilename(), file == null ? 0 : file.getSize());
         try {
             TenderImportResultDTO result = tenderImportService.importFromExcel(file);
-            String message = "成功导入 " + result.getSuccessCount() + " 条标讯";
-            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(message, result));
+            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("成功导入 " + result.getSuccessCount() + " 条标讯", result));
         } catch (TenderImportRollbackException ex) {
             log.info("标讯批量导入校验未通过，已整批回滚 failureCount={}",
                     ex.getResult() == null ? 0 : ex.getResult().getFailureCount());
@@ -146,8 +142,7 @@ public class TenderController {
         log.info("PUT /api/tenders/{} - Updating tender", id);
         rejectDemoMutation(id);
         sanitizeTenderRequest(tenderRequest);
-        TenderDTO tenderDTO = tenderMapper.toDTO(tenderRequest);
-        TenderDTO updatedTender = tenderCommandService.updateTender(id, tenderDTO);
+        TenderDTO updatedTender = tenderCommandService.updateTender(id, tenderMapper.toDTO(tenderRequest));
         return ResponseEntity.ok(ApiResponse.success("Tender updated successfully", updatedTender));
     }
 
@@ -172,25 +167,20 @@ public class TenderController {
     @PostMapping("/{id}/participate")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<TenderBidResponse>> participateBid(
-            @PathVariable Long id,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
         log.info("POST /api/tenders/{}/participate - Participating bid", id);
         rejectDemoMutation(id);
-        Long userId = resolveUserId(userDetails);
-        TenderBidResponse response = tenderCommandService.participateBid(id, userId);
+        TenderBidResponse response = tenderCommandService.participateBid(id, resolveUserId(userDetails));
         return ResponseEntity.ok(ApiResponse.success(response.getMessage(), response));
     }
 
     @PostMapping("/{id}/abandon")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<TenderBidResponse>> abandonBid(
-            @PathVariable Long id,
-            @Valid @RequestBody TenderAbandonRequest req,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @PathVariable Long id, @Valid @RequestBody TenderAbandonRequest req, @AuthenticationPrincipal UserDetails userDetails) {
         log.info("POST /api/tenders/{}/abandon - Abandoning tender", id);
         rejectDemoMutation(id);
-        Long userId = resolveUserId(userDetails);
-        TenderBidResponse response = tenderCommandService.abandonBid(id, req, userId);
+        TenderBidResponse response = tenderCommandService.abandonBid(id, req, resolveUserId(userDetails));
         return ResponseEntity.ok(ApiResponse.success(response.getMessage(), response));
     }
 
@@ -199,23 +189,23 @@ public class TenderController {
     public ResponseEntity<ApiResponse<TenderAiAnalysisDTO>> getTenderAiAnalysis(@PathVariable Long id) {
         log.info("GET /api/tenders/{}/ai-analysis - Fetching tender AI analysis", id);
         if (isDemoEntityId(id)) {
-            TenderDTO tender = demoDataProvider.findDemoTenderById(id)
-                    .orElseThrow(() -> new com.xiyu.bid.exception.ResourceNotFoundException("Tender", id.toString()));
-            TenderAiAnalysisDTO dto = TenderAiAnalysisDTO.builder()
-                    .tenderId(tender.getId())
-                    .winScore(tender.getAiScore() == null ? 80 : tender.getAiScore())
-                    .suggestion("Demo 标讯分析：重点关注资质响应、交付周期和付款条件。")
-                    .dimensionScores(List.of())
-                    .risks(List.of())
-                    .autoTasks(List.of())
-                    .build();
-            return ResponseEntity.ok(ApiResponse.success("Tender AI analysis retrieved successfully", dto));
+            return ResponseEntity.ok(ApiResponse.success("Tender AI analysis retrieved successfully", buildDemoAiAnalysis(id)));
         }
         Optional<TenderAiAnalysisDTO> analysis = aiDeepCapabilityService.getLatestTenderAnalysis(id);
         if (analysis.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(404, "Tender AI analysis not found"));
         }
         return ResponseEntity.ok(ApiResponse.success("Tender AI analysis retrieved successfully", analysis.get()));
+    }
+
+    private TenderAiAnalysisDTO buildDemoAiAnalysis(Long id) {
+        TenderDTO tender = demoDataProvider.findDemoTenderById(id)
+                .orElseThrow(() -> new com.xiyu.bid.exception.ResourceNotFoundException("Tender", id.toString()));
+        return TenderAiAnalysisDTO.builder()
+                .tenderId(tender.getId())
+                .winScore(tender.getAiScore() == null ? 80 : tender.getAiScore())
+                .suggestion("Demo 标讯分析：重点关注资质响应、交付周期和付款条件。")
+                .dimensionScores(List.of()).risks(List.of()).autoTasks(List.of()).build();
     }
 
     @PostMapping("/{id}/ai-analysis")
@@ -253,24 +243,25 @@ public class TenderController {
     }
 
     private void sanitizeTenderRequest(TenderRequest request) {
-        if (request.getTitle() != null) request.setTitle(InputSanitizer.sanitizeString(request.getTitle(), 500));
-        if (request.getSource() != null) request.setSource(InputSanitizer.sanitizeString(request.getSource(), 200));
-        if (request.getRegion() != null) request.setRegion(InputSanitizer.sanitizeString(request.getRegion(), 100));
-        if (request.getIndustry() != null) request.setIndustry(InputSanitizer.sanitizeString(request.getIndustry(), 100));
-        if (request.getTenderAgency() != null) request.setTenderAgency(InputSanitizer.sanitizeString(request.getTenderAgency(), 255));
-        if (request.getPurchaserName() != null) request.setPurchaserName(InputSanitizer.sanitizeString(request.getPurchaserName(), 255));
-        if (request.getPurchaserHash() != null) request.setPurchaserHash(InputSanitizer.sanitizeString(request.getPurchaserHash(), 64));
-        if (request.getContactName() != null) request.setContactName(InputSanitizer.sanitizeString(request.getContactName(), 100));
-        if (request.getContactPhone() != null) request.setContactPhone(InputSanitizer.sanitizeString(request.getContactPhone(), 50));
-        if (request.getSourceDocumentName() != null) request.setSourceDocumentName(InputSanitizer.sanitizeString(request.getSourceDocumentName(), 255));
-        if (request.getSourceDocumentFileType() != null) request.setSourceDocumentFileType(InputSanitizer.sanitizeString(request.getSourceDocumentFileType(), 100));
-        if (request.getSourceDocumentFileUrl() != null) request.setSourceDocumentFileUrl(InputSanitizer.sanitizeString(request.getSourceDocumentFileUrl(), 1000));
-        if (request.getCustomerType() != null) request.setCustomerType(InputSanitizer.sanitizeString(request.getCustomerType(), 100));
-        if (request.getPriority() != null) request.setPriority(InputSanitizer.sanitizeString(request.getPriority(), 10));
-        if (request.getDescription() != null) request.setDescription(InputSanitizer.sanitizeString(request.getDescription(), 5000));
+        if (request == null) return;
+        request.setTitle(sanitize(request.getTitle(), 500));
+        request.setSource(sanitize(request.getSource(), 200));
+        request.setRegion(sanitize(request.getRegion(), 100));
+        request.setIndustry(sanitize(request.getIndustry(), 100));
+        request.setTenderAgency(sanitize(request.getTenderAgency(), 255));
+        request.setPurchaserName(sanitize(request.getPurchaserName(), 255));
+        request.setPurchaserHash(sanitize(request.getPurchaserHash(), 64));
+        request.setContactName(sanitize(request.getContactName(), 100));
+        request.setContactPhone(sanitize(request.getContactPhone(), 50));
+        request.setSourceDocumentName(sanitize(request.getSourceDocumentName(), 255));
+        request.setSourceDocumentFileType(sanitize(request.getSourceDocumentFileType(), 100));
+        request.setSourceDocumentFileUrl(sanitize(request.getSourceDocumentFileUrl(), 1000));
+        request.setCustomerType(sanitize(request.getCustomerType(), 100));
+        request.setPriority(sanitize(request.getPriority(), 10));
+        request.setDescription(sanitize(request.getDescription(), 5000));
         if (request.getTags() != null) {
             request.setTags(request.getTags().stream()
-                    .map(tag -> InputSanitizer.sanitizeString(tag, 100))
+                    .map(tag -> sanitize(tag, 100))
                     .filter(tag -> !tag.isBlank())
                     .toList());
         }
@@ -278,14 +269,18 @@ public class TenderController {
 
     private void sanitizeTenderSearchCriteria(TenderSearchCriteria criteria) {
         if (criteria == null) return;
-        if (criteria.getKeyword() != null) criteria.setKeyword(InputSanitizer.sanitizeString(criteria.getKeyword(), 200));
-        if (criteria.getSource() != null) criteria.setSource(InputSanitizer.sanitizeString(criteria.getSource(), 200));
-        if (criteria.getRegion() != null) criteria.setRegion(InputSanitizer.sanitizeString(criteria.getRegion(), 100));
-        if (criteria.getIndustry() != null) criteria.setIndustry(InputSanitizer.sanitizeString(criteria.getIndustry(), 100));
-        if (criteria.getPurchaserName() != null) criteria.setPurchaserName(InputSanitizer.sanitizeString(criteria.getPurchaserName(), 255));
-        if (criteria.getPurchaserHash() != null) criteria.setPurchaserHash(InputSanitizer.sanitizeString(criteria.getPurchaserHash(), 64));
-        if (criteria.getCustomerType() != null) criteria.setCustomerType(InputSanitizer.sanitizeString(criteria.getCustomerType(), 100));
-        if (criteria.getPriority() != null) criteria.setPriority(InputSanitizer.sanitizeString(criteria.getPriority(), 10));
+        criteria.setKeyword(sanitize(criteria.getKeyword(), 200));
+        criteria.setSource(sanitize(criteria.getSource(), 200));
+        criteria.setRegion(sanitize(criteria.getRegion(), 100));
+        criteria.setIndustry(sanitize(criteria.getIndustry(), 100));
+        criteria.setPurchaserName(sanitize(criteria.getPurchaserName(), 255));
+        criteria.setPurchaserHash(sanitize(criteria.getPurchaserHash(), 64));
+        criteria.setCustomerType(sanitize(criteria.getCustomerType(), 100));
+        criteria.setPriority(sanitize(criteria.getPriority(), 10));
+    }
+
+    private String sanitize(String value, int maxLength) {
+        return value != null ? InputSanitizer.sanitizeString(value, maxLength) : null;
     }
 
     private boolean isDemoEntityId(Long id) {
