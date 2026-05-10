@@ -243,5 +243,20 @@ export function toBackendStatus(frontendStatus) {
     return frontendStatus
   }
 
-  return toBackendTenderStatus(frontendStatus)
+  const rawValue = String(frontendStatus).trim()
+  const upperValue = rawValue.toUpperCase()
+
+  // First check if it's already a valid backend enum value
+  if (['PENDING_ASSIGNMENT', 'TRACKING', 'EVALUATED', 'BIDDING', 'WON', 'LOST', 'ABANDONED'].includes(upperValue)) {
+    return upperValue
+  }
+
+  // Then check the legacy aliases
+  const normalized = toBackendTenderStatus(frontendStatus)
+  if (normalized !== 'PENDING_ASSIGNMENT' || rawValue.toLowerCase() === 'new' || rawValue.toLowerCase() === 'pending' || rawValue === '待处理') {
+    return normalized
+  }
+
+  // Unknown values pass through unchanged
+  return rawValue
 }
