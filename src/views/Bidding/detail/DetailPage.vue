@@ -102,13 +102,23 @@
         </el-descriptions>
 
         <div class="action-buttons">
-          <el-button type="primary" size="large" @click="handleParticipate">
+          <el-button
+            type="primary"
+            size="large"
+            :disabled="tender.status === 'BIDDED' || tender.status === 'ABANDONED'"
+            @click="handleParticipate"
+          >
             <el-icon><DocumentAdd /></el-icon>
-            投标
+            {{ tender.status === 'BIDDED' ? '已投标' : tender.status === 'ABANDONED' ? '已弃标' : '投标' }}
           </el-button>
-          <el-button type="danger" size="large" @click="handleAbandon">
+          <el-button
+            type="danger"
+            size="large"
+            :disabled="tender.status === 'ABANDONED' || tender.status === 'BIDDED'"
+            @click="handleAbandon"
+          >
             <el-icon><CircleClose /></el-icon>
-            弃标
+            {{ tender.status === 'ABANDONED' ? '已弃标' : '弃标' }}
           </el-button>
           <el-button
             v-if="tender && safeTenderUrl(tender.originalUrl)"

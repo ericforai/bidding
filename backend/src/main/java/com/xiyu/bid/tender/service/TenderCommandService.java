@@ -169,15 +169,25 @@ public class TenderCommandService {
     }
 
     @Transactional
+    @Auditable(action = "BID", entityType = "Tender", description = "投标标讯")
     public TenderBidResponse participateBid(Long tenderId, Long userId) {
         Tender tender = tenderRepository.findById(tenderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tender", tenderId.toString()));
+        accessGuard.assertCanAccessTender(tender);
+
         if (tender.getStatus() == Tender.Status.BIDDED) {
             return TenderBidResponse.builder()
                     .accepted(false)
                     .message("该标讯已投标")
                     .build();
         }
+        if (tender.getStatus() == Tender.Status.ABANDONED) {
+            return TenderBidResponse.builder()
+                    .accepted(false)
+                    .message("该标讯已放弃，无法投标")
+                    .build();
+        }
+
         tender.setStatus(Tender.Status.BIDDED);
         tenderRepository.save(tender);
 
@@ -187,6 +197,7 @@ public class TenderCommandService {
                 .description("标讯「" + tender.getTitle() + "」已投标，需进行项目立项。预算：" + tender.getBudget() + "万元。")
                 .status(Task.Status.TODO)
                 .priority(Task.Priority.HIGH)
+                .assigneeId(userId)
                 .dueDate(LocalDateTime.now().plusDays(7))
                 .build();
         TaskDTO createdTodo = taskService.createTask(todo);
@@ -202,18 +213,28 @@ public class TenderCommandService {
     }
 
     @Transactional
-    public TenderBidResponse abandonBid(Long tenderId, TenderAbandonRequest req) {
+    @Auditable(action = "ABANDON", entityType = "Tender", description = "弃标标讯")
+    public TenderBidResponse abandonBid(Long tenderId, TenderAbandonRequest req, Long userId) {
         Tender tender = tenderRepository.findById(tenderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tender", tenderId.toString()));
+        accessGuard.assertCanAccessTender(tender);
+
         if (tender.getStatus() == Tender.Status.ABANDONED) {
             return TenderBidResponse.builder()
                     .accepted(false)
                     .message("该标讯已放弃")
                     .build();
         }
+        if (tender.getStatus() == Tender.Status.BIDDED) {
+            return TenderBidResponse.builder()
+                    .accepted(false)
+                    .message("该标讯已投标，无法弃标")
+                    .build();
+        }
+
         tender.setStatus(Tender.Status.ABANDONED);
         tenderRepository.save(tender);
-        log.info("Tender {} abandoned, reason: {}", tenderId, req.getReason());
+        log.info("Tender {} abandoned by user {}, reason: {}", tenderId, userId, req.getReason());
         return TenderBidResponse.builder()
                 .accepted(true)
                 .message("已放弃该标讯")
