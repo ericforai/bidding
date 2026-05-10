@@ -175,7 +175,7 @@ public class TenderCommandService {
                 .orElseThrow(() -> new ResourceNotFoundException("Tender", tenderId.toString()));
         accessGuard.assertCanAccessTender(tender);
 
-        if (tender.getStatus() == Tender.Status.BIDDED) {
+        if (tender.getStatus() == Tender.Status.BIDDING) {
             return TenderBidResponse.builder()
                     .accepted(false)
                     .message("该标讯已投标")
@@ -188,7 +188,7 @@ public class TenderCommandService {
                     .build();
         }
 
-        tender.setStatus(Tender.Status.BIDDED);
+        tender.setStatus(Tender.Status.BIDDING);
         tenderRepository.save(tender);
 
         TaskDTO todo = TaskDTO.builder()
@@ -225,7 +225,7 @@ public class TenderCommandService {
                     .message("该标讯已放弃")
                     .build();
         }
-        if (tender.getStatus() == Tender.Status.BIDDED) {
+        if (tender.getStatus() == Tender.Status.BIDDING) {
             return TenderBidResponse.builder()
                     .accepted(false)
                     .message("该标讯已投标，无法弃标")

@@ -24,6 +24,7 @@ import com.xiyu.bid.tender.service.TenderQueryService;
 import com.xiyu.bid.tender.service.TenderSearchCriteria;
 import com.xiyu.bid.util.InputSanitizer;
 import com.xiyu.bid.annotation.DataScope;
+import jakarta.validation.Valid;
 import com.xiyu.bid.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +47,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.validation.Valid;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
@@ -69,6 +69,7 @@ public class TenderController {
     private final DemoDataProvider demoDataProvider;
     private final DemoFusionService demoFusionService;
     private final AuthService authService;
+    private final TenderRequestSanitizer sanitizer = new TenderRequestSanitizer();
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
@@ -126,10 +127,12 @@ public class TenderController {
     @Idempotent
     public ResponseEntity<ApiResponse<TenderImportResultDTO>> importTenders(@RequestParam("file") MultipartFile file) {
         log.info("POST /api/tenders/import - Importing tenders, originalName={}, size={}",
-                file == null ? null : file.getOriginalFilename(), file == null ? 0 : file.getSize());
+                file == null ? null : file.getOriginalFilename(),
+                file == null ? 0 : file.getSize());
         try {
             TenderImportResultDTO result = tenderImportService.importFromExcel(file);
-            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("成功导入 " + result.getSuccessCount() + " 条标讯", result));
+            String message = "成功导入 " + result.getSuccessCount() + " 条标讯";
+            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(message, result));
         } catch (TenderImportRollbackException ex) {
             log.info("标讯批量导入校验未通过，已整批回滚 failureCount={}",
                     ex.getResult() == null ? 0 : ex.getResult().getFailureCount());
@@ -143,7 +146,8 @@ public class TenderController {
         log.info("PUT /api/tenders/{} - Updating tender", id);
         rejectDemoMutation(id);
         sanitizeTenderRequest(tenderRequest);
-        TenderDTO updatedTender = tenderCommandService.updateTender(id, tenderMapper.toDTO(tenderRequest));
+        TenderDTO tenderDTO = tenderMapper.toDTO(tenderRequest);
+        TenderDTO updatedTender = tenderCommandService.updateTender(id, tenderDTO);
         return ResponseEntity.ok(ApiResponse.success("Tender updated successfully", updatedTender));
     }
 
@@ -168,20 +172,25 @@ public class TenderController {
     @PostMapping("/{id}/participate")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<TenderBidResponse>> participateBid(
-            @PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
         log.info("POST /api/tenders/{}/participate - Participating bid", id);
         rejectDemoMutation(id);
-        TenderBidResponse response = tenderCommandService.participateBid(id, resolveUserId(userDetails));
+        Long userId = resolveUserId(userDetails);
+        TenderBidResponse response = tenderCommandService.participateBid(id, userId);
         return ResponseEntity.ok(ApiResponse.success(response.getMessage(), response));
     }
 
     @PostMapping("/{id}/abandon")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<TenderBidResponse>> abandonBid(
-            @PathVariable Long id, @Valid @RequestBody TenderAbandonRequest req, @AuthenticationPrincipal UserDetails userDetails) {
+            @PathVariable Long id,
+            @Valid @RequestBody TenderAbandonRequest req,
+            @AuthenticationPrincipal UserDetails userDetails) {
         log.info("POST /api/tenders/{}/abandon - Abandoning tender", id);
         rejectDemoMutation(id);
-        TenderBidResponse response = tenderCommandService.abandonBid(id, req, resolveUserId(userDetails));
+        Long userId = resolveUserId(userDetails);
+        TenderBidResponse response = tenderCommandService.abandonBid(id, req, userId);
         return ResponseEntity.ok(ApiResponse.success(response.getMessage(), response));
     }
 
@@ -190,23 +199,23 @@ public class TenderController {
     public ResponseEntity<ApiResponse<TenderAiAnalysisDTO>> getTenderAiAnalysis(@PathVariable Long id) {
         log.info("GET /api/tenders/{}/ai-analysis - Fetching tender AI analysis", id);
         if (isDemoEntityId(id)) {
-            return ResponseEntity.ok(ApiResponse.success("Tender AI analysis retrieved successfully", buildDemoAiAnalysis(id)));
+            TenderDTO tender = demoDataProvider.findDemoTenderById(id)
+                    .orElseThrow(() -> new com.xiyu.bid.exception.ResourceNotFoundException("Tender", id.toString()));
+            TenderAiAnalysisDTO dto = TenderAiAnalysisDTO.builder()
+                    .tenderId(tender.getId())
+                    .winScore(tender.getAiScore() == null ? 80 : tender.getAiScore())
+                    .suggestion("Demo 标讯分析：重点关注资质响应、交付周期和付款条件。")
+                    .dimensionScores(List.of())
+                    .risks(List.of())
+                    .autoTasks(List.of())
+                    .build();
+            return ResponseEntity.ok(ApiResponse.success("Tender AI analysis retrieved successfully", dto));
         }
         Optional<TenderAiAnalysisDTO> analysis = aiDeepCapabilityService.getLatestTenderAnalysis(id);
         if (analysis.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(404, "Tender AI analysis not found"));
         }
         return ResponseEntity.ok(ApiResponse.success("Tender AI analysis retrieved successfully", analysis.get()));
-    }
-
-    private TenderAiAnalysisDTO buildDemoAiAnalysis(Long id) {
-        TenderDTO tender = demoDataProvider.findDemoTenderById(id)
-                .orElseThrow(() -> new com.xiyu.bid.exception.ResourceNotFoundException("Tender", id.toString()));
-        return TenderAiAnalysisDTO.builder()
-                .tenderId(tender.getId())
-                .winScore(tender.getAiScore() == null ? 80 : tender.getAiScore())
-                .suggestion("Demo 标讯分析：重点关注资质响应、交付周期和付款条件。")
-                .dimensionScores(List.of()).risks(List.of()).autoTasks(List.of()).build();
     }
 
     @PostMapping("/{id}/ai-analysis")
@@ -243,42 +252,29 @@ public class TenderController {
         return ResponseEntity.ok(ApiResponse.success("Successfully retrieved statistics", statistics));
     }
 
-    private void sanitizeTenderRequest(TenderRequest r) {
-        if (r == null) return;
-        sanitize(r, 500, TenderRequest::setTitle, TenderRequest::setSource, TenderRequest::setRegion,
-            TenderRequest::setIndustry, TenderRequest::setTenderAgency, TenderRequest::setPurchaserName,
-            TenderRequest::setPurchaserHash, TenderRequest::setContactName, TenderRequest::setContactPhone,
-            TenderRequest::setSourceDocumentName, TenderRequest::setSourceDocumentFileType,
-            TenderRequest::setSourceDocumentFileUrl, TenderRequest::setCustomerType,
-            TenderRequest::setPriority, TenderRequest::setDescription);
-        if (r.getTags() != null) r.setTags(r.getTags().stream().map(t -> sanitize(t, 100)).filter(t -> !t.isBlank()).toList());
+    private void sanitizeTenderRequest(TenderRequest request) {
+        sanitizer.sanitize(request);
     }
 
-    private void sanitizeTenderSearchCriteria(TenderSearchCriteria c) {
-        if (c == null) return;
-        sanitize(c, 200, TenderSearchCriteria::setKeyword, TenderSearchCriteria::setSource,
-            TenderSearchCriteria::setRegion, TenderSearchCriteria::setIndustry,
-            TenderSearchCriteria::setPurchaserName, TenderSearchCriteria::setPurchaserHash,
-            TenderSearchCriteria::setCustomerType, TenderSearchCriteria::setPriority);
+    private void sanitizeTenderSearchCriteria(TenderSearchCriteria criteria) {
+        sanitizer.sanitizeCriteria(criteria);
     }
 
-    @SafeVarargs
-    private <T> void sanitize(T obj, int len, java.util.function.BiConsumer<T, String>... setters) {
-        for (var s : setters) s.accept(obj, sanitize(getField(obj, s), len));
+    private boolean isDemoEntityId(Long id) {
+        return demoModeService.isEnabled() && id != null && id < 0;
     }
 
-    private <T> String getField(T obj, java.util.function.BiConsumer<T, String> setter) {
-        try { return (String) setter.getClass().getDeclaredMethods()[0].invoke(obj); } catch (Exception e) { return null; }
+    private void rejectDemoMutation(Long id) {
+        if (isDemoEntityId(id)) {
+            throw new IllegalArgumentException("Demo records are read-only in e2e mode");
+        }
     }
 
-    private String sanitize(String v, int len) { return v != null ? InputSanitizer.sanitizeString(v, len) : null; }
-
-    private boolean isDemoEntityId(Long id) { return demoModeService.isEnabled() && id != null && id < 0; }
-
-    private void rejectDemoMutation(Long id) { if (isDemoEntityId(id)) throw new IllegalArgumentException("Demo records are read-only in e2e mode"); }
-
-    private Long resolveUserId(UserDetails u) {
-        if (u == null || u.getUsername() == null || u.getUsername().isBlank()) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.UNAUTHORIZED, "无法识别当前用户");
-        return authService.resolveUserIdByUsername(u.getUsername().trim());
+    private Long resolveUserId(UserDetails userDetails) {
+        if (userDetails == null || userDetails.getUsername() == null || userDetails.getUsername().isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.UNAUTHORIZED, "无法识别当前用户");
+        }
+        return authService.resolveUserIdByUsername(userDetails.getUsername().trim());
     }
 }
