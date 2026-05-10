@@ -1,4 +1,4 @@
--- V109__tender_filter_fields.sql
+-- V115__tender_filter_fields.sql
 -- 为标讯中心增加筛选条件：报名截止时间、开标时间、客户类型、客户级别
 -- 添加报名截止时间字段用于筛选
 

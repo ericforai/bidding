@@ -1,5 +1,5 @@
--- Rollback: V109__tender_filter_fields.sql
--- Input: migration-mysql/V109__tender_filter_fields.sql
+-- Rollback: V115__tender_filter_fields.sql
+-- Input: migration-mysql/V115__tender_filter_fields.sql
 -- Output: rollback for mysql environments; review data-loss comments before production use.
 
 -- 警告：数据丢失风险
