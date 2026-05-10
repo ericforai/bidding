@@ -32,6 +32,7 @@ public class TenderDTO {
     private LocalDate publishDate;
     private LocalDateTime deadline;
     private LocalDateTime bidOpeningTime;
+    private LocalDateTime registrationDeadline;
     private String contactName;
     private String contactPhone;
     private String sourceDocumentName;

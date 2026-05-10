@@ -80,6 +80,13 @@ export function useTenderListPage() {
       region: searchForm.value.region || undefined,
       status: searchForm.value.status || undefined,
       sourceType: searchForm.value.sourceType || undefined,
+      source: searchForm.value.source || undefined,
+      customerType: searchForm.value.customerType || undefined,
+      priority: searchForm.value.priority || undefined,
+      registrationDeadlineFrom: searchForm.value.registrationDeadlineFrom || undefined,
+      registrationDeadlineTo: searchForm.value.registrationDeadlineTo || undefined,
+      bidOpeningTimeFrom: searchForm.value.bidOpeningTimeFrom || undefined,
+      bidOpeningTimeTo: searchForm.value.bidOpeningTimeTo || undefined,
     })
   }
 

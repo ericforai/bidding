@@ -252,6 +252,8 @@ public class TenderController {
         if (criteria.getIndustry() != null) criteria.setIndustry(InputSanitizer.sanitizeString(criteria.getIndustry(), 100));
         if (criteria.getPurchaserName() != null) criteria.setPurchaserName(InputSanitizer.sanitizeString(criteria.getPurchaserName(), 255));
         if (criteria.getPurchaserHash() != null) criteria.setPurchaserHash(InputSanitizer.sanitizeString(criteria.getPurchaserHash(), 64));
+        if (criteria.getCustomerType() != null) criteria.setCustomerType(InputSanitizer.sanitizeString(criteria.getCustomerType(), 100));
+        if (criteria.getPriority() != null) criteria.setPriority(InputSanitizer.sanitizeString(criteria.getPriority(), 10));
     }
 
     private boolean isDemoEntityId(Long id) {

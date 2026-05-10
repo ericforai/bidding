@@ -72,6 +72,22 @@ public final class TenderSpecification {
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("aiScore"), safeCriteria.getAiScoreMax()));
             }
 
+            addStringEquals(predicates, criteriaBuilder, root.get("customerType"), safeCriteria.getCustomerType());
+            addStringEquals(predicates, criteriaBuilder, root.get("priority"), safeCriteria.getPriority());
+
+            if (safeCriteria.getBidOpeningTimeFrom() != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("bidOpeningTime"), safeCriteria.getBidOpeningTimeFrom()));
+            }
+            if (safeCriteria.getBidOpeningTimeTo() != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("bidOpeningTime"), safeCriteria.getBidOpeningTimeTo()));
+            }
+            if (safeCriteria.getRegistrationDeadlineFrom() != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("registrationDeadline"), safeCriteria.getRegistrationDeadlineFrom()));
+            }
+            if (safeCriteria.getRegistrationDeadlineTo() != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("registrationDeadline"), safeCriteria.getRegistrationDeadlineTo()));
+            }
+
             if (query != null) {
                 query.orderBy(
                         criteriaBuilder.desc(root.get("publishDate")),
