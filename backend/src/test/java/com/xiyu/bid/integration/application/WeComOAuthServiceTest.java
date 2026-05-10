@@ -60,7 +60,7 @@ class WeComOAuthServiceTest {
 
         // Assert
         assertThat(result).isPresent();
-        assertThat(result.get().UserId()).isEqualTo("USER123");
+        assertThat(result.get().userId()).isEqualTo("USER123");
     }
 
     @Test

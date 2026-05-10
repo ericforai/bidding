@@ -130,7 +130,7 @@ class WeComApiClientTest {
         WeComApiClient.WeComUserInfoResponse response = client.requestUserInfo("mytoken", "mycode");
 
         assertThat(response.errcode()).isEqualTo(0);
-        assertThat(response.UserId()).isEqualTo("U123");
+        assertThat(response.userId()).isEqualTo("U123");
         assertThat(response.user_ticket()).isEqualTo("T123");
         server.verify();
     }
