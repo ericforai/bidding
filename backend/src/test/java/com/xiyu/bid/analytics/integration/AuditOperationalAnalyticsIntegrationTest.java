@@ -63,7 +63,7 @@ class AuditOperationalAnalyticsIntegrationTest extends AbstractAuditOperationalA
                 .andExpect(jsonPath("$.data.summaryStats.totalTenders").value(2))
                 .andExpect(jsonPath("$.data.summaryStats.activeProjects").value(1))
                 .andExpect(jsonPath("$.data.summaryStats.pendingTasks").value(0))
-                .andExpect(jsonPath("$.data.statusDistribution.BIDDED").value(1))
+                .andExpect(jsonPath("$.data.statusDistribution.BIDDING").value(1))
                 .andExpect(jsonPath("$.data.topCompetitors[0].name").value("中国政府采购网"));
 
         resetStatistics();
@@ -75,7 +75,7 @@ class AuditOperationalAnalyticsIntegrationTest extends AbstractAuditOperationalA
 
         resetStatistics();
         mockMvc.perform(get("/api/analytics/drilldown/revenue")
-                        .param("status", "BIDDED"))
+                        .param("status", "BIDDING"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.metricKey").value("revenue"))
                 .andExpect(jsonPath("$.data.items[0].title").value("智慧办公平台采购"))
