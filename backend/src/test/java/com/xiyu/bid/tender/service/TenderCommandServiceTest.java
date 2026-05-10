@@ -294,7 +294,7 @@ class TenderCommandServiceTest {
     @Test
     @DisplayName("投标 - 已投标状态返回失败")
     void participateBid_AlreadyBidded() {
-        Tender biddenTender = Tender.builder().id(1L).title("测试标讯").status(Tender.Status.BIDDED).build();
+        Tender biddenTender = Tender.builder().id(1L).title("测试标讯").status(Tender.Status.BIDDING).build();
         when(tenderRepository.findById(1L)).thenReturn(Optional.of(biddenTender));
 
         TenderBidResponse response = tenderCommandService.participateBid(1L, 10L);
@@ -350,7 +350,7 @@ class TenderCommandServiceTest {
     @Test
     @DisplayName("弃标 - 已投标状态无法弃标")
     void abandonBid_BiddedCannotAbandon() {
-        Tender biddenTender = Tender.builder().id(1L).title("测试标讯").status(Tender.Status.BIDDED).build();
+        Tender biddenTender = Tender.builder().id(1L).title("测试标讯").status(Tender.Status.BIDDING).build();
         TenderAbandonRequest req = TenderAbandonRequest.builder().reason("测试原因").build();
         when(tenderRepository.findById(1L)).thenReturn(Optional.of(biddenTender));
 
