@@ -28,6 +28,7 @@ public class TenderMapper {
                 .publishDate(tender.getPublishDate())
                 .deadline(tender.getDeadline())
                 .bidOpeningTime(tender.getBidOpeningTime())
+                .registrationDeadline(tender.getRegistrationDeadline())
                 .contactName(tender.getContactName())
                 .contactPhone(tender.getContactPhone())
                 .sourceDocumentName(tender.getSourceDocumentName())
@@ -64,6 +65,7 @@ public class TenderMapper {
                 .publishDate(request.getPublishDate())
                 .deadline(request.getDeadline())
                 .bidOpeningTime(request.getBidOpeningTime())
+                .registrationDeadline(request.getRegistrationDeadline())
                 .contactName(request.getContactName())
                 .contactPhone(request.getContactPhone())
                 .sourceDocumentName(request.getSourceDocumentName())
@@ -99,6 +101,7 @@ public class TenderMapper {
                 .publishDate(dto.getPublishDate())
                 .deadline(dto.getDeadline())
                 .bidOpeningTime(dto.getBidOpeningTime())
+                .registrationDeadline(dto.getRegistrationDeadline())
                 .contactName(dto.getContactName())
                 .contactPhone(dto.getContactPhone())
                 .sourceDocumentName(dto.getSourceDocumentName())
@@ -134,6 +137,7 @@ public class TenderMapper {
         if (dto.getPublishDate() != null) target.setPublishDate(dto.getPublishDate());
         if (dto.getDeadline() != null) target.setDeadline(dto.getDeadline());
         if (dto.getBidOpeningTime() != null) target.setBidOpeningTime(dto.getBidOpeningTime());
+        if (dto.getRegistrationDeadline() != null) target.setRegistrationDeadline(dto.getRegistrationDeadline());
         if (dto.getContactName() != null) target.setContactName(dto.getContactName());
         if (dto.getContactPhone() != null) target.setContactPhone(dto.getContactPhone());
         if (dto.getSourceDocumentName() != null) target.setSourceDocumentName(dto.getSourceDocumentName());

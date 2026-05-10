@@ -120,6 +120,12 @@ export const DEFAULT_SEARCH_FORM = Object.freeze({
   status: '',
   source: '',
   sourceType: '',
+  customerType: '',
+  priority: '',
+  registrationDeadlineFrom: null,
+  registrationDeadlineTo: null,
+  bidOpeningTimeFrom: null,
+  bidOpeningTimeTo: null,
 })
 
 export const DEFAULT_SOURCE_CONFIG = Object.freeze({

@@ -64,6 +64,9 @@ public class TenderRequest {
     @Future(message = "开标时间必须是未来的时间")
     private LocalDateTime bidOpeningTime;
 
+    @Future(message = "报名截止时间必须是未来的时间")
+    private LocalDateTime registrationDeadline;
+
     @Size(max = 100, message = "联系人长度不能超过100个字符")
     private String contactName;
 

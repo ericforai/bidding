@@ -43,6 +43,8 @@ import java.util.Locale;
     @Index(name = "idx_tender_purchaser_hash_normalized", columnList = "purchaser_hash_normalized"),
     @Index(name = "idx_tender_customer_type", columnList = "customer_type"),
     @Index(name = "idx_tender_priority", columnList = "priority"),
+    @Index(name = "idx_tender_registration_deadline", columnList = "registration_deadline"),
+    @Index(name = "idx_tender_bid_opening_time", columnList = "bid_opening_time"),
     @Index(name = "idx_tender_status_region_industry_normalized",
             columnList = "status, region_normalized, industry_normalized"),
     @Index(name = "idx_tender_source_type", columnList = "source_type")
@@ -136,6 +138,15 @@ public class Tender {
     @Column(name = "bid_opening_time")
     private LocalDateTime bidOpeningTime;
 
+    /**
+     * 报名截止时间
+     */
+    @Column(name = "registration_deadline", nullable = true)
+    private LocalDateTime registrationDeadline;
+
+    /**
+     * 联系人姓名
+     */
     @Column(name = "contact_name", length = 100)
     private String contactName;
 
