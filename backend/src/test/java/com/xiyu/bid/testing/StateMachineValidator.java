@@ -1,6 +1,7 @@
 package com.xiyu.bid.testing;
 
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
 import java.util.*;
 
@@ -25,6 +26,8 @@ import java.util.*;
  */
 @Slf4j
 public class StateMachineValidator {
+
+    private static final Logger log = org.slf4j.LoggerFactory.getLogger(StateMachineValidator.class);
 
     private final String entityName;
     private final Set<String> states;

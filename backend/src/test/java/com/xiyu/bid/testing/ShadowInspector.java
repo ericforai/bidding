@@ -34,6 +34,8 @@ import java.util.function.Function;
 @Slf4j
 public class ShadowInspector {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ShadowInspector.class);
+
     private final JdbcTemplate jdbcTemplate;
 
     @Autowired
