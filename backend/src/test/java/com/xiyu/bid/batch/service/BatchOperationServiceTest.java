@@ -97,13 +97,13 @@ class BatchOperationServiceTest {
         testTender1 = Tender.builder()
                 .id(1L)
                 .title("Test Tender 1")
-                .status(Tender.Status.PENDING)
+                .status(Tender.Status.PENDING_ASSIGNMENT)
                 .build();
 
         testTender2 = Tender.builder()
                 .id(2L)
                 .title("Test Tender 2")
-                .status(Tender.Status.PENDING)
+                .status(Tender.Status.PENDING_ASSIGNMENT)
                 .build();
 
         testTask1 = Task.builder()

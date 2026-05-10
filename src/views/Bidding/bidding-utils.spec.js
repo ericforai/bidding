@@ -18,9 +18,9 @@ import {
 
 describe('normalizeTenderStatus', () => {
   it.each([
-    ['PENDING_ASSIGNMENT', '待处理'],
+    ['PENDING_ASSIGNMENT', '待分配'],
     ['TRACKING', '跟踪中'],
-    ['BIDDING', '已投标'],
+    ['BIDDING', '投标中'],
     ['ABANDONED', '已放弃']
   ])('maps backend status "%s" to "%s"', (input, expected) => {
     expect(normalizeTenderStatus(input)).toBe(expected)

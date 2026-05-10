@@ -183,6 +183,7 @@ public class ArchitectureTest {
         "TemplateUseRecord",
         "TemplateVersion",
         "Tender",
+        "TenderStatus",
         "User"
     );
 

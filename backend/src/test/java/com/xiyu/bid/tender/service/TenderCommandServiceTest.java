@@ -58,6 +58,7 @@ class TenderCommandServiceTest {
 
     private TenderCommandService tenderCommandService;
     private TenderQueryService tenderQueryService;
+    private com.xiyu.bid.batch.core.TenderStatusTransitionPolicy statusTransitionPolicy;
     private Tender tender;
     private TenderDTO tenderDTO;
 
@@ -65,7 +66,8 @@ class TenderCommandServiceTest {
     void setUp() {
         TenderMapper tenderMapper = new TenderMapper();
         TenderProjectAccessGuard accessGuard = new TenderProjectAccessGuard(projectRepository, projectAccessScopeService);
-        tenderCommandService = new TenderCommandService(tenderRepository, aiService, tenderMapper, accessGuard);
+        statusTransitionPolicy = new com.xiyu.bid.batch.core.TenderStatusTransitionPolicy();
+        tenderCommandService = new TenderCommandService(tenderRepository, aiService, tenderMapper, accessGuard, statusTransitionPolicy);
         tenderQueryService = new TenderQueryService(tenderRepository, tenderMapper, accessGuard,
                 projectRepository, userRepository, tenderAssignmentRecordRepository);
 
@@ -82,7 +84,7 @@ class TenderCommandServiceTest {
                 .publishDate(LocalDate.of(2026, 4, 21))
                 .deadline(LocalDateTime.now().plusDays(20))
                 .bidOpeningTime(LocalDateTime.now().plusDays(22))
-                .status(Tender.Status.PENDING)
+                .status(Tender.Status.PENDING_ASSIGNMENT)
                 .contactName("王经理")
                 .contactPhone("13800138000")
                 .customerType("KA 客户")
@@ -108,7 +110,7 @@ class TenderCommandServiceTest {
                 .bidOpeningTime(tender.getBidOpeningTime())
                 .customerType("KA 客户")
                 .priority("A")
-                .status(Tender.Status.PENDING)
+                .status(Tender.Status.PENDING_ASSIGNMENT)
                 .tags(java.util.List.of("数据中心", "GPU"))
                 .build();
     }
