@@ -1,6 +1,5 @@
 package com.xiyu.bid.auth;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -13,12 +12,15 @@ import java.util.concurrent.ConcurrentHashMap;
  * Uses Redis if available, otherwise falls back to in-memory map.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class OAuthStateService {
 
     private final StringRedisTemplate redisTemplate;
     private final ConcurrentHashMap<String, java.time.Instant> localMap = new ConcurrentHashMap<>();
+
+    public OAuthStateService(@org.springframework.beans.factory.annotation.Autowired(required = false) StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
     private static final String REDIS_PREFIX = "oauth_state:";
     private static final Duration TTL = Duration.ofMinutes(10);
 

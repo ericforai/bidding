@@ -1,4 +1,4 @@
-package com.xiyu.bid.controller;
+package com.xiyu.bid.integration.controller;
 
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.dto.AuthResponse;
