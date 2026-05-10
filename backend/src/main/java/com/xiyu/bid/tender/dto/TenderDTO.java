@@ -50,4 +50,14 @@ public class TenderDTO {
     private String externalId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    /**
+     * 项目经理名称（从关联的项目获取）
+     */
+    private String projectManagerName;
+
+    /**
+     * 分配人名称（从标讯分配记录获取）
+     */
+    private String assigneeName;
 }

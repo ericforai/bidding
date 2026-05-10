@@ -1,11 +1,13 @@
 package com.xiyu.bid.tender.service;
 
 import com.xiyu.bid.ai.service.AiService;
+import com.xiyu.bid.batch.repository.TenderAssignmentRecordRepository;
 import com.xiyu.bid.entity.Project;
 import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.exception.ResourceNotFoundException;
 import com.xiyu.bid.repository.ProjectRepository;
 import com.xiyu.bid.repository.TenderRepository;
+import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.service.ProjectAccessScopeService;
 import com.xiyu.bid.tender.dto.TenderDTO;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +45,12 @@ class TenderCommandServiceTest {
     private ProjectRepository projectRepository;
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private TenderAssignmentRecordRepository tenderAssignmentRecordRepository;
+
+    @Mock
     private ProjectAccessScopeService projectAccessScopeService;
 
     @Mock
@@ -58,7 +66,8 @@ class TenderCommandServiceTest {
         TenderMapper tenderMapper = new TenderMapper();
         TenderProjectAccessGuard accessGuard = new TenderProjectAccessGuard(projectRepository, projectAccessScopeService);
         tenderCommandService = new TenderCommandService(tenderRepository, aiService, tenderMapper, accessGuard);
-        tenderQueryService = new TenderQueryService(tenderRepository, tenderMapper, accessGuard);
+        tenderQueryService = new TenderQueryService(tenderRepository, tenderMapper, accessGuard,
+                projectRepository, userRepository, tenderAssignmentRecordRepository);
 
         tender = Tender.builder()
                 .id(1L)
@@ -133,6 +142,8 @@ class TenderCommandServiceTest {
     @DisplayName("根据ID查询标讯 - 成功")
     void getTenderById_ShouldReturnTender() {
         when(tenderRepository.findById(1L)).thenReturn(Optional.of(tender));
+        when(projectRepository.findByTenderId(1L)).thenReturn(java.util.List.of());
+        when(tenderAssignmentRecordRepository.findByTenderIdOrderByAssignedAtDesc(1L)).thenReturn(java.util.List.of());
 
         TenderDTO foundDto = tenderQueryService.getTenderById(1L);
 
