@@ -12,7 +12,7 @@ import {
 
 describe('bidding-utils-status', () => {
   it.each([
-    ['new', TENDER_STATUSES.PENDING_ASSIGNMENT_ASSIGNMENT],
+    ['new', TENDER_STATUSES.PENDING_ASSIGNMENT],
     ['contacted', TENDER_STATUSES.TRACKING],
     ['following', TENDER_STATUSES.TRACKING],
     ['quoting', TENDER_STATUSES.TRACKING],
@@ -43,7 +43,7 @@ describe('bidding-utils-status', () => {
   it('exposes display helpers from one source of truth', () => {
     expect(getTenderStatusText('quoting')).toBe('跟踪中')
     expect(getTenderStatusTagType('TRACKING')).toBe('warning')
-    expect(getTenderStatusBadgeClass('bidding')).toBe('bidded')
+    expect(getTenderStatusBadgeClass('bidding')).toBe('bidding')
   })
 
   it('re-exports backend status conversion through canonical mapping', () => {
