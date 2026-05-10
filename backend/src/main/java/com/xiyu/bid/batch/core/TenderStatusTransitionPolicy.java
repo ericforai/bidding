@@ -30,10 +30,10 @@ public class TenderStatusTransitionPolicy {
     private Set<Tender.Status> allowedTargets(Tender.Status currentStatus) {
         return switch (currentStatus) {
             case PENDING_ASSIGNMENT -> EnumSet.of(Tender.Status.TRACKING, Tender.Status.ABANDONED);
-            case TRACKING -> EnumSet.of(Tender.Status.PENDING_ASSIGNMENT, Tender.Status.EVALUATED, Tender.Status.ABANDONED);
+            case TRACKING -> EnumSet.of(Tender.Status.EVALUATED, Tender.Status.ABANDONED);
             case EVALUATED -> EnumSet.of(Tender.Status.BIDDING, Tender.Status.ABANDONED);
             case BIDDING -> EnumSet.of(Tender.Status.WON, Tender.Status.LOST, Tender.Status.ABANDONED);
-            case WON, LOST, ABANDONED -> EnumSet.noneOf(Tender.Status.class);
+            case WON, LOST, ABANDONED -> EnumSet.of(Tender.Status.PENDING_ASSIGNMENT);
         };
     }
 }

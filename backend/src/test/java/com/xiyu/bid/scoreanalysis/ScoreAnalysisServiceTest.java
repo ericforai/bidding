@@ -46,6 +46,15 @@ class ScoreAnalysisServiceTest {
     @Mock
     private ProjectAccessScopeService projectAccessScopeService;
 
+    @Mock
+    private com.xiyu.bid.tender.service.TenderCommandService tenderCommandService;
+
+    @Mock
+    private com.xiyu.bid.scoreanalysis.core.ScoreAnalysisCalculationPolicy calculationPolicy;
+
+    @Mock
+    private com.xiyu.bid.scoreanalysis.service.ScoreAnalysisQueryService queryService;
+
     @InjectMocks
     private ScoreAnalysisService scoreAnalysisService;
 
@@ -103,8 +112,12 @@ class ScoreAnalysisServiceTest {
     @DisplayName("应该成功创建评分分析")
     void shouldCreateAnalysisSuccessfully() {
         // Given
+        when(calculationPolicy.calculateWeightedScoreFromDTOs(any())).thenReturn(new BigDecimal("85"));
+        when(calculationPolicy.determineRiskLevel(85)).thenReturn(RiskLevel.LOW);
         when(scoreAnalysisRepository.save(any(ScoreAnalysis.class))).thenReturn(testAnalysis);
-        when(dimensionScoreRepository.saveAll(anyList())).thenReturn(Arrays.asList(testDimension));
+        when(queryService.convertToDTO(any())).thenReturn(ScoreAnalysisDTO.builder()
+                .projectId(100L)
+                .build());
 
         // When
         ApiResponse<ScoreAnalysisDTO> response = scoreAnalysisService.createAnalysis(createRequest);
@@ -115,17 +128,18 @@ class ScoreAnalysisServiceTest {
         assertNotNull(response.getData());
         assertEquals(100L, response.getData().getProjectId());
         verify(scoreAnalysisRepository, times(1)).save(any(ScoreAnalysis.class));
-        verify(dimensionScoreRepository, times(1)).saveAll(anyList());
     }
 
     @Test
     @DisplayName("应该获取项目的评分分析")
     void shouldGetAnalysisByProjectSuccessfully() {
         // Given
-        when(scoreAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(100L))
-                .thenReturn(Optional.of(testAnalysis));
-        when(dimensionScoreRepository.findByAnalysisId(1L))
-                .thenReturn(Arrays.asList(testDimension));
+        ScoreAnalysisDTO expectedDto = ScoreAnalysisDTO.builder()
+                .projectId(100L)
+                .overallScore(85)
+                .build();
+        when(queryService.getAnalysisByProject(100L))
+                .thenReturn(ApiResponse.success("获取评分分析成功", expectedDto));
 
         // When
         ApiResponse<ScoreAnalysisDTO> response = scoreAnalysisService.getAnalysisByProject(100L);
@@ -142,8 +156,8 @@ class ScoreAnalysisServiceTest {
     @DisplayName("应该获取项目不存在的分析时返回错误")
     void shouldReturnErrorWhenAnalysisNotFound() {
         // Given
-        when(scoreAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(999L))
-                .thenReturn(Optional.empty());
+        when(queryService.getAnalysisByProject(999L))
+                .thenReturn(ApiResponse.error("未找到项目的评分分析"));
 
         // When
         ApiResponse<ScoreAnalysisDTO> response = scoreAnalysisService.getAnalysisByProject(999L);

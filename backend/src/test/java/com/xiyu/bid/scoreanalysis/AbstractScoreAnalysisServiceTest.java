@@ -2,6 +2,7 @@ package com.xiyu.bid.scoreanalysis;
 
 import com.xiyu.bid.scoreanalysis.core.ScoreAnalysisCalculationPolicy;
 import com.xiyu.bid.scoreanalysis.dto.DimensionScoreDTO;
+import com.xiyu.bid.scoreanalysis.dto.ScoreAnalysisDTO;
 import com.xiyu.bid.scoreanalysis.dto.ScoreAnalysisCreateRequest;
 import com.xiyu.bid.scoreanalysis.entity.DimensionScore;
 import com.xiyu.bid.scoreanalysis.entity.ScoreAnalysis;
@@ -34,7 +35,17 @@ abstract class AbstractScoreAnalysisServiceTest {
     protected ProjectAccessScopeService projectAccessScopeService;
 
     @Mock
+<<<<<<< HEAD
     protected TenderCommandService tenderCommandService;
+=======
+    protected com.xiyu.bid.tender.service.TenderCommandService tenderCommandService;
+
+    @Mock
+    protected com.xiyu.bid.scoreanalysis.core.ScoreAnalysisCalculationPolicy calculationPolicy;
+
+    @Mock
+    protected com.xiyu.bid.scoreanalysis.service.ScoreAnalysisQueryService queryService;
+>>>>>>> origin/feat/tender-status-upgrade
 
     protected ScoreAnalysisService scoreAnalysisService;
     protected ScoreAnalysisCalculationPolicy calculationPolicy;
@@ -92,6 +103,15 @@ abstract class AbstractScoreAnalysisServiceTest {
                 .isAiGenerated(true)
                 .summary("综合评估优秀")
                 .dimensions(dimensions)
+                .build();
+    }
+
+    protected ScoreAnalysisDTO convertToDTO(ScoreAnalysis analysis) {
+        return ScoreAnalysisDTO.builder()
+                .id(analysis.getId())
+                .projectId(analysis.getProjectId())
+                .overallScore(analysis.getOverallScore())
+                .riskLevel(analysis.getRiskLevel())
                 .build();
     }
 }

@@ -90,7 +90,11 @@ abstract class AbstractAuditOperationalAnalyticsIntegrationTest {
                 .title("智慧办公平台采购")
                 .source("中国政府采购网")
                 .budget(new BigDecimal("500000"))
+<<<<<<< HEAD
                 .status(Tender.Status.BIDDING)
+=======
+                .status(Tender.Status.WON)
+>>>>>>> origin/feat/tender-status-upgrade
                 .aiScore(88)
                 .riskLevel(Tender.RiskLevel.LOW)
                 .build());

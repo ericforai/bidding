@@ -52,7 +52,11 @@ class BatchTenderStatusAppServiceTest {
     @Test
     void shouldReturnPartialFailureWhenTransitionIsInvalid() {
         Tender pending = Tender.builder().id(1L).status(Tender.Status.PENDING_ASSIGNMENT).build();
+<<<<<<< HEAD
         Tender bidded = Tender.builder().id(2L).status(Tender.Status.BIDDING).build();
+=======
+        Tender bidded = Tender.builder().id(2L).status(Tender.Status.WON).build();
+>>>>>>> origin/feat/tender-status-upgrade
         when(tenderRepository.findById(1L)).thenReturn(Optional.of(pending));
         when(tenderRepository.findById(2L)).thenReturn(Optional.of(bidded));
         when(tenderRepository.saveAll(anyList())).thenReturn(List.of(pending));

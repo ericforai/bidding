@@ -84,7 +84,11 @@ class BatchTenderAssignAppServiceTest {
     @Test
     void shouldRejectAssigningBiddedTenderBackToTracking() {
         User assignee = User.builder().id(9L).fullName("销售甲").build();
+<<<<<<< HEAD
         Tender bidded = Tender.builder().id(1L).status(Tender.Status.BIDDING).build();
+=======
+        Tender bidded = Tender.builder().id(1L).status(Tender.Status.WON).build();
+>>>>>>> origin/feat/tender-status-upgrade
 
         when(userRepository.findById(9L)).thenReturn(Optional.of(assignee));
         when(tenderRepository.findById(1L)).thenReturn(Optional.of(bidded));

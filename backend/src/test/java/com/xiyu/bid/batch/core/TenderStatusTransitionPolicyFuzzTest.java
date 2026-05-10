@@ -59,6 +59,7 @@ class TenderStatusTransitionPolicyFuzzTest {
         assertDoesNotThrow(() -> policy.assertTransition(status, status));
     }
 
+<<<<<<< HEAD
     @ParameterizedTest
     @EnumSource(Tender.Status.class)
     void biddingIsTerminalSink(Tender.Status other) {
@@ -69,6 +70,8 @@ class TenderStatusTransitionPolicyFuzzTest {
                 () -> "BIDDING is terminal; BIDDING -> " + other + " must be rejected");
     }
 
+=======
+>>>>>>> origin/feat/tender-status-upgrade
     @Test
     void nullInputsAreRejectedWithoutThrowing() {
         for (Tender.Status status : Tender.Status.values()) {
@@ -89,7 +92,7 @@ class TenderStatusTransitionPolicyFuzzTest {
     }
 
     @Test
-    void randomWalkFromPendingStaysInsideLegalGraph() {
+    void randomWalkFromInitialStaysInsideLegalGraph() {
         Random rng = new Random(FUZZ_SEED);
         Tender.Status[] universe = Tender.Status.values();
         Tender.Status current = Tender.Status.PENDING_ASSIGNMENT;
@@ -130,10 +133,17 @@ class TenderStatusTransitionPolicyFuzzTest {
         }
         return switch (from) {
             case PENDING_ASSIGNMENT -> to == Tender.Status.TRACKING || to == Tender.Status.ABANDONED;
+<<<<<<< HEAD
             case TRACKING -> to == Tender.Status.PENDING_ASSIGNMENT || to == Tender.Status.EVALUATED || to == Tender.Status.ABANDONED;
             case EVALUATED -> to == Tender.Status.BIDDING || to == Tender.Status.ABANDONED;
             case BIDDING -> to == Tender.Status.WON || to == Tender.Status.LOST || to == Tender.Status.ABANDONED;
             case WON, LOST, ABANDONED -> false;
+=======
+            case TRACKING -> to == Tender.Status.EVALUATED || to == Tender.Status.ABANDONED;
+            case EVALUATED -> to == Tender.Status.BIDDING || to == Tender.Status.ABANDONED;
+            case BIDDING -> to == Tender.Status.WON || to == Tender.Status.LOST || to == Tender.Status.ABANDONED;
+            case WON, LOST, ABANDONED -> to == Tender.Status.PENDING_ASSIGNMENT;
+>>>>>>> origin/feat/tender-status-upgrade
         };
     }
 }

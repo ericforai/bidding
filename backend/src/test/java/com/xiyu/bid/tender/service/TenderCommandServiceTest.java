@@ -62,7 +62,11 @@ class TenderCommandServiceTest {
     private AiService aiService;
 
     @Mock
+<<<<<<< HEAD
     private TaskService taskService;
+=======
+    private com.xiyu.bid.batch.core.TenderStatusTransitionPolicy statusTransitionPolicy;
+>>>>>>> origin/feat/tender-status-upgrade
 
     private TenderCommandService tenderCommandService;
     private TenderQueryService tenderQueryService;
@@ -74,8 +78,12 @@ class TenderCommandServiceTest {
     void setUp() {
         TenderMapper tenderMapper = new TenderMapper();
         TenderProjectAccessGuard accessGuard = new TenderProjectAccessGuard(projectRepository, projectAccessScopeService);
+<<<<<<< HEAD
         statusTransitionPolicy = new com.xiyu.bid.batch.core.TenderStatusTransitionPolicy();
         tenderCommandService = new TenderCommandService(tenderRepository, aiService, tenderMapper, accessGuard, statusTransitionPolicy, taskService);
+=======
+        tenderCommandService = new TenderCommandService(tenderRepository, aiService, tenderMapper, accessGuard, statusTransitionPolicy);
+>>>>>>> origin/feat/tender-status-upgrade
         tenderQueryService = new TenderQueryService(tenderRepository, tenderMapper, accessGuard,
                 projectRepository, userRepository, tenderAssignmentRecordRepository);
 

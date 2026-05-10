@@ -80,7 +80,7 @@ describe('TenderActionMenu permissions', () => {
 
   it('shows participate option when status is EVALUATED', () => {
     const evaluatedRow = { id: 1, title: '测试', status: 'EVALUATED' }
-    const wrapper = mountMenu({ row: evaluatedRow })
+    const wrapper = mountMenu({ canManageTenders: true, row: evaluatedRow })
 
     expect(wrapper.html()).toContain('立即投标')
   })
