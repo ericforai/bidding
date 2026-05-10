@@ -24,7 +24,7 @@ export function normalizeTenderForCreate(formData) {
     source: formData.source || '人工录入',
     budget: formData.budget != null ? Number(formData.budget) : 0,
     deadline: formData.deadline || null,
-    status: 'PENDING',
+    status: 'PENDING_ASSIGNMENT',
     aiScore: formData.aiScore != null ? Number(formData.aiScore) : 0,
     riskLevel: formData.riskLevel || null,
     originalUrl: formData.originalUrl || '',
@@ -243,12 +243,5 @@ export function toBackendStatus(frontendStatus) {
     return frontendStatus
   }
 
-  const normalized = toBackendTenderStatus(frontendStatus)
-  const rawValue = String(frontendStatus).trim()
-  return normalized === 'PENDING' && rawValue.toUpperCase() !== 'PENDING'
-    && rawValue.toLowerCase() !== 'new'
-    && rawValue.toLowerCase() !== 'pending'
-    && rawValue !== '待处理'
-    ? frontendStatus
-    : normalized
+  return toBackendTenderStatus(frontendStatus)
 }

@@ -84,7 +84,7 @@ abstract class AbstractExcelExportServiceTest {
                 .source("政府采购网")
                 .budget(new BigDecimal("1000000.00"))
                 .deadline(LocalDateTime.of(2024, 6, 30, 17, 0))
-                .status(Tender.Status.PENDING)
+                .status(Tender.Status.PENDING_ASSIGNMENT)
                 .aiScore(85)
                 .riskLevel(Tender.RiskLevel.LOW)
                 .createdAt(LocalDateTime.of(2024, 3, 1, 10, 0))

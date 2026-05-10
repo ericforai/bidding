@@ -19,7 +19,7 @@ vi.stubGlobal('ResizeObserver', vi.fn().mockImplementation(() => ({
 
 import TenderActionMenu from './TenderActionMenu.vue'
 
-const row = { id: 1, title: '测试标讯' }
+const row = { id: 1, title: '测试标讯', status: 'PENDING_ASSIGNMENT' }
 
 function mountMenu(props = {}) {
   const stubs = {
