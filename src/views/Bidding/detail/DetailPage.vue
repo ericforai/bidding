@@ -90,15 +90,6 @@
           <el-descriptions-item label="分配人">
             {{ tender.assigneeName || '-' }}
           </el-descriptions-item>
-          <el-descriptions-item label="中标概率" :span="3">
-            <div class="win-probability-display">
-              <el-rate :model-value="winProbabilityView.rate" disabled />
-              <el-tooltip :content="winProbabilityView.tooltip" placement="top">
-                <span class="win-probability-label">{{ winProbabilityView.label }}</span>
-              </el-tooltip>
-              <span class="win-probability-source">按真实匹配评分换算</span>
-            </div>
-          </el-descriptions-item>
         </el-descriptions>
 
         <div class="action-buttons">
@@ -129,112 +120,9 @@
             <el-icon><Link /></el-icon>
             查看官网公告
           </el-button>
-          <el-button size="large" @click="handleFollow">
-            <el-icon><StarFilled v-if="isFollowed" /><Star v-else /></el-icon>
-            {{ isFollowed ? '已关注' : '加入关注' }}
-          </el-button>
-          <el-button size="large" @click="handleShare">
-            <el-icon><Share /></el-icon>
-            分享
-          </el-button>
         </div>
       </el-card>
 
-      <el-card v-if="showTenderAiSection" class="ai-analysis-card" shadow="never">
-        <template #header>
-          <div class="card-title-with-icon">
-            <el-icon class="ai-icon"><MagicStick /></el-icon>
-            AI智能分析
-          </div>
-        </template>
-
-        <div class="analysis-content">
-          <div class="analysis-section">
-            <MatchScorePanel
-              :score="matchScore"
-              :loading="scoreLoading"
-              :generating="scoreGenerating"
-              :error="scoreError"
-              @generate="handleGenerateMatchScore"
-              @reload="loadMatchScore(tender.id)"
-              @configure="handleConfigureMatchScore"
-            />
-          </div>
-
-          <el-divider />
-
-          <div class="analysis-section">
-            <h4 class="detail-section-title">优势分析</h4>
-            <div class="advantages-list">
-              <div v-for="(advantage, index) in advantages" :key="index" class="advantage-item">
-                <el-icon class="advantage-icon"><CircleCheckFilled /></el-icon>
-                <span>{{ advantage }}</span>
-              </div>
-            </div>
-          </div>
-
-          <el-divider />
-
-          <div class="analysis-section">
-            <h4 class="detail-section-title">AI建议</h4>
-            <div class="suggestions">
-              <el-alert
-                v-for="(suggestion, index) in suggestions"
-                :key="index"
-                :title="suggestion.title"
-                :type="suggestion.type"
-                :closable="false"
-                show-icon
-              >
-                <template #default>
-                  <p>{{ suggestion.content }}</p>
-                </template>
-              </el-alert>
-            </div>
-          </div>
-        </div>
-      </el-card>
-
-      <el-card class="related-cases-card" shadow="never">
-        <template #header>
-          <div class="card-title-with-icon">
-            <el-icon><Briefcase /></el-icon>
-            相关案例推荐
-          </div>
-        </template>
-
-        <div v-if="relatedCasesLoading" class="cases-list">
-          <el-skeleton :rows="3" animated />
-        </div>
-        <el-empty
-          v-else-if="relatedCases.length === 0"
-          description="暂无真实案例推荐"
-        />
-        <div v-else class="cases-list">
-          <div v-for="caseItem in relatedCases" :key="caseItem.id" class="case-item" @click="handleViewCase(caseItem.id)">
-            <div class="case-icon">
-              <el-icon><Document /></el-icon>
-            </div>
-            <div class="case-content">
-              <h5 class="case-title">{{ caseItem.title }}</h5>
-              <div class="case-meta">
-                <span>{{ caseItem.customer }}</span>
-                <span>{{ caseItem.amount }}万元</span>
-                <span>{{ caseItem.year }}年</span>
-              </div>
-              <p class="case-summary">{{ caseItem.summary }}</p>
-              <div class="case-highlights">
-                <el-tag v-for="highlight in caseItem.highlights" :key="highlight" size="small" type="info">
-                  {{ highlight }}
-                </el-tag>
-              </div>
-            </div>
-            <div class="case-arrow">
-              <el-icon><ArrowRight /></el-icon>
-            </div>
-          </div>
-        </div>
-      </el-card>
     </div>
 
     <div v-else class="loading-container">
@@ -244,42 +132,25 @@
 </template>
 
 <script setup>
-import { ArrowRight, Briefcase, CircleCheckFilled, CircleClose, Document, DocumentAdd, Link, MagicStick, Share, Star, StarFilled } from '@element-plus/icons-vue'
+import { CircleClose, DocumentAdd, Link } from '@element-plus/icons-vue'
 import { formatBudgetWan, formatTenderDate, safeTenderUrl } from '../bidding-utils.js'
-import MatchScorePanel from '../match-scoring/MatchScorePanel.vue'
 import { useBiddingDetailPage } from './useBiddingDetailPage.js'
 import './styles/detail-layout.css'
 import './styles/detail-overrides.css'
 
 const {
-  showTenderAiSection,
   tender,
-  isFollowed,
   matchScore,
-  scoreLoading,
-  scoreGenerating,
-  scoreError,
   matchScoreState,
   regionMeta,
   industryMeta,
   deadlineParts,
-  winProbabilityView,
-  advantages,
-  suggestions,
-  relatedCases,
-  relatedCasesLoading,
   getScoreClass,
   getStatusType,
   getStatusText,
   getDeadlineClass,
   handleParticipate,
-  handleFollow,
-  handleShare,
   handleViewOriginal,
-  handleViewCase,
-  loadMatchScore,
-  handleGenerateMatchScore,
-  handleConfigureMatchScore,
   handleAbandon,
 } = useBiddingDetailPage()
 </script>
