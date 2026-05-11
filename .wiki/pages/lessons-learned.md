@@ -5,7 +5,6 @@ category: guide
 tags: [经验总结, 数据库迁移, PostgreSQL, MySQL, Flyway]
 sources:
   - CLAUDE.md
-  - 本次任务 cursor/tender-source-tag-20260509
   - conductor/tracks/tender_source_tag_20260509/index.md
 backlinks:
   - _index

@@ -500,6 +500,32 @@ Controller → Service → Repository → Entity
 - **CI 检查**：PR 会用当前 diff 执行 `scripts/check-agent-locks.mjs --base <base> --head HEAD`，锁冲突会阻断合并。
 - **职责边界**：文件锁只用于提前暴露并行修改冲突；高频锁冲突文件必须按 Split-First Rule 拆分职责，不能长期靠锁排队。
 
+### 10.5 仓库历史危险操作清单（强红线）
+
+以下命令任何一条单独执行都会**改写 git 历史**，是导致 `main` 出现 disconnected root commits 类故障的直接成因（参见 [ericforai/bidding#224](https://github.com/ericforai/bidding/issues/224)，曾在一次操作中静默丢失企微登录入口）。本节列出的所有命令在 `main`、`master`、`release/*` 上**默认禁止**：
+
+- `git filter-repo`（及其前身 `git filter-branch`）
+- `git checkout --orphan`
+- `git replace --graft` / `git replace -d`
+- `git rebase --root`
+- `git push --force` / `git push --force-with-lease`
+- `git reset --hard` 后接 `git push`（任何形式，包括 `--force-if-includes`）
+- 通过 GitHub API 直接覆盖 ref（`PATCH /repos/{owner}/{repo}/git/refs/...`）
+
+执行前必须同时满足全部 4 条门槛：
+
+1. **issue 立项**：在 GitHub 上开 issue 描述动机、影响范围、回滚预案；用此 issue 编号关联后续 PR / 工单。
+2. **两人签字**：至少 1 名仓库 maintainer + 1 名当事人之外的开发者在 issue 上明确 `LGTM` 后方可执行；签字时间戳必须早于操作。
+3. **现状备份**：执行前打 tag `pre-rewrite/<date>-<issue>`，并 push 到远端（这本身不算危险操作，因为只是新增 ref）。
+4. **CI / 本地护栏检测的现状**：执行后 `.github/workflows/branch-history-guard.yml` 和 `.githooks/pre-push` 的 ratchet 阈值必须同步调整；否则后续合并会因 ratchet 触发而全员阻塞。
+
+护栏自身（CI workflow 和 git hook）**不绕过**：
+
+- 如需在本地测试 force push，使用一次性环境变量 `FORCE_PUSH_OK=1 git push ...`，仅对当次有效，并且 commit message 或 PR body 必须解释原因。
+- 严禁修改 `.githooks/pre-push` 或 `.github/workflows/branch-history-guard.yml` 中的 `MAX_ROOTS` 仅为绕过当前提示——降低阈值只能用于"真的削减了 root 数"的后置收紧场景。
+
+新加入仓库的成员务必执行一次 `./scripts/install-githooks.sh` 启用本地 hook（默认 git 不会主动启用，详见脚本注释）。
+
 ---
 
 ## 11. 强同步规则 (Sync First Rule)
