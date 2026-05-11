@@ -40,6 +40,7 @@
     "agent:lock-check:changed": "node scripts/check-agent-locks.mjs --changed-only",
     "agent:lock-acquire": "node scripts/manage-agent-locks.mjs acquire",
     "agent:lock-release": "node scripts/manage-agent-locks.mjs release",
+    "agent:lock-renew": "node scripts/agent-lock-renew.mjs",
     "dev:mode": "bash ./scripts/dev-current-mode.sh",
     "ci:local": "bash scripts/local-ci.sh full",
     "ci:local:quick": "bash scripts/local-ci.sh quick",
