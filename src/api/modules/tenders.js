@@ -176,14 +176,51 @@ export const tendersApi = {
     return httpClient.get(`/api/tenders/${tenderId}/evaluation`)
   },
 
-  async submitEvaluation(tenderId, data) {
+  /**
+   * V119: Load existing evaluation or get a blank DRAFT view from the server.
+   * Alias for getEvaluation() that uses an explicit name expected by the
+   * detail page.
+   */
+  async loadEvaluation(tenderId) {
+    return tendersApi.getEvaluation(tenderId)
+  },
+
+  /**
+   * V119: Save evaluation as draft (PUT /api/tenders/{id}/evaluation).
+   * Performs no business-required validation server-side.
+   */
+  async saveEvaluationDraft(tenderId, data) {
     if (!isNumericId(tenderId)) {
       return {
         success: false,
         message: '当前后端仅支持数字型标讯 ID'
       }
     }
-    return httpClient.post(`/api/tenders/${tenderId}/evaluation`, data)
+    return httpClient.put(`/api/tenders/${tenderId}/evaluation`, data)
+  },
+
+  /**
+   * V119: Submit evaluation form (POST /api/tenders/{id}/evaluation/submit).
+   * Backend runs TenderEvaluationFormPolicy and transitions DRAFT → SUBMITTED.
+   */
+  async submitEvaluationFinal(tenderId, data) {
+    if (!isNumericId(tenderId)) {
+      return {
+        success: false,
+        message: '当前后端仅支持数字型标讯 ID'
+      }
+    }
+    return httpClient.post(`/api/tenders/${tenderId}/evaluation/submit`, data)
+  },
+
+  /**
+   * @deprecated V118 entry point removed by V119 cleanup. Use
+   * {@link saveEvaluationDraft} + {@link submitEvaluationFinal} on the detail
+   * page instead. Retained only as a soft alias to keep transient callers
+   * from blowing up; it will be removed in a follow-up.
+   */
+  async submitEvaluation(tenderId, data) {
+    return tendersApi.submitEvaluationFinal(tenderId, data)
   },
 
   async reviewTender(tenderId, data) {

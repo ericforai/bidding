@@ -94,24 +94,6 @@
 
         <div class="action-buttons">
           <el-button
-            type="primary"
-            size="large"
-            :disabled="tender.status === 'BIDDING' || tender.status === 'WON' || tender.status === 'LOST' || tender.status === 'ABANDONED'"
-            @click="handleParticipate"
-          >
-            <el-icon><DocumentAdd /></el-icon>
-            {{ tender.status === 'BIDDING' ? '投标中' : tender.status === 'WON' ? '已中标' : tender.status === 'LOST' ? '未中标' : tender.status === 'ABANDONED' ? '已弃标' : '投标' }}
-          </el-button>
-          <el-button
-            type="danger"
-            size="large"
-            :disabled="tender.status === 'ABANDONED' || tender.status === 'WON' || tender.status === 'LOST'"
-            @click="handleAbandon"
-          >
-            <el-icon><CircleClose /></el-icon>
-            {{ tender.status === 'ABANDONED' ? '已弃标' : '弃标' }}
-          </el-button>
-          <el-button
             v-if="tender && safeTenderUrl(tender.originalUrl)"
             type="success"
             size="large"
@@ -123,6 +105,17 @@
         </div>
       </el-card>
 
+      <TenderEvaluationForm
+        v-if="tender"
+        :evaluation="tenderEvaluation"
+        :current-user-role="currentUserRole"
+        :tender-id="Number(tender.id)"
+        @submit="handleEvaluationSubmit"
+        @save-draft="handleEvaluationSaveDraft"
+        @bid="handleParticipate"
+        @abandon="handleAbandonWithReason"
+      />
+
     </div>
 
     <div v-else class="loading-container">
@@ -132,9 +125,14 @@
 </template>
 
 <script setup>
-import { CircleClose, DocumentAdd, Link } from '@element-plus/icons-vue'
+import { computed, ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Link } from '@element-plus/icons-vue'
 import { formatBudgetWan, formatTenderDate, safeTenderUrl } from '../bidding-utils.js'
 import { useBiddingDetailPage } from './useBiddingDetailPage.js'
+import { useUserStore } from '@/stores/user'
+import { tendersApi } from '@/api'
+import TenderEvaluationForm from './TenderEvaluationForm.vue'
 import './styles/detail-layout.css'
 import './styles/detail-overrides.css'
 
@@ -153,4 +151,91 @@ const {
   handleViewOriginal,
   handleAbandon,
 } = useBiddingDetailPage()
+
+// Reference handleAbandon so existing logic remains accessible even though
+// the button now lives inside <TenderEvaluationForm>.
+void handleAbandon
+
+const userStore = useUserStore()
+const currentUserRole = computed(() => userStore?.userRole || 'STAFF')
+
+// Evaluation payload owned by the parent — the form is a pure presentational
+// child. Backend wiring (load / save / submit) lives here so the form stays
+// focused on form-state + emits.
+const tenderEvaluation = ref(null)
+// M4: prevent double-click submit/save while a request is in flight.
+const submitting = ref(false)
+const savingDraft = ref(false)
+
+// V119: load existing evaluation (or empty DRAFT) as soon as the tender is
+// resolved by useBiddingDetailPage. Watcher keeps it in sync if the tender id
+// changes (e.g. route param swap without remounting the page).
+watch(
+  () => tender.value?.id,
+  async (id) => {
+    if (!id) return
+    try {
+      const result = await tendersApi.loadEvaluation(id)
+      if (result?.success !== false) {
+        tenderEvaluation.value = result?.data || null
+      }
+    } catch (e) {
+      // Non-fatal: a missing evaluation (or a permission gate) should not
+      // block the detail view from rendering.
+      console.warn('loadEvaluation failed:', e?.message || e)
+    }
+  },
+  { immediate: true }
+)
+
+async function handleEvaluationSaveDraft(payload) {
+  if (!tender.value || savingDraft.value) return
+  savingDraft.value = true
+  try {
+    const result = await tendersApi.saveEvaluationDraft(tender.value.id, payload)
+    if (result?.success !== false) {
+      tenderEvaluation.value = result?.data || { ...payload, evaluationStatus: 'DRAFT' }
+      ElMessage.success('草稿已保存')
+    } else {
+      ElMessage.error(result?.message || '草稿保存失败')
+    }
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || '草稿保存失败')
+  } finally {
+    savingDraft.value = false
+  }
+}
+
+async function handleEvaluationSubmit(payload) {
+  if (!tender.value || submitting.value) return
+  submitting.value = true
+  try {
+    const result = await tendersApi.submitEvaluationFinal(tender.value.id, payload)
+    if (result?.success !== false) {
+      tenderEvaluation.value = result?.data || { ...payload, evaluationStatus: 'SUBMITTED' }
+      ElMessage.success('评估已提交')
+    } else {
+      ElMessage.error(result?.message || '评估提交失败')
+    }
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || '评估提交失败')
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function handleAbandonWithReason({ reason }) {
+  if (!tender.value) return
+  try {
+    const result = await tendersApi.abandon(tender.value.id, { reason })
+    if (result?.success && result?.data?.accepted) {
+      ElMessage.success(result.data.message || '已放弃该标讯')
+      tender.value = { ...tender.value, status: 'ABANDONED' }
+    } else {
+      ElMessage.warning(result?.data?.message || '弃标失败')
+    }
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || '弃标失败')
+  }
+}
 </script>

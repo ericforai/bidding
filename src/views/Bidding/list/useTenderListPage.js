@@ -40,10 +40,6 @@ export function useTenderListPage() {
   const showParsingDialog = ref(false)
   const parseProgress = ref(0)
   const parsingTenderId = ref(null)
-  const evaluationDialogVisible = ref(false)
-  const reviewDialogVisible = ref(false)
-  const currentTenderId = ref(null)
-  const currentTenderTitle = ref('')
   let parseTimer = null
 
   const userRole = computed(() => resolveUserRole(userStore))
@@ -199,26 +195,6 @@ export function useTenderListPage() {
     }, 250)
   }
 
-  const handleEdit = (row) => {
-    currentTenderId.value = row.id
-    currentTenderTitle.value = row.title
-    evaluationDialogVisible.value = true
-  }
-
-  const handleReview = (row) => {
-    currentTenderId.value = row.id
-    currentTenderTitle.value = row.title
-    reviewDialogVisible.value = true
-  }
-
-  const handleEvaluationSuccess = () => {
-    refreshTenderList()
-  }
-
-  const handleReviewSuccess = () => {
-    refreshTenderList()
-  }
-
   onMounted(async () => {
     checkMobile()
     window.addEventListener('resize', checkMobile)
@@ -250,10 +226,6 @@ export function useTenderListPage() {
     showTenderAiEntry,
     showParsingDialog,
     parseProgress,
-    evaluationDialogVisible,
-    reviewDialogVisible,
-    currentTenderId,
-    currentTenderTitle,
     selection,
     sourceConfig,
     manualCreate,
@@ -272,9 +244,5 @@ export function useTenderListPage() {
     openManualAdd,
     openSourceConfig,
     handleAIAnalysis,
-    handleEdit,
-    handleReview,
-    handleEvaluationSuccess,
-    handleReviewSuccess,
   }
 }
