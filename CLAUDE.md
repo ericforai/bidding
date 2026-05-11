@@ -186,6 +186,7 @@ npm run test:e2e
 10. **watchdog 后端失败 10 次会进入 STOPPED 状态**
     新版 `scripts/dev-services.sh` 给 backend 重启加了指数退避（30s → 2min → 10min → 30min cap）。连续失败 10 次后写入 `.runtime/dev-services/backend.fail-state` 并停止重试。`scripts/dev-services.sh start` 在 fail-state 存在时会拒绝启动并打印最后的错误行。修复后用 `rm .runtime/dev-services/backend.fail-state && ./scripts/dev-services.sh start` 恢复。
     可调整：`WATCHDOG_BACKEND_MAX_FAILURES` 环境变量（默认 10）。
+    **全局聚合**：`npm run agent:health-check` 会扫描所有 worktree 的 `.runtime/dev-services/` 并打印总体状况（每个 worktree 的 backend/frontend/sidecar 是否 ALIVE、最近一条 ERROR 行、fail-state 详情）。怀疑某个 worktree 在闷头重启时先跑一下这个。
 
 ## 路径提示
 
