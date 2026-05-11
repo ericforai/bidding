@@ -78,6 +78,8 @@ BACKEND_LOG="$RUNTIME_DIR/backend.log"
 FRONTEND_LOG="$RUNTIME_DIR/frontend.log"
 WATCHDOG_PID_FILE="$RUNTIME_DIR/watchdog.pid"
 WATCHDOG_LOG="$RUNTIME_DIR/watchdog.log"
+BACKEND_FAIL_STATE="$RUNTIME_DIR/backend.fail-state"
+WATCHDOG_BACKEND_MAX_FAILURES="${WATCHDOG_BACKEND_MAX_FAILURES:-10}"
 WATCHDOG_INTERVAL_SECONDS="${WATCHDOG_INTERVAL_SECONDS:-5}"
 SIDECAR_START_TIMEOUT_SECONDS="${SIDECAR_START_TIMEOUT_SECONDS:-60}"
 BACKEND_START_TIMEOUT_SECONDS="${BACKEND_START_TIMEOUT_SECONDS:-300}"
@@ -845,6 +847,8 @@ watchdog_loop() {
   echo "$$" >"$WATCHDOG_PID_FILE"
   trap 'rm -f "$WATCHDOG_PID_FILE"' EXIT
   echo "[$(date '+%F %T')] watchdog loop started interval=${WATCHDOG_INTERVAL_SECONDS}s"
+  local backend_failures=0
+  local backend_next_retry=0
   while true; do
     if ! curl_health "$SIDECAR_HEALTH_URL"; then
       echo "[$(date '+%F %T')] sidecar unhealthy, attempting restart"
@@ -855,13 +859,56 @@ watchdog_loop() {
       fi
     fi
 
-    if ! curl_health "$BACKEND_HEALTH_URL"; then
-      echo "[$(date '+%F %T')] backend unhealthy, attempting restart"
-      if start_backend; then
-        wait_http "$BACKEND_HEALTH_URL" "$BACKEND_START_TIMEOUT_SECONDS" >/dev/null 2>&1 || true
+    # Backend with exponential backoff + max-failure stop. See ericforai/bidding#232.
+    if [[ -f "$BACKEND_FAIL_STATE" ]]; then
+      : # Stopped state, skip until human intervention removes the file
+    elif ! curl_health "$BACKEND_HEALTH_URL"; then
+      local now_epoch
+      now_epoch=$(date +%s)
+      if (( now_epoch < backend_next_retry )); then
+        : # In backoff window, skip
       else
-        echo "[$(date '+%F %T')] backend restart skipped because port identity check failed"
+        echo "[$(date '+%F %T')] backend unhealthy, attempting restart (failure #$((backend_failures + 1)))"
+        if start_backend; then
+          if wait_http "$BACKEND_HEALTH_URL" "$BACKEND_START_TIMEOUT_SECONDS" >/dev/null 2>&1; then
+            backend_failures=0
+            backend_next_retry=0
+            echo "[$(date '+%F %T')] backend restart succeeded, failure counter reset"
+          else
+            backend_failures=$((backend_failures + 1))
+          fi
+        else
+          backend_failures=$((backend_failures + 1))
+          echo "[$(date '+%F %T')] backend restart skipped because port identity check failed"
+        fi
+
+        if (( backend_failures >= WATCHDOG_BACKEND_MAX_FAILURES )); then
+          local last_error_line
+          last_error_line=$(grep -E "^\[ERROR\]|Caused by|Migrations have failed|FAILED" "$BACKEND_LOG" 2>/dev/null | tail -1 || echo "(no error line found in backend.log)")
+          {
+            echo "last_error_line: ${last_error_line}"
+            echo "failures: ${backend_failures}"
+            echo "stopped_at: $(date '+%F %T')"
+            echo "resume_with: rm \"${BACKEND_FAIL_STATE}\" && \"${ROOT_DIR}/scripts/dev-services.sh\" start"
+          } >"$BACKEND_FAIL_STATE"
+          echo "[$(date '+%F %T')] backend failed ${backend_failures} times, giving up. State written to ${BACKEND_FAIL_STATE}"
+        elif (( backend_failures >= 1 )); then
+          # Exponential backoff: 30s, 2m, 10m, then cap at 30m
+          local backoff_seconds
+          case "$backend_failures" in
+            1) backoff_seconds=30 ;;
+            2) backoff_seconds=120 ;;
+            3) backoff_seconds=600 ;;
+            *) backoff_seconds=1800 ;;
+          esac
+          backend_next_retry=$((now_epoch + backoff_seconds))
+          echo "[$(date '+%F %T')] backend backoff: next retry in ${backoff_seconds}s"
+        fi
       fi
+    elif (( backend_failures > 0 )); then
+      backend_failures=0
+      backend_next_retry=0
+      echo "[$(date '+%F %T')] backend recovered, failure counter reset"
     fi
 
     if ! frontend_matches_workspace; then
@@ -936,6 +983,11 @@ watchdog_status() {
     fi
   fi
   echo "watchdog: $state"
+  if [[ -f "$BACKEND_FAIL_STATE" ]]; then
+    echo ""
+    echo "backend: STOPPED (watchdog gave up after repeated failures)"
+    sed 's/^/  /' "$BACKEND_FAIL_STATE"
+  fi
 }
 
 usage() {
@@ -964,6 +1016,14 @@ parse_args "$@"
 
 case "$CMD" in
   start)
+    if [[ -f "$BACKEND_FAIL_STATE" ]]; then
+      echo "[start] backend is in stopped state from a previous run:"
+      sed 's/^/  /' "$BACKEND_FAIL_STATE"
+      echo ""
+      echo "Investigate the last_error_line above, then resume with:"
+      echo "  rm \"$BACKEND_FAIL_STATE\" && \"$0\" start"
+      exit 1
+    fi
     start_sidecar
     if ! wait_http "$SIDECAR_HEALTH_URL" "$SIDECAR_START_TIMEOUT_SECONDS"; then
       echo "[sidecar] failed to become healthy. See logs:"
