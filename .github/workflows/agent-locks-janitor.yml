@@ -42,8 +42,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .agent-locks.yml
-          git commit -m "chore(locks): prune stale expired locks [skip ci]
-
-Automated daily cleanup by agent-locks-prune.mjs.
-See ericforai/bidding#230 for rationale."
+          git commit -m "chore(locks): prune stale expired locks [skip ci]" -m "Automated daily cleanup by agent-locks-prune.mjs. See ericforai/bidding#230."
           git push origin HEAD:main
