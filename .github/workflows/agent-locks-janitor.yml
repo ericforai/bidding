@@ -1,0 +1,49 @@
+name: Agent Locks Janitor
+
+on:
+  schedule:
+    # Run daily at 2:17 AM UTC (off-peak, avoid :00 and :30)
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+# Daily cleanup of stale expired locks in .agent-locks.yml. A lock is stale if:
+# - expiresAt is >24h in the past, AND
+# - the branch is gone from origin, OR the branch has no commits in the past 24h
+#
+# This prevents the lock file from accumulating expired entries that condition
+# everyone to ignore lock warnings. See ericforai/bidding#230.
+
+jobs:
+  prune-stale-locks:
+    name: Prune stale expired locks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run agent-locks-prune
+        id: prune
+        run: |
+          node scripts/agent-locks-prune.mjs > prune.log 2>&1
+          cat prune.log
+          if grep -q "removed.*stale lock" prune.log; then
+            echo "pruned=true" >> $GITHUB_OUTPUT
+          else
+            echo "pruned=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit pruned locks
+        if: steps.prune.outputs.pruned == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .agent-locks.yml
+          git commit -m "chore(locks): prune stale expired locks [skip ci]
+
+Automated daily cleanup by agent-locks-prune.mjs.
+See ericforai/bidding#230 for rationale."
+          git push origin HEAD:main

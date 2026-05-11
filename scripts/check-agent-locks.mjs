@@ -8,6 +8,7 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 
 const DEFAULT_LOCK_FILE = '.agent-locks.yml'
+const DEFAULT_HOT_PATHS_FILE = 'scripts/hot-paths.yml'
 
 export function parseAgentLocks(content) {
   const lines = content.split(/\r?\n/)
@@ -96,16 +97,18 @@ export function findBlockingLocks({ changedFiles, context, locks, now = new Date
   )
 }
 
-export function checkAgentLocks({ changedFiles, context, locks, now = new Date() }) {
+export function checkAgentLocks({ changedFiles, context, locks, now = new Date(), hotPaths = [] }) {
   const duplicateLocks = findDuplicateActiveLocks(locks, now)
   const blockingLocks = findBlockingLocks({ changedFiles, context, locks, now })
   const expiredLocks = locks.filter((lock) => isExpiredLock(lock, now))
+  const missingHotPathLocks = findMissingHotPathLocks({ changedFiles, context, locks, now, hotPaths })
 
   return {
-    ok: duplicateLocks.length === 0 && blockingLocks.length === 0,
+    ok: duplicateLocks.length === 0 && blockingLocks.length === 0 && missingHotPathLocks.length === 0,
     blockingLocks,
     duplicateLocks,
     expiredLocks,
+    missingHotPathLocks,
   }
 }
 
@@ -196,6 +199,43 @@ function findDuplicateActiveLocks(locks, now) {
   return duplicates
 }
 
+function findMissingHotPathLocks({ changedFiles, context, locks, now, hotPaths }) {
+  if (!hotPaths || hotPaths.length === 0) return []
+
+  const activeLocks = locks.filter((lock) => !isExpiredLock(lock, now))
+  const myLocks = activeLocks.filter((lock) => isLockOwnedByContext(lock, context))
+  const missing = []
+
+  for (const file of changedFiles) {
+    const matchedHotPath = hotPaths.find((hp) => fileMatchesHotPathPattern(file, hp.pattern))
+    if (!matchedHotPath) continue
+
+    const coveredByMyLock = myLocks.some((lock) => pathMatchesLock(file, lock))
+    if (!coveredByMyLock) {
+      missing.push({ file, hotPath: matchedHotPath })
+    }
+  }
+
+  return missing
+}
+
+function fileMatchesHotPathPattern(filePath, pattern) {
+  const normalized = normalizeRepoPath(filePath)
+  const patternNormalized = normalizeRepoPath(pattern)
+
+  if (patternNormalized.endsWith('/**')) {
+    const prefix = patternNormalized.slice(0, -3)
+    return normalized === prefix || normalized.startsWith(`${prefix}/`)
+  }
+
+  if (patternNormalized.includes('*')) {
+    const regex = new RegExp('^' + patternNormalized.replace(/\*/g, '.*') + '$')
+    return regex.test(normalized)
+  }
+
+  return normalized === patternNormalized
+}
+
 function isSameLogicalLock(left, right) {
   return left.owner === right.owner && left.branch === right.branch && left.task === right.task
 }
@@ -214,10 +254,12 @@ function main() {
   const context = loadContextFromWorktree(rootDir)
   const locks = collectLocksFromRegistries(registrySources, { currentBranch: context.branch })
   const changedFiles = options.changedFiles ?? readChangedFiles({ base: options.base, head: options.head })
+  const hotPaths = loadHotPaths(path.join(rootDir, DEFAULT_HOT_PATHS_FILE))
   const result = checkAgentLocks({
     changedFiles,
     context,
     locks,
+    hotPaths,
   })
 
   printWarnings(result, context)
@@ -294,6 +336,41 @@ function loadContextFromWorktree(rootDir) {
   return {
     agent: branch.includes('/') ? branch.split('/')[0] : '',
     branch,
+  }
+}
+
+function loadHotPaths(hotPathsFile) {
+  if (!fs.existsSync(hotPathsFile)) return []
+  try {
+    const content = fs.readFileSync(hotPathsFile, 'utf8')
+    const lines = content.split(/\r?\n/)
+    const hotPaths = []
+    let currentHotPath = null
+
+    for (const rawLine of lines) {
+      const line = stripYamlComment(rawLine)
+      const trimmed = line.trim()
+      if (!trimmed) continue
+
+      if (trimmed === 'hot_paths:' || trimmed === 'hot_paths: []') {
+        continue
+      }
+
+      if (line.startsWith('  - ')) {
+        currentHotPath = {}
+        hotPaths.push(currentHotPath)
+        assignYamlField(currentHotPath, trimmed.slice(2))
+        continue
+      }
+
+      if (line.startsWith('    ') && currentHotPath) {
+        assignYamlField(currentHotPath, trimmed)
+      }
+    }
+
+    return hotPaths
+  } catch {
+    return []
   }
 }
 
@@ -381,6 +458,17 @@ function printFailures(result, context) {
         `    locked by owner=${lock.owner} branch=${lock.branch} task=${lock.task} source=${lock.source || 'unknown'} expiresAt=${lock.expiresAt}`,
       )
       console.error(`    reason=${lock.reason}`)
+    }
+  }
+
+  if (result.missingHotPathLocks && result.missingHotPathLocks.length > 0) {
+    console.error('agent-lock-check: high-risk path changed without active lock')
+    console.error(`  current owner=${context.agent || '(unknown)'} branch=${context.branch || '(unknown)'}`)
+    for (const { file, hotPath } of result.missingHotPathLocks) {
+      console.error(`  file=${file}`)
+      console.error(`    hot-path pattern=${hotPath.pattern}`)
+      console.error(`    reason=${hotPath.reason}`)
+      console.error(`    required: add an active lock covering this path to .agent-locks.yml`)
     }
   }
 }
