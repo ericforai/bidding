@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# Input: current Git clone with in-tree .githooks/ directory
+# Output: sets core.hooksPath so .githooks/ hooks become active for this clone
+# Pos: scripts/Git hooks 启用脚本
+# 维护声明: 若新增或重命名 .githooks/ 下脚本，请同步更新本文件与 scripts/README.md。
+#
 # scripts/install-githooks.sh — enable repo-local git hooks for this clone.
 #
 # The hooks live in .githooks/ but git ignores them by default. Running this
