@@ -22,7 +22,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -30,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -61,7 +61,8 @@ class TenderEvaluationServiceTest {
                 projectService,
                 taskService,
                 userRepository,
-                new TenderStatusTransitionPolicy()
+                new TenderStatusTransitionPolicy(),
+                mock(TenderEvaluationSubmissionService.class)
         );
     }
 
@@ -107,7 +108,6 @@ class TenderEvaluationServiceTest {
         TenderEvaluation evaluation = TenderEvaluation.builder()
                 .tenderId(1L)
                 .evaluatorId(18L)
-                .estimatedBudget(new BigDecimal("2000000"))
                 .build();
 
         when(tenderEvaluationRepository.findByTenderId(1L)).thenReturn(Optional.of(evaluation));

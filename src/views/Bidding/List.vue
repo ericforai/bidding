@@ -112,8 +112,6 @@
         @view-detail="handleViewDetail"
         @ai-analysis="handleAIAnalysis"
         @participate="handleParticipate"
-        @edit="handleEdit"
-        @review="handleReview"
         @status-change="batchActions.handleUpdateStatus"
         @delete="batchActions.handleDeleteTender"
       />
@@ -192,18 +190,6 @@
       @refresh="marketInsight.refreshTrendData"
     />
     <AiParsingDialog v-model="showParsingDialog" :progress="parseProgress" />
-    <TenderEvaluationDialog
-      v-model="evaluationDialogVisible"
-      :tender-id="currentTenderId"
-      :tender-title="currentTenderTitle"
-      @success="handleEvaluationSuccess"
-    />
-    <TenderReviewDialog
-      v-model="reviewDialogVisible"
-      :tender-id="currentTenderId"
-      :tender-title="currentTenderTitle"
-      @success="handleReviewSuccess"
-    />
   </div>
 </template>
 
@@ -225,8 +211,6 @@ import TenderBatchActionBar from './list/components/TenderBatchActionBar.vue'
 import TenderMobileCards from './list/components/TenderMobileCards.vue'
 import TenderSearchCard from './list/components/TenderSearchCard.vue'
 import TenderTable from './list/components/TenderTable.vue'
-import TenderEvaluationDialog from './list/components/TenderEvaluationDialog.vue'
-import TenderReviewDialog from './list/components/TenderReviewDialog.vue'
 import { useTenderListPage } from './list/useTenderListPage.js'
 import { ref } from 'vue'
 import './list/styles/list-page.css'

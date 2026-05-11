@@ -5,15 +5,11 @@
 package com.xiyu.bid.tender.controller;
 
 import com.xiyu.bid.dto.ApiResponse;
-import com.xiyu.bid.entity.Task;
-import com.xiyu.bid.entity.User;
-import com.xiyu.bid.project.dto.ProjectDTO;
 import com.xiyu.bid.service.AuthService;
 import com.xiyu.bid.tender.dto.TenderEvaluationDTO;
-import com.xiyu.bid.tender.dto.TenderEvaluationRequest;
+import com.xiyu.bid.tender.dto.TenderEvaluationSubmitRequest;
 import com.xiyu.bid.tender.dto.TenderReviewRequest;
 import com.xiyu.bid.tender.service.TenderEvaluationService;
-import com.xiyu.bid.task.dto.TaskDTO;
 import com.xiyu.bid.task.service.TaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,14 +20,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
 
 /**
  * 标讯评估与审核控制器
@@ -48,31 +44,48 @@ public class TenderEvaluationController {
     private final AuthService authService;
 
     /**
-     * 获取标讯评估详情
+     * 获取标讯评估详情（V119 新口径）：
+     * <p>已存在 → 返回当前记录；不存在 → 返回空白 DRAFT（不持久化）。
      */
     @GetMapping("/{tenderId}/evaluation")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
-    public ResponseEntity<ApiResponse<TenderEvaluationDTO>> getEvaluation(@PathVariable Long tenderId) {
+    public ResponseEntity<ApiResponse<TenderEvaluationDTO>> getEvaluation(
+            @PathVariable Long tenderId,
+            @AuthenticationPrincipal UserDetails userDetails) {
         log.info("GET /api/tenders/{}/evaluation", tenderId);
-        return tenderEvaluationService.getEvaluation(tenderId)
-                .map(evaluation -> ResponseEntity.ok(ApiResponse.success("ok", evaluation)))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "标讯尚未提交评估"));
+        Long userId = currentUserId(userDetails);
+        TenderEvaluationDTO evaluation = tenderEvaluationService.loadOrInitDraft(tenderId, userId);
+        return ResponseEntity.ok(ApiResponse.success("ok", evaluation));
     }
 
     /**
-     * 项目经理提交评估（状态变为已评估）
+     * 保存评估草稿（V119）。
      */
-    @PostMapping("/{tenderId}/evaluation")
+    @PutMapping("/{tenderId}/evaluation")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<ApiResponse<TenderEvaluationDTO>> submitEvaluation(
+    public ResponseEntity<ApiResponse<TenderEvaluationDTO>> saveDraft(
             @PathVariable Long tenderId,
-            @Valid @RequestBody TenderEvaluationRequest request,
+            @Valid @RequestBody TenderEvaluationSubmitRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
-        log.info("POST /api/tenders/{}/evaluation - Submitting evaluation", tenderId);
+        log.info("PUT /api/tenders/{}/evaluation - save draft", tenderId);
         Long userId = currentUserId(userDetails);
-        TenderEvaluationDTO evaluation = tenderEvaluationService.submitEvaluation(tenderId, request, userId);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("评估提交成功", evaluation));
+        TenderEvaluationDTO dto = tenderEvaluationService.saveDraft(tenderId, request, userId);
+        return ResponseEntity.ok(ApiResponse.success("草稿已保存", dto));
+    }
+
+    /**
+     * 提交评估表（V119）：经 Policy 校验后 DRAFT → SUBMITTED。
+     */
+    @PostMapping("/{tenderId}/evaluation/submit")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponse<TenderEvaluationDTO>> submitDraft(
+            @PathVariable Long tenderId,
+            @Valid @RequestBody TenderEvaluationSubmitRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        log.info("POST /api/tenders/{}/evaluation/submit", tenderId);
+        Long userId = currentUserId(userDetails);
+        TenderEvaluationDTO dto = tenderEvaluationService.submit(tenderId, request, userId);
+        return ResponseEntity.ok(ApiResponse.success("评估已提交", dto));
     }
 
     /**
@@ -109,6 +122,20 @@ public class TenderEvaluationController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "无法识别当前用户");
         }
         return authService.resolveUserIdByUsername(userDetails.getUsername().trim());
+    }
+
+    /**
+     * 将 {@link ResponseStatusException} 转换为标准 ApiResponse JSON 体。
+     * <p>在 standalone MockMvc 中默认不会序列化 ResponseStatusException 的 reason
+     * 到 body；此 handler 保证 service 层抛出的状态异常能附带可读 message。
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResponseStatus(ResponseStatusException ex) {
+        log.warn("ResponseStatusException - status: {}, reason: {}", ex.getStatusCode(), ex.getReason());
+        return ResponseEntity
+                .status(ex.getStatusCode())
+                .body(ApiResponse.error(ex.getStatusCode().value(),
+                        ex.getReason() == null ? "" : ex.getReason()));
     }
 
     /**

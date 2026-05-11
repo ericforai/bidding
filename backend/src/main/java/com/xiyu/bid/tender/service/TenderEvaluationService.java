@@ -1,7 +1,7 @@
 // Input: TenderEvaluationRepository, TenderRepository, ProjectRepository, TaskService, UserRepository
-// Output: TenderEvaluation operations - submit evaluation, review, and proceed to bid
+// Output: TenderEvaluation operations - admin review, proceed-to-bid + V119 facade
 // Pos: Service/业务编排层
-// 维护声明: 仅维护标讯评估业务规则。
+// 维护声明: 仅维护标讯评估业务规则。V118 facade (submitEvaluation) 已 retired (V119 移除)。
 package com.xiyu.bid.tender.service;
 
 import com.xiyu.bid.batch.core.TenderStatusTransitionPolicy;
@@ -16,13 +16,12 @@ import com.xiyu.bid.repository.TenderRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.tender.controller.TenderEvaluationController.TenderBidResult;
 import com.xiyu.bid.tender.dto.TenderEvaluationDTO;
-import com.xiyu.bid.tender.dto.TenderEvaluationRequest;
+import com.xiyu.bid.tender.dto.TenderEvaluationSubmitRequest;
 import com.xiyu.bid.tender.dto.TenderReviewRequest;
 import com.xiyu.bid.tender.entity.TenderEvaluation;
 import com.xiyu.bid.tender.repository.TenderEvaluationRepository;
 import com.xiyu.bid.task.dto.TaskDTO;
 import com.xiyu.bid.task.service.TaskService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,11 +30,15 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
- * 标讯评估服务
- * 处理项目经理提交评估、投标部管理员审核和投标立项
+ * 标讯评估服务（V119 收口后）。
+ * <p>当前职责：
+ * <ul>
+ *   <li>V119 评估表草稿 / 提交（委托给 {@link TenderEvaluationSubmissionService}）</li>
+ *   <li>管理员审核（投标 / 弃标）</li>
+ *   <li>投标立项（创建项目 + 待办）</li>
+ * </ul>
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 @Transactional
 public class TenderEvaluationService {
@@ -46,6 +49,45 @@ public class TenderEvaluationService {
     private final TaskService taskService;
     private final UserRepository userRepository;
     private final TenderStatusTransitionPolicy statusTransitionPolicy;
+    private final TenderEvaluationSubmissionService submissionService;
+
+    public TenderEvaluationService(
+            TenderEvaluationRepository tenderEvaluationRepository,
+            TenderRepository tenderRepository,
+            ProjectService projectService,
+            TaskService taskService,
+            UserRepository userRepository,
+            TenderStatusTransitionPolicy statusTransitionPolicy,
+            TenderEvaluationSubmissionService submissionService) {
+        this.tenderEvaluationRepository = tenderEvaluationRepository;
+        this.tenderRepository = tenderRepository;
+        this.projectService = projectService;
+        this.taskService = taskService;
+        this.userRepository = userRepository;
+        this.statusTransitionPolicy = statusTransitionPolicy;
+        this.submissionService = submissionService;
+    }
+
+    // ---------- V119: 项目评估表草稿/提交 facade（委托给 TenderEvaluationSubmissionService） ----------
+
+    /** 加载或初始化草稿（V119）。 */
+    public TenderEvaluationDTO loadOrInitDraft(Long tenderId, Long evaluatorId) {
+        return submissionService.loadOrInitDraft(tenderId, evaluatorId);
+    }
+
+    /** 保存草稿（V119）。 */
+    public TenderEvaluationDTO saveDraft(Long tenderId,
+                                         TenderEvaluationSubmitRequest request,
+                                         Long evaluatorId) {
+        return submissionService.saveDraft(tenderId, request, evaluatorId);
+    }
+
+    /** 提交评估（V119）。 */
+    public TenderEvaluationDTO submit(Long tenderId,
+                                      TenderEvaluationSubmitRequest request,
+                                      Long evaluatorId) {
+        return submissionService.submit(tenderId, request, evaluatorId);
+    }
 
     /**
      * 获取标讯评估详情
@@ -54,48 +96,6 @@ public class TenderEvaluationService {
     public Optional<TenderEvaluationDTO> getEvaluation(Long tenderId) {
         return tenderEvaluationRepository.findByTenderId(tenderId)
                 .map(this::toDTO);
-    }
-
-    /**
-     * 项目经理提交评估
-     * 状态从 TRACKING 变为 EVALUATED
-     */
-    public TenderEvaluationDTO submitEvaluation(Long tenderId, TenderEvaluationRequest request, Long evaluatorId) {
-        log.info("Submitting evaluation for tender {} by user {}", tenderId, evaluatorId);
-
-        Tender tender = tenderRepository.findById(tenderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tender", tenderId.toString()));
-
-        // 验证状态转换
-        statusTransitionPolicy.assertTransition(tender.getStatus(), Tender.Status.EVALUATED);
-
-        // 获取评估人信息
-        User evaluator = userRepository.findById(evaluatorId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", evaluatorId.toString()));
-
-        // 创建或更新评估记录
-        TenderEvaluation evaluation = tenderEvaluationRepository.findByTenderId(tenderId)
-                .orElse(TenderEvaluation.builder()
-                        .tenderId(tenderId)
-                        .reviewStatus(TenderEvaluation.ReviewStatus.PENDING)
-                        .build());
-
-        evaluation.setEvaluationContent(request.evaluationContent());
-        evaluation.setEstimatedBudget(request.estimatedBudget());
-        evaluation.setRiskAssessment(request.riskAssessment());
-        evaluation.setNotes(request.notes());
-        evaluation.setEvaluatorId(evaluatorId);
-        evaluation.setEvaluatorName(evaluator.getUsername());
-        evaluation.setEvaluatedAt(LocalDateTime.now());
-
-        TenderEvaluation savedEvaluation = tenderEvaluationRepository.save(evaluation);
-
-        // 更新标讯状态
-        tender.setStatus(Tender.Status.EVALUATED);
-        tenderRepository.save(tender);
-
-        log.info("Evaluation submitted for tender {}, status changed to EVALUATED", tenderId);
-        return toDTO(savedEvaluation);
     }
 
     /**
@@ -166,7 +166,7 @@ public class TenderEvaluationService {
                 .tenderId(tenderId)
                 .status(Project.Status.INITIATED)
                 .managerId(evaluation.getEvaluatorId())
-                .budget(evaluation.getEstimatedBudget())
+                .budget(null)
                 .customer(tender.getPurchaserName())
                 .industry(tender.getIndustry())
                 .region(tender.getRegion())
@@ -203,10 +203,16 @@ public class TenderEvaluationService {
                 evaluation.getTenderId(),
                 tender != null ? tender.getTitle() : null,
                 tender != null ? tender.getStatus() : null,
-                evaluation.getEvaluationContent(),
-                evaluation.getEstimatedBudget(),
-                evaluation.getRiskAssessment(),
-                evaluation.getNotes(),
+                evaluation.getEvaluationStatus(),
+                evaluation.getProjectBackground(),
+                evaluation.getCompetitorAnalysis(),
+                evaluation.getContractPeriodStart(),
+                evaluation.getContractPeriodEnd(),
+                evaluation.getShortlistedCount(),
+                evaluation.getPlatformServiceFee(),
+                evaluation.getPreviousQuotation(),
+                evaluation.getBidRecommendation(),
+                evaluation.getSubmittedAt(),
                 evaluation.getEvaluatorId(),
                 evaluation.getEvaluatorName(),
                 evaluation.getEvaluatedAt()
