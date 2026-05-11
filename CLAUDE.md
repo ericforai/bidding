@@ -180,6 +180,13 @@ npm run test:e2e
    本地开发推荐使用 `backend/start.sh`（已内置默认值），或参考“推荐命令 / 手动方式：后端”传入完整环境变量。
    生产部署必须通过真实环境注入，**不得使用 `start.sh` 中的本地默认值**。
 
+9. **launchd 守护进程会在后台自动重启 dev-services**
+   `~/Library/LaunchAgents/com.xiyu.bid.dev-services.{main,codex,gemini,claude}.plist` 会在登录时自动启动 `scripts/dev-services.sh watch-run`。`pkill` 杀不掉它们，launchd 会立即重启。要彻底停某一个，用 `launchctl bootout gui/$(id -u)/com.xiyu.bid.dev-services.<label>`。
+
+10. **watchdog 后端失败 10 次会进入 STOPPED 状态**
+    新版 `scripts/dev-services.sh` 给 backend 重启加了指数退避（30s → 2min → 10min → 30min cap）。连续失败 10 次后写入 `.runtime/dev-services/backend.fail-state` 并停止重试。`scripts/dev-services.sh start` 在 fail-state 存在时会拒绝启动并打印最后的错误行。修复后用 `rm .runtime/dev-services/backend.fail-state && ./scripts/dev-services.sh start` 恢复。
+    可调整：`WATCHDOG_BACKEND_MAX_FAILURES` 环境变量（默认 10）。
+
 ## 路径提示
 
 - 前端业务代码：`src/`
