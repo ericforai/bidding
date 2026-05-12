@@ -103,12 +103,12 @@ health_checked: 2026-05-07
 | EV-INT-02 | 接口联调记录与问题闭环 | SIT、UAT、上线准入 | 待编制 | 待补 | 需包含接口日志和异常处理记录 |
 | EV-REQ-01 | 附件6功能范围裁剪确认表 | 蓝图确认、UAT 范围 | 待编制 | [[implementation/attachment6-function-list-trace]] 为基线 | 标注纳入本期、待实施、待确认、非本期 |
 | EV-REQ-02 | 附件6功能点到 UAT 用例映射表 | UAT 准入、验收测试报告 | 待编制 | 待补 | UAT 用例需覆盖附件6一级域和关键二级功能点 |
-| EV-UAT-01 | UAT 测试计划与执行记录 | UAT 签字 | 待编制 | `docs/UAT_PLAN.md` 为模板 | 执行记录需含截图 |
-| EV-UAT-02 | UAT 签字确认单 | 上线准入 | 待编制 | `docs/UAT_SIGNOFF_TEMPLATE.md` 为模板 | 业务负责人签字 |
+| EV-UAT-01 | UAT 测试计划与执行记录 | UAT 签字 | 待编制 | `docs/specs/UAT_PLAN.md` 为模板 | 执行记录需含截图 |
+| EV-UAT-02 | UAT 签字确认单 | 上线准入 | 待编制 | `docs/specs/UAT_SIGNOFF_TEMPLATE.md` 为模板 | 业务负责人签字 |
 | EV-SEC-01 | 安全方案与等保差距说明 | 安全验收 | 待编制 | 待补 | 明确二级/三级最终口径 |
 | EV-PERF-01 | 性能测试报告 | 非功能验收 | 待编制 | 待补 | 覆盖 2 秒响应、可用性和容量假设 |
 | EV-OPS-01 | 备份恢复演练报告 | 上线前准入 | 待编制 | 待补 | 至少一次可恢复演练 |
-| EV-OPS-02 | 生产 smoke 与上线验证报告 | 上线确认 | 待编制 | 待补 | 对应 `docs/GO_LIVE_CHECKLIST.md` |
+| EV-OPS-02 | 生产 smoke 与上线验证报告 | 上线确认 | 待编制 | 待补 | 对应 `docs/release/GO_LIVE_CHECKLIST.md` |
 | EV-TRAIN-01 | 培训签到、考试或反馈记录 | 培训验收 | 待编制 | 待补 | 管理员、关键用户、最终用户分层 |
 | EV-IP-01 | 源码交付清单与保密交接记录 | 知识产权/保密 | 待编制 | 待补 | 对应合同知识产权条款 |
 

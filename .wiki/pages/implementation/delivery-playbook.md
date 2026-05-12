@@ -5,8 +5,8 @@ category: guide
 tags: [implementation, delivery]
 sources:
   - .wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx
-  - docs/UAT_PLAN.md
-  - docs/GO_LIVE_CHECKLIST.md
+  - docs/specs/UAT_PLAN.md
+  - docs/release/GO_LIVE_CHECKLIST.md
 backlinks:
   - _index
   - implementation/acceptance-and-closure

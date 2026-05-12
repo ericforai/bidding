@@ -7,7 +7,7 @@ sources:
   - .wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx
   - backend/src/main/java/com/xiyu/bid/entity/README.md
   - backend/src/main/java/com/xiyu/bid/dto/README.md
-  - docs/后端架构设计.md
+  - docs/architecture/后端架构设计.md
 backlinks:
   - _index
   - architecture
