@@ -244,7 +244,7 @@ Agent 必须使用包装脚本启动，以自动适配上述隔离端口：
 3. `git status` 确认只修改了授权文件。
 
 ### 5. 任务启动协议 (Lease + Auto-Detect)
-不画静态目录所有权表 — 任务推进就过时。改用 **git 事实** 当主信号，Gemini 的 conductor 任务声明当辅助。
+不画静态目录所有权表 — 任务推进就过时。改用 **git 事实** 当主信号，文件锁仅用于 hot-paths 前置预订。
 
 #### 5.0 同步基线（**每次开新任务都要跑**，不只是 session 开头）
 "早操"只覆盖 session 开头。**任务之间也必须重新同步** — 否则 5.1 的 `who-touches.sh` 看到的是旧 main 的 diff，可能漏掉别的 agent 中途合的改动，你照样会在过期 base 上累工作。
@@ -274,7 +274,25 @@ alias agent-start='git fetch origin && git rebase origin/main'
 - 退出码 `0` + 无输出 → 干净，可以开工
 - 退出码 `1` + 有输出 → 别的 agent 在动这块，看清楚再决定
 
-#### 5.2 辅助信号：Gemini 的任务声明（**仅当撞到 `agent/gemini-init` 时有用**）
+#### 5.2 文件锁（hot-paths 前置预订）— 已改为 per-task 文件
+`scripts/hot-paths.yml` 列出的高危路径（DB 迁移、entity、application.yml、SecurityConfig 等）改动时**必须**有 active lock。锁文件**自 2026-05-12 起改为 per-task 单文件**：
+
+```
+.agent-locks/<task-slug>.yml      ← 每个任务一个文件，新任务 = 新文件 = 零冲突
+.agent-locks.yml                  ← DEPRECATED；仅做 read-only 兼容层
+```
+
+acquire/release 仍走相同 CLI（自动写到 per-task 文件）：
+```bash
+npm run agent:lock-acquire -- --path <path> --scope file|directory --reason "<reason>"
+npm run agent:lock-release -- --path <path>
+npm run agent:lock-check                # 列所有锁
+npm run agent:lock-check:changed        # 仅检查当前改动是否撞锁
+```
+
+> **为什么换 per-task 文件**：原 `.agent-locks.yml` 单文件被所有 agent 同时写，每次 rebase 都撞冲突，conditioned everyone to ignore lock warnings。Per-task 文件意味着新任务 → 新文件 → 不打架；janitor 也清得更干净（删文件 vs 删行）。
+
+#### 5.3 Gemini 任务声明（**仅当撞到 `agent/gemini-init` 时有用**）
 Gemini 在 `conductor/tracks/` 系统里执行任务，会把 in-progress 任务标 `[~]` 并附 `(@gemini, scope: ...)`。如果 5.1 显示 `agent/gemini-init` 在你的目标路径有未合改动，可以查一眼具体任务上下文：
 ```bash
 grep -h "\[~\]" conductor/tracks/*/plan.md | grep gemini
@@ -282,12 +300,12 @@ grep -h "\[~\]" conductor/tracks/*/plan.md | grep gemini
 
 > **重要**：Claude / Codex / Cursor **没有等价的任务声明机制**。撞到这几个 agent 的分支时，**不要假设可以从 plan.md 查到他们的意图** — 直接看 `git log <branch>` 的 commit message，或在 PR 描述里 @ 对方协调。其他 agent 的"意图声明"靠 §6 的 commit message + push 频率自然沉淀。
 
-#### 5.3 撞了的处置
+#### 5.4 撞了的处置
 - 等对方 push 完一个原子 commit / PR merge / Gemini 任务标 `[x]`
 - 换一个不撞的任务先做
 - 在 PR 描述里 @ 对方说明协调结果（"我接着你的 X 改 Y，rebase 你的 PR 后再合"）
 
-#### 5.4 没撞 → 开工
+#### 5.5 没撞 → 开工
 - 你是 Gemini：在 plan.md 把任务从 `[ ]` 改成 `[~] (@gemini, scope: ...)` 让别人看见你的意图
 - 你是其他 agent：**push commit 时就是你的意图声明** — commit message 写清楚 scope，下个 §6
 

@@ -1,0 +1,15 @@
+version: 1
+task: "lock-system-per-task-files"
+locks:
+  - path: "scripts/check-agent-locks.mjs"
+    scope: "file"
+    owner: "claude"
+    branch: "claude/lock-system-per-task-files"
+    expiresAt: "2026-05-13T00:25:36.612Z"
+    reason: "重构 lock 系统：单文件 -> per-task 文件"
+  - path: "scripts/manage-agent-locks.mjs"
+    scope: "file"
+    owner: "claude"
+    branch: "claude/lock-system-per-task-files"
+    expiresAt: "2026-05-13T00:25:36.881Z"
+    reason: "重构 lock 系统：per-task 文件"
