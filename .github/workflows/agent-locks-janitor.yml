@@ -12,6 +12,10 @@ on:
 #
 # This prevents the lock file from accumulating expired entries that condition
 # everyone to ignore lock warnings. See ericforai/bidding#230.
+#
+# Workflow opens a PR (branch chore/janitor-<run-id>) and enables auto-merge
+# so it lands once required CI checks pass. Direct push to main is blocked by
+# branch protection (GH006: 6 required status checks).
 
 jobs:
   prune-stale-locks:
@@ -36,11 +40,18 @@ jobs:
             echo "pruned=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit pruned locks
+      - name: Open auto-merge PR with pruned locks
         if: steps.prune.outputs.pruned == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
+          branch="chore/janitor-${{ github.run_id }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
           git add .agent-locks.yml
           git commit -m "chore(locks): prune stale expired locks [skip ci]" -m "Automated daily cleanup by agent-locks-prune.mjs. See ericforai/bidding#230."
-          git push origin HEAD:main
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" --title "chore(locks): prune stale expired locks (automated)" --body "Daily cleanup by \`agent-locks-prune.mjs\`. See [#230](https://github.com/ericforai/bidding/issues/230) for rationale. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          gh pr merge --auto --squash --delete-branch "$branch"
