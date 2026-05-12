@@ -1,23 +1,10 @@
 version: 1
-locks:
-  - path: "backend/src/main/resources/db/migration-mysql"
-    scope: "directory"
-    owner: "claude"
-    branch: "claude/tender-project-evaluation"
-    task: "tender-project-evaluation"
-    expiresAt: "2026-05-12T11:55:33.117Z"
-    reason: "项目评估 V119 迁移"
-  - path: "backend/src/main/java/com/xiyu/bid/tender"
-    scope: "directory"
-    owner: "claude"
-    branch: "claude/tender-project-evaluation"
-    task: "tender-project-evaluation"
-    expiresAt: "2026-05-12T11:55:33.589Z"
-    reason: "项目评估表后端实现"
-  - path: "src/views/Bidding/detail"
-    scope: "directory"
-    owner: "claude"
-    branch: "claude/tender-project-evaluation"
-    task: "tender-project-evaluation"
-    expiresAt: "2026-05-12T11:55:33.957Z"
-    reason: "项目评估前端组件接入"
+# DEPRECATED — new locks should go to .agent-locks/<task-slug>.yml (per-task files).
+# This single file is kept readable for backwards compatibility with existing locks
+# and remote-branch scans. `npm run agent:lock-acquire` writes to per-task files now;
+# `npm run agent:lock-check` reads union of legacy + per-task. See CLAUDE.md §5.
+#
+# Why: a single shared lock file caused near-constant rebase conflicts when
+# multiple agents ran in parallel. Per-task files mean new tasks = new files = no
+# conflicts. Existing entries here will age out via the daily janitor.
+locks: []
