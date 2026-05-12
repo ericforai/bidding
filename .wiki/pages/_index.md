@@ -4,7 +4,7 @@ space: engineering
 category: guide
 tags: [首页, 导航, wiki]
 sources:
-  - WIKI.md
+  - docs/specs/WIKI.md
   - .wiki/INDEX.md
   - .wiki/PAGE_INDEX.md
 backlinks:
@@ -18,7 +18,7 @@ health_checked: 2026-05-07
 
 ## 快速入口
 
-- 规则协议：`WIKI.md`
+- 规则协议：`docs/specs/WIKI.md`
 - 源文档编目：`.wiki/INDEX.md`
 - 页面索引：`.wiki/PAGE_INDEX.md`
 - 抽取中间层：`.wiki/extracts/`
