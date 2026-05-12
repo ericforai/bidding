@@ -4,8 +4,8 @@ space: engineering
 category: business
 tags: [业务流程, 投标生命周期, 六阶段, 标讯, 立项, 标书, 闭环]
 sources:
-  - docs/业务流程图.md
-  - docs/讲标文件-功能响应与亮点.md
+  - docs/specs/业务流程图.md
+  - docs/specs/讲标文件-功能响应与亮点.md
   - README.md
 backlinks:
   - _index

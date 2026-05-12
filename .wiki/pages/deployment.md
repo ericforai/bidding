@@ -5,10 +5,10 @@ category: guide
 tags: [部署, 上线, 发布, 运维, Docker, UAT]
 sources:
   - .wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx
-  - docs/GO_LIVE_CHECKLIST.md
-  - docs/ROLLBACK_RUNBOOK.md
-  - docs/UAT_PLAN.md
-  - docs/MYSQL_8_DEPLOYMENT.md
+  - docs/release/GO_LIVE_CHECKLIST.md
+  - docs/release/ROLLBACK_RUNBOOK.md
+  - docs/specs/UAT_PLAN.md
+  - docs/specs/MYSQL_8_DEPLOYMENT.md
   - README.md
   - backend/src/main/resources/application.yml
   - docs/plans/2026-03-10-go-live-execution-plan.md
@@ -159,7 +159,7 @@ docker exec -it <mysql-container> mysql -u xiyu_user -p xiyu_bid
 ### 4.1 发布前（Pre-release）
 
 - [ ] 候选版本已冻结
-- [ ] `docs/COMMERCIAL_SCOPE.md` 已确认正式版白名单与 demo-only 黑名单
+- [ ] `docs/research/COMMERCIAL_SCOPE.md` 已确认正式版白名单与 demo-only 黑名单
 - [ ] `npm run build` 和 `VITE_API_MODE=api npm run build` 均通过
 - [ ] `mvn -DskipTests compile` 通过
 - [ ] 关键测试通过，MySQL 主线回归验证通过
@@ -314,7 +314,7 @@ CONFIRM_RESTORE=YES bash scripts/release/restore-db.sh <backup-file>
 
 - 自动 UAT 执行脚本：`node scripts/release/run-uat.mjs`
 - Playwright API 联调栈启动：`bash scripts/test/start-api-e2e-stack.sh`
-- 正式签字模板：`docs/UAT_SIGNOFF_TEMPLATE.md`
+- 正式签字模板：`docs/specs/UAT_SIGNOFF_TEMPLATE.md`
 - 签字包生成：`node scripts/release/build-signoff-packet.mjs`
 
 详细团队分工与时间线参见 [[team-and-timeline]]。

@@ -12,7 +12,7 @@ sources:
   - backend/COMPLIANCE_MODULE_SUMMARY.md
   - backend/SCORE_ANALYSIS_MODULE.md
   - backend/COMPETITION_INTEL_MODULE.md
-  - docs/技术架构方案.md
+  - docs/architecture/技术架构方案.md
 backlinks:
   - _index
   - business-process

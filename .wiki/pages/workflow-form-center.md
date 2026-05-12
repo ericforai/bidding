@@ -4,7 +4,7 @@ space: engineering
 category: integration
 tags: [workflow-form, oa, weaver, approval, configuration]
 sources:
-  - docs/WORKFLOW_FORM_CENTER.md
+  - docs/research/WORKFLOW_FORM_CENTER.md
   - backend/src/main/java/com/xiyu/bid/workflowform/README.md
   - src/views/System/workflow-form-designer/README.md
   - src/api/modules/workflowForm.js
