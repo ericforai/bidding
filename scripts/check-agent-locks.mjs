@@ -7,6 +7,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 
+import { loadCombinedLocks } from './lib/agent-lock-store.mjs'
+
 const DEFAULT_LOCK_FILE = '.agent-locks.yml'
 const DEFAULT_HOT_PATHS_FILE = 'scripts/hot-paths.yml'
 
@@ -243,10 +245,10 @@ function isSameLogicalLock(left, right) {
 function main() {
   const options = parseArgs(process.argv.slice(2))
   const rootDir = runGit(['rev-parse', '--show-toplevel']).trim()
-  const lockFile = path.join(rootDir, options.lockFile)
-  const localRegistry = fs.existsSync(lockFile)
-    ? parseAgentLocks(fs.readFileSync(lockFile, 'utf8'))
-    : { version: 1, locks: [] }
+  // Working-tree locks union: legacy `.agent-locks.yml` + per-task `.agent-locks/*.yml`.
+  // The new per-task scheme avoids merge conflicts on the single legacy file.
+  const localLocks = loadCombinedLocks({ rootDir, lockFile: options.lockFile })
+  const localRegistry = { version: 1, locks: localLocks.map(({ source: _ignored, ...lock }) => lock) }
   const registrySources = [{ source: 'working-tree', registry: localRegistry }]
   if (options.includeRemoteLocks) {
     registrySources.push(...readRemoteLockRegistries(options.lockFile))
