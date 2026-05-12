@@ -1,30 +1,5 @@
 version: 1
-locks:
-  - path: "backend/src/main/resources/db/migration-mysql"
-    scope: "directory"
-    owner: "claude"
-    branch: "claude/tender-project-evaluation"
-    task: "tender-project-evaluation"
-    expiresAt: "2026-05-12T11:55:33.117Z"
-    reason: "项目评估 V119 迁移"
-  - path: "backend/src/main/java/com/xiyu/bid/tender"
-    scope: "directory"
-    owner: "claude"
-    branch: "claude/tender-project-evaluation"
-    task: "tender-project-evaluation"
-    expiresAt: "2026-05-12T11:55:33.589Z"
-    reason: "项目评估表后端实现"
-  - path: "src/views/Bidding/detail"
-    scope: "directory"
-    owner: "claude"
-    branch: "claude/tender-project-evaluation"
-    task: "tender-project-evaluation"
-    expiresAt: "2026-05-12T11:55:33.957Z"
-    reason: "项目评估前端组件接入"
-  - path: ".github/workflows"
-    scope: "directory"
-    owner: "fix"
-    branch: "fix/janitor-workflow-yaml"
-    task: "fix-janitor-yaml"
-    expiresAt: "2026-05-13T08:00:00.000Z"
-    reason: "Fix YAML parse error in agent-locks-janitor.yml commit-message indentation"
+# Task 'tender-project-evaluation' (PR #241) merged 2026-05-11.
+# Locks cleared so check-agent-locks.mjs stops reporting them as active
+# when scanning origin/claude/* refs.
+locks: []
