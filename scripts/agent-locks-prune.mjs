@@ -84,6 +84,16 @@ function assignField(target, fieldLine) {
 }
 
 function isStale(lock, staleThreshold, remoteBranches) {
+  // Orphan-branch detection: if the lock's branch no longer exists on origin
+  // (and isn't a long-lived branch like main/master), the lock is by definition
+  // orphaned regardless of expiresAt. This catches the common pattern where a
+  // PR self-locks for hot-path enforcement and the squash-merge preserves the
+  // lock entry on main even though the branch is deleted.
+  const longLived = new Set(['main', 'master'])
+  if (lock.branch && !longLived.has(lock.branch) && !remoteBranches.includes(lock.branch)) {
+    return true
+  }
+
   if (!lock.expiresAt) return false
 
   const expiresAtTime = new Date(lock.expiresAt).getTime()
