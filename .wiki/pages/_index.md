@@ -43,6 +43,7 @@ health_checked: 2026-05-07
 - [[integration-organization-event-sdk]] — 组织架构对接 - 客户事件库 SDK 方案
 - [[integration-wecom]] — 系统集成中心 - 企业微信
 - [[modules]] — 模块目录
+- [[multi-agent-defense-playbook]] — 多 Agent 并行开发防御工程化手册（可移植）
 - [[overview]] — 项目综述
 - [[requirements]] — 需求追溯
 - [[roles-and-permissions]] — 角色与权限
