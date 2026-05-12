@@ -13,6 +13,7 @@ import com.xiyu.bid.tender.dto.TenderBidResponse;
 import com.xiyu.bid.tender.dto.TenderDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +42,7 @@ public class TenderCommandService {
     private final TenderProjectAccessGuard accessGuard;
     private final com.xiyu.bid.batch.core.TenderStatusTransitionPolicy statusTransitionPolicy;
     private final TaskService taskService;
+    private final TenderAssignmentPermissions permissions;
 
     public TenderDTO createTender(TenderDTO tenderDTO) {
         log.debug("Creating new tender: {}", tenderDTO.getTitle());
@@ -175,6 +177,11 @@ public class TenderCommandService {
                 .orElseThrow(() -> new ResourceNotFoundException("Tender", tenderId.toString()));
         accessGuard.assertCanAccessTender(tender);
 
+        if (!permissions.canDecide(tenderId, userId)) {
+            throw new AccessDeniedException(
+                    "user " + userId + " is not the assigner of tender " + tenderId);
+        }
+
         if (tender.getStatus() == Tender.Status.BIDDING) {
             return TenderBidResponse.builder()
                     .accepted(false)
@@ -218,6 +225,11 @@ public class TenderCommandService {
         Tender tender = tenderRepository.findById(tenderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tender", tenderId.toString()));
         accessGuard.assertCanAccessTender(tender);
+
+        if (!permissions.canDecide(tenderId, userId)) {
+            throw new AccessDeniedException(
+                    "user " + userId + " is not the assigner of tender " + tenderId);
+        }
 
         if (tender.getStatus() == Tender.Status.ABANDONED) {
             return TenderBidResponse.builder()

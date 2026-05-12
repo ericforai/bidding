@@ -125,7 +125,12 @@ import { useTenderEvaluationForm } from './useTenderEvaluationForm.js'
 
 const props = defineProps({
   evaluation: { type: Object, default: null },
-  currentUserRole: { type: String, required: true },
+  // Instance-level permission booleans — backend computes these on the
+  // evaluation DTO based on the current user's relationship to the tender:
+  //   canFill   ← user is latest assignee
+  //   canDecide ← user is latest assigned-by
+  canFill: { type: Boolean, default: false },
+  canDecide: { type: Boolean, default: false },
   tenderId: { type: Number, required: true },
 })
 

@@ -64,6 +64,9 @@ class TenderCommandServiceTest {
     @Mock
     private TaskService taskService;
 
+    @Mock
+    private TenderAssignmentPermissions tenderAssignmentPermissions;
+
     private TenderCommandService tenderCommandService;
     private TenderQueryService tenderQueryService;
     private com.xiyu.bid.batch.core.TenderStatusTransitionPolicy statusTransitionPolicy;
@@ -75,7 +78,13 @@ class TenderCommandServiceTest {
         TenderMapper tenderMapper = new TenderMapper();
         TenderProjectAccessGuard accessGuard = new TenderProjectAccessGuard(projectRepository, projectAccessScopeService);
         statusTransitionPolicy = new com.xiyu.bid.batch.core.TenderStatusTransitionPolicy();
-        tenderCommandService = new TenderCommandService(tenderRepository, aiService, tenderMapper, accessGuard, statusTransitionPolicy, taskService);
+        tenderCommandService = new TenderCommandService(
+                tenderRepository, aiService, tenderMapper, accessGuard,
+                statusTransitionPolicy, taskService, tenderAssignmentPermissions);
+        // Permissive by default — individual instance-permission tests override.
+        org.mockito.Mockito.lenient()
+                .when(tenderAssignmentPermissions.canDecide(any(), any()))
+                .thenReturn(true);
         tenderQueryService = new TenderQueryService(tenderRepository, tenderMapper, accessGuard,
                 projectRepository, userRepository, tenderAssignmentRecordRepository);
 
@@ -359,5 +368,73 @@ class TenderCommandServiceTest {
         assertThat(response.isAccepted()).isFalse();
         assertThat(response.getMessage()).isEqualTo("该标讯已投标，无法弃标");
         verify(tenderRepository, never()).save(any());
+    }
+
+    // ========== 实例级权限 (canDecide) 测试用例 ==========
+
+    @Test
+    @DisplayName("投标 - 非分配人（canDecide=false）抛 AccessDeniedException，不写库")
+    void participateBid_nonAssigner_throwsForbidden() {
+        Tender pendingTender = Tender.builder()
+                .id(1L).title("测试标讯").budget(new BigDecimal("100.00"))
+                .status(Tender.Status.PENDING_ASSIGNMENT).build();
+        when(tenderRepository.findById(1L)).thenReturn(Optional.of(pendingTender));
+        when(tenderAssignmentPermissions.canDecide(1L, 999L)).thenReturn(false);
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> tenderCommandService.participateBid(1L, 999L));
+
+        verify(tenderRepository, never()).save(any());
+        verify(taskService, never()).createTask(any());
+    }
+
+    @Test
+    @DisplayName("投标 - 分配人（canDecide=true）正常完成")
+    void participateBid_authorizedAssigner_succeeds() {
+        Tender pendingTender = Tender.builder()
+                .id(1L).title("测试标讯").budget(new BigDecimal("100.00"))
+                .status(Tender.Status.PENDING_ASSIGNMENT).build();
+        TaskDTO createdTask = TaskDTO.builder().id(100L).title("【待立项】测试标讯").status(Task.Status.TODO).build();
+
+        when(tenderRepository.findById(1L)).thenReturn(Optional.of(pendingTender));
+        when(tenderAssignmentPermissions.canDecide(1L, 5L)).thenReturn(true);
+        when(tenderRepository.save(any(Tender.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(taskService.createTask(any(TaskDTO.class))).thenReturn(createdTask);
+
+        TenderBidResponse response = tenderCommandService.participateBid(1L, 5L);
+
+        assertThat(response.isAccepted()).isTrue();
+        verify(taskService).createTask(any(TaskDTO.class));
+    }
+
+    @Test
+    @DisplayName("弃标 - 非分配人（canDecide=false）抛 AccessDeniedException，不写库")
+    void abandonBid_nonAssigner_throwsForbidden() {
+        Tender trackingTender = Tender.builder()
+                .id(1L).title("测试标讯").status(Tender.Status.TRACKING).build();
+        TenderAbandonRequest req = TenderAbandonRequest.builder().reason("预算不足").build();
+        when(tenderRepository.findById(1L)).thenReturn(Optional.of(trackingTender));
+        when(tenderAssignmentPermissions.canDecide(1L, 999L)).thenReturn(false);
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> tenderCommandService.abandonBid(1L, req, 999L));
+
+        verify(tenderRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("弃标 - 分配人（canDecide=true）正常完成")
+    void abandonBid_authorizedAssigner_succeeds() {
+        Tender trackingTender = Tender.builder()
+                .id(1L).title("测试标讯").status(Tender.Status.TRACKING).build();
+        TenderAbandonRequest req = TenderAbandonRequest.builder().reason("预算不足").build();
+        when(tenderRepository.findById(1L)).thenReturn(Optional.of(trackingTender));
+        when(tenderAssignmentPermissions.canDecide(1L, 5L)).thenReturn(true);
+        when(tenderRepository.save(any(Tender.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        TenderBidResponse response = tenderCommandService.abandonBid(1L, req, 5L);
+
+        assertThat(response.isAccepted()).isTrue();
+        verify(tenderRepository).save(any(Tender.class));
     }
 }

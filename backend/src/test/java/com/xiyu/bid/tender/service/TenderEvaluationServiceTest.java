@@ -51,6 +51,12 @@ class TenderEvaluationServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private TenderAssignmentPermissions permissions;
+
+    @Mock
+    private TenderProjectAccessGuard accessGuard;
+
     private TenderEvaluationService service;
 
     @BeforeEach
@@ -62,8 +68,14 @@ class TenderEvaluationServiceTest {
                 taskService,
                 userRepository,
                 new TenderStatusTransitionPolicy(),
-                mock(TenderEvaluationSubmissionService.class)
+                mock(TenderEvaluationSubmissionService.class),
+                permissions,
+                accessGuard
         );
+        // 决策类端点默认放行；individual 测试覆写为 false 检验 403 路径。
+        org.mockito.Mockito.lenient()
+                .when(permissions.canDecide(any(), any()))
+                .thenReturn(true);
     }
 
     @Test
@@ -156,5 +168,47 @@ class TenderEvaluationServiceTest {
         when(tenderRepository.findById(1L)).thenReturn(Optional.of(tender));
 
         assertThrows(IllegalStateException.class, () -> service.proceedToBid(1L, 99L));
+    }
+
+    @Test
+    @DisplayName("reviewTender: 非分配人（canDecide=false）抛 AccessDeniedException")
+    void reviewTender_nonAssigner_throwsForbidden() {
+        Tender tender = Tender.builder().id(1L).status(Tender.Status.EVALUATED).build();
+        when(tenderRepository.findById(1L)).thenReturn(Optional.of(tender));
+        when(permissions.canDecide(1L, 999L)).thenReturn(false);
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> service.reviewTender(1L, new TenderReviewRequest(true, null, "通过"), 999L));
+
+        verify(tenderEvaluationRepository, org.mockito.Mockito.never()).save(any());
+        verify(tenderRepository, org.mockito.Mockito.never()).save(any(Tender.class));
+    }
+
+    @Test
+    @DisplayName("proceedToBid: 非分配人（canDecide=false）抛 AccessDeniedException")
+    void proceedToBid_nonAssigner_throwsForbidden() {
+        Tender tender = Tender.builder().id(1L).status(Tender.Status.BIDDING).build();
+        when(tenderRepository.findById(1L)).thenReturn(Optional.of(tender));
+        when(permissions.canDecide(1L, 999L)).thenReturn(false);
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> service.proceedToBid(1L, 999L));
+
+        verify(projectService, org.mockito.Mockito.never()).createProject(any());
+        verify(taskService, org.mockito.Mockito.never()).createTask(any());
+    }
+
+    @Test
+    @DisplayName("reviewTender: 项目作用域拒绝（accessGuard） → AccessDeniedException")
+    void reviewTender_projectScopeDenied_throwsForbidden() {
+        Tender tender = Tender.builder().id(1L).status(Tender.Status.EVALUATED).build();
+        when(tenderRepository.findById(1L)).thenReturn(Optional.of(tender));
+        org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException("project scope"))
+                .when(accessGuard).assertCanAccessTender(tender);
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> service.reviewTender(1L, new TenderReviewRequest(true, null, "通过"), 9L));
+
+        verify(tenderEvaluationRepository, org.mockito.Mockito.never()).save(any());
     }
 }

@@ -23,6 +23,7 @@ import com.xiyu.bid.tender.repository.TenderEvaluationRepository;
 import com.xiyu.bid.task.dto.TaskDTO;
 import com.xiyu.bid.task.service.TaskService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +51,8 @@ public class TenderEvaluationService {
     private final UserRepository userRepository;
     private final TenderStatusTransitionPolicy statusTransitionPolicy;
     private final TenderEvaluationSubmissionService submissionService;
+    private final TenderAssignmentPermissions permissions;
+    private final TenderProjectAccessGuard accessGuard;
 
     public TenderEvaluationService(
             TenderEvaluationRepository tenderEvaluationRepository,
@@ -58,7 +61,9 @@ public class TenderEvaluationService {
             TaskService taskService,
             UserRepository userRepository,
             TenderStatusTransitionPolicy statusTransitionPolicy,
-            TenderEvaluationSubmissionService submissionService) {
+            TenderEvaluationSubmissionService submissionService,
+            TenderAssignmentPermissions permissions,
+            TenderProjectAccessGuard accessGuard) {
         this.tenderEvaluationRepository = tenderEvaluationRepository;
         this.tenderRepository = tenderRepository;
         this.projectService = projectService;
@@ -66,6 +71,8 @@ public class TenderEvaluationService {
         this.userRepository = userRepository;
         this.statusTransitionPolicy = statusTransitionPolicy;
         this.submissionService = submissionService;
+        this.permissions = permissions;
+        this.accessGuard = accessGuard;
     }
 
     // ---------- V119: 项目评估表草稿/提交 facade（委托给 TenderEvaluationSubmissionService） ----------
@@ -90,25 +97,34 @@ public class TenderEvaluationService {
     }
 
     /**
-     * 获取标讯评估详情
+     * 获取标讯评估详情（旧 API，已无前端调用方；保留以避免破坏单测）。
+     * <p>实例级权限标志默认为 false：本路径不携带 userId，不能做相对判定。
      */
     @Transactional(readOnly = true)
     public Optional<TenderEvaluationDTO> getEvaluation(Long tenderId) {
         return tenderEvaluationRepository.findByTenderId(tenderId)
-                .map(this::toDTO);
+                .map(e -> toDTO(e, false, false));
     }
 
     /**
-     * 管理员审核标讯
+     * 决策标讯（投标 / 弃标）—— 不再依赖角色 enum；改用实例级 canDecide 判定。
      */
     public TenderEvaluationDTO reviewTender(Long tenderId, TenderReviewRequest request, Long reviewerId) {
-        log.info("Reviewing tender {} by admin {}, approved={}", tenderId, reviewerId, request.approved());
-
-        TenderEvaluation evaluation = tenderEvaluationRepository.findByTenderId(tenderId)
-                .orElseThrow(() -> new ResourceNotFoundException("标讯尚未提交评估"));
+        log.info("Reviewing tender {} by user {}, approved={}", tenderId, reviewerId, request.approved());
 
         Tender tender = tenderRepository.findById(tenderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tender", tenderId.toString()));
+        // Project-scope guard 与 sibling participate/abandon 保持一致 — 设计明确
+        // "保持不变：TenderProjectAccessGuard.assertCanAccessTender"。
+        accessGuard.assertCanAccessTender(tender);
+
+        if (!permissions.canDecide(tenderId, reviewerId)) {
+            throw new AccessDeniedException(
+                    "user " + reviewerId + " is not the assigner of tender " + tenderId);
+        }
+
+        TenderEvaluation evaluation = tenderEvaluationRepository.findByTenderId(tenderId)
+                .orElseThrow(() -> new ResourceNotFoundException("标讯尚未提交评估"));
 
         // 获取审核人信息
         User reviewer = userRepository.findById(reviewerId)
@@ -140,20 +156,29 @@ public class TenderEvaluationService {
         tenderRepository.save(tender);
 
         log.info("Tender {} reviewed, status changed to {}", tenderId, tender.getStatus());
-        return toDTO(savedEvaluation);
+        boolean canFill = permissions.canFill(tenderId, reviewerId);
+        boolean canDecide = permissions.canDecide(tenderId, reviewerId);
+        return toDTO(savedEvaluation, canFill, canDecide);
     }
 
     /**
-     * 投标立项：审核通过后创建项目和待办
+     * 投标立项：审核通过后创建项目和待办。
+     * <p>实例级权限：调用方必须是 latest assigned-by。
      */
     public TenderBidResult proceedToBid(Long tenderId, Long adminId) {
-        log.info("Proceeding to bid for tender {} by admin {}", tenderId, adminId);
-
-        TenderEvaluation evaluation = tenderEvaluationRepository.findByTenderId(tenderId)
-                .orElseThrow(() -> new ResourceNotFoundException("标讯尚未提交评估"));
+        log.info("Proceeding to bid for tender {} by user {}", tenderId, adminId);
 
         Tender tender = tenderRepository.findById(tenderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tender", tenderId.toString()));
+        accessGuard.assertCanAccessTender(tender);
+
+        if (!permissions.canDecide(tenderId, adminId)) {
+            throw new AccessDeniedException(
+                    "user " + adminId + " is not the assigner of tender " + tenderId);
+        }
+
+        TenderEvaluation evaluation = tenderEvaluationRepository.findByTenderId(tenderId)
+                .orElseThrow(() -> new ResourceNotFoundException("标讯尚未提交评估"));
 
         // 验证状态是 BIDDING
         if (tender.getStatus() != Tender.Status.BIDDING) {
@@ -197,7 +222,7 @@ public class TenderEvaluationService {
         );
     }
 
-    private TenderEvaluationDTO toDTO(TenderEvaluation evaluation) {
+    private TenderEvaluationDTO toDTO(TenderEvaluation evaluation, boolean canFill, boolean canDecide) {
         Tender tender = tenderRepository.findById(evaluation.getTenderId()).orElse(null);
         return new TenderEvaluationDTO(
                 evaluation.getTenderId(),
@@ -215,7 +240,9 @@ public class TenderEvaluationService {
                 evaluation.getSubmittedAt(),
                 evaluation.getEvaluatorId(),
                 evaluation.getEvaluatorName(),
-                evaluation.getEvaluatedAt()
+                evaluation.getEvaluatedAt(),
+                canFill,
+                canDecide
         );
     }
 }

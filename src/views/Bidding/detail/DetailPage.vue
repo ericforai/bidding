@@ -108,7 +108,8 @@
       <TenderEvaluationForm
         v-if="tender"
         :evaluation="tenderEvaluation"
-        :current-user-role="currentUserRole"
+        :can-fill="Boolean(tenderEvaluation?.canFillEvaluation)"
+        :can-decide="Boolean(tenderEvaluation?.canDecideBid)"
         :tender-id="Number(tender.id)"
         @submit="handleEvaluationSubmit"
         @save-draft="handleEvaluationSaveDraft"
