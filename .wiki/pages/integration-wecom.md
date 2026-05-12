@@ -7,7 +7,7 @@ sources:
   - backend/src/main/java/com/xiyu/bid/integration/
   - src/views/System/settings/SystemIntegrationPanel.vue
   - src/views/System/settings/integration/
-  - docs/WORKFLOW_FORM_CENTER.md
+  - docs/research/WORKFLOW_FORM_CENTER.md
 backlinks:
   - _index
   - implementation/attachment4-gap-matrix

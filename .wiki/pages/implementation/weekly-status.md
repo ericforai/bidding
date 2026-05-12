@@ -5,7 +5,7 @@ category: guide
 tags: [implementation, delivery]
 sources:
   - .wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx
-  - docs/启动会项目组织架构与沟通矩阵.md
+  - docs/specs/启动会项目组织架构与沟通矩阵.md
   - docs/tasks/production-task-breakdown.md
 backlinks:
   - _index

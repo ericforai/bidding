@@ -4,9 +4,9 @@ space: engineering
 category: reference
 tags: [术语, 投标, 招标, MRO, 词汇]
 sources:
-  - docs/业务流程图.md
-  - docs/讲标文件-功能响应与亮点.md
-  - docs/COMMERCIAL_SCOPE.md
+  - docs/specs/业务流程图.md
+  - docs/specs/讲标文件-功能响应与亮点.md
+  - docs/research/COMMERCIAL_SCOPE.md
   - README.md
 backlinks:
   - _index
