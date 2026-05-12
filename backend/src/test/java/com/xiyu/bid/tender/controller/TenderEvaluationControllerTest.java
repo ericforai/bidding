@@ -98,7 +98,8 @@ class TenderEvaluationControllerTest {
                 tenderId, "测试标讯", Tender.Status.TRACKING,
                 EvaluationStatus.DRAFT,
                 null, null, null, null, null, null, null, null, null,
-                11L, "pm-1", null
+                11L, "pm-1", null,
+                true, false
         );
     }
 
@@ -109,7 +110,8 @@ class TenderEvaluationControllerTest {
                 "背景", "竞品", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31),
                 3, new BigDecimal("1000.00"), null, BidRecommendation.RECOMMEND,
                 LocalDateTime.of(2026, 5, 11, 10, 0),
-                11L, "pm-1", LocalDateTime.of(2026, 5, 11, 10, 0)
+                11L, "pm-1", LocalDateTime.of(2026, 5, 11, 10, 0),
+                true, false
         );
     }
 

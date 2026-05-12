@@ -169,8 +169,10 @@ public class TenderController {
         return ResponseEntity.ok(ApiResponse.success("Tender analyzed successfully", analyzedTender));
     }
 
+    /**
+     * 投标。实例级权限：调用方必须是 latest assigned-by（service 层 canDecide 守）。
+     */
     @PostMapping("/{id}/participate")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<TenderBidResponse>> participateBid(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -181,8 +183,10 @@ public class TenderController {
         return ResponseEntity.ok(ApiResponse.success(response.getMessage(), response));
     }
 
+    /**
+     * 弃标。实例级权限：调用方必须是 latest assigned-by（service 层 canDecide 守）。
+     */
     @PostMapping("/{id}/abandon")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<TenderBidResponse>> abandonBid(
             @PathVariable Long id,
             @Valid @RequestBody TenderAbandonRequest req,

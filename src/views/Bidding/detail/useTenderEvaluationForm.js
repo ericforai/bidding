@@ -73,24 +73,23 @@ export function useTenderEvaluationForm(props, emit) {
     { immediate: true, deep: true }
   )
 
-  // ---- visibility ---------------------------------------------------------
-  // C3: the user store exposes 'MANAGER' (per CLAUDE.md role table), not the
-  // legacy alias 'PROJECT_MANAGER'. We accept both for transitional safety —
-  // anything stamped MANAGER (or PROJECT_MANAGER) is treated as a PM here.
+  // ---- visibility (instance-level, no role enum) --------------------------
+  // canFill   → user is latest assignee of this tender (PM-of-this-tender)
+  // canDecide → user is latest assigned-by  (bid/abandon decision maker)
+  //
+  // Decision rule:
+  //   editable        := canFill && status !== SUBMITTED
+  //   draft/submit    := same as editable (only assignee can write)
+  //   bid/abandon     := canDecide && status === SUBMITTED (evaluate first)
   const evaluationStatus = computed(() => props.evaluation?.evaluationStatus || null)
-  const isProjectManager = computed(
-    () => props.currentUserRole === 'MANAGER' || props.currentUserRole === 'PROJECT_MANAGER'
-  )
-  const isAdmin = computed(() => props.currentUserRole === 'ADMIN')
   const isSubmitted = computed(() => evaluationStatus.value === 'SUBMITTED')
 
-  // PM edits draft + null; admin sees read-only when SUBMITTED.
-  const isEditable = computed(() => isProjectManager.value && !isSubmitted.value)
-  // Form disabled (read-only) when not editable.
+  // Vue's `type: Boolean` prop already coerces — no need to re-wrap here.
+  const isEditable = computed(() => props.canFill && !isSubmitted.value)
   const isReadOnly = computed(() => !isEditable.value)
 
-  const showDraftSubmitButtons = computed(() => isProjectManager.value && !isSubmitted.value)
-  const showDecisionButtons = computed(() => isAdmin.value && isSubmitted.value)
+  const showDraftSubmitButtons = computed(() => props.canFill && !isSubmitted.value)
+  const showDecisionButtons = computed(() => props.canDecide && isSubmitted.value)
 
   // ---- declarative el-form rules -----------------------------------------
   // Kept small and declarative per the Split-First Rule (no hand-rolled

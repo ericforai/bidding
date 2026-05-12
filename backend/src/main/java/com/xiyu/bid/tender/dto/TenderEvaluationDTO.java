@@ -33,5 +33,11 @@ public record TenderEvaluationDTO(
     // ---------- 审核 / 评估人 元数据 ----------
     Long evaluatorId,
     String evaluatorName,
-    LocalDateTime evaluatedAt
+    LocalDateTime evaluatedAt,
+
+    // ---------- 实例级权限（当前调用方相对该标讯的判定） ----------
+    // canFillEvaluation: 当前用户是 latest assignee → 可填 / 提交评估表
+    // canDecideBid    : 当前用户是 latest assigned-by → 可投标 / 弃标
+    boolean canFillEvaluation,
+    boolean canDecideBid
 ) {}

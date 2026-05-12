@@ -64,6 +64,9 @@ class TenderEvaluationSubmissionServiceTest {
     @Mock
     private TenderProjectAccessGuard accessGuard;
 
+    @Mock
+    private TenderAssignmentPermissions permissions;
+
     private Clock fixedClock;
     private TenderEvaluationSubmissionService service;
 
@@ -77,9 +80,15 @@ class TenderEvaluationSubmissionServiceTest {
                 tenderRepository,
                 userRepository,
                 accessGuard,
+                permissions,
                 fixedClock
         );
         // Default permissive — individual tests override for forbidden cases.
+        // lenient() because not every test path consults both flags.
+        org.mockito.Mockito.lenient()
+                .when(permissions.canFill(any(), any())).thenReturn(true);
+        org.mockito.Mockito.lenient()
+                .when(permissions.canDecide(any(), any())).thenReturn(true);
     }
 
     // ---------- helpers ----------
@@ -438,6 +447,94 @@ class TenderEvaluationSubmissionServiceTest {
 
         assertThat(already.getStatus()).isEqualTo(Tender.Status.EVALUATED);
         verify(tenderRepository, never()).save(any(Tender.class));
+    }
+
+    // ---------- 7. instance-level permissions (canFill / canDecide) ----------
+
+    @Test
+    @DisplayName("loadOrInitDraft: DTO 中 canFillEvaluation/canDecideBid 由 permissions 决定")
+    void loadOrInitDraft_populatesPermissionFlags() {
+        stubTenderAndEvaluator();
+        when(evaluationRepository.findByTenderId(TENDER_ID)).thenReturn(Optional.empty());
+        when(permissions.canFill(TENDER_ID, EVALUATOR_ID)).thenReturn(true);
+        when(permissions.canDecide(TENDER_ID, EVALUATOR_ID)).thenReturn(false);
+
+        TenderEvaluationDTO dto = service.loadOrInitDraft(TENDER_ID, EVALUATOR_ID);
+
+        assertThat(dto.canFillEvaluation()).isTrue();
+        assertThat(dto.canDecideBid()).isFalse();
+    }
+
+    @Test
+    @DisplayName("loadOrInitDraft: 已存在记录也会回填 permissions 标志")
+    void loadOrInitDraft_existingAlsoCarriesFlags() {
+        TenderEvaluation existing = TenderEvaluation.builder()
+                .id(50L).tenderId(TENDER_ID).evaluatorId(EVALUATOR_ID)
+                .evaluationStatus(EvaluationStatus.SUBMITTED)
+                .build();
+        stubTenderAndEvaluator();
+        when(evaluationRepository.findByTenderId(TENDER_ID)).thenReturn(Optional.of(existing));
+        when(permissions.canFill(TENDER_ID, EVALUATOR_ID)).thenReturn(false);
+        when(permissions.canDecide(TENDER_ID, EVALUATOR_ID)).thenReturn(true);
+
+        TenderEvaluationDTO dto = service.loadOrInitDraft(TENDER_ID, EVALUATOR_ID);
+
+        assertThat(dto.canFillEvaluation()).isFalse();
+        assertThat(dto.canDecideBid()).isTrue();
+    }
+
+    @Test
+    @DisplayName("saveDraft: 非 assignee (canFill=false) → AccessDeniedException，不持久化")
+    void saveDraft_nonAssignee_throwsForbidden() {
+        stubTenderAndEvaluator();
+        when(permissions.canFill(TENDER_ID, EVALUATOR_ID)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.saveDraft(TENDER_ID, fullValidRequest(), EVALUATOR_ID))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(evaluationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("submit: 非 assignee (canFill=false) → AccessDeniedException，不持久化")
+    void submit_nonAssignee_throwsForbidden() {
+        stubTenderAndEvaluator();
+        when(permissions.canFill(TENDER_ID, EVALUATOR_ID)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.submit(TENDER_ID, fullValidRequest(), EVALUATOR_ID))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(evaluationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("submit: 成功返回的 DTO 也带 permissions 标志")
+    void submit_returnsDtoWithFlags() {
+        stubTenderAndEvaluator();
+        when(evaluationRepository.findByTenderId(TENDER_ID)).thenReturn(Optional.empty());
+        when(evaluationRepository.save(any(TenderEvaluation.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(permissions.canFill(TENDER_ID, EVALUATOR_ID)).thenReturn(true);
+        when(permissions.canDecide(TENDER_ID, EVALUATOR_ID)).thenReturn(true);
+
+        TenderEvaluationDTO dto = service.submit(TENDER_ID, fullValidRequest(), EVALUATOR_ID);
+
+        assertThat(dto.canFillEvaluation()).isTrue();
+        assertThat(dto.canDecideBid()).isTrue();
+    }
+
+    @Test
+    @DisplayName("loadOrInitDraft: 未分配标讯（permissions 全 false）DTO 标志也为 false")
+    void loadOrInitDraft_unassignedTender_bothFlagsFalse() {
+        stubTenderAndEvaluator();
+        when(evaluationRepository.findByTenderId(TENDER_ID)).thenReturn(Optional.empty());
+        when(permissions.canFill(TENDER_ID, EVALUATOR_ID)).thenReturn(false);
+        when(permissions.canDecide(TENDER_ID, EVALUATOR_ID)).thenReturn(false);
+
+        TenderEvaluationDTO dto = service.loadOrInitDraft(TENDER_ID, EVALUATOR_ID);
+
+        assertThat(dto.canFillEvaluation()).isFalse();
+        assertThat(dto.canDecideBid()).isFalse();
     }
 
     @Test

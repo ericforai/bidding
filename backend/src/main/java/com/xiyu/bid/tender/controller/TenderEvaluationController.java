@@ -89,10 +89,10 @@ public class TenderEvaluationController {
     }
 
     /**
-     * 管理员审核标讯（投标或弃标）
+     * 决策标讯（投标 / 弃标）。
+     * <p>实例级权限：调用方必须是 latest assigned-by（service 层 canDecide 守）。
      */
     @PostMapping("/{tenderId}/review")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<TenderEvaluationDTO>> reviewTender(
             @PathVariable Long tenderId,
             @Valid @RequestBody TenderReviewRequest request,
@@ -104,10 +104,10 @@ public class TenderEvaluationController {
     }
 
     /**
-     * 投标操作：投标部管理员审核通过后，创建项目并生成待办
+     * 投标立项：审核通过后创建项目并生成待办。
+     * <p>实例级权限：调用方必须是 latest assigned-by（service 层 canDecide 守）。
      */
     @PostMapping("/{tenderId}/bid")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<TenderBidResult>> proceedToBid(
             @PathVariable Long tenderId,
             @AuthenticationPrincipal UserDetails userDetails) {

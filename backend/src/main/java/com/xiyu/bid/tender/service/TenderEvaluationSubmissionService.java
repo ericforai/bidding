@@ -18,6 +18,7 @@ import com.xiyu.bid.tender.dto.TenderEvaluationSubmitRequest;
 import com.xiyu.bid.tender.entity.TenderEvaluation;
 import com.xiyu.bid.tender.entity.TenderEvaluation.EvaluationStatus;
 import com.xiyu.bid.tender.repository.TenderEvaluationRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +50,7 @@ public class TenderEvaluationSubmissionService {
     private final TenderRepository tenderRepository;
     private final UserRepository userRepository;
     private final TenderProjectAccessGuard accessGuard;
+    private final TenderAssignmentPermissions permissions;
     private final Clock clock;
 
     public TenderEvaluationSubmissionService(
@@ -56,11 +58,13 @@ public class TenderEvaluationSubmissionService {
             TenderRepository tenderRepository,
             UserRepository userRepository,
             TenderProjectAccessGuard accessGuard,
+            TenderAssignmentPermissions permissions,
             Clock clock) {
         this.evaluationRepository = evaluationRepository;
         this.tenderRepository = tenderRepository;
         this.userRepository = userRepository;
         this.accessGuard = accessGuard;
+        this.permissions = permissions;
         this.clock = clock;
     }
 
@@ -72,9 +76,11 @@ public class TenderEvaluationSubmissionService {
         Tender tender = requireTender(tenderId);
         accessGuard.assertCanAccessTender(tender);
         User evaluator = requireUser(evaluatorId);
+        boolean canFill = permissions.canFill(tenderId, evaluatorId);
+        boolean canDecide = permissions.canDecide(tenderId, evaluatorId);
         return evaluationRepository.findByTenderId(tenderId)
-                .map(existing -> toDTO(existing, tender))
-                .orElseGet(() -> emptyDraftDTO(tender, evaluator));
+                .map(existing -> toDTO(existing, tender, canFill, canDecide))
+                .orElseGet(() -> emptyDraftDTO(tender, evaluator, canFill, canDecide));
     }
 
     /**
@@ -88,6 +94,11 @@ public class TenderEvaluationSubmissionService {
         accessGuard.assertCanAccessTender(tender);
         User evaluator = requireUser(evaluatorId);
 
+        if (!permissions.canFill(tenderId, evaluatorId)) {
+            throw new AccessDeniedException(
+                    "user " + evaluatorId + " is not the assignee of tender " + tenderId);
+        }
+
         TenderEvaluation entity = evaluationRepository.findByTenderId(tenderId)
                 .orElseGet(() -> newEntity(tenderId, evaluator));
 
@@ -100,7 +111,8 @@ public class TenderEvaluationSubmissionService {
         entity.setEvaluationStatus(EvaluationStatus.DRAFT);
 
         TenderEvaluation saved = evaluationRepository.save(entity);
-        return toDTO(saved, tender);
+        boolean canDecide = permissions.canDecide(tenderId, evaluatorId);
+        return toDTO(saved, tender, true, canDecide);
     }
 
     /**
@@ -117,6 +129,11 @@ public class TenderEvaluationSubmissionService {
         Tender tender = requireTender(tenderId);
         accessGuard.assertCanAccessTender(tender);
         User evaluator = requireUser(evaluatorId);
+
+        if (!permissions.canFill(tenderId, evaluatorId)) {
+            throw new AccessDeniedException(
+                    "user " + evaluatorId + " is not the assignee of tender " + tenderId);
+        }
 
         ValidationResult result = TenderEvaluationFormPolicy.validate(req);
         if (!result.isValid()) {
@@ -154,7 +171,8 @@ public class TenderEvaluationSubmissionService {
             tenderRepository.save(tender);
         }
 
-        return toDTO(saved, tender);
+        boolean canDecide = permissions.canDecide(tenderId, evaluatorId);
+        return toDTO(saved, tender, true, canDecide);
     }
 
     // ---------- helpers ----------
@@ -194,7 +212,8 @@ public class TenderEvaluationSubmissionService {
         return LocalDateTime.ofInstant(clock.instant(), ZoneId.systemDefault());
     }
 
-    private TenderEvaluationDTO emptyDraftDTO(Tender tender, User evaluator) {
+    private TenderEvaluationDTO emptyDraftDTO(Tender tender, User evaluator,
+                                              boolean canFill, boolean canDecide) {
         return new TenderEvaluationDTO(
                 tender.getId(),
                 tender.getTitle(),
@@ -203,11 +222,14 @@ public class TenderEvaluationSubmissionService {
                 null, null, null, null, null, null, null, null, null,
                 evaluator.getId(),
                 evaluator.getUsername(),
-                null
+                null,
+                canFill,
+                canDecide
         );
     }
 
-    private TenderEvaluationDTO toDTO(TenderEvaluation e, Tender tender) {
+    private TenderEvaluationDTO toDTO(TenderEvaluation e, Tender tender,
+                                      boolean canFill, boolean canDecide) {
         return new TenderEvaluationDTO(
                 e.getTenderId(),
                 tender != null ? tender.getTitle() : null,
@@ -224,7 +246,9 @@ public class TenderEvaluationSubmissionService {
                 e.getSubmittedAt(),
                 e.getEvaluatorId(),
                 e.getEvaluatorName(),
-                e.getEvaluatedAt()
+                e.getEvaluatedAt(),
+                canFill,
+                canDecide
         );
     }
 }
