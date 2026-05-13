@@ -101,7 +101,7 @@
               v-model="form.pastedText"
               type="textarea"
               :rows="4"
-              maxlength="20000"
+              maxlength="50000"
               show-word-limit
               placeholder="直接粘贴招标公告正文，系统将自动识别并回填字段"
               :disabled="parsingDocument"
@@ -109,10 +109,8 @@
             <div class="paste-actions">
               <el-button
                 type="primary"
-                plain
                 :icon="DocumentCopy"
                 :loading="parsingDocument"
-                :disabled="!form.pastedText?.trim()"
                 @click="$emit('parse-pasted-text')"
               >
                 识别粘贴文字
