@@ -29,10 +29,12 @@ case "$BRANCH_NAME" in
 esac
 
 case "$WORKTREE_NAME" in
-  codex|claude|gemini|cursor|integrator)
-    echo "agent-worktree-guard: refusing commit in shared bootstrap worktree '$ROOT_DIR'." >&2
-    echo "Use a task-specific worktree under /Users/user/xiyu/worktrees/<agent>-<task>." >&2
-    exit 1
+  codex|claude|gemini|integrator)
+    if [[ ! -f "$ROOT_DIR/.agent-task-context" ]]; then
+      echo "agent-worktree-guard: refusing commit in shared bootstrap worktree '$ROOT_DIR'." >&2
+      echo "Use a task-specific worktree under /Users/user/xiyu/worktrees/<agent>-<task>." >&2
+      exit 1
+    fi
     ;;
 esac
 

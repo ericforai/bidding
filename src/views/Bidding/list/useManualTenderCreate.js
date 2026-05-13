@@ -3,10 +3,12 @@
 // Pos: src/views/Bidding/list/ - Manual tender creation composable
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { createManualTenderForm } from './constants.js'
 import { buildManualTenderPayload, normalizeManualTenderParseResult } from './helpers.js'
+
+const PASTED_TEXT_MAX_LENGTH = 50000
 
 const SUPPORTED_PARSE_EXTENSIONS = new Set(['.doc', '.docx', '.pdf'])
 
@@ -61,6 +63,16 @@ export function useManualTenderCreate({ tendersApi, refreshTenderList, canCreate
   const savingManual = ref(false)
   const parsingManualDocument = ref(false)
   const manualForm = ref(createManualTenderForm())
+
+  // Guard: ensure pastedText never exceeds the maxlength regardless of browser/element-plus quirks
+  watch(
+    () => manualForm.value.pastedText,
+    (value) => {
+      if (value && value.length > PASTED_TEXT_MAX_LENGTH) {
+        manualForm.value.pastedText = value.substring(0, PASTED_TEXT_MAX_LENGTH)
+      }
+    }
+  )
 
   const resetManualForm = () => {
     manualForm.value = createManualTenderForm()
