@@ -8,7 +8,7 @@ import { ElMessage } from 'element-plus'
 import { createManualTenderForm } from './constants.js'
 import { buildManualTenderPayload, normalizeManualTenderParseResult } from './helpers.js'
 
-const PASTED_TEXT_MAX_LENGTH = 50000
+const PASTED_TEXT_MAX_LENGTH = 500000
 
 const SUPPORTED_PARSE_EXTENSIONS = new Set(['.doc', '.docx', '.pdf'])
 
