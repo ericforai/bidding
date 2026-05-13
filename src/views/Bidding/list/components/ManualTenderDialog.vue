@@ -101,7 +101,7 @@
               v-model="form.pastedText"
               type="textarea"
               :rows="4"
-              maxlength="50000"
+              maxlength="500000"
               show-word-limit
               placeholder="直接粘贴招标公告正文，系统将自动识别并回填字段"
               :disabled="parsingDocument"
