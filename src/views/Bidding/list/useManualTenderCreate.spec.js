@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useManualTenderCreate } from './useManualTenderCreate.js'
 
@@ -208,5 +208,21 @@ describe('useManualTenderCreate', () => {
     await expect(workflow.saveManualTender()).resolves.toBe(false)
 
     expect(ElMessage.error).not.toHaveBeenCalledWith('Request failed with status code 400')
+  })
+
+  it('keeps pasted text intact up to 500,000 characters and trims only when exceeding the cap', async () => {
+    const { workflow } = createWorkflow()
+
+    workflow.manualForm.value.pastedText = '中'.repeat(60_000)
+    await nextTick()
+    expect(workflow.manualForm.value.pastedText.length).toBe(60_000)
+
+    workflow.manualForm.value.pastedText = '中'.repeat(500_000)
+    await nextTick()
+    expect(workflow.manualForm.value.pastedText.length).toBe(500_000)
+
+    workflow.manualForm.value.pastedText = '中'.repeat(500_010)
+    await nextTick()
+    expect(workflow.manualForm.value.pastedText.length).toBe(500_000)
   })
 })
