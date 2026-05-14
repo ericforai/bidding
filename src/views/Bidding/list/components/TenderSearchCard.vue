@@ -43,7 +43,7 @@
       </el-form-item>
       <el-form-item label="开标时间" class="search-field--datetime">
         <el-date-picker v-model="bidOpeningTimeRange" type="datetimerange" range-separator="至"
-          start-placeholder="开始时间" end-placeholder="结束时间" value-format="YYYY-MM-DD HH:mm:ss" class="filter-datetime-picker" clearable />
+          start-placeholder="开始时间" end-placeholder="结束时间" value-format="YYYY-MM-DDTHH:mm:ss" class="filter-datetime-picker" clearable />
       </el-form-item>
       <el-form-item class="search-actions">
         <el-button type="primary" class="search-submit-button" @click="$emit('search')">
@@ -77,8 +77,8 @@ const registrationDeadlineRange = computed({
     return (f && t) ? [f, t] : null
   },
   set: (val) => {
-    modelValue.value.registrationDeadlineFrom = val?.[0] ? val[0] + ' 00:00:00' : null
-    modelValue.value.registrationDeadlineTo = val?.[1] ? val[1] + ' 23:59:59' : null
+    modelValue.value.registrationDeadlineFrom = val?.[0] ? val[0] + 'T00:00:00' : null
+    modelValue.value.registrationDeadlineTo = val?.[1] ? val[1] + 'T23:59:59' : null
   }
 })
 
