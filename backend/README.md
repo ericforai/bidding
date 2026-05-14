@@ -106,3 +106,7 @@ mvn test -Dtest=FlywayMysqlContainerTest,ExpenseControllerIntegrationTest,BarCer
 - Demo 记录统一使用负数 ID，避免与真实数据库主键冲突。
 - 对 Demo 负数 ID 的写操作（新增/修改/删除）会返回受控失败，语义为“演示数据只读”。
 - 非 `e2e` 环境不启用上述融合逻辑。
+
+## 代码格式化
+
+使用 Spotless + google-java-format。提交前跑 `mvn -Pjava-format spotless:apply` 自动格式化。详见 [docs/code-formatting.md](docs/code-formatting.md)。
