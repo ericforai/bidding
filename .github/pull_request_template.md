@@ -17,6 +17,7 @@
 ## Verification
 - [ ] `npm run build`
 - [ ] `VITE_API_MODE=api npm run build`
+- [ ] If backend Java files changed, I ran `cd backend && mvn -Pjava-format spotless:apply` before committing (or my IDE auto-formats on save with google-java-format).
 - [ ] If backend changed, the relevant Maven compile/test commands passed.
 - [ ] If backend quality-gate config or protected modules changed, I ran the documented quality audit/strict commands and included the result in the PR description.
 
