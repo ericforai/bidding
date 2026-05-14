@@ -168,8 +168,24 @@ body line not indented"     # ← 这一行顶格会破坏整个 YAML 结构
 remote: error: GH006: Protected branch update failed for refs/heads/main.
 ```
 
-### 7. Squash merge 会保留 self-lock 在 main
-PR 用 self-lock 通过 hot-path 检查，合并后那个锁会跟随到 main，挡死下一个 PR。除非 janitor 检测"分支已死 = 自动 stale"，否则会形成无限 PR 链。本项目今天连开 4 个 PR 踩这个坑（#239 / #242 / #244 / #245）。
+### 7. Squash merge 会保留 self-lock 在 main（三层防御）
+PR 用 self-lock 通过 hot-path 检查，合并后那个锁会跟随到 main，挡死下一个 PR。除非 janitor 检测"分支已死 = 自动 stale"，否则会形成无限 PR 链。本项目踩过两次：
+
+- 第一波：#239 / #242 / #244 / #245（janitor 不会自愈 + 直推被 branch protection 拒）
+- 第二波（2026-05-14）：lock 系统改成 **per-task 文件**后，prune 脚本仍只扫旧的单文件 `.agent-locks.yml`，新格式 `.agent-locks/<task>.yml` 完全不在它视野内。一个 PR self-lock 又躺尸 2 天才被发现。
+
+**根因不是单一 bug，是结构性 gap**。每一层都能漏，需要三层独立兜底：
+
+| 层 | 触发 | 作用 | 文件 |
+|---|---|---|---|
+| L1：cron + auto-release | 每天 02:17 UTC + main push 命中 `.agent-locks/**` 即触发 | 兜底 + 主动闭环；prune 同时扫 legacy 单文件和 per-task 目录，per-task 文件清空时直接 unlink | `.github/workflows/agent-locks-janitor.yml`、`scripts/agent-locks-prune.mjs` |
+| L2：CI 阻断（`findSelfMergeOrphans`） | PR base=main 且 diff 新增的 lock 的 `branch:` == PR head ref | merge 前就报错，强制作者 `npm run agent:lock-release --all` | `scripts/check-agent-locks.mjs` |
+| L3：白名单 | `chore/janitor-*` / `chore/clean-orphan-lock-*` / `chore/auto-release-*` | janitor / 清理 PR 自己豁免 L2，避免循环 | 同上 |
+
+**关键设计决策**：
+- L1 复用一段 prune 逻辑、两个触发点（cron + push: main）。一段代码，两个时机。
+- L2 把窗口从"24h 滞后"压到"merge 前 0 分钟"，但允许的"逃跑路径"必须留——janitor 自己的 PR 必然有 lock 文件改动，要白名单。
+- per-task 文件意味着两个 agent 同时改自己的 task 锁不再撞 yaml 行号冲突——这是 #243 的初衷，但当时漏了 prune 配套。任何"按需重构存储格式"的动作都要同步更新所有读这个格式的工具，**否则就是 R1 这种"改了一半"的 trap**。
 
 ### 8. 多个 worktree 默认共享同一个开发数据库
 如果不显式配置，每个 worktree 都连 `DB_NAME=foo_main`，一个失败的 worktree 会跨 worktree 污染。dev 环境也要做 per-worktree DB 隔离。
