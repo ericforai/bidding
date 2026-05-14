@@ -357,3 +357,160 @@ A  scripts/tracked-file.mjs
     ).toBe('codex/agent-lock-gate')
   })
 })
+
+describe('findSelfMergeOrphans', () => {
+  const futureExpiry = '2026-06-01T00:00:00Z'
+
+  it('flags PRs that add their own lock entry on a per-task file', async () => {
+    const { findSelfMergeOrphans } = await import('./check-agent-locks.mjs')
+    const addedLocks = [
+      {
+        path: 'backend/src/main/resources/db/migration-mysql/V300__x.sql',
+        scope: 'file',
+        owner: 'claude',
+        branch: 'claude/some-task',
+        expiresAt: futureExpiry,
+        reason: 'PR self-lock',
+        source: 'per-task:some-task.yml',
+      },
+    ]
+    const orphans = findSelfMergeOrphans({
+      addedLocks,
+      prHeadBranch: 'claude/some-task',
+      prBaseBranch: 'main',
+    })
+    expect(orphans).toHaveLength(1)
+    expect(orphans[0]).toMatchObject({ branch: 'claude/some-task' })
+  })
+
+  it('does not flag when added lock belongs to a different branch', async () => {
+    const { findSelfMergeOrphans } = await import('./check-agent-locks.mjs')
+    const orphans = findSelfMergeOrphans({
+      addedLocks: [
+        {
+          path: 'x',
+          scope: 'file',
+          branch: 'codex/other',
+          expiresAt: futureExpiry,
+          source: 'per-task:codex-other.yml',
+        },
+      ],
+      prHeadBranch: 'claude/some-task',
+      prBaseBranch: 'main',
+    })
+    expect(orphans).toHaveLength(0)
+  })
+
+  it('does not flag when PR is not targeting main', async () => {
+    const { findSelfMergeOrphans } = await import('./check-agent-locks.mjs')
+    const orphans = findSelfMergeOrphans({
+      addedLocks: [
+        {
+          path: 'x',
+          scope: 'file',
+          branch: 'claude/some-task',
+          expiresAt: futureExpiry,
+        },
+      ],
+      prHeadBranch: 'claude/some-task',
+      prBaseBranch: 'develop',
+    })
+    expect(orphans).toHaveLength(0)
+  })
+
+  it('whitelists janitor branches', async () => {
+    const { findSelfMergeOrphans } = await import('./check-agent-locks.mjs')
+    const orphans = findSelfMergeOrphans({
+      addedLocks: [
+        {
+          path: 'x',
+          scope: 'file',
+          branch: 'chore/janitor-12345',
+          expiresAt: futureExpiry,
+        },
+      ],
+      prHeadBranch: 'chore/janitor-12345',
+      prBaseBranch: 'main',
+    })
+    expect(orphans).toHaveLength(0)
+  })
+
+  it('whitelists clean-orphan-lock branches', async () => {
+    const { findSelfMergeOrphans } = await import('./check-agent-locks.mjs')
+    const orphans = findSelfMergeOrphans({
+      addedLocks: [
+        {
+          path: 'x',
+          scope: 'file',
+          branch: 'chore/clean-orphan-lock-256',
+          expiresAt: futureExpiry,
+        },
+      ],
+      prHeadBranch: 'chore/clean-orphan-lock-256',
+      prBaseBranch: 'main',
+    })
+    expect(orphans).toHaveLength(0)
+  })
+
+  it('flags legacy-file locks too', async () => {
+    const { findSelfMergeOrphans } = await import('./check-agent-locks.mjs')
+    const orphans = findSelfMergeOrphans({
+      addedLocks: [
+        {
+          path: 'x',
+          scope: 'file',
+          branch: 'claude/legacy',
+          expiresAt: futureExpiry,
+          source: 'legacy',
+        },
+      ],
+      prHeadBranch: 'claude/legacy',
+      prBaseBranch: 'main',
+    })
+    expect(orphans).toHaveLength(1)
+  })
+
+  it('does not flag when the added lock covers a hot-path file the PR is changing', async () => {
+    const { findSelfMergeOrphans } = await import('./check-agent-locks.mjs')
+    const orphans = findSelfMergeOrphans({
+      addedLocks: [
+        {
+          path: '.github/workflows/agent-locks-janitor.yml',
+          scope: 'file',
+          branch: 'claude/some-task',
+          expiresAt: futureExpiry,
+          source: 'per-task:some-task.yml',
+        },
+      ],
+      prHeadBranch: 'claude/some-task',
+      prBaseBranch: 'main',
+      changedHotPathFiles: ['.github/workflows/agent-locks-janitor.yml'],
+    })
+    expect(orphans).toHaveLength(0)
+  })
+
+  it('still flags an unrelated self-lock even when other locks cover a hot-path', async () => {
+    const { findSelfMergeOrphans } = await import('./check-agent-locks.mjs')
+    const orphans = findSelfMergeOrphans({
+      addedLocks: [
+        {
+          path: '.github/workflows/agent-locks-janitor.yml',
+          scope: 'file',
+          branch: 'claude/some-task',
+          expiresAt: futureExpiry,
+        },
+        {
+          path: 'unrelated/file.txt',
+          scope: 'file',
+          branch: 'claude/some-task',
+          expiresAt: futureExpiry,
+        },
+      ],
+      prHeadBranch: 'claude/some-task',
+      prBaseBranch: 'main',
+      changedHotPathFiles: ['.github/workflows/agent-locks-janitor.yml'],
+    })
+    expect(orphans).toHaveLength(1)
+    expect(orphans[0].path).toBe('unrelated/file.txt')
+  })
+})

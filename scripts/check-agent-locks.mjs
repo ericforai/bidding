@@ -99,19 +99,64 @@ export function findBlockingLocks({ changedFiles, context, locks, now = new Date
   )
 }
 
-export function checkAgentLocks({ changedFiles, context, locks, now = new Date(), hotPaths = [] }) {
+export function checkAgentLocks({ changedFiles, context, locks, now = new Date(), hotPaths = [], selfMergeOrphans = [] }) {
   const duplicateLocks = findDuplicateActiveLocks(locks, now)
   const blockingLocks = findBlockingLocks({ changedFiles, context, locks, now })
   const expiredLocks = locks.filter((lock) => isExpiredLock(lock, now))
   const missingHotPathLocks = findMissingHotPathLocks({ changedFiles, context, locks, now, hotPaths })
 
   return {
-    ok: duplicateLocks.length === 0 && blockingLocks.length === 0 && missingHotPathLocks.length === 0,
+    ok:
+      duplicateLocks.length === 0 &&
+      blockingLocks.length === 0 &&
+      missingHotPathLocks.length === 0 &&
+      selfMergeOrphans.length === 0,
     blockingLocks,
     duplicateLocks,
     expiredLocks,
     missingHotPathLocks,
+    selfMergeOrphans,
   }
+}
+
+// Branches allowed to land lock-file changes onto main without triggering the
+// self-merge gate. These workflows manage the lock store as their job —
+// expecting them to release-before-merge would be circular.
+const SELF_MERGE_WHITELIST_PATTERNS = [
+  /^chore\/janitor-/,
+  /^chore\/clean-orphan-lock/,
+  /^chore\/auto-release-/,
+]
+
+function isWhitelistedForSelfMerge(branch) {
+  return SELF_MERGE_WHITELIST_PATTERNS.some((rx) => rx.test(branch || ''))
+}
+
+/**
+ * Detect locks that a PR adds and that name the PR's own head branch.
+ * Squash-merging such a PR carries the lock entry into main forever — once
+ * the PR head is closed (or auto-deleted), the lock becomes orphaned. Block
+ * the PR at CI time so it must `npm run agent:lock-release --all` before merge.
+ *
+ * Exception: a lock that covers a hot-path file the PR is actually changing
+ * is REQUIRED by the existing hot-path gate. Without this carve-out, any PR
+ * touching .github/workflows/ etc. would be impossible to merge. L1/L2
+ * continue to clean such locks after the squash-merge lands on main.
+ *
+ * @param {object} input
+ * @param {Array<{branch?: string, path?: string, scope?: string, source?: string}>} input.addedLocks - locks introduced by the PR diff (after - before)
+ * @param {string} input.prHeadBranch - PR head branch (e.g. claude/some-task)
+ * @param {string} input.prBaseBranch - PR base branch; only `main` triggers the check
+ * @param {Array<string>} [input.changedHotPathFiles] - PR-changed files that match hot-path patterns
+ * @returns {Array<object>} locks that should block the merge
+ */
+export function findSelfMergeOrphans({ addedLocks, prHeadBranch, prBaseBranch, changedHotPathFiles = [] }) {
+  if (prBaseBranch !== 'main') return []
+  if (!prHeadBranch) return []
+  if (isWhitelistedForSelfMerge(prHeadBranch)) return []
+  return (addedLocks || [])
+    .filter((lock) => lock.branch === prHeadBranch)
+    .filter((lock) => !changedHotPathFiles.some((file) => pathMatchesLock(file, lock)))
 }
 
 export function collectLocksFromRegistries(sources, { currentBranch = '' } = {}) {
@@ -242,6 +287,19 @@ function isSameLogicalLock(left, right) {
   return left.owner === right.owner && left.branch === right.branch && left.task === right.task
 }
 
+/**
+ * Diff two lock-set arrays to find entries present in `after` but not in `before`.
+ * Identity = (scope, path, owner, branch). Pure function, easy to test.
+ */
+export function computeAddedLocks({ before, after }) {
+  const beforeKeys = new Set(
+    (before || []).map((l) => `${l.scope}\0${l.path}\0${l.owner || ''}\0${l.branch || ''}`),
+  )
+  return (after || []).filter(
+    (l) => !beforeKeys.has(`${l.scope}\0${l.path}\0${l.owner || ''}\0${l.branch || ''}`),
+  )
+}
+
 function main() {
   const options = parseArgs(process.argv.slice(2))
   const rootDir = runGit(['rev-parse', '--show-toplevel']).trim()
@@ -257,11 +315,27 @@ function main() {
   const locks = collectLocksFromRegistries(registrySources, { currentBranch: context.branch })
   const changedFiles = options.changedFiles ?? readChangedFiles({ base: options.base, head: options.head })
   const hotPaths = loadHotPaths(path.join(rootDir, DEFAULT_HOT_PATHS_FILE))
+
+  // R3 — self-merge orphan gate. Only meaningful in PR context where we know
+  // base and head. Skip when running locally (--changed-only) or when env
+  // lacks PR metadata.
+  const changedHotPathFiles = changedFiles.filter((file) =>
+    hotPaths.some((hp) => fileMatchesHotPathPattern(file, hp.pattern)),
+  )
+  const selfMergeOrphans = computeSelfMergeOrphansForRun({
+    base: options.base,
+    head: options.head,
+    prHeadBranch: process.env.GITHUB_HEAD_REF || '',
+    prBaseBranch: process.env.GITHUB_BASE_REF || '',
+    changedHotPathFiles,
+  })
+
   const result = checkAgentLocks({
     changedFiles,
     context,
     locks,
     hotPaths,
+    selfMergeOrphans,
   })
 
   printWarnings(result, context)
@@ -274,6 +348,39 @@ function main() {
   console.log(
     `agent-lock-check: ok (${changedFiles.length} changed file${changedFiles.length === 1 ? '' : 's'}, ${locks.length} lock${locks.length === 1 ? '' : 's'})`,
   )
+}
+
+function computeSelfMergeOrphansForRun({ base, head, prHeadBranch, prBaseBranch, changedHotPathFiles = [] }) {
+  if (!prHeadBranch || !prBaseBranch) return []
+  if (prBaseBranch !== 'main') return []
+  if (!head || head === null) return []
+
+  const before = readLocksAtRev(base)
+  const after = readLocksAtRev(head)
+  const added = computeAddedLocks({ before, after })
+  return findSelfMergeOrphans({ addedLocks: added, prHeadBranch, prBaseBranch, changedHotPathFiles })
+}
+
+function readLocksAtRev(rev) {
+  if (!rev) return []
+  const out = []
+  // Legacy single file
+  const legacy = runGit(['show', `${rev}:.agent-locks.yml`], { allowFailure: true })
+  if (legacy.trim()) {
+    const registry = parseAgentLocks(legacy)
+    for (const lock of registry.locks || []) out.push({ ...lock, source: 'legacy' })
+  }
+  // Per-task directory — list files via ls-tree then read each
+  const tree = runGit(['ls-tree', '--name-only', rev, '.agent-locks/'], { allowFailure: true })
+  for (const entry of tree.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)) {
+    if (!entry.endsWith('.yml')) continue
+    const content = runGit(['show', `${rev}:${entry}`], { allowFailure: true })
+    if (!content.trim()) continue
+    const registry = parseAgentLocks(content)
+    const filename = entry.replace(/^.*\//, '')
+    for (const lock of registry.locks || []) out.push({ ...lock, source: `per-task:${filename}` })
+  }
+  return out
 }
 
 function parseArgs(args) {
@@ -471,6 +578,19 @@ function printFailures(result, context) {
       console.error(`    hot-path pattern=${hotPath.pattern}`)
       console.error(`    reason=${hotPath.reason}`)
       console.error(`    required: add an active lock covering this path to .agent-locks.yml`)
+    }
+  }
+
+  if (result.selfMergeOrphans && result.selfMergeOrphans.length > 0) {
+    console.error('agent-lock-check: PR would merge its own lock entry to main')
+    console.error('  This creates an orphan on main as soon as the PR head branch is closed.')
+    console.error('  Fix: release the lock BEFORE merging:')
+    console.error('    npm run agent:lock-release -- --all')
+    console.error('  Then push and re-run the check.')
+    for (const lock of result.selfMergeOrphans) {
+      console.error(
+        `  ${lock.scope}:${lock.path} owner=${lock.owner} branch=${lock.branch} source=${lock.source || 'unknown'}`,
+      )
     }
   }
 }
