@@ -1,4 +1,4 @@
--- Input: migration-mysql/V107__organization_retry_statuses.sql
+-- Input: migration-mysql/V120__organization_retry_statuses.sql
 -- Output: rollback script for mysql environments; downgrades retry-only states before enum shrink.
 -- Pos: Flyway down migration coverage for 西域数智化投标管理平台.
 

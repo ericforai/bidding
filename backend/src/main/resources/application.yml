@@ -86,10 +86,6 @@ app:
     memory-threshold: ${APP_TENDER_MEMORY_THRESHOLD:0.92}
     worker-fixed-delay-ms: ${APP_TENDER_WORKER_DELAY_MS:5000}
 
-xiyu:
-  tender:
-    abandon-roles: ${XIYU_TENDER_ABANDON_ROLES:ADMIN,MANAGER}
-
 server:
   port: 8080
   error:
@@ -141,6 +137,8 @@ webhook:
     token: ${WEBHOOK_CRM_TOKEN:}
 
 xiyu:
+  tender:
+    abandon-roles: ${XIYU_TENDER_ABANDON_ROLES:ADMIN,MANAGER}
   integrations:
     organization:
       enabled: ${XIYU_ORG_SYNC_ENABLED:false}
