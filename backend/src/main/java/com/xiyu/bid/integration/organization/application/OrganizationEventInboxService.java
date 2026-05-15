@@ -2,11 +2,13 @@ package com.xiyu.bid.integration.organization.application;
 
 import com.xiyu.bid.integration.organization.domain.OrganizationEventNotice;
 import com.xiyu.bid.integration.organization.domain.OrganizationEventStatus;
+import com.xiyu.bid.integration.organization.domain.OrganizationDirectoryRetryPolicy;
+import com.xiyu.bid.integration.organization.domain.OrganizationRetryDecision;
 import com.xiyu.bid.integration.organization.domain.OrganizationSyncPolicy;
 import com.xiyu.bid.integration.organization.infrastructure.persistence.entity.OrganizationEventLogEntity;
 import com.xiyu.bid.integration.organization.infrastructure.persistence.repository.OrganizationEventLogRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,11 +18,21 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 public class OrganizationEventInboxService {
     private final OrganizationEventLogRepository eventLogRepository;
+    private final OrganizationIntegrationProperties properties;
+
+    public OrganizationEventInboxService(
+            OrganizationEventLogRepository eventLogRepository,
+            OrganizationIntegrationProperties properties
+    ) {
+        this.eventLogRepository = eventLogRepository;
+        this.properties = properties == null ? new OrganizationIntegrationProperties() : properties;
+    }
 
     public String eventKey(OrganizationEventNotice notice) {
         return OrganizationEventKeyFactory.hash(OrganizationSyncPolicy.idempotencyKey(notice));
@@ -38,12 +50,7 @@ public class OrganizationEventInboxService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markRejected(String eventKey, String message, String rawPayload) {
-        OrganizationEventLogEntity log = eventLogRepository.findByEventKey(eventKey).orElseGet(OrganizationEventLogEntity::new);
-        log.setEventKey(eventKey);
-        log.setEventTopic("");
-        log.setSourceApp("");
-        log.setTraceId("");
-        log.setPayloadHash(OrganizationEventKeyFactory.hash(rawPayload == null ? "" : rawPayload));
+        OrganizationEventLogEntity log = eventLogRepository.findByEventKey(eventKey).orElseGet(() -> rejectedLog(eventKey, rawPayload));
         applyStatus(log, OrganizationEventStatus.REJECTED, message, "VALIDATION_FAILED");
         eventLogRepository.save(log);
     }
@@ -55,7 +62,79 @@ public class OrganizationEventInboxService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markFailed(String eventKey, String message, String errorCode) {
-        updateStatus(eventKey, OrganizationEventStatus.FAILED, message, errorCode);
+        markRetryableFailure(eventKey, message, errorCode, configuredMaxAttempts());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markRetryableFailure(String eventKey, String message, String errorCode, int maxAttempts) {
+        eventLogRepository.findByEventKey(eventKey).ifPresent(log -> {
+            LocalDateTime now = LocalDateTime.now();
+            int retryCount = log.getRetryCount() == null ? 1 : log.getRetryCount() + 1;
+            OrganizationRetryDecision decision = OrganizationDirectoryRetryPolicy.decide(retryCount, maxAttempts, now);
+            log.setStatus(decision.status());
+            log.setMessage(message == null ? "" : message);
+            log.setLastErrorCode(errorCode == null ? "" : errorCode);
+            log.setRetryCount(retryCount);
+            log.setNextRetryAt(decision.nextRetryAt());
+            log.setProcessedAt(now);
+            eventLogRepository.save(log);
+        });
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markNonRetryableFailure(String eventKey, String message, String errorCode) {
+        eventLogRepository.findByEventKey(eventKey).ifPresent(log -> {
+            applyStatus(log, OrganizationEventStatus.DEAD_LETTER, message, errorCode);
+            log.setNextRetryAt(null);
+            eventLogRepository.save(log);
+        });
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean claimDueRetry(String eventKey, LocalDateTime now) {
+        return eventLogRepository.claimDueRetry(
+                eventKey,
+                OrganizationEventStatus.PENDING_RETRY,
+                OrganizationEventStatus.PROCESSING,
+                now,
+                "retrying"
+        ) == 1;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public int recoverStaleProcessing(LocalDateTime cutoff, LocalDateTime now) {
+        return eventLogRepository.recoverStaleProcessing(
+                OrganizationEventStatus.PROCESSING,
+                OrganizationEventStatus.PENDING_RETRY,
+                cutoff,
+                now,
+                "retry lease expired"
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrganizationEventLogEntity> findDueRetries(LocalDateTime now, int batchSize) {
+        return eventLogRepository.findByStatusAndNextRetryAtLessThanEqualOrderByNextRetryAtAsc(
+                OrganizationEventStatus.PENDING_RETRY,
+                now,
+                PageRequest.of(0, batchSize)
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<OrganizationEventLogEntity> findByEventKey(String eventKey) {
+        return eventLogRepository.findByEventKey(eventKey);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean claimDeadLetterReplay(String eventKey, LocalDateTime now) {
+        return eventLogRepository.claimDeadLetterReplay(
+                eventKey,
+                OrganizationEventStatus.DEAD_LETTER,
+                OrganizationEventStatus.PROCESSING,
+                now,
+                "manual replaying"
+        ) == 1;
     }
 
     private void updateStatus(String eventKey, OrganizationEventStatus status, String message, String errorCode) {
@@ -63,6 +142,21 @@ public class OrganizationEventInboxService {
             applyStatus(log, status, message, errorCode);
             eventLogRepository.save(log);
         });
+    }
+
+    private int configuredMaxAttempts() {
+        return Math.max(1, properties.getRetry().getMaxAttempts());
+    }
+
+    private OrganizationEventLogEntity rejectedLog(String eventKey, String rawPayload) {
+        OrganizationEventLogEntity log = new OrganizationEventLogEntity();
+        log.setEventKey(eventKey);
+        log.setEventTopic("");
+        log.setSourceApp("");
+        log.setTraceId("");
+        log.setPayloadHash(OrganizationEventKeyFactory.hash(rawPayload == null ? "" : rawPayload));
+        log.setRawPayload(rawPayload);
+        return log;
     }
 
     private OrganizationEventLogEntity buildLog(

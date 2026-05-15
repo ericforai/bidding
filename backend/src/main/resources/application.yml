@@ -86,10 +86,6 @@ app:
     memory-threshold: ${APP_TENDER_MEMORY_THRESHOLD:0.92}
     worker-fixed-delay-ms: ${APP_TENDER_WORKER_DELAY_MS:5000}
 
-xiyu:
-  tender:
-    abandon-roles: ${XIYU_TENDER_ABANDON_ROLES:ADMIN,MANAGER}
-
 server:
   port: 8080
   error:
@@ -139,6 +135,42 @@ webhook:
   crm:
     # 共享密钥；fail-closed —— 未设置或 header 不匹配时 /api/webhooks/crm/** 一律 401
     token: ${WEBHOOK_CRM_TOKEN:}
+
+xiyu:
+  tender:
+    abandon-roles: ${XIYU_TENDER_ABANDON_ROLES:ADMIN,MANAGER}
+  integrations:
+    organization:
+      enabled: ${XIYU_ORG_SYNC_ENABLED:false}
+      webhook-secret: ${XIYU_ORG_WEBHOOK_SECRET:}
+      ip-whitelist: ${XIYU_ORG_IP_WHITELIST:}
+      event-log-retention-days: ${XIYU_ORG_EVENT_LOG_RETENTION_DAYS:90}
+      allowed-source-apps: ${XIYU_ORG_ALLOWED_SOURCE_APPS:oss,customer-org}
+      event-sdk:
+        enabled: ${XIYU_ORG_EVENT_SDK_ENABLED:false}
+        consumer-group: ${XIYU_ORG_EVENT_CONSUMER_GROUP:bid-org-consumer-test}
+      directory:
+        base-url: ${XIYU_ORG_DIRECTORY_BASE_URL:}
+        user-detail-path: ${XIYU_ORG_DIRECTORY_USER_DETAIL_PATH:/users/{userId}}
+        department-detail-path: ${XIYU_ORG_DIRECTORY_DEPARTMENT_DETAIL_PATH:/departments/{deptId}}
+        user-window-path: ${XIYU_ORG_DIRECTORY_USER_WINDOW_PATH:}
+        department-window-path: ${XIYU_ORG_DIRECTORY_DEPARTMENT_WINDOW_PATH:}
+        source-app: ${XIYU_ORG_DIRECTORY_SOURCE_APP:}
+        trace-header-name: ${XIYU_ORG_DIRECTORY_TRACE_HEADER:EHSY-TraceID}
+        source-header-name: ${XIYU_ORG_DIRECTORY_SOURCE_HEADER:EHSY-SRCAPP}
+        auth-header-name: ${XIYU_ORG_DIRECTORY_AUTH_HEADER:}
+        auth-token: ${XIYU_ORG_DIRECTORY_AUTH_TOKEN:}
+        connect-timeout-ms: ${XIYU_ORG_DIRECTORY_CONNECT_TIMEOUT_MS:3000}
+        read-timeout-ms: ${XIYU_ORG_DIRECTORY_READ_TIMEOUT_MS:5000}
+      retry:
+        enabled: ${XIYU_ORG_RETRY_ENABLED:true}
+        max-attempts: ${XIYU_ORG_RETRY_MAX_ATTEMPTS:5}
+        batch-size: ${XIYU_ORG_RETRY_BATCH_SIZE:50}
+        fixed-delay-ms: ${XIYU_ORG_RETRY_FIXED_DELAY_MS:60000}
+      reconciliation:
+        enabled: ${XIYU_ORG_RECONCILIATION_ENABLED:false}
+        cron: ${XIYU_ORG_RECONCILIATION_CRON:0 30 2 * * *}
+        lookback-days: ${XIYU_ORG_RECONCILIATION_LOOKBACK_DAYS:3}
 
 wecom:
   api:

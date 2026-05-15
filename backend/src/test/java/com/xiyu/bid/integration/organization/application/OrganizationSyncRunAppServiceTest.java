@@ -46,7 +46,8 @@ class OrganizationSyncRunAppServiceTest {
                 departmentWriter,
                 userWriter,
                 runRepository,
-                itemRepository
+                itemRepository,
+                OrganizationDirectorySyncAppServiceTest.fixedSettings(true)
         );
 
         OrganizationSyncRunEntity run = service.syncWindow(
@@ -81,7 +82,8 @@ class OrganizationSyncRunAppServiceTest {
                 departmentWriter,
                 userWriter,
                 runRepository,
-                itemRepository
+                itemRepository,
+                OrganizationDirectorySyncAppServiceTest.fixedSettings(true)
         );
 
         OrganizationSyncRunEntity run = service.syncWindow(

@@ -23,6 +23,8 @@
 
 详细背景、配置、限制与后续规划见 [.wiki/pages/api-openapi.md](../.wiki/pages/api-openapi.md)。
 
+组织架构集成仍遵循真实 API 单一路径：YAPI 契约映射见 [organization-directory-yapi-mapping.md](../integration/organization-directory-yapi-mapping.md)，部署与验收 Runbook 见 [organization-directory-runbook.md](../integration/organization-directory-runbook.md)。OA 流程创建和 CRM 客户接口不属于该组织架构切片。
+
 ## 目录结构
 
 ```

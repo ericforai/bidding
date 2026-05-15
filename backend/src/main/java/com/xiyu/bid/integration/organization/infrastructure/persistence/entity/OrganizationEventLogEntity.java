@@ -8,6 +8,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.Data;
@@ -16,7 +17,10 @@ import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Table(name = "organization_event_logs")
+@Table(
+        name = "organization_event_logs",
+        indexes = @Index(name = "idx_org_event_logs_next_retry", columnList = "status,next_retry_at")
+)
 public class OrganizationEventLogEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -19,6 +19,15 @@ public class OrganizationIntegrationProperties {
     private List<String> adminRoleCodes = new ArrayList<>();
     private List<String> managerRoleCodes = new ArrayList<>();
     private Directory directory = new Directory();
+    private EventSdk eventSdk = new EventSdk();
+    private Retry retry = new Retry();
+    private Reconciliation reconciliation = new Reconciliation();
+
+    @Data
+    public static class EventSdk {
+        private boolean enabled = false;
+        private String consumerGroup = "bid-org-consumer-test";
+    }
 
     @Data
     public static class Directory {
@@ -27,7 +36,27 @@ public class OrganizationIntegrationProperties {
         private String departmentDetailPath = "/departments/{deptId}";
         private String userWindowPath = "";
         private String departmentWindowPath = "";
+        private String sourceApp = "";
+        private String traceHeaderName = "EHSY-TraceID";
+        private String sourceHeaderName = "EHSY-SRCAPP";
+        private String authHeaderName = "";
+        private String authToken = "";
         private int connectTimeoutMs = 3000;
         private int readTimeoutMs = 5000;
+    }
+
+    @Data
+    public static class Retry {
+        private boolean enabled = true;
+        private int maxAttempts = 5;
+        private int batchSize = 50;
+        private long fixedDelayMs = 60000;
+    }
+
+    @Data
+    public static class Reconciliation {
+        private boolean enabled = false;
+        private String cron = "0 30 2 * * *";
+        private int lookbackDays = 3;
     }
 }

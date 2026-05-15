@@ -1,5 +1,5 @@
-<!-- Input: WeCom + OA 配置卡片面板，统一挂在系统集成 Tab -->
-<!-- Output: 系统设置中企业微信与泛微 OA 配置入口（OA 使用系统设置 integrationConfig 持久化） -->
+<!-- Input: WeCom + OA + organization integration cards，统一挂在系统集成 Tab -->
+<!-- Output: 系统设置中企业微信、泛微 OA 配置入口与组织架构运维入口 -->
 <!-- Pos: src/views/System/settings/ -->
 
 <template>
@@ -32,7 +32,7 @@
       />
 
       <IntegrationComingSoonCard title="CRM 系统" />
-      <IntegrationComingSoonCard title="组织架构系统" />
+      <OrganizationIntegrationCard />
     </div>
   </div>
 </template>
@@ -43,6 +43,7 @@ import { useWeComSettings } from './useWeComSettings.js'
 import WeComIntegrationCard from './integration/WeComIntegrationCard.vue'
 import WeaverIntegrationCard from './integration/WeaverIntegrationCard.vue'
 import IntegrationComingSoonCard from './integration/IntegrationComingSoonCard.vue'
+import OrganizationIntegrationCard from './integration/OrganizationIntegrationCard.vue'
 import { useSystemIntegrationSettings } from './useSystemIntegrationSettings.js'
 
 const {

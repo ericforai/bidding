@@ -5,5 +5,7 @@ public enum OrganizationEventStatus {
     PROCESSED,
     DUPLICATE,
     REJECTED,
-    FAILED
+    FAILED,
+    PENDING_RETRY,
+    DEAD_LETTER
 }

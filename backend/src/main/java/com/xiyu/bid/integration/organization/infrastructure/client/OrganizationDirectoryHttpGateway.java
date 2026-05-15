@@ -6,11 +6,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.integration.organization.application.OrganizationDirectoryGateway;
 import com.xiyu.bid.integration.organization.application.OrganizationIntegrationProperties;
 import com.xiyu.bid.integration.organization.domain.OrganizationDepartmentSnapshot;
+import com.xiyu.bid.integration.organization.domain.OrganizationDirectoryLookupContext;
+import com.xiyu.bid.integration.organization.domain.OrganizationDirectoryResponseDecision;
+import com.xiyu.bid.integration.organization.domain.OrganizationDirectoryResponseOutcome;
+import com.xiyu.bid.integration.organization.domain.OrganizationDirectoryResponsePolicy;
 import com.xiyu.bid.integration.organization.domain.OrganizationUserSnapshot;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -22,13 +31,15 @@ import java.util.Map;
 import java.util.Optional;
 
 @Component
-@ConditionalOnProperty(prefix = "xiyu.integrations.organization.directory", name = "base-url")
+@Conditional(OrganizationDirectoryBaseUrlConfiguredCondition.class)
 public class OrganizationDirectoryHttpGateway implements OrganizationDirectoryGateway {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final OrganizationIntegrationProperties.Directory directory;
     private final OrganizationDirectoryJsonMapper mapper = new OrganizationDirectoryJsonMapper();
+    private final OrganizationDirectoryAuthHeaders authHeaders;
 
+    @Autowired
     public OrganizationDirectoryHttpGateway(
             RestTemplateBuilder restTemplateBuilder,
             ObjectMapper objectMapper,
@@ -48,49 +59,118 @@ public class OrganizationDirectoryHttpGateway implements OrganizationDirectoryGa
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
         this.directory = properties.getDirectory();
+        this.authHeaders = new OrganizationDirectoryAuthHeaders(directory);
     }
 
     @Override
     public Optional<OrganizationDepartmentSnapshot> fetchDepartmentByDeptId(String deptId) {
-        return getJson(url(directory.getDepartmentDetailPath(), Map.of("deptId", deptId)))
+        return fetchDepartmentByDeptId(deptId, OrganizationDirectoryLookupContext.empty());
+    }
+
+    @Override
+    public Optional<OrganizationDepartmentSnapshot> fetchDepartmentByDeptId(
+            String deptId,
+            OrganizationDirectoryLookupContext context
+    ) {
+        return getJson(url(directory.getDepartmentDetailPath(), Map.of("deptId", deptId)), context)
                 .map(mapper::department);
     }
 
     @Override
     public Optional<OrganizationUserSnapshot> fetchUserByUserId(String userId) {
-        return getJson(url(directory.getUserDetailPath(), Map.of("userId", userId)))
+        return fetchUserByUserId(userId, OrganizationDirectoryLookupContext.empty());
+    }
+
+    @Override
+    public Optional<OrganizationUserSnapshot> fetchUserByUserId(String userId, OrganizationDirectoryLookupContext context) {
+        return getJson(url(directory.getUserDetailPath(), Map.of("userId", userId)), context)
                 .map(mapper::user);
     }
 
     @Override
     public List<OrganizationDepartmentSnapshot> listDepartmentsByWindow(LocalDateTime startAt, LocalDateTime endAt) {
-        return getJson(windowUrl(directory.getDepartmentWindowPath(), startAt, endAt))
+        return listDepartmentsByWindow(startAt, endAt, OrganizationDirectoryLookupContext.empty());
+    }
+
+    @Override
+    public List<OrganizationDepartmentSnapshot> listDepartmentsByWindow(
+            LocalDateTime startAt,
+            LocalDateTime endAt,
+            OrganizationDirectoryLookupContext context
+    ) {
+        return getJson(windowUrl(directory.getDepartmentWindowPath(), startAt, endAt), context)
                 .map(mapper::departments)
                 .orElse(List.of());
     }
 
     @Override
     public List<OrganizationUserSnapshot> listUsersByWindow(LocalDateTime startAt, LocalDateTime endAt) {
-        return getJson(windowUrl(directory.getUserWindowPath(), startAt, endAt))
+        return listUsersByWindow(startAt, endAt, OrganizationDirectoryLookupContext.empty());
+    }
+
+    @Override
+    public List<OrganizationUserSnapshot> listUsersByWindow(
+            LocalDateTime startAt,
+            LocalDateTime endAt,
+            OrganizationDirectoryLookupContext context
+    ) {
+        return getJson(windowUrl(directory.getUserWindowPath(), startAt, endAt), context)
                 .map(mapper::users)
                 .orElse(List.of());
     }
 
-    private Optional<JsonNode> getJson(String url) {
+    private Optional<JsonNode> getJson(String url, OrganizationDirectoryLookupContext context) {
         if (url.isBlank()) {
             return Optional.empty();
         }
         try {
-            String body = restTemplate.getForObject(url, String.class);
+            ResponseEntity<String> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    new HttpEntity<>(authHeaders.headers(context == null ? OrganizationDirectoryLookupContext.empty() : context)),
+                    String.class
+            );
+            String body = response.getBody();
             if (body == null || body.isBlank()) {
                 return Optional.empty();
             }
-            return Optional.of(objectMapper.readTree(body));
+            JsonNode root = objectMapper.readTree(body);
+            return classify(root).outcome() == OrganizationDirectoryResponseOutcome.SUCCESS
+                    ? Optional.of(root)
+                    : Optional.empty();
         } catch (HttpClientErrorException.NotFound ex) {
             return Optional.empty();
+        } catch (HttpStatusCodeException ex) {
+            if (ex.getStatusCode().is4xxClientError()) {
+                throw OrganizationDirectoryHttpGatewayException.nonRetryable("组织架构主数据接口拒绝请求", ex);
+            }
+            throw OrganizationDirectoryHttpGatewayException.retryable("组织架构主数据接口调用失败", ex);
         } catch (JsonProcessingException | RestClientException ex) {
-            throw new OrganizationDirectoryHttpGatewayException("组织架构主数据接口调用失败", ex);
+            throw OrganizationDirectoryHttpGatewayException.retryable("组织架构主数据接口调用失败", ex);
         }
+    }
+
+    private OrganizationDirectoryResponseDecision classify(JsonNode root) {
+        JsonNode code = root.path("code");
+        if (!code.isValueNode() || code.isNull()) {
+            return new OrganizationDirectoryResponseDecision(OrganizationDirectoryResponseOutcome.SUCCESS, false, "success");
+        }
+        OrganizationDirectoryResponseDecision decision = OrganizationDirectoryResponsePolicy.classify(code.asText(), hasData(root));
+        if (decision.retryable()) {
+            throw OrganizationDirectoryHttpGatewayException.retryable(decision.message(), null);
+        }
+        if (decision.outcome() == OrganizationDirectoryResponseOutcome.NON_RETRYABLE_FAILURE) {
+            throw OrganizationDirectoryHttpGatewayException.nonRetryable(decision.message(), null);
+        }
+        return decision;
+    }
+
+    private boolean hasData(JsonNode root) {
+        return hasPayload(root.path("data")) || hasPayload(root.path("result"));
+    }
+
+    private boolean hasPayload(JsonNode data) {
+        return !data.isMissingNode() && !data.isNull() && (!data.isContainerNode() || data.size() > 0);
     }
 
     private String url(String path, Map<String, ?> variables) {

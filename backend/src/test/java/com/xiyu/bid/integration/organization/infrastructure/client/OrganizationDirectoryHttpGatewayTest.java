@@ -2,11 +2,13 @@ package com.xiyu.bid.integration.organization.infrastructure.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xiyu.bid.integration.organization.application.OrganizationIntegrationProperties;
+import com.xiyu.bid.integration.organization.domain.OrganizationDirectoryLookupContext;
 import com.xiyu.bid.integration.organization.domain.OrganizationDepartmentSnapshot;
 import com.xiyu.bid.integration.organization.domain.OrganizationUserSnapshot;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestTemplate;
 
@@ -15,8 +17,11 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withResourceNotFound;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 @DisplayName("OrganizationDirectoryHttpGateway - customer org master data client")
@@ -52,6 +57,83 @@ class OrganizationDirectoryHttpGatewayTest {
         assertThat(snapshot.get().email()).isEqualTo("wangwu@example.com");
         assertThat(snapshot.get().departmentCode()).isEqualTo("3730158");
         assertThat(snapshot.get().enabled()).isTrue();
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("sends trace source and auth headers to YAPI gateway")
+    void fetchUserByUserId_sendsTraceSourceAndAuthHeaders() {
+        RestTemplate restTemplate = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+        server.expect(requestTo("https://oss.example.test/users/720518523"))
+                .andExpect(header("EHSY-TraceID", "trace-1"))
+                .andExpect(header("EHSY-SRCAPP", "BidSystem"))
+                .andExpect(header("Authorization", "Bearer test-token"))
+                .andRespond(withSuccess("""
+                        {
+                          "code": "200",
+                          "data": {
+                            "userId": 720518523,
+                            "userNo": "wangwu",
+                            "userName": "王五",
+                            "email": "wangwu@example.com",
+                            "mobile": "13900000000",
+                            "deptId": 3730158
+                          }
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        OrganizationIntegrationProperties properties = properties();
+        properties.getDirectory().setSourceApp("BidSystem");
+        properties.getDirectory().setAuthHeaderName("Authorization");
+        properties.getDirectory().setAuthToken("Bearer test-token");
+
+        Optional<OrganizationUserSnapshot> snapshot = new OrganizationDirectoryHttpGateway(
+                restTemplate,
+                new ObjectMapper(),
+                properties
+        ).fetchUserByUserId("720518523", new OrganizationDirectoryLookupContext("trace-1", "oss"));
+
+        assertThat(snapshot).isPresent();
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("maps code 200 result envelope as successful payload")
+    void fetchUserByUserId_code200ResultEnvelope_mapsUserSnapshot() {
+        RestTemplate restTemplate = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+        server.expect(requestTo("https://oss.example.test/users/720518523"))
+                .andRespond(withSuccess("""
+                        {
+                          "code": "200",
+                          "result": {
+                            "userId": 720518523,
+                            "userNo": "wangwu",
+                            "userName": "王五",
+                            "deptId": 3730158
+                          }
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        Optional<OrganizationUserSnapshot> snapshot = gateway(restTemplate).fetchUserByUserId("720518523");
+
+        assertThat(snapshot).isPresent();
+        assertThat(snapshot.get().externalUserId()).isEqualTo("720518523");
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("maps 401 to non retryable gateway exception")
+    void fetchUserByUserId_unauthorized_nonRetryable() {
+        RestTemplate restTemplate = new RestTemplate();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+        server.expect(requestTo("https://oss.example.test/users/720518523"))
+                .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
+
+        assertThatThrownBy(() -> gateway(restTemplate).fetchUserByUserId("720518523"))
+                .isInstanceOf(OrganizationDirectoryHttpGatewayException.class)
+                .satisfies(ex -> assertThat(((OrganizationDirectoryHttpGatewayException) ex).retryable()).isFalse());
         server.verify();
     }
 
@@ -164,12 +246,16 @@ class OrganizationDirectoryHttpGatewayTest {
     }
 
     private OrganizationDirectoryHttpGateway gateway(RestTemplate restTemplate) {
+        return new OrganizationDirectoryHttpGateway(restTemplate, new ObjectMapper(), properties());
+    }
+
+    private OrganizationIntegrationProperties properties() {
         OrganizationIntegrationProperties properties = new OrganizationIntegrationProperties();
         properties.getDirectory().setBaseUrl("https://oss.example.test");
         properties.getDirectory().setUserDetailPath("/users/{userId}");
         properties.getDirectory().setDepartmentDetailPath("/departments/{deptId}");
         properties.getDirectory().setUserWindowPath("/users/window?startAt={startAt}&endAt={endAt}");
         properties.getDirectory().setDepartmentWindowPath("/departments/window?startAt={startAt}&endAt={endAt}");
-        return new OrganizationDirectoryHttpGateway(restTemplate, new ObjectMapper(), properties);
+        return properties;
     }
 }

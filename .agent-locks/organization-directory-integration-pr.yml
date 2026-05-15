@@ -1,0 +1,15 @@
+version: 1
+task: "organization-directory-integration-pr"
+locks:
+  - path: "backend/src/main/resources/application.yml"
+    scope: "file"
+    owner: "codex"
+    branch: "codex/organization-directory-integration-pr"
+    expiresAt: "2026-05-22T11:35:37.682Z"
+    reason: "Organization directory integration updates shared application configuration"
+  - path: "backend/src/main/resources/db/migration-mysql"
+    scope: "directory"
+    owner: "codex"
+    branch: "codex/organization-directory-integration-pr"
+    expiresAt: "2026-05-22T11:35:37.848Z"
+    reason: "Organization retry status migration reserves Flyway MySQL version space"

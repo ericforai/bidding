@@ -76,7 +76,7 @@ class OrganizationDirectorySyncAppServiceTest {
         OrganizationEventWebhookResponse response = service.receiveWebhook(request("BaseOssUser", "userId", "10001"));
 
         assertThat(response.code()).isEqualTo("500");
-        assertThat(inbox.status).isEqualTo(OrganizationEventStatus.FAILED);
+        assertThat(inbox.status).isEqualTo(OrganizationEventStatus.PENDING_RETRY);
     }
 
     @Test
@@ -168,7 +168,7 @@ class OrganizationDirectorySyncAppServiceTest {
         String errorCode;
 
         FakeInbox() {
-            super(null);
+            super(null, new OrganizationIntegrationProperties());
         }
 
         public String eventKey(com.xiyu.bid.integration.organization.domain.OrganizationEventNotice notice) {
@@ -184,7 +184,7 @@ class OrganizationDirectorySyncAppServiceTest {
         }
 
         public void markFailed(String eventKey, String message, String errorCode) {
-            status = OrganizationEventStatus.FAILED;
+            status = OrganizationEventStatus.PENDING_RETRY;
             this.errorCode = errorCode;
         }
 
