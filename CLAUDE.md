@@ -322,3 +322,8 @@ grep -h "\[~\]" conductor/tracks/*/plan.md | grep gemini
 
 > 对非 Gemini 的 agent 而言，**commit message + 改动文件就是你的"我在做这事"声明**。所以 commit message 要明确，例如 `wip: add CONTRACT profile (scope: docinsight/contract*)`，即使没 PR 别人也能从 `who-touches.sh` 输出 + `git log <branch> --oneline -5` 推断你在干什么。
 
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->
