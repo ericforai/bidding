@@ -16,7 +16,7 @@ backlinks:
   - workflow-form-center
 created: 2026-04-25
 updated: 2026-04-25
-health_checked: 2026-05-08
+health_checked: 2026-05-15
 ---
 # OpenAPI/Swagger 接口规范
 
@@ -121,7 +121,7 @@ springdoc 会自动扫描 `@RestController + @RequestMapping("/api/...")` 注解
 
 - [[architecture]] §5 API 集成层
 - [[deployment]] 端口与部署
-- `docs/API_INTEGRATION.md` 前后端集成与统一响应规范
+- `docs/research/API_INTEGRATION.md` 前后端集成与统一响应规范
 - `docs/API_MATCH_ANALYSIS.md` 接口匹配度分析
 
 ## 变更历史

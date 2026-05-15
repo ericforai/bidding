@@ -27,20 +27,43 @@
         </template>
 
         <el-descriptions :column="3" border>
+          <el-descriptions-item label="标题" :span="3">
+            {{ tender.title }}
+          </el-descriptions-item>
           <el-descriptions-item label="预算金额">
             <span class="amount-text">{{ formatBudgetWan(tender.budget) }}万元</span>
           </el-descriptions-item>
-          <el-descriptions-item label="所属地区">
+          <el-descriptions-item label="总部所在地">
             <el-tooltip v-if="regionMeta.isMissing" :content="regionMeta.tooltip" placement="top">
               <span class="field-missing">{{ regionMeta.text }}</span>
             </el-tooltip>
             <span v-else>{{ regionMeta.text }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="招标机构">
+            {{ tender.tenderAgency || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="业主单位">
+            {{ tender.purchaserName || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="报名截止时间">
+            <span v-if="tender.registrationDeadline">{{ formatTenderDate(tender.registrationDeadline) }}</span>
+            <span v-else>-</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="开标时间">
+            <span v-if="tender.bidOpeningTime">{{ formatTenderDate(tender.bidOpeningTime) }}</span>
+            <span v-else>-</span>
           </el-descriptions-item>
           <el-descriptions-item label="所属行业">
             <el-tooltip v-if="industryMeta.isMissing" :content="industryMeta.tooltip" placement="top">
               <span class="field-missing">{{ industryMeta.text }}</span>
             </el-tooltip>
             <span v-else>{{ industryMeta.text }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="联系人">
+            {{ tender.contactName || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="联系方式">
+            {{ tender.contactPhone || '-' }}
           </el-descriptions-item>
           <el-descriptions-item label="发布日期">{{ formatTenderDate(tender.publishDate || tender.date) }}</el-descriptions-item>
           <el-descriptions-item label="截止日期">
@@ -52,25 +75,24 @@
               </template>
             </span>
           </el-descriptions-item>
+          <el-descriptions-item label="客户类型">
+            {{ tender.customerType || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="优先级">
+            {{ tender.priority || '-' }}
+          </el-descriptions-item>
           <el-descriptions-item label="当前状态">
             <el-tag :type="getStatusType(tender.status)" size="small">{{ getStatusText(tender.status) }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="中标概率" :span="3">
-            <div class="win-probability-display">
-              <el-rate :model-value="winProbabilityView.rate" disabled />
-              <el-tooltip :content="winProbabilityView.tooltip" placement="top">
-                <span class="win-probability-label">{{ winProbabilityView.label }}</span>
-              </el-tooltip>
-              <span class="win-probability-source">按真实匹配评分换算</span>
-            </div>
+          <el-descriptions-item label="项目经理">
+            {{ tender.projectManagerName || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="分配人">
+            {{ tender.assigneeName || '-' }}
           </el-descriptions-item>
         </el-descriptions>
 
         <div class="action-buttons">
-          <el-button type="primary" size="large" @click="handleParticipate">
-            <el-icon><DocumentAdd /></el-icon>
-            立即投标
-          </el-button>
           <el-button
             v-if="tender && safeTenderUrl(tender.originalUrl)"
             type="success"
@@ -80,112 +102,21 @@
             <el-icon><Link /></el-icon>
             查看官网公告
           </el-button>
-          <el-button size="large" @click="handleFollow">
-            <el-icon><StarFilled v-if="isFollowed" /><Star v-else /></el-icon>
-            {{ isFollowed ? '已关注' : '加入关注' }}
-          </el-button>
-          <el-button size="large" @click="handleShare">
-            <el-icon><Share /></el-icon>
-            分享
-          </el-button>
         </div>
       </el-card>
 
-      <el-card v-if="showTenderAiSection" class="ai-analysis-card" shadow="never">
-        <template #header>
-          <div class="card-title-with-icon">
-            <el-icon class="ai-icon"><MagicStick /></el-icon>
-            AI智能分析
-          </div>
-        </template>
+      <TenderEvaluationForm
+        v-if="tender"
+        :evaluation="tenderEvaluation"
+        :can-fill="Boolean(tenderEvaluation?.canFillEvaluation)"
+        :can-decide="Boolean(tenderEvaluation?.canDecideBid)"
+        :tender-id="Number(tender.id)"
+        @submit="handleEvaluationSubmit"
+        @save-draft="handleEvaluationSaveDraft"
+        @bid="handleParticipate"
+        @abandon="handleAbandonWithReason"
+      />
 
-        <div class="analysis-content">
-          <div class="analysis-section">
-            <MatchScorePanel
-              :score="matchScore"
-              :loading="scoreLoading"
-              :generating="scoreGenerating"
-              :error="scoreError"
-              @generate="handleGenerateMatchScore"
-              @reload="loadMatchScore(tender.id)"
-              @configure="handleConfigureMatchScore"
-            />
-          </div>
-
-          <el-divider />
-
-          <div class="analysis-section">
-            <h4 class="detail-section-title">优势分析</h4>
-            <div class="advantages-list">
-              <div v-for="(advantage, index) in advantages" :key="index" class="advantage-item">
-                <el-icon class="advantage-icon"><CircleCheckFilled /></el-icon>
-                <span>{{ advantage }}</span>
-              </div>
-            </div>
-          </div>
-
-          <el-divider />
-
-          <div class="analysis-section">
-            <h4 class="detail-section-title">AI建议</h4>
-            <div class="suggestions">
-              <el-alert
-                v-for="(suggestion, index) in suggestions"
-                :key="index"
-                :title="suggestion.title"
-                :type="suggestion.type"
-                :closable="false"
-                show-icon
-              >
-                <template #default>
-                  <p>{{ suggestion.content }}</p>
-                </template>
-              </el-alert>
-            </div>
-          </div>
-        </div>
-      </el-card>
-
-      <el-card class="related-cases-card" shadow="never">
-        <template #header>
-          <div class="card-title-with-icon">
-            <el-icon><Briefcase /></el-icon>
-            相关案例推荐
-          </div>
-        </template>
-
-        <div v-if="relatedCasesLoading" class="cases-list">
-          <el-skeleton :rows="3" animated />
-        </div>
-        <el-empty
-          v-else-if="relatedCases.length === 0"
-          description="暂无真实案例推荐"
-        />
-        <div v-else class="cases-list">
-          <div v-for="caseItem in relatedCases" :key="caseItem.id" class="case-item" @click="handleViewCase(caseItem.id)">
-            <div class="case-icon">
-              <el-icon><Document /></el-icon>
-            </div>
-            <div class="case-content">
-              <h5 class="case-title">{{ caseItem.title }}</h5>
-              <div class="case-meta">
-                <span>{{ caseItem.customer }}</span>
-                <span>{{ caseItem.amount }}万元</span>
-                <span>{{ caseItem.year }}年</span>
-              </div>
-              <p class="case-summary">{{ caseItem.summary }}</p>
-              <div class="case-highlights">
-                <el-tag v-for="highlight in caseItem.highlights" :key="highlight" size="small" type="info">
-                  {{ highlight }}
-                </el-tag>
-              </div>
-            </div>
-            <div class="case-arrow">
-              <el-icon><ArrowRight /></el-icon>
-            </div>
-          </div>
-        </div>
-      </el-card>
     </div>
 
     <div v-else class="loading-container">
@@ -195,41 +126,117 @@
 </template>
 
 <script setup>
-import { ArrowRight, Briefcase, CircleCheckFilled, Document, DocumentAdd, Link, MagicStick, Share, Star, StarFilled } from '@element-plus/icons-vue'
+import { computed, ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Link } from '@element-plus/icons-vue'
 import { formatBudgetWan, formatTenderDate, safeTenderUrl } from '../bidding-utils.js'
-import MatchScorePanel from '../match-scoring/MatchScorePanel.vue'
 import { useBiddingDetailPage } from './useBiddingDetailPage.js'
+import { useUserStore } from '@/stores/user'
+import { tendersApi } from '@/api'
+import TenderEvaluationForm from './TenderEvaluationForm.vue'
 import './styles/detail-layout.css'
 import './styles/detail-overrides.css'
 
 const {
-  showTenderAiSection,
   tender,
-  isFollowed,
   matchScore,
-  scoreLoading,
-  scoreGenerating,
-  scoreError,
   matchScoreState,
   regionMeta,
   industryMeta,
   deadlineParts,
-  winProbabilityView,
-  advantages,
-  suggestions,
-  relatedCases,
-  relatedCasesLoading,
   getScoreClass,
   getStatusType,
   getStatusText,
   getDeadlineClass,
   handleParticipate,
-  handleFollow,
-  handleShare,
   handleViewOriginal,
-  handleViewCase,
-  loadMatchScore,
-  handleGenerateMatchScore,
-  handleConfigureMatchScore,
+  handleAbandon,
 } = useBiddingDetailPage()
+
+// Reference handleAbandon so existing logic remains accessible even though
+// the button now lives inside <TenderEvaluationForm>.
+void handleAbandon
+
+const userStore = useUserStore()
+const currentUserRole = computed(() => userStore?.userRole || 'STAFF')
+
+// Evaluation payload owned by the parent — the form is a pure presentational
+// child. Backend wiring (load / save / submit) lives here so the form stays
+// focused on form-state + emits.
+const tenderEvaluation = ref(null)
+// M4: prevent double-click submit/save while a request is in flight.
+const submitting = ref(false)
+const savingDraft = ref(false)
+
+// V119: load existing evaluation (or empty DRAFT) as soon as the tender is
+// resolved by useBiddingDetailPage. Watcher keeps it in sync if the tender id
+// changes (e.g. route param swap without remounting the page).
+watch(
+  () => tender.value?.id,
+  async (id) => {
+    if (!id) return
+    try {
+      const result = await tendersApi.loadEvaluation(id)
+      if (result?.success !== false) {
+        tenderEvaluation.value = result?.data || null
+      }
+    } catch (e) {
+      // Non-fatal: a missing evaluation (or a permission gate) should not
+      // block the detail view from rendering.
+      console.warn('loadEvaluation failed:', e?.message || e)
+    }
+  },
+  { immediate: true }
+)
+
+async function handleEvaluationSaveDraft(payload) {
+  if (!tender.value || savingDraft.value) return
+  savingDraft.value = true
+  try {
+    const result = await tendersApi.saveEvaluationDraft(tender.value.id, payload)
+    if (result?.success !== false) {
+      tenderEvaluation.value = result?.data || { ...payload, evaluationStatus: 'DRAFT' }
+      ElMessage.success('草稿已保存')
+    } else {
+      ElMessage.error(result?.message || '草稿保存失败')
+    }
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || '草稿保存失败')
+  } finally {
+    savingDraft.value = false
+  }
+}
+
+async function handleEvaluationSubmit(payload) {
+  if (!tender.value || submitting.value) return
+  submitting.value = true
+  try {
+    const result = await tendersApi.submitEvaluationFinal(tender.value.id, payload)
+    if (result?.success !== false) {
+      tenderEvaluation.value = result?.data || { ...payload, evaluationStatus: 'SUBMITTED' }
+      ElMessage.success('评估已提交')
+    } else {
+      ElMessage.error(result?.message || '评估提交失败')
+    }
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || '评估提交失败')
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function handleAbandonWithReason({ reason }) {
+  if (!tender.value) return
+  try {
+    const result = await tendersApi.abandon(tender.value.id, { reason })
+    if (result?.success && result?.data?.accepted) {
+      ElMessage.success(result.data.message || '已放弃该标讯')
+      tender.value = { ...tender.value, status: 'ABANDONED' }
+    } else {
+      ElMessage.warning(result?.data?.message || '弃标失败')
+    }
+  } catch (e) {
+    ElMessage.error(e?.response?.data?.message || '弃标失败')
+  }
+}
 </script>

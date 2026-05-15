@@ -30,6 +30,11 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findByTenderId(Long tenderId);
 
     /**
+     * 根据标讯ID列表批量查询项目（用于列表场景批量补全项目经理）
+     */
+    List<Project> findByTenderIdIn(Collection<Long> tenderIds);
+
+    /**
      * 统计指定状态的项目数量
      */
     Long countByStatus(Project.Status status);

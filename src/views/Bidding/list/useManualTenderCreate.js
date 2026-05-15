@@ -3,10 +3,12 @@
 // Pos: src/views/Bidding/list/ - Manual tender creation composable
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { createManualTenderForm } from './constants.js'
 import { buildManualTenderPayload, normalizeManualTenderParseResult } from './helpers.js'
+
+const PASTED_TEXT_MAX_LENGTH = 500000
 
 const SUPPORTED_PARSE_EXTENSIONS = new Set(['.doc', '.docx', '.pdf'])
 
@@ -45,6 +47,15 @@ function hasGlobalHttpErrorMessage(error) {
   return Boolean(error?.isAxiosError || error?.response || error?.code === 'ECONNABORTED')
 }
 
+async function parseAndBackfill({ form, source, warningMessage }) {
+  const response = await source.parse()
+  if (!response?.success) {
+    throw new Error(response?.message || warningMessage)
+  }
+  applyParsedFields(form, normalizeManualTenderParseResult(response.data))
+  applySourceDocumentMetadata(form, source.file, response.data)
+}
+
 export function useManualTenderCreate({ tendersApi, refreshTenderList, canCreateTender }) {
   const showManualAdd = ref(false)
   const manualFormRef = ref(null)
@@ -52,6 +63,16 @@ export function useManualTenderCreate({ tendersApi, refreshTenderList, canCreate
   const savingManual = ref(false)
   const parsingManualDocument = ref(false)
   const manualForm = ref(createManualTenderForm())
+
+  // Guard: ensure pastedText never exceeds the maxlength regardless of browser/element-plus quirks
+  watch(
+    () => manualForm.value.pastedText,
+    (value) => {
+      if (value && value.length > PASTED_TEXT_MAX_LENGTH) {
+        manualForm.value.pastedText = value.substring(0, PASTED_TEXT_MAX_LENGTH)
+      }
+    }
+  )
 
   const resetManualForm = () => {
     manualForm.value = createManualTenderForm()
@@ -64,16 +85,46 @@ export function useManualTenderCreate({ tendersApi, refreshTenderList, canCreate
 
     parsingManualDocument.value = true
     try {
-      const response = await tendersApi.parseTenderIntakeDocument(uploadFile, { entityId: 'manual-tender' })
-      if (!response?.success) {
-        throw new Error(response?.message || '文档自动识别失败')
-      }
-      applyParsedFields(manualForm.value, normalizeManualTenderParseResult(response.data))
-      applySourceDocumentMetadata(manualForm.value, uploadFile, response.data)
+      await parseAndBackfill({
+        form: manualForm.value,
+        source: {
+          file: uploadFile,
+          parse: () => tendersApi.parseTenderIntakeDocument(uploadFile, { entityId: 'manual-tender' }),
+        },
+        warningMessage: '文档自动识别失败',
+      })
       ElMessage.success('DeepSeek/AI 已识别附件内容，可继续编辑后保存')
     } catch (error) {
       const timedOut = error?.code === 'ECONNABORTED'
       ElMessage.warning(timedOut ? 'AI 解析超时，可继续手动填写' : '自动识别失败，可继续手动填写')
+    } finally {
+      parsingManualDocument.value = false
+    }
+  }
+
+  const handlePastedTextParse = async () => {
+    const text = manualForm.value.pastedText?.trim()
+    if (!text) {
+      ElMessage.warning('请先粘贴标讯正文')
+      return false
+    }
+
+    parsingManualDocument.value = true
+    try {
+      await parseAndBackfill({
+        form: manualForm.value,
+        source: {
+          file: { name: '粘贴标讯文本.txt', type: 'text/plain' },
+          parse: () => tendersApi.parseTenderIntakeText(text, { entityId: 'manual-tender' }),
+        },
+        warningMessage: '粘贴文本识别失败',
+      })
+      ElMessage.success('DeepSeek/AI 已识别粘贴文本，可继续编辑后保存')
+      return true
+    } catch (error) {
+      const timedOut = error?.code === 'ECONNABORTED'
+      ElMessage.warning(timedOut ? 'AI 解析超时，可继续手动填写' : '粘贴文本识别失败，可继续手动填写')
+      return false
     } finally {
       parsingManualDocument.value = false
     }
@@ -117,6 +168,7 @@ export function useManualTenderCreate({ tendersApi, refreshTenderList, canCreate
     parsingManualDocument,
     resetManualForm,
     handleFileChange,
+    handlePastedTextParse,
     saveManualTender,
   }
 }

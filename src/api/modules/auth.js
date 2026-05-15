@@ -89,6 +89,30 @@ export const authApi = {
     })
 
     return normalizeAuthSessionResponse(response)
+  },
+
+  async getWeComAuthorizeParams() {
+    return httpClient.get('/api/auth/wecom/authorize-params')
+  },
+
+  async loginByWeCom(code, state) {
+    const response = await httpClient.get('/api/auth/wecom/callback', {
+      params: { code, state },
+      skipAuthRefresh: true,
+      skipGlobalErrorMessage: true
+    })
+    const authPayload = response?.data
+    const normalizedUser = normalizeUser(authPayload)
+
+    setAccessToken(authPayload?.token, true)
+    persistRuntimeSettings({
+      roles: [{
+        code: normalizedUser.role,
+        menuPermissions: normalizedUser.menuPermissions
+      }]
+    })
+
+    return normalizeAuthSessionResponse(response)
   }
 }
 

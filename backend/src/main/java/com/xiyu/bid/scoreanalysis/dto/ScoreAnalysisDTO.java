@@ -30,6 +30,11 @@ public class ScoreAnalysisDTO {
     private Long projectId;
 
     /**
+     * 关联的标讯ID
+     */
+    private Long tenderId;
+
+    /**
      * 分析日期
      */
     private LocalDateTime analysisDate;

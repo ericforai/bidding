@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useManualTenderCreate } from './useManualTenderCreate.js'
 
@@ -16,6 +16,7 @@ function createWorkflow(overrides = {}) {
   const tendersApi = {
     create: vi.fn(),
     parseTenderIntakeDocument: vi.fn(),
+    parseTenderIntakeText: vi.fn(),
   }
   const workflow = useManualTenderCreate({
     tendersApi,
@@ -42,10 +43,14 @@ describe('useManualTenderCreate', () => {
           tenderTitle: '西域智能仓储采购项目',
           budget: '1200000',
           region: '上海',
-          industry: '数据中心',
+          tenderAgency: '上海招标代理有限公司',
           deadline: '2026-06-01T17:00:00',
+          bidOpeningTime: '2026-06-03T10:00:00',
           purchaserName: '西域采购中心',
           contactName: '李经理',
+          contactPhone: '13800138000',
+          customerType: '央企集团',
+          priority: 'S',
           tenderScope: '仓储自动化设备采购',
           tags: ['公开招标', '智能仓储'],
         },
@@ -59,9 +64,12 @@ describe('useManualTenderCreate', () => {
       title: '西域智能仓储采购项目',
       budget: 1200000,
       region: '上海',
-      industry: '数据中心',
+      tenderAgency: '上海招标代理有限公司',
       purchaser: '西域采购中心',
       contact: '李经理',
+      phone: '13800138000',
+      customerType: '央企集团',
+      priority: 'S',
       description: '仓储自动化设备采购',
       tags: ['公开招标', '智能仓储'],
       sourceDocumentName: '招标文件.pdf',
@@ -69,7 +77,42 @@ describe('useManualTenderCreate', () => {
       sourceDocumentFileUrl: 'doc-insight://TENDER_INTAKE/manual-tender/hash-招标文件.pdf',
     })
     expect(workflow.manualForm.value.deadline).toEqual(new Date('2026-06-01T17:00:00'))
+    expect(workflow.manualForm.value.bidOpeningTime).toEqual(new Date('2026-06-03T10:00:00'))
     expect(ElMessage.success).toHaveBeenCalledWith('DeepSeek/AI 已识别附件内容，可继续编辑后保存')
+  })
+
+  it('backfills fields from pasted tender text recognition', async () => {
+    const { workflow, tendersApi } = createWorkflow()
+    workflow.manualForm.value.pastedText = '项目名称：西域MRO项目\n开标时间：2026-06-03 10:00'
+    tendersApi.parseTenderIntakeText.mockResolvedValue({
+      success: true,
+      data: {
+        documentId: 'doc-insight://TENDER_INTAKE/manual-tender/hash-粘贴标讯文本.txt',
+        extractedData: {
+          tenderTitle: '西域MRO项目',
+          bidOpeningTime: '2026-06-03T10:00:00',
+          customerType: 'KA 客户',
+          priority: 'A',
+        },
+      },
+    })
+
+    await expect(workflow.handlePastedTextParse()).resolves.toBe(true)
+
+    expect(tendersApi.parseTenderIntakeText).toHaveBeenCalledWith(
+      '项目名称：西域MRO项目\n开标时间：2026-06-03 10:00',
+      { entityId: 'manual-tender' },
+    )
+    expect(workflow.manualForm.value).toMatchObject({
+      title: '西域MRO项目',
+      customerType: 'KA 客户',
+      priority: 'A',
+      sourceDocumentName: '粘贴标讯文本.txt',
+      sourceDocumentFileType: 'text/plain',
+      sourceDocumentFileUrl: 'doc-insight://TENDER_INTAKE/manual-tender/hash-粘贴标讯文本.txt',
+    })
+    expect(workflow.manualForm.value.bidOpeningTime).toEqual(new Date('2026-06-03T10:00:00'))
+    expect(ElMessage.success).toHaveBeenCalledWith('DeepSeek/AI 已识别粘贴文本，可继续编辑后保存')
   })
 
   it('keeps existing manual values when document parsing fails', async () => {
@@ -111,11 +154,14 @@ describe('useManualTenderCreate', () => {
       title: '中国兵器装备集团有限公司电子商城电商供应商引入项目',
       budget: null,
       region: '北京',
-      industry: '电商',
+      tenderAgency: '中招国际招标有限公司',
       deadline: new Date('2026-10-14T00:00:00'),
+      bidOpeningTime: new Date('2026-10-16T09:30:00'),
       purchaser: '南方工业科技贸易有限公司',
-      contact: '',
-      phone: '',
+      contact: '赵经理',
+      phone: '010-88888888',
+      customerType: '央企集团',
+      priority: 'A',
       description: '框架协议供应商引入，无明确采购预算。',
       tags: ['框架协议'],
       sourceDocumentName: '框架协议招标文件.docx',
@@ -130,8 +176,13 @@ describe('useManualTenderCreate', () => {
         title: '中国兵器装备集团有限公司电子商城电商供应商引入项目',
         budget: null,
         region: '北京',
-        industry: '电商',
+        tenderAgency: '中招国际招标有限公司',
+        bidOpeningTime: '2026-10-16T09:30:00',
         purchaserName: '南方工业科技贸易有限公司',
+        contactName: '赵经理',
+        contactPhone: '010-88888888',
+        customerType: '央企集团',
+        priority: 'A',
         sourceDocumentName: '框架协议招标文件.docx',
         sourceDocumentFileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         sourceDocumentFileUrl: 'doc-insight://TENDER_INTAKE/manual-tender/hash-框架协议招标文件.docx',
@@ -157,5 +208,21 @@ describe('useManualTenderCreate', () => {
     await expect(workflow.saveManualTender()).resolves.toBe(false)
 
     expect(ElMessage.error).not.toHaveBeenCalledWith('Request failed with status code 400')
+  })
+
+  it('keeps pasted text intact up to 500,000 characters and trims only when exceeding the cap', async () => {
+    const { workflow } = createWorkflow()
+
+    workflow.manualForm.value.pastedText = '中'.repeat(60_000)
+    await nextTick()
+    expect(workflow.manualForm.value.pastedText.length).toBe(60_000)
+
+    workflow.manualForm.value.pastedText = '中'.repeat(500_000)
+    await nextTick()
+    expect(workflow.manualForm.value.pastedText.length).toBe(500_000)
+
+    workflow.manualForm.value.pastedText = '中'.repeat(500_010)
+    await nextTick()
+    expect(workflow.manualForm.value.pastedText.length).toBe(500_000)
   })
 })

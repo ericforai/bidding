@@ -96,7 +96,7 @@ class DashboardAnalyticsTrendAndDistributionService {
                     List<DashboardAnalyticsRepository.ProductLineCandidateRow> tenders = entry.getValue();
                     long bidCount = tenders.size();
                     long wonCount = tenders.stream()
-                            .filter(tender -> tender.status() == Tender.Status.BIDDED)
+                            .filter(tender -> tender.status() == Tender.Status.WON)
                             .count();
                     BigDecimal revenue = tenders.stream()
                             .map(DashboardAnalyticsRepository.ProductLineCandidateRow::budget)

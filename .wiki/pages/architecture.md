@@ -5,10 +5,10 @@ category: architecture
 tags: [架构, 前端, 后端, 数据库, Vue, SpringBoot, 技术栈]
 sources:
   - .wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx
-  - docs/技术架构方案.md
-  - docs/后端架构设计-SpringBoot.md
-  - docs/API_INTEGRATION.md
-  - docs/MYSQL_8_DEPLOYMENT.md
+  - docs/architecture/技术架构方案.md
+  - docs/architecture/后端架构设计-SpringBoot.md
+  - docs/research/API_INTEGRATION.md
+  - docs/specs/MYSQL_8_DEPLOYMENT.md
   - backend/src/main/resources/application.yml
   - backend/src/main/java/com/xiyu/bid/tenderupload/README.md
   - backend/src/main/java/com/xiyu/bid/settings/README.md
@@ -30,7 +30,7 @@ backlinks:
   - team-and-timeline
 created: 2026-04-15
 updated: 2026-05-07
-health_checked: 2026-05-08
+health_checked: 2026-05-15
 ---
 # 架构合成
 

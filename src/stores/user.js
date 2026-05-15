@@ -86,6 +86,18 @@ export const useUserStore = defineStore('user', {
       return this.currentUser
     },
 
+    async loginByWeCom(code, state) {
+      const result = await authApi.loginByWeCom(code, state)
+
+      if (!result?.success || !result?.data?.user || !result?.data?.token) {
+        throw new Error(result?.message || '企业微信登录失败')
+      }
+
+      this.applyAuthSession(result.data, true)
+      this.hasRestoredSession = true
+      return this.currentUser
+    },
+
     async restoreSession() {
       if (this.isRestoringSession) {
         return this.currentUser

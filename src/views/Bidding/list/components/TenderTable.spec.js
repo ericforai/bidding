@@ -14,12 +14,13 @@ describe('TenderTable responsive layout contract', () => {
     expect(source).not.toContain('prop="deadline" label="截止日期"')
   })
 
-  it('uses compact action width with an obvious horizontal-scroll fallback', () => {
+  it('uses responsive action width with overflow handling', () => {
     expect(source).toContain('scrollbar-always-on')
-    expect(source).toContain('label="操作" width="244"')
+    expect(source).toContain('label="操作" width="320"')
     expect(tableStyles).toContain('.table-actions')
     expect(tableStyles).toContain('flex-wrap: nowrap')
-    expect(tableStyles).toContain('padding-right: 12px')
+    expect(tableStyles).toContain('box-sizing: border-box')
+    expect(tableStyles).toContain('overflow: visible')
     expect(tableStyles).toContain('el-table-fixed-column--right')
     expect(tableStyles).toContain('.el-scrollbar__bar.is-horizontal')
     expect(tableStyles).toContain('height: 9px')

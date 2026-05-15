@@ -53,6 +53,17 @@ class TenderRequestValidationTest {
         assertTrue(hasNegativeBudgetViolation);
     }
 
+    @Test
+    void shouldAllowGovernanceFieldsWhenProvided() {
+        TenderRequest request = validRequest();
+        request.setTenderAgency("上海招标代理有限公司");
+        request.setBidOpeningTime(LocalDateTime.now().plusDays(31));
+        request.setCustomerType("KA 客户");
+        request.setPriority("S");
+
+        assertTrue(validator.validate(request).isEmpty());
+    }
+
     private TenderRequest validRequest() {
         TenderRequest request = new TenderRequest();
         request.setTitle("框架协议供应商引入项目");

@@ -6,6 +6,9 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [Testing Infrastructure & TDD Workflow Governance](./tracks/testing-governance/plan.md)
 
+- [ ] **Track: Tender Source Tag (标讯来源标签标记)**
+  *Link: [./tracks/tender_source_tag_20260509/](./tracks/tender_source_tag_20260509/)*
+
 - [ ] **Track: Refactor Safety Governance (行为基线 + 多 Agent 边界 + 抽象 Ablation)**
   *Link: [./tracks/refactor_safety_governance_20260426/](./tracks/refactor_safety_governance_20260426/)*
 

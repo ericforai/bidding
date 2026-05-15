@@ -7,6 +7,7 @@ package com.xiyu.bid.docinsight.controller;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.docinsight.application.DocumentAnalysisResult;
 import com.xiyu.bid.docinsight.application.DocumentIntelligenceService;
+import com.xiyu.bid.docinsight.domain.DocInsightProfiles;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -40,6 +41,8 @@ public class DocInsightController {
             "application/vnd.openxmlformats-officedocument.presentationml.presentation"
     );
 
+    private static final String TEXT_PLAIN = "text/plain";
+
     /** profileCode: 字母、数字、下划线、短横线，1-64 字符。 */
     private static final Pattern PROFILE_CODE_PATTERN = Pattern.compile("[A-Za-z0-9_\\-]{1,64}");
 
@@ -62,17 +65,17 @@ public class DocInsightController {
                     .body(ApiResponse.error(413, "上传文件过大"));
         }
 
-        // ── 2. Content-type allowlist ─────────────────────────────────────────
-        String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase())) {
-            return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                    .body(ApiResponse.error(415, "不支持的文件类型"));
-        }
-
-        // ── 3. profileCode validation ─────────────────────────────────────────
+        // ── 2. profileCode validation ─────────────────────────────────────────
         if (profileCode == null || profileCode.isBlank()
                 || !PROFILE_CODE_PATTERN.matcher(profileCode).matches()) {
             throw new IllegalArgumentException("无效的解析配置标识");
+        }
+
+        // ── 3. Content-type allowlist ─────────────────────────────────────────
+        String contentType = file.getContentType();
+        if (contentType == null || !isAllowedContentType(profileCode, contentType)) {
+            return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                    .body(ApiResponse.error(415, "不支持的文件类型"));
         }
 
         // ── 4. entityId validation ────────────────────────────────────────────
@@ -84,5 +87,11 @@ public class DocInsightController {
         // ── 5. Access scope + analysis (service layer guards project access) ──
         DocumentAnalysisResult result = docInsightService.process(profileCode, entityId, file);
         return ResponseEntity.ok(ApiResponse.success("文档解析完成", result));
+    }
+
+    private boolean isAllowedContentType(String profileCode, String contentType) {
+        String normalizedContentType = contentType.toLowerCase();
+        return ALLOWED_CONTENT_TYPES.contains(normalizedContentType)
+                || (TEXT_PLAIN.equals(normalizedContentType) && DocInsightProfiles.isTenderIntake(profileCode));
     }
 }

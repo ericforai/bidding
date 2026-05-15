@@ -10,10 +10,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpEntity;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -51,5 +54,26 @@ class MarkItDownSidecarExtractorTest {
         assertThat(result.extractorKey()).isEqualTo("markitdown-sidecar");
         assertThat(requestCaptor.getValue().getHeaders().getFirst("X-Sidecar-Key"))
                 .isEqualTo("test-sidecar-key");
+    }
+
+    @Test
+    void shouldExtractPlainTextWithoutSidecar() {
+        MarkItDownSidecarExtractor extractor = new MarkItDownSidecarExtractor(
+                restTemplate,
+                new ObjectMapper(),
+                "http://localhost:8000",
+                "test-sidecar-key"
+        );
+
+        ExtractedDocument result = extractor.extract(
+                "paste.txt",
+                "text/plain; charset=UTF-8",
+                "标题：南方电网供应链数字化项目".getBytes(StandardCharsets.UTF_8)
+        );
+
+        assertThat(result.text()).isEqualTo("标题：南方电网供应链数字化项目");
+        assertThat(result.textLength()).isEqualTo(result.text().length());
+        assertThat(result.extractorKey()).isEqualTo("plain-text");
+        verify(restTemplate, never()).postForObject(anyString(), any(HttpEntity.class), eq(String.class));
     }
 }

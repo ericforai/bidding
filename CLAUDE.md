@@ -1,3 +1,22 @@
+<!-- OPENSPEC:START -->
+# OpenSpec Instructions
+
+These instructions are for AI assistants working in this project.
+
+Always open `@/openspec/AGENTS.md` when the request:
+- Mentions planning or proposals (words like proposal, spec, change, plan)
+- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
+- Sounds ambiguous and you need the authoritative spec before coding
+
+Use `@/openspec/AGENTS.md` to learn:
+- How to create and apply change proposals
+- Spec format and conventions
+- Project structure and guidelines
+
+Keep this managed block so 'openspec update' can refresh the instructions.
+
+<!-- OPENSPEC:END -->
+
 # CLAUDE.md
 
 本文件提供本仓库的执行入口、常用命令、验证清单和环境坑点。
@@ -14,6 +33,16 @@
 - 仓库名、包名、构件名中的 `xiyu-bid-poc`、`bid-poc` 属于历史遗留。
 - 当前项目按真实 API 交付模式协作，Mock 模式已于 2026-04-30 退役（`mock.js`、`mock-adapters/`、`.env.mock` 均已删除）。
 - 如仍在其它文档或评论中看到 `frontendDemo` / `demoPersistence` / `isMockMode` 字样，视为过期表述，不代表仓库真实状态。
+- **数据库**：仅支持 MySQL 8.0。迁移脚本统一放在 `migration-mysql/` 目录，`migration/` 目录已废弃并删除。
+
+### 数据库迁移规范
+
+- **迁移脚本位置**：`backend/src/main/resources/db/migration-mysql/`
+- **命名规范**：
+  - 基线版本：`B{version}_*.sql`（如 `B73__full_schema_baseline.sql`）
+  - 增量版本：`V{version}_*.sql`（如 `V114__tender_source_type.sql`）
+- **版本号**：必须大于已有最大版本号
+- **回滚脚本**：放在 `db/rollback/` 目录，与迁移脚本版本对应
 
 ## 推荐命令
 
@@ -151,6 +180,14 @@ npm run test:e2e
    本地开发推荐使用 `backend/start.sh`（已内置默认值），或参考“推荐命令 / 手动方式：后端”传入完整环境变量。
    生产部署必须通过真实环境注入，**不得使用 `start.sh` 中的本地默认值**。
 
+9. **launchd 守护进程会在后台自动重启 dev-services**
+   `~/Library/LaunchAgents/com.xiyu.bid.dev-services.{main,codex,gemini,claude}.plist` 会在登录时自动启动 `scripts/dev-services.sh watch-run`。`pkill` 杀不掉它们，launchd 会立即重启。要彻底停某一个，用 `launchctl bootout gui/$(id -u)/com.xiyu.bid.dev-services.<label>`。
+
+10. **watchdog 后端失败 10 次会进入 STOPPED 状态**
+    新版 `scripts/dev-services.sh` 给 backend 重启加了指数退避（30s → 2min → 10min → 30min cap）。连续失败 10 次后写入 `.runtime/dev-services/backend.fail-state` 并停止重试。`scripts/dev-services.sh start` 在 fail-state 存在时会拒绝启动并打印最后的错误行。修复后用 `rm .runtime/dev-services/backend.fail-state && ./scripts/dev-services.sh start` 恢复。
+    可调整：`WATCHDOG_BACKEND_MAX_FAILURES` 环境变量（默认 10）。
+    **全局聚合**：`npm run agent:health-check` 会扫描所有 worktree 的 `.runtime/dev-services/` 并打印总体状况（每个 worktree 的 backend/frontend/sidecar 是否 ALIVE、最近一条 ERROR 行、fail-state 详情）。怀疑某个 worktree 在闷头重启时先跑一下这个。
+
 ## 路径提示
 
 - 前端业务代码：`src/`
@@ -207,7 +244,7 @@ Agent 必须使用包装脚本启动，以自动适配上述隔离端口：
 3. `git status` 确认只修改了授权文件。
 
 ### 5. 任务启动协议 (Lease + Auto-Detect)
-不画静态目录所有权表 — 任务推进就过时。改用 **git 事实** 当主信号，Gemini 的 conductor 任务声明当辅助。
+不画静态目录所有权表 — 任务推进就过时。改用 **git 事实** 当主信号，文件锁仅用于 hot-paths 前置预订。
 
 #### 5.0 同步基线（**每次开新任务都要跑**，不只是 session 开头）
 "早操"只覆盖 session 开头。**任务之间也必须重新同步** — 否则 5.1 的 `who-touches.sh` 看到的是旧 main 的 diff，可能漏掉别的 agent 中途合的改动，你照样会在过期 base 上累工作。
@@ -237,7 +274,25 @@ alias agent-start='git fetch origin && git rebase origin/main'
 - 退出码 `0` + 无输出 → 干净，可以开工
 - 退出码 `1` + 有输出 → 别的 agent 在动这块，看清楚再决定
 
-#### 5.2 辅助信号：Gemini 的任务声明（**仅当撞到 `agent/gemini-init` 时有用**）
+#### 5.2 文件锁（hot-paths 前置预订）— 已改为 per-task 文件
+`scripts/hot-paths.yml` 列出的高危路径（DB 迁移、entity、application.yml、SecurityConfig 等）改动时**必须**有 active lock。锁文件**自 2026-05-12 起改为 per-task 单文件**：
+
+```
+.agent-locks/<task-slug>.yml      ← 每个任务一个文件，新任务 = 新文件 = 零冲突
+.agent-locks.yml                  ← DEPRECATED；仅做 read-only 兼容层
+```
+
+acquire/release 仍走相同 CLI（自动写到 per-task 文件）：
+```bash
+npm run agent:lock-acquire -- --path <path> --scope file|directory --reason "<reason>"
+npm run agent:lock-release -- --path <path>
+npm run agent:lock-check                # 列所有锁
+npm run agent:lock-check:changed        # 仅检查当前改动是否撞锁
+```
+
+> **为什么换 per-task 文件**：原 `.agent-locks.yml` 单文件被所有 agent 同时写，每次 rebase 都撞冲突，conditioned everyone to ignore lock warnings。Per-task 文件意味着新任务 → 新文件 → 不打架；janitor 也清得更干净（删文件 vs 删行）。
+
+#### 5.3 Gemini 任务声明（**仅当撞到 `agent/gemini-init` 时有用**）
 Gemini 在 `conductor/tracks/` 系统里执行任务，会把 in-progress 任务标 `[~]` 并附 `(@gemini, scope: ...)`。如果 5.1 显示 `agent/gemini-init` 在你的目标路径有未合改动，可以查一眼具体任务上下文：
 ```bash
 grep -h "\[~\]" conductor/tracks/*/plan.md | grep gemini
@@ -245,12 +300,12 @@ grep -h "\[~\]" conductor/tracks/*/plan.md | grep gemini
 
 > **重要**：Claude / Codex / Cursor **没有等价的任务声明机制**。撞到这几个 agent 的分支时，**不要假设可以从 plan.md 查到他们的意图** — 直接看 `git log <branch>` 的 commit message，或在 PR 描述里 @ 对方协调。其他 agent 的"意图声明"靠 §6 的 commit message + push 频率自然沉淀。
 
-#### 5.3 撞了的处置
+#### 5.4 撞了的处置
 - 等对方 push 完一个原子 commit / PR merge / Gemini 任务标 `[x]`
 - 换一个不撞的任务先做
 - 在 PR 描述里 @ 对方说明协调结果（"我接着你的 X 改 Y，rebase 你的 PR 后再合"）
 
-#### 5.4 没撞 → 开工
+#### 5.5 没撞 → 开工
 - 你是 Gemini：在 plan.md 把任务从 `[ ]` 改成 `[~] (@gemini, scope: ...)` 让别人看见你的意图
 - 你是其他 agent：**push commit 时就是你的意图声明** — commit message 写清楚 scope，下个 §6
 
@@ -267,3 +322,8 @@ grep -h "\[~\]" conductor/tracks/*/plan.md | grep gemini
 
 > 对非 Gemini 的 agent 而言，**commit message + 改动文件就是你的"我在做这事"声明**。所以 commit message 要明确，例如 `wip: add CONTRACT profile (scope: docinsight/contract*)`，即使没 PR 别人也能从 `who-touches.sh` 输出 + `git log <branch> --oneline -5` 推断你在干什么。
 
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->

@@ -14,24 +14,39 @@ class TenderStatusTransitionPolicyTest {
 
     @Test
     void shouldAllowPendingToTracking() {
-        assertTrue(policy.canTransition(Tender.Status.PENDING, Tender.Status.TRACKING));
-        assertDoesNotThrow(() -> policy.assertTransition(Tender.Status.PENDING, Tender.Status.TRACKING));
+        assertTrue(policy.canTransition(Tender.Status.PENDING_ASSIGNMENT, Tender.Status.TRACKING));
+        assertDoesNotThrow(() -> policy.assertTransition(Tender.Status.PENDING_ASSIGNMENT, Tender.Status.TRACKING));
     }
 
     @Test
-    void shouldAllowTrackingToBidded() {
-        assertTrue(policy.canTransition(Tender.Status.TRACKING, Tender.Status.BIDDED));
+    void shouldAllowTrackingToEvaluated() {
+        assertTrue(policy.canTransition(Tender.Status.TRACKING, Tender.Status.EVALUATED));
     }
 
     @Test
-    void shouldRejectBiddedRollbackToTracking() {
-        assertFalse(policy.canTransition(Tender.Status.BIDDED, Tender.Status.TRACKING));
+    void shouldAllowEvaluatedToBidding() {
+        assertTrue(policy.canTransition(Tender.Status.EVALUATED, Tender.Status.BIDDING));
+    }
+
+    @Test
+    void shouldAllowBiddingToWonOrLost() {
+        assertTrue(policy.canTransition(Tender.Status.BIDDING, Tender.Status.WON));
+        assertTrue(policy.canTransition(Tender.Status.BIDDING, Tender.Status.LOST));
+    }
+
+    @Test
+    void shouldAllowAnyStateToAbandon() {
+        assertTrue(policy.canTransition(Tender.Status.PENDING_ASSIGNMENT, Tender.Status.ABANDONED));
+        assertTrue(policy.canTransition(Tender.Status.TRACKING, Tender.Status.ABANDONED));
+        assertTrue(policy.canTransition(Tender.Status.EVALUATED, Tender.Status.ABANDONED));
+        assertTrue(policy.canTransition(Tender.Status.BIDDING, Tender.Status.ABANDONED));
+    }
+
+    @Test
+    void shouldRejectIllegalTransitions() {
+        assertFalse(policy.canTransition(Tender.Status.PENDING_ASSIGNMENT, Tender.Status.BIDDING));
+        assertFalse(policy.canTransition(Tender.Status.WON, Tender.Status.BIDDING));
         assertThrows(IllegalArgumentException.class,
-                () -> policy.assertTransition(Tender.Status.BIDDED, Tender.Status.TRACKING));
-    }
-
-    @Test
-    void shouldAllowAbandonedRecoveryToPending() {
-        assertTrue(policy.canTransition(Tender.Status.ABANDONED, Tender.Status.PENDING));
+                () -> policy.assertTransition(Tender.Status.WON, Tender.Status.BIDDING));
     }
 }

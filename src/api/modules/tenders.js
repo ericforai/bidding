@@ -75,6 +75,22 @@ export const tendersApi = {
     return httpClient.post('/api/tenders', data, withIdempotencyKey())
   },
 
+  async downloadImportTemplate() {
+    return httpClient.get('/api/tenders/import-template', {
+      responseType: 'blob',
+      timeout: 60000
+    })
+  },
+
+  async bulkImport(file) {
+    const formData = new FormData()
+    formData.set('file', file, file?.name || 'tender-import.xlsx')
+    return httpClient.post('/api/tenders/import', formData, withIdempotencyKey({
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000
+    }))
+  },
+
   async parseTenderIntakeDocument(file, { entityId = 'manual-tender' } = {}) {
     const formData = new FormData()
     formData.set('profile', 'TENDER_INTAKE')
@@ -85,6 +101,11 @@ export const tendersApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 45000
     })
+  },
+
+  async parseTenderIntakeText(text, { entityId = 'manual-tender' } = {}) {
+    const file = new File([String(text || '')], '粘贴标讯文本.txt', { type: 'text/plain' })
+    return tendersApi.parseTenderIntakeDocument(file, { entityId })
   },
 
   async update(id, data) {
@@ -143,6 +164,91 @@ export const tendersApi = {
       }
     }
     return httpClient.get(`/api/tenders/tasks/${taskId}`)
+  },
+
+  async getEvaluation(tenderId) {
+    if (!isNumericId(tenderId)) {
+      return {
+        success: false,
+        message: '当前后端仅支持数字型标讯 ID'
+      }
+    }
+    return httpClient.get(`/api/tenders/${tenderId}/evaluation`)
+  },
+
+  /**
+   * V119: Load existing evaluation or get a blank DRAFT view from the server.
+   * Alias for getEvaluation() that uses an explicit name expected by the
+   * detail page.
+   */
+  async loadEvaluation(tenderId) {
+    return tendersApi.getEvaluation(tenderId)
+  },
+
+  /**
+   * V119: Save evaluation as draft (PUT /api/tenders/{id}/evaluation).
+   * Performs no business-required validation server-side.
+   */
+  async saveEvaluationDraft(tenderId, data) {
+    if (!isNumericId(tenderId)) {
+      return {
+        success: false,
+        message: '当前后端仅支持数字型标讯 ID'
+      }
+    }
+    return httpClient.put(`/api/tenders/${tenderId}/evaluation`, data)
+  },
+
+  /**
+   * V119: Submit evaluation form (POST /api/tenders/{id}/evaluation/submit).
+   * Backend runs TenderEvaluationFormPolicy and transitions DRAFT → SUBMITTED.
+   */
+  async submitEvaluationFinal(tenderId, data) {
+    if (!isNumericId(tenderId)) {
+      return {
+        success: false,
+        message: '当前后端仅支持数字型标讯 ID'
+      }
+    }
+    return httpClient.post(`/api/tenders/${tenderId}/evaluation/submit`, data)
+  },
+
+  /**
+   * @deprecated V118 entry point removed by V119 cleanup. Use
+   * {@link saveEvaluationDraft} + {@link submitEvaluationFinal} on the detail
+   * page instead. Retained only as a soft alias to keep transient callers
+   * from blowing up; it will be removed in a follow-up.
+   */
+  async submitEvaluation(tenderId, data) {
+    return tendersApi.submitEvaluationFinal(tenderId, data)
+  },
+
+  async reviewTender(tenderId, data) {
+    if (!isNumericId(tenderId)) {
+      return {
+        success: false,
+        message: '当前后端仅支持数字型标讯 ID'
+      }
+    }
+    return httpClient.post(`/api/tenders/${tenderId}/review`, data)
+  },
+
+  async proceedToBid(tenderId) {
+    if (!isNumericId(tenderId)) {
+      return {
+        success: false,
+        message: '当前后端仅支持数字型标讯 ID'
+      }
+    }
+    return httpClient.post(`/api/tenders/${tenderId}/bid`)
+  },
+
+  async participate(id) {
+    return httpClient.post(`/api/tenders/${id}/participate`)
+  },
+
+  async abandon(id, data) {
+    return httpClient.post(`/api/tenders/${id}/abandon`, data)
   }
 }
 

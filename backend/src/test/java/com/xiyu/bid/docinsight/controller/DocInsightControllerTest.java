@@ -82,6 +82,24 @@ class DocInsightControllerTest {
                 .andExpect(jsonPath("$.message").value("不支持的文件类型"));
     }
 
+    @Test
+    @DisplayName("POST /parse TENDER_INTAKE 允许 text/plain 粘贴文本文件")
+    void parse_tenderIntakeTextPlain_returns200() throws Exception {
+        MockMultipartFile txtFile = new MockMultipartFile(
+                "file", "pasted.txt", "text/plain", "项目名称：西域MRO项目".getBytes());
+        DocumentAnalysisResult result = new DocumentAnalysisResult(
+                "doc://pasted", Map.of(), List.of(), null, List.of()
+        );
+        when(docInsightService.process(any(), any(), any())).thenReturn(result);
+
+        mockMvc.perform(multipart("/api/doc-insight/parse")
+                        .file(txtFile)
+                        .param("profile", "TENDER_INTAKE")
+                        .param("entityId", "manual-tender"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.documentId").value("doc://pasted"));
+    }
+
     // ── 400 – invalid profileCode ─────────────────────────────────────────────
 
     @Test

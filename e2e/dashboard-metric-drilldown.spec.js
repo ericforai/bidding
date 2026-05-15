@@ -150,7 +150,7 @@ test('dashboard metric win-rate drill-down honors outcome query filters', async 
       source: 'ERI-151',
       budget: 520000,
       deadline: toLocalDateTimeString(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
-      status: 'BIDDED',
+      status: 'BIDDING',
       aiScore: 89,
       riskLevel: 'LOW',
     }),

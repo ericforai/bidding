@@ -12,13 +12,13 @@ import {
 
 describe('bidding-utils-status', () => {
   it.each([
-    ['new', TENDER_STATUSES.PENDING],
+    ['new', TENDER_STATUSES.PENDING_ASSIGNMENT],
     ['contacted', TENDER_STATUSES.TRACKING],
     ['following', TENDER_STATUSES.TRACKING],
     ['quoting', TENDER_STATUSES.TRACKING],
-    ['bidding', TENDER_STATUSES.BIDDED],
+    ['bidding', TENDER_STATUSES.BIDDING],
     ['abandoned', TENDER_STATUSES.ABANDONED],
-    ['已投标', TENDER_STATUSES.BIDDED],
+    ['已投标', TENDER_STATUSES.BIDDING],
     ['TRACKING', TENDER_STATUSES.TRACKING],
   ])('normalizes %s to %s', (input, expected) => {
     expect(normalizeTenderStatusCode(input)).toBe(expected)
@@ -29,21 +29,21 @@ describe('bidding-utils-status', () => {
       { id: 1, status: 'new' },
       { id: 2, status: 'quoting' },
     ])).toEqual([
-      { id: 1, status: 'PENDING' },
+      { id: 1, status: 'PENDING_ASSIGNMENT' },
       { id: 2, status: 'TRACKING' },
     ])
   })
 
   it('matches canonical and legacy status filters', () => {
     expect(matchesTenderStatus('TRACKING', 'following')).toBe(true)
-    expect(matchesTenderStatus('bidding', 'BIDDED')).toBe(true)
-    expect(matchesTenderStatus('PENDING', 'ABANDONED')).toBe(false)
+    expect(matchesTenderStatus('bidding', 'BIDDING')).toBe(true)
+    expect(matchesTenderStatus('PENDING_ASSIGNMENT', 'ABANDONED')).toBe(false)
   })
 
   it('exposes display helpers from one source of truth', () => {
     expect(getTenderStatusText('quoting')).toBe('跟踪中')
     expect(getTenderStatusTagType('TRACKING')).toBe('warning')
-    expect(getTenderStatusBadgeClass('bidding')).toBe('bidded')
+    expect(getTenderStatusBadgeClass('bidding')).toBe('bidding')
   })
 
   it('re-exports backend status conversion through canonical mapping', () => {

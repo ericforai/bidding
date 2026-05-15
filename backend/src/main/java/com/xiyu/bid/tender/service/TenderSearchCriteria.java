@@ -20,6 +20,7 @@ public class TenderSearchCriteria {
     private String keyword;
     private Tender.Status status;
     private String source;
+    private Tender.SourceType sourceType;
     private String region;
     private String industry;
     private String purchaserName;
@@ -38,6 +39,21 @@ public class TenderSearchCriteria {
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate publishDateTo;
+
+    private String customerType;
+    private String priority;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    private LocalDateTime bidOpeningTimeFrom;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    private LocalDateTime bidOpeningTimeTo;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    private LocalDateTime registrationDeadlineFrom;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    private LocalDateTime registrationDeadlineTo;
 
     private Integer aiScoreMin;
     private Integer aiScoreMax;

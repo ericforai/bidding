@@ -26,12 +26,20 @@
         <el-icon><Plus /></el-icon>
         人工录入
       </el-button>
+      <el-button v-if="canCreateTender" @click="$emit('download-import-template')">
+        <el-icon><Download /></el-icon>
+        下载批量导入模板
+      </el-button>
+      <el-button v-if="canCreateTender" type="warning" plain @click="$emit('open-bulk-import')">
+        <el-icon><Upload /></el-icon>
+        批量导入
+      </el-button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { Download, Plus, Setting, UserFilled } from '@element-plus/icons-vue'
+import { Download, Plus, Setting, Upload, UserFilled } from '@element-plus/icons-vue'
 
 defineProps({
   customerOpportunityEnabled: { type: Boolean, default: true },
@@ -40,5 +48,12 @@ defineProps({
   fetchingTenders: { type: Boolean, default: false },
 })
 
-defineEmits(['open-customer-opportunities', 'open-source-config', 'sync-external', 'open-manual-add'])
+defineEmits([
+  'open-customer-opportunities',
+  'open-source-config',
+  'sync-external',
+  'open-manual-add',
+  'download-import-template',
+  'open-bulk-import'
+])
 </script>

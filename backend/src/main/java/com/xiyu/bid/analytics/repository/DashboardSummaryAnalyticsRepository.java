@@ -36,7 +36,7 @@ public class DashboardSummaryAnalyticsRepository {
         Long bidTenderCount = entityManager.createQuery(
                         "select count(t) from Tender t where t.status = :bidded",
                         Long.class)
-                .setParameter("bidded", Tender.Status.BIDDED)
+                .setParameter("bidded", Tender.Status.WON)
                 .getSingleResult();
         Long winningProjectCount = entityManager.createQuery(
                         "select count(p) from Project p where p.status in :winningStatuses",
@@ -100,7 +100,7 @@ public class DashboardSummaryAnalyticsRepository {
                         where p.id in :projectIds and t.status = :bidded
                         """, Long.class)
                 .setParameter("projectIds", projectIds)
-                .setParameter("bidded", Tender.Status.BIDDED)
+                .setParameter("bidded", Tender.Status.WON)
                 .getSingleResult();
         Long winningProjectCount = entityManager.createQuery("""
                         select count(p)
@@ -238,7 +238,7 @@ public class DashboardSummaryAnalyticsRepository {
                         group by t.source
                         order by count(t) desc, t.source asc
                         """, DashboardAnalyticsRepository.SourceAggregateRow.class)
-                .setParameter("bidded", Tender.Status.BIDDED);
+                .setParameter("bidded", Tender.Status.WON);
         if (limit > 0 && limit < Integer.MAX_VALUE) {
             query.setMaxResults(limit);
         }
@@ -266,7 +266,7 @@ public class DashboardSummaryAnalyticsRepository {
                         order by count(distinct t.id) desc, t.source asc
                         """, DashboardAnalyticsRepository.SourceAggregateRow.class)
                 .setParameter("projectIds", projectIds)
-                .setParameter("bidded", Tender.Status.BIDDED);
+                .setParameter("bidded", Tender.Status.WON);
         if (limit > 0 && limit < Integer.MAX_VALUE) {
             query.setMaxResults(limit);
         }

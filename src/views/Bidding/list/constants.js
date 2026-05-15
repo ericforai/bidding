@@ -42,10 +42,44 @@ export const REGION_OPTIONS = [
 
 export const INDUSTRY_OPTIONS = ['政府', '能源', '交通', '数据中心', '金融', '医疗', '教育']
 
+export const CUSTOMER_TYPE_OPTIONS = ['央企集团', '国有集团', 'KA 客户']
+
+export const PRIORITY_OPTIONS = [
+  {
+    value: 'S',
+    label: 'S 级',
+    desc: '战略级高价值客户',
+    standard: '年度合作额超 5000 万存量客户及超大型央企集团',
+  },
+  {
+    value: 'A',
+    label: 'A 级',
+    desc: '高价值重点客户',
+    standard: '年度合作额超 1000 万存量客户及其他央企集团',
+  },
+  {
+    value: 'B',
+    label: 'B 级',
+    desc: '重要潜力客户',
+    standard: '省属/市属国企，或营收超 100 亿制造业民营/外资企业',
+  },
+  {
+    value: 'C',
+    label: 'C 级',
+    desc: '潜力客户',
+    standard: '营收 50-100 亿制造业民营/外资企业',
+  },
+]
+
 export const SOURCE_OPTIONS = [
-  { label: '内部', value: 'internal' },
-  { label: '外部获取', value: 'external' },
-  { label: '人工录入', value: 'manual' },
+  { label: '外部获取', value: 'EXTERNAL' },
+  { label: '人工录入', value: 'MANUAL' },
+]
+
+export const SOURCE_TYPE_OPTIONS = [
+  { label: '全部来源', value: '' },
+  { label: '外部获取', value: 'EXTERNAL' },
+  { label: '人工录入', value: 'MANUAL' },
 ]
 
 export const SOURCE_PLATFORM_OPTIONS = ['中国政府采购网', '各省招标网', '第三方商机服务', '企业招标平台']
@@ -75,8 +109,7 @@ export const SOURCE_KEYWORD_OPTIONS = [
 ]
 
 export const ASSIGN_RULES = [
-  { value: 'region', label: '按区域分发', desc: '根据标讯地区自动分配' },
-  { value: 'industry', label: '按行业分发', desc: '根据行业类型分配' },
+  { value: 'region', label: '按总部所在地分发', desc: '根据标讯总部所在地自动分配' },
   { value: 'score', label: '按 AI 评分', desc: '高分优先给候选人' },
   { value: 'average', label: '平均分配', desc: '均匀分配给可选人员' },
 ]
@@ -84,9 +117,15 @@ export const ASSIGN_RULES = [
 export const DEFAULT_SEARCH_FORM = Object.freeze({
   keyword: '',
   region: '',
-  industry: '',
   status: '',
   source: '',
+  sourceType: '',
+  customerType: '',
+  priority: '',
+  registrationDeadlineFrom: null,
+  registrationDeadlineTo: null,
+  bidOpeningTimeFrom: null,
+  bidOpeningTimeTo: null,
 })
 
 export const DEFAULT_SOURCE_CONFIG = Object.freeze({
@@ -115,7 +154,10 @@ export function createManualTenderForm() {
     title: '',
     budget: null,
     region: '',
-    industry: '',
+    tenderAgency: '',
+    bidOpeningTime: null,
+    customerType: '',
+    priority: '',
     deadline: null,
     purchaser: '',
     contact: '',
@@ -126,12 +168,19 @@ export function createManualTenderForm() {
     sourceDocumentName: '',
     sourceDocumentFileType: '',
     sourceDocumentFileUrl: '',
+    pastedText: '',
   }
 }
 
 export const MANUAL_FORM_RULES = {
   title: [{ required: true, message: '请输入标讯标题', trigger: 'blur' }],
-  region: [{ required: true, message: '请选择地区', trigger: 'change' }],
-  industry: [{ required: true, message: '请选择行业', trigger: 'change' }],
-  deadline: [{ required: true, message: '请选择截止日期', trigger: 'change' }],
+  tenderAgency: [{ required: true, message: '请输入招标机构', trigger: 'blur' }],
+  purchaser: [{ required: true, message: '请输入业主单位', trigger: 'blur' }],
+  region: [{ required: true, message: '请选择总部所在地', trigger: 'change' }],
+  deadline: [{ required: true, message: '请选择报名截止时间', trigger: 'change' }],
+  bidOpeningTime: [{ required: true, message: '请选择开标时间', trigger: 'change' }],
+  contact: [{ required: true, message: '请输入联系人', trigger: 'blur' }],
+  phone: [{ required: true, message: '请输入联系方式', trigger: 'blur' }],
+  customerType: [{ required: true, message: '请选择客户类型', trigger: 'change' }],
+  priority: [{ required: true, message: '请选择优先级', trigger: 'change' }],
 }

@@ -46,6 +46,9 @@ public class TenderRequest {
     @Size(max = 100, message = "行业长度不能超过100个字符")
     private String industry;
 
+    @Size(max = 255, message = "招标机构长度不能超过255个字符")
+    private String tenderAgency;
+
     @Size(max = 255, message = "采购单位名称长度不能超过255个字符")
     private String purchaserName;
 
@@ -57,6 +60,12 @@ public class TenderRequest {
     @NotNull(message = "截止日期不能为空")
     @Future(message = "截止日期必须是未来的时间")
     private LocalDateTime deadline;
+
+    @Future(message = "开标时间必须是未来的时间")
+    private LocalDateTime bidOpeningTime;
+
+    @Future(message = "报名截止时间必须是未来的时间")
+    private LocalDateTime registrationDeadline;
 
     @Size(max = 100, message = "联系人长度不能超过100个字符")
     private String contactName;
@@ -73,6 +82,12 @@ public class TenderRequest {
     @Size(max = 1000, message = "源附件地址长度不能超过1000个字符")
     private String sourceDocumentFileUrl;
 
+    @Size(max = 100, message = "客户类型长度不能超过100个字符")
+    private String customerType;
+
+    @Size(max = 10, message = "优先级长度不能超过10个字符")
+    private String priority;
+
     @Size(max = 5000, message = "标讯描述长度不能超过5000个字符")
     private String description;
 
@@ -85,6 +100,8 @@ public class TenderRequest {
     private Integer aiScore;
 
     private Tender.RiskLevel riskLevel;
+
+    private Tender.SourceType sourceType;
 
     @Size(max = 2000, message = "原始链接长度不能超过2000个字符")
     private String originalUrl;

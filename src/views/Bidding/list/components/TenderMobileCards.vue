@@ -7,12 +7,11 @@
       </div>
       <div class="mobile-card-body">
         <div><span>预算</span><strong>{{ formatBudgetWan(row.budget) }}万元</strong></div>
-        <div><span>地区</span><strong>{{ row.region }}</strong></div>
-        <div><span>行业</span><strong>{{ row.industry }}</strong></div>
+        <div><span>总部所在地</span><strong>{{ row.region }}</strong></div>
         <div>
           <span>来源</span>
-          <el-tag v-if="row.source" :type="getSourceTagType(row.source)" size="small">
-            {{ getSourceText(row.source) }}
+          <el-tag v-if="row.sourceType" :type="getSourceTypeTagType(row.sourceType)" size="small">
+            {{ getSourceTypeText(row.sourceType) }}
           </el-tag>
         </div>
         <div>
@@ -26,15 +25,28 @@
         <el-button type="primary" size="small" @click="$emit('view-detail', row.id)">查看详情</el-button>
         <el-button v-if="showAiEntry" type="success" size="small" @click="$emit('ai-analysis', row.id)">AI分析</el-button>
         <el-button size="small" @click="$emit('participate', row.id)">参与投标</el-button>
-        <el-dropdown v-if="canManageTenders || canDeleteTenders" trigger="click">
+        <el-dropdown v-if="canManageTenders || canDeleteTenders || isAdmin" trigger="click">
           <el-button size="small">更多</el-button>
           <template #dropdown>
             <el-dropdown-menu>
+              <template v-if="row.status === 'TRACKING'">
+                <el-dropdown-item @click="$emit('edit', row)">编辑</el-dropdown-item>
+              </template>
+              <template v-if="isAdmin && row.status === 'EVALUATED'">
+                <el-dropdown-item @click="$emit('review', row)">审核</el-dropdown-item>
+              </template>
               <template v-if="canManageTenders">
-                <el-dropdown-item @click="$emit('claim', row)">领取</el-dropdown-item>
-                <el-dropdown-item @click="$emit('assign', row)">指派</el-dropdown-item>
-                <el-dropdown-item @click="$emit('status-change', row, 'TRACKING')">设为跟踪中</el-dropdown-item>
-                <el-dropdown-item @click="$emit('status-change', row, 'BIDDED')">标记为已投标</el-dropdown-item>
+                <template v-if="row.status === 'PENDING_ASSIGNMENT'">
+                  <el-dropdown-item @click="$emit('claim', row)">领取</el-dropdown-item>
+                  <el-dropdown-item @click="$emit('assign', row)">指派</el-dropdown-item>
+                </template>
+                <el-dropdown-item v-if="row.status === 'TRACKING'" @click="$emit('status-change', row, 'EVALUATED')">标记为已评估</el-dropdown-item>
+                <el-dropdown-item v-if="row.status === 'EVALUATED'" @click="$emit('status-change', row, 'BIDDING')">立即投标</el-dropdown-item>
+                <template v-if="row.status === 'BIDDING'">
+                  <el-dropdown-item @click="$emit('status-change', row, 'WON')">登记中标</el-dropdown-item>
+                  <el-dropdown-item @click="$emit('status-change', row, 'LOST')">登记未中标</el-dropdown-item>
+                </template>
+                <el-dropdown-item divided @click="$emit('status-change', row, 'ABANDONED')">标记为已放弃</el-dropdown-item>
               </template>
               <el-dropdown-item v-if="canDeleteTenders" divided @click="$emit('delete', row)">删除</el-dropdown-item>
             </el-dropdown-menu>
@@ -46,7 +58,7 @@
 </template>
 
 <script setup>
-import { formatBudgetWan, getSourceTagType, getSourceText } from '../helpers.js'
+import { formatBudgetWan, getSourceTypeTagType, getSourceTypeText } from '../helpers.js'
 import { getTenderStatusTagType, getTenderStatusText } from '../../bidding-utils-status.js'
 
 defineProps({
@@ -54,6 +66,7 @@ defineProps({
   canManageTenders: { type: Boolean, default: false },
   canDeleteTenders: { type: Boolean, default: false },
   showAiEntry: { type: Boolean, default: true },
+  isAdmin: { type: Boolean, default: false },
 })
 
 defineEmits(['view-detail', 'ai-analysis', 'participate', 'claim', 'assign', 'status-change', 'delete'])

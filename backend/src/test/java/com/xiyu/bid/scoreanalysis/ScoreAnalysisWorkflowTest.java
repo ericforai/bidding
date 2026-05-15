@@ -32,8 +32,10 @@ class ScoreAnalysisWorkflowTest extends AbstractScoreAnalysisServiceTest {
     @Test
     @DisplayName("应该成功创建评分分析")
     void shouldCreateAnalysisSuccessfully() {
+        when(calculationPolicy.calculateWeightedScoreFromDTOs(any())).thenReturn(new BigDecimal("85"));
+        when(calculationPolicy.determineRiskLevel(85)).thenReturn(RiskLevel.LOW);
         when(scoreAnalysisRepository.save(any(ScoreAnalysis.class))).thenReturn(testAnalysis);
-        when(dimensionScoreRepository.saveAll(anyList())).thenReturn(List.of(testDimension));
+        when(queryService.convertToDTO(any())).thenReturn(convertToDTO(testAnalysis));
 
         ApiResponse<ScoreAnalysisDTO> response = scoreAnalysisService.createAnalysis(createRequest);
 
@@ -42,14 +44,14 @@ class ScoreAnalysisWorkflowTest extends AbstractScoreAnalysisServiceTest {
         assertNotNull(response.getData());
         assertEquals(100L, response.getData().getProjectId());
         verify(scoreAnalysisRepository, times(1)).save(any(ScoreAnalysis.class));
-        verify(dimensionScoreRepository, times(1)).saveAll(anyList());
     }
 
     @Test
     @DisplayName("创建分析时应该记录审计日志")
     void shouldLogAuditWhenCreatingAnalysis() {
+        when(calculationPolicy.calculateWeightedScoreFromDTOs(any())).thenReturn(new BigDecimal("85"));
+        when(calculationPolicy.determineRiskLevel(85)).thenReturn(RiskLevel.LOW);
         when(scoreAnalysisRepository.save(any(ScoreAnalysis.class))).thenReturn(testAnalysis);
-        when(dimensionScoreRepository.saveAll(anyList())).thenReturn(List.of(testDimension));
 
         scoreAnalysisService.createAnalysis(createRequest);
 
@@ -60,14 +62,12 @@ class ScoreAnalysisWorkflowTest extends AbstractScoreAnalysisServiceTest {
     @DisplayName("应该正确计算加权总分")
     void shouldCalculateOverallScoreCorrectly() {
         List<DimensionScore> dimensions = Arrays.asList(
-                DimensionScore.builder().dimensionName("技术能力").score(90).weight(new BigDecimal("0.30")).build(),
-                DimensionScore.builder().dimensionName("财务实力").score(80).weight(new BigDecimal("0.25")).build(),
-                DimensionScore.builder().dimensionName("团队经验").score(85).weight(new BigDecimal("0.20")).build(),
-                DimensionScore.builder().dimensionName("历史业绩").score(75).weight(new BigDecimal("0.15")).build(),
-                DimensionScore.builder().dimensionName("合规性").score(95).weight(new BigDecimal("0.10")).build()
+                DimensionScore.builder().dimensionName("技术能力").score(90).weight(new BigDecimal("0.30")).build()
         );
         when(scoreAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(100L)).thenReturn(Optional.of(testAnalysis));
         when(dimensionScoreRepository.findByAnalysisId(1L)).thenReturn(dimensions);
+        when(calculationPolicy.calculateWeightedScoreFromEntities(any())).thenReturn(new BigDecimal("84"));
+        when(calculationPolicy.determineRiskLevel(84)).thenReturn(RiskLevel.LOW);
         when(scoreAnalysisRepository.save(any(ScoreAnalysis.class))).thenReturn(testAnalysis);
 
         ApiResponse<Integer> response = scoreAnalysisService.calculateOverallScore(100L);
@@ -83,10 +83,10 @@ class ScoreAnalysisWorkflowTest extends AbstractScoreAnalysisServiceTest {
         ScoreAnalysis highRisk = ScoreAnalysis.builder().id(1L).projectId(101L).overallScore(45).riskLevel(RiskLevel.HIGH).build();
         ScoreAnalysis mediumRisk = ScoreAnalysis.builder().id(2L).projectId(102L).overallScore(65).riskLevel(RiskLevel.MEDIUM).build();
         ScoreAnalysis lowRisk = ScoreAnalysis.builder().id(3L).projectId(103L).overallScore(85).riskLevel(RiskLevel.LOW).build();
-        when(scoreAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(101L)).thenReturn(Optional.of(highRisk));
-        when(scoreAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(102L)).thenReturn(Optional.of(mediumRisk));
-        when(scoreAnalysisRepository.findFirstByProjectIdOrderByAnalysisDateDesc(103L)).thenReturn(Optional.of(lowRisk));
-        when(dimensionScoreRepository.findByAnalysisId(anyLong())).thenReturn(List.of());
+        
+        when(queryService.getAnalysisByProject(101L)).thenReturn(ApiResponse.success(convertToDTO(highRisk)));
+        when(queryService.getAnalysisByProject(102L)).thenReturn(ApiResponse.success(convertToDTO(mediumRisk)));
+        when(queryService.getAnalysisByProject(103L)).thenReturn(ApiResponse.success(convertToDTO(lowRisk)));
 
         ApiResponse<ScoreAnalysisDTO> response1 = scoreAnalysisService.getAnalysisByProject(101L);
         ApiResponse<ScoreAnalysisDTO> response2 = scoreAnalysisService.getAnalysisByProject(102L);
@@ -108,7 +108,7 @@ class ScoreAnalysisWorkflowTest extends AbstractScoreAnalysisServiceTest {
                 .dimensions(List.of())
                 .build();
         when(scoreAnalysisRepository.save(any(ScoreAnalysis.class))).thenReturn(testAnalysis);
-        when(dimensionScoreRepository.findByAnalysisId(anyLong())).thenReturn(List.of());
+        when(queryService.convertToDTO(any())).thenReturn(convertToDTO(testAnalysis));
 
         ApiResponse<ScoreAnalysisDTO> response = scoreAnalysisService.createAnalysis(emptyRequest);
 
@@ -149,7 +149,11 @@ class ScoreAnalysisWorkflowTest extends AbstractScoreAnalysisServiceTest {
                 .overallScore(0)
                 .riskLevel(RiskLevel.HIGH)
                 .build();
+        
+        when(calculationPolicy.calculateWeightedScoreFromDTOs(any())).thenReturn(BigDecimal.ZERO);
+        when(calculationPolicy.determineRiskLevel(0)).thenReturn(RiskLevel.HIGH);
         when(scoreAnalysisRepository.save(any(ScoreAnalysis.class))).thenReturn(zeroScoreAnalysis);
+        when(queryService.convertToDTO(any())).thenReturn(convertToDTO(zeroScoreAnalysis));
 
         ApiResponse<ScoreAnalysisDTO> response = scoreAnalysisService.createAnalysis(zeroRequest);
 

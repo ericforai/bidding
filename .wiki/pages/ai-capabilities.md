@@ -12,7 +12,7 @@ sources:
   - backend/COMPLIANCE_MODULE_SUMMARY.md
   - backend/SCORE_ANALYSIS_MODULE.md
   - backend/COMPETITION_INTEL_MODULE.md
-  - docs/技术架构方案.md
+  - docs/architecture/技术架构方案.md
 backlinks:
   - _index
   - business-process
@@ -24,7 +24,7 @@ backlinks:
   - requirements
 created: 2026-04-15
 updated: 2026-04-29
-health_checked: 2026-05-08
+health_checked: 2026-05-15
 ---
 # AI 能力
 

@@ -1,0 +1,86 @@
+name: Flyway Migration Dry-Run
+
+on:
+  pull_request:
+    paths:
+      - 'backend/src/main/resources/db/migration-mysql/**'
+      - 'backend/pom.xml'
+      - '.github/workflows/flyway-migrate-dryrun.yml'
+
+# Bottom-line gate against broken Flyway migrations. Runs the full migration
+# chain from baseline to HEAD on a real MySQL 8.0 database. If any migration
+# fails to apply cleanly, the PR is blocked.
+#
+# Background: ericforai/bidding#218 — V117 shipped with a SQL bug (UPDATE to
+# an ENUM value not yet in the column definition) that broke every fresh
+# database boot. This workflow would have caught it at PR time.
+
+jobs:
+  flyway-migrate-dryrun:
+    name: Migrate from baseline (MySQL 8.0)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci_test_password
+          MYSQL_DATABASE: xiyu_bid_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -u root -pci_test_password --silent 2>/dev/null; then
+              echo "MySQL is up"
+              exit 0
+            fi
+            echo "Waiting for MySQL... ($i/30)"
+            sleep 2
+          done
+          echo "MySQL did not become ready in time"
+          exit 1
+
+      - name: Run Flyway migrate from baseline
+        run: |
+          mvn org.flywaydb:flyway-maven-plugin:9.22.3:migrate \
+            -Dflyway.url="jdbc:mysql://127.0.0.1:3306/xiyu_bid_ci?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" \
+            -Dflyway.user=root \
+            -Dflyway.password=ci_test_password \
+            -Dflyway.locations=filesystem:src/main/resources/db/migration-mysql \
+            -Dflyway.baselineOnMigrate=false \
+            -Dflyway.validateOnMigrate=true
+
+      - name: Validate migration history
+        run: |
+          mvn org.flywaydb:flyway-maven-plugin:9.22.3:validate \
+            -Dflyway.url="jdbc:mysql://127.0.0.1:3306/xiyu_bid_ci?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" \
+            -Dflyway.user=root \
+            -Dflyway.password=ci_test_password \
+            -Dflyway.locations=filesystem:src/main/resources/db/migration-mysql
+
+      - name: Show migration history on failure
+        if: failure()
+        run: |
+          mvn org.flywaydb:flyway-maven-plugin:9.22.3:info \
+            -Dflyway.url="jdbc:mysql://127.0.0.1:3306/xiyu_bid_ci?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" \
+            -Dflyway.user=root \
+            -Dflyway.password=ci_test_password \
+            -Dflyway.locations=filesystem:src/main/resources/db/migration-mysql

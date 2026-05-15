@@ -4,7 +4,7 @@ space: engineering
 category: integration
 tags: [workflow-form, oa, weaver, approval, configuration]
 sources:
-  - docs/WORKFLOW_FORM_CENTER.md
+  - docs/research/WORKFLOW_FORM_CENTER.md
   - backend/src/main/java/com/xiyu/bid/workflowform/README.md
   - src/views/System/workflow-form-designer/README.md
   - src/api/modules/workflowForm.js
@@ -15,7 +15,7 @@ backlinks:
   - modules
 created: 2026-04-29
 updated: 2026-04-29
-health_checked: 2026-05-08
+health_checked: 2026-05-15
 ---
 # 流程表单中心与泛微 OA
 

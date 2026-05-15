@@ -100,7 +100,10 @@ export function buildManualTenderPayload(form = {}) {
     title: form.title,
     budget: form.budget,
     region: form.region,
-    industry: form.industry,
+    tenderAgency: form.tenderAgency,
+    bidOpeningTime: formatManualTenderDeadline(form.bidOpeningTime),
+    customerType: form.customerType,
+    priority: form.priority,
     deadline: formatManualTenderDeadline(form.deadline),
     publishDate: formatLocalDate(),
     source: 'manual',
@@ -130,7 +133,6 @@ export function getScoreTagType(score) {
 
 export function getSourceTagType(source) {
   const map = {
-    internal: 'info',
     external: 'success',
     manual: 'warning',
     中国招标投标公共服务平台: 'success',
@@ -140,12 +142,37 @@ export function getSourceTagType(source) {
 
 export function getSourceText(source) {
   const map = {
-    internal: '内部',
     external: '外部获取',
     manual: '人工录入',
     中国招标投标公共服务平台: '外部获取',
   }
   return map[source] || source || '未知'
+}
+
+/**
+ * 根据标讯来源类型获取标签类型
+ * @param {string} sourceType - MANUAL 或 EXTERNAL
+ * @returns {string} Element Plus tag type
+ */
+export function getSourceTypeTagType(sourceType) {
+  const map = {
+    MANUAL: 'warning',
+    EXTERNAL: 'success',
+  }
+  return map[sourceType] || 'info'
+}
+
+/**
+ * 根据标讯来源类型获取显示文本
+ * @param {string} sourceType - MANUAL 或 EXTERNAL
+ * @returns {string} 显示文本
+ */
+export function getSourceTypeText(sourceType) {
+  const map = {
+    MANUAL: '人工录入',
+    EXTERNAL: '外部获取',
+  }
+  return map[sourceType] || sourceType || '未知'
 }
 
 export function normalizeAssignmentCandidate(candidate = {}) {

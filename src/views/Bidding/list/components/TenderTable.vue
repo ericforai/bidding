@@ -29,11 +29,10 @@
               <el-tag v-if="row.aiScore >= 90" size="small" type="success">高匹配</el-tag>
             </div>
             <div class="tender-meta-line">
-              <el-tag v-if="row.source" :type="getSourceTagType(row.source)" size="small">
-                {{ getSourceText(row.source) }}
+              <el-tag v-if="row.sourceType" :type="getSourceTypeTagType(row.sourceType)" size="small">
+                {{ getSourceTypeText(row.sourceType) }}
               </el-tag>
               <span v-if="row.region" class="meta-item">{{ row.region }}</span>
-              <span v-if="row.industry" class="meta-item">{{ row.industry }}</span>
               <span v-if="row.deadline" class="meta-item">截止 {{ row.deadline }}</span>
             </div>
           </div>
@@ -56,19 +55,20 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="244" align="center" fixed="right">
+      <el-table-column label="操作" width="320" align="center" fixed="right">
         <template #default="{ row = {} } = {}">
           <TenderActionMenu
             :row="row"
             :can-manage-tenders="canManageTenders"
             :can-delete-tenders="canDeleteTenders"
             :show-ai-entry="showAiEntry"
+            :is-admin="isAdmin"
             @view-detail="$emit('view-detail', $event)"
             @ai-analysis="$emit('ai-analysis', $event)"
             @participate="$emit('participate', $event)"
             @distribute="$emit('distribute', $event)"
-            @claim="$emit('claim', $event)"
-            @assign="$emit('assign', $event)"
+            @edit="$emit('edit', $event)"
+            @review="$emit('review', $event)"
             @status-change="(target, status) => $emit('status-change', target, status)"
             @delete="$emit('delete', $event)"
           />
@@ -81,7 +81,7 @@
 <script setup>
 import { ref } from 'vue'
 import { Link as LinkIcon } from '@element-plus/icons-vue'
-import { formatBudgetWan, getSourceTagType, getSourceText, safeTenderUrl } from '../helpers.js'
+import { formatBudgetWan, getSourceTagType, getSourceText, getSourceTypeTagType, getSourceTypeText, safeTenderUrl } from '../helpers.js'
 import { getTenderStatusTagType, getTenderStatusText } from '../../bidding-utils-status.js'
 import TenderActionMenu from './TenderActionMenu.vue'
 
@@ -90,6 +90,7 @@ defineProps({
   canManageTenders: { type: Boolean, default: false },
   canDeleteTenders: { type: Boolean, default: false },
   showAiEntry: { type: Boolean, default: true },
+  isAdmin: { type: Boolean, default: false },
 })
 
 defineEmits([
@@ -98,8 +99,8 @@ defineEmits([
   'ai-analysis',
   'participate',
   'distribute',
-  'claim',
-  'assign',
+  'edit',
+  'review',
   'status-change',
   'delete',
 ])

@@ -4,13 +4,13 @@ space: engineering
 category: guide
 tags: [首页, 导航, wiki]
 sources:
-  - WIKI.md
+  - docs/specs/WIKI.md
   - .wiki/INDEX.md
   - .wiki/PAGE_INDEX.md
 backlinks:
-created: 2026-05-08
-updated: 2026-05-08
-health_checked: 2026-05-08
+created: 2026-05-07
+updated: 2026-05-07
+health_checked: 2026-05-15
 ---
 # 西域投标管理平台知识库
 
@@ -18,7 +18,7 @@ health_checked: 2026-05-08
 
 ## 快速入口
 
-- 规则协议：`WIKI.md`
+- 规则协议：`docs/specs/WIKI.md`
 - 源文档编目：`.wiki/INDEX.md`
 - 页面索引：`.wiki/PAGE_INDEX.md`
 - 抽取中间层：`.wiki/extracts/`
@@ -43,6 +43,7 @@ health_checked: 2026-05-08
 - [[integration-organization-event-sdk]] — 组织架构对接 - 客户事件库 SDK 方案
 - [[integration-wecom]] — 系统集成中心 - 企业微信
 - [[modules]] — 模块目录
+- [[multi-agent-defense-playbook]] — 多 Agent 并行开发防御工程化手册（可移植）
 - [[overview]] — 项目综述
 - [[requirements]] — 需求追溯
 - [[roles-and-permissions]] — 角色与权限

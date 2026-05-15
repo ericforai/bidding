@@ -33,6 +33,37 @@ public class WeComApiClient {
     }
 
     /**
+     * Raw response from WeCom user/getuserinfo endpoint.
+     */
+    public record WeComUserInfoResponse(
+            int errcode,
+            String errmsg,
+            String userId,
+            String openId,
+            String user_ticket,
+            int expires_in
+    ) {
+    }
+
+    /**
+     * Raw response from WeCom user/getuserdetail endpoint.
+     */
+    public record WeComUserDetailResponse(
+            int errcode,
+            String errmsg,
+            String userid,
+            String name,
+            String gender,
+            String avatar,
+            String qr_code,
+            String mobile,
+            String email,
+            String biz_mail,
+            String address
+    ) {
+    }
+
+    /**
      * Raw response from WeCom message send endpoint.
      */
     public record WeComSendResponse(
@@ -56,6 +87,45 @@ public class WeComApiClient {
                 .setConnectTimeout(Duration.ofMillis(connectTimeoutMs))
                 .setReadTimeout(Duration.ofMillis(readTimeoutMs))
                 .build();
+    }
+
+    /**
+     * Fetches user info from WeCom via OAuth2 code.
+     */
+    public WeComUserInfoResponse requestUserInfo(String accessToken, String code) {
+        String url = baseUrl + "/cgi-bin/user/getuserinfo?access_token={token}&code={code}";
+        try {
+            var response = restTemplate.getForObject(url, Map.class, accessToken, code);
+            return parseUserInfoResponse(response);
+        } catch (HttpStatusCodeException ex) {
+            log.warn("WeCom getuserinfo HTTP error: {}", ex.getStatusCode());
+            throw new WeComApiException(WeComApiErrCode.UNKNOWN.code(),
+                    "WeCom getuserinfo HTTP error: " + ex.getStatusCode(), ex);
+        } catch (RestClientException ex) {
+            log.warn("WeCom getuserinfo request failed: {}", ex.getMessage());
+            throw new WeComApiException(WeComApiErrCode.UNKNOWN.code(),
+                    "WeCom getuserinfo request failed: " + ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Fetches detailed user info from WeCom via user_ticket.
+     */
+    public WeComUserDetailResponse requestUserDetail(String accessToken, String userTicket) {
+        String url = baseUrl + "/cgi-bin/user/getuserdetail?access_token={token}";
+        Map<String, String> payload = Map.of("user_ticket", userTicket);
+        try {
+            var response = restTemplate.postForObject(url, payload, Map.class, accessToken);
+            return parseUserDetailResponse(response);
+        } catch (HttpStatusCodeException ex) {
+            log.warn("WeCom getuserdetail HTTP error: {}", ex.getStatusCode());
+            throw new WeComApiException(WeComApiErrCode.UNKNOWN.code(),
+                    "WeCom getuserdetail HTTP error: " + ex.getStatusCode(), ex);
+        } catch (RestClientException ex) {
+            log.warn("WeCom getuserdetail request failed: {}", ex.getMessage());
+            throw new WeComApiException(WeComApiErrCode.UNKNOWN.code(),
+                    "WeCom getuserdetail request failed: " + ex.getMessage(), ex);
+        }
     }
 
     /**
@@ -122,6 +192,39 @@ public class WeComApiClient {
         String errmsg = body.containsKey("errmsg") ? String.valueOf(body.get("errmsg")) : "";
         String invaliduser = body.containsKey("invaliduser") ? String.valueOf(body.get("invaliduser")) : null;
         return new WeComSendResponse(errcode, errmsg, invaliduser);
+    }
+
+    @SuppressWarnings("unchecked")
+    private WeComUserInfoResponse parseUserInfoResponse(Map<?, ?> body) {
+        if (body == null) {
+            throw new WeComApiException(WeComApiErrCode.UNKNOWN.code(), "WeCom getuserinfo returned null body");
+        }
+        int errcode = body.containsKey("errcode") ? toInt(body.get("errcode")) : 0;
+        String errmsg = body.containsKey("errmsg") ? String.valueOf(body.get("errmsg")) : "";
+        String userId = body.containsKey("UserId") ? String.valueOf(body.get("UserId")) : null;
+        String openId = body.containsKey("OpenId") ? String.valueOf(body.get("OpenId")) : null;
+        String userTicket = body.containsKey("user_ticket") ? String.valueOf(body.get("user_ticket")) : null;
+        int expiresIn = body.containsKey("expires_in") ? toInt(body.get("expires_in")) : 0;
+        return new WeComUserInfoResponse(errcode, errmsg, userId, openId, userTicket, expiresIn);
+    }
+
+    @SuppressWarnings("unchecked")
+    private WeComUserDetailResponse parseUserDetailResponse(Map<?, ?> body) {
+        if (body == null) {
+            throw new WeComApiException(WeComApiErrCode.UNKNOWN.code(), "WeCom getuserdetail returned null body");
+        }
+        int errcode = body.containsKey("errcode") ? toInt(body.get("errcode")) : 0;
+        String errmsg = body.containsKey("errmsg") ? String.valueOf(body.get("errmsg")) : "";
+        String userid = body.containsKey("userid") ? String.valueOf(body.get("userid")) : null;
+        String name = body.containsKey("name") ? String.valueOf(body.get("name")) : null;
+        String gender = body.containsKey("gender") ? String.valueOf(body.get("gender")) : null;
+        String avatar = body.containsKey("avatar") ? String.valueOf(body.get("avatar")) : null;
+        String qrCode = body.containsKey("qr_code") ? String.valueOf(body.get("qr_code")) : null;
+        String mobile = body.containsKey("mobile") ? String.valueOf(body.get("mobile")) : null;
+        String email = body.containsKey("email") ? String.valueOf(body.get("email")) : null;
+        String bizMail = body.containsKey("biz_mail") ? String.valueOf(body.get("biz_mail")) : null;
+        String address = body.containsKey("address") ? String.valueOf(body.get("address")) : null;
+        return new WeComUserDetailResponse(errcode, errmsg, userid, name, gender, avatar, qrCode, mobile, email, bizMail, address);
     }
 
     private int toInt(Object value) {

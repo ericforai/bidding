@@ -37,10 +37,9 @@ public class OpenAiTenderDocumentAnalyzer
     private static final List<String> INTAKE_KEYWORDS = List.of(
             "项目名称", "项目标题", "标讯标题", "招标项目", "采购项目", "公告标题",
             "预算", "最高限价", "控制价", "金额", "人民币",
-            "地区", "地点", "地址", "省", "市",
-            "行业", "分类",
+            "总部", "所在地", "地区", "地点", "地址", "省", "市",
             "截止", "递交", "投标截止", "开标时间", "报名",
-            "采购人", "采购单位", "招标人", "联系人", "联系方式",
+            "采购人", "采购单位", "招标人", "招标机构", "代理机构", "联系人", "联系方式", "客户类型", "优先级",
             "项目概况", "项目描述", "采购内容", "招标范围", "标签"
     );
 
@@ -82,10 +81,6 @@ public class OpenAiTenderDocumentAnalyzer
         return mergeAndMap(focusedInput, List.of(requestAi(prompt, focusedInput)));
     }
 
-    /**
-     * Legacy path: direct chunk → profile without lossy Map round-trip (CRIT-1 fix).
-     * All 18 output fields survive to the returned TenderRequirementProfile.
-     */
     @Override
     public TenderRequirementProfile analyze(TenderDocumentAnalysisInput input) {
         List<DocumentChunk> chunks = getStructuralChunker().chunk(
@@ -177,6 +172,7 @@ public class OpenAiTenderDocumentAnalyzer
         data.put("requiredMaterials", merged.requiredMaterials());
         data.put("riskPoints", merged.riskPoints());
         data.put("tags", merged.tags());
+        if (DocInsightProfiles.isTenderIntake(input.profileCode())) putTenderIntakeFields(data, results);
         return new DocumentAnalysisResult(
                 input.documentId(), data,
                 merged.items().stream().map(TenderRequirementProfileMapper::toAnalysisItem).toList(),
@@ -184,7 +180,22 @@ public class OpenAiTenderDocumentAnalyzer
         );
     }
 
-    /** Restored full rule set (CRIT-2 fix). Safety preamble → extraction rules → IDs → document fence. */
+    private void putTenderIntakeFields(Map<String, Object> data, List<TenderRequirementOutput> results) {
+        for (TenderRequirementOutput item : results) {
+            if (item == null) continue;
+            putIfBlank(data, "tenderAgency", item.tenderAgency); putIfBlank(data, "bidOpeningTime", item.bidOpeningTime);
+            putIfBlank(data, "contactName", item.contactName); putIfBlank(data, "contactPhone", item.contactPhone);
+            putIfBlank(data, "contactEmail", item.contactEmail); putIfBlank(data, "customerType", item.customerType);
+            putIfBlank(data, "priority", item.priority);
+        }
+    }
+
+    private void putIfBlank(Map<String, Object> data, String key, String value) {
+        if ((data.get(key) == null || String.valueOf(data.get(key)).isBlank()) && value != null && !value.isBlank()) {
+            data.put(key, value);
+        }
+    }
+
     @Override
     protected String buildPrompt(DocumentAnalysisInput input, DocumentChunk chunk,
                                  int index, int total) {
@@ -226,10 +237,14 @@ public class OpenAiTenderDocumentAnalyzer
                 返回字段及口径：
                 - tenderTitle/projectName：标讯标题或采购项目名称，无法确认留空。
                 - budget：预算金额（采购预算或最高限价），必须统一为人民币元数字字符串；遇到“约、预计、左右”等不确定金额则留空。
-                - region：项目地区，只能来自文本中的省市区县或实施地点，无法确认留空。
-                - industry：行业分类，只能来自文本明确表述，无法确认留空。
-                - deadline：投标截止/响应截止日期时间，格式 yyyy-MM-dd'T'HH:mm:ss；只有日期时输出 yyyy-MM-dd。
-                - purchaserName：采购单位/招标人名称。
+                - region：总部所在地，只能来自文本中的省市区县、总部/所在地或实施地点，无法确认留空。
+                - tenderAgency：招标机构/招标代理机构名称。
+                - purchaserName：业主单位，即招标人/采购人名称。
+                - deadline：报名截止/投标截止/响应截止日期时间，格式 yyyy-MM-dd'T'HH:mm:ss；只有日期时输出 yyyy-MM-dd。
+                - bidOpeningTime：开标时间，格式 yyyy-MM-dd'T'HH:mm:ss；只有日期时输出 yyyy-MM-dd。
+                - contactName/contactPhone/contactEmail：联系人、手机号/座机、邮箱；无法确认留空。
+                - customerType：客户类型，只能是央企集团、国有集团、KA 客户之一；无法确认留空。
+                - priority：优先级，只能是 S、A、B、C；S=超5000万存量或超大型央企，A=超1000万存量或其他央企，B=省/市属国企或超100亿制造企业，C=50-100亿制造企业；无法确认留空。
                 - tenderScope：项目概况/采购内容的简短摘要，不超过 120 字。
                 - tags：最多 5 个明确标签。
                 不需要 requirementItems；qualificationRequirements、technicalRequirements、commercialRequirements、scoringCriteria、requiredMaterials、riskPoints 均返回空数组。

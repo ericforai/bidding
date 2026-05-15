@@ -62,13 +62,16 @@ describe('tendersApi', () => {
       title: '人工录入标讯',
       budget: 1200000,
       region: '上海',
-      industry: '数据中心',
+      tenderAgency: '上海招标代理有限公司',
       purchaserName: '上海西域采购中心',
       purchaserHash: 'hash-shanghai-xiyu',
       publishDate: '2026-04-21',
       deadline: '2026-05-08T18:00:00',
+      bidOpeningTime: '2026-05-10T09:30:00',
       contactName: '王经理',
       contactPhone: '13800138000',
+      customerType: 'KA 客户',
+      priority: 'A',
       description: '人工录入测试',
       tags: ['数据中心'],
       source: 'manual',
@@ -109,6 +112,21 @@ describe('tendersApi', () => {
     expect(formData.get('entityId')).toBe('manual-tender')
     expect(formData.get('file').name).toBe('招标公告.pdf')
     expect(formData.get('file').type).toBe('application/pdf')
+  })
+
+  it('parseTenderIntakeText(): uploads pasted text as a tender intake text file', async () => {
+    httpClient.post.mockResolvedValue({
+      success: true,
+      data: { documentId: 'doc-insight://TENDER_INTAKE/manual-tender/粘贴标讯文本.txt' }
+    })
+
+    await tendersApi.parseTenderIntakeText('项目名称：西域MRO项目', { entityId: 'manual-tender' })
+
+    const formData = httpClient.post.mock.calls[0][1]
+    expect(formData.get('profile')).toBe('TENDER_INTAKE')
+    expect(formData.get('entityId')).toBe('manual-tender')
+    expect(formData.get('file').name).toBe('粘贴标讯文本.txt')
+    expect(formData.get('file').type).toBe('text/plain')
   })
 
   it('initUploadSession(): creates async upload session for large tender files', async () => {

@@ -15,8 +15,16 @@ import {
   pathMatchesLock,
   resolveCurrentBranch,
 } from './check-agent-locks.mjs'
+import {
+  LEGACY_LOCK_FILE,
+  PER_TASK_LOCK_DIR,
+  loadCombinedLocks,
+  locateLock,
+  readPerTaskRegistry,
+  writePerTaskRegistry,
+} from './lib/agent-lock-store.mjs'
 
-const DEFAULT_LOCK_FILE = '.agent-locks.yml'
+const DEFAULT_LOCK_FILE = LEGACY_LOCK_FILE
 const DEFAULT_DAYS = 1
 
 export function createLockFromContext({ context, path: lockPath, scope, reason, days, expiresAt, now = new Date() }) {
@@ -138,18 +146,17 @@ function main() {
   const command = process.argv[2]
   const options = parseCommandArgs(process.argv.slice(3))
   const rootDir = runGit(['rev-parse', '--show-toplevel']).trim()
-  const lockFile = path.join(rootDir, options.lockFile || DEFAULT_LOCK_FILE)
-  const registry = readLockRegistry(lockFile)
   const context = loadContextFromWorktree(rootDir)
-  const localBranchRegistry = filterRegistryForBranch(registry, context.branch)
+  const taskSlug = resolveTaskSlug(context)
 
   if (command === 'acquire') {
-    const remoteLocks = readRemoteLocks(options.lockFile || DEFAULT_LOCK_FILE, context.branch)
-    const result = acquireLock({
-      registry: {
-        ...localBranchRegistry,
-        locks: [...(localBranchRegistry.locks || []), ...remoteLocks],
-      },
+    // Collision check: union of (a) all local locks across legacy + per-task
+    // files, (b) remote-branch locks. This survives the per-task split.
+    const combinedLocal = loadCombinedLocks({ rootDir })
+    const remoteLocks = readRemoteLocks(context.branch)
+    const allLocks = [...combinedLocal, ...remoteLocks]
+
+    const requestedLock = createLockFromContext({
       context,
       path: options.path,
       scope: options.scope,
@@ -157,41 +164,143 @@ function main() {
       days: options.days,
       expiresAt: options.expiresAt,
     })
-
-    if (!result.ok) {
-      printAcquireConflicts(result.conflicts)
+    const conflicts = findAcquisitionConflicts({
+      existingLocks: allLocks,
+      requestedLock,
+    })
+    if (conflicts.length > 0) {
+      printAcquireConflicts(conflicts)
       process.exit(1)
     }
 
-    const localResult = acquireLock({
-      registry: localBranchRegistry,
-      context,
-      path: options.path,
-      scope: options.scope,
-      reason: options.reason,
-      days: options.days,
-      expiresAt: options.expiresAt,
+    // Write to per-task file (new scheme).
+    const perTaskRegistry = readPerTaskRegistry({ rootDir, task: taskSlug }) || {
+      task: taskSlug,
+      locks: [],
+    }
+    const filteredLocks = perTaskRegistry.locks.filter(
+      (lock) =>
+        !(
+          lock.branch === requestedLock.branch &&
+          normalizeRepoPath(lock.path) === requestedLock.path &&
+          lock.scope === requestedLock.scope
+        ),
+    )
+    const newLocks = [...filteredLocks, requestedLock]
+    const result = writePerTaskRegistry({
+      rootDir,
+      task: taskSlug,
+      locks: newLocks,
     })
-    writeLockRegistry(lockFile, localResult.registry)
-    console.log(`agent-lock-acquire: locked ${localResult.lock.scope}:${localResult.lock.path} for ${context.branch}`)
+    console.log(
+      `agent-lock-acquire: locked ${requestedLock.scope}:${requestedLock.path} for ${context.branch} (${path.relative(rootDir, result.path)})`,
+    )
     return
   }
 
   if (command === 'release') {
-    const result = releaseLocks({
-      registry,
-      context,
-      path: options.path,
+    if (options.all) {
+      const removed = releaseAllForBranch({ rootDir, branch: context.branch, taskSlug })
+      console.log(`agent-lock-release: removed ${removed} lock${removed === 1 ? '' : 's'}`)
+      return
+    }
+
+    if (!options.path) {
+      console.error('agent-lock-release: --path required (or --all)')
+      process.exit(1)
+    }
+
+    const removed = releaseSingleLock({
+      rootDir,
+      branch: context.branch,
+      taskSlug,
+      lockPath: options.path,
       scope: options.scope,
-      all: options.all,
     })
-    writeLockRegistry(lockFile, result.registry)
-    console.log(`agent-lock-release: removed ${result.removed.length} lock${result.removed.length === 1 ? '' : 's'}`)
+    console.log(`agent-lock-release: removed ${removed} lock${removed === 1 ? '' : 's'}`)
     return
   }
 
   printUsage()
   process.exit(1)
+}
+
+function resolveTaskSlug(context) {
+  // Prefer explicit task from .agent-task-context; fallback to branch-derived slug.
+  const explicit = String(context.task || '').trim()
+  if (explicit && !explicit.includes('/') && !explicit.includes('\\')) {
+    return explicit
+  }
+  const branch = String(context.branch || '').trim()
+  if (!branch) throw new Error('agent-lock: cannot resolve task slug without branch')
+  const afterSlash = branch.includes('/') ? branch.split('/').slice(1).join('/') : branch
+  return afterSlash.replaceAll('/', '-')
+}
+
+function releaseSingleLock({ rootDir, branch, taskSlug, lockPath, scope }) {
+  // Try per-task file first (new scheme).
+  const perTask = readPerTaskRegistry({ rootDir, task: taskSlug })
+  if (perTask) {
+    const before = perTask.locks.length
+    const kept = perTask.locks.filter(
+      (lock) =>
+        !(
+          lock.branch === branch &&
+          normalizeRepoPath(lock.path) === normalizeRepoPath(lockPath) &&
+          (!scope || lock.scope === scope)
+        ),
+    )
+    if (kept.length !== before) {
+      writePerTaskRegistry({ rootDir, task: taskSlug, locks: kept })
+      return before - kept.length
+    }
+  }
+
+  // Fall back: locate the lock in legacy file, rewrite it.
+  const located = locateLock({ rootDir, path: lockPath, scope, branch })
+  if (!located || located.source !== 'legacy') return 0
+  return releaseFromLegacy({ rootDir, branch, lockPath, scope })
+}
+
+function releaseAllForBranch({ rootDir, branch, taskSlug }) {
+  let removed = 0
+
+  const perTask = readPerTaskRegistry({ rootDir, task: taskSlug })
+  if (perTask) {
+    const kept = perTask.locks.filter((lock) => lock.branch !== branch)
+    removed += perTask.locks.length - kept.length
+    writePerTaskRegistry({ rootDir, task: taskSlug, locks: kept })
+  }
+
+  removed += releaseAllFromLegacy({ rootDir, branch })
+  return removed
+}
+
+function releaseFromLegacy({ rootDir, branch, lockPath, scope }) {
+  const legacyPath = path.join(rootDir, DEFAULT_LOCK_FILE)
+  const registry = readLegacyRegistry(legacyPath)
+  const before = (registry.locks || []).length
+  const kept = (registry.locks || []).filter(
+    (lock) =>
+      !(
+        lock.branch === branch &&
+        normalizeRepoPath(lock.path) === normalizeRepoPath(lockPath) &&
+        (!scope || lock.scope === scope)
+      ),
+  )
+  if (kept.length === before) return 0
+  writeLegacyRegistry(legacyPath, { version: registry.version || 1, locks: kept })
+  return before - kept.length
+}
+
+function releaseAllFromLegacy({ rootDir, branch }) {
+  const legacyPath = path.join(rootDir, DEFAULT_LOCK_FILE)
+  const registry = readLegacyRegistry(legacyPath)
+  const before = (registry.locks || []).length
+  const kept = (registry.locks || []).filter((lock) => lock.branch !== branch)
+  if (kept.length === before) return 0
+  writeLegacyRegistry(legacyPath, { version: registry.version || 1, locks: kept })
+  return before - kept.length
 }
 
 function parseCommandArgs(args) {
@@ -222,14 +331,14 @@ function parseCommandArgs(args) {
   return options
 }
 
-function readLockRegistry(lockFile) {
+function readLegacyRegistry(lockFile) {
   if (!fs.existsSync(lockFile)) {
     return { version: 1, locks: [] }
   }
   return parseAgentLocks(fs.readFileSync(lockFile, 'utf8'))
 }
 
-function writeLockRegistry(lockFile, registry) {
+function writeLegacyRegistry(lockFile, registry) {
   fs.writeFileSync(lockFile, serializeAgentLocks(registry), 'utf8')
 }
 
@@ -261,7 +370,12 @@ export function filterRegistryForBranch(registry, branch) {
   }
 }
 
-function readRemoteLocks(lockFile, currentBranch) {
+function readRemoteLocks(currentBranch, lockFile = DEFAULT_LOCK_FILE) {
+  // Reads remote-branch locks from `.agent-locks.yml` only (legacy compat).
+  // Per-task files are git-tracked and propagate via fetch, so the new scheme
+  // doesn't need a separate remote scan — `loadCombinedLocks` picks them up
+  // from the working tree after rebase. This helper preserves the existing
+  // remote-branch warning channel for legacy entries while not regressing.
   const refsOutput = runGit(['for-each-ref', '--format=%(refname:short)', 'refs/remotes/origin'], {
     allowFailure: true,
   })

@@ -16,6 +16,8 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Map;
 
 @Component
@@ -42,6 +44,17 @@ public class MarkItDownSidecarExtractor implements DocumentTextExtractor {
 
     @Override
     public ExtractedDocument extract(String fileName, String contentType, byte[] content) {
+        if (isPlainText(contentType)) {
+            String text = new String(content, StandardCharsets.UTF_8);
+            return new ExtractedDocument(
+                    text,
+                    text.length(),
+                    null,
+                    "plain-text",
+                    Map.of()
+            );
+        }
+
         log.info("Sending document {} to MarkItDown sidecar...", fileName);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
@@ -79,5 +92,12 @@ public class MarkItDownSidecarExtractor implements DocumentTextExtractor {
             log.error("Failed to extract text using Sidecar: {}", e.getMessage());
             throw new IllegalStateException("Failed to parse sidecar response or network error", e);
         }
+    }
+
+    private boolean isPlainText(String contentType) {
+        if (contentType == null) {
+            return false;
+        }
+        return "text/plain".equals(contentType.split(";", 2)[0].trim().toLowerCase(Locale.ROOT));
     }
 }

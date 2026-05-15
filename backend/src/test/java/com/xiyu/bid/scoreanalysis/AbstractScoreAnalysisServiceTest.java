@@ -1,13 +1,17 @@
 package com.xiyu.bid.scoreanalysis;
 
+import com.xiyu.bid.scoreanalysis.core.ScoreAnalysisCalculationPolicy;
 import com.xiyu.bid.scoreanalysis.dto.DimensionScoreDTO;
+import com.xiyu.bid.scoreanalysis.dto.ScoreAnalysisDTO;
 import com.xiyu.bid.scoreanalysis.dto.ScoreAnalysisCreateRequest;
 import com.xiyu.bid.scoreanalysis.entity.DimensionScore;
 import com.xiyu.bid.scoreanalysis.entity.ScoreAnalysis;
 import com.xiyu.bid.scoreanalysis.repository.DimensionScoreRepository;
 import com.xiyu.bid.scoreanalysis.repository.ScoreAnalysisRepository;
+import com.xiyu.bid.scoreanalysis.service.ScoreAnalysisQueryService;
 import com.xiyu.bid.scoreanalysis.service.ScoreAnalysisService;
 import com.xiyu.bid.service.ProjectAccessScopeService;
+import com.xiyu.bid.tender.service.TenderCommandService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -30,6 +34,15 @@ abstract class AbstractScoreAnalysisServiceTest {
     @Mock
     protected ProjectAccessScopeService projectAccessScopeService;
 
+    @Mock
+    protected TenderCommandService tenderCommandService;
+
+    @Mock
+    protected ScoreAnalysisCalculationPolicy calculationPolicy;
+
+    @Mock
+    protected ScoreAnalysisQueryService queryService;
+
     protected ScoreAnalysisService scoreAnalysisService;
     protected ScoreAnalysis testAnalysis;
     protected DimensionScore testDimension;
@@ -40,7 +53,10 @@ abstract class AbstractScoreAnalysisServiceTest {
         scoreAnalysisService = new ScoreAnalysisService(
                 scoreAnalysisRepository,
                 dimensionScoreRepository,
-                projectAccessScopeService
+                projectAccessScopeService,
+                tenderCommandService,
+                calculationPolicy,
+                queryService
         );
 
         testDimension = DimensionScore.builder()
@@ -79,6 +95,15 @@ abstract class AbstractScoreAnalysisServiceTest {
                 .isAiGenerated(true)
                 .summary("综合评估优秀")
                 .dimensions(dimensions)
+                .build();
+    }
+
+    protected ScoreAnalysisDTO convertToDTO(ScoreAnalysis analysis) {
+        return ScoreAnalysisDTO.builder()
+                .id(analysis.getId())
+                .projectId(analysis.getProjectId())
+                .overallScore(analysis.getOverallScore())
+                .riskLevel(analysis.getRiskLevel())
                 .build();
     }
 }

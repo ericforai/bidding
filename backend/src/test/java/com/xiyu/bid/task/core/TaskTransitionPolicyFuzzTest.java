@@ -163,7 +163,10 @@ class TaskTransitionPolicyFuzzTest {
         return switch (from) {
             case TODO -> to == TaskStatus.IN_PROGRESS || to == TaskStatus.CANCELLED;
             case IN_PROGRESS -> to == TaskStatus.REVIEW || to == TaskStatus.CANCELLED;
-            case REVIEW -> to == TaskStatus.COMPLETED || to == TaskStatus.IN_PROGRESS;
+            // PRD §3.2.2 (WS-B): REVIEW 可以前进到 COMPLETED，回退到 IN_PROGRESS，
+            // 或退回到 TODO（驳回，validateTransition(c,t,reviewComment) 强制要求 reviewComment）。
+            case REVIEW -> to == TaskStatus.COMPLETED || to == TaskStatus.IN_PROGRESS
+                    || to == TaskStatus.TODO;
             case COMPLETED -> false;
             case CANCELLED -> to == TaskStatus.TODO || to == TaskStatus.IN_PROGRESS;
         };

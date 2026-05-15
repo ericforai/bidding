@@ -4,7 +4,7 @@ space: engineering
 category: decision
 tags: [design-system, ui, token, frontend]
 sources:
-  - DESIGN.md
+  - docs/design-system/MASTER.md
   - CLAUDE.md
   - src/styles/variables.css
   - src/main.js
@@ -13,15 +13,15 @@ backlinks:
   - overview
 created: 2026-04-22
 updated: 2026-04-22
-health_checked: 2026-05-08
+health_checked: 2026-05-15
 ---
 # 设计系统基线
 
 ## 决策摘要
 
-2026-04-22 起，仓库以根目录 `DESIGN.md` 作为 UI/视觉设计单一事实源（Single Source of Truth），用于约束前端字体、色彩、间距、布局、动效与增量治理策略。
+2026-04-22 起，仓库以根目录 `docs/design-system/MASTER.md` 作为 UI/视觉设计单一事实源（Single Source of Truth），用于约束前端字体、色彩、间距、布局、动效与增量治理策略。
 
-同时在 `CLAUDE.md` 明确执行约束：任何视觉/UI 决策需先读取 `DESIGN.md`，未经明确批准不得偏离。
+同时在 `CLAUDE.md` 明确执行约束：任何视觉/UI 决策需先读取 `docs/design-system/MASTER.md`，未经明确批准不得偏离。
 
 ## 背景与问题
 
@@ -39,7 +39,7 @@ health_checked: 2026-05-08
 - Layout: grid-disciplined
 - Motion: minimal-functional
 
-完整定义以 `DESIGN.md` 为准，不在本页重复维护明细参数。
+完整定义以 `docs/design-system/MASTER.md` 为准，不在本页重复维护明细参数。
 
 ## 落地策略
 
@@ -52,7 +52,7 @@ health_checked: 2026-05-08
 
 ## 与实施空间的关系
 
-该基线是“研发事实 -> 实施动作 -> 验收证据”链路中的研发事实节点。实施阶段若出现“页面风格跑偏”问题，应以 `DESIGN.md` 为判定依据并回链本页。
+该基线是“研发事实 -> 实施动作 -> 验收证据”链路中的研发事实节点。实施阶段若出现“页面风格跑偏”问题，应以 `docs/design-system/MASTER.md` 为判定依据并回链本页。
 
 ## 相关页面
 

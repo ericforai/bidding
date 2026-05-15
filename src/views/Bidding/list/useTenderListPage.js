@@ -21,6 +21,7 @@ import {
   TENDER_STATUSES,
 } from '../bidding-utils-status.js'
 import { useManualTenderCreate } from './useManualTenderCreate.js'
+import { useTenderBulkImport } from './useTenderBulkImport.js'
 import { useMarketInsight } from './useMarketInsight.js'
 import { useTenderBatchActions } from './useTenderBatchActions.js'
 import { useTenderDistribution } from './useTenderDistribution.js'
@@ -42,6 +43,7 @@ export function useTenderListPage() {
   let parseTimer = null
 
   const userRole = computed(() => resolveUserRole(userStore))
+  const isAdmin = computed(() => userRole.value === 'ADMIN')
   const permissions = computed(() => buildPermissionFlags(userRole.value))
   const canManageTenders = computed(() => permissions.value.canManageTenders)
   const canCreateTender = computed(() => permissions.value.canCreateTender)
@@ -67,9 +69,12 @@ export function useTenderListPage() {
 
   const statusCounts = computed(() => ({
     all: tenders.value.length,
-    pending: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.PENDING)).length,
+    pendingAssignment: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.PENDING_ASSIGNMENT)).length,
     tracking: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.TRACKING)).length,
-    bidded: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.BIDDED)).length,
+    evaluated: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.EVALUATED)).length,
+    bidding: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.BIDDING)).length,
+    won: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.WON)).length,
+    lost: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.LOST)).length,
     abandoned: tenders.value.filter((tender) => matchesTenderStatus(tender.status, TENDER_STATUSES.ABANDONED)).length,
   }))
 
@@ -77,9 +82,15 @@ export function useTenderListPage() {
     await biddingStore.getTenders({
       keyword: searchForm.value.keyword || undefined,
       region: searchForm.value.region || undefined,
-      industry: searchForm.value.industry || undefined,
       status: searchForm.value.status || undefined,
+      sourceType: searchForm.value.sourceType || undefined,
       source: searchForm.value.source || undefined,
+      customerType: searchForm.value.customerType || undefined,
+      priority: searchForm.value.priority || undefined,
+      registrationDeadlineFrom: searchForm.value.registrationDeadlineFrom || undefined,
+      registrationDeadlineTo: searchForm.value.registrationDeadlineTo || undefined,
+      bidOpeningTimeFrom: searchForm.value.bidOpeningTimeFrom || undefined,
+      bidOpeningTimeTo: searchForm.value.bidOpeningTimeTo || undefined,
     })
   }
 
@@ -90,6 +101,7 @@ export function useTenderListPage() {
     canSyncExternalSource,
   })
   const manualCreate = useManualTenderCreate({ tendersApi, refreshTenderList, canCreateTender })
+  const bulkImport = useTenderBulkImport({ tendersApi, refreshTenderList, canCreateTender })
   const marketInsight = useMarketInsight()
   const batchActions = useTenderBatchActions({
     batchTendersApi,
@@ -132,9 +144,8 @@ export function useTenderListPage() {
     exportExcel(ExportType.TENDERS, {
       keyword: searchForm.value.keyword || undefined,
       region: searchForm.value.region || undefined,
-      industry: searchForm.value.industry || undefined,
       status: searchForm.value.status || undefined,
-      source: searchForm.value.source || undefined,
+      sourceType: searchForm.value.sourceType || undefined,
     }, '标讯列表导出成功')
   }
 
@@ -142,6 +153,11 @@ export function useTenderListPage() {
 
   const handleParticipate = (id) => {
     router.push({ path: '/project/create', query: { tenderId: id } })
+  }
+
+  const handleEvaluate = (id) => {
+    // Redirect to score analysis page with tenderId
+    router.push({ path: '/analytics/score-analysis', query: { tenderId: id, action: 'create' } })
   }
 
   const handleViewAllRecommend = () => {
@@ -201,6 +217,7 @@ export function useTenderListPage() {
     displayTenders,
     statusCounts,
     userRole,
+    isAdmin,
     canManageTenders,
     canCreateTender,
     canDeleteTenders,
@@ -212,6 +229,7 @@ export function useTenderListPage() {
     selection,
     sourceConfig,
     manualCreate,
+    bulkImport,
     marketInsight,
     batchActions,
     distribution,
@@ -220,6 +238,7 @@ export function useTenderListPage() {
     handleExport,
     handleViewDetail,
     handleParticipate,
+    handleEvaluate,
     handleViewAllRecommend,
     handleOpenCustomerOpportunityCenter,
     openManualAdd,

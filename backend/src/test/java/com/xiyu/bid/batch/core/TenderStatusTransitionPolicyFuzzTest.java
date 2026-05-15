@@ -61,12 +61,16 @@ class TenderStatusTransitionPolicyFuzzTest {
 
     @ParameterizedTest
     @EnumSource(Tender.Status.class)
-    void biddedIsTerminalSink(Tender.Status other) {
-        if (other == Tender.Status.BIDDED) {
+    void biddingTransitionsToExpectedSinkStates(Tender.Status other) {
+        if (other == Tender.Status.BIDDING) {
             return;
         }
-        assertFalse(policy.canTransition(Tender.Status.BIDDED, other),
-                () -> "BIDDED is terminal; BIDDED -> " + other + " must be rejected");
+        boolean allowed = policy.canTransition(Tender.Status.BIDDING, other);
+        assertEquals(
+            other == Tender.Status.WON || other == Tender.Status.LOST || other == Tender.Status.ABANDONED,
+            allowed,
+            () -> "BIDDING -> " + other + " should only be allowed for WON/LOST/ABANDONED"
+        );
     }
 
     @Test
@@ -89,10 +93,10 @@ class TenderStatusTransitionPolicyFuzzTest {
     }
 
     @Test
-    void randomWalkFromPendingStaysInsideLegalGraph() {
+    void randomWalkFromInitialStaysInsideLegalGraph() {
         Random rng = new Random(FUZZ_SEED);
         Tender.Status[] universe = Tender.Status.values();
-        Tender.Status current = Tender.Status.PENDING;
+        Tender.Status current = Tender.Status.PENDING_ASSIGNMENT;
 
         for (int i = 0; i < FUZZ_ITERATIONS; i++) {
             Tender.Status candidate = universe[rng.nextInt(universe.length)];
@@ -121,6 +125,14 @@ class TenderStatusTransitionPolicyFuzzTest {
      * Duplicated authoritative spec kept in the test so a drift in the policy
      * produces a red test, not a silent widening.
      */
+    /**
+     * Authoritative spec from design.md.
+     * PENDING_ASSIGNMENT -> TRACKING, ABANDONED
+     * TRACKING -> PENDING_ASSIGNMENT (revert), EVALUATED, ABANDONED
+     * EVALUATED -> BIDDING, ABANDONED
+     * BIDDING -> WON, LOST, ABANDONED
+     * WON/LOST/ABANDONED -> (terminal, no transitions)
+     */
     private static boolean isAllowedBySpec(Tender.Status from, Tender.Status to) {
         if (from == null || to == null) {
             return false;
@@ -129,10 +141,11 @@ class TenderStatusTransitionPolicyFuzzTest {
             return true;
         }
         return switch (from) {
-            case PENDING -> to == Tender.Status.TRACKING || to == Tender.Status.ABANDONED;
-            case TRACKING -> to == Tender.Status.PENDING || to == Tender.Status.BIDDED || to == Tender.Status.ABANDONED;
-            case BIDDED -> false;
-            case ABANDONED -> to == Tender.Status.PENDING;
+            case PENDING_ASSIGNMENT -> to == Tender.Status.TRACKING || to == Tender.Status.ABANDONED;
+            case TRACKING -> to == Tender.Status.PENDING_ASSIGNMENT || to == Tender.Status.EVALUATED || to == Tender.Status.ABANDONED;
+            case EVALUATED -> to == Tender.Status.BIDDING || to == Tender.Status.ABANDONED;
+            case BIDDING -> to == Tender.Status.WON || to == Tender.Status.LOST || to == Tender.Status.ABANDONED;
+            case WON, LOST, ABANDONED -> false;
         };
     }
 }

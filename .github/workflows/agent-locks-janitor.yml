@@ -1,0 +1,77 @@
+name: Agent Locks Janitor
+
+on:
+  schedule:
+    # Run daily at 2:17 AM UTC (off-peak, avoid :00 and :30)
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+  # Auto-release: any push to main that touches the lock stores triggers an
+  # immediate prune. This catches PR-self-acquired locks that get carried into
+  # main by squash-merge, closing the gap between merge and the daily janitor.
+  push:
+    branches:
+      - main
+    paths:
+      - '.agent-locks.yml'
+      - '.agent-locks/**'
+
+# Daily cleanup of stale locks in both the legacy `.agent-locks.yml` and the
+# per-task `.agent-locks/*.yml` stores. A lock is stale if:
+# - its branch is gone from origin (orphan), OR
+# - expiresAt is >24h in the past AND the branch has no commits in the past 24h
+#
+# When a per-task file's last lock is pruned, the file itself is deleted.
+#
+# This prevents the lock stores from accumulating expired entries that condition
+# everyone to ignore lock warnings. See ericforai/bidding#230.
+#
+# Workflow opens a PR (branch chore/janitor-<run-id>) and enables auto-merge
+# so it lands once required CI checks pass. Direct push to main is blocked by
+# branch protection (GH006: 6 required status checks).
+
+jobs:
+  prune-stale-locks:
+    name: Prune stale expired locks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run agent-locks-prune
+        id: prune
+        run: |
+          node scripts/agent-locks-prune.mjs > prune.log 2>&1
+          cat prune.log
+          if grep -q "removed.*stale lock" prune.log; then
+            echo "pruned=true" >> $GITHUB_OUTPUT
+          else
+            echo "pruned=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Open auto-merge PR with pruned locks
+        if: steps.prune.outputs.pruned == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          branch="chore/janitor-${{ github.run_id }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          # Stage both legacy single file and per-task directory. `-A` on the
+          # directory picks up deletions (per-task files unlinked when emptied).
+          git add -A .agent-locks.yml .agent-locks/
+          # Safety: only commit if prune actually changed something. Without this,
+          # an empty commit would still trigger the PR creation step.
+          if git diff --cached --quiet; then
+            echo "agent-locks-janitor: prune script reported changes but git sees no diff; aborting."
+            exit 1
+          fi
+          git commit -m "chore(locks): prune stale expired locks [skip ci]" -m "Automated daily cleanup by agent-locks-prune.mjs. See ericforai/bidding#230."
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" --title "chore(locks): prune stale expired locks (automated)" --body "Daily cleanup by \`agent-locks-prune.mjs\`. See [#230](https://github.com/ericforai/bidding/issues/230) for rationale. Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          gh pr merge --auto --squash --delete-branch "$branch"

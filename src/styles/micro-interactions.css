@@ -132,9 +132,19 @@ body, .text-body, .el-main, .el-card__body {
 
 /* Primary button */
 .el-button--primary {
-  background: linear-gradient(135deg, var(--brand-xiyu-logo, #2E7659) 0%, var(--brand-xiyu-logo-hover, #27674E) 100%);
+  background-color: var(--brand-xiyu-logo, #2E7659) !important;
   border: none;
   box-shadow: 0 4px 12px var(--brand-xiyu-logo-shadow, rgba(46, 118, 89, 0.24));
+  --el-button-bg-color: var(--brand-xiyu-logo, #2E7659) !important;
+  --el-button-border-color: var(--brand-xiyu-logo, #2E7659) !important;
+  --el-button-text-color: #ffffff !important;
+  --el-button-hover-bg-color: var(--brand-xiyu-logo-hover, #27674E) !important;
+  --el-button-hover-border-color: var(--brand-xiyu-logo-hover, #27674E) !important;
+  --el-button-hover-text-color: #ffffff !important;
+}
+
+.el-button--primary::before {
+  display: none !important;
 }
 
 .el-button--primary:not(.is-link):not(.is-text),
@@ -143,7 +153,7 @@ body, .text-body, .el-main, .el-card__body {
 }
 
 .el-button--primary:hover {
-  background: linear-gradient(135deg, #367F61 0%, var(--brand-xiyu-logo-active, #1F553F) 100%);
+  background-color: var(--brand-xiyu-logo-hover, #27674E);
   color: #FFFFFF;
   box-shadow: var(--elevation-2);
   transform: translateY(-1px);
@@ -630,6 +640,7 @@ button[class*="icon"]:not(.el-button),
   color: #374151;
   font-size: 13px;
   letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
 /* ==================== Link Styles ==================== */

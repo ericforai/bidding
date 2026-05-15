@@ -56,7 +56,7 @@ class DashboardAnalyticsTeamComputationService {
         for (ProjectSnapshotAggregate project : projects) {
             DashboardAnalyticsRepository.TenderSummaryRow tender = tenderById.get(project.tenderId());
             BigDecimal amount = normalizeAmount(tender != null ? tender.budget() : project.budget());
-            boolean won = tender != null && tender.status() == Tender.Status.BIDDED;
+            boolean won = tender != null && tender.status() == Tender.Status.WON;
             boolean active = project.projectStatus() != Project.Status.ARCHIVED;
 
             accumulateTeamAggregate(project.managerId(), amount, won, active, true, aggregates);

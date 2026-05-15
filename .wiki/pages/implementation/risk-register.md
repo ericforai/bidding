@@ -5,8 +5,7 @@ category: guide
 tags: [implementation, delivery]
 sources:
   - .wiki/sources/implementation/西域数智化投标管理平台实施计划书SOW2026V1.4(格式校准).docx
-  - docs/DELIVERY_BLOCKERS_SCHEDULE.md
-  - docs/UAT_PLAN.md
+  - docs/specs/UAT_PLAN.md
   - .wiki/sources/contract/西域数智化投标管理平台建设项目合同-V1 0420.docx
   - .wiki/sources/contract/附件3-合同报价清单人工摘录.md
 backlinks:
@@ -18,7 +17,7 @@ backlinks:
   - implementation/weekly-status
 created: 2026-04-21
 updated: 2026-05-07
-health_checked: 2026-05-08
+health_checked: 2026-05-15
 ---
 # 实施风险台账
 

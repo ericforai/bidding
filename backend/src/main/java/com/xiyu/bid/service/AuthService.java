@@ -127,6 +127,28 @@ public class AuthService {
                 .build();
     }
 
+    @Transactional
+    public AuthSessionResult loginWithoutPassword(User user) {
+        if (!Boolean.TRUE.equals(user.getEnabled())) {
+            throw new InsufficientAuthenticationException("User account is disabled");
+        }
+
+        String token = jwtUtil.generateAccessToken(user.getUsername());
+        String refreshToken = createRefreshSession(user);
+        log.info("User logged in via SSO/WeCom: {}", user.getUsername());
+
+        return AuthSessionResult.builder()
+                .authResponse(AuthResponse.from(
+                        token,
+                        user,
+                        projectAccessScopeService.getAllowedProjectIds(user),
+                        projectAccessScopeService.getAllowedDepartmentCodes(user),
+                        dataScopeConfigService.getRoleMenuPermissions(user)
+                ))
+                .refreshToken(refreshToken)
+                .build();
+    }
+
     public AuthResponse getCurrentUser(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND));

@@ -41,14 +41,15 @@ import java.util.Locale;
     @Index(name = "idx_tender_region_normalized", columnList = "region_normalized"),
     @Index(name = "idx_tender_industry_normalized", columnList = "industry_normalized"),
     @Index(name = "idx_tender_purchaser_hash_normalized", columnList = "purchaser_hash_normalized"),
+    @Index(name = "idx_tender_customer_type", columnList = "customer_type"),
+    @Index(name = "idx_tender_priority", columnList = "priority"),
+    @Index(name = "idx_tender_registration_deadline", columnList = "registration_deadline"),
+    @Index(name = "idx_tender_bid_opening_time", columnList = "bid_opening_time"),
     @Index(name = "idx_tender_status_region_industry_normalized",
-            columnList = "status, region_normalized, industry_normalized")
+            columnList = "status, region_normalized, industry_normalized"),
+    @Index(name = "idx_tender_source_type", columnList = "source_type")
 })
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 public class Tender {
 
     @Id
@@ -79,36 +80,23 @@ public class Tender {
     @Column(name = "original_url", length = 1000)
     private String originalUrl;
 
-    /**
-     * 预算金额
-     */
     @Column(precision = 19, scale = 2)
     private BigDecimal budget;
 
-    /**
-     * 所属地区
-     */
     @Column(length = 100)
     private String region;
 
-    /**
-     * 所属行业
-     */
     @Column(length = 100)
     private String industry;
 
-    /**
-     * 采购单位名称
-     */
+    @Column(name = "tender_agency", length = 255)
+    private String tenderAgency;
+
     @Column(name = "purchaser_name", length = 255)
     private String purchaserName;
 
-    /**
-     * 采购单位稳定哈希
-     */
     @Column(name = "purchaser_hash", length = 64)
     private String purchaserHash;
-
     @Column(name = "source_normalized", length = 200)
     private String sourceNormalized;
 
@@ -127,30 +115,23 @@ public class Tender {
     @Column(name = "search_text_normalized", columnDefinition = "text")
     private String searchTextNormalized;
 
-    /**
-     * 发布日期
-     */
     @Column(name = "publish_date")
     private LocalDate publishDate;
 
-    /**
-     * 截止日期
-     */
     @Column(name = "deadline")
     private LocalDateTime deadline;
 
-    /**
-     * 联系人姓名
-     */
+    @Column(name = "bid_opening_time")
+    private LocalDateTime bidOpeningTime;
+
+    @Column(name = "registration_deadline", nullable = true)
+    private LocalDateTime registrationDeadline;
+
     @Column(name = "contact_name", length = 100)
     private String contactName;
 
-    /**
-     * 联系电话
-     */
     @Column(name = "contact_phone", length = 50)
     private String contactPhone;
-
     @Column(name = "source_document_name", length = 255)
     private String sourceDocumentName;
 
@@ -160,48 +141,41 @@ public class Tender {
     @Column(name = "source_document_file_url", length = 1000)
     private String sourceDocumentFileUrl;
 
-    /**
-     * 标讯描述
-     */
+    @Column(name = "customer_type", length = 100)
+    private String customerType;
+
+    @Column(name = "priority", length = 10)
+    private String priority;
+
     @Column(columnDefinition = "text")
     private String description;
 
-    /**
-     * 标签，使用逗号分隔存储
-     */
     @Column(columnDefinition = "text")
     private String tags;
 
-    /**
-     * 状态
-     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
-    private Tender.Status status = Tender.Status.PENDING;
+    private Tender.Status status = Tender.Status.PENDING_ASSIGNMENT;
 
-    /**
-     * AI评分（0-100）
-     */
+    @Column(name = "abandonment_reason", length = 1000)
+    private String abandonmentReason;
+
     @Column(name = "ai_score")
     private Integer aiScore;
 
-    /**
-     * 风险等级
-     */
     @Enumerated(EnumType.STRING)
     @Column(name = "risk_level", length = 20)
     private Tender.RiskLevel riskLevel;
 
-    /**
-     * 创建时间
-     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_type", length = 20)
+    @Builder.Default
+    private Tender.SourceType sourceType = Tender.SourceType.MANUAL;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    /**
-     * 更新时间
-     */
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
@@ -232,6 +206,9 @@ public class Tender {
                 nullToBlank(title),
                 nullToBlank(description),
                 nullToBlank(purchaserName),
+                nullToBlank(tenderAgency),
+                nullToBlank(customerType),
+                nullToBlank(priority),
                 nullToBlank(tags),
                 nullToBlank(region),
                 nullToBlank(industry),
@@ -251,10 +228,13 @@ public class Tender {
      * 标讯状态枚举
      */
     public enum Status {
-        PENDING,      // 待处理
-        TRACKING,     // 跟踪中
-        BIDDED,       // 已投标
-        ABANDONED     // 已放弃
+        PENDING_ASSIGNMENT, // 待分配
+        TRACKING,           // 跟踪中
+        EVALUATED,          // 已评估
+        BIDDING,            // 投标中
+        WON,                // 已中标
+        LOST,               // 未中标
+        ABANDONED           // 已放弃
     }
 
     /**
@@ -264,5 +244,13 @@ public class Tender {
         LOW,      // 低风险
         MEDIUM,   // 中风险
         HIGH      // 高风险
+    }
+
+    /**
+     * 标讯来源类型枚举
+     */
+    public enum SourceType {
+        MANUAL,   // 人工录入
+        EXTERNAL  // 外部获取
     }
 }

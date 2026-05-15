@@ -29,6 +29,9 @@ public final class TenderSpecification {
                 predicates.add(criteriaBuilder.equal(root.get("status"), safeCriteria.getStatus()));
             }
             addStringEquals(predicates, criteriaBuilder, root.get("sourceNormalized"), safeCriteria.getSource());
+            if (safeCriteria.getSourceType() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("sourceType"), safeCriteria.getSourceType()));
+            }
             addStringEquals(predicates, criteriaBuilder, root.get("regionNormalized"), safeCriteria.getRegion());
             addStringEquals(predicates, criteriaBuilder, root.get("industryNormalized"), safeCriteria.getIndustry());
             addStringContains(
@@ -67,6 +70,22 @@ public final class TenderSpecification {
             }
             if (safeCriteria.getAiScoreMax() != null) {
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("aiScore"), safeCriteria.getAiScoreMax()));
+            }
+
+            addStringEquals(predicates, criteriaBuilder, root.get("customerType"), safeCriteria.getCustomerType());
+            addStringEquals(predicates, criteriaBuilder, root.get("priority"), safeCriteria.getPriority());
+
+            if (safeCriteria.getBidOpeningTimeFrom() != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("bidOpeningTime"), safeCriteria.getBidOpeningTimeFrom()));
+            }
+            if (safeCriteria.getBidOpeningTimeTo() != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("bidOpeningTime"), safeCriteria.getBidOpeningTimeTo()));
+            }
+            if (safeCriteria.getRegistrationDeadlineFrom() != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("registrationDeadline"), safeCriteria.getRegistrationDeadlineFrom()));
+            }
+            if (safeCriteria.getRegistrationDeadlineTo() != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("registrationDeadline"), safeCriteria.getRegistrationDeadlineTo()));
             }
 
             if (query != null) {

@@ -9,6 +9,8 @@
       @open-source-config="openSourceConfig"
       @sync-external="sourceConfig.syncExternalTenders"
       @open-manual-add="openManualAdd"
+      @download-import-template="bulkImport.downloadImportTemplate"
+      @open-bulk-import="bulkImport.openBulkImport"
     />
 
     <TenderSearchCard
@@ -57,9 +59,12 @@
             </el-button>
             <el-radio-group v-model="viewMode" size="small">
               <el-radio-button value="all">全部 ({{ statusCounts.all }})</el-radio-button>
-              <el-radio-button value="PENDING">待处理 ({{ statusCounts.pending }})</el-radio-button>
+              <el-radio-button value="PENDING_ASSIGNMENT">待分配 ({{ statusCounts.pendingAssignment }})</el-radio-button>
               <el-radio-button value="TRACKING">跟踪中 ({{ statusCounts.tracking }})</el-radio-button>
-              <el-radio-button value="BIDDED">已投标 ({{ statusCounts.bidded }})</el-radio-button>
+              <el-radio-button value="EVALUATED">已评估 ({{ statusCounts.evaluated }})</el-radio-button>
+              <el-radio-button value="BIDDING">投标中 ({{ statusCounts.bidding }})</el-radio-button>
+              <el-radio-button value="WON">已中标 ({{ statusCounts.won }})</el-radio-button>
+              <el-radio-button value="LOST">未中标 ({{ statusCounts.lost }})</el-radio-button>
               <el-radio-button value="ABANDONED">已放弃 ({{ statusCounts.abandoned }})</el-radio-button>
             </el-radio-group>
           </div>
@@ -85,6 +90,7 @@
         :can-manage-tenders="canManageTenders"
         :can-delete-tenders="canDeleteTenders"
         :show-ai-entry="showTenderAiEntry"
+        :is-admin="isAdmin"
         @selection-change="selection.handleSelectionChange"
         @view-detail="handleViewDetail"
         @ai-analysis="handleAIAnalysis"
@@ -92,6 +98,7 @@
         @distribute="distribution.openSingleDistribute"
         @claim="batchActions.handleSingleClaim"
         @assign="distribution.openAssignDialog"
+        @evaluate="handleEvaluate"
         @status-change="batchActions.handleUpdateStatus"
         @delete="batchActions.handleDeleteTender"
       />
@@ -101,11 +108,10 @@
         :can-manage-tenders="canManageTenders"
         :can-delete-tenders="canDeleteTenders"
         :show-ai-entry="showTenderAiEntry"
+        :is-admin="isAdmin"
         @view-detail="handleViewDetail"
         @ai-analysis="handleAIAnalysis"
         @participate="handleParticipate"
-        @claim="batchActions.handleSingleClaim"
-        @assign="distribution.openAssignDialog"
         @status-change="batchActions.handleUpdateStatus"
         @delete="batchActions.handleDeleteTender"
       />
@@ -150,6 +156,17 @@
       @save="sourceConfig.saveSourceConfig"
       @test="sourceConfig.testConnection"
     />
+    <BulkImportDialog
+      v-model="bulkImport.showBulkImport.value"
+      :selected-file="bulkImport.selectedFile.value"
+      :result="bulkImport.importResult.value"
+      :template-downloading="bulkImport.templateDownloading.value"
+      :importing="bulkImport.importing.value"
+      @reset="bulkImport.resetImport"
+      @download-template="bulkImport.downloadImportTemplate"
+      @file-change="bulkImport.handleFileChange"
+      @submit="bulkImport.submitBulkImport"
+    />
     <ManualTenderDialog
       v-model="manualCreate.showManualAdd.value"
       :ref="(instance) => { manualCreate.manualFormRef.value = instance }"
@@ -158,6 +175,7 @@
       :parsing-document="manualCreate.parsingManualDocument.value"
       @reset="manualCreate.resetManualForm"
       @file-change="manualCreate.handleFileChange"
+      @parse-pasted-text="manualCreate.handlePastedTextParse"
       @submit="manualCreate.saveManualTender"
     />
     <FetchResultDialog v-model="sourceConfig.fetchResult.value.visible" :result="sourceConfig.fetchResult.value" />
@@ -181,6 +199,7 @@ import AiParsingDialog from './list/components/AiParsingDialog.vue'
 import AiRecommendSection from './list/components/AiRecommendSection.vue'
 import AssignDialog from './list/components/AssignDialog.vue'
 import BiddingPageHeader from './list/components/BiddingPageHeader.vue'
+import BulkImportDialog from './list/components/BulkImportDialog.vue'
 import DistributeDialog from './list/components/DistributeDialog.vue'
 import FetchResultDialog from './list/components/FetchResultDialog.vue'
 import ManualTenderDialog from './list/components/ManualTenderDialog.vue'
@@ -193,6 +212,7 @@ import TenderMobileCards from './list/components/TenderMobileCards.vue'
 import TenderSearchCard from './list/components/TenderSearchCard.vue'
 import TenderTable from './list/components/TenderTable.vue'
 import { useTenderListPage } from './list/useTenderListPage.js'
+import { ref } from 'vue'
 import './list/styles/list-page.css'
 import './list/styles/table.css'
 import './list/styles/mobile-page.css'
@@ -217,6 +237,7 @@ const {
   selection,
   sourceConfig,
   manualCreate,
+  bulkImport,
   marketInsight,
   batchActions,
   distribution,

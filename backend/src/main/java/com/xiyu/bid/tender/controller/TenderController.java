@@ -11,20 +11,30 @@ import com.xiyu.bid.demo.service.DemoFusionService;
 import com.xiyu.bid.demo.service.DemoModeService;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.idempotency.Idempotent;
+import com.xiyu.bid.tender.dto.TenderImportResultDTO;
 import com.xiyu.bid.tender.dto.TenderRequest;
 import com.xiyu.bid.tender.dto.TenderDTO;
+import com.xiyu.bid.tender.dto.TenderAbandonRequest;
+import com.xiyu.bid.tender.dto.TenderBidResponse;
 import com.xiyu.bid.tender.service.TenderCommandService;
+import com.xiyu.bid.tender.service.TenderImportRollbackException;
+import com.xiyu.bid.tender.service.TenderImportService;
 import com.xiyu.bid.tender.service.TenderMapper;
 import com.xiyu.bid.tender.service.TenderQueryService;
 import com.xiyu.bid.tender.service.TenderSearchCriteria;
 import com.xiyu.bid.util.InputSanitizer;
 import com.xiyu.bid.annotation.DataScope;
 import jakarta.validation.Valid;
+import com.xiyu.bid.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -33,7 +43,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import java.util.List;
 import java.util.Map;
@@ -48,10 +63,13 @@ public class TenderController {
     private final TenderQueryService tenderQueryService;
     private final TenderCommandService tenderCommandService;
     private final TenderMapper tenderMapper;
+    private final TenderImportService tenderImportService;
     private final AiDeepCapabilityService aiDeepCapabilityService;
     private final DemoModeService demoModeService;
     private final DemoDataProvider demoDataProvider;
     private final DemoFusionService demoFusionService;
+    private final AuthService authService;
+    private final TenderRequestSanitizer sanitizer = new TenderRequestSanitizer();
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
@@ -91,6 +109,37 @@ public class TenderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tender created successfully", createdTender));
     }
 
+    @GetMapping("/import-template")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<byte[]> downloadImportTemplate() {
+        log.info("GET /api/tenders/import-template - Generating bulk import template");
+        byte[] body = tenderImportService.generateTemplate();
+        String filename = URLEncoder.encode("标讯批量导入模板.xlsx", StandardCharsets.UTF_8).replace("+", "%20");
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"tender-import-template.xlsx\"; filename*=UTF-8''" + filename)
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(body);
+    }
+
+    @PostMapping(path = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @Idempotent
+    public ResponseEntity<ApiResponse<TenderImportResultDTO>> importTenders(@RequestParam("file") MultipartFile file) {
+        log.info("POST /api/tenders/import - Importing tenders, originalName={}, size={}",
+                file == null ? null : file.getOriginalFilename(),
+                file == null ? 0 : file.getSize());
+        try {
+            TenderImportResultDTO result = tenderImportService.importFromExcel(file);
+            String message = "成功导入 " + result.getSuccessCount() + " 条标讯";
+            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(message, result));
+        } catch (TenderImportRollbackException ex) {
+            log.info("标讯批量导入校验未通过，已整批回滚 failureCount={}",
+                    ex.getResult() == null ? 0 : ex.getResult().getFailureCount());
+            return ResponseEntity.ok(ApiResponse.success("导入未通过校验，请按错误列表修正后重试", ex.getResult()));
+        }
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<TenderDTO>> updateTender(@PathVariable Long id, @Valid @RequestBody TenderRequest tenderRequest) {
@@ -118,6 +167,35 @@ public class TenderController {
         rejectDemoMutation(id);
         TenderDTO analyzedTender = tenderCommandService.analyzeTender(id);
         return ResponseEntity.ok(ApiResponse.success("Tender analyzed successfully", analyzedTender));
+    }
+
+    /**
+     * 投标。实例级权限：调用方必须是 latest assigned-by（service 层 canDecide 守）。
+     */
+    @PostMapping("/{id}/participate")
+    public ResponseEntity<ApiResponse<TenderBidResponse>> participateBid(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        log.info("POST /api/tenders/{}/participate - Participating bid", id);
+        rejectDemoMutation(id);
+        Long userId = resolveUserId(userDetails);
+        TenderBidResponse response = tenderCommandService.participateBid(id, userId);
+        return ResponseEntity.ok(ApiResponse.success(response.getMessage(), response));
+    }
+
+    /**
+     * 弃标。实例级权限：调用方必须是 latest assigned-by（service 层 canDecide 守）。
+     */
+    @PostMapping("/{id}/abandon")
+    public ResponseEntity<ApiResponse<TenderBidResponse>> abandonBid(
+            @PathVariable Long id,
+            @Valid @RequestBody TenderAbandonRequest req,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        log.info("POST /api/tenders/{}/abandon - Abandoning tender", id);
+        rejectDemoMutation(id);
+        Long userId = resolveUserId(userDetails);
+        TenderBidResponse response = tenderCommandService.abandonBid(id, req, userId);
+        return ResponseEntity.ok(ApiResponse.success(response.getMessage(), response));
     }
 
     @GetMapping("/{id}/ai-analysis")
@@ -179,34 +257,11 @@ public class TenderController {
     }
 
     private void sanitizeTenderRequest(TenderRequest request) {
-        if (request.getTitle() != null) request.setTitle(InputSanitizer.sanitizeString(request.getTitle(), 500));
-        if (request.getSource() != null) request.setSource(InputSanitizer.sanitizeString(request.getSource(), 200));
-        if (request.getRegion() != null) request.setRegion(InputSanitizer.sanitizeString(request.getRegion(), 100));
-        if (request.getIndustry() != null) request.setIndustry(InputSanitizer.sanitizeString(request.getIndustry(), 100));
-        if (request.getPurchaserName() != null) request.setPurchaserName(InputSanitizer.sanitizeString(request.getPurchaserName(), 255));
-        if (request.getPurchaserHash() != null) request.setPurchaserHash(InputSanitizer.sanitizeString(request.getPurchaserHash(), 64));
-        if (request.getContactName() != null) request.setContactName(InputSanitizer.sanitizeString(request.getContactName(), 100));
-        if (request.getContactPhone() != null) request.setContactPhone(InputSanitizer.sanitizeString(request.getContactPhone(), 50));
-        if (request.getSourceDocumentName() != null) request.setSourceDocumentName(InputSanitizer.sanitizeString(request.getSourceDocumentName(), 255));
-        if (request.getSourceDocumentFileType() != null) request.setSourceDocumentFileType(InputSanitizer.sanitizeString(request.getSourceDocumentFileType(), 100));
-        if (request.getSourceDocumentFileUrl() != null) request.setSourceDocumentFileUrl(InputSanitizer.sanitizeString(request.getSourceDocumentFileUrl(), 1000));
-        if (request.getDescription() != null) request.setDescription(InputSanitizer.sanitizeString(request.getDescription(), 5000));
-        if (request.getTags() != null) {
-            request.setTags(request.getTags().stream()
-                    .map(tag -> InputSanitizer.sanitizeString(tag, 100))
-                    .filter(tag -> !tag.isBlank())
-                    .toList());
-        }
+        sanitizer.sanitize(request);
     }
 
     private void sanitizeTenderSearchCriteria(TenderSearchCriteria criteria) {
-        if (criteria == null) return;
-        if (criteria.getKeyword() != null) criteria.setKeyword(InputSanitizer.sanitizeString(criteria.getKeyword(), 200));
-        if (criteria.getSource() != null) criteria.setSource(InputSanitizer.sanitizeString(criteria.getSource(), 200));
-        if (criteria.getRegion() != null) criteria.setRegion(InputSanitizer.sanitizeString(criteria.getRegion(), 100));
-        if (criteria.getIndustry() != null) criteria.setIndustry(InputSanitizer.sanitizeString(criteria.getIndustry(), 100));
-        if (criteria.getPurchaserName() != null) criteria.setPurchaserName(InputSanitizer.sanitizeString(criteria.getPurchaserName(), 255));
-        if (criteria.getPurchaserHash() != null) criteria.setPurchaserHash(InputSanitizer.sanitizeString(criteria.getPurchaserHash(), 64));
+        sanitizer.sanitizeCriteria(criteria);
     }
 
     private boolean isDemoEntityId(Long id) {
@@ -217,5 +272,13 @@ public class TenderController {
         if (isDemoEntityId(id)) {
             throw new IllegalArgumentException("Demo records are read-only in e2e mode");
         }
+    }
+
+    private Long resolveUserId(UserDetails userDetails) {
+        if (userDetails == null || userDetails.getUsername() == null || userDetails.getUsername().isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.UNAUTHORIZED, "无法识别当前用户");
+        }
+        return authService.resolveUserIdByUsername(userDetails.getUsername().trim());
     }
 }
