@@ -1,9 +1,0 @@
-version: 1
-task: "lock-defense-three-layers"
-locks:
-  - path: ".github/workflows/agent-locks-janitor.yml"
-    scope: "file"
-    owner: "claude"
-    branch: "claude/lock-defense-three-layers"
-    expiresAt: "2026-05-14T22:58:58.935Z"
-    reason: "R1+R2: extend janitor for per-task store + push:main trigger"
