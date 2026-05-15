@@ -18,103 +18,97 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("OrganizationSyncRunAppService - batch orchestration")
-class OrganizationSyncRunAppServiceTest {
+@DisplayName("OrganizationManualResyncAppService")
+class OrganizationManualResyncAppServiceTest {
     @Mock
     private OrganizationSyncRunRepository runRepository;
     @Mock
     private OrganizationSyncItemRepository itemRepository;
 
     @Test
-    @DisplayName("sync window writes departments users and run items")
-    void syncWindow_writesRunAndItems() {
+    @DisplayName("resyncs one department by immutable deptId")
+    void resyncDepartment_fetchesAndWritesOneDepartment() {
         FakeGateway gateway = new FakeGateway();
         FakeDepartmentWriter departmentWriter = new FakeDepartmentWriter();
-        FakeUserWriter userWriter = new FakeUserWriter();
+        gateway.department = Optional.of(new OrganizationDepartmentSnapshot("D001", "sales", "销售部", "", "", true));
         when(runRepository.save(any(OrganizationSyncRunEntity.class))).thenAnswer(invocation -> {
             OrganizationSyncRunEntity run = invocation.getArgument(0);
-            run.setId(10L);
+            run.setId(11L);
             return run;
         });
-        OrganizationSyncRunAppService service = new OrganizationSyncRunAppService(
+
+        OrganizationSyncRunEntity run = new OrganizationManualResyncAppService(
                 gateway,
                 departmentWriter,
-                userWriter,
+                new FakeUserWriter(),
                 runRepository,
                 itemRepository,
                 OrganizationDirectorySyncAppServiceTest.fixedSettings(true)
-        );
+        ).resyncDepartment("oss", "D001", "admin");
 
-        OrganizationSyncRunEntity run = service.syncWindow(
-                "customer-org",
-                LocalDateTime.now().minusDays(1),
-                LocalDateTime.now(),
-                "COMPENSATION"
-        );
-
+        assertThat(run.getRunType()).isEqualTo("MANUAL_DEPARTMENT_RESYNC");
         assertThat(run.getStatus()).isEqualTo("SUCCEEDED");
-        assertThat(run.getTotalCount()).isEqualTo(2);
+        assertThat(gateway.fetchedDeptId).isEqualTo("D001");
         assertThat(departmentWriter.writes).isEqualTo(1);
-        assertThat(userWriter.writes).isEqualTo(1);
-        verify(itemRepository, times(2)).save(any(OrganizationSyncItemEntity.class));
+        verify(itemRepository).save(any(OrganizationSyncItemEntity.class));
     }
 
     @Test
-    @DisplayName("sync window records failed items and keeps run inspectable")
-    void syncWindow_itemFailure_marksPartialFailed() {
+    @DisplayName("resyncs one user by immutable userId")
+    void resyncUser_fetchesAndWritesOneUser() {
         FakeGateway gateway = new FakeGateway();
-        FakeDepartmentWriter departmentWriter = new FakeDepartmentWriter();
         FakeUserWriter userWriter = new FakeUserWriter();
-        userWriter.throwOnWrite = true;
+        gateway.user = Optional.of(new OrganizationUserSnapshot(
+                "10001", "zhangsan", "张三", "zhangsan@example.com", "13900000000", "sales", "销售部", "", true
+        ));
         when(runRepository.save(any(OrganizationSyncRunEntity.class))).thenAnswer(invocation -> {
             OrganizationSyncRunEntity run = invocation.getArgument(0);
-            run.setId(10L);
+            run.setId(12L);
             return run;
         });
-        when(itemRepository.save(any(OrganizationSyncItemEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        OrganizationSyncRunAppService service = new OrganizationSyncRunAppService(
+
+        OrganizationSyncRunEntity run = new OrganizationManualResyncAppService(
                 gateway,
-                departmentWriter,
+                new FakeDepartmentWriter(),
                 userWriter,
                 runRepository,
                 itemRepository,
                 OrganizationDirectorySyncAppServiceTest.fixedSettings(true)
-        );
+        ).resyncUser("oss", "10001", "admin");
 
-        OrganizationSyncRunEntity run = service.syncWindow(
-                "customer-org",
-                LocalDateTime.now().minusDays(1),
-                LocalDateTime.now(),
-                "COMPENSATION"
-        );
-
-        assertThat(run.getStatus()).isEqualTo("PARTIAL_FAILED");
-        assertThat(run.getTotalCount()).isEqualTo(2);
-        assertThat(run.getSuccessCount()).isEqualTo(1);
-        assertThat(run.getFailedCount()).isEqualTo(1);
-        verify(itemRepository, times(2)).save(any(OrganizationSyncItemEntity.class));
+        assertThat(run.getRunType()).isEqualTo("MANUAL_USER_RESYNC");
+        assertThat(run.getStatus()).isEqualTo("SUCCEEDED");
+        assertThat(gateway.fetchedUserId).isEqualTo("10001");
+        assertThat(userWriter.writes).isEqualTo(1);
+        verify(itemRepository).save(any(OrganizationSyncItemEntity.class));
     }
 
     private static class FakeGateway implements OrganizationDirectoryGateway {
+        Optional<OrganizationDepartmentSnapshot> department = Optional.empty();
+        Optional<OrganizationUserSnapshot> user = Optional.empty();
+        String fetchedDeptId;
+        String fetchedUserId;
+
         public Optional<OrganizationDepartmentSnapshot> fetchDepartmentByDeptId(String deptId) {
-            return Optional.empty();
+            fetchedDeptId = deptId;
+            return department;
         }
 
         public Optional<OrganizationUserSnapshot> fetchUserByUserId(String userId) {
-            return Optional.empty();
+            fetchedUserId = userId;
+            return user;
         }
 
         public List<OrganizationDepartmentSnapshot> listDepartmentsByWindow(LocalDateTime startAt, LocalDateTime endAt) {
-            return List.of(new OrganizationDepartmentSnapshot("D001", "sales", "销售部", "", "", true));
+            return List.of();
         }
 
         public List<OrganizationUserSnapshot> listUsersByWindow(LocalDateTime startAt, LocalDateTime endAt) {
-            return List.of(new OrganizationUserSnapshot("10001", "zhangsan", "张三", "zhangsan@example.com", "", "sales", "销售部", "", true));
+            return List.of();
         }
     }
 
@@ -137,16 +131,12 @@ class OrganizationSyncRunAppServiceTest {
 
     private static class FakeUserWriter extends OrganizationUserSyncWriter {
         int writes;
-        boolean throwOnWrite;
 
         FakeUserWriter() {
             super(null, null, new OrganizationIntegrationProperties());
         }
 
         public com.xiyu.bid.entity.User upsert(String sourceApp, String eventKey, OrganizationUserSnapshot snapshot) {
-            if (throwOnWrite) {
-                throw new IllegalStateException("write failed");
-            }
             writes++;
             return new com.xiyu.bid.entity.User();
         }

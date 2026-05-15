@@ -5,6 +5,7 @@
 ## [未发布]
 
 ### Added
+- **组织架构集成文档切片**: 新增 YAPI 契约映射与部署验收 Runbook，冻结 `BaseOssDept` / `BaseOssUser` 事件、部门/员工详情和时间窗同步的 Blocking Inputs，并明确 SDK JAR 缺失时不伪造 SDK、先走统一应用服务链路。
 - **DocInsight 文档智能引擎**: 实现了全系统通用的底层文档解析基础设施 (`com.xiyu.bid.docinsight`)。
   - 支持 .doc/.docx/.pdf 到高保真 Markdown 的高保真转换（物理层）。
   - 实现了基于标题层级的“结构化切片”逻辑，保留完整的章节上下文路径（结构层）。

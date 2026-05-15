@@ -1,5 +1,5 @@
 // Input: API config, HTTP client, feature availability helpers, business API modules
-// Output: @/api public exports and Promise-compatible module accessors including bid-agent and match-scoring APIs
+// Output: @/api public exports and Promise-compatible module accessors including bid-agent, match-scoring, and integration APIs
 // Pos: src/api/ - Frontend data access public entry
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -46,6 +46,7 @@ import { taskStatusDictAdminApi } from './modules/taskStatusDictAdmin.js'
 import { taskExtendedFieldApi } from './modules/taskExtendedField.js'
 import { taskExtendedFieldAdminApi } from './modules/taskExtendedFieldAdmin.js'
 import { taskActivityApi } from './modules/taskActivity.js'
+import { organizationIntegrationApi, weComIntegrationApi } from './modules/systemIntegration.js'
 
 export {
   httpClient,
@@ -79,7 +80,9 @@ export {
   taskStatusDictAdminApi,
   taskExtendedFieldApi,
   taskExtendedFieldAdminApi,
-  taskActivityApi
+  taskActivityApi,
+  weComIntegrationApi,
+  organizationIntegrationApi
 }
 
 export default {
@@ -108,5 +111,7 @@ export default {
   taskStatusDictAdmin: () => Promise.resolve(taskStatusDictAdminApi),
   taskExtendedField: () => Promise.resolve(taskExtendedFieldApi),
   taskExtendedFieldAdmin: () => Promise.resolve(taskExtendedFieldAdminApi),
-  taskActivity: () => Promise.resolve(taskActivityApi)
+  taskActivity: () => Promise.resolve(taskActivityApi),
+  weComIntegration: () => Promise.resolve(weComIntegrationApi),
+  organizationIntegration: () => Promise.resolve(organizationIntegrationApi)
 }

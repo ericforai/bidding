@@ -6,6 +6,7 @@ import com.xiyu.bid.integration.organization.domain.OrganizationEventStatus;
 import com.xiyu.bid.integration.organization.domain.OrganizationUserSnapshot;
 import com.xiyu.bid.integration.organization.dto.OrganizationEventWebhookRequest;
 import com.xiyu.bid.integration.organization.dto.OrganizationEventWebhookResponse;
+import com.xiyu.bid.integration.organization.infrastructure.client.OrganizationDirectoryHttpGatewayException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,7 +59,7 @@ class OrganizationDirectorySyncAppServiceFailureTest {
         OrganizationEventWebhookResponse response = service.receiveWebhook(request("BaseOssUser", "userId", "10001"));
 
         assertThat(response.code()).isEqualTo("500");
-        assertThat(inbox.status).isEqualTo(OrganizationEventStatus.FAILED);
+        assertThat(inbox.status).isEqualTo(OrganizationEventStatus.PENDING_RETRY);
         assertThat(inbox.errorCode).isEqualTo("SYNC_EXCEPTION");
     }
 
@@ -74,8 +75,20 @@ class OrganizationDirectorySyncAppServiceFailureTest {
         OrganizationEventWebhookResponse response = service.receiveWebhook(request("BaseOssUser", "userId", "10001"));
 
         assertThat(response.code()).isEqualTo("500");
-        assertThat(inbox.status).isEqualTo(OrganizationEventStatus.FAILED);
+        assertThat(inbox.status).isEqualTo(OrganizationEventStatus.PENDING_RETRY);
         assertThat(inbox.errorCode).isEqualTo("SYNC_EXCEPTION");
+    }
+
+    @Test
+    @DisplayName("non retryable gateway exception moves event to dead letter")
+    void receiveWebhook_nonRetryableGatewayException_marksDeadLetter() {
+        gateway.throwNonRetryableOnUser = true;
+
+        OrganizationEventWebhookResponse response = service.receiveWebhook(request("BaseOssUser", "userId", "10001"));
+
+        assertThat(response.code()).isEqualTo("500");
+        assertThat(inbox.status).isEqualTo(OrganizationEventStatus.DEAD_LETTER);
+        assertThat(inbox.errorCode).isEqualTo("DIRECTORY_GATEWAY_NON_RETRYABLE");
     }
 
     private OrganizationEventWebhookRequest request(String topic, String idField, String id) {
@@ -95,8 +108,12 @@ class OrganizationDirectorySyncAppServiceFailureTest {
 
     private static class FakeGateway extends OrganizationDirectorySyncAppServiceTest.FakeGateway {
         boolean throwOnUser;
+        boolean throwNonRetryableOnUser;
 
         public Optional<OrganizationUserSnapshot> fetchUserByUserId(String userId) {
+            if (throwNonRetryableOnUser) {
+                throw OrganizationDirectoryHttpGatewayException.nonRetryable("鉴权失败", null);
+            }
             if (throwOnUser) {
                 throw new IllegalStateException("gateway timeout");
             }
@@ -125,7 +142,12 @@ class OrganizationDirectorySyncAppServiceFailureTest {
         }
 
         public void markFailed(String eventKey, String message, String errorCode) {
-            status = OrganizationEventStatus.FAILED;
+            status = OrganizationEventStatus.PENDING_RETRY;
+            this.errorCode = errorCode;
+        }
+
+        public void markNonRetryableFailure(String eventKey, String message, String errorCode) {
+            status = OrganizationEventStatus.DEAD_LETTER;
             this.errorCode = errorCode;
         }
     }

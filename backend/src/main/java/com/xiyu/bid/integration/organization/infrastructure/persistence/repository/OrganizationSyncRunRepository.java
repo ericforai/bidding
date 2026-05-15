@@ -8,5 +8,7 @@ import java.util.Optional;
 public interface OrganizationSyncRunRepository extends JpaRepository<OrganizationSyncRunEntity, Long> {
     Optional<OrganizationSyncRunEntity> findByRunKey(String runKey);
 
+    Optional<OrganizationSyncRunEntity> findTopByOrderByStartedAtDesc();
+
     boolean existsByRunKey(String runKey);
 }

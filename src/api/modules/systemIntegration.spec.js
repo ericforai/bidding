@@ -1,5 +1,5 @@
 // Input: systemIntegration API module with mocked HTTP client
-// Output: endpoint and payload coverage for WeChat Work (企业微信) integration
+// Output: endpoint and payload coverage for WeChat Work and organization integrations
 // Pos: src/api/modules/ - API module unit tests
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -14,7 +14,7 @@ vi.mock('@/api/client', () => ({
 }))
 
 import httpClient from '@/api/client'
-import { weComIntegrationApi } from './systemIntegration.js'
+import { organizationIntegrationApi, weComIntegrationApi } from './systemIntegration.js'
 
 describe('weComIntegrationApi', () => {
   beforeEach(() => {
@@ -141,5 +141,45 @@ describe('weComIntegrationApi', () => {
 
     expect(result.data.success).toBe(false)
     expect(result.data.message).toBe('认证失败，请检查 CorpID 和 Secret')
+  })
+})
+
+describe('organizationIntegrationApi', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('getOperationsStatus(): calls real organization status endpoint', async () => {
+    httpClient.get.mockResolvedValue({ enabled: true, pendingRetryCount: 0 })
+
+    const result = await organizationIntegrationApi.getOperationsStatus()
+
+    expect(httpClient.get).toHaveBeenCalledWith('/api/integrations/organization/operations/status')
+    expect(result.enabled).toBe(true)
+  })
+
+  it('startSyncRun(): posts reconciliation payload unchanged', async () => {
+    const payload = { sourceApp: 'oss', runType: 'RECONCILIATION' }
+    httpClient.post.mockResolvedValue({ runId: 1 })
+
+    await organizationIntegrationApi.startSyncRun(payload)
+
+    expect(httpClient.post).toHaveBeenCalledWith('/api/integrations/organization/sync-runs', payload)
+  })
+
+  it('resyncUser(): posts user id path', async () => {
+    httpClient.post.mockResolvedValue({ runId: 2 })
+
+    await organizationIntegrationApi.resyncUser('10001')
+
+    expect(httpClient.post).toHaveBeenCalledWith('/api/integrations/organization/resync/users/10001')
+  })
+
+  it('resyncDepartment(): posts department id path', async () => {
+    httpClient.post.mockResolvedValue({ runId: 3 })
+
+    await organizationIntegrationApi.resyncDepartment('D001')
+
+    expect(httpClient.post).toHaveBeenCalledWith('/api/integrations/organization/resync/departments/D001')
   })
 })

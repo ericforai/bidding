@@ -26,6 +26,7 @@
 | `projects.js` | API 模块 | 项目列表、详情、任务拆解、评分、结果录入调用 |
 | `resources.js` | API 模块 | 平台账号、BAR、证书、资源能力调用 |
 | `settings.js` | API 模块 | 系统设置页的数据权限与组织树读写 |
+| `systemIntegration.js` | API 模块 | 系统集成页真实接口，包含企业微信与组织架构运维操作 |
 | `taskStatusDict.js` | API 模块 | 项目任务状态字典查询（启用状态列表），供动态任务看板驱动列配置 |
 | `taskActivity.js` | API 模块 | 任务评论与历史动态真实 API，供 TaskForm 动态 Tab 读取和发表评论 |
 | `taskExtendedField.js` | API 模块 | 项目任务扩展字段 schema 读取（启用字段列表），供 TaskForm 动态渲染 |
@@ -50,3 +51,4 @@
 - 2026-05-03: 新增 `taskExtendedField.js` 与 `taskExtendedFieldAdmin.js`，接入任务扩展字段 schema 的公开读取与管理员 CRUD/启停/排序 API，供 TaskForm 动态渲染扩展字段。
 - 2026-05-03: `users.js` 接入 `/api/tasks/assignment-candidates`，任务负责人改为从组织归属候选人中选择，不再手写姓名。
 - 2026-05-04: 新增 `taskActivity.js`，接入 `/api/tasks/{id}/activity` 与 `/api/tasks/{id}/comments`，任务动态仅走真实后端 API。
+- 2026-05-15: 新增 `systemIntegration.js` 组织架构运维接口，系统集成页可通过真实后端查看状态、触发窗口对账和单人/单部门重同步。

@@ -25,6 +25,7 @@
 |------|------|
 | `auth.js` | 认证授权 |
 | `settings.js` | 系统设置中的数据权限与组织树 |
+| `systemIntegration.js` | 系统集成配置与组织架构运维 API |
 | `projectGroups.js` | 项目组正式领域模型配置与删除 |
 | `qualification.js` | 资质 CRUD 与借阅合同式接线 |
 | `tenders.js` | 标讯管理 |
@@ -55,3 +56,4 @@
 - 2026-04-24: 新增 `bidMatchScoring.js` 并在 `index.js` 暴露 `bidMatchScoringApi`，接入自定义投标匹配评分真实 API。
 - 2026-04-28: `client.js` 支持 `silentError` / `skipGlobalErrorMessage`，供项目任务拆解等页面自管业务错误展示。
 - 2026-04-30: 退役死代码 —— 删除零调用者的 `mock-adapters/` 目录和 `examples.js` 文档文件，随带清理 `.env.mock` 模板（`config.js` 早已硬编码 API 模式，不读 `VITE_API_MODE`）。
+- 2026-05-15: `systemIntegration.js` 增加组织架构 operations/status、窗口同步与单用户/单部门重同步真实 API 封装。

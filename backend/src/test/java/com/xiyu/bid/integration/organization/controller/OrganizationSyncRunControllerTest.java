@@ -41,7 +41,7 @@ class OrganizationSyncRunControllerTest {
         LocalDateTime endAt;
 
         FakeSyncRunAppService() {
-            super(null, null, null, null, null);
+            super(null, null, null, null, null, null);
         }
 
         @Override

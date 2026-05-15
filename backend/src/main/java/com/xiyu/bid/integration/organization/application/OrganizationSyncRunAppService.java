@@ -1,6 +1,7 @@
 package com.xiyu.bid.integration.organization.application;
 
 import com.xiyu.bid.integration.organization.domain.OrganizationDepartmentSnapshot;
+import com.xiyu.bid.integration.organization.domain.OrganizationDirectoryLookupContext;
 import com.xiyu.bid.integration.organization.domain.OrganizationUserSnapshot;
 import com.xiyu.bid.integration.organization.infrastructure.persistence.entity.OrganizationSyncItemEntity;
 import com.xiyu.bid.integration.organization.infrastructure.persistence.entity.OrganizationSyncRunEntity;
@@ -20,9 +21,13 @@ public class OrganizationSyncRunAppService {
     private final OrganizationUserSyncWriter userWriter;
     private final OrganizationSyncRunRepository runRepository;
     private final OrganizationSyncItemRepository itemRepository;
+    private final OrganizationIntegrationSettingsResolver settingsResolver;
 
     public OrganizationSyncRunEntity syncWindow(String sourceApp, LocalDateTime startAt, LocalDateTime endAt, String runType) {
         OrganizationSyncRunEntity run = createRun(sourceApp, runType);
+        if (!settingsResolver.resolve().enabled()) {
+            return finishRejected(run);
+        }
         try {
             RunCounters counters = syncEntities(run, sourceApp, startAt, endAt);
             run.setTotalCount(counters.totalCount());
@@ -38,13 +43,25 @@ public class OrganizationSyncRunAppService {
         return runRepository.save(run);
     }
 
+    private OrganizationSyncRunEntity finishRejected(OrganizationSyncRunEntity run) {
+        run.setStatus("REJECTED");
+        run.setTotalCount(0);
+        run.setSuccessCount(0);
+        run.setFailedCount(0);
+        run.setLastErrorCode("INTEGRATION_DISABLED");
+        run.setLastErrorMessage("组织架构集成已关闭");
+        run.setFinishedAt(LocalDateTime.now());
+        return runRepository.save(run);
+    }
+
     private RunCounters syncEntities(OrganizationSyncRunEntity run, String sourceApp, LocalDateTime startAt, LocalDateTime endAt) {
         RunCounters counters = new RunCounters(0, 0, 0);
-        List<OrganizationDepartmentSnapshot> departments = directoryGateway.listDepartmentsByWindow(startAt, endAt);
+        OrganizationDirectoryLookupContext context = new OrganizationDirectoryLookupContext(run.getRunKey(), sourceApp);
+        List<OrganizationDepartmentSnapshot> departments = directoryGateway.listDepartmentsByWindow(startAt, endAt, context);
         for (OrganizationDepartmentSnapshot department : departments) {
             counters = counters.add(processDepartment(run, sourceApp, department));
         }
-        List<OrganizationUserSnapshot> users = directoryGateway.listUsersByWindow(startAt, endAt);
+        List<OrganizationUserSnapshot> users = directoryGateway.listUsersByWindow(startAt, endAt, context);
         for (OrganizationUserSnapshot user : users) {
             counters = counters.add(processUser(run, sourceApp, user));
         }
