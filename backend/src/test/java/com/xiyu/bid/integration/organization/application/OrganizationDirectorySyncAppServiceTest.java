@@ -168,7 +168,7 @@ class OrganizationDirectorySyncAppServiceTest {
         String errorCode;
 
         FakeInbox() {
-            super(null);
+            super(null, new OrganizationIntegrationProperties());
         }
 
         public String eventKey(com.xiyu.bid.integration.organization.domain.OrganizationEventNotice notice) {

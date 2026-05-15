@@ -7,7 +7,6 @@ import com.xiyu.bid.integration.organization.domain.OrganizationRetryDecision;
 import com.xiyu.bid.integration.organization.domain.OrganizationSyncPolicy;
 import com.xiyu.bid.integration.organization.infrastructure.persistence.entity.OrganizationEventLogEntity;
 import com.xiyu.bid.integration.organization.infrastructure.persistence.repository.OrganizationEventLogRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -20,17 +19,13 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class OrganizationEventInboxService {
     private final OrganizationEventLogRepository eventLogRepository;
     private final OrganizationIntegrationProperties properties;
 
-    public OrganizationEventInboxService(OrganizationEventLogRepository eventLogRepository) {
-        this(eventLogRepository, new OrganizationIntegrationProperties());
-    }
-
-    @Autowired
     public OrganizationEventInboxService(
             OrganizationEventLogRepository eventLogRepository,
             OrganizationIntegrationProperties properties
@@ -124,6 +119,22 @@ public class OrganizationEventInboxService {
                 now,
                 PageRequest.of(0, batchSize)
         );
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<OrganizationEventLogEntity> findByEventKey(String eventKey) {
+        return eventLogRepository.findByEventKey(eventKey);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean claimDeadLetterReplay(String eventKey, LocalDateTime now) {
+        return eventLogRepository.claimDeadLetterReplay(
+                eventKey,
+                OrganizationEventStatus.DEAD_LETTER,
+                OrganizationEventStatus.PROCESSING,
+                now,
+                "manual replaying"
+        ) == 1;
     }
 
     private void updateStatus(String eventKey, OrganizationEventStatus status, String message, String errorCode) {

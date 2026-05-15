@@ -42,6 +42,10 @@ export const organizationIntegrationApi = {
   async resyncDepartment(deptId) {
     return httpClient.post(`${ORG_BASE}/resync/departments/${encodeURIComponent(deptId)}`)
   },
+
+  async replayDeadLetter(eventKey) {
+    return httpClient.post(`${ORG_BASE}/operations/dead-letters/${encodeURIComponent(eventKey)}/replay`)
+  },
 }
 
 export default weComIntegrationApi

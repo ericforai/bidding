@@ -58,6 +58,8 @@
       <el-button :loading="resyncingUser" :disabled="!canOperate" @click="resyncUser">重同步用户</el-button>
       <el-input v-model="deptId" placeholder="deptId" clearable />
       <el-button :loading="resyncingDepartment" :disabled="!canOperate" @click="resyncDepartment">重同步部门</el-button>
+      <el-input v-model="deadLetterEventKey" placeholder="eventKey" clearable />
+      <el-button :loading="replayingDeadLetter" :disabled="!canOperate" @click="replayDeadLetter">重放死信</el-button>
     </div>
   </div>
 </template>
@@ -71,16 +73,19 @@ const {
   syncing,
   resyncingUser,
   resyncingDepartment,
+  replayingDeadLetter,
   status,
   loaded,
   errorText,
   canOperate,
   userId,
   deptId,
+  deadLetterEventKey,
   load,
   startSyncRun,
   resyncUser,
   resyncDepartment,
+  replayDeadLetter,
 } = useOrganizationIntegrationOperations()
 
 const enabledText = computed(() => {

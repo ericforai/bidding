@@ -31,7 +31,7 @@ class OrganizationEventInboxServiceTest {
     @DisplayName("reserve stores notice identity and raw payload")
     void reserve_storesNoticeIdentity() {
         when(repository.saveAndFlush(any(OrganizationEventLogEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        OrganizationEventInboxService service = new OrganizationEventInboxService(repository);
+        OrganizationEventInboxService service = service();
 
         boolean reserved = service.reserve(notice(), "{\"data\":{\"userId\":\"10001\"}}");
 
@@ -47,7 +47,7 @@ class OrganizationEventInboxServiceTest {
     @DisplayName("reserve stores millisecond event time from event bus")
     void reserve_storesEpochMillisEventTime() {
         when(repository.saveAndFlush(any(OrganizationEventLogEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        OrganizationEventInboxService service = new OrganizationEventInboxService(repository);
+        OrganizationEventInboxService service = service();
 
         service.reserve(new OrganizationEventNotice(
                 "trace-1", "span-1", "", "oss",
@@ -64,7 +64,7 @@ class OrganizationEventInboxServiceTest {
     void reserve_duplicate_returnsFalse() {
         when(repository.saveAndFlush(any(OrganizationEventLogEntity.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate"));
-        OrganizationEventInboxService service = new OrganizationEventInboxService(repository);
+        OrganizationEventInboxService service = service();
 
         assertThat(service.reserve(notice(), "{}")).isFalse();
     }
@@ -76,7 +76,7 @@ class OrganizationEventInboxServiceTest {
         existing.setEventKey("event-key");
         existing.setRetryCount(0);
         when(repository.findByEventKey("event-key")).thenReturn(Optional.of(existing));
-        OrganizationEventInboxService service = new OrganizationEventInboxService(repository);
+        OrganizationEventInboxService service = service();
 
         service.markFailed("event-key", "接口超时", "TIMEOUT");
 
@@ -93,7 +93,7 @@ class OrganizationEventInboxServiceTest {
         existing.setEventKey("event-key");
         existing.setRetryCount(4);
         when(repository.findByEventKey("event-key")).thenReturn(Optional.of(existing));
-        OrganizationEventInboxService service = new OrganizationEventInboxService(repository);
+        OrganizationEventInboxService service = service();
 
         service.markRetryableFailure("event-key", "接口超时", "TIMEOUT", 5);
 
@@ -134,7 +134,7 @@ class OrganizationEventInboxServiceTest {
         existing.setTraceId("trace-1");
         existing.setNextRetryAt(java.time.LocalDateTime.now());
         when(repository.findByEventKey("event-key")).thenReturn(Optional.of(existing));
-        OrganizationEventInboxService service = new OrganizationEventInboxService(repository);
+        OrganizationEventInboxService service = service();
 
         service.markNonRetryableFailure("event-key", "鉴权失败", "DIRECTORY_GATEWAY_NON_RETRYABLE");
 
@@ -155,9 +155,29 @@ class OrganizationEventInboxServiceTest {
                 now,
                 "retrying"
         )).thenReturn(1);
-        OrganizationEventInboxService service = new OrganizationEventInboxService(repository);
+        OrganizationEventInboxService service = service();
 
         assertThat(service.claimDueRetry("event-key", now)).isTrue();
+    }
+
+    @Test
+    @DisplayName("claims dead letter replay with atomic repository update")
+    void claimDeadLetterReplay_usesRepositoryClaim() {
+        java.time.LocalDateTime now = java.time.LocalDateTime.parse("2026-05-15T10:00:00");
+        when(repository.claimDeadLetterReplay(
+                "event-key",
+                OrganizationEventStatus.DEAD_LETTER,
+                OrganizationEventStatus.PROCESSING,
+                now,
+                "manual replaying"
+        )).thenReturn(1);
+        OrganizationEventInboxService service = service();
+
+        assertThat(service.claimDeadLetterReplay("event-key", now)).isTrue();
+    }
+
+    private OrganizationEventInboxService service() {
+        return new OrganizationEventInboxService(repository, new OrganizationIntegrationProperties());
     }
 
     private OrganizationEventNotice notice() {

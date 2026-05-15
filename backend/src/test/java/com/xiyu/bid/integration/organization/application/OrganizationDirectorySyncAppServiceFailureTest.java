@@ -126,7 +126,7 @@ class OrganizationDirectorySyncAppServiceFailureTest {
         String errorCode;
 
         FakeInbox() {
-            super(null);
+            super(null, new OrganizationIntegrationProperties());
         }
 
         public String eventKey(OrganizationEventNotice notice) {

@@ -12,8 +12,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -67,6 +69,49 @@ class OrganizationEventRetryAppServiceTest {
 
         assertThat(summary.totalCount()).isZero();
         verify(inboxService, never()).findDueRetries(now, properties.getRetry().getBatchSize());
+    }
+
+    @Test
+    @DisplayName("manual dead letter replay claims the original log before reprocessing payload")
+    void replayDeadLetter_claimsAndReprocessesOriginalPayload() {
+        LocalDateTime now = LocalDateTime.parse("2026-05-15T10:00:00");
+        OrganizationEventLogEntity event = eventLog(" event-key ", "{\"data\":{\"userId\":\"10001\"}}");
+        event.setStatus(OrganizationEventStatus.DEAD_LETTER);
+        when(inboxService.findByEventKey("event-key")).thenReturn(Optional.of(event));
+        when(inboxService.claimDeadLetterReplay("event-key", now)).thenReturn(true);
+        when(syncAppService.reprocessReservedEvent("event-key", event.getRawPayload())).thenReturn(response("200"));
+
+        OrganizationEventWebhookResponse response = new OrganizationEventRetryAppService(
+                inboxService,
+                syncAppService,
+                new OrganizationIntegrationProperties(),
+                OrganizationDirectorySyncAppServiceTest.fixedSettings(true)
+        ).replayDeadLetter(" event-key ", now);
+
+        assertThat(response.code()).isEqualTo("200");
+        verify(inboxService).claimDeadLetterReplay("event-key", now);
+        verify(syncAppService).reprocessReservedEvent("event-key", "{\"data\":{\"userId\":\"10001\"}}");
+    }
+
+    @Test
+    @DisplayName("manual replay rejects non dead letter logs")
+    void replayDeadLetter_nonDeadLetter_rejects() {
+        LocalDateTime now = LocalDateTime.parse("2026-05-15T10:00:00");
+        OrganizationEventLogEntity event = eventLog("event-key", "{}");
+        when(inboxService.findByEventKey("event-key")).thenReturn(Optional.of(event));
+
+        OrganizationEventRetryAppService service = new OrganizationEventRetryAppService(
+                inboxService,
+                syncAppService,
+                new OrganizationIntegrationProperties(),
+                OrganizationDirectorySyncAppServiceTest.fixedSettings(true)
+        );
+
+        assertThatThrownBy(() -> service.replayDeadLetter("event-key", now))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("DEAD_LETTER");
+        verify(inboxService, never()).claimDeadLetterReplay("event-key", now);
+        verify(syncAppService, never()).reprocessReservedEvent("event-key", "{}");
     }
 
     private OrganizationEventLogEntity eventLog(String eventKey, String rawPayload) {

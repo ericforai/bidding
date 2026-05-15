@@ -22,6 +22,7 @@ vi.mock('@/api/modules/systemIntegration.js', () => ({
     startSyncRun: vi.fn(),
     resyncUser: vi.fn(),
     resyncDepartment: vi.fn(),
+    replayDeadLetter: vi.fn(),
   },
 }))
 
@@ -52,5 +53,20 @@ describe('useOrganizationIntegrationOperations', () => {
 
     expect(organizationIntegrationApi.startSyncRun).not.toHaveBeenCalled()
     expect(ElMessage.warning).toHaveBeenCalledWith('组织架构集成未启用')
+  })
+
+  it('replays dead letter event from its event key and reloads status', async () => {
+    organizationIntegrationApi.getOperationsStatus.mockResolvedValue({ enabled: true })
+    organizationIntegrationApi.replayDeadLetter.mockResolvedValue({ code: '200' })
+    const operations = useOrganizationIntegrationOperations()
+    await operations.load()
+    operations.deadLetterEventKey.value = ' event-key '
+
+    await operations.replayDeadLetter()
+
+    expect(organizationIntegrationApi.replayDeadLetter).toHaveBeenCalledWith('event-key')
+    expect(ElMessage.success).toHaveBeenCalledWith('死信事件重放成功')
+    expect(operations.deadLetterEventKey.value).toBe('')
+    expect(organizationIntegrationApi.getOperationsStatus).toHaveBeenCalledTimes(2)
   })
 })

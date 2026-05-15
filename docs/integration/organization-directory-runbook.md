@@ -69,7 +69,7 @@
 
 ## 手工重同步
 
-手工重同步用于处理 dead letter、客户补数、单条纠错和 UAT 验收。命令中的 token、host 和 ID 由运维现场提供。
+手工重同步用于客户补数、单条纠错和 UAT 验收。死信事件优先使用 event log 原地重放，命令中的 token、host 和 ID 由运维现场提供。
 
 ```bash
 curl -X POST "$BACKEND_BASE_URL/api/integrations/organization/resync/departments/$DEPT_ID" \
@@ -83,11 +83,17 @@ curl -X POST "$BACKEND_BASE_URL/api/integrations/organization/resync/users/$USER
   -H "X-Request-Id: $REQUEST_ID"
 ```
 
+```bash
+curl -X POST "$BACKEND_BASE_URL/api/integrations/organization/operations/dead-letters/$EVENT_KEY/replay" \
+  -H "Authorization: Bearer $ORG_ADMIN_JWT" \
+  -H "X-Request-Id: $REQUEST_ID"
+```
+
 操作要求:
 
 - 每次手工重同步必须能定位操作人、时间、对象 ID、结果和失败原因。
 - `deptId` / `userId` 不得写成测试账号或真实个人信息示例。
-- 失败后先查 sync item 和 event log，再判断是否需要客户重放事件或补齐 YAPI 数据。
+- 失败后先查 sync item 和 event log，再判断是否需要原地重放事件、客户重新投递或补齐 YAPI 数据。
 
 ## 日志脱敏
 

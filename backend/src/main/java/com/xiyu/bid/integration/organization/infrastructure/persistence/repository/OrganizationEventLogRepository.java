@@ -47,6 +47,24 @@ public interface OrganizationEventLogRepository extends JpaRepository<Organizati
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             update OrganizationEventLogEntity event
+            set event.status = :processingStatus,
+                event.message = :message,
+                event.nextRetryAt = null,
+                event.processedAt = :now
+            where event.eventKey = :eventKey
+              and event.status = :deadLetterStatus
+            """)
+    int claimDeadLetterReplay(
+            @Param("eventKey") String eventKey,
+            @Param("deadLetterStatus") OrganizationEventStatus deadLetterStatus,
+            @Param("processingStatus") OrganizationEventStatus processingStatus,
+            @Param("now") LocalDateTime now,
+            @Param("message") String message
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            update OrganizationEventLogEntity event
             set event.status = :pendingStatus,
                 event.message = :message,
                 event.nextRetryAt = :now

@@ -12,11 +12,13 @@ export function useOrganizationIntegrationOperations() {
   const syncing = ref(false)
   const resyncingUser = ref(false)
   const resyncingDepartment = ref(false)
+  const replayingDeadLetter = ref(false)
   const status = ref(null)
   const loaded = ref(false)
   const errorText = ref('')
   const userId = ref('')
   const deptId = ref('')
+  const deadLetterEventKey = ref('')
   const canOperate = computed(() => loaded.value && !errorText.value && status.value?.enabled === true)
 
   const load = async () => {
@@ -81,6 +83,28 @@ export function useOrganizationIntegrationOperations() {
     }
   }
 
+  const replayDeadLetter = async () => {
+    const eventKey = deadLetterEventKey.value.trim()
+    if (!eventKey) {
+      ElMessage.warning('请输入事件 ID')
+      return
+    }
+    if (!ensureOperable()) return
+    replayingDeadLetter.value = true
+    try {
+      const result = await organizationIntegrationApi.replayDeadLetter(eventKey)
+      if (result?.code === '200') {
+        ElMessage.success('死信事件重放成功')
+        deadLetterEventKey.value = ''
+      } else {
+        ElMessage.warning(result?.msg || '死信事件重放未成功')
+      }
+      await load()
+    } finally {
+      replayingDeadLetter.value = false
+    }
+  }
+
   const ensureOperable = () => {
     if (canOperate.value) return true
     ElMessage.warning(errorText.value || '组织架构集成未启用')
@@ -92,15 +116,18 @@ export function useOrganizationIntegrationOperations() {
     syncing,
     resyncingUser,
     resyncingDepartment,
+    replayingDeadLetter,
     status,
     loaded,
     errorText,
     canOperate,
     userId,
     deptId,
+    deadLetterEventKey,
     load,
     startSyncRun,
     resyncUser,
     resyncDepartment,
+    replayDeadLetter,
   }
 }

@@ -182,4 +182,13 @@ describe('organizationIntegrationApi', () => {
 
     expect(httpClient.post).toHaveBeenCalledWith('/api/integrations/organization/resync/departments/D001')
   })
+
+  it('replayDeadLetter(): posts encoded event key path', async () => {
+    httpClient.post.mockResolvedValue({ code: '200' })
+
+    await organizationIntegrationApi.replayDeadLetter('event key')
+
+    expect(httpClient.post)
+      .toHaveBeenCalledWith('/api/integrations/organization/operations/dead-letters/event%20key/replay')
+  })
 })
