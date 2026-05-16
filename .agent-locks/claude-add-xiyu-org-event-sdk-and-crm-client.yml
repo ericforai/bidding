@@ -1,9 +1,0 @@
-version: 1
-task: "claude-add-xiyu-org-event-sdk-and-crm-client"
-locks:
-  - path: "backend/src/main/resources/db/migration-mysql"
-    scope: "directory"
-    owner: "agent"
-    branch: "agent/claude-add-xiyu-org-event-sdk-and-crm-client"
-    expiresAt: "2026-05-17T06:36:37.438Z"
-    reason: "V121 migration for organization event sync + local_users table"
