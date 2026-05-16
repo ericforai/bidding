@@ -51,12 +51,15 @@
 
 字段、鉴权 Header、响应 envelope、禁用/查无语义以 `docs/integration/organization-directory-yapi-mapping.md` 为准。
 
+兼容口径: 当前 YAPI 响应 envelope 尚未冻结。若响应体没有 `code` 字段，系统会按直接 payload 兼容处理，并从 `data`、`result` 或根节点读取部门/员工字段。契约冻结后应收紧 envelope 校验，避免异常 JSON 被误判为成功。
+
 ## 重试策略
 
 - 可重试: YAPI timeout、连接失败、5xx、临时限流、数据库瞬时失败。
 - 不可重试: 鉴权失败、合同字段缺失、未知 Topic、缺少 `deptId` / `userId`。
 - 幂等: 同一事件重复到达应稳定返回成功，不重复写部门或员工。
 - 退避: 采用指数退避并设置上限；耗尽最大次数后进入 dead letter，等待人工处理。
+- 恢复: 首次处理或自动重试 claim 后若服务中断，stale `PROCESSING` 会回到 `PENDING_RETRY`；死信手工重放中断则回到 `DEAD_LETTER`，避免绕过人工复核。
 - 观测: 记录事件状态、retry count、next retry time、last error code，但不得记录 token、手机号、邮箱完整值。
 
 ## 每日低峰对账
@@ -93,7 +96,15 @@ curl -X POST "$BACKEND_BASE_URL/api/integrations/organization/operations/dead-le
 
 - 每次手工重同步必须能定位操作人、时间、对象 ID、结果和失败原因。
 - `deptId` / `userId` 不得写成测试账号或真实个人信息示例。
+- 单用户/单部门手工重同步不进入事件重试或死信机制；失败只写入 sync run/item 证据并返回错误，后续由运维判断是否再次触发。
+- 死信事件原地重放如果 claim 后服务中断，stale `PROCESSING` 会回到 `DEAD_LETTER`，继续等待人工复核。
 - 失败后先查 sync item 和 event log，再判断是否需要原地重放事件、客户重新投递或补齐 YAPI 数据。
+
+## 运维状态接口
+
+- `pendingRetryCount`: 当前等待自动重试的事件数。
+- `deadLetterCount`: 当前需要人工复核或重放的死信事件数。
+- `failedCount`: 遗留失败计数，仅统计重试/死信拆分前残留的 `FAILED` 状态，新流程不再写入该状态。
 
 ## 日志脱敏
 
