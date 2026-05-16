@@ -187,7 +187,7 @@ class OrganizationEventInboxServiceTest {
                 OrganizationEventStatus.PENDING_RETRY,
                 cutoff,
                 now,
-                "retry lease expired",
+                "processing lease expired",
                 "manual replaying"
         )).thenReturn(2);
         when(repository.recoverStaleDeadLetterReplay(

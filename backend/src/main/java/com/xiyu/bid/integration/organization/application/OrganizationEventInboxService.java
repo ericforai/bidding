@@ -24,7 +24,7 @@ import java.util.Optional;
 @Service
 public class OrganizationEventInboxService {
     private static final String RETRYING_MESSAGE = "retrying";
-    private static final String RETRY_LEASE_EXPIRED_MESSAGE = "retry lease expired";
+    private static final String PROCESSING_LEASE_EXPIRED_MESSAGE = "processing lease expired";
     private static final String MANUAL_REPLAYING_MESSAGE = "manual replaying";
     private static final String MANUAL_REPLAY_LEASE_EXPIRED_MESSAGE = "manual replay lease expired";
 
@@ -113,7 +113,7 @@ public class OrganizationEventInboxService {
                 OrganizationEventStatus.PENDING_RETRY,
                 cutoff,
                 now,
-                RETRY_LEASE_EXPIRED_MESSAGE,
+                PROCESSING_LEASE_EXPIRED_MESSAGE,
                 MANUAL_REPLAYING_MESSAGE
         );
         int replayRecovered = eventLogRepository.recoverStaleDeadLetterReplay(

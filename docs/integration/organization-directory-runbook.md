@@ -59,6 +59,7 @@
 - 不可重试: 鉴权失败、合同字段缺失、未知 Topic、缺少 `deptId` / `userId`。
 - 幂等: 同一事件重复到达应稳定返回成功，不重复写部门或员工。
 - 退避: 采用指数退避并设置上限；耗尽最大次数后进入 dead letter，等待人工处理。
+- 恢复: 首次处理或自动重试 claim 后若服务中断，stale `PROCESSING` 会回到 `PENDING_RETRY`；死信手工重放中断则回到 `DEAD_LETTER`，避免绕过人工复核。
 - 观测: 记录事件状态、retry count、next retry time、last error code，但不得记录 token、手机号、邮箱完整值。
 
 ## 每日低峰对账
