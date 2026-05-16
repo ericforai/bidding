@@ -38,22 +38,27 @@ public class LocalDevAccountInitializer implements ApplicationRunner {
 
     void seedLocalAccounts() {
         List<LocalAccount> accounts = List.of(
-                new LocalAccount("staff", "小王", "staff@xiyu-local", User.Role.STAFF),
-                new LocalAccount("manager", "张经理", "manager@xiyu-local", User.Role.MANAGER)
+                new LocalAccount("staff", "小王", "staff@xiyu-local", RoleProfileCatalog.STAFF_CODE),
+                new LocalAccount("manager", "张经理", "manager@xiyu-local", RoleProfileCatalog.MANAGER_CODE),
+                new LocalAccount("bid_admin", "陈投标管理", "bidadmin@xiyu-local", RoleProfileCatalog.BID_ADMIN_CODE),
+                new LocalAccount("bid_lead", "刘投标组长", "bidlead@xiyu-local", RoleProfileCatalog.BID_LEAD_CODE),
+                new LocalAccount("sales", "张销售", "sales@xiyu-local", RoleProfileCatalog.SALES_CODE),
+                new LocalAccount("bid_specialist", "周投标专员", "bidspecialist@xiyu-local", RoleProfileCatalog.BID_SPECIALIST_CODE),
+                new LocalAccount("admin_staff", "郑行政", "adminstaff@xiyu-local", RoleProfileCatalog.ADMIN_STAFF_CODE)
         );
 
         accounts.forEach(this::createOrUpdateAccount);
     }
 
     private void createOrUpdateAccount(LocalAccount account) {
-        RoleProfile roleProfile = resolveRoleProfile(account.role());
+        RoleProfile roleProfile = resolveRoleProfile(account.roleCode());
         User user = userRepository.findByUsername(account.username())
                 .orElseGet(User::new);
 
         user.setUsername(account.username());
         user.setFullName(account.fullName());
         user.setEmail(account.email());
-        user.setRole(account.role());
+        user.setRole(RoleProfileCatalog.legacyRoleForCode(account.roleCode()));
         user.setRoleProfile(roleProfile);
         user.setEnabled(true);
         user.setEmailVerified(true);
@@ -63,12 +68,11 @@ public class LocalDevAccountInitializer implements ApplicationRunner {
         log.info("Ensured local dev account: {}", account.username());
     }
 
-    private RoleProfile resolveRoleProfile(User.Role role) {
-        String roleCode = RoleProfileCatalog.definitionForLegacyRole(role).code();
+    private RoleProfile resolveRoleProfile(String roleCode) {
         return roleProfileRepository.findByCodeIgnoreCase(roleCode)
                 .orElseThrow(() -> new IllegalStateException("Required RoleProfile not found: " + roleCode));
     }
 
-    private record LocalAccount(String username, String fullName, String email, User.Role role) {
+    private record LocalAccount(String username, String fullName, String email, String roleCode) {
     }
 }
