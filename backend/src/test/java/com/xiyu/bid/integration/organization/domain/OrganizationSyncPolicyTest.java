@@ -63,4 +63,99 @@ class OrganizationSyncPolicyTest {
 
         assertThat(plan.roleCode()).isEqualTo("manager");
     }
+
+    @Test
+    @DisplayName("position mapped role code takes priority over adminRoleCodes")
+    void planUserSync_positionMapping_priorityOverLegacyCodes() {
+        OrganizationUserSnapshot snapshot = new OrganizationUserSnapshot(
+                "10001", "zhangsan", "张三", "zhangsan@example.com",
+                "13800000000", "sales", "销售部", "投标管理员", true
+        );
+
+        OrganizationUserSyncPlan plan = OrganizationSyncPolicy.planUserSync(
+                snapshot,
+                "staff",
+                Set.of("boss"),
+                Set.of("manager"),
+                "bid_admin"
+        );
+
+        assertThat(plan.roleCode()).isEqualTo("bid_admin");
+    }
+
+    @Test
+    @DisplayName("falls back to legacy role mapping when position mapping is null")
+    void planUserSync_nullPositionMapping_fallsBackToLegacy() {
+        OrganizationUserSnapshot snapshot = new OrganizationUserSnapshot(
+                "10001", "zhangsan", "张三", "zhangsan@example.com",
+                "13800000000", "sales", "销售部", "manager", true
+        );
+
+        OrganizationUserSyncPlan plan = OrganizationSyncPolicy.planUserSync(
+                snapshot,
+                "staff",
+                Set.of(),
+                Set.of("manager"),
+                null
+        );
+
+        assertThat(plan.roleCode()).isEqualTo("manager");
+    }
+
+    @Test
+    @DisplayName("falls back to legacy role mapping when position mapping is blank")
+    void planUserSync_blankPositionMapping_fallsBackToLegacy() {
+        OrganizationUserSnapshot snapshot = new OrganizationUserSnapshot(
+                "10001", "zhangsan", "张三", "zhangsan@example.com",
+                "13800000000", "sales", "销售部", "manager", true
+        );
+
+        OrganizationUserSyncPlan plan = OrganizationSyncPolicy.planUserSync(
+                snapshot,
+                "staff",
+                Set.of(),
+                Set.of("manager"),
+                ""
+        );
+
+        assertThat(plan.roleCode()).isEqualTo("manager");
+    }
+
+    @Test
+    @DisplayName("admin upgrade guard still blocks non-admin existing users from becoming admin via position mapping")
+    void planUserSync_positionMapping_adminUpgradeGuard() {
+        OrganizationUserSnapshot snapshot = new OrganizationUserSnapshot(
+                "10001", "zhangsan", "张三", "zhangsan@example.com",
+                "13800000000", "sales", "销售部", "系统管理员", true
+        );
+
+        OrganizationUserSyncPlan plan = OrganizationSyncPolicy.planUserSync(
+                snapshot,
+                "manager",
+                Set.of(),
+                Set.of(),
+                "admin"
+        );
+
+        assertThat(plan.roleCode()).isEqualTo("manager");
+    }
+
+    @Test
+    @DisplayName("position mapping can assign staff to new user when no existing role")
+    void planUserSync_positionMapping_newUser() {
+        OrganizationUserSnapshot snapshot = new OrganizationUserSnapshot(
+                "10001", "zhangsan", "张三", "zhangsan@example.com",
+                "13800000000", "sales", "销售部", "投标专员", true
+        );
+
+        OrganizationUserSyncPlan plan = OrganizationSyncPolicy.planUserSync(
+                snapshot,
+                null,
+                Set.of(),
+                Set.of(),
+                "bid_specialist"
+        );
+
+        assertThat(plan.roleCode()).isEqualTo("bid_specialist");
+    }
 }

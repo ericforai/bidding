@@ -18,6 +18,7 @@ public class OrganizationIntegrationProperties {
     private List<String> allowedSourceApps = new ArrayList<>(List.of("oss", "customer-org"));
     private List<String> adminRoleCodes = new ArrayList<>();
     private List<String> managerRoleCodes = new ArrayList<>();
+    private List<PositionToRoleMapping> positionToRoleMappings = new ArrayList<>();
     private Directory directory = new Directory();
     private EventSdk eventSdk = new EventSdk();
     private Retry retry = new Retry();
@@ -43,6 +44,12 @@ public class OrganizationIntegrationProperties {
         private String authToken = "";
         private int connectTimeoutMs = 3000;
         private int readTimeoutMs = 5000;
+    }
+
+    @Data
+    public static class PositionToRoleMapping {
+        private String positionPattern = "";
+        private String roleCode = "";
     }
 
     @Data

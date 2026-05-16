@@ -220,7 +220,7 @@ class OrganizationDirectorySyncAppServiceTest {
         String disabledExternalUserId;
 
         FakeUserWriter() {
-            super(null, null, new OrganizationIntegrationProperties());
+            super(null, null, new OrganizationIntegrationProperties(), null);
         }
 
         public com.xiyu.bid.entity.User upsert(String sourceApp, String eventKey, OrganizationUserSnapshot snapshot) {

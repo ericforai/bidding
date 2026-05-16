@@ -47,10 +47,20 @@ public final class OrganizationSyncPolicy {
             Set<String> adminRoleCodes,
             Set<String> managerRoleCodes
     ) {
+        return planUserSync(incoming, existingRoleCode, adminRoleCodes, managerRoleCodes, null);
+    }
+
+    public static OrganizationUserSyncPlan planUserSync(
+            OrganizationUserSnapshot incoming,
+            String existingRoleCode,
+            Set<String> adminRoleCodes,
+            Set<String> managerRoleCodes,
+            String positionMappedRoleCode
+    ) {
         String username = firstPresent(incoming.username(), incoming.externalUserId());
         String fullName = firstPresent(incoming.fullName(), username);
         String email = blankToEmpty(incoming.email());
-        String roleCode = planRoleCode(incoming.externalRoleCode(), existingRoleCode, adminRoleCodes, managerRoleCodes);
+        String roleCode = planRoleCode(incoming.externalRoleCode(), existingRoleCode, adminRoleCodes, managerRoleCodes, positionMappedRoleCode);
         return new OrganizationUserSyncPlan(
                 normalize(username),
                 fullName.trim(),
@@ -81,9 +91,15 @@ public final class OrganizationSyncPolicy {
             String externalRoleCode,
             String existingRoleCode,
             Set<String> adminRoleCodes,
-            Set<String> managerRoleCodes
+            Set<String> managerRoleCodes,
+            String positionMappedRoleCode
     ) {
-        String targetRole = mapRoleCode(externalRoleCode, adminRoleCodes, managerRoleCodes);
+        String targetRole;
+        if (positionMappedRoleCode != null && !positionMappedRoleCode.isBlank()) {
+            targetRole = positionMappedRoleCode;
+        } else {
+            targetRole = mapRoleCode(externalRoleCode, adminRoleCodes, managerRoleCodes);
+        }
         String existingRole = normalize(existingRoleCode);
         if (ADMIN.equals(targetRole) && !ADMIN.equals(existingRole)) {
             return STAFF.equals(existingRole) || MANAGER.equals(existingRole) ? existingRole : STAFF;

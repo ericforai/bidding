@@ -6,6 +6,7 @@ import com.xiyu.bid.entity.User;
 import com.xiyu.bid.integration.organization.domain.OrganizationSyncPolicy;
 import com.xiyu.bid.integration.organization.domain.OrganizationUserSnapshot;
 import com.xiyu.bid.integration.organization.domain.OrganizationUserSyncPlan;
+import com.xiyu.bid.integration.organization.infrastructure.mapper.PositionToRoleMapper;
 import com.xiyu.bid.repository.RoleProfileRepository;
 import com.xiyu.bid.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,17 +26,20 @@ public class OrganizationUserSyncWriter {
     private final UserRepository userRepository;
     private final RoleProfileRepository roleProfileRepository;
     private final OrganizationIntegrationProperties properties;
+    private final PositionToRoleMapper positionToRoleMapper;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public User upsert(String sourceApp, String eventKey, OrganizationUserSnapshot snapshot) {
         validateRequiredContact(snapshot);
         User user = userRepository.findByExternalOrgSourceAppAndExternalOrgUserId(sourceApp, snapshot.externalUserId())
                 .orElseGet(User::new);
+        String positionMappedRoleCode = positionToRoleMapper.map(snapshot.externalRoleCode());
         OrganizationUserSyncPlan plan = OrganizationSyncPolicy.planUserSync(
                 snapshot,
                 user.getRoleCode(),
                 normalizeSet(properties.getAdminRoleCodes()),
-                normalizeSet(properties.getManagerRoleCodes())
+                normalizeSet(properties.getManagerRoleCodes()),
+                positionMappedRoleCode
         );
         user.setUsername(plan.username());
         user.setPassword(user.getPassword() == null ? LOCKED_PASSWORD_HASH : user.getPassword());
