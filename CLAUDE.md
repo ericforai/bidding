@@ -19,6 +19,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 # CLAUDE.md
 
+每次对话开始，都请打招呼：同志，你好！
 本文件提供本仓库的执行入口、常用命令、验证清单和环境坑点。
 它的目标不是描述理想状态，而是帮助代理和开发者快速对齐当前仓库的真实情况。
 
