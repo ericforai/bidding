@@ -1,0 +1,9 @@
+version: 1
+task: "002-frontend-permission-migration"
+locks:
+  - path: "src/router/index.js"
+    scope: "file"
+    owner: "cursor"
+    branch: "002-frontend-permission-migration"
+    expiresAt: "2026-05-17T23:56:38.756Z"
+    reason: "frontend permission migration: modify router guards and meta.roles removal"

@@ -56,7 +56,7 @@ const props = defineProps({
 })
 
 const userStore = useUserStore()
-const isAdmin = computed(() => String(userStore.userRole || '').toLowerCase() === 'admin')
+const isAdmin = computed(() => userStore.hasPermission('project:retrospective:review') || userStore.hasPermission('retrospective.review'))
 
 const form = reactive({
   summary: '',

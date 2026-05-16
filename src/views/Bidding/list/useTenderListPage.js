@@ -44,7 +44,7 @@ export function useTenderListPage() {
 
   const userRole = computed(() => resolveUserRole(userStore))
   const isAdmin = computed(() => userRole.value === 'ADMIN')
-  const permissions = computed(() => buildPermissionFlags(userRole.value))
+  const permissions = computed(() => buildPermissionFlags(userStore.menuPermissions))
   const canManageTenders = computed(() => permissions.value.canManageTenders)
   const canCreateTender = computed(() => permissions.value.canCreateTender)
   const canDeleteTenders = computed(() => permissions.value.canDeleteTenders)

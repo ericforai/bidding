@@ -24,7 +24,7 @@ export function useQualificationPage() {
     qualifications
   } = storeToRefs(qualificationStore)
 
-  const isAdmin = computed(() => userStore.currentUser?.role === 'admin')
+  const isAdmin = computed(() => userStore.hasPermission('knowledge:qualification:manage') || userStore.hasPermission('certificate.manage') || userStore.hasPermission('all'))
 
   const searchForm = reactive({
     name: '',

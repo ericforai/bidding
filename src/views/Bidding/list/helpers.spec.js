@@ -55,18 +55,19 @@ describe('bidding list helpers', () => {
   })
 
   it('matches frontend permission flags to backend role boundary', () => {
-    expect(buildPermissionFlags('staff')).toMatchObject({
+    expect(buildPermissionFlags(['bidding', 'project.create'])).toMatchObject({
       canCreateTender: true,
       canManageTenders: false,
       canDeleteTenders: false,
       canSyncExternalSource: false,
     })
-    expect(buildPermissionFlags('manager')).toMatchObject({
+    expect(buildPermissionFlags(['bidding', 'settings'])).toMatchObject({
       canManageTenders: true,
+      canCreateTender: true,
       canDeleteTenders: false,
       canSyncExternalSource: false,
     })
-    expect(buildPermissionFlags('ROLE_ADMIN')).toMatchObject({
+    expect(buildPermissionFlags(['all'])).toMatchObject({
       canManageTenders: true,
       canDeleteTenders: true,
       canSyncExternalSource: true,

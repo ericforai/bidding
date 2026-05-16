@@ -3,6 +3,7 @@
 // Pos: src/views/Bidding/list/ - Pure helper layer for the bidding list page
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
+import { hasAnyPermission } from '@/utils/permission'
 import { DEFAULT_SOURCE_CONFIG } from './constants.js'
 import {
   formatBudgetWan as formatBudgetWanValue,
@@ -26,15 +27,13 @@ export function resolveUserRole(userStore) {
   )
 }
 
-export function buildPermissionFlags(role) {
-  const normalized = normalizeRole(role)
-  const canManageTenders = normalized === 'admin' || normalized === 'manager'
-  const canCreateTender = canManageTenders || normalized === 'staff'
+export function buildPermissionFlags(menuPermissions) {
+  const perms = Array.isArray(menuPermissions) ? menuPermissions : []
   return {
-    canManageTenders,
-    canCreateTender,
-    canDeleteTenders: normalized === 'admin',
-    canSyncExternalSource: normalized === 'admin',
+    canManageTenders: hasAnyPermission(perms, ['bidding.manage', 'settings', 'all']),
+    canCreateTender: hasAnyPermission(perms, ['bidding.create', 'bidding', 'project.create', 'all']),
+    canDeleteTenders: hasAnyPermission(perms, ['bidding.delete', 'all']),
+    canSyncExternalSource: hasAnyPermission(perms, ['bidding.sync', 'all']),
   }
 }
 
