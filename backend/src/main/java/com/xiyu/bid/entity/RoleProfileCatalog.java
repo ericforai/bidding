@@ -18,6 +18,8 @@ public final class RoleProfileCatalog {
     public static final String BID_LEAD_CODE = "bid_lead";
     public static final String BID_ADMIN_CODE = "bid_admin";
     public static final String TASK_EXECUTOR_CODE = "task_executor";
+    public static final String BID_SPECIALIST_CODE = "bid_specialist";
+    public static final String ADMIN_STAFF_CODE = "admin_staff";
 
     private static final Map<String, SeedDefinition> DEFINITIONS = Map.ofEntries(
             Map.entry(ADMIN_CODE, new SeedDefinition(ADMIN_CODE, "管理员", "系统管理员，拥有所有权限", true, "all", List.of("all"))),
@@ -42,7 +44,13 @@ public final class RoleProfileCatalog {
                             "task.review", "retrospective.review", "closure.review", "lead.assign"))),
             Map.entry(TASK_EXECUTOR_CODE, new SeedDefinition(TASK_EXECUTOR_CODE, "任务执行人", "标书任务承接与执行", true, "self",
                     List.of("dashboard", "project", "knowledge",
-                            "task.view.own", "task.handle.own")))
+                            "task.view.own", "task.handle.own"))),
+            Map.entry(BID_SPECIALIST_CODE, new SeedDefinition(BID_SPECIALIST_CODE, "投标专员", "投标辅助、标书审核与任务处理", true, "self",
+                    List.of("dashboard", "bidding", "project", "knowledge", "resource",
+                            "task.view.own", "task.handle.own", "evaluation.update"))),
+            Map.entry(ADMIN_STAFF_CODE, new SeedDefinition(ADMIN_STAFF_CODE, "行政人员", "资质证书管理与行政事务", true, "self",
+                    List.of("dashboard", "knowledge", "resource",
+                            "certificate.manage", "qualification.view")))
     );
 
     private RoleProfileCatalog() {
@@ -57,7 +65,9 @@ public final class RoleProfileCatalog {
                 DEFINITIONS.get(SALES_CODE),
                 DEFINITIONS.get(BID_LEAD_CODE),
                 DEFINITIONS.get(BID_ADMIN_CODE),
-                DEFINITIONS.get(TASK_EXECUTOR_CODE)
+                DEFINITIONS.get(TASK_EXECUTOR_CODE),
+                DEFINITIONS.get(BID_SPECIALIST_CODE),
+                DEFINITIONS.get(ADMIN_STAFF_CODE)
         );
     }
 
@@ -83,7 +93,7 @@ public final class RoleProfileCatalog {
         String normalizedCode = roleCode == null ? STAFF_CODE : roleCode.trim().toLowerCase(Locale.ROOT);
         return switch (normalizedCode) {
             case ADMIN_CODE -> User.Role.ADMIN;
-            case MANAGER_CODE -> User.Role.MANAGER;
+            case MANAGER_CODE, BID_ADMIN_CODE, BID_LEAD_CODE, SALES_CODE -> User.Role.MANAGER;
             default -> User.Role.STAFF;
         };
     }

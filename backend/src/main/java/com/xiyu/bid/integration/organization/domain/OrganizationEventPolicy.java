@@ -35,10 +35,21 @@ public final class OrganizationEventPolicy {
             Set<String> adminRoleCodes,
             Set<String> managerRoleCodes
     ) {
+        return planUserSync(incoming, adminRoleCodes, managerRoleCodes, null);
+    }
+
+    public static OrganizationUserSyncPlan planUserSync(
+            OrganizationUserSnapshot incoming,
+            Set<String> adminRoleCodes,
+            Set<String> managerRoleCodes,
+            String positionMappedRoleCode
+    ) {
         String username = firstPresent(incoming.username(), incoming.externalUserId());
         String fullName = firstPresent(incoming.fullName(), username);
         String email = firstPresent(incoming.email(), username + "@external-org.local");
-        String roleCode = OrganizationSyncPolicy.mapRoleCode(incoming.externalRoleCode(), adminRoleCodes, managerRoleCodes);
+        String roleCode = OrganizationSyncPolicy.planUserSync(
+                incoming, null, adminRoleCodes, managerRoleCodes, positionMappedRoleCode
+        ).roleCode();
         return new OrganizationUserSyncPlan(
                 normalize(username),
                 fullName.trim(),
