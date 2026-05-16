@@ -40,10 +40,10 @@
 
 **Purpose**: Project initialization, DB schema, configuration, shared utilities.
 
-- [x] T001 Create Flyway migration for organization tables in `backend/src/main/resources/db/migration-mysql/V121__local_users_and_event_dedup.sql`
-- [x] T002 [P] Create `SensitiveDataMasker` utility in `backend/src/main/java/com/xiyu/bid/shared/infrastructure/SensitiveDataMasker.java`
-- [x] T003 [P] Create `OrganizationSyncProperties` config in `backend/src/main/java/com/xiyu/bid/organization/config/OrganizationSyncProperties.java`
-- [x] T004 [P] Create `CrmProperties` config in `backend/src/main/java/com/xiyu/bid/crm/config/CrmProperties.java`
+- [ ] T001 Create Flyway migration for organization tables in `backend/src/main/resources/db/migration-mysql/V{next}__organization_event_sync.sql`
+- [ ] T002 [P] Create `SensitiveDataMasker` utility in `backend/src/main/java/com/xiyu/bid/shared/infrastructure/SensitiveDataMasker.java`
+- [ ] T003 [P] Create `OrganizationSyncProperties` config in `backend/src/main/java/com/xiyu/bid/organization/config/OrganizationSyncProperties.java`
+- [ ] T004 [P] Create `CrmProperties` config in `backend/src/main/java/com/xiyu/bid/crm/config/CrmProperties.java`
 - [ ] T005 Add ClientSDK dependency to `backend/pom.xml` (conditional; jar pending from T000.1)
 
 **Checkpoint**: Schema and configuration ready.
@@ -56,13 +56,13 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [x] T006 [P] Create `OrganizationEventInboxEntity` in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/persistence/entity/OrganizationEventInboxEntity.java`
-- [x] T007 [P] Create `LocalDepartmentEntity` in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/persistence/entity/LocalDepartmentEntity.java`
-- [x] T008 [P] Create `LocalUserEntity` in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/persistence/entity/LocalUserEntity.java`
-- [x] T009 Create repositories in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/persistence/repository/`
-- [x] T010 [P] Create `EventDeduplicationPolicy` in `backend/src/main/java/com/xiyu/bid/organization/domain/EventDeduplicationPolicy.java`
-- [x] T011 [P] Create `CrmToken` value object in `backend/src/main/java/com/xiyu/bid/crm/domain/CrmToken.java`
-- [x] T012 [P] Create `CrmTokenCache` with single-flight in `backend/src/main/java/com/xiyu/bid/crm/domain/CrmTokenCache.java`
+- [ ] T006 [P] Create `OrganizationEventInbox` entity in `backend/src/main/java/com/xiyu/bid/organization/domain/OrganizationEventInbox.java`
+- [ ] T007 [P] Create `LocalDepartment` entity in `backend/src/main/java/com/xiyu/bid/organization/domain/LocalDepartment.java`
+- [ ] T008 [P] Create `LocalUser` entity in `backend/src/main/java/com/xiyu/bid/organization/domain/LocalUser.java`
+- [ ] T009 Create `OrganizationRepository` JPA repository in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/OrganizationRepository.java`
+- [ ] T010 [P] Create `EventDeduplicationPolicy` in `backend/src/main/java/com/xiyu/bid/organization/domain/EventDeduplicationPolicy.java`
+- [ ] T011 [P] Create `CrmToken` value object in `backend/src/main/java/com/xiyu/bid/crm/domain/CrmToken.java`
+- [ ] T012 [P] Create `CrmTokenCache` with single-flight in `backend/src/main/java/com/xiyu/bid/crm/domain/CrmTokenCache.java`
 
 **Checkpoint**: Foundation ready - user story implementation can begin.
 
@@ -78,18 +78,18 @@
 
 > **Write these tests FIRST, ensure they FAIL before implementation.**
 
-- [x] T013 [P] [US1] Unit test `EventDeduplicationPolicy` in `backend/src/test/java/com/xiyu/bid/organization/domain/EventDeduplicationPolicyTest.java`
-- [x] T014 [P] [US1] Unit test `OrganizationUpsertPolicy` in `backend/src/test/java/com/xiyu/bid/organization/domain/OrganizationUpsertPolicyTest.java`
+- [ ] T013 [P] [US1] Unit test `EventDeduplicationPolicy` in `backend/src/test/java/com/xiyu/bid/organization/domain/EventDeduplicationPolicyTest.java`
+- [ ] T014 [P] [US1] Integration test HTTP fallback endpoint in `backend/src/test/java/com/xiyu/bid/organization/infrastructure/HttpFallbackControllerTest.java`
 - [ ] T015 [P] [US1] Integration test event consume → upsert flow in `backend/src/test/java/com/xiyu/bid/organization/application/EventSyncServiceTest.java`
 
 ### Implementation for User Story 1
 
-- [x] T016 [US1] Implement SDK adapter (placeholder) in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/ClientSdkAdapter.java` (activate when SDK jar delivered)
-- [x] T017 [P] [US1] Implement HTTP fallback controller in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/HttpFallbackController.java`
-- [x] T018 [US1] Implement `EventSyncService` in `backend/src/main/java/com/xiyu/bid/organization/application/EventSyncService.java`
-- [x] T019 [US1] Implement `OrganizationUpsertPolicy` in `backend/src/main/java/com/xiyu/bid/organization/domain/OrganizationUpsertPolicy.java`
-- [x] T020 [US1] Implement `XiyuOrganizationApiClient` in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/XiyuOrganizationApiClient.java`
-- [x] T021 [US1] Retry/timeout configuration in `OrganizationSyncProperties` (T003 covers this)
+- [ ] T016 [US1] Implement SDK adapter in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/ClientSdkAdapter.java` (conditional on SDK jar)
+- [ ] T017 [P] [US1] Implement HTTP fallback controller in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/HttpFallbackController.java`
+- [ ] T018 [US1] Implement `EventSyncService` orchestration in `backend/src/main/java/com/xiyu/bid/organization/application/EventSyncService.java`
+- [ ] T019 [US1] Implement `OrganizationUpsertPolicy` in `backend/src/main/java/com/xiyu/bid/organization/domain/OrganizationUpsertPolicy.java`
+- [ ] T020 [US1] Implement `XiyuOrganizationApiClient` (lookback after event) in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/XiyuOrganizationApiClient.java`
+- [ ] T021 [US1] Add retry/timeout configuration to `OrganizationSyncProperties` (update T003)
 
 **Checkpoint**: Event sync (SDK + HTTP dual-path) functional and testable independently.
 
@@ -103,15 +103,15 @@
 
 ### Tests for User Story 2
 
-- [x] T022 [P] [US2] Unit test `FullInitService` in `backend/src/test/java/com/xiyu/bid/organization/application/FullInitServiceTest.java`
-- [x] T023 [P] [US2] Unit test `ReconciliationService` in `backend/src/test/java/com/xiyu/bid/organization/application/ReconciliationServiceTest.java`
+- [ ] T022 [P] [US2] Integration test full init in `backend/src/test/java/com/xiyu/bid/organization/application/FullInitServiceTest.java`
+- [ ] T023 [P] [US2] Integration test reconciliation in `backend/src/test/java/com/xiyu/bid/organization/application/ReconciliationServiceTest.java`
 
 ### Implementation for User Story 2
 
-- [x] T024 [US2] Implement `FullInitService` with pagination in `backend/src/main/java/com/xiyu/bid/organization/application/FullInitService.java`
-- [x] T025 [US2] Implement `ReconciliationService` with time window in `backend/src/main/java/com/xiyu/bid/organization/application/ReconciliationService.java`
-- [x] T026 [US2] Implement `ReconciliationPolicy` (diff classification) in `backend/src/main/java/com/xiyu/bid/organization/domain/ReconciliationPolicy.java`
-- [x] T027 [US2] Add init/reconcile REST endpoints to `OrganizationController` in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/OrganizationController.java`
+- [ ] T024 [US2] Implement `FullInitService` with pagination + resume in `backend/src/main/java/com/xiyu/bid/organization/application/FullInitService.java`
+- [ ] T025 [US2] Implement `ReconciliationService` with time window in `backend/src/main/java/com/xiyu/bid/organization/application/ReconciliationService.java`
+- [ ] T026 [US2] Implement `ReconciliationPolicy` (diff classification) in `backend/src/main/java/com/xiyu/bid/organization/domain/ReconciliationPolicy.java`
+- [ ] T027 [US2] Add init/reconcile REST endpoints to `OrganizationController` in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/OrganizationController.java`
 
 **Checkpoint**: Full init + reconciliation functional. US1 + US2 together = org event sync complete.
 
@@ -131,11 +131,11 @@
 
 ### Implementation for User Story 3
 
-- [x] T031 [US3] Implement `CrmAuthService` (applyToken/refresh/logout) in `backend/src/main/java/com/xiyu/bid/crm/application/CrmAuthService.java`
-- [x] T032 [US3] Implement `CrmHttpClient` unified HTTP layer in `backend/src/main/java/com/xiyu/bid/crm/infrastructure/CrmHttpClient.java`
-- [x] T033 [US3] Implement `CrmResponseHandler` in `backend/src/main/java/com/xiyu/bid/crm/infrastructure/CrmResponseHandler.java`
-- [x] T034 [US3] Implement `CrmCustomerService` (search + contacts) in `backend/src/main/java/com/xiyu/bid/crm/application/CrmCustomerService.java`
-- [x] T035 [US3] Create REST endpoints for customer/auth in `backend/src/main/java/com/xiyu/bid/crm/infrastructure/CrmController.java`
+- [ ] T031 [US3] Implement `CrmAuthService` (applyToken/refresh/logout) in `backend/src/main/java/com/xiyu/bid/crm/application/CrmAuthService.java`
+- [ ] T032 [US3] Implement `CrmHttpClient` unified HTTP layer in `backend/src/main/java/com/xiyu/bid/crm/infrastructure/CrmHttpClient.java`
+- [ ] T033 [US3] Implement `CrmResponseHandler` in `backend/src/main/java/com/xiyu/bid/crm/infrastructure/CrmResponseHandler.java`
+- [ ] T034 [US3] Implement `CrmCustomerService` (search + contacts) in `backend/src/main/java/com/xiyu/bid/crm/application/CrmCustomerService.java`
+- [ ] T035 [US3] Create REST endpoints for customer search/contacts in `backend/src/main/java/com/xiyu/bid/crm/infrastructure/CrmController.java`
 
 **Checkpoint**: CRM auth + customer query functional. Token lifecycle transparent to callers.
 
@@ -149,17 +149,17 @@
 
 ### Tests for User Story 4
 
-- [ ] T036 [P] [US4] Integration test menu tree in `backend/src/test/java/com/xiyu/bid/crm/application/CrmMenuServiceTest.java`
+- [ ] T036 [P] [US4] Integration test menu tree (with cache) in `backend/src/test/java/com/xiyu/bid/crm/application/CrmMenuServiceTest.java`
 - [ ] T037 [P] [US4] Integration test employee query in `backend/src/test/java/com/xiyu/bid/crm/application/CrmEmployeeServiceTest.java`
-- [ ] T038 [P] [US4] Integration test message send in `backend/src/test/java/com/xiyu/bid/crm/application/CrmMessageServiceTest.java`
+- [ ] T038 [P] [US4] Integration test message send (single + batch split) in `backend/src/test/java/com/xiyu/bid/crm/application/CrmMessageServiceTest.java`
 
 ### Implementation for User Story 4
 
-- [x] T039 [US4] Implement `CrmMenuService` in `backend/src/main/java/com/xiyu/bid/crm/application/CrmMenuService.java`
-- [x] T040 [US4] Implement `CrmEmployeeService` in `backend/src/main/java/com/xiyu/bid/crm/application/CrmEmployeeService.java`
-- [x] T041 [US4] Implement `CrmMessageRouter` in `backend/src/main/java/com/xiyu/bid/crm/domain/CrmMessageRouter.java`
-- [x] T042 [US4] Implement `CrmMessageService` in `backend/src/main/java/com/xiyu/bid/crm/application/CrmMessageService.java`
-- [x] T043 [US4] Add menu/employee/message REST endpoints to `CrmController`
+- [ ] T039 [US4] Implement `CrmMenuService` with cache in `backend/src/main/java/com/xiyu/bid/crm/application/CrmMenuService.java`
+- [ ] T040 [US4] Implement `CrmEmployeeService` in `backend/src/main/java/com/xiyu/bid/crm/application/CrmEmployeeService.java`
+- [ ] T041 [US4] Implement `CrmMessageRouter` (batch split strategy) in `backend/src/main/java/com/xiyu/bid/crm/domain/CrmMessageRouter.java`
+- [ ] T042 [US4] Implement `CrmMessageService` (single + batch) in `backend/src/main/java/com/xiyu/bid/crm/application/CrmMessageService.java`
+- [ ] T043 [US4] Add menu/employee/message REST endpoints to `CrmController` (update T035)
 
 **Checkpoint**: All 7 CRM business endpoints functional.
 
@@ -173,16 +173,16 @@
 
 ### Tests for User Story 5
 
-- [x] T044 [P] [US5] Unit test `SensitiveDataMasker` in `backend/src/test/java/com/xiyu/bid/shared/infrastructure/SensitiveDataMaskerTest.java`
+- [ ] T044 [P] [US5] Unit test `SensitiveDataMasker` in `backend/src/test/java/com/xiyu/bid/shared/infrastructure/SensitiveDataMaskerTest.java`
 - [ ] T045 [P] [US5] Integration test metrics emission in `backend/src/test/java/com/xiyu/bid/organization/application/EventSyncMetricsTest.java`
 
 ### Implementation for User Story 5
 
-- [ ] T046 [US5] Wire `SensitiveDataMasker` into logback config (deferred: logback config change needs ops review)
-- [ ] T047 [US5] Add Micrometer metrics to `EventSyncService` (deferred: needs Spring Boot test context)
-- [ ] T048 [P] [US5] Add Micrometer metrics to `CrmHttpClient` (deferred: needs Spring Boot test context)
-- [x] T049 [US5] Audit secrets: `OrganizationSyncProperties` and `CrmProperties` use env vars only, no hardcoded secrets
-- [ ] T050 [US5] Add health check indicators (deferred: needs SDK jar for SDK connectivity check)
+- [ ] T046 [US5] Wire `SensitiveDataMasker` into logback config in `backend/src/main/resources/logback-spring.xml`
+- [ ] T047 [US5] Add Micrometer metrics to `EventSyncService` (update T018) for event consume success/ latency/fallback count
+- [ ] T048 [P] [US5] Add Micrometer metrics to `CrmHttpClient` (update T032) for request count/latency/error rate/retry count
+- [ ] T049 [US5] Verify all secrets from env vars only — audit `OrganizationSyncProperties` and `CrmProperties`
+- [ ] T050 [US5] Add health check indicators for SDK connectivity + CRM connectivity
 
 **Checkpoint**: Production-ready observability and security compliance complete.
 
@@ -192,11 +192,11 @@
 
 **Purpose**: Improvements affecting multiple user stories.
 
-- [x] T051 [P] Run `mvn test -Dtest=ArchitectureTest` — passed, no violations
-- [x] T052 [P] Run `npm run build` — no frontend changes, no regressions
-- [x] T053 Code review — `SensitiveDataMasker` covers token/mobile/email, test-verified
-- [ ] T054 [P] Verify quickstart.md instructions end-to-end (deferred: needs SDK jar)
-- [ ] T055 [P] Update openspec specs (deferred: post-apply archive step)
+- [ ] T051 [P] Run `mvn test -Dtest=ArchitectureTest` and fix any violations
+- [ ] T052 [P] Run `npm run build` (frontend) to verify no regressions
+- [ ] T053 Code review: verify all sensitive fields masked in logs
+- [ ] T054 [P] Verify quickstart.md instructions end-to-end
+- [ ] T055 [P] Update openspec specs if applicable (post-apply archive)
 
 ---
 
