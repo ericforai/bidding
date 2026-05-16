@@ -49,6 +49,7 @@ class OrganizationOperationsAppServiceTest {
         assertThat(response.eventSdkEnabled()).isFalse();
         assertThat(response.pendingRetryCount()).isEqualTo(2L);
         assertThat(response.deadLetterCount()).isEqualTo(1L);
+        assertThat(response.failedCount()).isZero();
         assertThat(response.lastRun().runKey()).isEqualTo("run-1");
     }
 }

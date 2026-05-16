@@ -9,6 +9,7 @@ public record OrganizationOperationsStatusResponse(
         boolean eventSdkEnabled,
         long pendingRetryCount,
         long deadLetterCount,
+        /** Legacy count for events left in FAILED before retry/dead-letter statuses were introduced. */
         long failedCount,
         LastRun lastRun
 ) {

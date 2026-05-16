@@ -70,6 +70,7 @@ public interface OrganizationEventLogRepository extends JpaRepository<Organizati
                 event.nextRetryAt = :now
             where event.status = :processingStatus
               and event.retryCount > 0
+              and (event.message is null or event.message <> :excludedMessage)
               and event.processedAt <= :cutoff
             """)
     int recoverStaleProcessing(
@@ -77,6 +78,27 @@ public interface OrganizationEventLogRepository extends JpaRepository<Organizati
             @Param("pendingStatus") OrganizationEventStatus pendingStatus,
             @Param("cutoff") LocalDateTime cutoff,
             @Param("now") LocalDateTime now,
+            @Param("message") String message,
+            @Param("excludedMessage") String excludedMessage
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            update OrganizationEventLogEntity event
+            set event.status = :deadLetterStatus,
+                event.message = :message,
+                event.nextRetryAt = null,
+                event.processedAt = :now
+            where event.status = :processingStatus
+              and event.message = :replayMessage
+              and event.processedAt <= :cutoff
+            """)
+    int recoverStaleDeadLetterReplay(
+            @Param("processingStatus") OrganizationEventStatus processingStatus,
+            @Param("deadLetterStatus") OrganizationEventStatus deadLetterStatus,
+            @Param("cutoff") LocalDateTime cutoff,
+            @Param("now") LocalDateTime now,
+            @Param("replayMessage") String replayMessage,
             @Param("message") String message
     );
 

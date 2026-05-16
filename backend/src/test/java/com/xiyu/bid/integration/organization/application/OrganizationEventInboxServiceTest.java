@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -147,7 +148,7 @@ class OrganizationEventInboxServiceTest {
     @Test
     @DisplayName("claims due retry with atomic repository update")
     void claimDueRetry_usesRepositoryClaim() {
-        java.time.LocalDateTime now = java.time.LocalDateTime.parse("2026-05-15T10:00:00");
+        LocalDateTime now = LocalDateTime.parse("2026-05-15T10:00:00");
         when(repository.claimDueRetry(
                 "event-key",
                 OrganizationEventStatus.PENDING_RETRY,
@@ -163,7 +164,7 @@ class OrganizationEventInboxServiceTest {
     @Test
     @DisplayName("claims dead letter replay with atomic repository update")
     void claimDeadLetterReplay_usesRepositoryClaim() {
-        java.time.LocalDateTime now = java.time.LocalDateTime.parse("2026-05-15T10:00:00");
+        LocalDateTime now = LocalDateTime.parse("2026-05-15T10:00:00");
         when(repository.claimDeadLetterReplay(
                 "event-key",
                 OrganizationEventStatus.DEAD_LETTER,
@@ -174,6 +175,32 @@ class OrganizationEventInboxServiceTest {
         OrganizationEventInboxService service = service();
 
         assertThat(service.claimDeadLetterReplay("event-key", now)).isTrue();
+    }
+
+    @Test
+    @DisplayName("stale processing recovery keeps retry and manual replay leases separate")
+    void recoverStaleProcessing_recoversRetryAndManualReplaySeparately() {
+        LocalDateTime cutoff = LocalDateTime.parse("2026-05-15T09:45:00");
+        LocalDateTime now = LocalDateTime.parse("2026-05-15T10:00:00");
+        when(repository.recoverStaleProcessing(
+                OrganizationEventStatus.PROCESSING,
+                OrganizationEventStatus.PENDING_RETRY,
+                cutoff,
+                now,
+                "retry lease expired",
+                "manual replaying"
+        )).thenReturn(2);
+        when(repository.recoverStaleDeadLetterReplay(
+                OrganizationEventStatus.PROCESSING,
+                OrganizationEventStatus.DEAD_LETTER,
+                cutoff,
+                now,
+                "manual replaying",
+                "manual replay lease expired"
+        )).thenReturn(1);
+        OrganizationEventInboxService service = service();
+
+        assertThat(service.recoverStaleProcessing(cutoff, now)).isEqualTo(3);
     }
 
     private OrganizationEventInboxService service() {
