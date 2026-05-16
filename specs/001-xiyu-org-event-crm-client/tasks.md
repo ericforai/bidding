@@ -40,10 +40,10 @@
 
 **Purpose**: Project initialization, DB schema, configuration, shared utilities.
 
-- [ ] T001 Create Flyway migration for organization tables in `backend/src/main/resources/db/migration-mysql/V{next}__organization_event_sync.sql`
-- [ ] T002 [P] Create `SensitiveDataMasker` utility in `backend/src/main/java/com/xiyu/bid/shared/infrastructure/SensitiveDataMasker.java`
-- [ ] T003 [P] Create `OrganizationSyncProperties` config in `backend/src/main/java/com/xiyu/bid/organization/config/OrganizationSyncProperties.java`
-- [ ] T004 [P] Create `CrmProperties` config in `backend/src/main/java/com/xiyu/bid/crm/config/CrmProperties.java`
+- [x] T001 Create Flyway migration for organization tables in `backend/src/main/resources/db/migration-mysql/V121__local_users_and_event_dedup.sql`
+- [x] T002 [P] Create `SensitiveDataMasker` utility in `backend/src/main/java/com/xiyu/bid/shared/infrastructure/SensitiveDataMasker.java`
+- [x] T003 [P] Create `OrganizationSyncProperties` config in `backend/src/main/java/com/xiyu/bid/organization/config/OrganizationSyncProperties.java`
+- [x] T004 [P] Create `CrmProperties` config in `backend/src/main/java/com/xiyu/bid/crm/config/CrmProperties.java`
 - [ ] T005 Add ClientSDK dependency to `backend/pom.xml` (conditional; jar pending from T000.1)
 
 **Checkpoint**: Schema and configuration ready.
@@ -56,13 +56,13 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T006 [P] Create `OrganizationEventInbox` entity in `backend/src/main/java/com/xiyu/bid/organization/domain/OrganizationEventInbox.java`
-- [ ] T007 [P] Create `LocalDepartment` entity in `backend/src/main/java/com/xiyu/bid/organization/domain/LocalDepartment.java`
-- [ ] T008 [P] Create `LocalUser` entity in `backend/src/main/java/com/xiyu/bid/organization/domain/LocalUser.java`
-- [ ] T009 Create `OrganizationRepository` JPA repository in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/OrganizationRepository.java`
-- [ ] T010 [P] Create `EventDeduplicationPolicy` in `backend/src/main/java/com/xiyu/bid/organization/domain/EventDeduplicationPolicy.java`
-- [ ] T011 [P] Create `CrmToken` value object in `backend/src/main/java/com/xiyu/bid/crm/domain/CrmToken.java`
-- [ ] T012 [P] Create `CrmTokenCache` with single-flight in `backend/src/main/java/com/xiyu/bid/crm/domain/CrmTokenCache.java`
+- [x] T006 [P] Create `OrganizationEventInboxEntity` in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/persistence/entity/OrganizationEventInboxEntity.java`
+- [x] T007 [P] Create `LocalDepartmentEntity` in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/persistence/entity/LocalDepartmentEntity.java`
+- [x] T008 [P] Create `LocalUserEntity` in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/persistence/entity/LocalUserEntity.java`
+- [x] T009 Create repositories in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/persistence/repository/`
+- [x] T010 [P] Create `EventDeduplicationPolicy` in `backend/src/main/java/com/xiyu/bid/organization/domain/EventDeduplicationPolicy.java`
+- [x] T011 [P] Create `CrmToken` value object in `backend/src/main/java/com/xiyu/bid/crm/domain/CrmToken.java`
+- [x] T012 [P] Create `CrmTokenCache` with single-flight in `backend/src/main/java/com/xiyu/bid/crm/domain/CrmTokenCache.java`
 
 **Checkpoint**: Foundation ready - user story implementation can begin.
 
@@ -78,18 +78,18 @@
 
 > **Write these tests FIRST, ensure they FAIL before implementation.**
 
-- [ ] T013 [P] [US1] Unit test `EventDeduplicationPolicy` in `backend/src/test/java/com/xiyu/bid/organization/domain/EventDeduplicationPolicyTest.java`
-- [ ] T014 [P] [US1] Integration test HTTP fallback endpoint in `backend/src/test/java/com/xiyu/bid/organization/infrastructure/HttpFallbackControllerTest.java`
+- [x] T013 [P] [US1] Unit test `EventDeduplicationPolicy` in `backend/src/test/java/com/xiyu/bid/organization/domain/EventDeduplicationPolicyTest.java`
+- [x] T014 [P] [US1] Unit test `OrganizationUpsertPolicy` in `backend/src/test/java/com/xiyu/bid/organization/domain/OrganizationUpsertPolicyTest.java`
 - [ ] T015 [P] [US1] Integration test event consume → upsert flow in `backend/src/test/java/com/xiyu/bid/organization/application/EventSyncServiceTest.java`
 
 ### Implementation for User Story 1
 
-- [ ] T016 [US1] Implement SDK adapter in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/ClientSdkAdapter.java` (conditional on SDK jar)
-- [ ] T017 [P] [US1] Implement HTTP fallback controller in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/HttpFallbackController.java`
-- [ ] T018 [US1] Implement `EventSyncService` orchestration in `backend/src/main/java/com/xiyu/bid/organization/application/EventSyncService.java`
-- [ ] T019 [US1] Implement `OrganizationUpsertPolicy` in `backend/src/main/java/com/xiyu/bid/organization/domain/OrganizationUpsertPolicy.java`
-- [ ] T020 [US1] Implement `XiyuOrganizationApiClient` (lookback after event) in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/XiyuOrganizationApiClient.java`
-- [ ] T021 [US1] Add retry/timeout configuration to `OrganizationSyncProperties` (update T003)
+- [x] T016 [US1] Implement SDK adapter (placeholder) in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/ClientSdkAdapter.java` (activate when SDK jar delivered)
+- [x] T017 [P] [US1] Implement HTTP fallback controller in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/HttpFallbackController.java`
+- [x] T018 [US1] Implement `EventSyncService` in `backend/src/main/java/com/xiyu/bid/organization/application/EventSyncService.java`
+- [x] T019 [US1] Implement `OrganizationUpsertPolicy` in `backend/src/main/java/com/xiyu/bid/organization/domain/OrganizationUpsertPolicy.java`
+- [x] T020 [US1] Implement `XiyuOrganizationApiClient` in `backend/src/main/java/com/xiyu/bid/organization/infrastructure/XiyuOrganizationApiClient.java`
+- [x] T021 [US1] Retry/timeout configuration in `OrganizationSyncProperties` (T003 covers this)
 
 **Checkpoint**: Event sync (SDK + HTTP dual-path) functional and testable independently.
 
@@ -131,11 +131,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T031 [US3] Implement `CrmAuthService` (applyToken/refresh/logout) in `backend/src/main/java/com/xiyu/bid/crm/application/CrmAuthService.java`
-- [ ] T032 [US3] Implement `CrmHttpClient` unified HTTP layer in `backend/src/main/java/com/xiyu/bid/crm/infrastructure/CrmHttpClient.java`
-- [ ] T033 [US3] Implement `CrmResponseHandler` in `backend/src/main/java/com/xiyu/bid/crm/infrastructure/CrmResponseHandler.java`
-- [ ] T034 [US3] Implement `CrmCustomerService` (search + contacts) in `backend/src/main/java/com/xiyu/bid/crm/application/CrmCustomerService.java`
-- [ ] T035 [US3] Create REST endpoints for customer search/contacts in `backend/src/main/java/com/xiyu/bid/crm/infrastructure/CrmController.java`
+- [x] T031 [US3] Implement `CrmAuthService` (applyToken/refresh/logout) in `backend/src/main/java/com/xiyu/bid/crm/application/CrmAuthService.java`
+- [x] T032 [US3] Implement `CrmHttpClient` unified HTTP layer in `backend/src/main/java/com/xiyu/bid/crm/infrastructure/CrmHttpClient.java`
+- [x] T033 [US3] Implement `CrmResponseHandler` in `backend/src/main/java/com/xiyu/bid/crm/infrastructure/CrmResponseHandler.java`
+- [x] T034 [US3] Implement `CrmCustomerService` (search + contacts) in `backend/src/main/java/com/xiyu/bid/crm/application/CrmCustomerService.java`
+- [x] T035 [US3] Create REST endpoints for customer/auth in `backend/src/main/java/com/xiyu/bid/crm/infrastructure/CrmController.java`
 
 **Checkpoint**: CRM auth + customer query functional. Token lifecycle transparent to callers.
 
