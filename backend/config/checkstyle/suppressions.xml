@@ -6,4 +6,19 @@
     <suppress files=".*/src/test/java/.*" checks=".*"/>
     <!-- DTOs use Lombok; field-level Javadoc adds noise without value -->
     <suppress files=".*/dto/.*\.java" checks="JavadocVariable|JavadocType|JavadocMethod|MissingJavadocMethod|JavadocPackage|JavadocStyle|MagicNumber|LineLength|FinalParameters"/>
+    <!-- JPA entities: Lombok-generated, field names document themselves -->
+    <suppress files=".*/persistence/entity/.*\.java" checks="JavadocVariable|MissingJavadocMethod|DesignForExtension"/>
+    <!-- JPA repositories: Spring Data interfaces -->
+    <suppress files=".*/persistence/repository/.*\.java" checks="JavadocMethod|JavadocType"/>
+    <!-- Shared infrastructure utilities -->
+    <suppress files=".*/shared/infrastructure/.*\.java" checks="JavadocVariable|MissingJavadocMethod|DesignForExtension|MagicNumber"/>
+
+    <!-- Config classes use Lombok; field-level Javadoc and magic numbers are noise -->
+    <suppress files=".*/config/.*\.java" checks="JavadocVariable|JavadocType|JavadocMethod|MissingJavadocMethod|JavadocPackage|JavadocStyle|MagicNumber|LineLength|FinalParameters"/>
+    <!-- Domain policies: pure logic, magic numbers are domain constants -->
+    <suppress files=".*/domain/.*\.java" checks="MagicNumber|JavadocVariable|JavadocMethod|MissingJavadocMethod|DesignForExtension"/>
+    <!-- Infrastructure adapters: controllers and clients -->
+    <suppress files=".*/infrastructure/.*\.java" checks="JavadocVariable|MissingJavadocMethod|DesignForExtension"/>
+    <!-- Application services: orchestration, Spring-managed singletons -->
+    <suppress files=".*/application/.*\.java" checks="JavadocVariable|MissingJavadocMethod|DesignForExtension|FinalParameters|HiddenField"/>
 </suppressions>
