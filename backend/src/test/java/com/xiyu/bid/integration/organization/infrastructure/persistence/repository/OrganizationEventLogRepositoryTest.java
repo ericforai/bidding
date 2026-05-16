@@ -20,10 +20,11 @@ class OrganizationEventLogRepositoryTest {
     private OrganizationEventLogRepository repository;
 
     @Test
-    @DisplayName("recovers stale retry and dead letter replay processing into separate states")
-    void recoverStaleProcessing_keepsRetryAndManualReplaySeparate() {
+    @DisplayName("recovers stale initial, retry, and dead letter replay processing into separate states")
+    void recoverStaleProcessing_keepsInitialRetryAndManualReplaySeparate() {
         LocalDateTime cutoff = LocalDateTime.parse("2026-05-15T09:45:00");
         LocalDateTime now = LocalDateTime.parse("2026-05-15T10:00:00");
+        repository.saveAndFlush(log("initial-event", "processing", 0, cutoff.minusMinutes(1)));
         repository.saveAndFlush(log("retry-event", "retrying", 1, cutoff.minusMinutes(1)));
         repository.saveAndFlush(log("dead-letter-event", "manual replaying", 0, cutoff.minusMinutes(1)));
 
@@ -32,7 +33,7 @@ class OrganizationEventLogRepositoryTest {
                 OrganizationEventStatus.PENDING_RETRY,
                 cutoff,
                 now,
-                "retry lease expired",
+                "processing lease expired",
                 "manual replaying"
         );
         int replayRecovered = repository.recoverStaleDeadLetterReplay(
@@ -44,10 +45,13 @@ class OrganizationEventLogRepositoryTest {
                 "manual replay lease expired"
         );
 
+        OrganizationEventLogEntity initialEvent = repository.findByEventKey("initial-event").orElseThrow();
         OrganizationEventLogEntity retryEvent = repository.findByEventKey("retry-event").orElseThrow();
         OrganizationEventLogEntity replayEvent = repository.findByEventKey("dead-letter-event").orElseThrow();
-        assertThat(retryRecovered).isEqualTo(1);
+        assertThat(retryRecovered).isEqualTo(2);
         assertThat(replayRecovered).isEqualTo(1);
+        assertThat(initialEvent.getStatus()).isEqualTo(OrganizationEventStatus.PENDING_RETRY);
+        assertThat(initialEvent.getNextRetryAt()).isEqualTo(now);
         assertThat(retryEvent.getStatus()).isEqualTo(OrganizationEventStatus.PENDING_RETRY);
         assertThat(retryEvent.getNextRetryAt()).isEqualTo(now);
         assertThat(replayEvent.getStatus()).isEqualTo(OrganizationEventStatus.DEAD_LETTER);

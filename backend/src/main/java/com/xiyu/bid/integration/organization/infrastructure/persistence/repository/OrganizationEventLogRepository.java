@@ -69,7 +69,6 @@ public interface OrganizationEventLogRepository extends JpaRepository<Organizati
                 event.message = :message,
                 event.nextRetryAt = :now
             where event.status = :processingStatus
-              and event.retryCount > 0
               and (event.message is null or event.message <> :excludedMessage)
               and event.processedAt <= :cutoff
             """)
