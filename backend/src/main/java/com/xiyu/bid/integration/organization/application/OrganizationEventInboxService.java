@@ -23,6 +23,11 @@ import java.util.Optional;
 
 @Service
 public class OrganizationEventInboxService {
+    private static final String RETRYING_MESSAGE = "retrying";
+    private static final String RETRY_LEASE_EXPIRED_MESSAGE = "retry lease expired";
+    private static final String MANUAL_REPLAYING_MESSAGE = "manual replaying";
+    private static final String MANUAL_REPLAY_LEASE_EXPIRED_MESSAGE = "manual replay lease expired";
+
     private final OrganizationEventLogRepository eventLogRepository;
     private final OrganizationIntegrationProperties properties;
 
@@ -31,7 +36,7 @@ public class OrganizationEventInboxService {
             OrganizationIntegrationProperties properties
     ) {
         this.eventLogRepository = eventLogRepository;
-        this.properties = properties == null ? new OrganizationIntegrationProperties() : properties;
+        this.properties = properties;
     }
 
     public String eventKey(OrganizationEventNotice notice) {
@@ -97,19 +102,29 @@ public class OrganizationEventInboxService {
                 OrganizationEventStatus.PENDING_RETRY,
                 OrganizationEventStatus.PROCESSING,
                 now,
-                "retrying"
+                RETRYING_MESSAGE
         ) == 1;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public int recoverStaleProcessing(LocalDateTime cutoff, LocalDateTime now) {
-        return eventLogRepository.recoverStaleProcessing(
+        int retryRecovered = eventLogRepository.recoverStaleProcessing(
                 OrganizationEventStatus.PROCESSING,
                 OrganizationEventStatus.PENDING_RETRY,
                 cutoff,
                 now,
-                "retry lease expired"
+                RETRY_LEASE_EXPIRED_MESSAGE,
+                MANUAL_REPLAYING_MESSAGE
         );
+        int replayRecovered = eventLogRepository.recoverStaleDeadLetterReplay(
+                OrganizationEventStatus.PROCESSING,
+                OrganizationEventStatus.DEAD_LETTER,
+                cutoff,
+                now,
+                MANUAL_REPLAYING_MESSAGE,
+                MANUAL_REPLAY_LEASE_EXPIRED_MESSAGE
+        );
+        return retryRecovered + replayRecovered;
     }
 
     @Transactional(readOnly = true)
@@ -133,7 +148,7 @@ public class OrganizationEventInboxService {
                 OrganizationEventStatus.DEAD_LETTER,
                 OrganizationEventStatus.PROCESSING,
                 now,
-                "manual replaying"
+                MANUAL_REPLAYING_MESSAGE
         ) == 1;
     }
 

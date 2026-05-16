@@ -1,5 +1,5 @@
 <!-- Input: organization integration operations composable -->
-<!-- Output: compact API-only organization operations card with explicit error and disabled states -->
+<!-- Output: compact API-only organization operations card with grouped manual operation controls -->
 <!-- Pos: src/views/System/settings/integration/ -->
 <!-- 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。 -->
 
@@ -54,12 +54,18 @@
     </div>
 
     <div class="resync-grid">
-      <el-input v-model="userId" placeholder="userId" clearable />
-      <el-button :loading="resyncingUser" :disabled="!canOperate" @click="resyncUser">重同步用户</el-button>
-      <el-input v-model="deptId" placeholder="deptId" clearable />
-      <el-button :loading="resyncingDepartment" :disabled="!canOperate" @click="resyncDepartment">重同步部门</el-button>
-      <el-input v-model="deadLetterEventKey" placeholder="eventKey" clearable />
-      <el-button :loading="replayingDeadLetter" :disabled="!canOperate" @click="replayDeadLetter">重放死信</el-button>
+      <div class="resync-operation">
+        <el-input v-model="userId" placeholder="userId" clearable />
+        <el-button :loading="resyncingUser" :disabled="!canOperate" @click="resyncUser">重同步用户</el-button>
+      </div>
+      <div class="resync-operation">
+        <el-input v-model="deptId" placeholder="deptId" clearable />
+        <el-button :loading="resyncingDepartment" :disabled="!canOperate" @click="resyncDepartment">重同步部门</el-button>
+      </div>
+      <div class="resync-operation">
+        <el-input v-model="deadLetterEventKey" placeholder="eventKey" clearable />
+        <el-button :loading="replayingDeadLetter" :disabled="!canOperate" @click="replayDeadLetter">重放死信</el-button>
+      </div>
     </div>
   </div>
 </template>
@@ -138,7 +144,7 @@ onMounted(load)
 }
 
 .toolbar-actions :deep(.el-button + .el-button),
-.resync-grid :deep(.el-button + .el-button) {
+.resync-operation :deep(.el-button + .el-button) {
   margin-left: 0;
 }
 
@@ -157,11 +163,22 @@ onMounted(load)
   font-size: 18px;
 }
 
-.status-grid,
-.resync-grid {
+.status-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
+}
+
+.resync-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.resync-operation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
 }
 
 .status-cell,
@@ -190,7 +207,10 @@ onMounted(load)
 }
 
 @media (max-width: 920px) {
-  .status-grid,
+  .status-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .resync-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -220,6 +240,14 @@ onMounted(load)
   .status-grid,
   .resync-grid {
     grid-template-columns: 1fr;
+  }
+
+  .resync-operation {
+    grid-template-columns: 1fr;
+  }
+
+  .resync-operation :deep(.el-button) {
+    width: 100%;
   }
 }
 </style>

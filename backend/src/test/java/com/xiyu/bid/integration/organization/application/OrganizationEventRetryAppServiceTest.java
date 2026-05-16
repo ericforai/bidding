@@ -114,6 +114,28 @@ class OrganizationEventRetryAppServiceTest {
         verify(syncAppService, never()).reprocessReservedEvent("event-key", "{}");
     }
 
+    @Test
+    @DisplayName("manual replay rejects claim races before reprocessing")
+    void replayDeadLetter_claimRace_rejects() {
+        LocalDateTime now = LocalDateTime.parse("2026-05-15T10:00:00");
+        OrganizationEventLogEntity event = eventLog("event-key", "{}");
+        event.setStatus(OrganizationEventStatus.DEAD_LETTER);
+        when(inboxService.findByEventKey("event-key")).thenReturn(Optional.of(event));
+        when(inboxService.claimDeadLetterReplay("event-key", now)).thenReturn(false);
+
+        OrganizationEventRetryAppService service = new OrganizationEventRetryAppService(
+                inboxService,
+                syncAppService,
+                new OrganizationIntegrationProperties(),
+                OrganizationDirectorySyncAppServiceTest.fixedSettings(true)
+        );
+
+        assertThatThrownBy(() -> service.replayDeadLetter("event-key", now))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("状态已变化");
+        verify(syncAppService, never()).reprocessReservedEvent("event-key", "{}");
+    }
+
     private OrganizationEventLogEntity eventLog(String eventKey, String rawPayload) {
         OrganizationEventLogEntity event = new OrganizationEventLogEntity();
         event.setEventKey(eventKey);
