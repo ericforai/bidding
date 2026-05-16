@@ -4,11 +4,11 @@
 // 维护声明: 仅维护配置与启动约束；业务规则变更请同步到对应 service/controller.
 package com.xiyu.bid.config;
 
+import com.xiyu.bid.entity.RoleProfile;
+import com.xiyu.bid.entity.RoleProfileCatalog;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.RoleProfileRepository;
 import com.xiyu.bid.repository.UserRepository;
-import com.xiyu.bid.entity.RoleProfile;
-import com.xiyu.bid.entity.RoleProfileCatalog;
 import com.xiyu.bid.task.entity.TaskStatusCategory;
 import com.xiyu.bid.task.entity.TaskStatusDict;
 import com.xiyu.bid.task.repository.TaskStatusDictRepository;
@@ -67,9 +67,14 @@ public class E2eDemoDataInitializer implements ApplicationRunner {
 
     void seedDemoUsers() {
         List<DemoUser> demoUsers = List.of(
-                new DemoUser("lizong", "李总", "lizong@example.com", User.Role.ADMIN),
-                new DemoUser("zhangjingli", "张经理", "zhangjingli@example.com", User.Role.MANAGER),
-                new DemoUser("xiaowang", "小王", "xiaowang@example.com", User.Role.STAFF)
+                new DemoUser("lizong", "李总", "lizong@example.com", RoleProfileCatalog.ADMIN_CODE),
+                new DemoUser("zhangjingli", "张经理", "zhangjingli@example.com", RoleProfileCatalog.MANAGER_CODE),
+                new DemoUser("xiaowang", "小王", "xiaowang@example.com", RoleProfileCatalog.STAFF_CODE),
+                new DemoUser("xiaochen", "陈投标管理", "xiaochen@example.com", RoleProfileCatalog.BID_ADMIN_CODE),
+                new DemoUser("xiaoliu", "刘投标组长", "xiaoliu@example.com", RoleProfileCatalog.BID_LEAD_CODE),
+                new DemoUser("xiaozhang", "张销售", "xiaozhang@example.com", RoleProfileCatalog.SALES_CODE),
+                new DemoUser("xiaozhou", "周投标专员", "xiaozhou@example.com", RoleProfileCatalog.BID_SPECIALIST_CODE),
+                new DemoUser("xiaozheng", "郑行政", "xiaozheng@example.com", RoleProfileCatalog.ADMIN_STAFF_CODE)
         );
 
         demoUsers.forEach(this::createOrUpdateUser);
@@ -79,14 +84,13 @@ public class E2eDemoDataInitializer implements ApplicationRunner {
         User user = userRepository.findByUsername(demoUser.username())
                 .orElseGet(User::new);
 
-        String roleCode = RoleProfileCatalog.definitionForLegacyRole(demoUser.role()).code();
-        var profile = roleProfileRepository.findByCodeIgnoreCase(roleCode)
-                .orElseThrow(() -> new IllegalStateException("Required RoleProfile not found: " + roleCode));
+        var profile = roleProfileRepository.findByCodeIgnoreCase(demoUser.roleCode())
+                .orElseThrow(() -> new IllegalStateException("Required RoleProfile not found: " + demoUser.roleCode()));
 
         user.setUsername(demoUser.username());
         user.setFullName(demoUser.fullName());
         user.setEmail(demoUser.email());
-        user.setRole(demoUser.role());
+        user.setRole(RoleProfileCatalog.legacyRoleForCode(demoUser.roleCode()));
         user.setRoleProfile(profile);
         user.setEnabled(true);
         user.setPassword(passwordEncoder.encode(DEMO_PASSWORD));
@@ -123,7 +127,7 @@ public class E2eDemoDataInitializer implements ApplicationRunner {
         }
     }
 
-    private record DemoUser(String username, String fullName, String email, User.Role role) {
+    private record DemoUser(String username, String fullName, String email, String roleCode) {
     }
 
     private record TaskStatusSeed(String code, String name, TaskStatusCategory category,

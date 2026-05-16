@@ -137,12 +137,38 @@ npm run test:e2e
 
 ## 默认登录凭据
 
-| 环境 | 用户名 | 密码 | 角色 | 来源 |
-|------|--------|------|------|------|
-| dev / prod | `admin` | `XiyuAdmin2026!` | ADMIN | V57 迁移 + DefaultAdminInitializer |
-| e2e | `lizong` | `123456` | ADMIN | E2eDemoDataInitializer |
-| e2e | `zhangjingli` | `123456` | MANAGER | E2eDemoDataInitializer |
-| e2e | `xiaowang` | `123456` | STAFF | E2eDemoDataInitializer |
+### dev / prod
+
+| 用户名 | 密码 | 角色 | 来源 |
+|--------|------|------|------|
+| `admin` | `XiyuAdmin2026!` | `admin` (ADMIN) | V57 迁移 + DefaultAdminInitializer |
+
+### e2e
+
+| 用户名 | 密码 | RoleProfile | Legacy 角色 | 来源 |
+|--------|------|-------------|-------------|------|
+| `lizong` | `123456` | `admin` | ADMIN | E2eDemoDataInitializer |
+| `zhangjingli` | `123456` | `manager` | MANAGER | E2eDemoDataInitializer |
+| `xiaowang` | `123456` | `staff` | STAFF | E2eDemoDataInitializer |
+| `xiaochen` | `123456` | `bid_admin` | MANAGER | E2eDemoDataInitializer |
+| `xiaoliu` | `123456` | `bid_lead` | MANAGER | E2eDemoDataInitializer |
+| `xiaozhang` | `123456` | `sales` | MANAGER | E2eDemoDataInitializer |
+| `xiaozhou` | `123456` | `bid_specialist` | STAFF | E2eDemoDataInitializer |
+| `xiaozheng` | `123456` | `admin_staff` | STAFF | E2eDemoDataInitializer |
+
+### dev (本地联调，SPRING_PROFILES_ACTIVE=dev)
+
+| 用户名 | 密码 | RoleProfile | Legacy 角色 | 来源 |
+|--------|------|-------------|-------------|------|
+| `staff` | `Test@123` | `staff` | STAFF | LocalDevAccountInitializer |
+| `manager` | `Test@123` | `manager` | MANAGER | LocalDevAccountInitializer |
+| `bid_admin` | `Test@123` | `bid_admin` | MANAGER | LocalDevAccountInitializer |
+| `bid_lead` | `Test@123` | `bid_lead` | MANAGER | LocalDevAccountInitializer |
+| `sales` | `Test@123` | `sales` | MANAGER | LocalDevAccountInitializer |
+| `bid_specialist` | `Test@123` | `bid_specialist` | STAFF | LocalDevAccountInitializer |
+| `admin_staff` | `Test@123` | `admin_staff` | STAFF | LocalDevAccountInitializer |
+
+> `bid_specialist` 与 `admin_staff` 为 2026-05-16 新增角色，对应产品蓝图 "投标专员" 与 "行政人员"。
 
 生产环境通过 `ADMIN_PASSWORD` 环境变量覆盖默认密码。任何 profile 启动后数据库至少有一个可登录账户。
 
