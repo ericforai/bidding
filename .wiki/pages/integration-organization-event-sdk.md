@@ -13,8 +13,8 @@ backlinks:
   - _index
   - integration-oa-crm
 created: 2026-04-28
-updated: 2026-05-07
-health_checked: 2026-05-15
+updated: 2026-05-17
+health_checked: 2026-05-17
 ---
 # 组织架构对接 - 客户事件库 SDK 方案
 
@@ -73,6 +73,47 @@ health_checked: 2026-05-15
 | 部门 ID | `deptId` (业务主键) | 不得使用自增 ID，基于 `deptId` 进行 upsert |
 | 员工 ID | `userId` (业务主键) | 不得使用自增 ID，基于 `userId` 进行 upsert |
 | 启停用/状态 | `enabled` 字段 | 接口未查询到或状态失效时禁用，不得物理删除 |
+| 职位信息 | `positionCode` / `positionName` / `jobCode` | 通过正则模式匹配映射到系统 `RoleProfile`（见下方"职位到角色映射"） |
+
+## 职位到角色映射
+
+西域组织架构接口不传递标准化角色码，只返回职位信息。系统通过 `PositionToRoleMapper` 基于正则模式匹配职位名称/编码，自动映射到 `RoleProfile`。
+
+### 映射优先级
+
+1. `PositionToRoleMapper.map(positionText)` — 正则匹配职位信息
+2. 回退到 `OrganizationSyncPolicy.mapRoleCode()` — `adminRoleCodes` / `managerRoleCodes` 精确匹配
+3. 保持用户现有角色（如果是已有用户）
+4. 默认 `staff`（如果是新建用户且无任何匹配）
+
+### Admin 升级守卫
+
+若职位映射结果为 `admin`，但用户现有角色不是 `admin`，则**拒绝升级**，保持现有角色。防止西域职位误配导致普通用户意外获得系统管理员权限。
+
+### 配置示例
+
+在 `application.yml` 中配置：
+
+```yaml
+xiyu:
+  integrations:
+    organization:
+      positionToRoleMappings:
+        - positionPattern: "投标.*管理.*"
+          roleCode: bid_admin
+        - positionPattern: "投标.*组长.*"
+          roleCode: bid_lead
+        - positionPattern: "投标.*专员.*"
+          roleCode: bid_specialist
+        - positionPattern: "项目.*负责.*"
+          roleCode: sales
+        - positionPattern: "行政.*"
+          roleCode: admin_staff
+        - positionPattern: "系统.*管理.*"
+          roleCode: admin
+```
+
+> 实际 `positionPattern` 需等西域联调后根据真实职位名称格式校准。建议先配置较宽正则，联调后收紧。
 
 ## 推荐后端模块拆分
 
