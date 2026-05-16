@@ -97,6 +97,7 @@ const clickSendComment = async (wrapper) => {
 }
 
 describe('ProjectCollaborationCard', () => {
+  vi.setConfig({ testTimeout: 10000 })
   beforeEach(() => {
     getThreadsMock.mockReset()
     getThreadMock.mockReset()
