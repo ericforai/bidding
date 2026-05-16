@@ -103,8 +103,8 @@
 
 ### Tests for User Story 2
 
-- [x] T022 [P] [US2] Unit test `ReconciliationPolicy` in `backend/src/test/java/com/xiyu/bid/organization/domain/ReconciliationPolicyTest.java`
-- [ ] T023 [P] [US2] Integration test reconciliation in `backend/src/test/java/com/xiyu/bid/organization/application/ReconciliationServiceTest.java`
+- [x] T022 [P] [US2] Unit test `FullInitService` in `backend/src/test/java/com/xiyu/bid/organization/application/FullInitServiceTest.java`
+- [x] T023 [P] [US2] Unit test `ReconciliationService` in `backend/src/test/java/com/xiyu/bid/organization/application/ReconciliationServiceTest.java`
 
 ### Implementation for User Story 2
 
