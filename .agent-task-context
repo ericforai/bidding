@@ -1,6 +1,6 @@
 agent=cursor
-task=docs-reorg-2
-branch=cursor/docs-reorg-2
+task=trunk
+branch=agent/cursor
 base=origin/main
-worktree=/Users/user/xiyu/worktrees/cursor-docs-reorg-2
-created_at=2026-05-12T07:09:11Z
+worktree=/Users/user/xiyu/worktrees/cursor
+created_at=2026-05-17T12:11:00Z
