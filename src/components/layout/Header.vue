@@ -126,7 +126,6 @@ import { useUserStore } from '@/stores/user'
 import { useNotificationStore } from '@/stores/notifications'
 import { useNotifications } from '@/composables/useNotifications'
 import NotificationPanel from '@/components/common/NotificationPanel.vue'
-import { hasMenuAccessForRole } from '@/api/modules/settings'
 
 defineProps({
   collapse: {
@@ -178,25 +177,7 @@ const userAvatar = computed(() => {
 })
 const userName = computed(() => userStore.currentUser?.name || '游客')
 const userRoleText = computed(() => userStore.currentUser?.roleName || roleTextMap[userStore.userRole] || '游客')
-const canAccessSettings = computed(() => {
-  if (userStore.userRole !== 'admin') {
-    return false
-  }
-  const decision = hasMenuAccessForRole(userStore.userRole, ['settings'])
-  if (decision !== null) {
-    return decision
-  }
-  const currentPermissions = Array.isArray(userStore.currentUser?.menuPermissions)
-    ? userStore.currentUser.menuPermissions
-    : []
-  if (currentPermissions.includes('all')) {
-    return true
-  }
-  if (currentPermissions.length > 0) {
-    return currentPermissions.includes('settings')
-  }
-  return userStore.userRole === 'admin'
-})
+const canAccessSettings = computed(() => userStore.hasPermission('settings'))
 
 const handleToggle = () => {
   emit('toggleCollapse')

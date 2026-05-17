@@ -128,8 +128,8 @@ import {
 
 const route = useRoute()
 const userStore = useUserStore()
-const canViewAuditLogs = computed(() => ['admin', 'auditor'].includes(String(userStore.userRole || '').toLowerCase()))
-const isAdmin = computed(() => String(userStore.userRole || '').toLowerCase() === 'admin')
+const canViewAuditLogs = computed(() => userStore.hasPermission('audit-logs') || userStore.hasPermission('all'))
+const isAdmin = computed(() => userStore.hasPermission('all'))
 const settingsTabNames = new Set([
   'departments',
   'roles',

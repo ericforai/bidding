@@ -52,7 +52,7 @@ const submitting = ref(false)
 const transitioning = ref(false)
 const bidding = ref(false)
 
-const isManager = computed(() => userStore.userRole === 'manager' || userStore.userRole === 'MANAGER')
+const isManager = computed(() => userStore.hasPermission('project:evaluate') || userStore.hasPermission('task.review') || userStore.hasPermission('lead.assign'))
 
 const formData = reactive({
   background: '',

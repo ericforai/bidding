@@ -95,7 +95,7 @@ export const sidebarMenuConfig = [
   {
     path: '/analytics/dashboard',
     name: 'AnalyticsDashboard',
-    meta: { title: '数据分析', icon: 'analytics', roles: ['admin', 'manager'], permissionKeys: ['analytics', 'analytics-dashboard'] }
+    meta: { title: '数据分析', icon: 'analytics', permissionKeys: ['analytics', 'analytics-dashboard'] }
   },
   {
     path: '/operation-logs',
@@ -105,32 +105,32 @@ export const sidebarMenuConfig = [
   {
     path: '/audit-logs',
     name: 'AuditLogs',
-    meta: { title: '审计日志', icon: 'lock', roles: ['admin', 'auditor'], permissionKeys: ['audit-logs'] }
+    meta: { title: '审计日志', icon: 'lock', permissionKeys: ['audit-logs'] }
   },
   {
     path: '/settings',
     name: 'Settings',
-    meta: { title: '系统设置', icon: 'settings', roles: ['admin'], permissionKeys: ['settings'] },
+    meta: { title: '系统设置', icon: 'settings', permissionKeys: ['settings'] },
     children: [
       {
         path: '/settings',
         name: 'SettingsRoot',
-        meta: { title: '组织设置', roles: ['admin'], permissionKeys: ['settings'] }
+        meta: { title: '组织设置', permissionKeys: ['settings'] }
       },
       {
         path: '/settings/workflow-forms',
         name: 'WorkflowFormDesigner',
-        meta: { title: '流程表单配置', roles: ['admin'], permissionKeys: ['settings', 'settings-workflow-forms'] }
+        meta: { title: '流程表单配置', permissionKeys: ['settings', 'settings-workflow-forms'] }
       },
       {
         path: '/settings/alert-rules',
         name: 'AlertRules',
-        meta: { title: '告警规则', roles: ['admin', 'manager'], permissionKeys: ['settings'] }
+        meta: { title: '告警规则', permissionKeys: ['settings'] }
       },
       {
         path: '/settings/alert-history',
         name: 'AlertHistory',
-        meta: { title: '告警历史', roles: ['admin', 'manager', 'staff'], permissionKeys: ['settings'] }
+        meta: { title: '告警历史', permissionKeys: ['settings'] }
       }
     ]
   }

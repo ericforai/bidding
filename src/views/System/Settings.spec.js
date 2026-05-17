@@ -13,10 +13,23 @@ const state = vi.hoisted(() => ({
   loadBidMatchScoringSettings: vi.fn(),
 }))
 
+const rolePermissions = {
+  admin: ['all'],
+  auditor: ['audit-logs', 'operation-logs', 'dashboard'],
+  manager: ['settings', 'dashboard', 'bidding', 'project', 'knowledge', 'resource', 'analytics'],
+  staff: ['dashboard', 'operation-logs', 'bidding', 'project', 'knowledge', 'resource'],
+}
+
 vi.mock('@/stores/user', () => ({
   useUserStore: () => ({
     get userRole() {
       return state.role
+    },
+    get menuPermissions() {
+      return rolePermissions[state.role] || []
+    },
+    hasPermission(key) {
+      return (rolePermissions[state.role] || []).includes(key)
     },
   }),
 }))

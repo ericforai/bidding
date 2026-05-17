@@ -170,7 +170,6 @@ const router = useRouter()
 const userStore = useUserStore()
 const isApiDeliveryMode = computed(() => true)
 
-const hasRoleAccess = (roles) => !roles || roles.length === 0 || roles.includes(userStore.userRole)
 const hasPermissionAccess = (permissionKeys) => {
   const decision = hasMenuAccessForRole(userStore.userRole, permissionKeys)
   if (decision !== null) {
@@ -204,7 +203,7 @@ const filteredMenus = computed(() => {
       if (isApiDeliveryMode.value && hiddenApiMenuNames.has(menu.name)) {
         return null
       }
-      if (!hasRoleAccess(menu.meta?.roles) || !hasPermissionAccess(menu.meta?.permissionKeys)) {
+      if (!hasPermissionAccess(menu.meta?.permissionKeys)) {
         return null
       }
 
@@ -212,7 +211,6 @@ const filteredMenus = computed(() => {
         const visibleChildren = menu.children.filter(
           child => (
             (!isApiDeliveryMode.value || !hiddenApiMenuNames.has(child.name)) &&
-            hasRoleAccess(child.meta?.roles) &&
             hasPermissionAccess(child.meta?.permissionKeys)
           )
         )

@@ -121,6 +121,7 @@ import { useWorkbenchTodos } from '@/views/Dashboard/useWorkbenchTodos.js'
 import { useWorkbenchApprovals } from '@/views/Dashboard/useWorkbenchApprovals.js'
 import { useWorkbenchDerivedLists } from '@/views/Dashboard/useWorkbenchDerivedLists.js'
 import { useWorkbenchDynamicWidgets } from '@/views/Dashboard/useWorkbenchDynamicWidgets.js'
+import { hasAnyPermission } from '@/utils/permission'
 import {
   formatCurrentDate, formatRelativeTime, getBannerActionConfig,
   getBannerSubtitle, getBannerTitle, getPriorityLabel, getPriorityType, getProgressColor,
@@ -142,7 +143,6 @@ const Icons = markRaw({ Briefcase, Calendar, Check, DataAnalysis, Document, Flag
 const router = useRouter()
 const userStore = useUserStore()
 const biddingStore = useBiddingStore()
-
 const currentUserRole = computed(() => userStore.currentUser?.role || 'staff')
 const currentUserName = computed(() => userStore.currentUser?.name || '用户')
 const currentUserId = computed(() => userStore.currentUser?.id || null)
@@ -164,7 +164,7 @@ const {
 const {
   priorityTodos, pendingCount, completedTodoCount, todosError, loadTodos,
   handleTaskComplete,
-} = useWorkbenchTodos({ assigneeIdRef: currentUserId, canLoadAlertTodosRef: computed(() => ['admin', 'manager'].includes(currentUserRole.value)), message: ElMessage })
+} = useWorkbenchTodos({ assigneeIdRef: currentUserId, canLoadAlertTodosRef: computed(() => hasAnyPermission(userStore.menuPermissions, ['dashboard:alert_todos', 'settings', 'task.review', 'task.assign'])), message: ElMessage })
 
 const myProjectCount = computed(() => workbenchProjects.value.length)
 
@@ -194,12 +194,12 @@ const runtimeModeLabel = computed(() => runtimeMode.value?.modeLabel || '')
 const runtimeModeTagType = computed(() => (runtimeMode.value?.demoFusionEnabled ? 'warning' : 'success'))
 const canUseQuickStart = computed(() => hasQuickStartPermission(userStore.currentUser))
 
-const canViewTenderList = computed(() => userStore.hasPermission('dashboard:view_tender_list') || currentUserRole.value === 'staff')
-const canViewTechnicalTask = computed(() => userStore.hasPermission('dashboard:view_technical_task') || currentUserRole.value === 'staff')
-const canViewReviewList = computed(() => userStore.hasPermission('dashboard:view_review_list') || ['staff', 'manager'].includes(currentUserRole.value))
-const canViewProjectList = computed(() => userStore.hasPermission('dashboard:view_project_list') || currentUserRole.value === 'manager')
-const canViewTeamTask = computed(() => userStore.hasPermission('dashboard:view_team_task') || currentUserRole.value === 'manager')
-const canViewGlobalProjects = computed(() => userStore.hasPermission('dashboard:view_global_projects'))
+const canViewTenderList = computed(() => hasAnyPermission(userStore.menuPermissions, ['dashboard:view_tender_list', 'bidding']))
+const canViewTechnicalTask = computed(() => hasAnyPermission(userStore.menuPermissions, ['dashboard:view_technical_task', 'project']))
+const canViewReviewList = computed(() => hasAnyPermission(userStore.menuPermissions, ['dashboard:view_review_list', 'project', 'task.review']))
+const canViewProjectList = computed(() => hasAnyPermission(userStore.menuPermissions, ['dashboard:view_project_list', 'project']))
+const canViewTeamTask = computed(() => hasAnyPermission(userStore.menuPermissions, ['dashboard:view_team_task', 'project', 'task.assign']))
+const canViewGlobalProjects = computed(() => hasAnyPermission(userStore.menuPermissions, ['dashboard:view_global_projects', 'analytics']))
 
 const {
   activeProjects, followUpCustomers, teamMembers, myTechnicalTasks,

@@ -2,23 +2,35 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { hasStoredUserHint } from '@/api/session.js'
 import { registerLoginNavigator } from './sessionNavigation.js'
+import { hasAnyPermission } from '@/utils/permission'
+import { sidebarMenuConfig } from '@/config/sidebar-menu'
 
 const DEFAULT_AUTHENTICATED_HOME = '/dashboard'
 const HIDDEN_API_ROUTES = new Set(['CustomerOpportunityCenter', '/bidding/customer-opportunities'])
 
-const getNormalizedRole = (userStore) => {
-  const role = userStore.currentUser?.role || ''
-  return String(role).toLowerCase()
+const getRequiredPermissions = (to) => {
+  const permissions = to.matched.flatMap((record) => record.meta?.permissionKeys || [])
+  return [...new Set(permissions)]
 }
 
-const getRequiredRoles = (to) => {
-  const roles = to.matched.flatMap((record) => record.meta?.roles || [])
-  return [...new Set(roles)]
+const hasRouteAccess = (to, userStore) => {
+  const requiredPermissions = getRequiredPermissions(to)
+
+  if (requiredPermissions.length > 0) {
+    return requiredPermissions.some((key) => userStore.hasPermission(key))
+  }
+
+  return true
 }
 
-const hasRouteAccess = (to, role) => {
-  const requiredRoles = getRequiredRoles(to)
-  return requiredRoles.length === 0 || requiredRoles.includes(role)
+const getFirstAccessiblePath = (userStore) => {
+  if (userStore.hasPermission('dashboard')) return DEFAULT_AUTHENTICATED_HOME
+  for (const menu of sidebarMenuConfig) {
+    if (hasAnyPermission(userStore.menuPermissions, menu.meta?.permissionKeys)) {
+      return menu.path
+    }
+  }
+  return DEFAULT_AUTHENTICATED_HOME
 }
 
 const isHiddenApiRoute = (to) => {
@@ -183,7 +195,7 @@ const routes = [
         path: 'analytics/dashboard',
         name: 'AnalyticsDashboard',
         component: () => import('@/views/Analytics/Dashboard.vue'),
-        meta: { title: '数据分析', roles: ['admin', 'manager'] }
+        meta: { title: '数据分析', permissionKeys: ['analytics', 'analytics-dashboard'] }
       },
       {
         path: 'analytics',
@@ -199,37 +211,37 @@ const routes = [
         path: 'audit-logs',
         name: 'AuditLogs',
         component: () => import('@/views/System/AuditLogPage.vue'),
-        meta: { title: '审计日志', roles: ['admin', 'auditor'] }
+        meta: { title: '审计日志', permissionKeys: ['audit-logs'] }
       },
       {
         path: 'settings',
         name: 'Settings',
         component: () => import('@/views/System/Settings.vue'),
-        meta: { title: '系统设置', roles: ['admin'] }
+        meta: { title: '系统设置', permissionKeys: ['settings'] }
       },
       {
         path: 'settings/workflow-forms',
         name: 'WorkflowFormDesigner',
         component: () => import('@/views/System/WorkflowFormDesigner.vue'),
-        meta: { title: '流程表单配置', roles: ['admin'], activeMenu: '/settings' }
+        meta: { title: '流程表单配置', permissionKeys: ['settings', 'settings-workflow-forms'], activeMenu: '/settings' }
       },
       {
         path: 'settings/alert-rules',
         name: 'AlertRules',
         component: () => import('@/views/System/AlertRules.vue'),
-        meta: { title: '告警规则', roles: ['admin', 'manager'] }
+        meta: { title: '告警规则', permissionKeys: ['settings'] }
       },
       {
         path: 'settings/alert-history',
         name: 'AlertHistory',
         component: () => import('@/views/System/AlertHistory.vue'),
-        meta: { title: '告警历史', roles: ['admin', 'manager', 'staff'] }
+        meta: { title: '告警历史', permissionKeys: ['settings'] }
       },
       {
         path: 'inbox',
         name: 'Inbox',
         component: () => import('@/views/NotificationInbox.vue'),
-        meta: { title: '通知中心', roles: ['admin', 'manager', 'staff'] }
+        meta: { title: '通知中心' }
       },
       {
         path: 'document/editor/:id',
@@ -275,8 +287,8 @@ router.beforeEach(async (to, from, next) => {
     next('/bidding')
   } else if (to.path === '/login' && hasAuthState) {
     next(DEFAULT_AUTHENTICATED_HOME)
-  } else if (hasAuthState && !hasRouteAccess(to, getNormalizedRole(userStore))) {
-    next(DEFAULT_AUTHENTICATED_HOME)
+  } else if (hasAuthState && !hasRouteAccess(to, userStore)) {
+    next(getFirstAccessiblePath(userStore))
   } else {
     next()
   }
