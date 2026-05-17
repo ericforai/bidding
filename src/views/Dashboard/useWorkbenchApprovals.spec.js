@@ -82,3 +82,26 @@ describe('useWorkbenchApprovals', () => {
     expect(approvals.myProcesses.value).toEqual([])
   })
 })
+
+  it('bidReviewApprovalCount counts bid_review approvals', async () => {
+    const api = {
+      getPendingApprovals: vi.fn().mockResolvedValue({
+        totalCount: 3,
+        data: [
+          { id: 1, projectName: '项目A', typeName: '标书评审', approvalType: 'bid_review' },
+          { id: 2, projectName: '项目B', typeName: '预算审批', approvalType: 'budget' },
+          { id: 3, projectName: '项目C', typeName: '标书评审', approvalType: 'bid_review' },
+        ],
+      }),
+      getMyApprovals: vi.fn(),
+    }
+    const approvals = useWorkbenchApprovals({ api, initialProcesses: [] })
+
+    await approvals.loadPendingApprovals()
+
+    expect(approvals.bidReviewApprovalCount.value).toBe(2)
+    expect(approvals.pendingApprovals.value[0]).toMatchObject({
+      title: '项目A - 标书评审',
+      type: 'bid_review',
+    })
+  })

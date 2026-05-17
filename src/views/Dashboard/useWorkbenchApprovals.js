@@ -3,7 +3,7 @@
 // Pos: src/views/Dashboard/ - dashboard feature composables
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { approvalApi as defaultApprovalApi } from '@/api'
 import { normalizePendingApproval, normalizeProcess } from '@/views/Dashboard/workbench-core.js'
 
@@ -48,6 +48,8 @@ export function useWorkbenchApprovals({
   const myProcesses = ref([...initialProcesses])
   const approvalsError = ref('')
   const processesError = ref('')
+
+  const bidReviewApprovalCount = computed(() => pendingApprovals.value.filter((item) => item.type === 'bid_review').length)
 
   const handleApprove = (item) => {
     approvalMode.value = 'approve'
@@ -102,6 +104,7 @@ export function useWorkbenchApprovals({
     currentApprovalItem,
     approvalsError,
     processesError,
+    bidReviewApprovalCount,
     myProcesses,
     handleApprove,
     handleReject,

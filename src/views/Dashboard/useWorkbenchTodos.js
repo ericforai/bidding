@@ -31,6 +31,8 @@ export function useWorkbenchTodos({
   const pendingCount = computed(() => priorityTodos.value.filter((todo) => !todo.done).length)
   const completedTodoCount = computed(() => priorityTodos.value.filter((todo) => todo.done).length)
 
+  const bidReviewCount = computed(() => priorityTodos.value.filter((todo) => todo.sourceType === 'bid_review').length)
+
   const loadPriorityTodos = async () => {
     const assigneeId = assigneeIdRef?.value
     if (!assigneeId) {
@@ -120,6 +122,7 @@ export function useWorkbenchTodos({
     priorityTodos,
     pendingCount,
     completedTodoCount,
+    bidReviewCount,
     todosError,
     loadPriorityTodos,
     loadAlertTodos,
