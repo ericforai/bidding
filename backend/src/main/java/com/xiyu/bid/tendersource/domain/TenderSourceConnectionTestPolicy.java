@@ -54,7 +54,11 @@ public final class TenderSourceConnectionTestPolicy {
 
         URI uri;
         try {
-            uri = URI.create(apiEndpoint.trim());
+            String trimmed = apiEndpoint.trim();
+            if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+                return TenderSourceConnectionResult.failure("API端点格式无效");
+            }
+            uri = URI.create(trimmed);
         } catch (IllegalArgumentException e) {
             return TenderSourceConnectionResult.failure("API端点格式无效");
         }
