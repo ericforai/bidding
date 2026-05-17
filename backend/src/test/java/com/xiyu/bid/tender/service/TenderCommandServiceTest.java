@@ -67,6 +67,9 @@ class TenderCommandServiceTest {
     @Mock
     private TenderAssignmentPermissions tenderAssignmentPermissions;
 
+    @Mock
+    private TenderAutoAssignmentService autoAssignmentService;
+
     private TenderCommandService tenderCommandService;
     private TenderQueryService tenderQueryService;
     private com.xiyu.bid.batch.core.TenderStatusTransitionPolicy statusTransitionPolicy;
@@ -80,7 +83,7 @@ class TenderCommandServiceTest {
         statusTransitionPolicy = new com.xiyu.bid.batch.core.TenderStatusTransitionPolicy();
         tenderCommandService = new TenderCommandService(
                 tenderRepository, aiService, tenderMapper, accessGuard,
-                statusTransitionPolicy, taskService, tenderAssignmentPermissions);
+                statusTransitionPolicy, taskService, tenderAssignmentPermissions, autoAssignmentService);
         // Permissive by default — individual instance-permission tests override.
         org.mockito.Mockito.lenient()
                 .when(tenderAssignmentPermissions.canDecide(any(), any()))
@@ -436,5 +439,65 @@ class TenderCommandServiceTest {
 
         assertThat(response.isAccepted()).isTrue();
         verify(tenderRepository).save(any(Tender.class));
+    }
+
+    // ========== CRM 自动分配测试用例 ==========
+
+    @Test
+    @DisplayName("创建标讯 - CRM 匹配成功则状态变为 TRACKING")
+    void createTender_CrmMatch_ShouldChangeStatusToTracking() {
+        when(tenderRepository.save(any(Tender.class))).thenAnswer(invocation -> {
+            Tender saved = invocation.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
+        // Mock 自动分配成功
+        when(autoAssignmentService.autoAssignIfPossible(any(Tender.class))).thenReturn(true);
+
+        TenderDTO savedDto = tenderCommandService.createTender(tenderDTO);
+
+        assertThat(savedDto.getTitle()).isEqualTo(tenderDTO.getTitle());
+        assertThat(savedDto.getStatus()).isEqualTo(Tender.Status.TRACKING);
+        // 验证 save 被调用两次：一次创建，一次更新状态
+        verify(tenderRepository, times(2)).save(any(Tender.class));
+    }
+
+    @Test
+    @DisplayName("创建标讯 - CRM 匹配失败则保持 PENDING_ASSIGNMENT")
+    void createTender_CrmNoMatch_ShouldKeepPendingAssignment() {
+        when(tenderRepository.save(any(Tender.class))).thenAnswer(invocation -> {
+            Tender saved = invocation.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
+        // Mock 自动分配失败
+        when(autoAssignmentService.autoAssignIfPossible(any(Tender.class))).thenReturn(false);
+
+        TenderDTO savedDto = tenderCommandService.createTender(tenderDTO);
+
+        assertThat(savedDto.getTitle()).isEqualTo(tenderDTO.getTitle());
+        assertThat(savedDto.getStatus()).isEqualTo(Tender.Status.PENDING_ASSIGNMENT);
+        // 验证 save 只被调用一次
+        verify(tenderRepository, times(1)).save(any(Tender.class));
+    }
+
+    @Test
+    @DisplayName("创建标讯 - CRM 接口异常时保持 PENDING_ASSIGNMENT")
+    void createTender_CrmException_ShouldKeepPendingAssignment() {
+        when(tenderRepository.save(any(Tender.class))).thenAnswer(invocation -> {
+            Tender saved = invocation.getArgument(0);
+            saved.setId(1L);
+            return saved;
+        });
+        // Mock 自动分配抛出异常
+        when(autoAssignmentService.autoAssignIfPossible(any(Tender.class)))
+                .thenThrow(new RuntimeException("CRM API unavailable"));
+
+        TenderDTO savedDto = tenderCommandService.createTender(tenderDTO);
+
+        assertThat(savedDto.getTitle()).isEqualTo(tenderDTO.getTitle());
+        assertThat(savedDto.getStatus()).isEqualTo(Tender.Status.PENDING_ASSIGNMENT);
+        // 验证 save 只被调用一次，不影响标讯创建
+        verify(tenderRepository, times(1)).save(any(Tender.class));
     }
 }

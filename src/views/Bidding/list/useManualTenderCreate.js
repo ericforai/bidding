@@ -11,6 +11,7 @@ import { buildManualTenderPayload, normalizeManualTenderParseResult } from './he
 const PASTED_TEXT_MAX_LENGTH = 500000
 
 const SUPPORTED_PARSE_EXTENSIONS = new Set(['.doc', '.docx', '.pdf'])
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
 function resolveUploadFile(file) {
   if (file instanceof File || file instanceof Blob) return file
@@ -21,6 +22,24 @@ function resolveUploadFile(file) {
 function isSupportedParseFile(file) {
   const name = String(file?.name || '').toLowerCase()
   return [...SUPPORTED_PARSE_EXTENSIONS].some((extension) => name.endsWith(extension))
+}
+
+function validateFileSize(file) {
+  const uploadFile = resolveUploadFile(file)
+  if (!uploadFile) return { valid: false, message: '无法读取文件' }
+  if (uploadFile.size > MAX_FILE_SIZE) {
+    return { valid: false, message: `文件 "${uploadFile.name}" 超过 50MB 限制` }
+  }
+  return { valid: true }
+}
+
+function validateFileType(file) {
+  const uploadFile = resolveUploadFile(file)
+  if (!uploadFile) return { valid: false, message: '无法读取文件' }
+  if (!isSupportedParseFile(uploadFile)) {
+    return { valid: false, message: `文件 "${uploadFile.name}" 格式不支持，仅支持 PDF/Word 文件` }
+  }
+  return { valid: true }
 }
 
 function applyParsedFields(form, parsedFields) {
@@ -81,6 +100,32 @@ export function useManualTenderCreate({ tendersApi, refreshTenderList, canCreate
   const handleFileChange = async (file, fileList) => {
     manualForm.value.attachments = fileList
     const uploadFile = resolveUploadFile(file)
+
+    // 文件大小验证
+    const sizeValidation = validateFileSize(uploadFile)
+    if (!sizeValidation.valid) {
+      ElMessage.warning(sizeValidation.message)
+      // 移除超大的文件
+      const filteredList = fileList.filter((f) => {
+        const fFile = resolveUploadFile(f)
+        return fFile && fFile.size <= MAX_FILE_SIZE
+      })
+      manualForm.value.attachments = filteredList
+      return
+    }
+
+    // 文件类型验证
+    const typeValidation = validateFileType(uploadFile)
+    if (!typeValidation.valid) {
+      ElMessage.warning(typeValidation.message)
+      // 移除不支持的文件
+      const filteredList = fileList.filter((f) => {
+        return isSupportedParseFile(resolveUploadFile(f))
+      })
+      manualForm.value.attachments = filteredList
+      return
+    }
+
     if (!uploadFile || !isSupportedParseFile(uploadFile)) return
 
     parsingManualDocument.value = true

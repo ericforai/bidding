@@ -25,7 +25,7 @@ public class TestController {
     public ResponseEntity<ApiResponse<Map<String, String>>> health() {
         Map<String, String> response = new HashMap<>();
         response.put("status", "UP");
-        response.put("message", "XiYu Bid POC Backend is running");
+        response.put("message", "西域数智化投标管理平台后端运行中");
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

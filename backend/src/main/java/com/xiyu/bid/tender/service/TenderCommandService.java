@@ -43,13 +43,39 @@ public class TenderCommandService {
     private final com.xiyu.bid.batch.core.TenderStatusTransitionPolicy statusTransitionPolicy;
     private final TaskService taskService;
     private final TenderAssignmentPermissions permissions;
+    private final TenderAutoAssignmentService autoAssignmentService;
 
     public TenderDTO createTender(TenderDTO tenderDTO) {
         log.debug("Creating new tender: {}", tenderDTO.getTitle());
         Tender tender = tenderMapper.toEntity(withCommandDefaults(tenderDTO));
         Tender savedTender = tenderRepository.save(tender);
         log.info("Created tender with id: {}", savedTender.getId());
+
+        // 自动分配：根据业主单位匹配 CRM 项目负责人
+        // 匹配成功 → 状态变为 TRACKING；匹配失败 → 保持 PENDING_ASSIGNMENT
+        tryAutoAssign(savedTender);
+
         return tenderMapper.toDTO(savedTender);
+    }
+
+    /**
+     * 尝试自动分配标讯。
+     * CRM 接口异常时记录日志，不影响标讯创建。
+     */
+    private void tryAutoAssign(Tender tender) {
+        try {
+            if (autoAssignmentService.autoAssignIfPossible(tender)) {
+                // 匹配成功，更新状态为 TRACKING
+                statusTransitionPolicy.assertTransition(tender.getStatus(), Tender.Status.TRACKING);
+                tender.setStatus(Tender.Status.TRACKING);
+                tenderRepository.save(tender);
+                log.info("Tender {} auto-assigned, status changed to TRACKING", tender.getId());
+            }
+        } catch (RuntimeException e) {
+            // CRM 接口异常不影响标讯创建，保持 PENDING_ASSIGNMENT
+            log.warn("Auto-assignment failed for tender {}, keeping PENDING_ASSIGNMENT: {}",
+                    tender.getId(), e.getMessage());
+        }
     }
 
     public TenderDTO updateStatus(Long id, Tender.Status targetStatus) {

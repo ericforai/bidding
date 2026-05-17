@@ -42,7 +42,7 @@ class DocInsightControllerTest {
     @BeforeEach
     void setUp() {
         controller = new DocInsightController(docInsightService);
-        ReflectionTestUtils.setField(controller, "maxUploadMb", 30);
+        ReflectionTestUtils.setField(controller, "maxUploadMb", 50);
 
         mockMvc = MockMvcBuilders
                 .standaloneSetup(controller)
@@ -98,6 +98,62 @@ class DocInsightControllerTest {
                         .param("entityId", "manual-tender"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.documentId").value("doc://pasted"));
+    }
+
+    @Test
+    @DisplayName("POST /parse TENDER_INTAKE 允许 .doc Word 文件")
+    void parse_tenderIntakeDocFile_returns200() throws Exception {
+        MockMultipartFile docFile = new MockMultipartFile(
+                "file", "tender.doc", "application/msword", "Word content".getBytes());
+        DocumentAnalysisResult result = new DocumentAnalysisResult(
+                "doc://tender", Map.of(), List.of(), null, List.of()
+        );
+        when(docInsightService.process(any(), any(), any())).thenReturn(result);
+
+        mockMvc.perform(multipart("/api/doc-insight/parse")
+                        .file(docFile)
+                        .param("profile", "TENDER_INTAKE")
+                        .param("entityId", "manual-tender"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    @DisplayName("POST /parse TENDER_INTAKE 允许 .docx Word 文件")
+    void parse_tenderIntakeDocxFile_returns200() throws Exception {
+        MockMultipartFile docxFile = new MockMultipartFile(
+                "file", "tender.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "Word content".getBytes());
+        DocumentAnalysisResult result = new DocumentAnalysisResult(
+                "doc://tender", Map.of(), List.of(), null, List.of()
+        );
+        when(docInsightService.process(any(), any(), any())).thenReturn(result);
+
+        mockMvc.perform(multipart("/api/doc-insight/parse")
+                        .file(docxFile)
+                        .param("profile", "TENDER_INTAKE")
+                        .param("entityId", "manual-tender"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    @DisplayName("POST /parse 50MB 文件应该通过大小检查")
+    void parse_fileWithin50MB_returns200() throws Exception {
+        // 创建一个接近 50MB 的文件
+        byte[] content = new byte[50 * 1024 * 1024]; // 50MB
+        MockMultipartFile largeFile = new MockMultipartFile(
+                "file", "large.pdf", "application/pdf", content);
+        DocumentAnalysisResult result = new DocumentAnalysisResult(
+                "doc://large", Map.of(), List.of(), null, List.of()
+        );
+        when(docInsightService.process(any(), any(), any())).thenReturn(result);
+
+        mockMvc.perform(multipart("/api/doc-insight/parse")
+                        .file(largeFile)
+                        .param("profile", "TENDER_INTAKE")
+                        .param("entityId", "manual-tender"))
+                .andExpect(status().isOk());
     }
 
     // ── 400 – invalid profileCode ─────────────────────────────────────────────

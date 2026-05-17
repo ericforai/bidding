@@ -45,13 +45,21 @@
     </el-form>
     <template #footer>
       <el-button @click="modelValue = false">取消</el-button>
-      <el-button :loading="testing" @click="$emit('test')">测试连接</el-button>
+      <el-button
+        :loading="testing"
+        :disabled="!canTestConnection"
+        type="success"
+        @click="$emit('test')"
+      >
+        测试连接
+      </el-button>
       <el-button type="primary" :loading="saving" @click="$emit('save')">保存配置</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { REGION_OPTIONS, SOURCE_KEYWORD_OPTIONS, SOURCE_PLATFORM_OPTIONS } from '../constants.js'
 
 const modelValue = defineModel({ type: Boolean, default: false })
@@ -65,4 +73,12 @@ defineProps({
 })
 
 defineEmits(['save', 'test'])
+
+const canTestConnection = computed(() => {
+  const config = sourceConfig.value
+  const hasThirdParty = config.platforms?.includes('第三方商机服务')
+  const hasEndpoint = config.apiEndpoint && config.apiEndpoint.trim().length > 0
+  const hasKey = config.apiKey && config.apiKey.trim().length > 0
+  return hasThirdParty && hasEndpoint && hasKey
+})
 </script>

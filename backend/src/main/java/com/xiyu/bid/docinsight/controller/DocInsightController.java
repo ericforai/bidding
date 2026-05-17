@@ -27,8 +27,8 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class DocInsightController {
 
-    /** 上传文件大小上限（MB），通过 app.docinsight.max-upload-mb 配置，默认 30 MB。 */
-    @Value("${app.docinsight.max-upload-mb:30}")
+    /** 上传文件大小上限（MB），通过 app.docinsight.max-upload-mb 配置，默认 50 MB。 */
+    @Value("${app.docinsight.max-upload-mb:50}")
     private int maxUploadMb;
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
