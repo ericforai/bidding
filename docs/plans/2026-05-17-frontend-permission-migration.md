@@ -168,6 +168,8 @@ npm run test:unit
 
 | 账号 | 角色 | 验证点 |
 |------|------|--------|
+| `auditor` / `Test@123` | auditor | 可访问 `/audit-logs`、`/operation-logs`，不可访问 `/settings` |
+| `task_executor` / `Test@123` | task_executor | 可访问任务相关页面，可承接标书任务 |
 | `bid_admin` / `Test@123` | bid_admin | 可访问 `/settings`、`/analytics/dashboard`、`/operation-logs` |
 | `bid_lead` / `Test@123` | bid_lead | 可访问 `/project`、`/bidding`，不可访问 `/settings` |
 | `bid_specialist` / `Test@123` | bid_specialist | 可访问任务相关页面，可更新评标 |
