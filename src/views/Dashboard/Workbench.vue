@@ -18,13 +18,12 @@
       :actions="bannerActions"
       @action-click="handleBannerAction"
     />
-    <MetricCards
-      :metrics="metrics"
-      :loading="metricsLoading"
-      :error="metricsError"
-      @metric-click="handleMetricClick"
-      @retry="reloadMetrics"
-    />
+    <MetricCards :metrics="metrics" :loading="metricsLoading" :error="metricsError"
+      @metric-click="handleMetricClick" @retry="reloadMetrics" />
+    <WorkbenchAdditions :can-create-project="canViewProjectList" :can-view-tenders="canViewTenderList"
+      :deadline-metrics="deadlineMetrics" :deadline-metrics-loading="deadlineMetricsLoading"
+      :deadline-metrics-error="deadlineMetricsError" @handle-todos="() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })"
+      @retry-deadline="loadDeadlineStats" />
 
     <WorkbenchStaticLayout
       v-if="!dynamicLayout"
@@ -119,7 +118,7 @@ import { useWorkbenchSchedule } from '@/views/Dashboard/useWorkbenchSchedule.js'
 import { useWorkbenchMetrics } from '@/views/Dashboard/useWorkbenchMetrics.js'
 import { useWorkbenchTodos } from '@/views/Dashboard/useWorkbenchTodos.js'
 import { useWorkbenchApprovals } from '@/views/Dashboard/useWorkbenchApprovals.js'
-import { useWorkbenchDerivedLists } from '@/views/Dashboard/useWorkbenchDerivedLists.js'
+import { useWorkbenchDeadline } from '@/views/Dashboard/useWorkbenchDeadline.js'; import { useWorkbenchDerivedLists } from '@/views/Dashboard/useWorkbenchDerivedLists.js'
 import { useWorkbenchDynamicWidgets } from '@/views/Dashboard/useWorkbenchDynamicWidgets.js'
 import { hasAnyPermission } from '@/utils/permission'
 import {
@@ -131,7 +130,7 @@ import { normalizeProjectForWorkbench } from '@/views/Dashboard/workbench-utils.
 import ApprovalDialog from '@/components/common/ApprovalDialog.vue'
 import MetricCards from '@/views/Dashboard/components/MetricCards.vue'
 import ProjectCollaboratorsDialog from '@/views/Dashboard/components/ProjectCollaboratorsDialog.vue'
-import WelcomeBanner from '@/views/Dashboard/components/WelcomeBanner.vue'
+import WorkbenchAdditions from '@/views/Dashboard/components/WorkbenchAdditions.vue'; import WelcomeBanner from '@/views/Dashboard/components/WelcomeBanner.vue'
 import WorkbenchStaticLayout from '@/views/Dashboard/components/WorkbenchStaticLayout.vue'
 import DynamicLayoutRenderer from '@/views/Dashboard/components/DynamicLayoutRenderer.vue'
 import {
@@ -181,6 +180,7 @@ const {
   icons: Icons,
 })
 
+const { deadlineMetrics, deadlineMetricsLoading, deadlineMetricsError, loadDeadlineStats } = useWorkbenchDeadline({ menuPermissionsRef: computed(() => userStore.menuPermissions) })
 const bannerTitle = computed(() => getBannerTitle(currentUserName.value))
 const bannerSubtitle = computed(() => getBannerSubtitle(currentUserRole.value, {
   currentDate: currentDate.value,

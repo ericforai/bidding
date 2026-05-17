@@ -22,6 +22,7 @@ const APPROVAL_TYPE_LABELS = {
   project_review: '立项审批',
   expense: '费用审批',
   budget: '预算审批',
+  bid_review: '标书评审',
 }
 
 function windows1252Bytes(value) {
@@ -57,14 +58,17 @@ function normalizeApprovalTypeName(value, approvalType) {
 
 export function normalizeApiTodo(task) {
   const priority = String(task?.priority || 'MEDIUM').toLowerCase()
+  const taskType = task?.type || 'task'
+  const isBidReview = taskType === 'bid_review'
   return {
     id: task?.id,
     title: cleanDisplayText(task?.title || ''),
     priority,
     deadline: formatTodoDeadline(task?.dueDate),
     done: task?.status === 'COMPLETED',
-    type: 'task',
-    sourceType: 'task',
+    type: isBidReview ? 'bid_review' : 'task',
+    sourceType: isBidReview ? 'bid_review' : 'task',
+    ...(isBidReview ? { badge: '标书评审' } : {}),
     rawStatus: task?.status,
   }
 }

@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -69,4 +70,14 @@ public interface FeeRepository extends JpaRepository<Fee, Long> {
      * 根据项目ID分页查询费用
      */
     Page<Fee> findByProjectId(Long projectId, Pageable pageable);
+
+    // === Workbench deadline queries ===
+
+    /** 全量保证金缴纳截止日期（Admin 用） */
+    @Query("SELECT f.feeDate FROM Fee f WHERE f.feeType = 'BID_BOND' AND f.status = 'PENDING' AND f.feeDate BETWEEN :start AND :end")
+    List<LocalDateTime> findDepositDeadlinesBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    /** 按项目ID过滤保证金缴纳截止日期（非 Admin 用） */
+    @Query("SELECT f.feeDate FROM Fee f WHERE f.feeType = 'BID_BOND' AND f.status = 'PENDING' AND f.projectId IN :projectIds AND f.feeDate BETWEEN :start AND :end")
+    List<LocalDateTime> findDepositDeadlinesByProjectIds(@Param("projectIds") Collection<Long> projectIds, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 }

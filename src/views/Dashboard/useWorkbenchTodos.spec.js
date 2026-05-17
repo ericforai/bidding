@@ -118,3 +118,35 @@ describe('useWorkbenchTodos', () => {
     expect(message.success).toHaveBeenCalledWith('完成任务: 提交方案')
   })
 })
+
+  it('sets badge and sourceType for bid_review tasks', async () => {
+    const tasksApi = { getMine: vi.fn().mockResolvedValue({ data: [{ id: 3, title: '标书评审-智慧交通', status: 'PENDING', type: 'bid_review' }] }) }
+    const todos = useWorkbenchTodos({
+      tasksApi,
+      alertHistoryApi: { getUnresolved: vi.fn() },
+      assigneeIdRef: ref(7),
+      canLoadAlertTodosRef: ref(false),
+    })
+
+    await todos.loadTodos()
+
+    const bidReviewItems = todos.priorityTodos.value.filter(t => t.sourceType === 'bid_review')
+    expect(bidReviewItems).toHaveLength(1)
+    expect(bidReviewItems[0].badge).toBe('标书评审')
+    expect(bidReviewItems[0].type).toBe('bid_review')
+    expect(todos.bidReviewCount.value).toBe(1)
+  })
+
+  it('bidReviewCount returns 0 when no bid_review todos', async () => {
+    const tasksApi = { getMine: vi.fn().mockResolvedValue({ data: [{ id: 1, title: '补材料', status: 'PENDING' }] }) }
+    const todos = useWorkbenchTodos({
+      tasksApi,
+      alertHistoryApi: { getUnresolved: vi.fn() },
+      assigneeIdRef: ref(7),
+      canLoadAlertTodosRef: ref(false),
+    })
+
+    await todos.loadTodos()
+
+    expect(todos.bidReviewCount.value).toBe(0)
+  })
