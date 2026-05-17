@@ -158,15 +158,17 @@ class WorkbenchDeadlineQueryServiceTest {
     }
 
     /**
-     * FMEA guard: when allowedTenderIds exceeds MAX_TENDER_IDS_FOR_IN_CLAUSE (500),
-     * the list must be truncated and the repository must receive a safe-sized sublist.
+     * FMEA guard (FIXED): when allowedTenderIds exceeds MAX_TENDER_IDS_FOR_IN_CLAUSE (500),
+     * the list must be partitioned into safe chunks and ALL tender IDs must be queried
+     * — no data is silently dropped. This replaces the old truncation regression test.
      */
     @Test
-    void tenderIdsExceedingInClauseLimitMustBeTruncated() {
+    void tenderIdsExceedingInClauseLimitMustBePartitionedNotTruncated() {
         var today = LocalDate.of(2026, 5, 17);
         when(projectAccessScopeService.currentUserHasAdminAccess()).thenReturn(false);
         when(projectAccessScopeService.getAllowedProjectIdsForCurrentUser()).thenReturn(List.of(1L));
 
+        // 600 tender IDs — must NOT be truncated to 500
         List<Long> hugeTenderIds = java.util.stream.LongStream.rangeClosed(1, 600).boxed().toList();
         when(projectRepository.findTenderIdsByProjectIds(List.of(1L))).thenReturn(hugeTenderIds);
         when(tenderRepository.findRegistrationDeadlinesByTenderIds(any(), any(), any())).thenReturn(List.of());
@@ -175,16 +177,23 @@ class WorkbenchDeadlineQueryServiceTest {
 
         service.getDeadlineStats(today);
 
-        ArgumentCaptor<List<Long>> captor = ArgumentCaptor.forClass(List.class);
-        verify(tenderRepository).findRegistrationDeadlinesByTenderIds(captor.capture(), any(), any());
-        verify(tenderRepository).findBidOpeningTimesByTenderIds(captor.capture(), any(), any());
+        // Must be called twice: batch 1=[1..500], batch 2=[501..600]
+        verify(tenderRepository, times(2)).findRegistrationDeadlinesByTenderIds(any(), any(), any());
+        verify(tenderRepository, times(2)).findBidOpeningTimesByTenderIds(any(), any(), any());
 
-        for (List<Long> captured : captor.getAllValues()) {
-            assertThat(captured.size())
-                    .as("tender IDs passed to repo must not exceed 500")
-                    .isLessThanOrEqualTo(500);
-            assertThat(captured.get(0)).isEqualTo(1L);
-            assertThat(captured.get(captured.size() - 1)).isEqualTo(500L);
-        }
+        ArgumentCaptor<List<Long>> captor = ArgumentCaptor.forClass(List.class);
+        verify(tenderRepository, times(2)).findRegistrationDeadlinesByTenderIds(captor.capture(), any(), any());
+
+        // First batch: [1..500]
+        List<Long> batch1 = captor.getAllValues().get(0);
+        assertThat(batch1.size()).isEqualTo(500);
+        assertThat(batch1.get(0)).isEqualTo(1L);
+        assertThat(batch1.get(499)).isEqualTo(500L);
+
+        // Second batch: [501..600]
+        List<Long> batch2 = captor.getAllValues().get(1);
+        assertThat(batch2.size()).isEqualTo(100);
+        assertThat(batch2.get(0)).isEqualTo(501L);
+        assertThat(batch2.get(99)).isEqualTo(600L);
     }
 }

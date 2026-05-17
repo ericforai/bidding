@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -75,8 +76,6 @@ class TenderReminderServiceTest {
 
             when(tenderRepository.existsById(tenderId)).thenReturn(true);
             when(tenderRepository.findById(tenderId)).thenReturn(Optional.of(savedEntity));
-            when(reminderRepository.findByTenderIdAndReminderType(tenderId, ReminderType.REGISTRATION_DEADLINE))
-                    .thenReturn(Optional.empty());
             when(reminderRepository.save(any(TenderReminderSetting.class)))
                     .thenAnswer(invocation -> {
                         TenderReminderSetting setting = invocation.getArgument(0);
@@ -115,7 +114,7 @@ class TenderReminderServiceTest {
         }
 
         @Test
-        @DisplayName("已存在同类型提醒应抛出异常")
+        @DisplayName("并发重复创建应被数据库唯一约束拦截并抛出异常")
         void shouldThrowExceptionWhenDuplicateType() {
             Long tenderId = 1L;
             CreateReminderRequest request = CreateReminderRequest.builder()
@@ -129,20 +128,15 @@ class TenderReminderServiceTest {
                     ))
                     .build();
 
-            TenderReminderSetting existing = TenderReminderSetting.builder()
-                    .id(1L)
-                    .tenderId(tenderId)
-                    .reminderType(ReminderType.REGISTRATION_DEADLINE)
-                    .build();
-
             when(tenderRepository.existsById(tenderId)).thenReturn(true);
-            when(reminderRepository.findByTenderIdAndReminderType(tenderId, ReminderType.REGISTRATION_DEADLINE))
-                    .thenReturn(Optional.of(existing));
+            when(reminderRepository.save(any(TenderReminderSetting.class)))
+                    .thenThrow(new DataIntegrityViolationException("Duplicate entry"));
 
-            assertThrows(IllegalStateException.class,
+            IllegalStateException ex = assertThrows(IllegalStateException.class,
                     () -> service.createReminder(tenderId, request, 1L));
+            assertTrue(ex.getMessage().contains("已存在相同类型的提醒设置"));
 
-            verify(reminderRepository, never()).save(any());
+            verify(reminderRepository).save(any(TenderReminderSetting.class));
         }
     }
 

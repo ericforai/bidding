@@ -1,7 +1,6 @@
 package com.xiyu.bid.tender.service;
 
-import com.xiyu.bid.crm.domain.CrmProjectMapping;
-import com.xiyu.bid.crm.domain.CrmProjectMappingRepository;
+import com.xiyu.bid.crm.application.CrmProjectClient;
 import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.crm.domain.AssignmentResult;
 import org.slf4j.Logger;
@@ -9,24 +8,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-
 /**
  * 标讯自动分配服务
- * 
+ *
  * <p>职责：在标讯创建后，根据业主单位名称自动匹配 CRM 项目负责人，
  * 实现自动分配。匹配失败时保持 PENDING_ASSIGNMENT 状态，等待手动分配。
- * 
+ *
  * <p>集成点：
  * <ul>
- *   <li>查询 CrmProjectMapping 表进行本地匹配</li>
+ *   <li>委托 CrmProjectClient 查询（运行时为 CrmProjectClientStub），消除直接 Repository 访问</li>
  *   <li>记录分配日志（INFO/DEBUG 级别，不影响业务流程）</li>
- * </ul>
- * 
- * <p>副作用边界：
- * <ul>
- *   <li>Repository 查询（CrmProjectMappingRepository）</li>
- *   <li>日志记录</li>
  * </ul>
  */
 @Service
@@ -34,10 +25,10 @@ public class TenderAutoAssignmentService {
 
     private static final Logger log = LoggerFactory.getLogger(TenderAutoAssignmentService.class);
 
-    private final CrmProjectMappingRepository mappingRepository;
+    private final CrmProjectClient crmProjectClient;
 
-    public TenderAutoAssignmentService(CrmProjectMappingRepository mappingRepository) {
-        this.mappingRepository = mappingRepository;
+    public TenderAutoAssignmentService(CrmProjectClient crmProjectClient) {
+        this.crmProjectClient = crmProjectClient;
     }
 
     /**
@@ -56,28 +47,22 @@ public class TenderAutoAssignmentService {
         String purchaserName = tender.getPurchaserName().trim();
         log.debug("Attempting auto-assignment for purchaser: {}", purchaserName);
 
-        Optional<CrmProjectMapping> mapping = mappingRepository.findByPurchaserName(purchaserName);
+        // 委托给 CrmProjectClient，消除与 CrmProjectClientStub 的重复查询逻辑
+        AssignmentResult result = crmProjectClient.findProjectByPurchaser(purchaserName);
 
-        if (mapping.isPresent()) {
-            CrmProjectMapping m = mapping.get();
+        if (result.isMatched()) {
             log.info("Auto-assignment matched for tender {} (purchaser: {}): manager={}, dept={}",
-                    tender.getId(), purchaserName, m.getProjectManagerName(), m.getDepartmentName());
-            return AssignmentResult.success(
-                    m.getCrmProjectId(),
-                    m.getProjectManagerId(),
-                    m.getProjectManagerName(),
-                    m.getDepartmentId(),
-                    m.getDepartmentName()
-            );
+                    tender.getId(), purchaserName, result.projectManagerName(), result.departmentName());
+        } else {
+            log.debug("No CRM mapping for purchaser: {}", purchaserName);
         }
 
-        log.debug("No mapping found for purchaser: {}", purchaserName);
-        return AssignmentResult.noMatch();
+        return result;
     }
 
     /**
      * 根据标讯创建后自动尝试分配。
-     * 
+     *
      * <p>此方法应在标讯保存后调用。
      * 分配成功后更新标讯状态为 TRACKING。
      *

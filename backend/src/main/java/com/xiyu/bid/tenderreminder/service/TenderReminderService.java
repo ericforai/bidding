@@ -13,6 +13,7 @@ import com.xiyu.bid.repository.TenderRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,17 +73,15 @@ public class TenderReminderService {
         validateTenderExists(tenderId);
         validateRequest(request);
 
-        // 检查是否已存在同类型提醒
-        Optional<TenderReminderSetting> existing = reminderRepository
-                .findByTenderIdAndReminderType(tenderId, request.getReminderType());
-
-        if (existing.isPresent()) {
-            throw new IllegalStateException("该标讯已存在相同类型的提醒设置");
-        }
-
         TenderReminderSetting entity = mapper.toEntity(request, userId);
         entity.setTenderId(tenderId);
-        entity = reminderRepository.save(entity);
+
+        try {
+            entity = reminderRepository.save(entity);
+        } catch (DataIntegrityViolationException e) {
+            log.warn("并发创建提醒设置被数据库唯一约束拦截: tenderId={}, type={}", tenderId, request.getReminderType());
+            throw new IllegalStateException("该标讯已存在相同类型的提醒设置，请勿重复操作");
+        }
 
         log.info("创建提醒设置成功: tenderId={}, type={}, id={}",
                 tenderId, request.getReminderType(), entity.getId());
