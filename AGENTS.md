@@ -142,6 +142,7 @@ Agent 在每次对话开始或切换任务时，必须声明当前环境。
 - **资源分配**：每个 Agent 拥有专属的端口（前端 131x / 后端 1808x）和数据库名，互不干扰。
 - **验证责任**：遵循“谁改代码，谁在自己的 Worktree 跑通验证”原则。报告“任务完成”前，必须提供在 Worktree 内部执行 `npm run build` 和 `mvn test` 的成功证据。
 - **协作启动命令**：多 Agent 本地联调优先使用根目录 `npm run agent:morning`（同步基线并拉起 launchd 常驻服务）或 `npm run agent:up` / `agent:restart` / `agent:status` / `agent:logs`；脚本会按当前 worktree 自动映射端口、数据库、Redis DB、sidecar 端口和 launchd label，启动类命令同样需要 `XIYU_DEV_CONFIRMED=1`。
+- **分支命名**：Agent 分支统一使用 `agent/<name>-<purpose>` 格式（如 `agent/codex-init`、`agent/claude-init`、`agent/cursor-init`），严禁使用其他前缀。
 
 ### 4. 文件锁门禁
 - **锁注册表**：仓库根目录 `.agent-locks.yml` 是多 Agent 文件锁的唯一登记入口，支持 `scope: file` 与 `scope: directory`。
