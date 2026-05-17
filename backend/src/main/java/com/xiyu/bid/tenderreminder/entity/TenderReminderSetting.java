@@ -41,7 +41,7 @@ public class TenderReminderSetting {
     private Long tenderId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "reminder_type", nullable = false, length = 50)
+    @Column(name = "reminder_type", nullable = false, columnDefinition = "VARCHAR(50)")
     private ReminderType reminderType;
 
     @Column(name = "remind_before_hours")

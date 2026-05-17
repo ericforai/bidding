@@ -43,7 +43,7 @@ public class TenderReminderLog {
     private Long tenderId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "reminder_type", nullable = false, length = 50)
+    @Column(name = "reminder_type", nullable = false, columnDefinition = "VARCHAR(50)")
     private ReminderType reminderType;
 
     @Column(name = "recipient_user_id", nullable = false)
