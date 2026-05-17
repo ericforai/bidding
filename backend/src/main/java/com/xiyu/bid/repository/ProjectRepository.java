@@ -3,6 +3,7 @@ package com.xiyu.bid.repository;
 import com.xiyu.bid.entity.Project;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
@@ -63,6 +64,10 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     @Query("SELECT p.id FROM Project p")
     List<Long> findAllProjectIds();
+
+    /** 按项目ID列表获取关联的标讯ID（去重） */
+    @Query("SELECT DISTINCT p.tenderId FROM Project p WHERE p.id IN :projectIds")
+    List<Long> findTenderIdsByProjectIds(@Param("projectIds") Collection<Long> projectIds);
 
     @Query(value = """
             SELECT DISTINCT p.id
