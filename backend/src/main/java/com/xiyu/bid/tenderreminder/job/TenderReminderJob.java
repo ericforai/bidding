@@ -146,10 +146,6 @@ public class TenderReminderJob {
             } catch (RuntimeException e) {
                 log.error("处理提醒设置失败: settingId={}, error={}", setting.getId(), e.getMessage());
                 failed++;
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.error("处理提醒设置被中断: settingId={}", setting.getId());
-                failed++;
             }
         }
 

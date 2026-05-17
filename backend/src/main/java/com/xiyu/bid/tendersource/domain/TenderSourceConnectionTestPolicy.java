@@ -93,8 +93,6 @@ public final class TenderSourceConnectionTestPolicy {
             return TenderSourceConnectionResult.failure("无法连接到服务器，请检查API端点");
         } catch (UnknownHostException e) {
             return TenderSourceConnectionResult.failure("无法解析域名，请检查API端点地址");
-        } catch (java.net.http.HttpClientImpl.TimeoutException e) {
-            return TenderSourceConnectionResult.failure("请求超时，请检查API端点是否响应");
         } catch (IllegalArgumentException e) {
             return TenderSourceConnectionResult.failure("HTTP请求构建失败: " + e.getMessage());
         } catch (RuntimeException e) {
