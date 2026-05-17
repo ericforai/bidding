@@ -8,6 +8,7 @@ package com.xiyu.bid.tender.service;
 import com.xiyu.bid.entity.Tender;
 import com.xiyu.bid.entity.User;
 import com.xiyu.bid.exception.ResourceNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import com.xiyu.bid.repository.TenderRepository;
 import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.tender.core.FieldError;
@@ -44,6 +45,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @Transactional
+@Slf4j
 public class TenderEvaluationSubmissionService {
 
     private final TenderEvaluationRepository evaluationRepository;
@@ -51,8 +53,6 @@ public class TenderEvaluationSubmissionService {
     private final UserRepository userRepository;
     private final TenderProjectAccessGuard accessGuard;
     private final TenderAssignmentPermissions permissions;
-    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TenderEvaluationSubmissionService.class);
-
     private final TenderEvaluationNotificationService evaluationNotificationService;
     private final Clock clock;
 
@@ -177,7 +177,7 @@ public class TenderEvaluationSubmissionService {
         }
 
         // REQ-BC-010: 评估提交后为相关角色创建待办
-        evaluationNotificationService.createEvaluationNotificationTodos(tender, evaluator);
+        evaluationNotificationService.createEvaluationNotificationTodos(tender);
 
         boolean canDecide = permissions.canDecide(tenderId, evaluatorId);
         return toDTO(saved, tender, true, canDecide);

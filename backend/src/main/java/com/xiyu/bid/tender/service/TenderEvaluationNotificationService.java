@@ -7,7 +7,6 @@ package com.xiyu.bid.tender.service;
 
 import com.xiyu.bid.entity.Task;
 import com.xiyu.bid.entity.Tender;
-import com.xiyu.bid.entity.User;
 import com.xiyu.bid.task.dto.TaskDTO;
 import com.xiyu.bid.task.service.TaskService;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +25,7 @@ public class TenderEvaluationNotificationService {
     /**
      * 评估提交后为投标负责人和项目负责人创建待办。
      */
-    public void createEvaluationNotificationTodos(Tender tender, User evaluator) {
+    public void createEvaluationNotificationTodos(Tender tender) {
         String title = "【评估待审】" + tender.getTitle();
         String description = "标讯「" + tender.getTitle() + "」已完成评估提交，请及时审核并决定是否投标。";
 
