@@ -18,26 +18,12 @@
       :actions="bannerActions"
       @action-click="handleBannerAction"
     />
-    <MetricCards
-      :metrics="metrics"
-      :loading="metricsLoading"
-      :error="metricsError"
-      @metric-click="handleMetricClick"
-      @retry="reloadMetrics"
-    />
-
-    <QuickEntrySection
-      :can-create-project="canViewProjectList"
-      :can-view-tenders="canViewTenderList"
-      @handle-todos="scrollToTodos"
-    />
-
-    <DeadlineMetricCards
-      :metrics="deadlineMetrics"
-      :loading="deadlineMetricsLoading"
-      :error="deadlineMetricsError"
-      @retry="loadDeadlineStats"
-    />
+    <MetricCards :metrics="metrics" :loading="metricsLoading" :error="metricsError"
+      @metric-click="handleMetricClick" @retry="reloadMetrics" />
+    <WorkbenchAdditions :can-create-project="canViewProjectList" :can-view-tenders="canViewTenderList"
+      :deadline-metrics="deadlineMetrics" :deadline-metrics-loading="deadlineMetricsLoading"
+      :deadline-metrics-error="deadlineMetricsError" @handle-todos="() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })"
+      @retry-deadline="loadDeadlineStats" />
 
     <WorkbenchStaticLayout
       v-if="!dynamicLayout"
@@ -118,8 +104,6 @@
       :project="selectedProjectForCollab"
       @changed="handleProjectMemberChanged"
     />
-
-    <AiPredictionPlaceholder />
   </div>
 </template>
 
@@ -127,17 +111,16 @@
 import { computed, markRaw, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { dashboardApi, projectsApi, tendersApi, workbenchApi } from '@/api'
+import { dashboardApi, projectsApi, tendersApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { useBiddingStore } from '@/stores/bidding'
 import { useWorkbenchSchedule } from '@/views/Dashboard/useWorkbenchSchedule.js'
 import { useWorkbenchMetrics } from '@/views/Dashboard/useWorkbenchMetrics.js'
 import { useWorkbenchTodos } from '@/views/Dashboard/useWorkbenchTodos.js'
 import { useWorkbenchApprovals } from '@/views/Dashboard/useWorkbenchApprovals.js'
-import { useWorkbenchDerivedLists } from '@/views/Dashboard/useWorkbenchDerivedLists.js'
+import { useWorkbenchDeadline } from '@/views/Dashboard/useWorkbenchDeadline.js'; import { useWorkbenchDerivedLists } from '@/views/Dashboard/useWorkbenchDerivedLists.js'
 import { useWorkbenchDynamicWidgets } from '@/views/Dashboard/useWorkbenchDynamicWidgets.js'
 import { hasAnyPermission } from '@/utils/permission'
-import { normalizeDeadlineStats, selectDeadlineMetrics } from '@/views/Dashboard/workbench-deadline-core.js'
 import {
   formatCurrentDate, formatRelativeTime, getBannerActionConfig,
   getBannerSubtitle, getBannerTitle, getPriorityLabel, getPriorityType, getProgressColor,
@@ -147,10 +130,7 @@ import { normalizeProjectForWorkbench } from '@/views/Dashboard/workbench-utils.
 import ApprovalDialog from '@/components/common/ApprovalDialog.vue'
 import MetricCards from '@/views/Dashboard/components/MetricCards.vue'
 import ProjectCollaboratorsDialog from '@/views/Dashboard/components/ProjectCollaboratorsDialog.vue'
-import DeadlineMetricCards from '@/views/Dashboard/components/DeadlineMetricCards.vue'
-import QuickEntrySection from '@/views/Dashboard/components/QuickEntrySection.vue'
-import AiPredictionPlaceholder from '@/views/Dashboard/components/AiPredictionPlaceholder.vue'
-import WelcomeBanner from '@/views/Dashboard/components/WelcomeBanner.vue'
+import WorkbenchAdditions from '@/views/Dashboard/components/WorkbenchAdditions.vue'; import WelcomeBanner from '@/views/Dashboard/components/WelcomeBanner.vue'
 import WorkbenchStaticLayout from '@/views/Dashboard/components/WorkbenchStaticLayout.vue'
 import DynamicLayoutRenderer from '@/views/Dashboard/components/DynamicLayoutRenderer.vue'
 import {
@@ -169,9 +149,6 @@ const currentDate = computed(() => formatCurrentDate())
 const workbenchProjects = ref([])
 const hotTenders = ref([])
 const runtimeMode = ref(null)
-const deadlineStats = ref(null)
-const deadlineMetricsLoading = ref(true)
-const deadlineMetricsError = ref('')
 const dynamicLayout = ref(null)
 const collabDialogVisible = ref(false)
 const selectedProjectForCollab = ref(null)
@@ -203,11 +180,7 @@ const {
   icons: Icons,
 })
 
-const deadlineMetrics = computed(() => {
-  if (!deadlineStats.value) return []
-  return selectDeadlineMetrics(userStore.menuPermissions, deadlineStats.value)
-})
-
+const { deadlineMetrics, deadlineMetricsLoading, deadlineMetricsError, loadDeadlineStats } = useWorkbenchDeadline({ menuPermissionsRef: computed(() => userStore.menuPermissions) })
 const bannerTitle = computed(() => getBannerTitle(currentUserName.value))
 const bannerSubtitle = computed(() => getBannerSubtitle(currentUserRole.value, {
   currentDate: currentDate.value,
@@ -376,27 +349,6 @@ async function reloadMetrics() {
   metricsLoading.value = false
 }
 
-async function loadDeadlineStats() {
-  deadlineMetricsLoading.value = true
-  deadlineMetricsError.value = ''
-  try {
-    const response = await workbenchApi.getDeadlineStats()
-    if (response?.success) {
-      deadlineStats.value = response.data
-    } else {
-      deadlineMetricsError.value = '截止节点数据暂时不可用'
-    }
-  } catch {
-    deadlineMetricsError.value = '截止节点数据暂时不可用，请稍后重试'
-  } finally {
-    deadlineMetricsLoading.value = false
-  }
-}
-
-function scrollToTodos() {
-  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
-}
-
 async function loadWorkbenchProjects() {
   try {
     const response = await projectsApi.getList()
@@ -467,7 +419,6 @@ onMounted(async () => {
     loadWorkbenchTenders(),
     loadScheduleOverview(), loadTodos(), loadPendingApprovals(), loadMyProcesses(),
     loadWorkbenchSummary(),
-    loadDeadlineStats(),
   ])
   metricsLoading.value = false
   syncSelectedDate()
