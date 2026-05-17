@@ -20,6 +20,9 @@ import java.util.List;
 @Slf4j
 public class WorkbenchDeadlineQueryService {
 
+    private static final int MAX_TENDER_IDS_FOR_IN_CLAUSE = 500;
+    private static final int QUERY_WINDOW_WARN_THRESHOLD_DAYS = 45;
+
     private final TenderRepository tenderRepository;
     private final FeeRepository feeRepository;
     private final ProjectRepository projectRepository;
@@ -55,13 +58,29 @@ public class WorkbenchDeadlineQueryService {
             depositDeadlines = feeRepository.findDepositDeadlinesBetween(queryStart, queryEnd);
         } else {
             List<Long> allowedTenderIds = projectRepository.findTenderIdsByProjectIds(allowedProjectIds);
-            regDeadlines = allowedTenderIds.isEmpty()
-                    ? List.of()
-                    : tenderRepository.findRegistrationDeadlinesByTenderIds(allowedTenderIds, queryStart, queryEnd);
-            openingTimes = allowedTenderIds.isEmpty()
-                    ? List.of()
-                    : tenderRepository.findBidOpeningTimesByTenderIds(allowedTenderIds, queryStart, queryEnd);
+
+            if (!allowedTenderIds.isEmpty()) {
+                List<Long> safeTenderIds = allowedTenderIds.size() > MAX_TENDER_IDS_FOR_IN_CLAUSE
+                        ? allowedTenderIds.subList(0, MAX_TENDER_IDS_FOR_IN_CLAUSE)
+                        : allowedTenderIds;
+                if (allowedTenderIds.size() > MAX_TENDER_IDS_FOR_IN_CLAUSE) {
+                    log.warn("Tender ID count {} exceeds safe IN-clause limit {}, truncating to {}",
+                            allowedTenderIds.size(), MAX_TENDER_IDS_FOR_IN_CLAUSE, safeTenderIds.size());
+                }
+                regDeadlines = tenderRepository.findRegistrationDeadlinesByTenderIds(safeTenderIds, queryStart, queryEnd);
+                openingTimes = tenderRepository.findBidOpeningTimesByTenderIds(safeTenderIds, queryStart, queryEnd);
+            } else {
+                regDeadlines = List.of();
+                openingTimes = List.of();
+            }
             depositDeadlines = feeRepository.findDepositDeadlinesByProjectIds(allowedProjectIds, queryStart, queryEnd);
+        }
+
+        long queryWindowDays = java.time.temporal.ChronoUnit.DAYS.between(queryStart.toLocalDate(), queryEnd.toLocalDate());
+        if (queryWindowDays > QUERY_WINDOW_WARN_THRESHOLD_DAYS) {
+            log.warn("Deadline query window spans {} days (threshold={}), admin={}. "
+                    + "Consider adding a database index on deadline columns or tightening the window logic.",
+                    queryWindowDays, QUERY_WINDOW_WARN_THRESHOLD_DAYS, isAdmin);
         }
 
         log.debug("Workbench deadline stats: reg={}, opening={}, deposit={}",
