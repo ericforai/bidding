@@ -109,4 +109,13 @@ describe('selectDeadlineMetrics', () => {
     expect(result[2].value).toBe('0')
     expect(result[3].value).toBe('0')
   })
+
+  it('null deadlineStats 不抛错并返回 "0" 值卡片', () => {
+    expect(() => selectDeadlineMetrics(['analytics'], null)).not.toThrow()
+    expect(() => selectDeadlineMetrics(['analytics'], undefined)).not.toThrow()
+
+    const result = selectDeadlineMetrics(['analytics'], null)
+    expect(result).toHaveLength(4)
+    result.forEach((card) => expect(card.value).toBe('0'))
+  })
 })

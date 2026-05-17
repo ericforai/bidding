@@ -1,13 +1,21 @@
 // Input: workbenchApi, userStore menuPermissions
 // Output: deadline stats state, computed metrics, and load function
 // Pos: src/views/Dashboard/ - Dashboard feature composables
-import { computed, ref } from 'vue'
-import { workbenchApi } from '@/api'
-import { selectDeadlineMetrics } from '@/views/Dashboard/workbench-deadline-core.js'
+// 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
-export function useWorkbenchDeadline({ menuPermissionsRef } = {}) {
+import { computed, ref } from 'vue'
+import { workbenchApi as defaultWorkbenchApi } from '@/api'
+import {
+  normalizeDeadlineStats,
+  selectDeadlineMetrics,
+} from '@/views/Dashboard/workbench-deadline-core.js'
+
+export function useWorkbenchDeadline({
+  menuPermissionsRef,
+  workbenchApi = defaultWorkbenchApi,
+} = {}) {
   const deadlineStats = ref(null)
-  const deadlineMetricsLoading = ref(true)
+  const deadlineMetricsLoading = ref(false)
   const deadlineMetricsError = ref('')
 
   const deadlineMetrics = computed(() => {
@@ -22,7 +30,9 @@ export function useWorkbenchDeadline({ menuPermissionsRef } = {}) {
     try {
       const response = await workbenchApi.getDeadlineStats()
       if (response?.success) {
-        deadlineStats.value = response.data
+        // P1 fix: normalize raw API payload to guard against null / missing fields /
+        // string-typed numbers. selectDeadlineMetrics/buildMetrics rely on this shape.
+        deadlineStats.value = normalizeDeadlineStats(response.data || {})
       } else {
         deadlineMetricsError.value = '截止节点数据暂时不可用'
       }

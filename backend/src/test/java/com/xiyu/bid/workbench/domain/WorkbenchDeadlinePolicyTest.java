@@ -105,4 +105,56 @@ class WorkbenchDeadlinePolicyTest {
         assertThat(stats.depositDeadline().counts().weekCount()).isEqualTo(0);
         assertThat(stats.depositDeadline().counts().monthCount()).isEqualTo(1);
     }
+
+    @Test
+    @DisplayName("P1: 周窗口跨月（月初周六）— weekStart 落在上月，仍能正确按周计数")
+    void shouldCountWeekDeadlinesAcrossMonthBoundaryAtStartOfMonth() {
+        // today = 2026-08-01 (Saturday) → week = Jul 27 ~ Aug 2
+        LocalDate today = LocalDate.of(2026, 8, 1);
+        WorkbenchDeadlinePolicy.TimeWindowBounds bounds = WorkbenchDeadlinePolicy.computeTimeWindows(today);
+
+        assertThat(bounds.weekStart()).isEqualTo(LocalDate.of(2026, 7, 27).atStartOfDay());
+        assertThat(bounds.weekEnd()).isEqualTo(LocalDate.of(2026, 8, 2).atTime(java.time.LocalTime.MAX));
+        assertThat(bounds.monthStart()).isEqualTo(LocalDate.of(2026, 8, 1).atStartOfDay());
+
+        List<LocalDateTime> deadlines = Arrays.asList(
+                LocalDateTime.of(2026, 7, 28, 10, 0), // in week, NOT in month
+                LocalDateTime.of(2026, 8, 1, 10, 0),  // today, in week, in month
+                LocalDateTime.of(2026, 8, 15, 10, 0)  // in month, NOT in week
+        );
+
+        WorkbenchDeadlinePolicy.WindowCounts counts = WorkbenchDeadlinePolicy.countByTimeWindow(deadlines, bounds);
+
+        assertThat(counts.todayCount()).isEqualTo(1);
+        assertThat(counts.weekCount())
+                .as("must include the Jul 28 deadline that falls in this week but previous month")
+                .isEqualTo(2);
+        assertThat(counts.monthCount()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("P1: 周窗口跨月（月末周二）— weekEnd 落在下月，仍能正确按周计数")
+    void shouldCountWeekDeadlinesAcrossMonthBoundaryAtEndOfMonth() {
+        // today = 2026-06-30 (Tuesday) → week = Jun 29 ~ Jul 5
+        LocalDate today = LocalDate.of(2026, 6, 30);
+        WorkbenchDeadlinePolicy.TimeWindowBounds bounds = WorkbenchDeadlinePolicy.computeTimeWindows(today);
+
+        assertThat(bounds.weekStart()).isEqualTo(LocalDate.of(2026, 6, 29).atStartOfDay());
+        assertThat(bounds.weekEnd()).isEqualTo(LocalDate.of(2026, 7, 5).atTime(java.time.LocalTime.MAX));
+        assertThat(bounds.monthEnd()).isEqualTo(LocalDate.of(2026, 6, 30).atTime(java.time.LocalTime.MAX));
+
+        List<LocalDateTime> deadlines = Arrays.asList(
+                LocalDateTime.of(2026, 6, 30, 10, 0), // today, in week, in month
+                LocalDateTime.of(2026, 7, 3, 10, 0),  // in week, NOT in month
+                LocalDateTime.of(2026, 6, 5, 10, 0)   // in month, NOT in week
+        );
+
+        WorkbenchDeadlinePolicy.WindowCounts counts = WorkbenchDeadlinePolicy.countByTimeWindow(deadlines, bounds);
+
+        assertThat(counts.todayCount()).isEqualTo(1);
+        assertThat(counts.weekCount())
+                .as("must include the Jul 3 deadline that falls in this week but next month")
+                .isEqualTo(2);
+        assertThat(counts.monthCount()).isEqualTo(2);
+    }
 }
