@@ -6,6 +6,7 @@ import com.xiyu.bid.entity.User;
 import com.xiyu.bid.repository.RoleProfileRepository;
 import com.xiyu.bid.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,6 +63,7 @@ public class DefaultAdminInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
+        ensureSystemRoles();
         if (userRepository.count() == 0) {
             log.warn("ZERO users detected in database — seeding default admin account.");
             seedDefaultAdmin();
@@ -97,4 +99,33 @@ public class DefaultAdminInitializer implements ApplicationRunner {
         log.warn("  Password: <see ADMIN_PASSWORD env var or app.bootstrap.admin.password>");
         log.warn("==================================");
     }
+
+    private void ensureSystemRoles() {
+        for (RoleProfileCatalog.SeedDefinition definition : RoleProfileCatalog.seedDefinitions()) {
+            roleProfileRepository.findByCodeIgnoreCase(definition.code())
+                    .ifPresentOrElse(
+                            existing -> {
+                                if (!Boolean.TRUE.equals(existing.getIsSystem())) {
+                                    existing.setIsSystem(true);
+                                    roleProfileRepository.save(existing);
+                                }
+                            },
+                            () -> {
+                                RoleProfile role = RoleProfile.builder()
+                                        .code(definition.code())
+                                        .name(definition.name())
+                                        .description(definition.description())
+                                        .isSystem(definition.system())
+                                        .enabled(true)
+                                        .dataScope(definition.dataScope())
+                                        .build();
+                                role.setMenuPermissions(definition.menuPermissions());
+                                role.setAllowedProjects(List.of());
+                                role.setAllowedDepts(List.of());
+                                roleProfileRepository.save(role);
+                            }
+                    );
+        }
+    }
 }
+
