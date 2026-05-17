@@ -20,7 +20,7 @@
     />
     <MetricCards :metrics="metrics" :loading="metricsLoading" :error="metricsError"
       @metric-click="handleMetricClick" @retry="reloadMetrics" />
-    <WorkbenchAdditions :can-create-project="canViewProjectList" :can-view-tenders="canViewTenderList"
+    <WorkbenchAdditions :can-create-project="canCreateProject" :can-view-tenders="canViewTenderList"
       :deadline-metrics="deadlineMetrics" :deadline-metrics-loading="deadlineMetricsLoading"
       :deadline-metrics-error="deadlineMetricsError" @handle-todos="() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })"
       @retry-deadline="loadDeadlineStats" />
@@ -131,8 +131,7 @@ import ApprovalDialog from '@/components/common/ApprovalDialog.vue'
 import MetricCards from '@/views/Dashboard/components/MetricCards.vue'
 import ProjectCollaboratorsDialog from '@/views/Dashboard/components/ProjectCollaboratorsDialog.vue'
 import WorkbenchAdditions from '@/views/Dashboard/components/WorkbenchAdditions.vue'; import WelcomeBanner from '@/views/Dashboard/components/WelcomeBanner.vue'
-import WorkbenchStaticLayout from '@/views/Dashboard/components/WorkbenchStaticLayout.vue'
-import DynamicLayoutRenderer from '@/views/Dashboard/components/DynamicLayoutRenderer.vue'
+import WorkbenchStaticLayout from '@/views/Dashboard/components/WorkbenchStaticLayout.vue'; import DynamicLayoutRenderer from '@/views/Dashboard/components/DynamicLayoutRenderer.vue'
 import {
   Briefcase, Calendar, Check, DataAnalysis, Document, Flag, TrendCharts, User,
 } from '@element-plus/icons-vue'
@@ -198,6 +197,7 @@ const canViewTenderList = computed(() => hasAnyPermission(userStore.menuPermissi
 const canViewTechnicalTask = computed(() => hasAnyPermission(userStore.menuPermissions, ['dashboard:view_technical_task', 'project']))
 const canViewReviewList = computed(() => hasAnyPermission(userStore.menuPermissions, ['dashboard:view_review_list', 'project', 'task.review']))
 const canViewProjectList = computed(() => hasAnyPermission(userStore.menuPermissions, ['dashboard:view_project_list', 'project']))
+const canCreateProject = computed(() => hasAnyPermission(userStore.menuPermissions, ['project.create', 'project']))
 const canViewTeamTask = computed(() => hasAnyPermission(userStore.menuPermissions, ['dashboard:view_team_task', 'project', 'task.assign']))
 const canViewGlobalProjects = computed(() => hasAnyPermission(userStore.menuPermissions, ['dashboard:view_global_projects', 'analytics']))
 
@@ -418,7 +418,7 @@ onMounted(async () => {
     loadWorkbenchProjects(),
     loadWorkbenchTenders(),
     loadScheduleOverview(), loadTodos(), loadPendingApprovals(), loadMyProcesses(),
-    loadWorkbenchSummary(),
+    loadWorkbenchSummary(), loadDeadlineStats(),
   ])
   metricsLoading.value = false
   syncSelectedDate()

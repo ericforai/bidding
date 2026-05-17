@@ -27,30 +27,41 @@ public class WorkbenchDeadlineQueryService {
 
     @Transactional(readOnly = true)
     public WorkbenchDeadlineStatsDTO getDeadlineStats(LocalDate today) {
+        // P0-1 fix: Empty allowedProjectIds is ambiguous (admin OR non-admin-with-zero-access).
+        // We MUST consult currentUserHasAdminAccess() to distinguish. Mirrors FeeService /
+        // DashboardAnalyticsQueryService pattern in this codebase. See PR #285 review.
+        boolean isAdmin = projectAccessScopeService.currentUserHasAdminAccess();
         List<Long> allowedProjectIds = projectAccessScopeService.getAllowedProjectIdsForCurrentUser();
 
-        var monthStart = today.withDayOfMonth(1).atStartOfDay();
-        var monthEnd = today.withDayOfMonth(today.lengthOfMonth()).atTime(23, 59, 59);
+        if (!isAdmin && allowedProjectIds.isEmpty()) {
+            log.debug("Workbench deadline stats: non-admin user has no project access; returning zero stats");
+            return zeroStats();
+        }
+
+        // P1 fix: query window must cover the union of today/week/month bounds.
+        // Otherwise weekly counts under-report when current week crosses a month boundary
+        // (e.g. today=Sat 2026-08-01 → week is Jul 27 ~ Aug 2, but monthStart is Aug 1).
+        WorkbenchDeadlinePolicy.TimeWindowBounds bounds = WorkbenchDeadlinePolicy.computeTimeWindows(today);
+        LocalDateTime queryStart = earliest(bounds.todayStart(), bounds.weekStart(), bounds.monthStart());
+        LocalDateTime queryEnd = latest(bounds.todayEnd(), bounds.weekEnd(), bounds.monthEnd());
 
         List<LocalDateTime> regDeadlines;
         List<LocalDateTime> openingTimes;
         List<LocalDateTime> depositDeadlines;
 
-        if (allowedProjectIds.isEmpty()) {
-            // Admin: 全量
-            regDeadlines = tenderRepository.findRegistrationDeadlinesBetween(monthStart, monthEnd);
-            openingTimes = tenderRepository.findBidOpeningTimesBetween(monthStart, monthEnd);
-            depositDeadlines = feeRepository.findDepositDeadlinesBetween(monthStart, monthEnd);
+        if (isAdmin) {
+            regDeadlines = tenderRepository.findRegistrationDeadlinesBetween(queryStart, queryEnd);
+            openingTimes = tenderRepository.findBidOpeningTimesBetween(queryStart, queryEnd);
+            depositDeadlines = feeRepository.findDepositDeadlinesBetween(queryStart, queryEnd);
         } else {
-            // 非 Admin: 按项目范围过滤
             List<Long> allowedTenderIds = projectRepository.findTenderIdsByProjectIds(allowedProjectIds);
             regDeadlines = allowedTenderIds.isEmpty()
                     ? List.of()
-                    : tenderRepository.findRegistrationDeadlinesByTenderIds(allowedTenderIds, monthStart, monthEnd);
+                    : tenderRepository.findRegistrationDeadlinesByTenderIds(allowedTenderIds, queryStart, queryEnd);
             openingTimes = allowedTenderIds.isEmpty()
                     ? List.of()
-                    : tenderRepository.findBidOpeningTimesByTenderIds(allowedTenderIds, monthStart, monthEnd);
-            depositDeadlines = feeRepository.findDepositDeadlinesByProjectIds(allowedProjectIds, monthStart, monthEnd);
+                    : tenderRepository.findBidOpeningTimesByTenderIds(allowedTenderIds, queryStart, queryEnd);
+            depositDeadlines = feeRepository.findDepositDeadlinesByProjectIds(allowedProjectIds, queryStart, queryEnd);
         }
 
         log.debug("Workbench deadline stats: reg={}, opening={}, deposit={}",
@@ -75,5 +86,20 @@ public class WorkbenchDeadlineQueryService {
                         stats.depositDeadline().counts().monthCount()
                 )
         );
+    }
+
+    private static WorkbenchDeadlineStatsDTO zeroStats() {
+        var zero = new WorkbenchDeadlineStatsDTO.DeadlinePeriodStatsDTO(0L, 0L, 0L);
+        return new WorkbenchDeadlineStatsDTO(zero, zero, zero);
+    }
+
+    private static LocalDateTime earliest(LocalDateTime a, LocalDateTime b, LocalDateTime c) {
+        LocalDateTime ab = a.isBefore(b) ? a : b;
+        return ab.isBefore(c) ? ab : c;
+    }
+
+    private static LocalDateTime latest(LocalDateTime a, LocalDateTime b, LocalDateTime c) {
+        LocalDateTime ab = a.isAfter(b) ? a : b;
+        return ab.isAfter(c) ? ab : c;
     }
 }

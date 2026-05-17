@@ -63,15 +63,18 @@ const METRIC_STYLE = {
 /**
  * Select deadline metrics based on user's menuPermissions.
  * analytics → admin-level (4 cards), project → team-level (3 cards), default → personal (3 cards)
+ *
+ * Pure-core defensive: deadlineStats may be null/undefined/{}; we never throw.
  */
 export function selectDeadlineMetrics(menuPermissions, deadlineStats) {
+  const safeStats = deadlineStats || {}
   if (hasAnyAnalyticsAccess(menuPermissions)) {
-    return buildMetrics(DEADLINE_METRIC_DEFS.admin, deadlineStats)
+    return buildMetrics(DEADLINE_METRIC_DEFS.admin, safeStats)
   }
   if (hasAnyProjectAccess(menuPermissions)) {
-    return buildMetrics(DEADLINE_METRIC_DEFS.manager, deadlineStats)
+    return buildMetrics(DEADLINE_METRIC_DEFS.manager, safeStats)
   }
-  return buildMetrics(DEADLINE_METRIC_DEFS.staff, deadlineStats)
+  return buildMetrics(DEADLINE_METRIC_DEFS.staff, safeStats)
 }
 
 function hasAnyAnalyticsAccess(perms) {

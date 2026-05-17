@@ -72,6 +72,8 @@ public interface FeeRepository extends JpaRepository<Fee, Long> {
     Page<Fee> findByProjectId(Long projectId, Pageable pageable);
 
     // === Workbench deadline queries ===
+    // NB: For BID_BOND + PENDING, Fee.feeDate is treated as the deposit deadline.
+    // See Fee#feeDate javadoc for the semantic contract.
 
     /** 全量保证金缴纳截止日期（Admin 用） */
     @Query("SELECT f.feeDate FROM Fee f WHERE f.feeType = 'BID_BOND' AND f.status = 'PENDING' AND f.feeDate BETWEEN :start AND :end")

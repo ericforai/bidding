@@ -1,6 +1,16 @@
 package com.xiyu.bid.fees.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -52,6 +62,14 @@ public class Fee {
 
     /**
      * 费用发生日期
+     *
+     * <p>语义说明：
+     * <ul>
+     *   <li>{@link FeeType#BID_BOND} + {@link Status#PENDING}：作为投标保证金的<b>缴纳截止日期</b>使用
+     *       （Workbench 工作台 deadline 卡片基于此字段）。</li>
+     *   <li>{@link FeeType#BID_BOND} + 其他状态、以及其他 FeeType：表示该笔费用的<b>实际发生日期</b>。</li>
+     * </ul>
+     * 未来如需引入独立的截止日期字段（如 {@code dueDate}），请同步迁移 Workbench 查询逻辑。
      */
     @Column(name = "fee_date", nullable = false)
     private LocalDateTime feeDate;

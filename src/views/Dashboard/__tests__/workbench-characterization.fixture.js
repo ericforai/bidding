@@ -84,6 +84,7 @@ const mockState = vi.hoisted(() => ({
   contractBorrowCreate: vi.fn(),
   expenseCreate: vi.fn(),
   scheduleGetOverview: vi.fn(),
+  workbenchGetDeadlineStats: vi.fn().mockResolvedValue({ success: true, data: {} }),
   messageSuccess: vi.fn(),
   messageWarning: vi.fn(),
   messageError: vi.fn(),
@@ -113,10 +114,14 @@ vi.mock('@/api', () => ({
   resourcesApi: {
     expenses: { create: mockState.expenseCreate },
   },
+  workbenchApi: {
+    getScheduleOverview: mockState.scheduleGetOverview,
+    getDeadlineStats: mockState.workbenchGetDeadlineStats,
+  },
 }))
 vi.mock('@/api/modules/dashboard.js', () => ({ tasksApi: { getMine: mockState.tasksGetMine, complete: mockState.tasksComplete } }))
 vi.mock('@/api/modules/alerts.js', () => ({ alertHistoryApi: { getUnresolved: mockState.alertGetUnresolved, acknowledge: mockState.alertAcknowledge } }))
-vi.mock('@/api/modules/workbench.js', () => ({ workbenchApi: { getScheduleOverview: mockState.scheduleGetOverview } }))
+vi.mock('@/api/modules/workbench.js', () => ({ workbenchApi: { getScheduleOverview: mockState.scheduleGetOverview, getDeadlineStats: mockState.workbenchGetDeadlineStats } }))
 vi.mock('@/api/modules/contractBorrow.js', () => ({ contractBorrowApi: { create: mockState.contractBorrowCreate } }))
 vi.mock('element-plus', () => ({
   ElMessage: {
