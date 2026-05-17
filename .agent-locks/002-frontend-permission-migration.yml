@@ -1,0 +1,5 @@
+version: 1
+task: "002-frontend-permission-migration"
+locks:
+  - path: "src/router/index.js"
+  - path: ".github/workflows/ci.yml"
