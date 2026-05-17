@@ -115,6 +115,17 @@ export function buildManualTenderPayload(form = {}) {
     sourceDocumentFileType: form.sourceDocumentFileType || '',
     sourceDocumentFileUrl: form.sourceDocumentFileUrl || '',
     status: 'PENDING',
+    // 项目评估表字段
+    evaluation: {
+      projectBackground: form.projectBackground || '',
+      competitorAnalysis: form.competitorAnalysis || '',
+      contractPeriodStart: form.contractPeriodStart || null,
+      contractPeriodEnd: form.contractPeriodEnd || null,
+      shortlistedCount: form.shortlistedCount || null,
+      platformServiceFee: form.platformServiceFee || null,
+      previousQuotation: form.previousQuotation || null,
+      bidRecommendation: form.bidRecommendation || '',
+    },
   }
 }
 

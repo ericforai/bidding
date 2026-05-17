@@ -51,15 +51,20 @@ public class TenderEvaluationSubmissionService {
     private final UserRepository userRepository;
     private final TenderProjectAccessGuard accessGuard;
     private final TenderAssignmentPermissions permissions;
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TenderEvaluationSubmissionService.class);
+
+    private final TenderEvaluationNotificationService evaluationNotificationService;
     private final Clock clock;
 
     public TenderEvaluationSubmissionService(
+            TenderEvaluationNotificationService evaluationNotificationService,
             TenderEvaluationRepository evaluationRepository,
             TenderRepository tenderRepository,
             UserRepository userRepository,
             TenderProjectAccessGuard accessGuard,
             TenderAssignmentPermissions permissions,
             Clock clock) {
+        this.evaluationNotificationService = evaluationNotificationService;
         this.evaluationRepository = evaluationRepository;
         this.tenderRepository = tenderRepository;
         this.userRepository = userRepository;
@@ -170,6 +175,9 @@ public class TenderEvaluationSubmissionService {
             tender.setStatus(Tender.Status.EVALUATED);
             tenderRepository.save(tender);
         }
+
+        // REQ-BC-010: 评估提交后为相关角色创建待办
+        evaluationNotificationService.createEvaluationNotificationTodos(tender, evaluator);
 
         boolean canDecide = permissions.canDecide(tenderId, evaluatorId);
         return toDTO(saved, tender, true, canDecide);

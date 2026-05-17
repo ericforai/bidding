@@ -140,6 +140,7 @@ export const DEFAULT_SOURCE_CONFIG = Object.freeze({
   syncInterval: 6,
   autoSave: true,
   enableDedupe: true,
+  businessUnit: '',
 })
 
 export const DEFAULT_FETCH_RESULT = Object.freeze({
@@ -169,6 +170,15 @@ export function createManualTenderForm() {
     sourceDocumentFileType: '',
     sourceDocumentFileUrl: '',
     pastedText: '',
+    // 项目评估表字段（第二步）
+    projectBackground: '',
+    competitorAnalysis: '',
+    contractPeriodStart: null,
+    contractPeriodEnd: null,
+    shortlistedCount: null,
+    platformServiceFee: null,
+    previousQuotation: null,
+    bidRecommendation: '',
   }
 }
 
