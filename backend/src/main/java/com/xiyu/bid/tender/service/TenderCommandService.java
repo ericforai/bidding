@@ -12,6 +12,7 @@ import com.xiyu.bid.tender.dto.TenderAbandonRequest;
 import com.xiyu.bid.tender.dto.TenderBidResponse;
 import com.xiyu.bid.tender.dto.TenderDTO;
 import lombok.RequiredArgsConstructor;
+import com.xiyu.bid.tender.service.TenderAuditService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -44,10 +45,12 @@ public class TenderCommandService {
     private final TaskService taskService;
     private final TenderAssignmentPermissions permissions;
     private final TenderAutoAssignmentService autoAssignmentService;
+    private final TenderAuditService tenderAuditService;
 
     public TenderDTO createTender(TenderDTO tenderDTO) {
         log.debug("Creating new tender: {}", tenderDTO.getTitle());
         Tender tender = tenderMapper.toEntity(withCommandDefaults(tenderDTO));
+        checkDuplicate(tender);
         Tender savedTender = tenderRepository.save(tender);
         log.info("Created tender with id: {}", savedTender.getId());
 

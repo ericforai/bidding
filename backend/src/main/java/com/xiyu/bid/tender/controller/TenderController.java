@@ -16,6 +16,7 @@ import com.xiyu.bid.tender.dto.TenderRequest;
 import com.xiyu.bid.tender.dto.TenderDTO;
 import com.xiyu.bid.tender.dto.TenderAbandonRequest;
 import com.xiyu.bid.tender.dto.TenderBidResponse;
+import com.xiyu.bid.tender.service.TenderAuditService;
 import com.xiyu.bid.tender.service.TenderCommandService;
 import com.xiyu.bid.tender.service.TenderImportRollbackException;
 import com.xiyu.bid.tender.service.TenderImportService;
@@ -52,6 +53,7 @@ import java.nio.charset.StandardCharsets;
 
 import java.util.List;
 import java.util.Map;
+import com.xiyu.bid.entity.AuditLog;
 import java.util.Optional;
 
 @RestController
@@ -68,6 +70,7 @@ public class TenderController {
     private final DemoModeService demoModeService;
     private final DemoDataProvider demoDataProvider;
     private final DemoFusionService demoFusionService;
+    private final TenderAuditService tenderAuditService;
     private final AuthService authService;
     private final TenderRequestSanitizer sanitizer = new TenderRequestSanitizer();
 
@@ -149,6 +152,15 @@ public class TenderController {
         TenderDTO tenderDTO = tenderMapper.toDTO(tenderRequest);
         TenderDTO updatedTender = tenderCommandService.updateTender(id, tenderDTO);
         return ResponseEntity.ok(ApiResponse.success("Tender updated successfully", updatedTender));
+    }
+
+    
+    @GetMapping("/{id}/audit-logs")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    public ResponseEntity<ApiResponse<List<AuditLog>>> getAuditLogs(@PathVariable Long id) {
+        log.info("GET /api/tenders/{}/audit-logs", id);
+        List<AuditLog> logs = tenderAuditService.getAuditLogs(id);
+        return ResponseEntity.ok(ApiResponse.success("Successfully retrieved audit logs", logs));
     }
 
     @DeleteMapping("/{id}")
