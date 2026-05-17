@@ -64,3 +64,23 @@ defineProps({
 const emit = defineEmits(['metric-click', 'retry'])
 const selectMetric = (metric) => emit('metric-click', metric)
 </script>
+
+<style scoped>
+.deadline-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .deadline-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .deadline-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
