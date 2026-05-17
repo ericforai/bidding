@@ -3,12 +3,11 @@ package com.xiyu.bid.tenderreminder.job;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xiyu.bid.config.BizTimezoneProperties;
 import com.xiyu.bid.entity.Tender;
-import com.xiyu.bid.entity.User;
 import com.xiyu.bid.notification.outbound.service.WeComPushService;
 import com.xiyu.bid.notification.outbound.event.NotificationCreatedEvent;
 import com.xiyu.bid.repository.TenderRepository;
-import com.xiyu.bid.repository.UserRepository;
 import com.xiyu.bid.tenderreminder.entity.ReminderType;
 import com.xiyu.bid.tenderreminder.entity.TenderReminderLog;
 import com.xiyu.bid.tenderreminder.entity.TenderReminderSetting;
@@ -22,6 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 标讯提醒定时任务
@@ -35,25 +38,23 @@ public class TenderReminderJob {
     private final TenderReminderSettingRepository settingRepository;
     private final TenderReminderLogRepository logRepository;
     private final TenderRepository tenderRepository;
-    private final UserRepository userRepository;
     private final WeComPushService weComPushService;
     private final ObjectMapper objectMapper;
+    private final BizTimezoneProperties bizTimezone;
 
     /**
      * 每小时执行一次
      */
     @Scheduled(cron = "0 0 * * * *")
-    @Transactional
     public void processReminders() {
         log.info("开始处理标讯提醒任务");
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = bizTimezone.now();
 
         int totalProcessed = 0;
         int totalSent = 0;
         int totalSkipped = 0;
         int totalFailed = 0;
 
-        // 处理报名截止提醒
         ProcessResult regResult = processReminderType(ReminderType.REGISTRATION_DEADLINE, now,
                 (setting, tender) -> tender.getRegistrationDeadline());
         totalProcessed += regResult.processed;
@@ -61,7 +62,6 @@ public class TenderReminderJob {
         totalSkipped += regResult.skipped;
         totalFailed += regResult.failed;
 
-        // 处理开标提醒
         ProcessResult bidResult = processReminderType(ReminderType.BID_OPENING, now,
                 (setting, tender) -> tender.getBidOpeningTime());
         totalProcessed += bidResult.processed;
@@ -85,6 +85,15 @@ public class TenderReminderJob {
 
         List<TenderReminderSetting> settings = settingRepository.findByEnabledTrue();
 
+        // 批量预加载所有 Tenders，消除 N+1 查询
+        Set<Long> tenderIds = settings.stream()
+                .map(TenderReminderSetting::getTenderId)
+                .collect(Collectors.toSet());
+        Map<Long, Tender> tenderMap = tenderIds.isEmpty()
+                ? Map.of()
+                : tenderRepository.findAllById(tenderIds).stream()
+                        .collect(Collectors.toMap(Tender::getId, Function.identity()));
+
         for (TenderReminderSetting setting : settings) {
             if (setting.getReminderType() != reminderType) {
                 continue;
@@ -93,7 +102,7 @@ public class TenderReminderJob {
             processed++;
 
             try {
-                Tender tender = tenderRepository.findById(setting.getTenderId()).orElse(null);
+                Tender tender = tenderMap.get(setting.getTenderId());
                 if (tender == null) {
                     log.warn("标讯不存在: tenderId={}", setting.getTenderId());
                     skipped++;
@@ -108,8 +117,16 @@ public class TenderReminderJob {
                 }
 
                 // 检查是否需要发送提醒
-                if (!shouldSendReminder(setting, currentTime, deadline)) {
-                    log.debug("提醒条件不满足: settingId={}, deadline={}", setting.getId(), deadline);
+                ReminderDecision decision = evaluateReminderCondition(setting, currentTime, deadline);
+                if (!decision.shouldSend) {
+                    if (decision.skippedBecause == SkipReason.DEADLINE_PASSED) {
+                        // 迟到提醒被静默丢弃 — 这是服务器宕机/队列积压的信号，写 ERROR 引起注意
+                        int hoursBefore = setting.getRemindBeforeHours() != null ? setting.getRemindBeforeHours() : 24;
+                        log.error("[REMINDER_LEAK] 提醒已过有效期，疑似系统延迟漏发: settingId={}, tenderId={}, "
+                                        + "deadline={}, remindAt={}, currentTime={}, type={}",
+                                setting.getId(), tender.getId(), deadline,
+                                deadline.minusHours(hoursBefore), currentTime, reminderType);
+                    }
                     skipped++;
                     continue;
                 }
@@ -122,11 +139,11 @@ public class TenderReminderJob {
                     continue;
                 }
 
-                // 发送提醒
+                // 发送提醒（事务外 — 解耦网络 I/O 与 DB 事务）
                 boolean hasError = false;
                 for (ReminderTargetInfo target : targets) {
                     try {
-                        sendReminder(setting, tender, reminderType, target);
+                        sendReminder(tender, reminderType, setting.getRemindBeforeHours(), target);
                         sent++;
                     } catch (RuntimeException e) {
                         log.error("发送提醒失败: settingId={}, userId={}, error={}",
@@ -137,11 +154,10 @@ public class TenderReminderJob {
 
                 if (hasError) {
                     failed++;
+                } else {
+                    // 记录发送日志（独立事务）
+                    persistReminderLogAndUpdateTimestamp(setting, tender, reminderType, targets);
                 }
-
-                // 更新最后通知时间
-                setting.setLastNotifiedAt(currentTime);
-                settingRepository.save(setting);
 
             } catch (RuntimeException e) {
                 log.error("处理提醒设置失败: settingId={}, error={}", setting.getId(), e.getMessage());
@@ -152,42 +168,52 @@ public class TenderReminderJob {
         return new ProcessResult(processed, sent, skipped, failed);
     }
 
-    private boolean shouldSendReminder(TenderReminderSetting setting, LocalDateTime currentTime, LocalDateTime deadline) {
-        // 已发送过，不再发送
+    private ReminderDecision evaluateReminderCondition(TenderReminderSetting setting, LocalDateTime currentTime, LocalDateTime deadline) {
         if (setting.getLastNotifiedAt() != null) {
-            return false;
+            return new ReminderDecision(false, SkipReason.ALREADY_SENT);
         }
-
         int hoursBefore = setting.getRemindBeforeHours() != null ? setting.getRemindBeforeHours() : 24;
         LocalDateTime remindAt = deadline.minusHours(hoursBefore);
-
-        // 当前时间已达到提醒时间点
-        return !currentTime.isBefore(remindAt) && !currentTime.isAfter(deadline);
+        if (currentTime.isBefore(remindAt)) {
+            return new ReminderDecision(false, SkipReason.TOO_EARLY);
+        }
+        if (currentTime.isAfter(deadline)) {
+            return new ReminderDecision(false, SkipReason.DEADLINE_PASSED);
+        }
+        return new ReminderDecision(true, null);
     }
 
-    private List<ReminderTargetInfo> parseReminderTargets(String json) {
-        if (json == null || json.isBlank()) {
-            return List.of();
-        }
-        try {
-            return objectMapper.readValue(json, new TypeReference<List<ReminderTargetInfo>>() {});
-        } catch (JsonProcessingException e) {
-            log.error("解析通知目标JSON失败: {}", json, e);
-            return List.of();
-        }
-    }
-
-    private void sendReminder(
+    @Transactional
+    public void persistReminderLogAndUpdateTimestamp(
             TenderReminderSetting setting,
             Tender tender,
             ReminderType reminderType,
+            List<ReminderTargetInfo> targets) {
+        for (ReminderTargetInfo target : targets) {
+            TenderReminderLog reminderLog = TenderReminderLog.builder()
+                    .reminderSettingId(setting.getId())
+                    .tenderId(tender.getId())
+                    .reminderType(reminderType)
+                    .recipientUserId(target.userId())
+                    .recipientWecomUserId(target.wecomUserId())
+                    .status("SENT")
+                    .sentAt(LocalDateTime.now())
+                    .build();
+            logRepository.save(reminderLog);
+        }
+        setting.setLastNotifiedAt(LocalDateTime.now());
+        settingRepository.save(setting);
+    }
+
+    private void sendReminder(
+            Tender tender,
+            ReminderType reminderType,
+            Integer hoursBefore,
             ReminderTargetInfo target) {
 
-        // 构建消息内容
         String title = buildReminderTitle(tender, reminderType);
-        String content = buildReminderContent(tender, reminderType, setting.getRemindBeforeHours());
+        String content = buildReminderContent(tender, reminderType, hoursBefore);
 
-        // 直接调用企微推送
         NotificationCreatedEvent event = new NotificationCreatedEvent(
                 null,
                 List.of(target.userId()),
@@ -197,18 +223,6 @@ public class TenderReminderJob {
                 tender.getId()
         );
         weComPushService.pushForRecipient(event, target.userId());
-
-        // 记录发送日志
-        TenderReminderLog reminderLog = TenderReminderLog.builder()
-                .reminderSettingId(setting.getId())
-                .tenderId(tender.getId())
-                .reminderType(reminderType)
-                .recipientUserId(target.userId())
-                .recipientWecomUserId(target.wecomUserId())
-                .status("SENT")
-                .sentAt(LocalDateTime.now())
-                .build();
-        logRepository.save(reminderLog);
 
         TenderReminderJob.log.info("发送提醒成功: tenderId={}, userId={}, type={}", tender.getId(), target.userId(), reminderType);
     }
@@ -236,14 +250,26 @@ public class TenderReminderJob {
 
         return String.format("""
                 %s提醒：标讯「%s」即将%s
-                
+
                 %s时间：%s
                 提前提醒：%d小时
-                
+
                 请及时处理！
                 """,
                 deadlineType, tender.getTitle(), deadlineType,
                 deadlineType, deadlineStr, hours);
+    }
+
+    private List<ReminderTargetInfo> parseReminderTargets(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<ReminderTargetInfo>>() {});
+        } catch (JsonProcessingException e) {
+            log.error("解析通知目标JSON失败: {}", json, e);
+            return List.of();
+        }
     }
 
     @FunctionalInterface
@@ -254,4 +280,8 @@ public class TenderReminderJob {
     private record ReminderTargetInfo(Long userId, String userName, String wecomUserId) {}
 
     private record ProcessResult(int processed, int sent, int skipped, int failed) {}
+
+    private enum SkipReason { ALREADY_SENT, TOO_EARLY, DEADLINE_PASSED }
+
+    private record ReminderDecision(boolean shouldSend, SkipReason skippedBecause) {}
 }

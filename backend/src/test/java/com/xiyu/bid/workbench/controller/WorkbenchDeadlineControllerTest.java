@@ -1,5 +1,6 @@
 package com.xiyu.bid.workbench.controller;
 
+import com.xiyu.bid.config.BizTimezoneProperties;
 import com.xiyu.bid.workbench.dto.WorkbenchDeadlineStatsDTO;
 import com.xiyu.bid.workbench.service.WorkbenchDeadlineQueryService;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,6 +10,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.time.LocalDate;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -22,11 +25,15 @@ class WorkbenchDeadlineControllerTest {
     @Mock
     private WorkbenchDeadlineQueryService service;
 
+    @Mock
+    private BizTimezoneProperties bizTimezone;
+
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders.standaloneSetup(new WorkbenchDeadlineController(service)).build();
+        when(bizTimezone.today()).thenReturn(LocalDate.of(2026, 5, 17));
+        mvc = MockMvcBuilders.standaloneSetup(new WorkbenchDeadlineController(service, bizTimezone)).build();
     }
 
     @Test
