@@ -114,6 +114,18 @@ VITE_API_MODE=api VITE_API_BASE_URL=http://127.0.0.1:18080 npm run dev -- --host
 
 ## Agent 行为规范
 
+### 0. Spec Kit 流程门禁（强制）
+
+**当收到包含 `Phase`、`开发计划`、`需求开发` 或类似复杂任务时，必须按以下顺序执行：**
+
+1. 使用 `speckit-specify` skill 创建/更新规格文档
+2. 使用 `speckit-plan` skill 生成/更新实现计划
+3. 使用 `speckit-tasks` skill 生成任务清单
+4. **在编码前必须完成上述三个步骤**
+5. 编码完成后使用 `speckit-analyze` skill 验证一致性
+
+> **违规说明**：跳过流程直接编码的提交将被 CI 门禁拒绝。
+
 ### 1. 任务起始
 Agent 在每次对话开始或切换任务时，必须声明当前环境。
 > 当前环境：XiYu Bid POC / Codex Agent Worktree
