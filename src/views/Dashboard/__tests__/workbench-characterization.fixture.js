@@ -149,7 +149,7 @@ const globalMountOptions = {
 }
 
 export const users = {
-  sales: { id: 7, name: '小王', role: 'staff', dept: '销售一部', menuPermissions: ['dashboard', 'dashboard.quickStart'] },
+  sales: { id: 7, name: '小王', role: 'staff', dept: '销售一部', menuPermissions: ['dashboard', 'dashboard.quickStart', 'bidding', 'project', 'project.create'] },
   manager: { id: 8, name: '张经理', role: 'manager', menuPermissions: ['dashboard', 'bidding', 'project', 'task.assign', 'task.review'] },
   staff: { id: 9, name: '李工', role: 'staff', menuPermissions: ['dashboard', 'bidding', 'project', 'task.review'] },
   admin: { id: 1, name: '管理员', role: 'admin', menuPermissions: ['all'] },
