@@ -11,12 +11,16 @@
  * @returns {boolean}
  */
 export function hasAnyPermission(userPermissions, requiredPermissions) {
-  if (!requiredPermissions || requiredPermissions.length === 0) {
+  if (requiredPermissions === undefined || requiredPermissions === null) {
     console.warn(
-      "[Permission] requiredPermissions is empty or missing — denying access by default per 'deny by default' policy. "
+      "[Permission] requiredPermissions is undefined/null — denying access by default per 'deny by default' policy. "
       + "Caller must explicitly declare required permissions."
     );
     return false;
+  }
+  if (requiredPermissions.length === 0) {
+    // requiredPermissions is [] (explicitly empty) → no restriction declared, allow.
+    return true;
   }
   const perms = Array.isArray(userPermissions) ? userPermissions : []
   if (perms.length === 0) return false
