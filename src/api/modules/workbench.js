@@ -1,5 +1,5 @@
-// Input: workbench schedule overview query params
-// Output: workbenchApi - explicit frontend adapter for workbench schedule overview
+// Input: workbench schedule overview query params, deadline stats
+// Output: workbenchApi - explicit frontend adapter for workbench schedule overview & deadline stats
 // Pos: src/api/modules/ - Feature API module for workbench
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 
@@ -36,6 +36,14 @@ export const workbenchApi = {
       },
     })
     return normalizeScheduleOverview(response)
+  },
+
+  async getDeadlineStats() {
+    const response = await httpClient.get('/api/workbench/deadline-stats')
+    return {
+      success: response?.success === true,
+      data: response?.data || {},
+    }
   },
 }
 
