@@ -12,9 +12,10 @@
  */
 export function hasAnyPermission(userPermissions, requiredPermissions) {
   if (!requiredPermissions || requiredPermissions.length === 0) return true
-  if (!userPermissions || userPermissions.length === 0) return false
-  if (userPermissions.includes('all')) return true
-  return requiredPermissions.some((key) => userPermissions.includes(key))
+  const perms = Array.isArray(userPermissions) ? userPermissions : []
+  if (perms.length === 0) return false
+  if (perms.includes('all')) return true
+  return requiredPermissions.some((key) => perms.includes(key))
 }
 
 /**
