@@ -84,6 +84,7 @@ const mockState = vi.hoisted(() => ({
   contractBorrowCreate: vi.fn(),
   expenseCreate: vi.fn(),
   scheduleGetOverview: vi.fn(),
+  tendersGetList: vi.fn(),
   workbenchGetDeadlineStats: vi.fn().mockResolvedValue({ success: true, data: {} }),
   messageSuccess: vi.fn(),
   messageWarning: vi.fn(),
@@ -93,7 +94,7 @@ const mockState = vi.hoisted(() => ({
 export const mocks = mockState
 
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: mockState.routerPush }) }))
-vi.mock('@/stores/user', () => ({ useUserStore: () => ({ get currentUser() { return mockState.currentUser }, hasPermission: (key) => (mockState.currentUser?.menuPermissions || []).includes('all') || (mockState.currentUser?.menuPermissions || []).includes(key) }) }))
+vi.mock('@/stores/user', () => ({ useUserStore: () => ({ get currentUser() { return mockState.currentUser }, get menuPermissions() { return mockState.currentUser?.menuPermissions || [] }, hasPermission: (key) => (mockState.currentUser?.menuPermissions || []).includes('all') || (mockState.currentUser?.menuPermissions || []).includes(key) }) }))
 vi.mock('@/stores/bidding', () => ({ useBiddingStore: () => ({ setCalendar: mockState.setCalendar }) }))
 vi.mock('@/api', () => ({
   dashboardApi: { 
@@ -121,6 +122,7 @@ vi.mock('@/api', () => ({
 }))
 vi.mock('@/api/modules/dashboard.js', () => ({ tasksApi: { getMine: mockState.tasksGetMine, complete: mockState.tasksComplete } }))
 vi.mock('@/api/modules/alerts.js', () => ({ alertHistoryApi: { getUnresolved: mockState.alertGetUnresolved, acknowledge: mockState.alertAcknowledge } }))
+vi.mock('@/api/modules/tenders.js', () => ({ tendersApi: { getList: mockState.tendersGetList } }))
 vi.mock('@/api/modules/workbench.js', () => ({ workbenchApi: { getScheduleOverview: mockState.scheduleGetOverview, getDeadlineStats: mockState.workbenchGetDeadlineStats } }))
 vi.mock('@/api/modules/contractBorrow.js', () => ({ contractBorrowApi: { create: mockState.contractBorrowCreate } }))
 vi.mock('element-plus', () => ({
@@ -142,8 +144,8 @@ const globalMountOptions = {
 
 export const users = {
   sales: { id: 7, name: '小王', role: 'staff', dept: '销售一部', menuPermissions: ['dashboard', 'dashboard.quickStart'] },
-  manager: { id: 8, name: '张经理', role: 'manager' },
-  staff: { id: 9, name: '李工', role: 'staff' },
+  manager: { id: 8, name: '张经理', role: 'manager', menuPermissions: ['dashboard', 'bidding', 'project', 'task.assign', 'task.review'] },
+  staff: { id: 9, name: '李工', role: 'staff', menuPermissions: ['dashboard', 'bidding', 'project', 'task.review'] },
   admin: { id: 1, name: '管理员', role: 'admin', menuPermissions: ['all'] },
 }
 
@@ -178,6 +180,7 @@ export function resetApiMocks() {
   mockState.scheduleGetOverview.mockResolvedValue({
     data: { events: [{ id: 301, eventDate: '2026-04-23', eventType: 'DEADLINE', title: '数字政府项目截标', projectId: 101, isUrgent: true }] },
   })
+  mockState.tendersGetList.mockResolvedValue({ success: true, data: [{ id: 'B001', title: '某央企智慧办公平台采购项目', aiScore: 92 }] })
 }
 
 export async function mountWorkbench(user = users.sales) {
