@@ -50,3 +50,28 @@ test-login.html
 # OMC 运行态文件（本地 agent/session 状态，不提交）
 .omc/
 **/.omc/
+
+# Agent skill 运行时生成的 speckit 规范工具链文件（本地安装，非仓库管理）
+.agents/skills/speckit-analyze/
+.agents/skills/speckit-checklist/
+.agents/skills/speckit-clarify/
+.agents/skills/speckit-constitution/
+.agents/skills/speckit-implement/
+.agents/skills/speckit-plan/
+.agents/skills/speckit-specify/
+.agents/skills/speckit-tasks/
+.agents/skills/speckit-taskstoissues/
+
+# 构建产物（release 包、tar.gz）
+.release/
+
+# Python 虚拟环境
+.venv/
+document-converter-sidecar/.venv
+
+# 外部文档 PDF
+docs/architecture/*.pdf
+!docs/architecture/README.md
+
+# PR body 临时文件
+.pr-body-temp.md
