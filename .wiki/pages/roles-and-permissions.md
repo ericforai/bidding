@@ -212,3 +212,289 @@ Spring Security 上下文注入用户信息 -> 业务接口正常响应
 | 系统设置 | 用户/权限/日志 | - | - | - | - |
 
 > 上表按产品蓝图 §1.3 职责描述映射。实际系统中 `bid_admin`（`dept` 范围）与 `bid_lead`（`self` 范围）的职责描述有重叠，区分点在数据范围而非功能菜单。`bid_specialist` 与 `task_executor` 也有部分重叠，前者侧重投标辅助与审核，后者侧重任务承接与执行。
+
+## 7. 前端权限控制架构
+
+### 7.1 设计原则
+
+前端权限控制遵循以下原则：
+
+1. **单一权限源**：唯一权限来源是后端 `AuthResponse` 返回的 `menuPermissions: string[]`，不再基于硬编码的 `role` 字符串判断。
+2. **向后兼容**：`userStore.currentUser.role` 仍保留，但仅用于工作台 Banner 文案、指标卡片展示等 UI 层，不参与任何访问控制决策。
+3. **权限判定 fallback**：当 `menuPermissions` 为空数组时，视为无限制（兼容历史会话或测试场景）。
+4. **通配符支持**：`menuPermissions` 包含 `'all'` 时，无条件通过所有权限检查。
+
+### 7.2 数据流
+
+```
+后端 RoleProfileCatalog
+    │
+    ▼
+AuthResponse.menuPermissions (string[])
+    │
+    ▼
+authNormalizer.js → normalizeUser()
+    │
+    ▼
+userStore.currentUser.menuPermissions
+    │
+    ├──► router/index.js  hasRouteAccess()
+    │         └── meta.permissionKeys 匹配
+    ├──► Sidebar.vue      hasPermissionAccess()
+    │         └── sidebarMenuConfig[].meta.permissionKeys 匹配
+    └──► 页面组件         hasPermission() / hasAnyPermission()
+              └── 按钮/Tab/操作显隐控制
+```
+
+### 7.3 核心文件职责
+
+| 文件 | 职责 | 关键 API |
+|------|------|----------|
+| `src/api/authNormalizer.js` | 将后端原始 payload 中的 `menuPermissions` 原样透传到 `normalizedUser` | `normalizeUser()` |
+| `src/stores/user.js` | Pinia store，暴露 `hasPermission(key)` getter 和 `menuPermissions` getter | `useUserStore()` |
+| `src/utils/permission.js` | 纯函数工具，独立于 store，供任意模块调用 | `hasAnyPermission()`, `isAdminRole()` |
+| `src/router/index.js` | 路由守卫，基于 `meta.permissionKeys` 判定是否放行 | `hasRouteAccess()` |
+| `src/config/sidebar-menu.js` | 菜单配置，每个菜单项声明 `meta.permissionKeys` | `sidebarMenuConfig` |
+| `src/components/layout/Sidebar.vue` | 渲染菜单时过滤无权限项 | `hasPermissionAccess()` |
+
+### 7.4 与后端 `RoleProfileCatalog` 的对接
+
+后端 `RoleProfileCatalog.seedDefinitions()` 定义了 10 个角色的 `menuPermissions` 列表。前端不硬编码这些列表，而是在登录/会话恢复时通过 `AuthResponse` 动态获取。因此：
+
+- 新增角色只需在后端定义并分配 `menuPermissions`，前端无需任何改动即可支持。
+- 调整角色的菜单权限只需修改后端 `RoleProfileCatalog`，无需重新部署前端。
+
+## 8. 前端权限工具函数
+
+### 8.1 `hasAnyPermission(userPermissions, requiredPermissions)`
+
+位置：`src/utils/permission.js`
+
+用途：检查用户权限数组是否包含任一所需权限。
+
+```javascript
+hasAnyPermission(['dashboard', 'bidding'], ['settings'])        // false
+hasAnyPermission(['dashboard', 'bidding'], ['bidding'])          // true
+hasAnyPermission(['all'], ['settings', 'audit-logs'])            // true
+hasAnyPermission([], ['settings'])                               // true (fallback)
+hasAnyPermission(['dashboard'], [])                              // true (no restriction)
+```
+
+边界规则：
+- `requiredPermissions` 为空数组 → `true`
+- `userPermissions` 为空数组 → `true`（兼容旧会话）
+- `userPermissions` 含 `'all'` → `true`
+
+### 8.2 `isAdminRole(roleCode)`
+
+位置：`src/utils/permission.js`
+
+用途：判断角色代码是否为 admin。仅用于极少量 UI 展示逻辑（如 Header 下拉菜单中的「系统设置」入口）。
+
+```javascript
+isAdminRole('admin')        // true
+isAdminRole('bid_admin')    // false
+isAdminRole('manager')      // false
+```
+
+### 8.3 `userStore.hasPermission(key)`
+
+位置：`src/stores/user.js`（getter）
+
+用途：Pinia store 级别的单权限检查，组件内最常用。
+
+```javascript
+const userStore = useUserStore()
+userStore.hasPermission('settings')      // boolean
+userStore.hasPermission('all')           // true 时所有权限通过
+```
+
+### 8.4 `userStore.menuPermissions`
+
+位置：`src/stores/user.js`（getter）
+
+用途：获取当前用户的完整权限数组，用于批量检查或传参给 `hasAnyPermission()`。
+
+```javascript
+const userStore = useUserStore()
+const perms = userStore.menuPermissions  // ['dashboard', 'bidding', 'project']
+```
+
+## 9. 各角色 menuPermissions 映射
+
+下表来自后端 `RoleProfileCatalog`（`backend/src/main/java/com/xiyu/bid/entity/RoleProfileCatalog.java`），是前端权限判断的事实来源。
+
+| 角色 | `menuPermissions` |
+|------|-------------------|
+| `admin` | `all` |
+| `auditor` | `dashboard`, `operation-logs`, `audit-logs` |
+| `manager` | `dashboard`, `operation-logs`, `bidding`, `project`, `knowledge`, `resource`, `ai-center`, `analytics`, `settings` |
+| `staff` | `dashboard`, `operation-logs`, `dashboard.quickStart`, `bidding`, `project`, `knowledge`, `resource`, `ai-center` |
+| `sales` | `dashboard`, `bidding`, `project`, `knowledge`, `project.create`, `project.view`, `deposit.return.fill` |
+| `bid_lead` | `dashboard`, `bidding`, `project`, `knowledge`, `resource`, `task.assign`, `evaluation.update`, `result.register`, `retrospective.submit`, `closure.request` |
+| `bid_admin` | `dashboard`, `operation-logs`, `bidding`, `project`, `knowledge`, `resource`, `analytics`, `settings`, `task.review`, `retrospective.review`, `closure.review`, `lead.assign` |
+| `task_executor` | `dashboard`, `project`, `knowledge`, `task.view.own`, `task.handle.own` |
+| `bid_specialist` | `dashboard`, `bidding`, `project`, `knowledge`, `resource`, `task.view.own`, `task.handle.own`, `evaluation.update` |
+| `admin_staff` | `dashboard`, `knowledge`, `resource`, `certificate.manage`, `qualification.view` |
+
+### 9.1 权限 Key 语义对照
+
+| 权限 Key | 语义 | 对应菜单/功能 |
+|----------|------|--------------|
+| `dashboard` | 工作台基础访问 | `/dashboard` |
+| `dashboard.quickStart` | 工作台快速发起 | 工作台 QuickStart 组件 |
+| `dashboard:view_tender_list` | 工作台标讯列表卡片 | Workbench 条件渲染 |
+| `dashboard:view_project_list` | 工作台项目列表卡片 | Workbench 条件渲染 |
+| `bidding` | 标讯中心 | `/bidding` |
+| `project` | 投标项目 | `/project` |
+| `project.create` | 创建项目 | 项目创建按钮/表单 |
+| `knowledge` | 知识库 | `/knowledge/*` |
+| `resource` | 资源管理 | `/resource/*` |
+| `ai-center` | AI 智能中心 | `/ai-center` |
+| `analytics` | 数据分析 | `/analytics/dashboard` |
+| `settings` | 系统设置 | `/settings/*` |
+| `operation-logs` | 操作日志 | `/operation-logs` |
+| `audit-logs` | 审计日志 | `/audit-logs` |
+| `task.assign` | 任务分配 | 项目详情-任务分配 |
+| `task.review` | 任务审核 | 评标/审批权限 |
+| `task.view.own` | 查看自己的任务 | 任务列表过滤 |
+| `task.handle.own` | 处理自己的任务 | 任务操作按钮 |
+| `evaluation.update` | 更新评标 | EvaluationStage |
+| `retrospective.submit` | 提交复盘 | RetrospectiveStage |
+| `retrospective.review` | 复盘审核 | RetrospectiveStage 审核表单 |
+| `closure.review` | 结项审核 | 结项审批 |
+| `lead.assign` | 指派负责人 | 项目负责人分配 |
+| `certificate.manage` | 证书管理 | 资质库管理操作 |
+| `qualification.view` | 资质查看 | 资质库查看 |
+| `deposit.return.fill` | 保证金退还填写 | 费用管理-保证金 |
+
+## 10. 页面级权限判断规范
+
+### 10.1 应使用权限判断的场景
+
+以下场景**必须**使用 `hasPermission()` 或 `hasAnyPermission()`，禁止硬编码 `role === 'xxx'`：
+
+| 场景 | 反例（禁止） | 正例（推荐） |
+|------|-------------|-------------|
+| 按钮显隐 | `userRole === 'admin'` | `userStore.hasPermission('settings')` |
+| Tab 显隐 | `['admin','auditor'].includes(role)` | `userStore.hasPermission('audit-logs')` |
+| 路由访问 | `meta.roles: ['admin']` | `meta.permissionKeys: ['settings']` |
+| 菜单过滤 | `hasRoleAccess(['admin'])` | `hasPermissionAccess(['settings'])` |
+| 操作权限 | `role === 'manager'` | `userStore.hasPermission('task.review')` |
+| 组件渲染 | `currentUserRole.value === 'staff'` | `hasAnyPermission(menuPermissions, ['bidding'])` |
+
+### 10.2 组件内使用示例
+
+**Vue `<script setup>` 中：**
+
+```javascript
+import { computed } from 'vue'
+import { useUserStore } from '@/stores/user'
+import { hasAnyPermission } from '@/utils/permission'
+
+const userStore = useUserStore()
+
+// 单权限检查
+const canManageSettings = computed(() => userStore.hasPermission('settings'))
+
+// 多权限任一满足
+const canViewAnalytics = computed(() =>
+  hasAnyPermission(userStore.menuPermissions, ['analytics', 'all'])
+)
+
+// 复杂条件组合
+const canApprove = computed(() =>
+  userStore.hasPermission('task.review') || userStore.hasPermission('all')
+)
+```
+
+**模板中：**
+
+```vue
+<el-button v-if="userStore.hasPermission('settings')">系统设置</el-button>
+<el-tab-pane v-if="userStore.hasPermission('audit-logs')" label="审计日志" />
+```
+
+### 10.3 路由配置示例
+
+```javascript
+{
+  path: 'analytics/dashboard',
+  name: 'AnalyticsDashboard',
+  component: () => import('@/views/Analytics/Dashboard.vue'),
+  meta: {
+    title: '数据分析',
+    permissionKeys: ['analytics', 'analytics-dashboard']
+  }
+}
+```
+
+路由守卫会自动收集 `matched` 链路上的所有 `permissionKeys` 去重后进行检查。只要用户拥有其中任一权限即可访问。
+
+### 10.4 新增权限 Key 的流程
+
+1. 在后端 `RoleProfileCatalog` 中为对应角色添加新的 `menuPermissions` 项。
+2. 在前端 `src/config/sidebar-menu.js` 中为对应菜单添加 `meta.permissionKeys`。
+3. 如为页面内按钮/功能，在对应 Vue 组件中使用 `userStore.hasPermission(key)` 控制显隐。
+4. 如需单元测试覆盖，在对应 `.spec.js` 中为 mock 的 `useUserStore` 补充 `hasPermission` 和 `menuPermissions`。
+
+## 11. 迁移历史记录
+
+### 11.1 2026-05-17 前端角色权限迁移（PR #281）
+
+**背景**：后端角色体系已完成扩展（PR #276），`RoleProfile` 从 8 个增至 10 个，新增 `bid_specialist`（投标专员）和 `admin_staff`（行政人员）。但前端仍大量使用硬编码的 `if (role === 'ADMIN')` 判断，导致新角色在实际使用中被路由守卫和页面级权限控制错误拦截。
+
+**根因**：
+1. `authNormalizer.js` 中 `role = String(authPayload?.roleCode).toLowerCase()`，`bid_admin` 用户的 `role` 是 `"bid_admin"`，而非 Legacy 回退的 `"manager"`。
+2. 路由守卫 `meta.roles` 检查 `bid_admin` 不等于 `"admin"`，访问 `/settings` 被拒绝。
+3. 页面级硬编码 `userRole === 'admin'` / `'manager'` 导致新角色无法命中功能按钮/Tab。
+4. Sidebar 双检逻辑 `hasRoleAccess && hasPermissionAccess` 中前者过滤新角色。
+
+**方案**：分三期完成迁移。
+
+#### Phase 1 — 紧急修复（路由守卫 + Sidebar）
+
+- `src/router/index.js`：`hasRouteAccess()` 增加 `permissionKeys` 回退；`beforeEach` 重定向逻辑优化（权限不足时不再无脑跳 `/dashboard`，而是寻找第一个有权限的路由）；为缺失 `permissionKeys` 的路由补充该字段。
+- `src/components/layout/Sidebar.vue`：`filteredMenus` 改为 `roleOK || permOK` 的 OR 逻辑。
+- 新建 `src/utils/permission.js`：提供 `hasAnyPermission()` 和 `isAdminRole()` 纯函数。
+- 新建 `src/utils/permission.test.js`：8 个边界测试。
+
+#### Phase 2 — 页面级硬编码清理
+
+逐文件替换 `role === 'xxx'` 为权限驱动判断：
+
+| 文件 | 改动 |
+|------|------|
+| `src/views/Bidding/list/helpers.js` | `buildPermissionFlags()` 改为接收 `menuPermissions` 数组 |
+| `src/views/Bidding/list/useTenderListPage.js` | 调用方改为传入 `userStore.menuPermissions` |
+| `src/views/Dashboard/Workbench.vue` | 6 个 `canViewXxx` 移除 `role === 'staff'` / `'manager'` 回退，改为 `hasAnyPermission` |
+| `src/views/Project/stages/EvaluationStage.vue` | `isManager` 改为 `hasPermission('project:evaluate'/'task.review'/'lead.assign')` |
+| `src/views/Project/stages/RetrospectiveStage.vue` | `isAdmin` 改为 `hasPermission('retrospective.review')` |
+| `src/views/System/Settings.vue` | `isAdmin` / `canViewAuditLogs` 改为权限判断 |
+| `src/views/System/Settings.spec.js` | 更新 mock，补充 `hasPermission` 与 `menuPermissions` |
+| `src/components/layout/Header.vue` | `canAccessSettings` 简化为 `hasPermission('settings')` |
+| `src/views/Knowledge/.../useQualificationPage.js` | `isAdmin` 改为权限判断 |
+| `src/composables/projectDetail/useProjectDetailState.js` | `canApproveCurrent` 改为权限判断 |
+
+#### Phase 3 — Legacy 角色体系退场
+
+- `src/router/index.js`：彻底移除 `meta.roles` 和所有 legacy role 检查逻辑，路由守卫仅保留 `permissionKeys` 驱动。
+- `src/config/sidebar-menu.js`：彻底移除所有菜单项的 `meta.roles`。
+- `src/components/layout/Sidebar.vue`：移除 `hasRoleAccess()` 与 `hasAccess()` 包装，只保留 `hasPermissionAccess()`。
+- `.wiki/pages/roles-and-permissions.md`：更新路由权限章节，移除 Legacy 角色回退映射中关于前端路由守卫的描述，增加权限 Key 语义对照表。
+
+**验证结果**：
+- `npm run build` ✅
+- `npm run test:unit` ✅ 148 个测试文件 / 883 个测试全部通过
+- 所有 pre-commit hook（agent-lock、line-budget、testing-gate、wiki-check）✅
+
+**影响范围**：
+- 所有新角色（`bid_admin`, `bid_lead`, `sales`, `bid_specialist`, `admin_staff`, `task_executor`）现在可以正常登录并访问其有权限的页面和菜单。
+- `admin`, `manager`, `staff`, `auditor` 等既有角色的访问行为保持不变（向后兼容）。
+- 后端 `RoleProfileCatalog` 是唯一权限配置源，前端无需重新部署即可支持角色权限调整。
+
+### 11.2 未来改进方向
+
+1. **工作台指标卡片**：当前 `workbench-role-core.js` 仍按 `admin` / `manager` / `staff` 分三支返回不同指标定义。理想情况下应改为基于 `menuPermissions` 动态组装，但因涉及 UI 展示文案和指标含义的语义差异，暂保留角色分支，仅将访问控制与数据权限分离。
+2. **`authNormalizer.js` 的 `legacyRole` 字段**：当前未暴露 `legacyRole`。如未来有外部系统（如飞书/企微连接器）必须接收 Legacy 角色枚举，可在此增加 `legacyRole: RoleProfileCatalog.legacyRoleForCode(roleCode)` 字段，但前端内部不再使用。
+3. **settings.json 缓存同步**：`hasMenuAccessForRole()` 仍读取 settings.json 中的角色权限缓存作为 fallback。长期目标是完全弃用该缓存，全部使用 `userStore.currentUser.menuPermissions` 实时数据。
