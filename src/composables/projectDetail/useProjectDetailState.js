@@ -73,7 +73,10 @@ export function useProjectDetailState(context) {
   const currentUserRole = computed(() => userStore.currentUser?.role || '')
   const canApproveCurrent = computed(() => {
     const currentName = userStore.userName || userStore.currentUser?.name || ''
-    return currentApproval.value?.currentApproverName === currentName || userStore.hasPermission('task.review') || userStore.hasPermission('all')
+    const isAdmin = userStore.hasPermission('all') ||
+      userStore.currentUser?.role === 'admin' ||
+      String(userStore.currentUser?.role || '').toLowerCase() === 'admin'
+    return currentApproval.value?.currentApproverName === currentName || isAdmin || userStore.hasPermission('task.review')
   })
 
   return {

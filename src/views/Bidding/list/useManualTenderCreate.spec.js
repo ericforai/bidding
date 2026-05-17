@@ -225,4 +225,103 @@ describe('useManualTenderCreate', () => {
     await nextTick()
     expect(workflow.manualForm.value.pastedText.length).toBe(500_000)
   })
+
+  it('rejects files exceeding 50MB size limit', async () => {
+    const { workflow, tendersApi } = createWorkflow()
+    const largeContent = new Array(51 * 1024 * 1024).join('x') // 51MB
+    const largeFile = new File([largeContent], '大文件.pdf', { type: 'application/pdf' })
+
+    await workflow.handleFileChange({ name: largeFile.name, raw: largeFile }, [{ name: largeFile.name, raw: largeFile }])
+
+    expect(ElMessage.warning).toHaveBeenCalledWith(expect.stringContaining('超过 50MB'))
+    expect(tendersApi.parseTenderIntakeDocument).not.toHaveBeenCalled()
+  })
+
+  it('rejects unsupported file types with warning message', async () => {
+    const { workflow, tendersApi } = createWorkflow()
+    const excelFile = new File(['test'], '数据.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+
+    await workflow.handleFileChange({ name: excelFile.name, raw: excelFile }, [
+      { name: excelFile.name, raw: excelFile },
+    ])
+
+    expect(ElMessage.warning).toHaveBeenCalledWith(expect.stringContaining('格式不支持'))
+    expect(tendersApi.parseTenderIntakeDocument).not.toHaveBeenCalled()
+  })
+
+  it('filters out oversized files from file list', async () => {
+    const { workflow } = createWorkflow()
+    const normalFile = new File(['test content'], '正常文件.pdf', { type: 'application/pdf' })
+    const largeContent = new Array(51 * 1024 * 1024).join('x')
+    const largeFile = new File([largeContent], '大文件.pdf', { type: 'application/pdf' })
+
+    await workflow.handleFileChange({ name: largeFile.name, raw: largeFile }, [
+      { name: normalFile.name, raw: normalFile },
+      { name: largeFile.name, raw: largeFile },
+    ])
+
+    expect(workflow.manualForm.value.attachments).toHaveLength(1)
+    expect(workflow.manualForm.value.attachments[0].name).toBe('正常文件.pdf')
+  })
+
+  it('filters out unsupported file types from file list', async () => {
+    const { workflow } = createWorkflow()
+    const pdfFile = new File(['pdf content'], '招标书.pdf', { type: 'application/pdf' })
+    const excelFile = new File(['excel'], '数据.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+
+    await workflow.handleFileChange({ name: excelFile.name, raw: excelFile }, [
+      { name: pdfFile.name, raw: pdfFile },
+      { name: excelFile.name, raw: excelFile },
+    ])
+
+    expect(workflow.manualForm.value.attachments).toHaveLength(1)
+    expect(workflow.manualForm.value.attachments[0].name).toBe('招标书.pdf')
+  })
+
+  it('successfully parses .doc files', async () => {
+    const { workflow, tendersApi } = createWorkflow()
+    const docFile = new File(['word content'], '招标公告.doc', { type: 'application/msword' })
+    tendersApi.parseTenderIntakeDocument.mockResolvedValue({
+      success: true,
+      data: {
+        documentId: 'doc-insight://TENDER_INTAKE/manual-tender/hash-招标公告.doc',
+        extractedData: {
+          tenderTitle: 'Word文档项目',
+        },
+      },
+    })
+
+    await workflow.handleFileChange({ name: docFile.name, raw: docFile }, [{ name: docFile.name, raw: docFile }])
+
+    expect(tendersApi.parseTenderIntakeDocument).toHaveBeenCalled()
+    expect(workflow.manualForm.value.title).toBe('Word文档项目')
+  })
+
+  it('successfully parses .docx files', async () => {
+    const { workflow, tendersApi } = createWorkflow()
+    const docxFile = new File(['word content'], '招标公告.docx', {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    })
+    tendersApi.parseTenderIntakeDocument.mockResolvedValue({
+      success: true,
+      data: {
+        documentId: 'doc-insight://TENDER_INTAKE/manual-tender/hash-招标公告.docx',
+        extractedData: {
+          tenderTitle: 'Word文档项目',
+        },
+      },
+    })
+
+    await workflow.handleFileChange(
+      { name: docxFile.name, raw: docxFile },
+      [{ name: docxFile.name, raw: docxFile }],
+    )
+
+    expect(tendersApi.parseTenderIntakeDocument).toHaveBeenCalled()
+    expect(workflow.manualForm.value.title).toBe('Word文档项目')
+  })
 })

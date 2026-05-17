@@ -71,6 +71,7 @@
             @review="$emit('review', $event)"
             @status-change="(target, status) => $emit('status-change', target, status)"
             @delete="$emit('delete', $event)"
+            @set-reminder="$emit('set-reminder', $event)"
           />
         </template>
       </el-table-column>
@@ -103,6 +104,7 @@ defineEmits([
   'review',
   'status-change',
   'delete',
+  'set-reminder',
 ])
 
 const innerTableRef = ref(null)

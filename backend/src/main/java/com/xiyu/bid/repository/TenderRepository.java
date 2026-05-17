@@ -64,4 +64,10 @@ public interface TenderRepository extends JpaRepository<Tender, Long>, JpaSpecif
     /** 按标讯ID过滤开标时间（非 Admin 用） */
     @Query("SELECT t.bidOpeningTime FROM Tender t WHERE t.id IN :tenderIds AND t.bidOpeningTime BETWEEN :start AND :end AND t.status NOT IN ('WON', 'LOST', 'ABANDONED')")
     List<LocalDateTime> findBidOpeningTimesByTenderIds(@Param("tenderIds") Collection<Long> tenderIds, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    /**
+     * 根据业主哈希查询标讯(按发布时间降序)
+     * 用于商机时间预测
+     */
+    List<Tender> findByPurchaserHashOrderByPublishDateDesc(String purchaserHash);
 }

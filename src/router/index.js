@@ -30,6 +30,11 @@ const getFirstAccessiblePath = (userStore) => {
       return menu.path
     }
   }
+  for (const menu of sidebarMenuConfig) {
+    const keys = menu.meta?.permissionKeys
+    if (!keys || keys.length === 0) return menu.path
+    if (userStore.hasPermission(keys[0])) return menu.path
+  }
   return DEFAULT_AUTHENTICATED_HOME
 }
 

@@ -1,0 +1,9 @@
+version: 1
+task: "phase1-completion"
+locks:
+  - path: "backend/src/main/resources/db/migration-mysql"
+    scope: "directory"
+    owner: "agent"
+    branch: "agent/cursor"
+    expiresAt: "2026-05-18T07:45:00.000Z"
+    reason: "Phase 1 完成：新增 V123 提醒设置、V124 CRM 项目映射迁移脚本"

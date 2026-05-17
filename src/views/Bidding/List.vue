@@ -101,6 +101,7 @@
         @evaluate="handleEvaluate"
         @status-change="batchActions.handleUpdateStatus"
         @delete="batchActions.handleDeleteTender"
+        @set-reminder="handleSetReminder"
       />
       <TenderMobileCards
         v-else
@@ -190,6 +191,11 @@
       @refresh="marketInsight.refreshTrendData"
     />
     <AiParsingDialog v-model="showParsingDialog" :progress="parseProgress" />
+    <ReminderSettingsDialog
+      v-model="reminderDialog.visible"
+      :tender-id="reminderDialog.tenderId"
+      @saved="handleReminderSaved"
+    />
   </div>
 </template>
 
@@ -205,6 +211,7 @@ import FetchResultDialog from './list/components/FetchResultDialog.vue'
 import ManualTenderDialog from './list/components/ManualTenderDialog.vue'
 import MarketInsightDialog from './list/components/MarketInsightDialog.vue'
 import RecordsDialog from './list/components/RecordsDialog.vue'
+import ReminderSettingsDialog from './list/components/ReminderSettingsDialog.vue'
 import SourceConfigDialog from './list/components/SourceConfigDialog.vue'
 import SourceStatusCard from './list/components/SourceStatusCard.vue'
 import TenderBatchActionBar from './list/components/TenderBatchActionBar.vue'
@@ -212,7 +219,7 @@ import TenderMobileCards from './list/components/TenderMobileCards.vue'
 import TenderSearchCard from './list/components/TenderSearchCard.vue'
 import TenderTable from './list/components/TenderTable.vue'
 import { useTenderListPage } from './list/useTenderListPage.js'
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 import './list/styles/list-page.css'
 import './list/styles/table.css'
 import './list/styles/mobile-page.css'
@@ -252,4 +259,24 @@ const {
   openSourceConfig,
   handleAIAnalysis,
 } = useTenderListPage()
+
+// 提醒设置相关
+const reminderDialog = reactive({
+  visible: false,
+  tenderId: null
+})
+
+function handleSetReminder(row) {
+  reminderDialog.tenderId = row.id
+  reminderDialog.visible = true
+}
+
+function handleReminderSaved() {
+  // 提醒设置保存后的回调
+}
+
+// 导出 handleSetReminder
+defineExpose({
+  handleSetReminder
+})
 </script>
