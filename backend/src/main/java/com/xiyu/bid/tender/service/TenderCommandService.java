@@ -75,9 +75,6 @@ public class TenderCommandService {
             // CRM 接口异常不影响标讯创建，保持 PENDING_ASSIGNMENT
             log.warn("Auto-assignment failed for tender {}, keeping PENDING_ASSIGNMENT: {}",
                     tender.getId(), e.getMessage());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.warn("Auto-assignment interrupted for tender {}, keeping PENDING_ASSIGNMENT", tender.getId());
         }
     }
 
