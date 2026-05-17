@@ -1,0 +1,9 @@
+version: 1
+task: "cursor"
+locks:
+  - path: "src/router/index.js"
+    scope: "file"
+    owner: "agent"
+    branch: "agent/cursor"
+    expiresAt: "2026-05-18T03:20:50.374Z"
+    reason: "fix: 修复空权限放行与路由 fallback 漏洞"
