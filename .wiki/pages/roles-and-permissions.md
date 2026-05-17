@@ -270,20 +270,21 @@ userStore.currentUser.menuPermissions
 
 位置：`src/utils/permission.js`
 
-用途：检查用户权限数组是否包含任一所需权限。
+用途：检查用户权限数组是否包含任一所需权限。语义：**默认拒绝，仅当明确授权时放行**。
 
 ```javascript
 hasAnyPermission(['dashboard', 'bidding'], ['settings'])        // false
 hasAnyPermission(['dashboard', 'bidding'], ['bidding'])          // true
 hasAnyPermission(['all'], ['settings', 'audit-logs'])            // true
-hasAnyPermission([], ['settings'])                               // true (fallback)
-hasAnyPermission(['dashboard'], [])                              // true (no restriction)
+hasAnyPermission([], ['settings'])                                  // false (deny-by-default)
+hasAnyPermission(['dashboard'], [])                                 // true (no restriction needed)
+hasAnyPermission(undefined, ['dashboard'])                         // false (undefined = no perms)
 ```
 
 边界规则：
-- `requiredPermissions` 为空数组 → `true`
-- `userPermissions` 为空数组 → `true`（兼容旧会话）
-- `userPermissions` 含 `'all'` → `true`
+- `requiredPermissions` 为空数组 → `true`（无需限制时显式放行）
+- `userPermissions` 为空或 `undefined` → **`false`**（安全默认：无权限即拒绝）
+- `userPermissions` 含 `'all'` → `true`（全局授权覆盖）
 
 ### 8.2 `isAdminRole(roleCode)`
 

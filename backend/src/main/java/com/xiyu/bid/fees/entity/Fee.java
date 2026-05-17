@@ -67,9 +67,19 @@ public class Fee {
      * <ul>
      *   <li>{@link FeeType#BID_BOND} + {@link Status#PENDING}：作为投标保证金的<b>缴纳截止日期</b>使用
      *       （Workbench 工作台 deadline 卡片基于此字段）。</li>
-     *   <li>{@link FeeType#BID_BOND} + 其他状态、以及其他 FeeType：表示该笔费用的<b>实际发生日期</b>。</li>
+     *   <li>{@link FeeType#BID_BOND} + 其他状态（PAID/RETURNED/CANCELLED）：feeDate 转为该笔费用的
+     *       <b>实际发生日期</b>，不再参与 Workbench deadline 统计（保证金已处理完毕，不应在截止提醒中出现）。</li>
+     *   <li>其他 FeeType：feeDate 均表示<b>实际发生日期</b>，与 deadline 统计无关。</li>
      * </ul>
-     * 未来如需引入独立的截止日期字段（如 {@code dueDate}），请同步迁移 Workbench 查询逻辑。
+     *
+     * <p><b>状态流转设计意图</b>：保证金从 PENDING → PAID 后，其 feeDate 不再被 Workbench 计入
+     * deadline 计数，确保工作台只呈现"待处理"的截止事项，避免向用户展示已完成的历史条目。
+     * 这一语义契约由 {@link com.xiyu.bid.fees.repository.FeeRepository#findDepositDeadlinesBetween}
+     * 和 {@link com.xiyu.bid.fees.repository.FeeRepository#findDepositDeadlinesByProjectIds} 的
+     * SQL 查询条件 <code>status = 'PENDING'</code> 强制执行。
+     *
+     * <p>未来如需引入独立的截止日期字段（如 {@code dueDate}），请同步迁移 Workbench 查询逻辑，
+     * 并将 feeDate 的 deadline 语义迁移至新字段。
      */
     @Column(name = "fee_date", nullable = false)
     private LocalDateTime feeDate;

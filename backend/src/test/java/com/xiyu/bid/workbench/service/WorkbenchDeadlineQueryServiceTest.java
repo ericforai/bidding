@@ -19,6 +19,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -154,5 +155,36 @@ class WorkbenchDeadlineQueryServiceTest {
         assertThat(endCap.getValue())
                 .as("query end should cover the week's Sunday (Jul 5) which is after monthEnd (Jun 30)")
                 .isEqualTo(LocalDate.of(2026, 7, 5).atTime(java.time.LocalTime.MAX));
+    }
+
+    /**
+     * FMEA guard: when allowedTenderIds exceeds MAX_TENDER_IDS_FOR_IN_CLAUSE (500),
+     * the list must be truncated and the repository must receive a safe-sized sublist.
+     */
+    @Test
+    void tenderIdsExceedingInClauseLimitMustBeTruncated() {
+        var today = LocalDate.of(2026, 5, 17);
+        when(projectAccessScopeService.currentUserHasAdminAccess()).thenReturn(false);
+        when(projectAccessScopeService.getAllowedProjectIdsForCurrentUser()).thenReturn(List.of(1L));
+
+        List<Long> hugeTenderIds = java.util.stream.LongStream.rangeClosed(1, 600).boxed().toList();
+        when(projectRepository.findTenderIdsByProjectIds(List.of(1L))).thenReturn(hugeTenderIds);
+        when(tenderRepository.findRegistrationDeadlinesByTenderIds(any(), any(), any())).thenReturn(List.of());
+        when(tenderRepository.findBidOpeningTimesByTenderIds(any(), any(), any())).thenReturn(List.of());
+        when(feeRepository.findDepositDeadlinesByProjectIds(eq(List.of(1L)), any(), any())).thenReturn(List.of());
+
+        service.getDeadlineStats(today);
+
+        ArgumentCaptor<List<Long>> captor = ArgumentCaptor.forClass(List.class);
+        verify(tenderRepository).findRegistrationDeadlinesByTenderIds(captor.capture(), any(), any());
+        verify(tenderRepository).findBidOpeningTimesByTenderIds(captor.capture(), any(), any());
+
+        for (List<Long> captured : captor.getAllValues()) {
+            assertThat(captured.size())
+                    .as("tender IDs passed to repo must not exceed 500")
+                    .isLessThanOrEqualTo(500);
+            assertThat(captured.get(0)).isEqualTo(1L);
+            assertThat(captured.get(captured.size() - 1)).isEqualTo(500L);
+        }
     }
 }
