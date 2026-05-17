@@ -11,9 +11,9 @@ import {
   sanitizeSourceConfigForStorage,
   summarizeExternalSyncResult,
 } from './helpers.js'
+import { tenderSourcesApi } from '@/api/modules/tenderSources'
 
 const STORAGE_KEY = 'tenderSourceConfig'
-const API_NOT_READY_MESSAGE = '外部标讯聚合 API 尚未接入，暂不能同步'
 
 export function useTenderSourceConfig({
   externalSyncApi = null,
@@ -68,18 +68,38 @@ export function useTenderSourceConfig({
   const testConnection = async () => {
     if (sourceConfig.value.platforms.length === 0) {
       ElMessage.warning('请先选择标讯源平台')
-      return
+      return false
     }
+
+    if (!sourceConfig.value.platforms.includes('第三方商机服务')) {
+      ElMessage.warning('仅支持测试「第三方商机服务」平台的连接')
+      return false
+    }
+
+    if (!sourceConfig.value.apiEndpoint || !sourceConfig.value.apiKey) {
+      ElMessage.warning('请先填写API端点和密钥')
+      return false
+    }
+
     testingConnection.value = true
     try {
-      if (typeof externalSyncApi !== 'function') {
-        ElMessage.warning('外部标讯聚合 API 尚未接入，无法测试连接')
-        return
+      const response = await tenderSourcesApi.testConnection({
+        platform: '第三方商机服务',
+        apiEndpoint: sourceConfig.value.apiEndpoint,
+        apiKey: sourceConfig.value.apiKey,
+      })
+
+      if (response?.data?.success) {
+        ElMessage.success('连接测试成功')
+        return true
+      } else {
+        ElMessage.error(response?.data?.message || '连接失败，请检查API端点和密钥')
+        return false
       }
-      await externalSyncApi({ keyword: searchForm.value?.keyword || '', pageSize: 1 })
-      ElMessage.success('连接测试成功')
-    } catch {
-      ElMessage.error('连接测试失败')
+    } catch (error) {
+      const errorMessage = error?.response?.data?.message || error?.message || '连接失败，请检查API端点和密钥'
+      ElMessage.error(errorMessage)
+      return false
     } finally {
       testingConnection.value = false
     }

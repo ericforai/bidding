@@ -32,6 +32,10 @@
             <ElDropdownItem @click="$emit('status-change', row, 'LOST')">登记未中标</ElDropdownItem>
           </template>
           
+          <ElDropdownItem v-if="row.registrationDeadline || row.bidOpeningTime" @click="$emit('set-reminder', row)">
+            提醒设置
+          </ElDropdownItem>
+          
           <ElDropdownItem divided @click="$emit('status-change', row, 'ABANDONED')">标记为已放弃</ElDropdownItem>
           <ElDropdownItem v-if="canDeleteTenders" divided class="danger-item" @click="$emit('delete', row)">
             删除
@@ -64,6 +68,7 @@ defineEmits([
   'evaluate',
   'status-change',
   'delete',
+  'set-reminder',
 ])
 
 const containerWidth = ref(320)

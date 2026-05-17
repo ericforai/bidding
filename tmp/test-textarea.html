@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Textarea Maxlength Test</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/element-plus@2.13.2/dist/index.full.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus@2.13.2/dist/index.css">
+  <style>
+    body { padding: 40px; font-family: system-ui, sans-serif; }
+    .test-result { margin-top: 20px; padding: 16px; background: #f5f5f5; border-radius: 8px; }
+    .test-result h3 { margin-top: 0; }
+    .test-result p { margin: 8px 0; }
+    .success { color: #67c23a; }
+    .error { color: #f56c6c; }
+    .warning { color: #e6a23c; }
+    button { margin: 5px; }
+    pre { background: #282c34; color: #abb2bf; padding: 12px; border-radius: 4px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <h1>Textarea Maxlength 测试</h1>
+
+    <el-card style="max-width: 800px;">
+      <template #header>
+        <div>Element Plus el-input (textarea) maxlength=50000</div>
+      </template>
+
+      <el-input
+        v-model="text"
+        type="textarea"
+        :rows="8"
+        maxlength="50000"
+        show-word-limit
+        placeholder="粘贴文本到这里..."
+        @input="onInput"
+        @paste="onPaste"
+      />
+
+      <div style="margin-top: 16px;">
+        <el-button type="primary" @click="fill50000">填入 50000 字符</el-button>
+        <el-button type="primary" @click="fill40000">填入 40000 字符</el-button>
+        <el-button type="primary" @click="fill38737">填入 38737 字符</el-button>
+        <el-button type="primary" @click="fill60000">填入 60000 字符</el-button>
+        <el-button @click="clear">清空</el-button>
+      </div>
+    </el-card>
+
+    <div class="test-result">
+      <h3>测试结果</h3>
+      <p>当前文本长度: <strong :class="text.length > 50000 ? 'error' : 'success'">{{ text.length }}</strong></p>
+      <p>Vue model value: <span class="warning">{{ text.length }} / 50000</span></p>
+      <p>最后一次 input 事件的长度: <strong>{{ lastInputLength }}</strong></p>
+      <p>最后一次 paste 事件的长度: <strong>{{ lastPasteLength || 'N/A' }}</strong></p>
+      <p v-if="text.length > 50000" class="error">⚠️ 文本超过 50000 字符限制！</p>
+      <p v-else-if="text.length === 50000" class="success">✓ 正好 50000 字符</p>
+    </div>
+
+    <el-card style="max-width: 800px; margin-top: 20px;">
+      <template #header>
+        <div>浏览器原生 textarea (maxlength=50000)</div>
+      </template>
+      <textarea
+        id="nativeTextarea"
+        :maxlength="50000"
+        rows="8"
+        style="width: 100%; font-family: inherit;"
+        @input="onNativeInput"
+        @paste="onNativePaste"
+      ></textarea>
+      <div style="margin-top: 8px;">
+        <span>原生 textarea 长度: <strong>{{ nativeLength }}</strong></span>
+      </div>
+    </el-card>
+
+    <el-card style="max-width: 800px; margin-top: 20px;">
+      <template #header>
+        <div>调试信息</div>
+      </template>
+      <el-button @click="runAllTests">运行所有测试</el-button>
+      <div v-if="testResults.length" style="margin-top: 16px;">
+        <div v-for="(result, idx) in testResults" :key="idx" style="margin: 8px 0; padding: 8px; background: #f9f9f9;">
+          <strong>{{ result.name }}</strong>: {{ result.message }}
+        </div>
+      </div>
+    </el-card>
+  </div>
+
+  <script>
+    const { createApp, ref } = Vue
+    const { ElMessage } = ElementPlus
+
+    createApp({
+      setup() {
+        const text = ref('')
+        const lastInputLength = ref(0)
+        const lastPasteLength = ref(null)
+        const nativeLength = ref(0)
+        const testResults = ref([])
+
+        const testChar = '测'
+        const target50000 = testChar.repeat(50000)
+        const target40000 = testChar.repeat(40000)
+        const target38737 = testChar.repeat(38737)
+        const target60000 = testChar.repeat(60000)
+
+        const onInput = (e) => {
+          lastInputLength.value = e.target.value.length
+        }
+
+        const onPaste = (e) => {
+          // We can't easily intercept the paste data in Vue, but we can check after
+          setTimeout(() => {
+            lastPasteLength.value = text.value.length
+          }, 0)
+        }
+
+        const onNativeInput = (e) => {
+          nativeLength.value = e.target.value.length
+        }
+
+        const onNativePaste = (e) => {
+          setTimeout(() => {
+            nativeLength.value = e.target.value.length
+          }, 0)
+        }
+
+        const fill50000 = () => {
+          text.value = target50000
+          lastInputLength.value = text.value.length
+        }
+
+        const fill40000 = () => {
+          text.value = target40000
+          lastInputLength.value = text.value.length
+        }
+
+        const fill38737 = () => {
+          text.value = target38737
+          lastInputLength.value = text.value.length
+        }
+
+        const fill60000 = () => {
+          text.value = target60000
+          lastInputLength.value = text.value.length
+        }
+
+        const clear = () => {
+          text.value = ''
+          lastInputLength.value = 0
+          lastPasteLength.value = null
+          nativeLength.value = 0
+        }
+
+        const runAllTests = () => {
+          testResults.value = []
+
+          // Test 1: Fill 50000 chars
+          text.value = target50000
+          testResults.value.push({
+            name: '填入 50000 字符',
+            message: text.value.length === 50000 ? '✓ 通过 (长度=' + text.value.length + ')' : '✗ 失败 (长度=' + text.value.length + ')'
+          })
+
+          // Test 2: Fill 38737 chars
+          text.value = target38737
+          testResults.value.push({
+            name: '填入 38737 字符',
+            message: text.value.length === 38737 ? '✓ 通过 (长度=' + text.value.length + ')' : '✗ 失败 (长度=' + text.value.length + ')'
+          })
+
+          // Test 3: Fill 60000 chars - should be truncated to 50000
+          text.value = target60000
+          testResults.value.push({
+            name: '填入 60000 字符',
+            message: text.value.length <= 50000 ? '✓ 通过 (长度=' + text.value.length + ', 正确截断)' : '✗ 失败 (长度=' + text.value.length + ', 未截断)'
+          })
+
+          // Test 4: Fill 40000 chars
+          text.value = target40000
+          testResults.value.push({
+            name: '填入 40000 字符',
+            message: text.value.length === 40000 ? '✓ 通过 (长度=' + text.value.length + ')' : '✗ 失败 (长度=' + text.value.length + ')'
+          })
+        }
+
+        return {
+          text,
+          lastInputLength,
+          lastPasteLength,
+          nativeLength,
+          testResults,
+          onInput,
+          onPaste,
+          onNativeInput,
+          onNativePaste,
+          fill50000,
+          fill40000,
+          fill38737,
+          fill60000,
+          clear,
+          runAllTests,
+        }
+      }
+    }).use(ElementPlus).mount('#app')
+  </script>
+</body>
+</html>

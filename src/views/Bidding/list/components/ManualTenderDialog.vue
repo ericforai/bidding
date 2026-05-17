@@ -119,19 +119,24 @@
           </el-form-item>
         </el-col>
         <el-col :span="24">
-          <el-form-item label="附件">
+          <el-form-item label="附件上传">
+            <div class="upload-hint">
+              支持 PDF/Word 文件上传（≤50MB），上传后自动 AI 解析并回填表单字段
+            </div>
             <el-upload
               class="manual-tender-upload"
               :auto-upload="false"
               :on-change="onFileChange"
               :file-list="form.attachments"
               :limit="5"
+              :accept="acceptFileTypes"
+              :on-exceed="onFileExceed"
               multiple
               drag
             >
               <el-icon class="el-icon--upload"><Upload /></el-icon>
               <div class="el-upload__text">
-                {{ parsingDocument ? 'DeepSeek/AI 解析中...' : '将文件拖到此处，或点击选择附件' }}
+                {{ parsingDocument ? 'DeepSeek/AI 解析中...' : '将文件拖到此处，或点击选择附件（PDF/Word ≤50MB）' }}
               </div>
             </el-upload>
           </el-form-item>
@@ -155,6 +160,8 @@ import {
   REGION_OPTIONS,
 } from '../constants.js'
 
+const ACCEPT_FILE_TYPES = '.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+
 const modelValue = defineModel({ type: Boolean, default: false })
 const form = defineModel('form', { type: Object, required: true })
 defineProps({
@@ -170,7 +177,13 @@ const emit = defineEmits(['reset', 'submit', 'file-change', 'parse-pasted-text']
 
 const innerFormRef = ref(null)
 
+const acceptFileTypes = ACCEPT_FILE_TYPES
+
 const onFileChange = (file, fileList) => emit('file-change', file, fileList)
+
+const onFileExceed = () => {
+  // 已在 useManualTenderCreate 中处理，此处为兼容 el-upload 的 on-exceed 事件
+}
 
 defineExpose({
   validate: () => innerFormRef.value?.validate(),
@@ -259,5 +272,12 @@ defineExpose({
   display: flex;
   justify-content: flex-end;
   margin-top: 8px;
+}
+
+.upload-hint {
+  margin-bottom: 8px;
+  color: #909399;
+  font-size: 13px;
+  line-height: 1.4;
 }
 </style>
