@@ -225,3 +225,4 @@ onMounted(() => {
 </script>
 
 <style src="./MarketPredictionPage.scss" scoped>
+</style>
