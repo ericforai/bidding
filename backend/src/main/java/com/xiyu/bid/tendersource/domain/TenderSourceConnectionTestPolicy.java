@@ -8,6 +8,7 @@ import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
+import java.io.IOException;
 
 /**
  * 标讯源连接测试策略（Pure Core）
@@ -89,10 +90,15 @@ public final class TenderSourceConnectionTestPolicy {
             }
         } catch (HttpTimeoutException e) {
             return TenderSourceConnectionResult.failure("连接超时，请检查API端点是否可访问");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return TenderSourceConnectionResult.failure("请求被中断");
         } catch (ConnectException e) {
             return TenderSourceConnectionResult.failure("无法连接到服务器，请检查API端点");
         } catch (UnknownHostException e) {
             return TenderSourceConnectionResult.failure("无法解析域名，请检查API端点地址");
+        } catch (IOException e) {
+            return TenderSourceConnectionResult.failure("IO错误，请检查网络连接");
         } catch (IllegalArgumentException e) {
             return TenderSourceConnectionResult.failure("HTTP请求构建失败: " + e.getMessage());
         } catch (RuntimeException e) {
