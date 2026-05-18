@@ -8,6 +8,8 @@
     </div>
 
     <div v-if="tender" class="detail-content">
+      <el-tabs v-model="activeTab" class="detail-tabs" type="border-card">
+        <el-tab-pane label="基本信息" name="basic">
       <el-card class="info-card" shadow="never">
         <template #header>
           <div class="detail-card-header">
@@ -105,6 +107,8 @@
         </div>
       </el-card>
 
+        </el-tab-pane>
+        <el-tab-pane label="项目评估表" name="evaluation">
       <TenderEvaluationForm
         v-if="tender"
         :evaluation="tenderEvaluation"
@@ -116,7 +120,11 @@
         @bid="handleParticipate"
         @abandon="handleAbandonWithReason"
       />
-
+        </el-tab-pane>
+        <el-tab-pane label="操作日志" name="logs">
+          <OperationLogTimeline v-if="tender" :tender-id="tender.id" />
+        </el-tab-pane>
+      </el-tabs>
     </div>
 
     <div v-else class="loading-container">
@@ -134,8 +142,11 @@ import { useBiddingDetailPage } from './useBiddingDetailPage.js'
 import { useUserStore } from '@/stores/user'
 import { tendersApi } from '@/api'
 import TenderEvaluationForm from './TenderEvaluationForm.vue'
+import OperationLogTimeline from './components/OperationLogTimeline.vue'
 import './styles/detail-layout.css'
 import './styles/detail-overrides.css'
+
+const activeTab = ref('basic')
 
 const {
   tender,

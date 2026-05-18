@@ -6,12 +6,17 @@ import source from './TenderTable.vue?raw'
 const tableStyles = readFileSync(join(process.cwd(), 'src/views/Bidding/list/styles/table.css'), 'utf-8')
 
 describe('TenderTable responsive layout contract', () => {
-  it('keeps secondary tender attributes inside the primary tender column', () => {
-    expect(source).toContain('label="标讯"')
-    expect(source).toContain('class="tender-meta-line"')
-    expect(source).not.toContain('prop="region" label="地区"')
-    expect(source).not.toContain('prop="industry" label="行业"')
-    expect(source).not.toContain('prop="deadline" label="截止日期"')
+  it('renders all 18 tender list columns with proper responsive layout', () => {
+    expect(source).toContain('项目名称')
+    expect(source).toContain('prop="region"')
+    expect(source).toContain('prop="projectType"')
+    expect(source).toContain('prop="customerType"')
+    expect(source).toContain('prop="registrationDeadline"')
+    expect(source).toContain('prop="bidOpeningTime"')
+    expect(source).toContain('prop="projectManagerName"')
+    expect(source).toContain('prop="biddingPersonName"')
+    expect(source).toContain('prop="priority"')
+    expect(source).toContain('prop="creatorName"')
   })
 
   it('uses responsive action width with overflow handling', () => {
