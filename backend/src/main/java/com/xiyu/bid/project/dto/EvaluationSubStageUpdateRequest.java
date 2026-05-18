@@ -5,6 +5,7 @@
 package com.xiyu.bid.project.dto;
 
 import com.xiyu.bid.project.core.EvaluationSubStage;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,5 +21,6 @@ public class EvaluationSubStageUpdateRequest {
     @NotNull(message = "targetSubStage 不能为空")
     private EvaluationSubStage targetSubStage;
 
+    @NotBlank(message = "情况说明不能为空")
     private String notes;
 }

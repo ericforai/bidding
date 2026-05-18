@@ -36,12 +36,13 @@ class ProjectDraftingServiceTest {
     @Mock ProjectRepository projectRepository;
     @Mock TaskRepository taskRepository;
     @Mock ProjectStageService projectStageService;
+    @Mock com.xiyu.bid.service.ProjectAccessScopeService projectAccessScopeService;
 
     ProjectDraftingService service;
 
     @BeforeEach
     void setUp() {
-        service = new ProjectDraftingService(leadRepo, projectRepository, taskRepository, projectStageService);
+        service = new ProjectDraftingService(leadRepo, projectRepository, taskRepository, projectStageService, projectAccessScopeService);
         lenient().when(projectRepository.findById(1L))
                 .thenReturn(Optional.of(Project.builder().id(1L).build()));
         lenient().when(leadRepo.save(any(ProjectLeadAssignment.class)))

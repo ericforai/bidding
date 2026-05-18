@@ -7,6 +7,7 @@ package com.xiyu.bid.biddraftagent.domain.validation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -66,7 +67,7 @@ public class QualificationMatcher {
    */
   boolean isSmartMatch(String source, String target) {
     if (target.length() > 5 || !target.matches("^[a-zA-Z]+$")) {
-      return source.toLowerCase().contains(target.toLowerCase());
+      return source.toLowerCase(Locale.ROOT).contains(target.toLowerCase(Locale.ROOT));
     }
     // Short name (pure English letters): word boundary match only
     Pattern pattern =

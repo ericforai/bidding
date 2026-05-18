@@ -63,13 +63,7 @@ class ProjectWorkflowServiceTest {
                 projectDocumentRepository,
                 projectScoreDraftRepository
         );
-        ProjectTaskWorkflowService projectTaskWorkflowService = new ProjectTaskWorkflowService(
-                guardService,
-                taskRepository,
-                userRepository,
-                objectMapper,
-                mock(TaskHistoryRecorder.class)
-        );
+        ProjectTaskWorkflowService projectTaskWorkflowService = new ProjectTaskWorkflowService(guardService, taskRepository, userRepository, objectMapper, mock(TaskHistoryRecorder.class), mock(com.xiyu.bid.projectworkflow.service.ProjectTaskDeliverableCollector.class));
         ProjectDocumentWorkflowService projectDocumentWorkflowService = new ProjectDocumentWorkflowService(
                 guardService,
                 projectDocumentRepository,
