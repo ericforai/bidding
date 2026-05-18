@@ -67,9 +67,6 @@ class TenderEvaluationSubmissionServiceTest {
     @Mock
     private TenderAssignmentPermissions permissions;
 
-    @Mock
-    private com.xiyu.bid.tender.service.TenderEvaluationNotificationService evaluationNotificationService;
-
     private Clock fixedClock;
     private TenderEvaluationSubmissionService service;
 
@@ -79,7 +76,6 @@ class TenderEvaluationSubmissionServiceTest {
                 FIXED_NOW.atZone(ZoneId.systemDefault()).toInstant(),
                 ZoneId.systemDefault());
         service = new TenderEvaluationSubmissionService(
-                evaluationNotificationService,
                 evaluationRepository,
                 tenderRepository,
                 userRepository,

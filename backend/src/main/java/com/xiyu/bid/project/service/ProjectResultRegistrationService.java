@@ -1,5 +1,5 @@
 // Input: 登记结果请求 + 当前用户
-// Output: ResultDTO；通过策略校验+持久化+审计；§5.4 自动推进 RESULT_PENDING → RETROSPECTIVE
+// Output: ResultDTO；通过策略校验+持久化+审计；§5.4 自动推进 RESULT_PENDING → RETROSPECTIVE/CLOSED
 // Pos: project/service/ - 编排层（不含纯规则）
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.project.service;
@@ -16,6 +16,7 @@ import com.xiyu.bid.project.dto.ResultRegistrationRequest;
 import com.xiyu.bid.project.entity.ProjectResult;
 import com.xiyu.bid.project.repository.ProjectResultRepository;
 import com.xiyu.bid.repository.ProjectRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -35,7 +36,7 @@ import java.util.stream.Collectors;
  *   <li>幂等：同 projectId 已登记 → 409 CONFLICT。</li>
  *   <li>策略：调 {@link ResultRegistrationFieldPolicy}（FAILED/ABANDONED 必须 summary，全部必须 evidence）。</li>
  *   <li>审计：@Auditable("REGISTER_PROJECT_RESULT")。</li>
- *   <li>FSM 推进：成功登记后自动推进 RESULT_PENDING → RETROSPECTIVE（幂等跳过）。</li>
+ *   <li>FSM 推进：成功登记后自动推进 RESULT_PENDING → RETROSPECTIVE/CLOSED（按结果类型分流，幂等跳过）。</li>
  * </ul>
  */
 @Service
@@ -47,9 +48,11 @@ public class ProjectResultRegistrationService {
     private final ProjectResultRepository repository;
     private final ProjectRepository projectRepository;
     private final ProjectStageService projectStageService;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
     @Auditable(action = "REGISTER_PROJECT_RESULT", entityType = "ProjectResult", description = "登记项目结果")
     public ResultDTO register(Long projectId, ResultRegistrationRequest req, Long currentUserId) {
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
         Project project = mustGetProject(projectId);
         // §3.6 全字段锁定 — CLOSED 阶段拒绝写入。
         ProjectStage stage = projectStageService.currentStage(projectId);
@@ -88,14 +91,19 @@ public class ProjectResultRegistrationService {
                 .updatedBy(currentUserId)
                 .build();
         ProjectResult saved = repository.save(entity);
-        // §5.4: 结果登记后推进 RESULT_PENDING → RETROSPECTIVE（幂等跳过）
+        // §5.4: 结果登记后按结果类型分流推进 RESULT_PENDING → RETROSPECTIVE / CLOSED（幂等跳过）
         ProjectStage current = projectStageService.currentStage(projectId);
         if (current == ProjectStage.RESULT_PENDING) {
-            projectStageService.requestTransition(projectId, ProjectStage.RETROSPECTIVE,
+            ProjectStage nextStage = ProjectStageTransitionPolicy.decideResultNext(req.getResultType());
+            projectStageService.requestTransition(projectId, nextStage,
                     ProjectStageTransitionPolicy.GateInputs.EMPTY);
         }
-        log.info("ProjectResult registered project={} type={} user={}",
-                projectId, req.getResultType(), currentUserId);
+        log.info("ProjectResult registered project={} type={} nextStage={} user={}",
+                projectId, req.getResultType(),
+                current == ProjectStage.RESULT_PENDING
+                        ? ProjectStageTransitionPolicy.decideResultNext(req.getResultType())
+                        : current,
+                currentUserId);
         return toDto(saved, currentUserId);
     }
 

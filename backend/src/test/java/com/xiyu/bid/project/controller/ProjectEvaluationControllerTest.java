@@ -70,7 +70,7 @@ class ProjectEvaluationControllerTest {
                 .id(10L).projectId(1L).subStage("AWAITING_BOARD").build();
         when(service.transitionSubStage(eq(1L), any(), any())).thenReturn(dto);
         var req = EvaluationSubStageUpdateRequest.builder()
-                .targetSubStage(EvaluationSubStage.AWAITING_BOARD).build();
+                .targetSubStage(EvaluationSubStage.AWAITING_BOARD).notes("评标情况说明").build();
         mockMvc.perform(patch("/api/projects/1/evaluation/sub-stage")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -79,11 +79,12 @@ class ProjectEvaluationControllerTest {
     }
 
     @Test
-    void patch_subStage_illegalJump_returns409() throws Exception {
+    void patch_subStage_serviceConflict_propagates409() throws Exception {
+        // 当 service 抛 409 (如同态/锁定阶段) 时 Controller 透传
         when(service.transitionSubStage(eq(1L), any(), any()))
-                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "评标子状态非法跳转"));
+                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "不能切换到当前子状态"));
         var req = EvaluationSubStageUpdateRequest.builder()
-                .targetSubStage(EvaluationSubStage.ANNOUNCED).build();
+                .targetSubStage(EvaluationSubStage.ANNOUNCED).notes("评标情况说明").build();
         mockMvc.perform(patch("/api/projects/1/evaluation/sub-stage")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))

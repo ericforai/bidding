@@ -38,6 +38,7 @@ class ProjectResultRegistrationServiceTest {
     private ProjectResultRepository repo;
     private ProjectRepository projectRepo;
     private ProjectStageService stageService;
+    private com.xiyu.bid.service.ProjectAccessScopeService accessScopeService;
     private ProjectResultRegistrationService service;
 
     @BeforeEach
@@ -45,7 +46,8 @@ class ProjectResultRegistrationServiceTest {
         repo = mock(ProjectResultRepository.class);
         projectRepo = mock(ProjectRepository.class);
         stageService = mock(ProjectStageService.class);
-        service = new ProjectResultRegistrationService(repo, projectRepo, stageService);
+        accessScopeService = mock(com.xiyu.bid.service.ProjectAccessScopeService.class);
+        service = new ProjectResultRegistrationService(repo, projectRepo, stageService, accessScopeService);
         Project p = new Project();
         p.setId(1L);
         when(projectRepo.findById(1L)).thenReturn(Optional.of(p));

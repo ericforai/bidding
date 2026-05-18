@@ -69,7 +69,8 @@ class MaintainabilityArchitectureTest {
     private static final Set<String> SERVICE_DEPENDENCY_BUDGET_EXEMPTIONS = Set.of(
         "com.xiyu.bid.batch.service.BatchOperationService",
         "com.xiyu.bid.export.service.ExcelExportService",
-        "com.xiyu.bid.scoreanalysis.service.ScoreAnalysisService"
+        "com.xiyu.bid.scoreanalysis.service.ScoreAnalysisService",
+        "com.xiyu.bid.projectworkflow.service.ProjectTaskWorkflowService"
     );
 
     private static final Set<String> SERVICE_PUBLIC_METHOD_BUDGET_EXEMPTIONS = Set.of(

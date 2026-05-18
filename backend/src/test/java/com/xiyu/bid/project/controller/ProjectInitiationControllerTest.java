@@ -42,6 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ProjectInitiationControllerTest {
 
     private ProjectInitiationService service;
+    private com.xiyu.bid.project.service.ProjectInitiationApprovalService approvalService;
     private AuthService authService;
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
@@ -49,9 +50,10 @@ class ProjectInitiationControllerTest {
     @BeforeEach
     void setup() {
         service = mock(ProjectInitiationService.class);
+        approvalService = mock(com.xiyu.bid.project.service.ProjectInitiationApprovalService.class);
         authService = mock(AuthService.class);
         when(authService.resolveUserIdByUsername("sales")).thenReturn(42L);
-        ProjectInitiationController controller = new ProjectInitiationController(service, authService);
+        ProjectInitiationController controller = new ProjectInitiationController(service, approvalService, authService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .build();

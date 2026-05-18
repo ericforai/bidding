@@ -15,8 +15,6 @@ import com.xiyu.bid.task.service.TaskService;
 import com.xiyu.bid.tender.dto.TenderAbandonRequest;
 import com.xiyu.bid.tender.dto.TenderBidResponse;
 import com.xiyu.bid.tender.dto.TenderDTO;
-import com.xiyu.bid.tender.service.TenderAuditService;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -75,9 +73,6 @@ class TenderCommandServiceTest {
     @Mock
     private TenderDeduplicationService tenderDeduplicationService;
 
-    @Mock
-    private TenderAuditService tenderAuditService;
-
     private TenderCommandService tenderCommandService;
     private TenderQueryService tenderQueryService;
     private com.xiyu.bid.batch.core.TenderStatusTransitionPolicy statusTransitionPolicy;
@@ -91,7 +86,7 @@ class TenderCommandServiceTest {
         statusTransitionPolicy = new com.xiyu.bid.batch.core.TenderStatusTransitionPolicy();
         tenderCommandService = new TenderCommandService(
                 tenderDeduplicationService, tenderRepository, aiService, tenderMapper, accessGuard,
-                statusTransitionPolicy, taskService, tenderAssignmentPermissions, autoAssignmentService, tenderAuditService);
+                statusTransitionPolicy, taskService, tenderAssignmentPermissions, autoAssignmentService, null);
         // Permissive by default — individual instance-permission tests override.
         org.mockito.Mockito.lenient()
                 .when(tenderAssignmentPermissions.canDecide(any(), any()))

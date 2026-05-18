@@ -71,35 +71,34 @@ class ProjectEvaluationServiceTest {
                 .id(10L).projectId(1L).subStage("IN_PROGRESS").build();
         when(repo.findByProjectId(1L)).thenReturn(Optional.of(existing));
         var req = EvaluationSubStageUpdateRequest.builder()
-                .targetSubStage(EvaluationSubStage.AWAITING_BOARD).build();
+                .targetSubStage(EvaluationSubStage.AWAITING_BOARD).notes("评标情况说明").build();
         var dto = service.transitionSubStage(1L, req, 7L);
         assertEquals("AWAITING_BOARD", dto.getSubStage());
         verify(stageService, never()).requestTransition(any(), any(), any());
     }
 
     @Test
-    void transition_skip_in_progress_to_announced_conflict() {
+    void transition_skip_in_progress_to_announced_allowed_by_blueprint() {
+        // 蓝图 V1.1 §4.3: 子状态可自由切换，IN_PROGRESS → ANNOUNCED 是合法的跳转
         ProjectEvaluation existing = ProjectEvaluation.builder()
                 .id(10L).projectId(1L).subStage("IN_PROGRESS").build();
         when(repo.findByProjectId(1L)).thenReturn(Optional.of(existing));
         var req = EvaluationSubStageUpdateRequest.builder()
-                .targetSubStage(EvaluationSubStage.ANNOUNCED).build();
-        var ex = assertThrows(ResponseStatusException.class,
-                () -> service.transitionSubStage(1L, req, 7L));
-        assertEquals(409, ex.getStatusCode().value());
-        verify(repo, never()).save(any());
+                .targetSubStage(EvaluationSubStage.ANNOUNCED).notes("评标情况说明").build();
+        var dto = service.transitionSubStage(1L, req, 7L);
+        assertEquals("ANNOUNCED", dto.getSubStage());
     }
 
     @Test
-    void transition_reverse_denied() {
+    void transition_reverse_allowed_by_blueprint() {
+        // 蓝图 V1.1 §4.3: 子状态可自由切换，AWAITING_BOARD → IN_PROGRESS 也允许
         ProjectEvaluation existing = ProjectEvaluation.builder()
                 .id(10L).projectId(1L).subStage("AWAITING_BOARD").build();
         when(repo.findByProjectId(1L)).thenReturn(Optional.of(existing));
         var req = EvaluationSubStageUpdateRequest.builder()
-                .targetSubStage(EvaluationSubStage.IN_PROGRESS).build();
-        var ex = assertThrows(ResponseStatusException.class,
-                () -> service.transitionSubStage(1L, req, 7L));
-        assertEquals(409, ex.getStatusCode().value());
+                .targetSubStage(EvaluationSubStage.IN_PROGRESS).notes("评标情况说明").build();
+        var dto = service.transitionSubStage(1L, req, 7L);
+        assertEquals("IN_PROGRESS", dto.getSubStage());
     }
 
     @Test
@@ -108,7 +107,7 @@ class ProjectEvaluationServiceTest {
                 .id(10L).projectId(1L).subStage("AWAITING_BOARD").build();
         when(repo.findByProjectId(1L)).thenReturn(Optional.of(existing));
         var req = EvaluationSubStageUpdateRequest.builder()
-                .targetSubStage(EvaluationSubStage.ANNOUNCED).build();
+                .targetSubStage(EvaluationSubStage.ANNOUNCED).notes("评标情况说明").build();
         var dto = service.transitionSubStage(1L, req, 7L);
         assertEquals("ANNOUNCED", dto.getSubStage());
         verify(stageService, times(1)).requestTransition(eq(1L),
@@ -123,7 +122,7 @@ class ProjectEvaluationServiceTest {
                 .id(10L).projectId(1L).subStage("AWAITING_BOARD").build();
         when(repo.findByProjectId(1L)).thenReturn(Optional.of(existing));
         var req = EvaluationSubStageUpdateRequest.builder()
-                .targetSubStage(EvaluationSubStage.ANNOUNCED).build();
+                .targetSubStage(EvaluationSubStage.ANNOUNCED).notes("评标情况说明").build();
         var dto = service.transitionSubStage(1L, req, 7L);
         assertEquals("ANNOUNCED", dto.getSubStage());
         verify(stageService, never()).requestTransition(any(), any(), any());
@@ -133,7 +132,7 @@ class ProjectEvaluationServiceTest {
     void transition_initialEntityCreatedIfMissing() {
         when(repo.findByProjectId(1L)).thenReturn(Optional.empty());
         var req = EvaluationSubStageUpdateRequest.builder()
-                .targetSubStage(EvaluationSubStage.AWAITING_BOARD).build();
+                .targetSubStage(EvaluationSubStage.AWAITING_BOARD).notes("评标情况说明").build();
         var dto = service.transitionSubStage(1L, req, 7L);
         assertEquals("AWAITING_BOARD", dto.getSubStage());
         verify(repo).save(any(ProjectEvaluation.class));
@@ -212,7 +211,7 @@ class ProjectEvaluationServiceTest {
     void transitionSubStage_atClosedStage_throws423() {
         when(stageService.currentStage(1L)).thenReturn(ProjectStage.CLOSED);
         var req = EvaluationSubStageUpdateRequest.builder()
-                .targetSubStage(EvaluationSubStage.AWAITING_BOARD).build();
+                .targetSubStage(EvaluationSubStage.AWAITING_BOARD).notes("评标情况说明").build();
         var ex = assertThrows(ResponseStatusException.class,
                 () -> service.transitionSubStage(1L, req, 7L));
         assertEquals(423, ex.getStatusCode().value());

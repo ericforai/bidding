@@ -14,9 +14,7 @@ class PositionToRoleMapperTest {
     private PositionToRoleMapper createMapper(List<OrganizationIntegrationProperties.PositionToRoleMapping> mappings) {
         OrganizationIntegrationProperties properties = new OrganizationIntegrationProperties();
         properties.setPositionToRoleMappings(mappings);
-        PositionToRoleMapper mapper = new PositionToRoleMapper(properties);
-        mapper.init();
-        return mapper;
+        return new PositionToRoleMapper(properties);
     }
 
     private OrganizationIntegrationProperties.PositionToRoleMapping mapping(String pattern, String roleCode) {
