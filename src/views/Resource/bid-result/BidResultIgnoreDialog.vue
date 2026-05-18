@@ -31,6 +31,6 @@ defineEmits(['close', 'submit', 'update:reason'])
 <style scoped>
 .hint {
   margin: 0 0 12px;
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 </style>

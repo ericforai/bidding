@@ -482,12 +482,12 @@ onMounted(async () => {
   font-size: 24px;
   font-weight: 600;
   margin: 0 0 8px 0;
-  color: #1a1a1a;
+  color: var(--text-primary);
 }
 
 .page-subtitle {
   font-size: 14px;
-  color: #909399;
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -509,13 +509,13 @@ onMounted(async () => {
 
 .site-name-cell .name {
   font-weight: 500;
-  color: #303133;
+  color: var(--gray-750);
   word-break: break-word;
 }
 
 .site-name-cell .url {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
   margin-top: 2px;
   word-break: break-all;
 }

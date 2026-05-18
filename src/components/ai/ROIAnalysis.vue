@@ -338,11 +338,11 @@ watch(
 }
 
 .metric-value.high {
-  color: var(--color-success, var(--color-success));
+  color: var(--color-success);
 }
 
 .metric-value.medium {
-  color: var(--color-warning, var(--color-warning));
+  color: var(--color-warning);
 }
 
 .metric-value.low {
@@ -384,7 +384,7 @@ watch(
 
 .revenue-ratio {
   font-size: 14px;
-  color: var(--color-success, var(--color-success));
+  color: var(--color-success);
   background: #f0f9ff;
   padding: 4px 12px;
   border-radius: 12px;

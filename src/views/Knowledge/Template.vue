@@ -206,7 +206,7 @@ const {
   padding: 20px;
   background:
     radial-gradient(circle at top right, rgba(64, 158, 255, 0.08), transparent 20%),
-    linear-gradient(180deg, #f5f9ff 0%, #ffffff 28%);
+    linear-gradient(180deg, #f5f9ff 0%, var(--bg-card) 28%);
 }
 
 .page-header {
@@ -226,7 +226,7 @@ const {
 
 .page-subtitle {
   margin: 0;
-  color: #6b7280;
+  color: var(--gray-650);
   line-height: 1.5;
 }
 
@@ -255,7 +255,7 @@ const {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #6b7280;
+  color: var(--gray-650);
 }
 
 .tabs-hint {
@@ -303,7 +303,7 @@ const {
 .results-meta {
   margin: 0;
   max-width: 360px;
-  color: #6b7280;
+  color: var(--gray-650);
   line-height: 1.6;
   text-align: right;
 }

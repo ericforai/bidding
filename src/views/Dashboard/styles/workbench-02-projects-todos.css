@@ -13,7 +13,7 @@
   align-items: center;
   gap: 16px;
   padding: 16px;
-  background: #F9FAFB;
+  background: var(--bg-subtle);
   border-radius: 10px;
   border: 1px solid #E5E7EB;
   cursor: pointer;
@@ -91,14 +91,14 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: #F9FAFB;
+  background: var(--bg-subtle);
   border-radius: 8px;
   border-left: 3px solid transparent;
   transition: all 0.2s ease;
 }
 
 .todo-item.priority-high {
-  border-left-color: #EF4444;
+  border-left-color: var(--color-danger);
   background: #FEF2F2;
 }
 
@@ -107,12 +107,12 @@
 }
 
 .todo-item.priority-low {
-  border-left-color: #10B981;
+  border-left-color: var(--color-success);
 }
 
 /* 系统预警待办样式 */
 .todo-item.todo-warning {
-  background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+  background: linear-gradient(135deg, #FFFBEB 0%, var(--color-warning-bg) 100%);
   border-left-color: #F59E0B;
   border-left-width: 4px;
 }
@@ -150,8 +150,8 @@
 }
 
 .checkbox-custom.checked {
-  background: #10B981;
-  border-color: #10B981;
+  background: var(--color-success);
+  border-color: var(--color-success);
 }
 
 .checkbox-custom .el-icon {

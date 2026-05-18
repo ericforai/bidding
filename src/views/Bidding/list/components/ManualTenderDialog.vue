@@ -199,7 +199,7 @@ defineExpose({
 .field-tip {
   width: 100%;
   margin-top: 4px;
-  color: #6b7280;
+  color: var(--gray-650);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -255,7 +255,7 @@ defineExpose({
 .priority-option small {
   max-width: 420px;
   overflow: hidden;
-  color: #6b7280;
+  color: var(--gray-650);
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -263,7 +263,7 @@ defineExpose({
 
 .paste-recognition-hint {
   margin-bottom: 8px;
-  color: #909399;
+  color: var(--text-muted);
   font-size: 13px;
   line-height: 1.4;
 }
@@ -276,7 +276,7 @@ defineExpose({
 
 .upload-hint {
   margin-bottom: 8px;
-  color: #909399;
+  color: var(--text-muted);
   font-size: 13px;
   line-height: 1.4;
 }

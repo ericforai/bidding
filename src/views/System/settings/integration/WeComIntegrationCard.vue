@@ -185,7 +185,7 @@ const formatProbedAt = (probedAt) => new Date(probedAt).toLocaleString('zh-CN')
 
 .test-time {
   margin-left: auto;
-  color: #999;
+  color: var(--text-tertiary);
   font-size: 12px;
 }
 

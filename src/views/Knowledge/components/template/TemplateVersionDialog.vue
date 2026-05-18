@@ -63,6 +63,6 @@ defineEmits(['update:visible'])
 }
 
 .version-description {
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 </style>

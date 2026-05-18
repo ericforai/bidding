@@ -226,7 +226,7 @@ watch(visible, (val) => {
 .section-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
   margin: 0 0 16px 0;
   padding-bottom: 10px;
   border-bottom: 1px solid #ebeef5;
@@ -236,15 +236,15 @@ watch(visible, (val) => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  background: #f5f7fa;
+  background: var(--bg-subtle);
   border-radius: 8px;
   padding: 20px;
 }
 
 .stat-item { text-align: center; }
 
-.stat-label { font-size: 13px; color: #909399; margin-bottom: 8px; }
-.stat-value { font-size: 24px; font-weight: 600; color: #303133; }
+.stat-label { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+.stat-value { font-size: 24px; font-weight: 600; color: var(--gray-750); }
 .stat-value.stat-success { color: #67c23a; }
 .stat-value.stat-warning { color: #e6a23c; }
 .stat-value.stat-primary { color: #409eff; }

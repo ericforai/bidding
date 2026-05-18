@@ -250,11 +250,11 @@ function formatTime(t) {
 .collab-empty {
   padding: 24px;
   text-align: center;
-  color: #909399;
+  color: var(--text-muted);
 }
 .collab-empty-inline {
   padding: 12px;
-  color: #909399;
+  color: var(--text-muted);
   font-size: 13px;
 }
 .collab-body {
@@ -276,7 +276,7 @@ function formatTime(t) {
   transition: background 150ms ease;
 }
 .thread-item:hover {
-  background: #f5f7fa;
+  background: var(--bg-subtle);
 }
 .thread-item--active {
   background: #ecf5ff;
@@ -293,14 +293,14 @@ function formatTime(t) {
 }
 .thread-title {
   font-weight: 500;
-  color: #303133;
+  color: var(--gray-750);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .thread-meta {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
   display: flex;
   gap: 12px;
 }
@@ -310,7 +310,7 @@ function formatTime(t) {
 }
 .thread-detail-header h4 {
   margin: 0 0 12px 0;
-  color: #303133;
+  color: var(--gray-750);
 }
 .comments-section {
   margin-bottom: 12px;
@@ -329,10 +329,10 @@ function formatTime(t) {
   gap: 12px;
   font-size: 13px;
   margin-bottom: 4px;
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 .comment-content {
-  color: #303133;
+  color: var(--gray-750);
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;

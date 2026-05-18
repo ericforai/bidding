@@ -139,6 +139,6 @@ defineExpose({ validate })
 @media (hover: none) and (pointer: coarse) {
   .add-task-btn { min-height: 44px; }
   .task-item { min-height: 60px; }
-  .task-item:active { background: #f5f7fa; }
+  .task-item:active { background: var(--bg-subtle); }
 }
 </style>

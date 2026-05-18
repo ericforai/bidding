@@ -42,8 +42,8 @@ defineEmits(['insert'])
   top: 20px;
   width: 280px;
   max-height: 400px;
-  background: #fff;
-  border: 1px solid #e4e7ed;
+  background: var(--bg-card);
+  border: 1px solid var(--gray-250);
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   overflow: hidden;
@@ -56,7 +56,7 @@ defineEmits(['insert'])
   gap: 8px;
   padding: 12px 16px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
+  color: var(--bg-card);
   font-weight: 600;
 }
 
@@ -74,8 +74,8 @@ defineEmits(['insert'])
 }
 
 .knowledge-item:hover {
-  background: #f5f7fa;
-  border-color: #0369a1;
+  background: var(--bg-subtle);
+  border-color: var(--accent-blue);
   box-shadow: 0 4px 12px rgba(3, 105, 161, 0.1);
   transform: translateY(-1px);
 }
@@ -104,13 +104,13 @@ defineEmits(['insert'])
 .knowledge-title {
   font-size: 14px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
   margin-bottom: 4px;
 }
 
 .knowledge-summary {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
   margin-bottom: 6px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -132,11 +132,11 @@ defineEmits(['insert'])
 
 :deep(.el-tag--primary) {
   background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #ffffff;
+  color: var(--bg-card);
 }
 
 :deep(.el-tag--success) {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--color-success), var(--color-success-dark));
+  color: var(--bg-card);
 }
 </style>

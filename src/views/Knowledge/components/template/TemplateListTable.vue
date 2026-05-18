@@ -288,11 +288,11 @@ function resolveCategoryIcon(category) {
 
 .name-text {
   font-weight: 600;
-  color: #111827;
+  color: var(--gray-950);
 }
 
 .name-desc {
-  color: #909399;
+  color: var(--text-muted);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -339,7 +339,7 @@ function resolveCategoryIcon(category) {
   padding: 16px;
   border-radius: 18px;
   border: 1px solid #e3ebf5;
-  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+  background: linear-gradient(180deg, var(--bg-card) 0%, #f9fbff 100%);
 }
 
 .mobile-card + .mobile-card {
@@ -355,12 +355,12 @@ function resolveCategoryIcon(category) {
 .mobile-name {
   margin: 0;
   font-size: 16px;
-  color: #111827;
+  color: var(--gray-950);
 }
 
 .mobile-desc {
   margin: 6px 0 0;
-  color: #6b7280;
+  color: var(--gray-650);
   font-size: 13px;
   line-height: 1.5;
 }

@@ -179,7 +179,7 @@ onMounted(loadPage)
 
 .page-subtitle {
   margin: 0;
-  color: #909399;
+  color: var(--text-muted);
   font-size: 14px;
 }
 

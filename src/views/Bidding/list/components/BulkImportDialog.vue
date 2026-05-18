@@ -92,7 +92,7 @@ const onFileChange = (file) => emit('file-change', file)
 .bulk-import-tips {
   margin-bottom: 12px;
   padding: 12px 16px;
-  background: #f5f7fa;
+  background: var(--bg-subtle);
   border-radius: 6px;
   color: #4b5563;
   font-size: 13px;

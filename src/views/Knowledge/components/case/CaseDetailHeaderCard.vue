@@ -89,7 +89,7 @@ defineEmits(['edit', 'share', 'use-case'])
 .case-title {
   font-size: 20px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
   margin: 0 0 12px 0;
   line-height: 1.5;
 }
@@ -122,7 +122,7 @@ defineEmits(['edit', 'share', 'use-case'])
 
 :deep(.el-card__header) {
   padding: 16px 20px;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--gray-250);
 }
 
 :deep(.el-card__body) {

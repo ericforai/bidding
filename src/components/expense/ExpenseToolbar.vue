@@ -116,7 +116,7 @@ defineEmits(['search', 'reset', 'apply', 'export'])
 .stat-item {
   padding: 20px;
   text-align: center;
-  color: #fff;
+  color: var(--bg-card);
   border-radius: 8px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 

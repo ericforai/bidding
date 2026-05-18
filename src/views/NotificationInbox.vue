@@ -170,7 +170,7 @@ onMounted(fetchData)
   align-items: flex-start;
   gap: 12px;
   padding: 16px;
-  background: #ffffff;
+  background: var(--bg-card);
   cursor: pointer;
   transition: background 150ms ease;
 }
@@ -240,7 +240,7 @@ onMounted(fetchData)
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #ef4444;
+  background: var(--color-danger);
 }
 
 .inbox-pagination {

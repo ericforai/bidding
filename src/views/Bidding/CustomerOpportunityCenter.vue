@@ -150,7 +150,7 @@ const {
 }
 
 .header-text p {
-  color: #64748b;
+  color: var(--text-slate);
   margin: 8px 0 0;
   font-size: 15px;
 }
@@ -162,14 +162,14 @@ const {
 
 .btn-refresh {
   background: white;
-  border-color: #e2e8f0;
-  color: #475569;
+  border-color: var(--gray-200);
+  color: var(--sidebar-text-secondary);
   font-weight: 500;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-refresh:hover {
-  background: #f1f5f9;
+  background: var(--gray-50);
   transform: translateY(-1px);
 }
 
@@ -232,7 +232,7 @@ const {
   background: white;
   padding: 24px;
   border-radius: 16px;
-  border: 1px solid #f1f5f9;
+  border: 1px solid var(--gray-50);
 }
 
 @media (max-width: 1200px) {

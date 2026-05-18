@@ -20,16 +20,16 @@
   flex-direction: column;
   gap: 10px;
   text-align: center;
-  background: #F8FAFC;
-  border: 1px dashed #CBD5E1;
+  background: var(--bg-subtle);
+  border: 1px dashed var(--gray-300);
   border-radius: 12px;
   color: var(--text-slate);
 }
 
 .workbench-empty-state.state-error {
-  background: #FEF2F2;
-  border-color: #FECACA;
-  color: #991B1B;
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-bg);
+  color: var(--color-danger-dark);
 }
 
 .empty-state-icon {
@@ -40,7 +40,7 @@
   justify-content: center;
   border-radius: 999px;
   background: var(--brand-xiyu-logo-soft, rgba(46, 118, 89, 0.12));
-  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  color: var(--brand-xiyu-logo);
   font-size: 13px;
   font-weight: 700;
 }
@@ -50,9 +50,9 @@
   min-height: 30px;
   height: 30px;
   padding: 0 10px;
-  border: 1px solid rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.24);
-  background: rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.1);
-  color: var(--brand-xiyu-logo, #2E7659);
+  border: 1px solid var(--brand-xiyu-logo-active);
+  background: var(--brand-xiyu-logo-active);
+  color: var(--bg-card);
   box-shadow: none;
   font-weight: 600;
   transform: none;
@@ -60,29 +60,30 @@
 
 .workbench-empty-state .el-button.el-button--primary.is-text:hover,
 .workbench-empty-state .el-button.el-button--primary.is-text:focus {
-  border-color: rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.36);
-  background: rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.16);
-  color: var(--brand-xiyu-logo, #2E7659);
+  border-color: var(--brand-xiyu-logo-active);
+  background: var(--brand-xiyu-logo-active);
+  opacity: 0.9;
+  color: var(--bg-card);
   box-shadow: none;
   transform: none;
 }
 
 .state-error .empty-state-icon {
-  background: #FEE2E2;
-  color: #DC2626;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
 }
 
 .state-error .el-button.el-button--primary.is-text {
-  border-color: #DC2626;
-  background: #DC2626;
-  color: #FFFFFF;
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: var(--bg-card);
 }
 
 .state-error .el-button.el-button--primary.is-text:hover,
 .state-error .el-button.el-button--primary.is-text:focus {
-  border-color: #B91C1C;
-  background: #B91C1C;
-  color: #FFFFFF;
+  border-color: var(--color-danger-dark, #B91C1C);
+  background: var(--color-danger-dark, #B91C1C);
+  color: var(--bg-card);
 }
 .empty-state-title {
   margin: 0 0 4px;

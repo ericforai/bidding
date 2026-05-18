@@ -102,7 +102,7 @@ const visibleProxy = computed({
 
 .stat-card,
 .panoramic-section {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--gray-200);
   border-radius: 16px;
   background: white;
 }
@@ -114,7 +114,7 @@ const visibleProxy = computed({
 .stat-label,
 .cat-info,
 .h-item-date {
-  color: #64748b;
+  color: var(--text-slate);
   font-size: 12px;
 }
 
@@ -154,7 +154,7 @@ const visibleProxy = computed({
 .cat-progress-bg {
   height: 8px;
   border-radius: 999px;
-  background: #e2e8f0;
+  background: var(--gray-200);
   overflow: hidden;
   margin-top: 8px;
 }
@@ -165,7 +165,7 @@ const visibleProxy = computed({
 }
 
 .history-item-card {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--gray-200);
   border-radius: 14px;
   padding: 14px;
   background: #f8fafc;
@@ -181,7 +181,7 @@ const visibleProxy = computed({
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #475569;
+  color: var(--sidebar-text-secondary);
   font-size: 12px;
 }
 

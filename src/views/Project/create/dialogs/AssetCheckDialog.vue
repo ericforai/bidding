@@ -117,7 +117,7 @@ function handleCancel() {
   border-bottom: 1px solid #eee;
 }
 
-.site-name { font-size: 18px; font-weight: 600; color: #303133; }
+.site-name { font-size: 18px; font-weight: 600; color: var(--gray-750); }
 
 .check-items { margin-bottom: 20px; }
 
@@ -131,5 +131,5 @@ function handleCancel() {
 
 .check-item .icon-success { color: #67c23a; font-size: 22px; }
 .check-item .icon-error { color: #f56c6c; font-size: 22px; }
-.check-item .icon-user { color: #909399; font-size: 20px; }
+.check-item .icon-user { color: var(--text-muted); font-size: 20px; }
 </style>

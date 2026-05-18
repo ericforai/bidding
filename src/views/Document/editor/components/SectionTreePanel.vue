@@ -129,7 +129,7 @@ defineExpose({ sectionTreeRef })
 }
 
 .tree-node-content:hover {
-  background: #f1f5f9;
+  background: var(--gray-50);
 }
 
 .node-icon {
@@ -158,7 +158,7 @@ defineExpose({ sectionTreeRef })
 
 .node-more-icon:hover {
   background: #e5e7eb;
-  color: #0369a1;
+  color: var(--accent-blue);
 }
 
 :deep(.el-radio.is-bordered) {
@@ -168,11 +168,11 @@ defineExpose({ sectionTreeRef })
 }
 
 :deep(.el-radio.is-bordered:hover) {
-  border-color: #94a3b8;
+  border-color: var(--gray-400);
 }
 
 :deep(.el-radio.is-bordered.is-checked) {
-  border-color: #0369a1;
+  border-color: var(--accent-blue);
   background: #f0f9ff;
 }
 

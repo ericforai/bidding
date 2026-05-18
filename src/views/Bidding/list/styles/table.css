@@ -70,7 +70,7 @@
 
 .budget-cell {
   font-weight: 650;
-  color: #334155;
+  color: var(--sidebar-text);
 }
 
 .table-actions {
@@ -99,7 +99,7 @@
 }
 
 .table-container .el-scrollbar__bar.is-horizontal .el-scrollbar__thumb {
-  background-color: #94a3b8;
+  background-color: var(--gray-400);
 }
 
 .table-container .el-table__fixed-right::before {

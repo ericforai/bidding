@@ -74,6 +74,6 @@ const handleRemove = (index) => emit('remove', index)
 .title {
   font-size: 13px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
 }
 </style>

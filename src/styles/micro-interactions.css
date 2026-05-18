@@ -132,14 +132,14 @@ body, .text-body, .el-main, .el-card__body {
 
 /* Primary button */
 .el-button--primary {
-  background-color: var(--brand-xiyu-logo, var(--brand-xiyu-logo)) !important;
+  background-color: var(--brand-xiyu-logo) !important;
   border: none;
   box-shadow: 0 4px 12px var(--brand-xiyu-logo-shadow, rgba(46, 118, 89, 0.24));
-  --el-button-bg-color: var(--brand-xiyu-logo, var(--brand-xiyu-logo)) !important;
-  --el-button-border-color: var(--brand-xiyu-logo, var(--brand-xiyu-logo)) !important;
+  --el-button-bg-color: var(--brand-xiyu-logo) !important;
+  --el-button-border-color: var(--brand-xiyu-logo) !important;
   --el-button-text-color: var(--bg-card) !important;
-  --el-button-hover-bg-color: var(--brand-xiyu-logo-hover, var(--brand-xiyu-logo-hover)) !important;
-  --el-button-hover-border-color: var(--brand-xiyu-logo-hover, var(--brand-xiyu-logo-hover)) !important;
+  --el-button-hover-bg-color: var(--brand-xiyu-logo-hover) !important;
+  --el-button-hover-border-color: var(--brand-xiyu-logo-hover) !important;
   --el-button-hover-text-color: var(--bg-card) !important;
 }
 
@@ -153,7 +153,7 @@ body, .text-body, .el-main, .el-card__body {
 }
 
 .el-button--primary:hover {
-  background-color: var(--brand-xiyu-logo-hover, var(--brand-xiyu-logo-hover));
+  background-color: var(--brand-xiyu-logo-hover);
   color: var(--bg-card);
   box-shadow: var(--elevation-2);
   transform: translateY(-1px);
@@ -166,7 +166,7 @@ body, .text-body, .el-main, .el-card__body {
 
 /* Default button */
 .el-button--default:hover {
-  background: #F1F5F9;
+  background: var(--gray-50);
   border-color: #CBD5E1;
   transform: translateY(-1px);
 }
@@ -177,14 +177,14 @@ body, .text-body, .el-main, .el-card__body {
 
 /* Danger button */
 .el-button--danger:hover {
-  background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
+  background: linear-gradient(135deg, var(--color-danger) 0%, var(--color-danger) 100%);
   border-color: transparent;
   box-shadow: var(--elevation-2);
 }
 
 /* Success button */
 .el-button--success:hover {
-  background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+  background: linear-gradient(135deg, var(--color-success-dark) 0%, var(--color-success) 100%);
   border-color: transparent;
   box-shadow: var(--elevation-2);
 }
@@ -258,7 +258,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-input .el-input__wrapper:hover {
-  border-color: #94A3B8;
+  border-color: var(--gray-400);
   box-shadow: var(--elevation-1);
 }
 
@@ -276,14 +276,14 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-input .el-input__inner::placeholder {
-  color: #94A3B8;
+  color: var(--gray-400);
   font-weight: 400;
 }
 
 /* Clear button in input */
 .el-input__clear {
   transition: all var(--transition-fast);
-  color: #94A3B8;
+  color: var(--gray-400);
 }
 
 .el-input__clear:hover {
@@ -294,7 +294,7 @@ button[class*="icon"]:not(.el-button),
 /* Password toggle */
 .el-input__password {
   transition: all var(--transition-fast);
-  color: #94A3B8;
+  color: var(--gray-400);
   cursor: pointer;
 }
 
@@ -310,7 +310,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-select:hover .el-input__wrapper {
-  border-color: #94A3B8;
+  border-color: var(--gray-400);
 }
 
 /* Select dropdown options */
@@ -322,7 +322,7 @@ button[class*="icon"]:not(.el-button),
 
 .el-select-dropdown__item.hover,
 .el-select-dropdown__item:hover {
-  background: #F1F5F9;
+  background: var(--gray-50);
 }
 
 .el-select-dropdown__item.selected {
@@ -431,7 +431,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-table th.el-table__cell {
-  background: #F1F5F9;
+  background: var(--gray-50);
   color: var(--sidebar-text-secondary);
   font-weight: 600;
   text-transform: uppercase;
@@ -465,24 +465,24 @@ button[class*="icon"]:not(.el-button),
 
 .el-tag--success {
   background: #D1FAE5;
-  color: #059669;
+  color: var(--color-success-dark);
   border-color: transparent;
 }
 
 .el-tag--warning {
-  background: #FEF3C7;
+  background: var(--color-warning-bg);
   color: #D97706;
   border-color: transparent;
 }
 
 .el-tag--danger {
-  background: #FEE2E2;
-  color: #DC2626;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
   border-color: transparent;
 }
 
 .el-tag--info {
-  background: #F1F5F9;
+  background: var(--gray-50);
   color: var(--text-slate);
   border-color: transparent;
 }
@@ -529,12 +529,12 @@ button[class*="icon"]:not(.el-button),
 /* Close button */
 .el-dialog__close {
   transition: all var(--transition-fast);
-  color: #94A3B8;
+  color: var(--gray-400);
 }
 
 .el-dialog__close:hover {
   color: var(--text-slate);
-  background: #F1F5F9;
+  background: var(--gray-50);
   border-radius: 6px;
 }
 
@@ -553,12 +553,12 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-message--warning {
-  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  background: linear-gradient(135deg, var(--color-warning-bg) 0%, var(--color-warning-light) 100%);
   color: #92400E;
 }
 
 .el-message--error {
-  background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+  background: linear-gradient(135deg, var(--color-danger-bg) 0%, #FECACA 100%);
   color: #991B1B;
 }
 
@@ -591,7 +591,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-pagination button:hover {
-  background: #F1F5F9;
+  background: var(--gray-50);
   transform: translateY(-1px);
 }
 
@@ -606,14 +606,14 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-pagination .el-pager li:hover {
-  background: #F1F5F9;
-  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  background: var(--gray-50);
+  color: var(--brand-xiyu-logo);
   transform: translateY(-1px);
 }
 
 .el-pagination .el-pager li.active,
 .el-pagination .el-pager li.is-active {
-  background: linear-gradient(135deg, var(--brand-xiyu-logo, var(--brand-xiyu-logo)) 0%, var(--brand-xiyu-logo-hover, var(--brand-xiyu-logo-hover)) 100%);
+  background: linear-gradient(135deg, var(--brand-xiyu-logo) 0%, var(--brand-xiyu-logo-hover) 100%);
   color: var(--bg-card);
   box-shadow: 0 4px 10px var(--brand-xiyu-logo-shadow, rgba(46, 118, 89, 0.24));
 }
@@ -626,7 +626,7 @@ button[class*="icon"]:not(.el-button),
 
 .el-tooltip__popper.is-dark {
   background: #1E293B;
-  color: #F1F5F9;
+  color: var(--gray-50);
 }
 
 /* ==================== Form Item Spacing ==================== */
@@ -678,7 +678,7 @@ button[class*="icon"]:not(.el-button),
 /* ==================== Slider ==================== */
 
 .el-slider__runway {
-  background: #E2E8F0;
+  background: var(--gray-200);
   border-radius: 4px;
 }
 
@@ -707,7 +707,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-dropdown-menu__item:hover {
-  background: #F1F5F9;
+  background: var(--gray-50);
 }
 
 /* ==================== Tabs ==================== */
@@ -764,7 +764,7 @@ button[class*="icon"]:not(.el-button),
 /* ==================== Progress Bar ==================== */
 
 .el-progress-bar__outer {
-  background: #E2E8F0;
+  background: var(--gray-200);
   border-radius: 12px;
 }
 
@@ -783,7 +783,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-calendar-table td:hover .el-calendar-day {
-  background: #F1F5F9;
+  background: var(--gray-50);
   border-radius: 8px;
 }
 
@@ -797,7 +797,7 @@ button[class*="icon"]:not(.el-button),
 
 .el-alert--success {
   background: #F0FDF4;
-  border-left-color: #059669;
+  border-left-color: var(--color-success-dark);
 }
 
 .el-alert--warning {
@@ -807,7 +807,7 @@ button[class*="icon"]:not(.el-button),
 
 .el-alert--error {
   background: #FEF2F2;
-  border-left-color: #DC2626;
+  border-left-color: var(--color-danger);
 }
 
 .el-alert--info {
@@ -856,7 +856,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-tree-node__content:hover {
-  background: #F1F5F9;
+  background: var(--gray-50);
 }
 
 /* ==================== Transfer ==================== */
@@ -920,7 +920,7 @@ button[class*="icon"]:not(.el-button),
 /* ==================== Skeleton Loading ==================== */
 
 .el-skeleton {
-  background: #F1F5F9;
+  background: var(--gray-50);
   border-radius: 6px;
 }
 
@@ -1018,7 +1018,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-anchor__item:hover {
-  background: #F1F5F9;
+  background: var(--gray-50);
 }
 
 /* ==================== Scrollbar ==================== */
@@ -1030,7 +1030,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 ::-webkit-scrollbar-track {
-  background: #F1F5F9;
+  background: var(--gray-50);
   border-radius: 4px;
 }
 
@@ -1041,7 +1041,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: var(--gray-400);
 }
 
 /* ==================== Selection ==================== */

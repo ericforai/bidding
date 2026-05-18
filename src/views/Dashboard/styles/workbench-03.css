@@ -24,15 +24,15 @@
 }
 
 .activity-dot.type-success {
-  background: #10B981;
+  background: var(--color-success);
 }
 
 .activity-dot.type-warning {
-  background: #F59E0B;
+  background: var(--color-warning);
 }
 
 .activity-dot.type-info {
-  background: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  background: var(--brand-xiyu-logo);
 }
 
 .activity-content {
@@ -41,19 +41,19 @@
 
 .activity-text {
   font-size: 13px;
-  color: #374151;
+  color: var(--text-primary-ui);
   margin-bottom: 2px;
   line-height: 1.5;
 }
 
 .activity-time {
   font-size: 12px;
-  color: #9CA3AF;
+  color: var(--text-muted);
 }
 
 /* ==================== 角色化横幅样式 ==================== */
 .banner-admin {
-  background: linear-gradient(135deg, var(--brand-xiyu-logo) 0%, #18563E 100%);
+  background: linear-gradient(135deg, var(--brand-xiyu-logo) 0%, var(--brand-xiyu-logo-active) 100%);
 }
 
 .banner-actions .el-button {
@@ -71,13 +71,13 @@
 
 .banner-admin .banner-actions .el-button--primary {
   background: var(--bg-card);
-  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  color: var(--brand-xiyu-logo);
   border-color: var(--bg-card);
 }
 
 .welcome-banner .banner-actions .el-button--primary .banner-action-label,
 .welcome-banner .banner-actions .el-button--primary .el-icon {
-  color: var(--brand-xiyu-logo-active, #18563E) !important;
+  color: var(--bg-card) !important;
 }
 
 /* ==================== 团队绩效卡片 ==================== */
@@ -90,7 +90,7 @@
 
 .team-performance-item {
   padding: 12px;
-  background: #F9FAFB;
+  background: var(--bg-subtle);
   border-radius: 8px;
 }
 
@@ -121,21 +121,21 @@
 .team-progress .progress-bar {
   flex: 1;
   height: 6px;
-  background: #E5E7EB;
+  background: var(--gray-100);
   border-radius: 3px;
   overflow: hidden;
 }
 
 .team-progress .progress-fill {
   height: 100%;
-  background: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  background: var(--brand-xiyu-logo);
   transition: width 0.3s ease;
 }
 
 .team-progress .progress-label {
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  color: var(--text-primary-ui);
   min-width: 36px;
 }
 
@@ -162,7 +162,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: #F9FAFB;
+  background: var(--bg-subtle);
   border-radius: 8px;
 }
 
@@ -176,9 +176,9 @@
   color: var(--bg-card);
 }
 
-.approval-icon.type-budget { background: #3B82F6; }
-.approval-icon.type-project { background: #10B981; }
-.approval-icon.type-hr { background: #F59E0B; }
+.approval-icon.type-budget { background: var(--brand-primary); }
+.approval-icon.type-project { background: var(--color-success); }
+.approval-icon.type-hr { background: var(--color-warning); }
 
 .approval-content {
   flex: 1;
@@ -215,16 +215,16 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: #F9FAFB;
+  background: var(--bg-subtle);
   border-radius: 8px;
-  border-left: 3px solid #E5E7EB;
+  border-left: 3px solid var(--gray-100);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .tender-card:hover {
-  background: #F3F4F6;
-  border-left-color: #3B82F6;
+  background: var(--gray-50);
+  border-left-color: var(--brand-primary);
 }
 
 .tender-score {
@@ -240,8 +240,8 @@
   flex-shrink: 0;
 }
 
-.tender-score.score-high { background: linear-gradient(135deg, #10B981 0%, #059669 100%); }
-.tender-score.score-medium { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); }
+.tender-score.score-high { background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%); }
+.tender-score.score-medium { background: linear-gradient(135deg, var(--color-warning) 0%, var(--color-warning-light) 100%); }
 
 .tender-info {
   flex: 1;

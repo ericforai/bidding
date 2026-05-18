@@ -77,7 +77,7 @@ defineEmits(['confirm', 'confirm-batch', 'ignore', 'prefill', 'selection-change'
 
 .subtitle {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
   margin-top: 4px;
 }
 </style>

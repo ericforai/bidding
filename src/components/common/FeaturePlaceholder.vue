@@ -22,7 +22,7 @@ defineProps({
   border-radius: 12px;
   border: 1px dashed #cbd5e1;
   background: #f8fafc;
-  color: #475569;
+  color: var(--sidebar-text-secondary);
 }
 
 .feature-placeholder.compact {
@@ -47,6 +47,6 @@ defineProps({
 }
 
 .placeholder-hint {
-  color: #64748b;
+  color: var(--text-slate);
 }
 </style>

@@ -189,17 +189,17 @@ function formatPaymentInfo(row) {
 
 .metric-label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--gray-650);
 }
 
 .metric-value {
   font-size: 18px;
   font-weight: 600;
-  color: #111827;
+  color: var(--gray-950);
 }
 
 .metric-value.success {
-  color: #059669;
+  color: var(--color-success-dark);
 }
 
 .metric-value.warning {

@@ -74,7 +74,7 @@ defineEmits(['sync', 'fetch', 'send-all-reminders', 'show-report'])
 
 .overview-card p {
   min-height: 40px;
-  color: #606266;
+  color: var(--text-secondary-ui);
   font-size: 13px;
 }
 
@@ -85,7 +85,7 @@ defineEmits(['sync', 'fetch', 'send-all-reminders', 'show-report'])
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--bg-card);
   font-size: 20px;
   margin-bottom: 12px;
 }
@@ -98,6 +98,6 @@ defineEmits(['sync', 'fetch', 'send-all-reminders', 'show-report'])
 .foot {
   margin-top: 10px;
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
 }
 </style>

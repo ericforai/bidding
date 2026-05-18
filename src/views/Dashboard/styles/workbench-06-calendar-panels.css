@@ -19,7 +19,7 @@
 
 .calendar-panel-eyebrow {
   font-size: 11px;
-  color: #94A3B8;
+  color: var(--gray-400);
   margin-bottom: 2px;
 }
 
@@ -60,7 +60,7 @@
 
 .selected-event-card.priority-warning,
 .upcoming-event-item.priority-warning {
-  border-color: #FDE68A;
+  border-color: var(--color-warning-light);
   background: linear-gradient(180deg, #FFFDF5 0%, #FFFBEB 100%);
 }
 

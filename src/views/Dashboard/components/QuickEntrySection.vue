@@ -47,7 +47,7 @@ defineEmits(['handle-todos'])
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .quick-entry-grid {
@@ -61,9 +61,9 @@ defineEmits(['handle-todos'])
   flex-direction: column;
   align-items: center;
   padding: 20px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 8px;
-  border: 1px solid #e4e7ed;
+  border: 1px solid var(--gray-250);
   cursor: pointer;
   transition: box-shadow 0.2s;
 }
@@ -76,12 +76,12 @@ defineEmits(['handle-todos'])
   margin-top: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .entry-desc {
   margin-top: 4px;
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
 }
 </style>

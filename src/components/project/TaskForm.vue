@@ -246,12 +246,12 @@ defineExpose({ submit, validate })
 }
 
 .assignee-option small {
-  color: #909399;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
 .attachment-tip {
-  color: #909399;
+  color: var(--text-muted);
   font-size: 12px;
   line-height: 1.4;
 }

@@ -113,7 +113,7 @@ function getApprovalStatusText(status) {
 
 .approval-info-item .label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--gray-650);
 }
 
 .approval-info-item .approver {

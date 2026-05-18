@@ -114,10 +114,10 @@ const handleShare = (event, project) => {
 }
 
 const defaultProgressColor = (progress) => {
-  if (progress >= 80) return '#059669'
+  if (progress >= 80) return 'var(--color-success-dark)'
   if (progress >= 50) return '#3B82F6'
   if (progress >= 20) return '#F59E0B'
-  return '#EF4444'
+  return 'var(--color-danger)'
 }
 
 const defaultStatusType = (status) => ({

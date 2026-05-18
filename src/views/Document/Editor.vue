@@ -283,7 +283,7 @@ watch(() => route.params.id, () => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f5f7fa;
+  background-color: var(--bg-subtle);
 }
 
 .editor-container {

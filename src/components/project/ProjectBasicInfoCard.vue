@@ -70,7 +70,7 @@ function getProgressStatus(progress) {
 .progress-section {
   margin-top: 24px;
   padding: 16px;
-  background: #f5f7fa;
+  background: var(--bg-subtle);
   border-radius: 8px;
 }
 
@@ -82,7 +82,7 @@ function getProgressStatus(progress) {
 
 .progress-label {
   font-size: 14px;
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 
 .progress-value {

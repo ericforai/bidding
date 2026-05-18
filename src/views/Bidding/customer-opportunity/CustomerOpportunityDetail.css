@@ -18,7 +18,7 @@
 .insight-section,
 .api-empty-card {
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--gray-200);
   border-radius: 20px;
   padding: 20px;
 }
@@ -121,7 +121,7 @@
 }
 
 .prediction-card {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--gray-200);
   border-radius: 16px;
   padding: 16px;
   background: #f8fafc;
@@ -218,7 +218,7 @@
 }
 
 .s-card {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--gray-200);
   border-radius: 16px;
   padding: 16px;
   display: flex;

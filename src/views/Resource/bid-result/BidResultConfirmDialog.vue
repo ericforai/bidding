@@ -47,7 +47,7 @@ defineEmits(['add-competitor', 'remove-competitor', 'close', 'submit'])
   align-items: center;
   gap: 10px;
   margin-bottom: 16px;
-  color: #606266;
+  color: var(--text-secondary-ui);
   font-size: 13px;
 }
 </style>

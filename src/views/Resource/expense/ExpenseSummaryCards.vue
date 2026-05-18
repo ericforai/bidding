@@ -61,15 +61,15 @@ defineProps({
 .stat-item {
   border-radius: 12px;
   padding: 18px 16px;
-  color: #fff;
+  color: var(--bg-card);
   text-align: center;
 }
 
 .primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
 .warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
-.success { background: linear-gradient(135deg, #10b981, #059669); }
-.neutral { background: linear-gradient(135deg, #64748b, #475569); }
-.danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.success { background: linear-gradient(135deg, var(--color-success), var(--color-success-dark)); }
+.neutral { background: linear-gradient(135deg, var(--text-slate), var(--sidebar-text-secondary)); }
+.danger { background: linear-gradient(135deg, var(--color-danger), var(--color-danger)); }
 .accent { background: linear-gradient(135deg, #0f766e, #115e59); }
 
 .stat-value {

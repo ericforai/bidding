@@ -64,7 +64,7 @@ defineEmits(['export', 'reset', 'search', 'upload'])
 
 .page-title {
   margin: 0;
-  color: #303133;
+  color: var(--gray-750);
   font-size: 20px;
   font-weight: 600;
 }

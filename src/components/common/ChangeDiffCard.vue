@@ -43,7 +43,7 @@ const formatValue = (v) => {
   border: 1px solid var(--border-color, #f1f5f9);
   border-radius: 8px;
   padding: 12px 16px;
-  background: #ffffff;
+  background: var(--bg-card);
   margin-top: 12px;
 }
 
@@ -59,13 +59,13 @@ const formatValue = (v) => {
 }
 
 .change-diff-before {
-  color: #ef4444;
+  color: var(--color-danger);
   text-decoration: line-through;
   word-break: break-all;
 }
 
 .change-diff-after {
-  color: #2E7659;
+  color: var(--brand-xiyu-logo);
   font-weight: 500;
   word-break: break-all;
 }

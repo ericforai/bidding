@@ -27,7 +27,7 @@
   padding: 10px 12px;
   border-radius: 12px;
   background: linear-gradient(180deg, #FBFDFF 0%, #F3F7FF 100%);
-  border: 1px solid #E2E8F0;
+  border: 1px solid var(--gray-200);
   box-shadow: none;
 }
 
@@ -100,7 +100,7 @@
 
 .filter-hint {
   font-size: 12px;
-  color: #94A3B8;
+  color: var(--gray-400);
 }
 
 .calendar-filter-row {
@@ -127,13 +127,13 @@
 
 .calendar-filter-chip:hover,
 .calendar-filter-chip.active {
-  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  color: var(--brand-xiyu-logo);
   border-color: rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.28);
   background: rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.1);
 }
 
 .dot-all {
-  background: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  background: var(--brand-xiyu-logo);
 }
 
 .dot-urgent {
@@ -195,7 +195,7 @@
 
 .calendar-day-cell.calendar-day-crowded {
   background: #FFFDF5;
-  border: 1px solid #FDE68A;
+  border: 1px solid var(--color-warning-light);
 }
 
 .calendar-day-number {
@@ -208,7 +208,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  background: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  background: var(--brand-xiyu-logo);
   color: var(--bg-card);
   font-weight: 700;
 }
@@ -235,19 +235,19 @@
 .calendar-event-dot.event-deadline,
 .legend-dot.event-deadline,
 .chip-dot.dot-deadline {
-  background: #EF4444;
+  background: var(--color-danger);
 }
 
 .calendar-event-dot.event-bid,
 .legend-dot.event-bid,
 .chip-dot.dot-bid {
-  background: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  background: var(--brand-xiyu-logo);
 }
 
 .calendar-event-dot.event-opening,
 .legend-dot.event-opening,
 .chip-dot.dot-opening {
-  background: #10B981;
+  background: var(--color-success);
 }
 
 .calendar-event-dot.event-review,
@@ -272,7 +272,7 @@
   justify-content: center;
   padding: 0 5px;
   border-radius: 999px;
-  background: #E2E8F0;
+  background: var(--gray-200);
   color: var(--sidebar-text);
   font-size: 10px;
   font-weight: 600;

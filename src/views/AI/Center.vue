@@ -388,13 +388,13 @@ export default {
 }
 
 .header-actions .el-button--primary {
-  background: linear-gradient(135deg, var(--brand-xiyu-logo, var(--brand-xiyu-logo)), var(--brand-xiyu-logo-hover, var(--brand-xiyu-logo-hover)));
+  background: linear-gradient(135deg, var(--brand-xiyu-logo), var(--brand-xiyu-logo-hover));
   border: none;
   box-shadow: 0 2px 8px var(--brand-xiyu-logo-shadow, rgba(46, 118, 89, 0.24));
 }
 
 .header-actions .el-button--primary:hover {
-  background: linear-gradient(135deg, #367F61, var(--brand-xiyu-logo-active, var(--brand-xiyu-logo-active)));
+  background: linear-gradient(135deg, #367F61, var(--brand-xiyu-logo-active));
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(46, 118, 89, 0.3);
 }
@@ -409,7 +409,7 @@ export default {
 }
 
 .header-actions .el-button--default:hover {
-  border-color: #94a3b8;
+  border-color: var(--gray-400);
   color: #1e293b;
   background: #f8fafc;
 }

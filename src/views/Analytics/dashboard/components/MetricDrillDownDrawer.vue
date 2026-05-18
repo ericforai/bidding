@@ -200,10 +200,10 @@ watch(visible, (val) => {
   padding: 14px 16px;
   border-radius: 12px;
   border: 1px solid #E5E7EB;
-  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  background: linear-gradient(180deg, var(--bg-card) 0%, #F8FAFC 100%);
 }
 
-.summary-label { font-size: 12px; color: #64748B; }
+.summary-label { font-size: 12px; color: var(--text-slate); }
 .summary-value { font-size: 20px; font-weight: 700; color: #0F172A; }
 
 .metric-drawer-pagination {

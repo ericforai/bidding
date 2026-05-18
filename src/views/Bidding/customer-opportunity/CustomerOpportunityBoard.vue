@@ -48,7 +48,7 @@ defineProps({
   background: white;
   padding: 24px;
   border-radius: 16px;
-  border: 1px solid #f1f5f9;
+  border: 1px solid var(--gray-50);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
@@ -75,9 +75,9 @@ defineProps({
   gap: 2px;
 }
 
-.card-trend.up { color: #10b981; }
+.card-trend.up { color: var(--color-success); }
 .card-trend.down { color: #f43f5e; }
-.card-trend.neutral { color: #64748b; }
+.card-trend.neutral { color: var(--text-slate); }
 
 .spark-box {
   height: 32px;
@@ -90,7 +90,7 @@ defineProps({
   height: 4px;
   width: 100%;
   border-radius: 2px;
-  background: #f1f5f9;
+  background: var(--gray-50);
   position: relative;
   overflow: hidden;
 }
@@ -106,7 +106,7 @@ defineProps({
   animation: spark-slide 2s ease-in-out infinite alternate;
 }
 
-.spark-line.success::after { background: #10b981; }
+.spark-line.success::after { background: var(--color-success); }
 .spark-line.danger::after { background: #f43f5e; }
 .spark-line.warning::after { background: #f59e0b; }
 .spark-line.info::after { background: #3b82f6; }
@@ -136,7 +136,7 @@ defineProps({
 
 .card-label span {
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-slate);
 }
 
 .card-value {
@@ -149,7 +149,7 @@ defineProps({
 
 .card-note {
   margin: 0;
-  color: #64748b;
+  color: var(--text-slate);
   font-size: 13px;
 }
 </style>

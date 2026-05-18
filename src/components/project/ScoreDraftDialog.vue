@@ -298,14 +298,14 @@ function handleClose() {
 <style scoped>
 .score-draft-dialog { display: flex; flex-direction: column; gap: 16px; }
 .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
-.file-name { color: #606266; font-size: 13px; }
-.upload-tip { color: #909399; font-size: 12px; }
+.file-name { color: var(--text-secondary-ui); font-size: 13px; }
+.upload-tip { color: var(--text-muted); font-size: 12px; }
 .summary { display: flex; gap: 8px; }
 .rule-text { white-space: pre-wrap; line-height: 1.5; }
 
 .deliverables-text,
 .source-text {
-  color: #606266;
+  color: var(--text-secondary-ui);
   font-size: 13px;
   line-height: 1.5;
   white-space: pre-wrap;

@@ -146,6 +146,7 @@ run_frontend_quick() {
   run_root npm run check:version-sync
   run_root npm run check:front-data-boundaries
   run_root npm run check:doc-governance
+  run_root npm run check:token-governance
   run_root npm run test:unit
   run_root npm run build:api
 }

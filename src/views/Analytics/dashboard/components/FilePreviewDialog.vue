@@ -85,7 +85,7 @@ watch(visible, (val) => {
 
 .preview-placeholder {
   text-align: center;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .preview-placeholder .el-icon {
