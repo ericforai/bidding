@@ -54,19 +54,19 @@ a:focus:not(:focus-visible),
 
 /* 颜色对比度安全类 - 确保文本可读性 */
 .text-contrast-high {
-  color: var(--color-text-primary, #1a1a1a);
+  color: var(--color-text-primary, var(--text-primary));
 }
 
 .text-contrast-medium {
-  color: var(--color-text-secondary, #666);
+  color: var(--color-text-secondary, var(--text-secondary));
 }
 
 .text-contrast-low {
-  color: var(--color-text-tertiary, #999);
+  color: var(--color-text-tertiary, var(--text-tertiary));
 }
 
 .text-contrast-on-primary {
-  color: #ffffff;
+  color: var(--bg-card);
 }
 
 .text-contrast-on-dark {
@@ -75,13 +75,13 @@ a:focus:not(:focus-visible),
 
 /* 背景对比度类 */
 .bg-contrast-safe {
-  background-color: var(--color-bg-elevated, #ffffff);
-  color: var(--color-text-primary, #1a1a1a);
+  background-color: var(--color-bg-elevated, var(--bg-card));
+  color: var(--color-text-primary, var(--text-primary));
 }
 
 .bg-contrast-safe-dark {
   background-color: var(--color-primary, #1890ff);
-  color: #ffffff;
+  color: var(--bg-card);
 }
 
 /* 减少动画 - 尊重用户偏好 */

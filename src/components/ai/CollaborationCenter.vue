@@ -257,7 +257,7 @@ const getStatusText = (status) => {
 const getChangeTypeColor = (type) => {
   const colorMap = {
     edit: '#409eff',
-    comment: '#909399',
+    comment: 'var(--text-muted)',
     conflict: '#f56c6c'
   }
   return colorMap[type] || '#dcdfe6'
@@ -405,7 +405,7 @@ watch(
 .loading-state {
   padding: 48px 0;
   text-align: center;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .collaboration-tabs {
@@ -423,7 +423,7 @@ watch(
 }
 
 .readonly-owner {
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 
 :deep(.el-table .row-completed) {
@@ -439,7 +439,7 @@ watch(
   justify-content: space-around;
   padding: 20px;
   margin-top: 20px;
-  background: #f5f7fa;
+  background: var(--bg-subtle);
   border-radius: 6px;
 }
 
@@ -452,13 +452,13 @@ watch(
 
 .summary-label {
   font-size: 13px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .summary-value {
   font-size: 20px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .summary-value.success {
@@ -470,7 +470,7 @@ watch(
 }
 
 .summary-value.info {
-  color: #909399;
+  color: var(--text-muted);
 }
 
 /* 变更记录样式 */
@@ -486,7 +486,7 @@ watch(
 
 .change-item {
   padding: 12px;
-  background: #f5f7fa;
+  background: var(--bg-subtle);
   border-radius: 6px;
   transition: all 0.2s;
 }
@@ -512,12 +512,12 @@ watch(
 .author-name {
   font-size: 14px;
   font-weight: 500;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .change-description {
   font-size: 13px;
-  color: #606266;
+  color: var(--text-secondary-ui);
   line-height: 1.6;
   padding-left: 42px;
 }
@@ -525,7 +525,7 @@ watch(
 /* 时间线样式覆盖 */
 :deep(.el-timeline-item__timestamp) {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 :deep(.el-timeline-item__wrapper) {

@@ -6,7 +6,7 @@
   --xiyu-control-radius: var(--radius-sm, 4px);
   --xiyu-control-border: var(--gray-200, #D0D0D0);
   --xiyu-control-error-border: var(--color-danger, #DD2200);
-  --xiyu-control-bg: #FFFFFF;
+  --xiyu-control-bg: var(--bg-card);
 }
 
 .el-input,

@@ -311,9 +311,9 @@ watch(
   display: flex;
   align-items: center;
   padding: 16px;
-  background: #f5f7fa;
+  background: var(--bg-subtle);
   border-radius: var(--card-border-radius, 8px);
-  border: var(--card-border, 1px solid #E8E8E8);
+  border: var(--card-border, 1px solid var(--gray-100));
   transition: all 0.25s ease;
 }
 
@@ -333,16 +333,16 @@ watch(
 .metric-value {
   font-size: 24px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
   line-height: 1.2;
 }
 
 .metric-value.high {
-  color: var(--color-success, #00AA44);
+  color: var(--color-success, var(--color-success));
 }
 
 .metric-value.medium {
-  color: var(--color-warning, #FF8800);
+  color: var(--color-warning, var(--color-warning));
 }
 
 .metric-value.low {
@@ -350,12 +350,12 @@ watch(
 }
 
 .metric-value.profit {
-  color: var(--color-primary, #0066CC);
+  color: var(--color-primary, var(--brand-primary));
 }
 
 .metric-label {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
   margin-top: 4px;
 }
 
@@ -366,25 +366,25 @@ watch(
   background: #f0f9ff;
   border-radius: var(--card-border-radius, 8px);
   margin-bottom: 20px;
-  border-left: 4px solid var(--color-primary, #0066CC);
+  border-left: 4px solid var(--color-primary, var(--brand-primary));
 }
 
 .revenue-label {
   font-size: 14px;
-  color: #606266;
+  color: var(--text-secondary-ui);
   margin-right: 8px;
 }
 
 .revenue-value {
   font-size: 20px;
   font-weight: 600;
-  color: var(--color-primary, #0066CC);
+  color: var(--color-primary, var(--brand-primary));
   margin-right: 16px;
 }
 
 .revenue-ratio {
   font-size: 14px;
-  color: var(--color-success, #00AA44);
+  color: var(--color-success, var(--color-success));
   background: #f0f9ff;
   padding: 4px 12px;
   border-radius: 12px;
@@ -406,7 +406,7 @@ watch(
 .section-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
   margin-bottom: 12px;
   display: flex;
   align-items: center;
@@ -423,6 +423,6 @@ watch(
 }
 
 :deep(.el-table th) {
-  background-color: #f5f7fa;
+  background-color: var(--bg-subtle);
 }
 </style>

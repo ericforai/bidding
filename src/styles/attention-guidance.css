@@ -57,8 +57,8 @@
 
 /* Primary action in table - bigger and more visible */
 .el-table .btn-participate {
-  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--accent-blue) 0%, #0891b2 100%);
+  color: var(--bg-card);
   border: none;
   padding: 6px 16px;
   border-radius: 6px;
@@ -76,8 +76,8 @@
 
 /* Secondary action in table */
 .el-table .btn-view {
-  color: #0369A1;
-  background: #E0F2FE;
+  color: var(--accent-blue);
+  background: var(--accent-blue-light);
   border: none;
   padding: 6px 12px;
   border-radius: 6px;
@@ -108,19 +108,19 @@
 
 .ai-score-high {
   background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-  color: #fff;
+  color: var(--bg-card);
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
 .ai-score-medium {
   background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-  color: #fff;
+  color: var(--bg-card);
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
 }
 
 .ai-score-low {
-  background: linear-gradient(135deg, #64748B 0%, #475569 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--text-slate) 0%, var(--sidebar-text-secondary) 100%);
+  color: var(--bg-card);
 }
 
 /* Status badges - better visibility */
@@ -138,12 +138,12 @@
 
 .status-badge.status-new {
   background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-  color: #fff;
+  color: var(--bg-card);
 }
 
 .status-badge.status-urgent {
   background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
-  color: #fff;
+  color: var(--bg-card);
   animation: subtle-pulse 2s infinite;
 }
 
@@ -165,7 +165,7 @@
   gap: 4px;
   padding: 2px 8px;
   background: #EF4444;
-  color: #fff;
+  color: var(--bg-card);
   border-radius: 10px;
   font-size: 11px;
   font-weight: 600;
@@ -181,7 +181,7 @@
   height: 18px;
   padding: 0 6px;
   background: #EF4444;
-  color: #fff;
+  color: var(--bg-card);
   border-radius: 9px;
   font-size: 11px;
   font-weight: 700;
@@ -189,7 +189,7 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
-  border: 2px solid #fff;
+  border: 2px solid var(--bg-card);
 }
 
 /* ==================== Table Cell Improvements ==================== */
@@ -201,7 +201,7 @@
 
 .el-table .column-important .cell {
   font-weight: 600;
-  color: #0369A1;
+  color: var(--accent-blue);
 }
 
 /* Action column - fixed width for consistency */
@@ -218,8 +218,8 @@
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--accent-blue) 0%, #0891b2 100%);
+  color: var(--bg-card);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
@@ -248,7 +248,7 @@
 }
 
 .notification-banner.info {
-  background: linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%);
+  background: linear-gradient(135deg, var(--accent-blue-light) 0%, #BAE6FD 100%);
   border-left: 4px solid #0284C7;
 }
 
@@ -280,7 +280,7 @@
 
 .notification-banner .banner-message {
   font-size: 13px;
-  color: #475569;
+  color: var(--sidebar-text-secondary);
 }
 
 .notification-banner .banner-action {
@@ -297,8 +297,8 @@
   width: 56px;
   height: 56px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--accent-blue) 0%, #0891b2 100%);
+  color: var(--bg-card);
   border: none;
   box-shadow: 0 4px 12px rgba(3, 105, 161, 0.4);
   cursor: pointer;
@@ -352,7 +352,7 @@
 
 .progress-with-status .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #0369A1 0%, #0891b2 100%);
+  background: linear-gradient(90deg, var(--accent-blue) 0%, #0891b2 100%);
   border-radius: 4px;
   transition: width 0.5s ease;
 }
@@ -361,7 +361,7 @@
   min-width: 40px;
   font-size: 13px;
   font-weight: 600;
-  color: #0369A1;
+  color: var(--accent-blue);
 }
 
 /* ==================== Click Hints ==================== */
@@ -421,7 +421,7 @@
   width: 8px;
   height: 8px;
   background: #10B981;
-  border: 2px solid #fff;
+  border: 2px solid var(--bg-card);
   border-radius: 50%;
   animation: pulse 2s infinite;
 }
@@ -436,8 +436,8 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #E0F2FE;
-  color: #0369A1;
+  background: var(--accent-blue-light);
+  color: var(--accent-blue);
   cursor: help;
   transition: all 0.2s ease;
   font-size: 12px;
@@ -461,7 +461,7 @@
   border-radius: 4px;
   font-family: monospace;
   font-size: 11px;
-  color: #64748B;
+  color: var(--text-slate);
 }
 
 /* ==================== Important Notices ==================== */
@@ -501,7 +501,7 @@
 
 .notice-box .notice-text {
   font-size: 13px;
-  color: #64748B;
+  color: var(--text-slate);
   line-height: 1.5;
 }
 
@@ -517,7 +517,7 @@
   position: absolute;
   inset: -2px;
   border-radius: inherit;
-  background: linear-gradient(45deg, #0369A1, #8B5CF6, #EC4899, #0369A1);
+  background: linear-gradient(45deg, var(--accent-blue), #8B5CF6, #EC4899, var(--accent-blue));
   background-size: 400% 400%;
   z-index: -1;
   opacity: 0;
@@ -551,7 +551,7 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   background: #F1F5F9 !important;
-  color: #475569 !important;
+  color: var(--sidebar-text-secondary) !important;
 }
 
 /* Important table rows */
@@ -560,7 +560,7 @@
 }
 
 .el-table .row-important:hover > td {
-  background: #E0F2FE !important;
+  background: var(--accent-blue-light) !important;
 }
 
 /* ==================== Action Button Group ==================== */
@@ -614,7 +614,7 @@
   height: 12px;
   border-radius: 50%;
   background: #E2E8F0;
-  border: 2px solid #fff;
+  border: 2px solid var(--bg-card);
   box-shadow: 0 0 0 2px #E2E8F0;
   transition: all 0.3s ease;
 }
@@ -625,18 +625,18 @@
 }
 
 .status-step.current .step-dot {
-  background: #0369A1;
+  background: var(--accent-blue);
   box-shadow: 0 0 0 4px rgba(3, 105, 161, 0.3);
   animation: pulse 2s infinite;
 }
 
 .status-step .step-label {
   font-size: 11px;
-  color: #64748B;
+  color: var(--text-slate);
 }
 
 .status-step.current .step-label {
-  color: #0369A1;
+  color: var(--accent-blue);
   font-weight: 600;
 }
 
@@ -695,7 +695,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   background: #F1F5F9;
-  color: #64748B;
+  color: var(--text-slate);
   border: 1px solid #E2E8F0;
 }
 
@@ -704,9 +704,9 @@
 }
 
 .filter-chip.active {
-  background: #0369A1;
-  color: #fff;
-  border-color: #0369A1;
+  background: var(--accent-blue);
+  color: var(--bg-card);
+  border-color: var(--accent-blue);
 }
 
 .filter-chip .chip-count {
@@ -798,7 +798,7 @@
 
 .error-state .error-message {
   font-size: 14px;
-  color: #64748B;
+  color: var(--text-slate);
   margin-bottom: 8px;
 }
 
@@ -827,7 +827,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--bg-card);
   font-size: 24px;
   animation: success-bounce 0.5s ease;
 }
@@ -874,7 +874,7 @@
   background: #F0F9FF;
   border-radius: 6px;
   font-size: 12px;
-  color: #0369A1;
+  color: var(--accent-blue);
 }
 
 .info-tip .tip-icon {
@@ -901,7 +901,7 @@
 .empty-state-with-action .empty-title {
   font-size: 18px;
   font-weight: 600;
-  color: #64748B;
+  color: var(--text-slate);
 }
 
 .empty-state-with-action .empty-description {
@@ -930,7 +930,7 @@
   width: 8px;
   height: 8px;
   background: #EF4444;
-  border: 2px solid #fff;
+  border: 2px solid var(--bg-card);
   border-radius: 50%;
   animation: pulse 2s infinite;
 }
@@ -1002,7 +1002,7 @@
 
 /* Text link actions - more visible */
 .link-action {
-  color: #0369A1;
+  color: var(--accent-blue);
   text-decoration: none;
   border-bottom: 1px dashed transparent;
   transition: all 0.2s ease;
@@ -1010,7 +1010,7 @@
 }
 
 .link-action:hover {
-  border-bottom-color: #0369A1;
+  border-bottom-color: var(--accent-blue);
 }
 
 /* ==================== Bulk Action Bar ==================== */
@@ -1021,8 +1021,8 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
-  color: #fff;
+  background: linear-gradient(135deg, #1E293B 0%, var(--sidebar-text) 100%);
+  color: var(--bg-card);
   padding: 16px 24px;
   display: flex;
   justify-content: space-between;
@@ -1062,13 +1062,13 @@
   transition: all 0.2s ease;
   background: transparent;
   border: 1px solid transparent;
-  color: #64748B;
+  color: var(--text-slate);
 }
 
 .inline-action:hover {
   background: #F1F5F9;
   border-color: #E2E8F0;
-  color: #0369A1;
+  color: var(--accent-blue);
 }
 
 .inline-action.action-danger:hover {
@@ -1097,7 +1097,7 @@
 
 .status-pill.inactive {
   background: #F1F5F9;
-  color: #64748B;
+  color: var(--text-slate);
 }
 
 .status-pill.pending {
@@ -1124,13 +1124,13 @@
   transition: all 0.2s ease;
   background: transparent;
   border: 1px solid transparent;
-  color: #64748B;
+  color: var(--text-slate);
 }
 
 .action-icon-btn:hover {
   background: #F1F5F9;
   border-color: #E2E8F0;
-  color: #0369A1;
+  color: var(--accent-blue);
   transform: scale(1.05);
 }
 
@@ -1157,17 +1157,17 @@
   transition: all 0.2s ease;
   background: transparent;
   border: 1px solid transparent;
-  color: #64748B;
+  color: var(--text-slate);
 }
 
 .quick-filter:hover {
-  background: #fff;
-  color: #0369A1;
+  background: var(--bg-card);
+  color: var(--accent-blue);
 }
 
 .quick-filter.active {
-  background: #fff;
-  color: #0369A1;
+  background: var(--bg-card);
+  color: var(--accent-blue);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
@@ -1187,7 +1187,7 @@
   transform: translateX(-50%) translateY(-4px);
   padding: 6px 10px;
   background: #1E293B;
-  color: #fff;
+  color: var(--bg-card);
   font-size: 12px;
   border-radius: 4px;
   white-space: nowrap;
@@ -1265,7 +1265,7 @@
 
 .count-display.count-zero {
   background: #F1F5F9;
-  color: #64748B;
+  color: var(--text-slate);
 }
 
 /* ==================== Progress Rings ==================== */
@@ -1323,14 +1323,14 @@
   inset: -3px;
   border-radius: inherit;
   border: 2px solid transparent;
-  background: linear-gradient(45deg, #0369A1, #8B5CF6, #EC4899, #0369A1);
+  background: linear-gradient(45deg, var(--accent-blue), #8B5CF6, #EC4899, var(--accent-blue));
   background-size: 400% 400%;
   animation: border-dance 3s linear infinite;
 }
 
 @keyframes border-dance {
   0% {
-    border-color: #0369A1;
+    border-color: var(--accent-blue);
   }
   25% {
     border-color: #8B5CF6;
@@ -1339,7 +1339,7 @@
     border-color: #EC4899;
   }
   75% {
-    border-color: #0369A1;
+    border-color: var(--accent-blue);
   }
   100% {
     border-color: #8B5CF6;

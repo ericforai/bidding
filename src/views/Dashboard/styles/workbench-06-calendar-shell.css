@@ -1,3 +1,4 @@
+@import '../../../styles/variables.css';
 /* ==================== 投标日历重构覆盖 ==================== */
 .calendar-card--hero {
   border-color: #D7E3F8;
@@ -61,7 +62,7 @@
 
 .summary-label {
   font-size: 10px;
-  color: #64748B;
+  color: var(--text-slate);
   letter-spacing: 0.05em;
   white-space: nowrap;
 }
@@ -80,7 +81,7 @@
   gap: 16px;
   padding: 12px 14px;
   border-radius: 14px;
-  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  background: linear-gradient(180deg, var(--bg-card) 0%, #F8FAFC 100%);
   border: 1px solid #E5E7EB;
 }
 
@@ -93,7 +94,7 @@
 
 .filter-eyebrow {
   font-size: 11px;
-  color: #64748B;
+  color: var(--text-slate);
   letter-spacing: 0.05em;
 }
 
@@ -117,8 +118,8 @@
   padding: 8px 11px;
   border: 1px solid #E5E7EB;
   border-radius: 999px;
-  background: #fff;
-  color: #475569;
+  background: var(--bg-card);
+  color: var(--sidebar-text-secondary);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -126,13 +127,13 @@
 
 .calendar-filter-chip:hover,
 .calendar-filter-chip.active {
-  color: var(--brand-xiyu-logo, #2E7659);
+  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
   border-color: rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.28);
   background: rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.1);
 }
 
 .dot-all {
-  background: var(--brand-xiyu-logo, #2E7659);
+  background: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
 }
 
 .dot-urgent {
@@ -207,8 +208,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  background: var(--brand-xiyu-logo, #2E7659);
-  color: #FFFFFF;
+  background: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  color: var(--bg-card);
   font-weight: 700;
 }
 
@@ -240,7 +241,7 @@
 .calendar-event-dot.event-bid,
 .legend-dot.event-bid,
 .chip-dot.dot-bid {
-  background: var(--brand-xiyu-logo, #2E7659);
+  background: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
 }
 
 .calendar-event-dot.event-opening,
@@ -272,7 +273,7 @@
   padding: 0 5px;
   border-radius: 999px;
   background: #E2E8F0;
-  color: #334155;
+  color: var(--sidebar-text);
   font-size: 10px;
   font-weight: 600;
 }
@@ -288,7 +289,7 @@
   flex-wrap: wrap;
   gap: 12px;
   padding: 12px 0 0;
-  color: #64748B;
+  color: var(--text-slate);
   font-size: 12px;
 }
 

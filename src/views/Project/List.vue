@@ -230,7 +230,7 @@ onMounted(async () => {
 .card-header .title {
   font-size: 16px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
 }
 
 .pagination {
@@ -240,18 +240,18 @@ onMounted(async () => {
 }
 
 .project-table { border: 1px solid #eef2f0; border-radius: 10px; overflow: hidden; }
-.project-table :deep(.el-table__header-wrapper th.el-table__cell) { height: 48px; background: #f7faf8; color: #334155; font-weight: 600; }
+.project-table :deep(.el-table__header-wrapper th.el-table__cell) { height: 48px; background: #f7faf8; color: var(--sidebar-text); font-weight: 600; }
 .project-table :deep(.el-table__cell) { padding: 14px 0; border-bottom-color: #edf2f0; vertical-align: middle; }
 .project-table :deep(.el-table__row:hover > td.el-table__cell) { background: #f8fbfa; }
 .project-name-cell { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .project-title-link { align-self: flex-start; justify-content: flex-start; } .project-title-link :deep(.el-link__inner) { white-space: normal; line-height: 1.45; text-align: left; font-weight: 600; color: #14796b; }
-.project-meta { display: inline-flex; align-items: center; gap: 6px; color: #64748b; font-size: 13px; line-height: 1.4; } .meta-label { padding: 1px 6px; border-radius: 4px; background: #eef2f6; color: #475569; font-size: 12px; } .deadline-text { color: #64748b; font-size: 13px; line-height: 1.4; }
+.project-meta { display: inline-flex; align-items: center; gap: 6px; color: var(--text-slate); font-size: 13px; line-height: 1.4; } .meta-label { padding: 1px 6px; border-radius: 4px; background: #eef2f6; color: var(--sidebar-text-secondary); font-size: 12px; } .deadline-text { color: var(--text-slate); font-size: 13px; line-height: 1.4; }
 .status-progress-cell, .owner-deadline-cell { display: flex; flex-direction: column; gap: 8px; }
-.project-progress :deep(.el-progress__text) { min-width: 28px; color: #475569; }
-.owner-name { color: #334155; font-weight: 500; line-height: 1.4; }
+.project-progress :deep(.el-progress__text) { min-width: 28px; color: var(--sidebar-text-secondary); }
+.owner-name { color: var(--sidebar-text); font-weight: 500; line-height: 1.4; }
 .table-actions { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .table-actions :deep(.table-action-button) { width: 30px; height: 30px; padding: 0; margin-left: 0; border-radius: 8px; background: #eef7f3; }
-.table-actions :deep(.table-action-button:hover) { background: #dcefe7; color: var(--brand-xiyu-logo-active, #1F553F); }
+.table-actions :deep(.table-action-button:hover) { background: #dcefe7; color: var(--brand-xiyu-logo-active, var(--brand-xiyu-logo-active)); }
 
 /* 移动端响应式样式 */
 @media (max-width: 768px) {
@@ -335,13 +335,13 @@ onMounted(async () => {
 }
 
 .card-header .el-button--primary {
-  background: linear-gradient(135deg, var(--brand-xiyu-logo, #2E7659), var(--brand-xiyu-logo-hover, #27674E));
+  background: linear-gradient(135deg, var(--brand-xiyu-logo, var(--brand-xiyu-logo)), var(--brand-xiyu-logo-hover, var(--brand-xiyu-logo-hover)));
   border: none;
   box-shadow: 0 2px 8px var(--brand-xiyu-logo-shadow, rgba(46, 118, 89, 0.24));
 }
 
 .card-header .el-button--primary:hover {
-  background: linear-gradient(135deg, #367F61, var(--brand-xiyu-logo-active, #1F553F));
+  background: linear-gradient(135deg, #367F61, var(--brand-xiyu-logo-active, var(--brand-xiyu-logo-active)));
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(46, 118, 89, 0.3);
 }
@@ -401,7 +401,7 @@ onMounted(async () => {
 .search-form :deep(.el-form-item__label) {
   font-size: 14px;
   font-weight: 500;
-  color: #475569;
+  color: var(--sidebar-text-secondary);
 }
 
 /* ==================== Table Link Enhancements ==================== */
@@ -428,27 +428,27 @@ onMounted(async () => {
 
 :deep(.el-tag--primary) {
   background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #ffffff;
+  color: var(--bg-card);
 }
 
 :deep(.el-tag--success) {
   background: linear-gradient(135deg, #10b981, #059669);
-  color: #ffffff;
+  color: var(--bg-card);
 }
 
 :deep(.el-tag--warning) {
   background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: #ffffff;
+  color: var(--bg-card);
 }
 
 :deep(.el-tag--danger) {
   background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: #ffffff;
+  color: var(--bg-card);
 }
 
 :deep(.el-tag--info) {
-  background: linear-gradient(135deg, #64748b, #475569);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--text-slate), var(--sidebar-text-secondary));
+  color: var(--bg-card);
 }
 
 /* ==================== Progress Bar Enhancement ==================== */
@@ -482,8 +482,8 @@ onMounted(async () => {
 }
 
 .pagination :deep(.el-pager li.is-active) {
-  background: linear-gradient(135deg, var(--brand-xiyu-logo, #2E7659), var(--brand-xiyu-logo-hover, #27674E));
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--brand-xiyu-logo, var(--brand-xiyu-logo)), var(--brand-xiyu-logo-hover, var(--brand-xiyu-logo-hover)));
+  color: var(--bg-card);
 }
 
 .pagination :deep(.btn-prev),
@@ -497,6 +497,6 @@ onMounted(async () => {
 .pagination :deep(.btn-prev:hover),
 .pagination :deep(.btn-next:hover) {
   background: #f1f5f9;
-  color: var(--brand-xiyu-logo, #2E7659);
+  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
 }
 </style>

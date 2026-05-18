@@ -366,7 +366,7 @@ const handleRefresh = () => {
 .section-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .filter-group {
@@ -389,7 +389,7 @@ const handleRefresh = () => {
   padding: 12px;
   background-color: #f4f4f5;
   border-radius: 8px;
-  color: #909399;
+  color: var(--text-muted);
   font-size: 14px;
 }
 
@@ -397,24 +397,24 @@ const handleRefresh = () => {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #606266;
+  color: var(--text-secondary-ui);
   font-size: 13px;
 }
 
 .history-item {
   padding: 12px;
-  background-color: #f5f7fa;
+  background-color: var(--bg-subtle);
   border-radius: 8px;
 }
 
 .history-title {
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
   margin-bottom: 4px;
 }
 
 .history-detail {
-  color: #606266;
+  color: var(--text-secondary-ui);
   font-size: 13px;
   margin-bottom: 8px;
 }
@@ -426,7 +426,7 @@ const handleRefresh = () => {
 
 :deep(.el-timeline-item__timestamp) {
   font-size: 13px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 :deep(.el-table) {

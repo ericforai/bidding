@@ -278,7 +278,7 @@ watch(
 
 .smart-assistant-drawer :deep(.el-drawer__body) {
   padding: 0;
-  background: #f5f7fa;
+  background: var(--bg-subtle);
 }
 
 .panel-container {
@@ -297,7 +297,7 @@ watch(
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: #f5f7fa;
+  background-color: var(--bg-subtle);
 }
 
 .panel-header {
@@ -306,7 +306,7 @@ watch(
   justify-content: space-between;
   padding: 16px 20px;
   background: white;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--gray-250);
   flex-shrink: 0;
 }
 
@@ -316,7 +316,7 @@ watch(
   gap: 8px;
   font-size: 16px;
   font-weight: 500;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .header-title .el-icon {
@@ -325,7 +325,7 @@ watch(
 
 .close-btn {
   font-size: 18px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .close-btn:hover {
@@ -376,7 +376,7 @@ watch(
 .group-title {
   font-size: 14px;
   font-weight: 500;
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 
 .feature-list {
@@ -429,13 +429,13 @@ watch(
 .feature-title {
   font-size: 14px;
   font-weight: 500;
-  color: #303133;
+  color: var(--gray-750);
   margin-bottom: 2px;
 }
 
 .feature-desc {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

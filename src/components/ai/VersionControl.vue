@@ -359,7 +359,7 @@ watch(
 .version-timeline {
   flex: 1;
   min-width: 400px;
-  border-right: 1px solid #e4e7ed;
+  border-right: 1px solid var(--gray-250);
   padding-right: 20px;
 }
 
@@ -377,7 +377,7 @@ watch(
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--gray-250);
 }
 
 .timeline-header h3,
@@ -385,7 +385,7 @@ watch(
 .detail-header h3 {
   margin: 0;
   font-size: 16px;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .version-list {
@@ -394,7 +394,7 @@ watch(
 
 .version-item {
   padding: 12px;
-  background: #f5f7fa;
+  background: var(--bg-subtle);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
@@ -426,7 +426,7 @@ watch(
 .version-number {
   font-weight: 600;
   font-size: 15px;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .version-author {
@@ -437,7 +437,7 @@ watch(
 
 .author-name {
   font-size: 13px;
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 
 .version-changes {
@@ -446,7 +446,7 @@ watch(
 
 .changes-title {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
   margin-bottom: 6px;
 }
 
@@ -454,7 +454,7 @@ watch(
   margin: 0;
   padding-left: 20px;
   font-size: 13px;
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 
 .changes-list li {
@@ -473,7 +473,7 @@ watch(
   gap: 20px;
   margin-bottom: 20px;
   padding: 16px;
-  background: #f5f7fa;
+  background: var(--bg-subtle);
   border-radius: 6px;
 }
 
@@ -485,7 +485,7 @@ watch(
 
 .selector-item label {
   font-size: 14px;
-  color: #606266;
+  color: var(--text-secondary-ui);
   min-width: 60px;
 }
 
@@ -496,7 +496,7 @@ watch(
 
 .compare-panel {
   flex: 1;
-  border: 1px solid #e4e7ed;
+  border: 1px solid var(--gray-250);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -544,7 +544,7 @@ watch(
 /* 版本详情样式 */
 .detail-content {
   padding: 16px;
-  background: #f5f7fa;
+  background: var(--bg-subtle);
   border-radius: 6px;
 }
 
@@ -552,7 +552,7 @@ watch(
   display: flex;
   align-items: center;
   padding: 10px 0;
-  border-bottom: 1px dashed #e4e7ed;
+  border-bottom: 1px dashed var(--gray-250);
 }
 
 .detail-item:last-child {
@@ -561,13 +561,13 @@ watch(
 
 .detail-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--text-muted);
   min-width: 80px;
 }
 
 .detail-value {
   font-size: 14px;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .detail-changes {
@@ -587,13 +587,13 @@ watch(
 .detail-changes-list li {
   padding: 6px 0;
   font-size: 13px;
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 
 /* 时间线样式覆盖 */
 :deep(.el-timeline-item__timestamp) {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 :deep(.el-timeline-item__wrapper) {
@@ -608,7 +608,7 @@ watch(
 
   .version-timeline {
     border-right: none;
-    border-bottom: 1px solid #e4e7ed;
+    border-bottom: 1px solid var(--gray-250);
     padding-right: 0;
     padding-bottom: 20px;
     min-width: 100%;

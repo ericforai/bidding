@@ -223,7 +223,7 @@ const getTaskCount = (code) => {
 }
 
 const getColumnHeaderStyle = (column) => {
-  const color = column?.color || '#909399'
+  const color = column?.color || 'var(--text-muted)'
   return {
     color,
     background: hexToSoftBackground(color)
@@ -232,7 +232,7 @@ const getColumnHeaderStyle = (column) => {
 
 const hexToSoftBackground = (hex) => {
   if (typeof hex !== 'string' || !/^#([\da-f]{3}|[\da-f]{6})$/i.test(hex)) {
-    return '#f5f7fa'
+    return 'var(--bg-subtle)'
   }
   let normalized = hex.replace('#', '')
   if (normalized.length === 3) {
@@ -385,7 +385,7 @@ const handleSubmitToDocument = async () => {
 .board-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .board-columns-container {
@@ -395,7 +395,7 @@ const handleSubmitToDocument = async () => {
 }
 
 .board-column {
-  background: #f5f7fa;
+  background: var(--bg-subtle);
   border-radius: 8px;
   overflow: hidden;
   display: flex;
@@ -467,7 +467,7 @@ const handleSubmitToDocument = async () => {
 }
 
 .more-icon {
-  color: #909399;
+  color: var(--text-muted);
   cursor: pointer;
   font-size: 16px;
 }
@@ -478,7 +478,7 @@ const handleSubmitToDocument = async () => {
 
 .task-name {
   font-size: 14px;
-  color: #303133;
+  color: var(--gray-750);
   margin-bottom: 8px;
   font-weight: 500;
   line-height: 1.4;
@@ -486,7 +486,7 @@ const handleSubmitToDocument = async () => {
 
 .task-desc {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
   margin-bottom: 12px;
   line-height: 1.4;
 }
@@ -495,7 +495,7 @@ const handleSubmitToDocument = async () => {
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .task-owner,
@@ -517,7 +517,7 @@ const handleSubmitToDocument = async () => {
 
 .deliverable-title {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
   margin-bottom: 8px;
 }
 

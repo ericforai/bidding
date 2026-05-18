@@ -287,7 +287,7 @@ export default {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: #f5f7fa;
+  background-color: var(--bg-subtle);
 }
 
 /* 顶部标题栏 */
@@ -296,15 +296,15 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  background: #fff;
-  border-bottom: 1px solid #e4e7ed;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--gray-250);
 }
 
 .page-title {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
 }
 
 .header-actions {
@@ -321,16 +321,16 @@ export default {
 
 /* Tab 样式 */
 .ai-tabs {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: var(--card-border-radius, 8px);
   box-shadow: var(--card-shadow, 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04));
-  border: var(--card-border, 1px solid #E8E8E8);
+  border: var(--card-border, 1px solid var(--gray-100));
 }
 
 .ai-tabs :deep(.el-tabs__header) {
   margin: 0;
   padding: 0 24px;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid var(--gray-250);
 }
 
 .ai-tabs :deep(.el-tabs__nav-wrap) {
@@ -388,13 +388,13 @@ export default {
 }
 
 .header-actions .el-button--primary {
-  background: linear-gradient(135deg, var(--brand-xiyu-logo, #2E7659), var(--brand-xiyu-logo-hover, #27674E));
+  background: linear-gradient(135deg, var(--brand-xiyu-logo, var(--brand-xiyu-logo)), var(--brand-xiyu-logo-hover, var(--brand-xiyu-logo-hover)));
   border: none;
   box-shadow: 0 2px 8px var(--brand-xiyu-logo-shadow, rgba(46, 118, 89, 0.24));
 }
 
 .header-actions .el-button--primary:hover {
-  background: linear-gradient(135deg, #367F61, var(--brand-xiyu-logo-active, #1F553F));
+  background: linear-gradient(135deg, #367F61, var(--brand-xiyu-logo-active, var(--brand-xiyu-logo-active)));
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(46, 118, 89, 0.3);
 }
@@ -405,7 +405,7 @@ export default {
 
 .header-actions .el-button--default {
   border: 1.5px solid #e5e7eb;
-  color: #64748b;
+  color: var(--text-slate);
 }
 
 .header-actions .el-button--default:hover {
@@ -420,23 +420,23 @@ export default {
   height: 42px;
   font-size: 15px;
   font-weight: 500;
-  color: #64748b;
+  color: var(--text-slate);
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 8px 8px 0 0;
 }
 
 .ai-tabs :deep(.el-tabs__item:hover) {
-  color: #0369a1;
+  color: var(--accent-blue);
   background: #f8fafc;
 }
 
 .ai-tabs :deep(.el-tabs__item.is-active) {
-  color: #0369a1;
+  color: var(--accent-blue);
   font-weight: 600;
 }
 
 .ai-tabs :deep(.el-tabs__active-bar) {
-  background: linear-gradient(90deg, #0369a1, #0ea5e9);
+  background: linear-gradient(90deg, var(--accent-blue), #0ea5e9);
   height: 3px;
   border-radius: 2px;
 }

@@ -1,3 +1,5 @@
+@import '../../../styles/variables.css';
+
 /* ==================== 响应式 ==================== */
 @media (max-width: 1200px) {
   .content-grid {
