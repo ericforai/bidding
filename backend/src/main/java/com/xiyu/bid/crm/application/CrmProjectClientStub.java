@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
+import java.util.List;
 
 /**
  * CRM 项目客户端 Stub 实现
@@ -43,22 +43,28 @@ public class CrmProjectClientStub implements CrmProjectClient {
         String normalizedName = purchaserName.trim();
         log.debug("Querying CRM project for purchaser: {}", normalizedName);
 
-        Optional<CrmProjectMapping> mapping = mappingRepository.findByPurchaserName(normalizedName);
+        List<CrmProjectMapping> mappings = mappingRepository.findAllByPurchaserName(normalizedName);
 
-        if (mapping.isPresent()) {
-            CrmProjectMapping m = mapping.get();
-            log.info("CRM mapping found for purchaser '{}': manager={}, dept={}",
-                    normalizedName, m.getProjectManagerName(), m.getDepartmentName());
-            return AssignmentResult.success(
-                    m.getCrmProjectId(),
-                    m.getProjectManagerId(),
-                    m.getProjectManagerName(),
-                    m.getDepartmentId(),
-                    m.getDepartmentName()
-            );
+        if (mappings.isEmpty()) {
+            log.debug("No CRM mapping for purchaser: {}", normalizedName);
+            return AssignmentResult.noMatch();
         }
 
-        log.debug("No CRM mapping for purchaser: {}", normalizedName);
-        return AssignmentResult.noMatch();
+        if (mappings.size() > 1) {
+            log.warn("Multiple CRM mappings ({} records) found for purchaser '{}'; using the first one. "
+                    + "Please deduplicate the crm_project_mapping table.",
+                    mappings.size(), normalizedName);
+        }
+
+        CrmProjectMapping m = mappings.get(0);
+        log.info("CRM mapping found for purchaser '{}': manager={}, dept={}",
+                normalizedName, m.getProjectManagerName(), m.getDepartmentName());
+        return AssignmentResult.success(
+                m.getCrmProjectId(),
+                m.getProjectManagerId(),
+                m.getProjectManagerName(),
+                m.getDepartmentId(),
+                m.getDepartmentName()
+        );
     }
 }
