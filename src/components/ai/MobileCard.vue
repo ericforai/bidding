@@ -223,9 +223,9 @@ const handleOpenInMobile = () => {
 .phone-frame {
   width: 375px;
   height: 667px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), inset 0 0 0 2px #1a1a1a;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), inset 0 0 0 2px var(--text-primary);
   overflow: hidden;
   position: relative;
 }
@@ -238,7 +238,7 @@ const handleOpenInMobile = () => {
   transform: translateX(-50%);
   width: 150px;
   height: 30px;
-  background: #1a1a1a;
+  background: var(--text-primary);
   border-radius: 0 0 20px 20px;
   z-index: 10;
 }
@@ -248,8 +248,8 @@ const handleOpenInMobile = () => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px 8px;
-  background: #1a1a1a;
-  color: #fff;
+  background: var(--text-primary);
+  color: var(--bg-card);
   font-size: 14px;
 }
 
@@ -280,7 +280,7 @@ const handleOpenInMobile = () => {
 .project-header {
   background: linear-gradient(135deg, #409EFF 0%, #79bbff 100%);
   padding: 40px 20px 20px;
-  color: #fff;
+  color: var(--bg-card);
 }
 
 .project-name {
@@ -294,7 +294,7 @@ const handleOpenInMobile = () => {
 
 /* 倒计时 */
 .countdown-section {
-  background: #fff;
+  background: var(--bg-card);
   margin: 16px;
   padding: 20px;
   border-radius: 16px;
@@ -304,7 +304,7 @@ const handleOpenInMobile = () => {
 
 .countdown-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--text-muted);
   margin-bottom: 8px;
 }
 
@@ -316,7 +316,7 @@ const handleOpenInMobile = () => {
 
 /* 赢面评分 */
 .win-score-section {
-  background: #fff;
+  background: var(--bg-card);
   margin: 0 16px 16px;
   padding: 20px;
   border-radius: 16px;
@@ -352,7 +352,7 @@ const handleOpenInMobile = () => {
 .score-value {
   font-size: 24px;
   font-weight: bold;
-  color: #fff;
+  color: var(--bg-card);
 }
 
 .score-label {
@@ -366,7 +366,7 @@ const handleOpenInMobile = () => {
 
 /* 信息卡片 */
 .info-card {
-  background: #fff;
+  background: var(--bg-card);
   margin: 0 16px 16px;
   padding: 16px;
   border-radius: 16px;
@@ -379,7 +379,7 @@ const handleOpenInMobile = () => {
   gap: 8px;
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
   margin-bottom: 12px;
 }
 
@@ -400,12 +400,12 @@ const handleOpenInMobile = () => {
 
 .info-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .info-value {
   font-size: 14px;
-  color: #303133;
+  color: var(--gray-750);
   font-weight: 500;
 }
 
@@ -436,13 +436,13 @@ const handleOpenInMobile = () => {
 
 .task-title {
   font-size: 14px;
-  color: #303133;
+  color: var(--gray-750);
   margin-bottom: 4px;
 }
 
 .task-due {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 /* 风险列表 */
@@ -473,7 +473,7 @@ const handleOpenInMobile = () => {
 
 .risk-item.low {
   background: #f4f4f5;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .risk-icon {
@@ -490,8 +490,8 @@ const handleOpenInMobile = () => {
   position: sticky;
   bottom: 0;
   display: flex;
-  background: #fff;
-  border-top: 1px solid #e4e7ed;
+  background: var(--bg-card);
+  border-top: 1px solid var(--gray-250);
   padding: 8px 0;
   padding-bottom: max(8px, env(safe-area-inset-bottom));
 }
@@ -502,7 +502,7 @@ const handleOpenInMobile = () => {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  color: #909399;
+  color: var(--text-muted);
   font-size: 12px;
   cursor: pointer;
   transition: color 0.3s;

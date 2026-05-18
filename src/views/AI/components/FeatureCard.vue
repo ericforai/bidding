@@ -101,11 +101,11 @@ const iconColorMap = {
   'score': '#67C23A',
   'intel': '#E6A23C',
   'roi': '#F56C6C',
-  'assembly': '#909399',
+  'assembly': 'var(--text-muted)',
   'compliance': '#67C23A',
   'version': '#409EFF',
   'collab': '#E6A23C',
-  'tasks': '#909399'
+  'tasks': 'var(--text-muted)'
 }
 
 const props = defineProps({
@@ -191,7 +191,7 @@ export default {
   height: 40px;
   border-radius: 8px;
   font-size: 20px;
-  color: #fff;
+  color: var(--bg-card);
 }
 
 .feature-icon :deep(svg) {
@@ -203,7 +203,7 @@ export default {
 .feature-name {
   font-size: 16px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
 }
 
 .header-right {
@@ -233,13 +233,13 @@ export default {
 .label {
   flex-shrink: 0;
   font-size: 13px;
-  color: #666666;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
 .value {
   font-size: 13px;
-  color: #1a1a1a;
+  color: var(--text-primary);
   line-height: 1.6;
 }
 
@@ -260,19 +260,19 @@ export default {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background-color: #f5f7fa;
+  background-color: var(--bg-subtle);
   border-radius: 6px;
   font-size: 12px;
 }
 
 .prompt-icon {
-  color: var(--color-primary, #0066CC);
+  color: var(--color-primary, var(--brand-primary));
   flex-shrink: 0;
 }
 
 .prompt-text {
   flex: 1;
-  color: #1a1a1a;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -303,7 +303,7 @@ export default {
 }
 
 .feature-card:hover {
-  border-color: #0369a1;
+  border-color: var(--accent-blue);
   box-shadow: 0 8px 24px rgba(3, 105, 161, 0.12);
   transform: translateY(-2px);
 }
@@ -355,27 +355,27 @@ export default {
 
 :deep(.el-tag--primary) {
   background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #ffffff;
+  color: var(--bg-card);
 }
 
 :deep(.el-tag--success) {
   background: linear-gradient(135deg, #10b981, #059669);
-  color: #ffffff;
+  color: var(--bg-card);
 }
 
 :deep(.el-tag--warning) {
   background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: #ffffff;
+  color: var(--bg-card);
 }
 
 :deep(.el-tag--danger) {
   background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: #ffffff;
+  color: var(--bg-card);
 }
 
 :deep(.el-tag--info) {
-  background: linear-gradient(135deg, #64748b, #475569);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--text-slate), var(--sidebar-text-secondary));
+  color: var(--bg-card);
 }
 
 :deep(.el-tag:hover) {

@@ -261,7 +261,7 @@ const handleCommand = async (command) => {
 
 .collapse-icon:hover,
 .mobile-menu-icon:hover {
-  color: var(--brand-xiyu-logo, #2E7659);
+  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
   background: var(--surface-hover, #f1f5f9);
 }
 
@@ -277,7 +277,7 @@ const handleCommand = async (command) => {
 .logo-icon {
   font-size: 18px;
   font-weight: 700;
-  color: var(--brand-xiyu-logo, #2E7659);
+  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
   letter-spacing: 1px;
 }
 
@@ -310,7 +310,7 @@ const handleCommand = async (command) => {
 }
 
 .search-input :deep(.el-input__wrapper:hover) {
-  background: #ffffff;
+  background: var(--bg-card);
   border-color: var(--border-color, #e5e7eb);
   box-shadow: none;
 }
@@ -325,7 +325,7 @@ const handleCommand = async (command) => {
 }
 
 .search-input :deep(.el-input__prefix) {
-  color: var(--text-secondary, #64748b);
+  color: var(--text-secondary, var(--text-slate));
 }
 
 .header-right {
@@ -356,7 +356,7 @@ const handleCommand = async (command) => {
 }
 
 .header-icon:hover {
-  color: var(--brand-xiyu-logo, #2E7659);
+  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
   background: var(--surface-hover, #f1f5f9);
 }
 
@@ -366,7 +366,7 @@ const handleCommand = async (command) => {
 
 :deep(.el-badge__content) {
   background: linear-gradient(135deg, #ef4444, #dc2626);
-  border: 2px solid #ffffff;
+  border: 2px solid var(--bg-card);
   box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
   font-weight: 600;
   font-size: 11px;
@@ -405,8 +405,8 @@ const handleCommand = async (command) => {
   justify-content: center;
   font-size: 14px;
   font-weight: 600;
-  color: #ffffff;
-  background: linear-gradient(135deg, #2E7659, #3C8B68);
+  color: var(--bg-card);
+  background: linear-gradient(135deg, var(--brand-xiyu-logo), #3C8B68);
   border-radius: var(--radius-full, 9999px);
   flex-shrink: 0;
   box-shadow: 0 2px 8px rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.2);
@@ -461,7 +461,7 @@ const handleCommand = async (command) => {
 
 :deep(.el-dropdown-menu__item:hover) {
   background: var(--surface-hover, #f1f5f9);
-  color: var(--brand-xiyu-logo, #2E7659);
+  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
 }
 
 :deep(.el-dropdown-menu__item.is-disabled) {
@@ -471,7 +471,7 @@ const handleCommand = async (command) => {
 
 :deep(.el-dropdown-menu__item.is-disabled:hover) {
   background: transparent;
-  color: var(--text-secondary, #64748b);
+  color: var(--text-secondary, var(--text-slate));
 }
 
 :deep(.el-dropdown-menu__item .el-icon) {
@@ -499,8 +499,8 @@ const handleCommand = async (command) => {
   justify-content: center;
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
-  background: linear-gradient(135deg, #2E7659, #3C8B68);
+  color: var(--bg-card);
+  background: linear-gradient(135deg, var(--brand-xiyu-logo), #3C8B68);
   border-radius: var(--radius-full);
   flex-shrink: 0;
 }

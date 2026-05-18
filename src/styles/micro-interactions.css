@@ -20,7 +20,7 @@ h2, .section-title, .card-title {
   font-size: 24px;
   font-weight: 600;
   line-height: 1.3;
-  color: #1A1A1A;
+  color: var(--text-primary);
   letter-spacing: -0.01em;
   margin-bottom: var(--space-md, 16px);
 }
@@ -39,13 +39,13 @@ h4, .subheading {
   font-size: 16px;
   font-weight: 600;
   line-height: 1.4;
-  color: #333333;
+  color: var(--gray-700);
   margin-bottom: var(--space-sm, 8px);
 }
 
 /* 正文文本 - WCAG AA 对比度 */
 body, .text-body, .el-main, .el-card__body {
-  color: #1A1A1A;
+  color: var(--text-primary);
   line-height: 1.6;
 }
 
@@ -132,15 +132,15 @@ body, .text-body, .el-main, .el-card__body {
 
 /* Primary button */
 .el-button--primary {
-  background-color: var(--brand-xiyu-logo, #2E7659) !important;
+  background-color: var(--brand-xiyu-logo, var(--brand-xiyu-logo)) !important;
   border: none;
   box-shadow: 0 4px 12px var(--brand-xiyu-logo-shadow, rgba(46, 118, 89, 0.24));
-  --el-button-bg-color: var(--brand-xiyu-logo, #2E7659) !important;
-  --el-button-border-color: var(--brand-xiyu-logo, #2E7659) !important;
-  --el-button-text-color: #ffffff !important;
-  --el-button-hover-bg-color: var(--brand-xiyu-logo-hover, #27674E) !important;
-  --el-button-hover-border-color: var(--brand-xiyu-logo-hover, #27674E) !important;
-  --el-button-hover-text-color: #ffffff !important;
+  --el-button-bg-color: var(--brand-xiyu-logo, var(--brand-xiyu-logo)) !important;
+  --el-button-border-color: var(--brand-xiyu-logo, var(--brand-xiyu-logo)) !important;
+  --el-button-text-color: var(--bg-card) !important;
+  --el-button-hover-bg-color: var(--brand-xiyu-logo-hover, var(--brand-xiyu-logo-hover)) !important;
+  --el-button-hover-border-color: var(--brand-xiyu-logo-hover, var(--brand-xiyu-logo-hover)) !important;
+  --el-button-hover-text-color: var(--bg-card) !important;
 }
 
 .el-button--primary::before {
@@ -149,12 +149,12 @@ body, .text-body, .el-main, .el-card__body {
 
 .el-button--primary:not(.is-link):not(.is-text),
 .el-button--primary:not(.is-link):not(.is-text) span {
-  color: #FFFFFF !important;
+  color: var(--bg-card) !important;
 }
 
 .el-button--primary:hover {
-  background-color: var(--brand-xiyu-logo-hover, #27674E);
-  color: #FFFFFF;
+  background-color: var(--brand-xiyu-logo-hover, var(--brand-xiyu-logo-hover));
+  color: var(--bg-card);
   box-shadow: var(--elevation-2);
   transform: translateY(-1px);
 }
@@ -287,7 +287,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-input__clear:hover {
-  color: #64748B;
+  color: var(--text-slate);
   transform: scale(1.1);
 }
 
@@ -299,7 +299,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-input__password:hover {
-  color: #64748B;
+  color: var(--text-slate);
 }
 
 /* ==================== Select Dropdown ==================== */
@@ -326,8 +326,8 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-select-dropdown__item.selected {
-  background: #E0F2FE;
-  color: #0369A1;
+  background: var(--accent-blue-light);
+  color: var(--accent-blue);
   font-weight: 500;
 }
 
@@ -345,12 +345,12 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-checkbox:hover .el-checkbox__inner {
-  border-color: #0369A1;
+  border-color: var(--accent-blue);
 }
 
 .el-checkbox.is-checked .el-checkbox__inner {
-  background: #0369A1;
-  border-color: #0369A1;
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
 }
 
 .el-checkbox__input.is-checked + .el-checkbox__label {
@@ -364,12 +364,12 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-radio:hover .el-radio__inner {
-  border-color: #0369A1;
+  border-color: var(--accent-blue);
 }
 
 .el-radio.is-checked .el-radio__inner {
-  background: #0369A1;
-  border-color: #0369A1;
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
 }
 
 .el-radio__input.is-checked + .el-radio__label {
@@ -432,7 +432,7 @@ button[class*="icon"]:not(.el-button),
 
 .el-table th.el-table__cell {
   background: #F1F5F9;
-  color: #475569;
+  color: var(--sidebar-text-secondary);
   font-weight: 600;
   text-transform: uppercase;
   font-size: 12px;
@@ -458,8 +458,8 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-tag--primary {
-  background: #E0F2FE;
-  color: #0369A1;
+  background: var(--accent-blue-light);
+  color: var(--accent-blue);
   border-color: transparent;
 }
 
@@ -483,7 +483,7 @@ button[class*="icon"]:not(.el-button),
 
 .el-tag--info {
   background: #F1F5F9;
-  color: #64748B;
+  color: var(--text-slate);
   border-color: transparent;
 }
 
@@ -533,7 +533,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-dialog__close:hover {
-  color: #64748B;
+  color: var(--text-slate);
   background: #F1F5F9;
   border-radius: 6px;
 }
@@ -563,14 +563,14 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-message--info {
-  background: linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%);
+  background: linear-gradient(135deg, var(--accent-blue-light) 0%, #BAE6FD 100%);
   color: #075985;
 }
 
 /* ==================== Loading States ==================== */
 
 .el-loading-spinner {
-  color: #0369A1;
+  color: var(--accent-blue);
 }
 
 .el-loading-spinner .circular {
@@ -607,14 +607,14 @@ button[class*="icon"]:not(.el-button),
 
 .el-pagination .el-pager li:hover {
   background: #F1F5F9;
-  color: var(--brand-xiyu-logo, #2E7659);
+  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
   transform: translateY(-1px);
 }
 
 .el-pagination .el-pager li.active,
 .el-pagination .el-pager li.is-active {
-  background: linear-gradient(135deg, var(--brand-xiyu-logo, #2E7659) 0%, var(--brand-xiyu-logo-hover, #27674E) 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--brand-xiyu-logo, var(--brand-xiyu-logo)) 0%, var(--brand-xiyu-logo-hover, var(--brand-xiyu-logo-hover)) 100%);
+  color: var(--bg-card);
   box-shadow: 0 4px 10px var(--brand-xiyu-logo-shadow, rgba(46, 118, 89, 0.24));
 }
 
@@ -667,7 +667,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-switch.is-checked .el-switch__core {
-  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%);
+  background: linear-gradient(135deg, var(--accent-blue) 0%, #0891b2 100%);
 }
 
 .el-switch__action {
@@ -683,13 +683,13 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-slider__bar {
-  background: linear-gradient(90deg, #0369A1 0%, #0891b2 100%);
+  background: linear-gradient(90deg, var(--accent-blue) 0%, #0891b2 100%);
   border-radius: 4px;
 }
 
 .el-slider__button {
-  border: 2px solid #0369A1;
-  background: #fff;
+  border: 2px solid var(--accent-blue);
+  background: var(--bg-card);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
   transition: all var(--transition-base);
 }
@@ -719,16 +719,16 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-tabs__item:hover {
-  color: #0369A1;
+  color: var(--accent-blue);
 }
 
 .el-tabs__item.is-active {
-  color: #0369A1;
+  color: var(--accent-blue);
   font-weight: 600;
 }
 
 .el-tabs__active-bar {
-  background: linear-gradient(90deg, #0369A1 0%, #0891b2 100%);
+  background: linear-gradient(90deg, var(--accent-blue) 0%, #0891b2 100%);
   height: 3px;
   border-radius: 2px 2px 0 0;
 }
@@ -744,7 +744,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-breadcrumb__inner:hover {
-  color: #0369A1;
+  color: var(--accent-blue);
 }
 
 /* ==================== Steps ==================== */
@@ -754,7 +754,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-step__head.is-process {
-  color: #0369A1;
+  color: var(--accent-blue);
 }
 
 .el-step__title {
@@ -769,7 +769,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-progress-bar__inner {
-  background: linear-gradient(90deg, #0369A1 0%, #0891b2 100%);
+  background: linear-gradient(90deg, var(--accent-blue) 0%, #0891b2 100%);
   border-radius: 12px;
   transition: width var(--transition-smooth);
 }
@@ -777,8 +777,8 @@ button[class*="icon"]:not(.el-button),
 /* ==================== Calendar ==================== */
 
 .el-calendar-table td.is-selected .el-calendar-day {
-  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--accent-blue) 0%, #0891b2 100%);
+  color: var(--bg-card);
   border-radius: 8px;
 }
 
@@ -812,7 +812,7 @@ button[class*="icon"]:not(.el-button),
 
 .el-alert--info {
   background: #F0F9FF;
-  border-left-color: #0369A1;
+  border-left-color: var(--accent-blue);
 }
 
 /* ==================== Empty State ==================== */
@@ -822,7 +822,7 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-empty__description {
-  color: #64748B;
+  color: var(--text-slate);
   font-size: 14px;
 }
 
@@ -875,20 +875,20 @@ button[class*="icon"]:not(.el-button),
 }
 
 .el-upload-dragger:hover {
-  border-color: #0369A1;
+  border-color: var(--accent-blue);
   background: #F0F9FF;
 }
 
 .el-upload-dragger.is-dragover {
-  border-color: #0369A1;
-  background: #E0F2FE;
+  border-color: var(--accent-blue);
+  background: var(--accent-blue-light);
 }
 
 /* ==================== Avatar ==================== */
 
 .el-avatar {
-  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--accent-blue) 0%, #0891b2 100%);
+  color: var(--bg-card);
   font-weight: 600;
 }
 
@@ -954,7 +954,7 @@ button[class*="icon"]:not(.el-button),
 /* ==================== Backtop ==================== */
 
 .el-backtop {
-  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%);
+  background: linear-gradient(135deg, var(--accent-blue) 0%, #0891b2 100%);
   box-shadow: var(--elevation-2);
   transition: all var(--transition-base);
 }
@@ -979,7 +979,7 @@ button[class*="icon"]:not(.el-button),
 
 .el-descriptions__label {
   font-weight: 500;
-  color: #64748B;
+  color: var(--text-slate);
 }
 
 .el-descriptions__content {
@@ -1048,12 +1048,12 @@ button[class*="icon"]:not(.el-button),
 
 ::selection {
   background: rgba(3, 105, 161, 0.2);
-  color: #0369A1;
+  color: var(--accent-blue);
 }
 
 ::-moz-selection {
   background: rgba(3, 105, 161, 0.2);
-  color: #0369A1;
+  color: var(--accent-blue);
 }
 
 /* ==================== Reduced Motion ==================== */
@@ -1084,7 +1084,7 @@ button[class*="icon"]:not(.el-button),
 
 @media (prefers-contrast: high) {
   :root {
-    --focus-ring-color: #0369A1;
+    --focus-ring-color: var(--accent-blue);
   }
 
   .el-button {

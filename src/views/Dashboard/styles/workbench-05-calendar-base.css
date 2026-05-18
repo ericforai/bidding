@@ -1,3 +1,5 @@
+@import '../../../styles/variables.css';
+
 /* ==================== 投标日历 ==================== */
 .calendar-wrapper {
   padding: 16px;
@@ -17,7 +19,7 @@
 .calendar-wrapper .el-calendar__title {
   font-size: 15px;
   font-weight: 600;
-  color: #111827;
+  color: var(--gray-950);
 }
 
 .calendar-wrapper .el-calendar__button-group {
@@ -35,7 +37,7 @@
     th {
       padding: 8px 0;
       font-size: 12px;
-      color: #6B7280;
+      color: var(--gray-650);
       font-weight: 500;
       border-bottom: 1px solid #F3F4F6;
     }
@@ -60,7 +62,7 @@
 
   .el-calendar-day.is-selected {
     background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%);
-    color: #fff;
+    color: var(--bg-card);
   }
 
   .el-calendar-day.is-today {
@@ -168,7 +170,7 @@
 
 .event-more {
   font-size: 9px;
-  color: #6B7280;
+  color: var(--gray-650);
   text-align: center;
   padding: 2px 0;
 }

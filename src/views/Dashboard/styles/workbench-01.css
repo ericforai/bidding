@@ -1,3 +1,5 @@
+@import '../../../styles/variables.css';
+
 .workbench {
   padding: 24px;
   background: #F8FAFC;
@@ -14,7 +16,7 @@
 .page-kicker {
   font-size: 14px;
   font-weight: 600;
-  color: #475569;
+  color: var(--sidebar-text-secondary);
   letter-spacing: 0.08em;
 }
 
@@ -29,7 +31,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 32px 40px;
-  background: linear-gradient(135deg, #2E7659 0%, #18563E 100%);
+  background: linear-gradient(135deg, var(--brand-xiyu-logo) 0%, #18563E 100%);
   border-radius: 16px;
   margin-bottom: 24px;
   overflow: hidden;
@@ -48,7 +50,7 @@
 .banner-title {
   font-size: 28px;
   font-weight: 700;
-  color: #fff;
+  color: var(--bg-card);
   margin-bottom: 8px;
 }
 
@@ -65,7 +67,7 @@
 .banner-actions .el-button {
   background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.3);
-  color: #fff;
+  color: var(--bg-card);
 }
 
 .banner-actions .el-button:hover {
@@ -73,9 +75,9 @@
 }
 
 .banner-actions .el-button--primary {
-  background: #fff;
-  color: var(--brand-xiyu-logo, #2E7659);
-  border-color: #fff;
+  background: var(--bg-card);
+  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  border-color: var(--bg-card);
 }
 
 .banner-actions .el-button--primary:hover {
@@ -129,7 +131,7 @@
   display: block;
   min-width: 0;
   padding: 18px 20px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 12px;
   border: 1px solid #E5E7EB;
   cursor: pointer;
@@ -172,7 +174,7 @@
   min-width: 0;
   font-size: 13px;
   font-weight: 500;
-  color: #6B7280;
+  color: var(--gray-650);
   line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
@@ -195,7 +197,7 @@
   width: 100%;
   font-size: 30px;
   font-weight: 700;
-  color: #111827;
+  color: var(--gray-950);
   line-height: 1.1;
   margin-bottom: 12px;
   letter-spacing: 0;
@@ -223,7 +225,7 @@
 
 .metric-change.up { color: #059669; }
 .metric-change.down { color: #DC2626; }
-.metric-change.neutral { color: #6B7280; }
+.metric-change.neutral { color: var(--gray-650); }
 
 .metric-compare {
   font-size: 12px;
@@ -260,7 +262,7 @@
 
 /* ==================== 卡片通用样式 ==================== */
 .section-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 12px;
   border: 1px solid #E5E7EB;
   overflow: hidden;
@@ -280,12 +282,12 @@
   gap: 10px;
   font-size: 15px;
   font-weight: 600;
-  color: #111827;
+  color: var(--gray-950);
   margin: 0;
 }
 
 .section-icon {
   width: 20px;
   height: 20px;
-  color: var(--brand-xiyu-logo, #2E7659);
+  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
 }
