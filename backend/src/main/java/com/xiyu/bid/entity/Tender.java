@@ -132,6 +132,68 @@ public class Tender {
 
     @Column(name = "contact_phone", length = 50)
     private String contactPhone;
+
+
+    /* 联系人1座机 */
+    @Column(name = "contact_tel", length = 50)
+    private String contactTel;
+
+    /* 联系人1邮箱 */
+    @Column(name = "contact_mail", length = 100)
+    private String contactMail;
+
+    /* 联系人2 */
+    @Column(name = "contact_name2", length = 100)
+    private String contactName2;
+
+    @Column(name = "contact_phone2", length = 50)
+    private String contactPhone2;
+
+    @Column(name = "contact_tel2", length = 50)
+    private String contactTel2;
+
+    @Column(name = "contact_mail2", length = 100)
+    private String contactMail2;
+
+    /* 项目类型 */
+    @Column(name = "project_type", length = 20)
+    private String projectType;
+
+    /* 人员分配 */
+    @Column(name = "project_manager_id")
+    private Long projectManagerId;
+
+    @Column(name = "project_manager_name", length = 100)
+    private String projectManagerName;
+
+    @Column(name = "bidding_person_id")
+    private Long biddingPersonId;
+
+    @Column(name = "bidding_person_name", length = 100)
+    private String biddingPersonName;
+
+    @Column(name = "department", length = 100)
+    private String department;
+
+    @Column(name = "distributor_id")
+    private Long distributorId;
+
+    @Column(name = "distributor_name", length = 100)
+    private String distributorName;
+
+    @Column(name = "creator_id")
+    private Long creatorId;
+
+    @Column(name = "creator_name", length = 100)
+    private String creatorName;
+
+    /* 标讯信息 */
+    @Column(name = "bid_notice", columnDefinition = "text")
+    private String bidNotice;
+
+    @Column(name = "bid_notice_file_url", length = 1000)
+    private String bidNoticeFileUrl;
+
     @Column(name = "source_document_name", length = 255)
     private String sourceDocumentName;
 
@@ -212,7 +274,12 @@ public class Tender {
                 nullToBlank(tags),
                 nullToBlank(region),
                 nullToBlank(industry),
-                nullToBlank(source)
+                nullToBlank(source),
+                nullToBlank(contactName),
+                nullToBlank(contactName2),
+                nullToBlank(projectManagerName),
+                nullToBlank(biddingPersonName),
+                nullToBlank(bidNotice)
         ));
     }
 

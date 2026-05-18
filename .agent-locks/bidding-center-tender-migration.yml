@@ -1,0 +1,9 @@
+version: 1
+task: "bidding-center-tender-migration"
+locks:
+  - path: "backend/src/main/resources/db/migration-mysql/"
+    scope: "directory"
+    owner: "codex"
+    branch: "agent/codex-bidding-center-spec-completion"
+    expiresAt: "2026-06-17T00:00:00Z"
+    reason: "标讯相关 Flyway 迁移"

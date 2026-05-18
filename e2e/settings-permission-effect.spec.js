@@ -147,7 +147,6 @@ test('api settings page supports custom roles and still blocks managers from adm
   await setSession(managerPage, managerSession)
   await managerPage.goto('/settings')
 
-  // MANAGER 角色已被 RoleProfileCatalog 赋予 settings 权限，守卫放行
-  await expect(managerPage).toHaveURL(/\/settings$/)
-  await expect(managerPage.getByText('系统设置').first()).toBeVisible()
+  await expect(managerPage).toHaveURL(/\/dashboard$/)
+  await expect(managerPage.getByText('工作台').first()).toBeVisible()
 })

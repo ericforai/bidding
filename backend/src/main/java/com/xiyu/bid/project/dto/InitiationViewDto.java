@@ -33,6 +33,12 @@ public class InitiationViewDto {
     private String depositPaymentMethod;
     private String competitors;
     private Boolean locked;
+    private String reviewStatus;
+    private String rejectionReason;
+    private Long reviewedBy;
+    private LocalDateTime reviewedAt;
+    private String aiRiskLevel;
+    private Long tenderDocumentId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

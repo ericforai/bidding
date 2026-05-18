@@ -14,6 +14,9 @@ public interface ProjectDocumentRepository extends JpaRepository<ProjectDocument
 
     List<ProjectDocument> findByProjectIdInOrderByCreatedAtDesc(Collection<Long> projectIds);
 
+    /** 判重：检查指定关联实体的文档是否已存在（用于幂等归集）。 */
+    boolean existsByLinkedEntityTypeAndLinkedEntityId(String linkedEntityType, Long linkedEntityId);
+
     @Query("""
             select d
             from ProjectDocument d

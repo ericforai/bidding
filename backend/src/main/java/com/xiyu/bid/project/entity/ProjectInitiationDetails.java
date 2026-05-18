@@ -92,6 +92,35 @@ public class ProjectInitiationDetails {
     @Builder.Default
     private Boolean locked = Boolean.FALSE;
 
+    /** 立项审核状态（DRAFT/PENDING_REVIEW/APPROVED/REJECTED）。V125 新增。 */
+    @Column(name = "review_status", length = 32, nullable = false)
+    @Builder.Default
+    private String reviewStatus = "DRAFT";
+
+    /** 驳回理由（REJECTED 时必填）。 */
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
+
+    /** 审核人 user id。 */
+    @Column(name = "reviewed_by")
+    private Long reviewedBy;
+
+    /** 审核时间。 */
+    @Column(name = "reviewed_at")
+    private LocalDateTime reviewedAt;
+
+    /** 客户信息扩展（JSON 快照，来源 CRM）。 */
+    @Column(name = "customer_info_json", columnDefinition = "JSON")
+    private String customerInfoJson;
+
+    /** 招标文件附件 id。 */
+    @Column(name = "tender_document_id")
+    private Long tenderDocumentId;
+
+    /** AI 风险评级（LOW/MEDIUM/HIGH）。 */
+    @Column(name = "ai_risk_level", length = 16)
+    private String aiRiskLevel;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -110,6 +139,7 @@ public class ProjectInitiationDetails {
         if (createdAt == null) createdAt = now;
         updatedAt = now;
         if (locked == null) locked = Boolean.FALSE;
+        if (reviewStatus == null) reviewStatus = "DRAFT";
     }
 
     @PreUpdate
