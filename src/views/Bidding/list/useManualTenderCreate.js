@@ -184,7 +184,8 @@ export function useManualTenderCreate({ tendersApi, refreshTenderList, canCreate
     try {
       await manualFormRef.value?.validate()
       savingManual.value = true
-      const response = await tendersApi.create(buildManualTenderPayload(manualForm.value))
+      const payload = buildManualTenderPayload(manualForm.value)
+      const response = await tendersApi.create(payload)
       if (!response?.success) {
         throw new Error(response?.message || '标讯入库失败')
       }
