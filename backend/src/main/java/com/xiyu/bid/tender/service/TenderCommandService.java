@@ -12,7 +12,6 @@ import com.xiyu.bid.tender.dto.TenderAbandonRequest;
 import com.xiyu.bid.tender.dto.TenderBidResponse;
 import com.xiyu.bid.tender.dto.TenderDTO;
 import lombok.RequiredArgsConstructor;
-import com.xiyu.bid.tender.service.TenderAuditService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
