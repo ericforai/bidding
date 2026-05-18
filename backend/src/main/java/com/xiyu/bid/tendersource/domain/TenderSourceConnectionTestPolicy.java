@@ -1,14 +1,17 @@
 package com.xiyu.bid.tendersource.domain;
 
+import java.net.ConnectException;
+import java.net.InetAddress;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.time.Duration;
-import java.net.ConnectException;
-import java.net.UnknownHostException;
 import java.io.IOException;
+import java.net.UnknownHostException;
 
 /**
  * 标讯源连接测试策略（Pure Core）
@@ -66,7 +69,68 @@ public final class TenderSourceConnectionTestPolicy {
         return performHttpTest(uri, apiKey.trim());
     }
 
+    private static boolean isPrivateAddress(InetAddress addr) {
+        if (addr.isLoopbackAddress() || addr.isLinkLocalAddress()) {
+            return true;
+        }
+        if (addr.isSiteLocalAddress()) {
+            return true;
+        }
+        if (addr instanceof Inet4Address) {
+            byte[] b = addr.getAddress();
+            // 172.16.0.0 – 172.31.255.255
+            if (b[0] == (byte) 172) {
+                int second = b[1] & 0xFF;
+                return second >= 16 && second <= 31;
+            }
+        }
+        if (addr instanceof Inet6Address inet6) {
+            // IPv6 映射的 IPv4 内网地址 (::ffff:a.b.c.d)
+            byte[] bytes = inet6.getAddress();
+            if (bytes.length == 16
+                    && bytes[10] == (byte) 0xff && bytes[11] == (byte) 0xff) {
+                return isPrivateAddress(addrMappedToIPv4(inet6));
+            }
+        }
+        return false;
+    }
+
+    private static InetAddress addrMappedToIPv4(Inet6Address addr) {
+        byte[] bytes = addr.getAddress();
+        byte[] v4bytes = new byte[4];
+        System.arraycopy(bytes, 12, v4bytes, 0, 4);
+        try {
+            return InetAddress.getByAddress(v4bytes);
+        } catch (java.net.UnknownHostException e) {
+            return addr;
+        }
+    }
+
+    private static TenderSourceConnectionResult checkPrivateAddress(URI uri) {
+        try {
+            InetAddress inetAddr = InetAddress.getByName(uri.getHost());
+            if (isPrivateAddress(inetAddr)) {
+                return TenderSourceConnectionResult.failure("禁止访问内网私有地址");
+            }
+            // 额外解析所有 IP，防止 DNS rebinding
+            InetAddress[] allAddrs = InetAddress.getAllByName(uri.getHost());
+            for (InetAddress a : allAddrs) {
+                if (isPrivateAddress(a)) {
+                    return TenderSourceConnectionResult.failure("禁止访问内网私有地址");
+                }
+            }
+        } catch (UnknownHostException e) {
+            // 解析失败交给 performHttpTest 的异常处理
+        }
+        return null;
+    }
+
     private static TenderSourceConnectionResult performHttpTest(URI uri, String apiKey) {
+        TenderSourceConnectionResult ssrfCheck = checkPrivateAddress(uri);
+        if (ssrfCheck != null) {
+            return ssrfCheck;
+        }
+
         HttpClient client = HttpClient.newBuilder()
                 .connectTimeout(REQUEST_TIMEOUT)
                 .build();
