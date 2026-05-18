@@ -1,0 +1,9 @@
+version: 1
+task: "dashboard-ui-protection"
+locks:
+  - path: "src/views/Dashboard/"
+    scope: "directory"
+    owner: "codex"
+    branch: "agent/codex-permission-deny-default"
+    expiresAt: "2026-06-17T00:00:00Z"
+    reason: "工作台 UI 样式 + 组件设计保护，禁止其他 Agent 未经协调修改 Dashboard 文件，防止 PR #312 类设计回退再次发生"
