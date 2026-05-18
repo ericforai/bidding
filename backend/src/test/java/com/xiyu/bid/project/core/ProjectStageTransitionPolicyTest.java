@@ -12,8 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProjectStageTransitionPolicyTest {
@@ -92,24 +94,63 @@ class ProjectStageTransitionPolicyTest {
 
     @Test
     void evaluationSubStage_linearHappy() {
+        // 蓝图 V1.1 §4.3: 子状态序列 IN_PROGRESS → AWAITING_BOARD → RESULT_OUT → ANNOUNCED
         assertTrue(ProjectStageTransitionPolicy.decideEvaluationSub(
                 EvaluationSubStage.IN_PROGRESS, EvaluationSubStage.AWAITING_BOARD).allowed());
         assertTrue(ProjectStageTransitionPolicy.decideEvaluationSub(
-                EvaluationSubStage.AWAITING_BOARD, EvaluationSubStage.ANNOUNCED).allowed());
+                EvaluationSubStage.AWAITING_BOARD, EvaluationSubStage.RESULT_OUT).allowed());
+        assertTrue(ProjectStageTransitionPolicy.decideEvaluationSub(
+                EvaluationSubStage.RESULT_OUT, EvaluationSubStage.ANNOUNCED).allowed());
     }
 
     @Test
     void evaluationSubStage_illegalDenied() {
+        // 跳级拒绝
         assertFalse(ProjectStageTransitionPolicy.decideEvaluationSub(
                 EvaluationSubStage.IN_PROGRESS, EvaluationSubStage.ANNOUNCED).allowed());
         assertFalse(ProjectStageTransitionPolicy.decideEvaluationSub(
+                EvaluationSubStage.AWAITING_BOARD, EvaluationSubStage.ANNOUNCED).allowed());
+        // 倒退拒绝
+        assertFalse(ProjectStageTransitionPolicy.decideEvaluationSub(
                 EvaluationSubStage.AWAITING_BOARD, EvaluationSubStage.IN_PROGRESS).allowed());
         assertFalse(ProjectStageTransitionPolicy.decideEvaluationSub(
-                EvaluationSubStage.ANNOUNCED, EvaluationSubStage.AWAITING_BOARD).allowed());
-        // ANNOUNCED 终态
+                EvaluationSubStage.ANNOUNCED, EvaluationSubStage.RESULT_OUT).allowed());
+        // ANNOUNCED 终态：所有出向均拒绝
         for (EvaluationSubStage s : EvaluationSubStage.values()) {
             assertFalse(ProjectStageTransitionPolicy.decideEvaluationSub(
                     EvaluationSubStage.ANNOUNCED, s).allowed());
         }
+    }
+
+    // ============ V1.1 新增：decideResultNext（按结果类型分流） ============
+
+    @Test
+    void decideResultNext_failed_goesToClosed() {
+        assertEquals(ProjectStage.CLOSED,
+                ProjectStageTransitionPolicy.decideResultNext(BidResultType.FAILED));
+    }
+
+    @Test
+    void decideResultNext_abandoned_goesToClosed() {
+        assertEquals(ProjectStage.CLOSED,
+                ProjectStageTransitionPolicy.decideResultNext(BidResultType.ABANDONED));
+    }
+
+    @Test
+    void decideResultNext_won_goesToRetrospective() {
+        assertEquals(ProjectStage.RETROSPECTIVE,
+                ProjectStageTransitionPolicy.decideResultNext(BidResultType.WON));
+    }
+
+    @Test
+    void decideResultNext_lost_goesToRetrospective() {
+        assertEquals(ProjectStage.RETROSPECTIVE,
+                ProjectStageTransitionPolicy.decideResultNext(BidResultType.LOST));
+    }
+
+    @Test
+    void decideResultNext_nullThrows() {
+        assertThrows(NullPointerException.class,
+                () -> ProjectStageTransitionPolicy.decideResultNext(null));
     }
 }

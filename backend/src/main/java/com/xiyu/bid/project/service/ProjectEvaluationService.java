@@ -69,7 +69,11 @@ public class ProjectEvaluationService {
         }
         applyTimestamps(entity, target);
         entity.setSubStage(target.name());
-        if (req.getNotes() != null) entity.setNotes(req.getNotes());
+        if (!hasText(req.getNotes())) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                    "情况说明不能为空");
+        }
+        entity.setNotes(req.getNotes());
         entity.setUpdatedBy(userId);
         ProjectEvaluation saved = repository.save(entity);
         if (target == EvaluationSubStage.ANNOUNCED) {
@@ -212,6 +216,10 @@ public class ProjectEvaluationService {
     private Project mustGetProject(Long projectId) {
         return projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", String.valueOf(projectId)));
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     private EvaluationDTO toDto(ProjectEvaluation e) {

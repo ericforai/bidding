@@ -11,11 +11,7 @@
         <el-form-item label="状态">
           <el-select v-model="searchForm.status" placeholder="请选择状态" clearable>
             <el-option label="全部" value="" />
-            <el-option label="草稿中" value="drafting" />
-            <el-option label="评审中" value="reviewing" />
-            <el-option label="投标中" value="bidding" />
-            <el-option label="已中标" value="won" />
-            <el-option label="未中标" value="lost" />
+            <el-option v-for="opt in statusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </el-select>
         </el-form-item>
         <el-form-item label="负责人">
@@ -126,6 +122,7 @@ const pagination = ref({
   total: 0
 })
 
+const statusOptions = [{ value: 'INITIATED', label: '立项' }, { value: 'DRAFTING', label: '标书制作' }, { value: 'EVALUATING', label: '评标中' }, { value: 'RESULT_PENDING', label: '结果确认' }, { value: 'RETROSPECTIVE', label: '项目复盘' }, { value: 'CLOSED', label: '项目结项' }]
 const userList = computed(() => userStore.users)
 
 const matchedProjects = computed(() => {

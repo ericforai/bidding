@@ -223,7 +223,7 @@ public class ExcelExportService {
     public String getExportFileName(String dataType) {
         String baseName = switch (dataType) {
             case "tenders" -> "标讯列表";
-            case "projects" -> "项目列表";
+            case "projects" -> "投标项目列表";
             case "qualifications" -> "资质列表";
             case "cases" -> "案例列表";
             case "templates" -> "模板列表";

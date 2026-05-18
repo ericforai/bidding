@@ -5,8 +5,11 @@
 package com.xiyu.bid.project.controller;
 
 import com.xiyu.bid.dto.ApiResponse;
+import com.xiyu.bid.project.dto.InitiationApprovalRequest;
 import com.xiyu.bid.project.dto.InitiationDto;
+import com.xiyu.bid.project.dto.InitiationRejectionRequest;
 import com.xiyu.bid.project.dto.InitiationViewDto;
+import com.xiyu.bid.project.service.ProjectInitiationApprovalService;
 import com.xiyu.bid.project.service.ProjectInitiationService;
 import com.xiyu.bid.service.AuthService;
 import jakarta.validation.Valid;
@@ -33,6 +36,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class ProjectInitiationController {
 
     private final ProjectInitiationService service;
+    private final ProjectInitiationApprovalService approvalService;
     private final AuthService authService;
 
     /** 提交立项：SALES/BID_LEAD（映射到 MANAGER/STAFF/ADMIN）。 */
@@ -66,6 +70,30 @@ public class ProjectInitiationController {
         InitiationViewDto dto = service.getByProject(projectId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "立项未提交"));
         return ResponseEntity.ok(ApiResponse.success("ok", dto));
+    }
+
+    /** 审核通过：ADMIN/MANAGER 限定。分配团队后推进 INITIATED→DRAFTING。 */
+    @PostMapping("/approve")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    public ResponseEntity<ApiResponse<Void>> approve(
+            @PathVariable Long projectId,
+            @Valid @RequestBody InitiationApprovalRequest req,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = currentUserId(userDetails);
+        approvalService.approve(projectId, req, userId);
+        return ResponseEntity.ok(ApiResponse.success("Initiation approved", null));
+    }
+
+    /** 审核驳回：ADMIN/MANAGER 限定。必须填写驳回原因。 */
+    @PostMapping("/reject")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
+    public ResponseEntity<ApiResponse<Void>> reject(
+            @PathVariable Long projectId,
+            @Valid @RequestBody InitiationRejectionRequest req,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Long userId = currentUserId(userDetails);
+        approvalService.reject(projectId, req, userId);
+        return ResponseEntity.ok(ApiResponse.success("Initiation rejected", null));
     }
 
     private Long currentUserId(UserDetails userDetails) {

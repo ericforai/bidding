@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -154,7 +155,7 @@ public record TenderRequirementProfile(
   }
 
   private static boolean isReadableListNoise(String value) {
-    String normalized = value.trim().toLowerCase();
+    String normalized = value.trim().toLowerCase(Locale.ROOT);
     return READABLE_LIST_NOISE.contains(normalized)
         || PLACEHOLDER_VALUES.contains(value.trim())
         || BARE_INTEGER.matcher(normalized).matches();
