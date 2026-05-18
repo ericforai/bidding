@@ -200,8 +200,9 @@ export function useManualTenderCreate({ tendersApi, refreshTenderList, canCreate
           try {
             await tendersApi.saveEvaluationDraft(response.data.id, evaluation)
           } catch (evalErr) {
-            // 评估保存失败不影响标讯创建成功
+            // 评估保存失败不影响标讯创建成功，但需提示用户
             console.warn('评估表草稿保存失败:', evalErr?.message || evalErr)
+            ElMessage.warning('标讯已入库，但评估表草稿保存失败，可稍后在标讯详情页补充评估信息')
           }
         }
       }
