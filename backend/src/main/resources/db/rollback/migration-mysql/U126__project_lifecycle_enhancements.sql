@@ -2,7 +2,7 @@
 -- Output: rollback script removing V126 column additions (preserves shared columns from V108/V113).
 -- Pos: Flyway down migration coverage for 西域数智化投标管理平台.
 
-ALTER TABLE project_task DROP COLUMN review_comment;
+ALTER TABLE tasks DROP COLUMN review_comment;
 
 DROP INDEX idx_project_closure_review_status ON project_closure;
 ALTER TABLE project_closure

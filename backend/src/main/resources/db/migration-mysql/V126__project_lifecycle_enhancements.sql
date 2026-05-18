@@ -38,5 +38,5 @@ ALTER TABLE project_closure
 CREATE INDEX idx_project_closure_review_status ON project_closure(review_status);
 
 -- ============ project_task: 驳回原因 ============
-ALTER TABLE project_task
+ALTER TABLE tasks
     ADD COLUMN review_comment TEXT;
