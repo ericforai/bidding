@@ -50,9 +50,9 @@
   min-height: 30px;
   height: 30px;
   padding: 0 10px;
-  border: 1px solid #166534;
-  background: #166534;
-  color: #FFFFFF;
+  border: 1px solid rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.24);
+  background: rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.1);
+  color: var(--brand-xiyu-logo, #2E7659);
   box-shadow: none;
   font-weight: 600;
   transform: none;
@@ -60,9 +60,9 @@
 
 .workbench-empty-state .el-button.el-button--primary.is-text:hover,
 .workbench-empty-state .el-button.el-button--primary.is-text:focus {
-  border-color: #14532D;
-  background: #14532D;
-  color: #FFFFFF;
+  border-color: rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.36);
+  background: rgba(var(--brand-xiyu-logo-rgb, 46, 118, 89), 0.16);
+  color: var(--brand-xiyu-logo, #2E7659);
   box-shadow: none;
   transform: none;
 }
@@ -84,7 +84,6 @@
   background: #B91C1C;
   color: #FFFFFF;
 }
-
 .empty-state-title {
   margin: 0 0 4px;
   color: var(--gray-950);
