@@ -36,6 +36,7 @@ import java.util.concurrent.TimeoutException;
 @Transactional
 public class TenderCommandService {
 
+    private final TenderDeduplicationService tenderDeduplicationService;
     private final TenderRepository tenderRepository;
     private final AiService aiService;
     private final TenderMapper tenderMapper;
@@ -44,10 +45,12 @@ public class TenderCommandService {
     private final TaskService taskService;
     private final TenderAssignmentPermissions permissions;
     private final TenderAutoAssignmentService autoAssignmentService;
+    private final TenderAuditService tenderAuditService;
 
     public TenderDTO createTender(TenderDTO tenderDTO) {
         log.debug("Creating new tender: {}", tenderDTO.getTitle());
         Tender tender = tenderMapper.toEntity(withCommandDefaults(tenderDTO));
+        tenderDeduplicationService.checkDuplicate(tender);
         Tender savedTender = tenderRepository.save(tender);
         log.info("Created tender with id: {}", savedTender.getId());
 
@@ -62,6 +65,7 @@ public class TenderCommandService {
      * 尝试自动分配标讯。
      * CRM 接口异常时记录日志，不影响标讯创建。
      */
+
     private void tryAutoAssign(Tender tender) {
         try {
             if (autoAssignmentService.autoAssignIfPossible(tender)) {

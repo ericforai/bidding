@@ -47,10 +47,6 @@ async function seedBiddingTender(session, suffix) {
 
 test.describe('bidding list detail ai flow', () => {
   test('navigates list to detail then ai analysis', async ({ page }) => {
-    // 确保视口足够宽（>= 1280px），使操作列 >= 310px，从而触发 AI分析 按钮渲染
-    // TenderActionMenu.shouldShowAiButton 依赖 ResizeObserver 测量 .table-actions 单元格宽度
-    await page.setViewportSize({ width: 1440, height: 900 })
-
     const suffix = Date.now()
     const session = await ensureApiSession({
       username: `bidding_flow_${suffix}`,
@@ -72,29 +68,10 @@ test.describe('bidding list detail ai flow', () => {
 
     await page.getByRole('link', { name: '标讯中心' }).click()
     await expect(page).toHaveURL(/\/bidding$/)
-    await page.waitForLoadState('networkidle')
 
-    // 验证 seeded 标讯行存在（ElTooltip 遮挡按钮导致 Playwright 无法定位，直接导航）
-    const seededRow = page.locator('.el-table__row', { hasText: tender.title }).first()
-    await expect(seededRow).toBeVisible()
-
-    // mock AI 分析 API 并直接导航到 AI 分析页面
-    await page.route(new RegExp(`/api/tenders/${tender.id}/ai-analysis`), (route) => {
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          success: true,
-          data: {
-            tenderId: tender.id,
-            summary: 'E2E mock AI analysis result for bidding flow test',
-            generatedAt: new Date().toISOString()
-          }
-        })
-      })
-    })
-
-    await page.goto(`/bidding/ai-analysis/${tender.id}`)
+    const refreshedRow = page.locator('.el-table__row', { hasText: tender.title }).first()
+    await expect(refreshedRow).toBeVisible()
+    await refreshedRow.getByRole('button', { name: 'AI分析' }).click()
 
     await expect(page).toHaveURL(new RegExp(`/bidding/ai-analysis/${tender.id}$`))
     await expect(page.getByText('AI分析报告')).toBeVisible()

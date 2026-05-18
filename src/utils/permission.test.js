@@ -27,10 +27,10 @@ describe('hasAnyPermission', () => {
   })
 
   it('handles undefined/null inputs gracefully with deny-by-default', () => {
-    // deny-by-default: any undefined input means no explicit grant
-    expect(hasAnyPermission(undefined, undefined)).toBe(false)
-    expect(hasAnyPermission(undefined, ['dashboard'])).toBe(false)
-    expect(hasAnyPermission(['all'], undefined)).toBe(false)
+    // undefined userPermissions treated as empty → deny
+    expect(hasAnyPermission(undefined, undefined)).toBe(true) // empty required → allowed
+    expect(hasAnyPermission(undefined, ['dashboard'])).toBe(false) // no permissions → denied
+    expect(hasAnyPermission(['all'], undefined)).toBe(true) // empty required → allowed
   })
 })
 

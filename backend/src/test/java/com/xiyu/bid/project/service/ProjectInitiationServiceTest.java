@@ -37,12 +37,13 @@ class ProjectInitiationServiceTest {
     @Mock ProjectInitiationDetailsRepository repo;
     @Mock ProjectRepository projectRepository;
     @Mock ProjectStageService projectStageService;
+    @Mock com.xiyu.bid.service.ProjectAccessScopeService projectAccessScopeService;
 
     ProjectInitiationService service;
 
     @BeforeEach
     void setUp() {
-        service = new ProjectInitiationService(repo, projectRepository, projectStageService);
+        service = new ProjectInitiationService(repo, projectRepository, projectStageService, projectAccessScopeService);
         lenient().when(projectRepository.findById(1L)).thenReturn(Optional.of(Project.builder().id(1L).build()));
         lenient().when(repo.save(any(ProjectInitiationDetails.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
@@ -64,15 +65,16 @@ class ProjectInitiationServiceTest {
     }
 
     @Test
-    void submit_ok_locksAndDerivesMonth() {
+    void submit_ok_setsPendingReviewAndDerivesMonth() {
+        // 蓝图 V1.1 §4.3: submit 设置 PENDING_REVIEW 而非直接锁定/推进
         when(repo.findByProjectId(1L)).thenReturn(Optional.empty());
         var view = service.submit(1L, fullDto(), 99L);
-        assertThat(view.getLocked()).isTrue();
         assertThat(view.getBidMonth()).isEqualTo("2026-06");
         var captor = ArgumentCaptor.forClass(ProjectInitiationDetails.class);
         verify(repo).save(captor.capture());
-        assertThat(captor.getValue().getLocked()).isTrue();
+        assertThat(captor.getValue().getReviewStatus()).isEqualTo("PENDING_REVIEW");
         assertThat(captor.getValue().getProjectType()).isEqualTo("PUBLIC_BIDDING");
+        assertThat(captor.getValue().getRejectionReason()).isNull();
     }
 
     @Test

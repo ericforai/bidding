@@ -184,9 +184,27 @@ export function useManualTenderCreate({ tendersApi, refreshTenderList, canCreate
     try {
       await manualFormRef.value?.validate()
       savingManual.value = true
-      const response = await tendersApi.create(buildManualTenderPayload(manualForm.value))
+      const payload = buildManualTenderPayload(manualForm.value)
+      const response = await tendersApi.create(payload)
       if (!response?.success) {
         throw new Error(response?.message || '标讯入库失败')
+      }
+
+      // 如有评估表单数据，创建标讯后同步保存评估表草稿
+      const evaluation = payload.evaluation
+      if (evaluation && response.data?.id) {
+        const evalHasData = evaluation.projectBackground || evaluation.competitorAnalysis ||
+          evaluation.contractPeriodStart || evaluation.contractPeriodEnd ||
+          evaluation.shortlistedCount != null || evaluation.platformServiceFee != null
+        if (evalHasData) {
+          try {
+            await tendersApi.saveEvaluationDraft(response.data.id, evaluation)
+          } catch (evalErr) {
+            // 评估保存失败不影响标讯创建成功，但需提示用户
+            console.warn('评估表草稿保存失败:', evalErr?.message || evalErr)
+            ElMessage.warning('标讯已入库，但评估表草稿保存失败，可稍后在标讯详情页补充评估信息')
+          }
+        }
       }
 
       ElMessage.success('标讯已成功入库')

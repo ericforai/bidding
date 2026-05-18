@@ -82,14 +82,14 @@ const canEdit = computed(() => {
 })
 
 const shouldShowAiButton = computed(() => {
-  if (!props.showAiEntry) return false
-  // ADMIN 用户始终可见，不依赖 ResizeObserver 动态宽度测量
-  if (props.isAdmin) return true
   const width = containerWidth.value
-  if (hasMoreActions.value) {
-    return width >= 310
+  if (props.showAiEntry) {
+    if (hasMoreActions.value) {
+      return width >= 310
+    }
+    return width >= 260
   }
-  return width >= 260
+  return false
 })
 
 const shouldShowParticipateButton = computed(() => {

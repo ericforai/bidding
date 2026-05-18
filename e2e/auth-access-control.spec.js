@@ -35,9 +35,10 @@ test.describe('auth access control', () => {
 
     await page.goto('/settings')
 
-    // MANAGER 角色已被 RoleProfileCatalog 赋予 settings 权限，守卫放行
-    await expect(page).toHaveURL(/\/settings$/)
-    await expect(page.getByText('系统设置').first()).toBeVisible()
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await expect(page.getByText('工作台').first()).toBeVisible()
+    await page.locator('.user-info').click()
+    await expect(page.getByRole('menuitem', { name: /系统设置/ })).toHaveCount(0)
   })
 
   test('blocks staff from analytics dashboard route', async ({ page }) => {
