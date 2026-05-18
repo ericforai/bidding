@@ -20,16 +20,16 @@
   flex-direction: column;
   gap: 10px;
   text-align: center;
-  background: #F8FAFC;
-  border: 1px dashed #CBD5E1;
+  background: var(--bg-subtle);
+  border: 1px dashed var(--gray-300);
   border-radius: 12px;
   color: var(--text-slate);
 }
 
 .workbench-empty-state.state-error {
-  background: #FEF2F2;
-  border-color: #FECACA;
-  color: #991B1B;
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-bg);
+  color: var(--color-danger-dark);
 }
 
 .empty-state-icon {
@@ -60,8 +60,9 @@
 
 .workbench-empty-state .el-button.el-button--primary.is-text:hover,
 .workbench-empty-state .el-button.el-button--primary.is-text:focus {
-  border-color: #14532D;
-  background: #14532D;
+  border-color: var(--brand-xiyu-logo-active);
+  background: var(--brand-xiyu-logo-active);
+  opacity: 0.9;
   color: var(--bg-card);
   box-shadow: none;
   transform: none;
@@ -84,7 +85,6 @@
   background: var(--color-danger-dark, #B91C1C);
   color: var(--bg-card);
 }
-
 .empty-state-title {
   margin: 0 0 4px;
   color: var(--gray-950);
