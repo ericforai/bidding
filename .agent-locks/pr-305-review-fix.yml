@@ -1,9 +1,0 @@
-version: 1
-task: "pr-305-review-fix"
-locks:
-  - path: "backend/src/main/java/com/xiyu/bid/entity/Tender.java"
-    scope: "file"
-    owner: "cursor"
-    branch: "cursor/pr-305-review-fix"
-    expiresAt: "2026-05-19T00:55:38.279Z"
-    reason: "Entity model changes for bidding center"
