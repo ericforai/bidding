@@ -130,8 +130,8 @@ defineEmits(['view'])
   min-height: 400px;
 
   .case-card {
-    background: #fff;
-    border: 1px solid #e4e7ed;
+    background: var(--bg-card);
+    border: 1px solid var(--gray-250);
     border-radius: 8px;
     padding: 20px;
     cursor: pointer;
@@ -150,7 +150,7 @@ defineEmits(['view'])
       .case-title {
         font-size: 16px;
         font-weight: 600;
-        color: #303133;
+        color: var(--gray-750);
         margin: 0;
         flex: 1;
         line-height: 1.5;
@@ -178,13 +178,13 @@ defineEmits(['view'])
           display: flex;
           align-items: center;
           gap: 4px;
-          color: #909399;
+          color: var(--text-muted);
           width: 70px;
           flex-shrink: 0;
         }
 
         .info-value {
-          color: #606266;
+          color: var(--text-secondary-ui);
           flex: 1;
 
           &.amount {
@@ -203,7 +203,7 @@ defineEmits(['view'])
     }
 
     .case-highlights {
-      background: #f5f7fa;
+      background: var(--bg-subtle);
       border-radius: 6px;
       padding: 12px;
       margin-bottom: 16px;
@@ -222,7 +222,7 @@ defineEmits(['view'])
         margin: 0;
         padding-left: 16px;
         font-size: 13px;
-        color: #606266;
+        color: var(--text-secondary-ui);
         line-height: 1.8;
 
         li {
@@ -240,9 +240,9 @@ defineEmits(['view'])
       justify-content: flex-end;
       gap: 16px;
       padding-top: 12px;
-      border-top: 1px solid #e4e7ed;
+      border-top: 1px solid var(--gray-250);
       font-size: 13px;
-      color: #909399;
+      color: var(--text-muted);
 
       span {
         display: flex;

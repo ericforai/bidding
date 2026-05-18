@@ -359,7 +359,7 @@ export default {
 }
 
 :deep(.el-tag--success) {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, var(--color-success), var(--color-success-dark));
   color: var(--bg-card);
 }
 
@@ -369,7 +369,7 @@ export default {
 }
 
 :deep(.el-tag--danger) {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  background: linear-gradient(135deg, var(--color-danger), var(--color-danger));
   color: var(--bg-card);
 }
 

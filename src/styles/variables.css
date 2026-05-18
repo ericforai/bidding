@@ -25,10 +25,13 @@
   /* 功能色 */
   --color-success: #00AA44;
   --color-success-bg: rgba(0, 170, 68, 0.1);
+  --color-success-dark: #059669;
   --color-warning: #FF8800;
   --color-warning-bg: rgba(255, 136, 0, 0.1);
+  --color-warning-light: #FDE68A;
   --color-danger: #DD2200;
   --color-danger-bg: rgba(221, 34, 0, 0.1);
+  --color-danger-dark: #B91C1C;
   --color-info: #0066CC;
   --color-info-bg: rgba(0, 102, 204, 0.1);
   --color-primary: #0066CC;

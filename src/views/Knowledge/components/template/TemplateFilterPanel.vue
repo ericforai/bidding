@@ -128,7 +128,7 @@ defineEmits(['search', 'reset'])
   border: 1px solid #d6e7f7;
   background:
     radial-gradient(circle at top right, rgba(64, 158, 255, 0.16), transparent 22%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    linear-gradient(180deg, var(--bg-card) 0%, #f8fbff 100%);
 }
 
 .panel-head {
@@ -173,7 +173,7 @@ defineEmits(['search', 'reset'])
 
 .tip-label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--gray-650);
 }
 
 .tip-value {

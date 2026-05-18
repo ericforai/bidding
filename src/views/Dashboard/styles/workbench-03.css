@@ -24,7 +24,7 @@
 }
 
 .activity-dot.type-success {
-  background: #10B981;
+  background: var(--color-success);
 }
 
 .activity-dot.type-warning {
@@ -32,7 +32,7 @@
 }
 
 .activity-dot.type-info {
-  background: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  background: var(--brand-xiyu-logo);
 }
 
 .activity-content {
@@ -71,13 +71,13 @@
 
 .banner-admin .banner-actions .el-button--primary {
   background: var(--bg-card);
-  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  color: var(--brand-xiyu-logo);
   border-color: var(--bg-card);
 }
 
 .welcome-banner .banner-actions .el-button--primary .banner-action-label,
 .welcome-banner .banner-actions .el-button--primary .el-icon {
-  color: #FFFFFF !important;
+  color: var(--bg-card) !important;
 }
 
 /* ==================== 团队绩效卡片 ==================== */
@@ -90,7 +90,7 @@
 
 .team-performance-item {
   padding: 12px;
-  background: #F9FAFB;
+  background: var(--bg-subtle);
   border-radius: 8px;
 }
 
@@ -128,7 +128,7 @@
 
 .team-progress .progress-fill {
   height: 100%;
-  background: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  background: var(--brand-xiyu-logo);
   transition: width 0.3s ease;
 }
 
@@ -162,7 +162,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: #F9FAFB;
+  background: var(--bg-subtle);
   border-radius: 8px;
 }
 
@@ -177,7 +177,7 @@
 }
 
 .approval-icon.type-budget { background: #3B82F6; }
-.approval-icon.type-project { background: #10B981; }
+.approval-icon.type-project { background: var(--color-success); }
 .approval-icon.type-hr { background: #F59E0B; }
 
 .approval-content {
@@ -215,7 +215,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: #F9FAFB;
+  background: var(--bg-subtle);
   border-radius: 8px;
   border-left: 3px solid #E5E7EB;
   cursor: pointer;
@@ -240,7 +240,7 @@
   flex-shrink: 0;
 }
 
-.tender-score.score-high { background: linear-gradient(135deg, #10B981 0%, #059669 100%); }
+.tender-score.score-high { background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%); }
 .tender-score.score-medium { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); }
 
 .tender-info {

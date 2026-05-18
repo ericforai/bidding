@@ -81,7 +81,7 @@ defineEmits(['upload', 'remind-again'])
 
 .subtitle {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
   margin-top: 4px;
 }
 </style>

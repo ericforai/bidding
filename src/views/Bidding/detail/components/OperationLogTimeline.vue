@@ -108,9 +108,9 @@ onMounted(async () => {
 .timeline-empty { padding: 40px 0; }
 .timeline-item-content { padding-bottom: 8px; }
 .timeline-action { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.timeline-operator { color: #909399; font-size: 13px; }
-.timeline-desc { color: #303133; font-size: 14px; margin-bottom: 4px; }
-.timeline-change { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #909399; }
+.timeline-operator { color: var(--text-muted); font-size: 13px; }
+.timeline-desc { color: var(--gray-750); font-size: 14px; margin-bottom: 4px; }
+.timeline-change { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
 .old-value { background: #fef0f0; padding: 2px 6px; border-radius: 3px; }
 .new-value { background: #f0f9eb; padding: 2px 6px; border-radius: 3px; }
 </style>

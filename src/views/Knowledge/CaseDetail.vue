@@ -140,7 +140,7 @@ const {
 <style scoped>
 .case-detail-page {
   padding: 20px;
-  background-color: #f5f7fa;
+  background-color: var(--bg-subtle);
   min-height: 100vh;
 }
 
@@ -163,7 +163,7 @@ const {
   gap: 8px;
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .card-title-with-icon .el-icon {
@@ -173,7 +173,7 @@ const {
 
 .content-text {
   font-size: 14px;
-  color: #606266;
+  color: var(--text-secondary-ui);
   line-height: 1.8;
   white-space: pre-line;
 }
@@ -189,7 +189,7 @@ const {
   align-items: flex-start;
   gap: 10px;
   font-size: 14px;
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 
 .highlight-icon {
@@ -220,7 +220,7 @@ const {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: #f5f7fa;
+  background: var(--bg-subtle);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s;
@@ -244,7 +244,7 @@ const {
 
 .related-case-icon .el-icon {
   font-size: 20px;
-  color: #fff;
+  color: var(--bg-card);
 }
 
 .related-case-content {
@@ -255,7 +255,7 @@ const {
 .related-case-title {
   font-size: 14px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
   margin: 0 0 4px 0;
 }
 
@@ -263,7 +263,7 @@ const {
   display: flex;
   gap: 12px;
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .related-case-arrow {
@@ -278,7 +278,7 @@ const {
 .loading-container,
 .empty-container {
   padding: 40px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 8px;
 }
 

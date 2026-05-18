@@ -39,7 +39,7 @@ defineEmits(['clear', 'create'])
   border: 1px dashed #c6d7ea;
   background:
     radial-gradient(circle at top left, rgba(64, 158, 255, 0.08), transparent 35%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    linear-gradient(180deg, var(--bg-card) 0%, #f8fbff 100%);
 }
 
 .state-badge {

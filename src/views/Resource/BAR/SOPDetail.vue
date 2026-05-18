@@ -215,7 +215,7 @@ onMounted(async () => {
   font-size: 20px;
   font-weight: 600;
   margin: 8px 0 0 0;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .sop-card {
@@ -225,7 +225,7 @@ onMounted(async () => {
 .card-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -244,7 +244,7 @@ onMounted(async () => {
 }
 
 .link-label {
-  color: #606266;
+  color: var(--text-secondary-ui);
   min-width: 80px;
 }
 
@@ -261,7 +261,7 @@ onMounted(async () => {
 }
 
 .contact-info {
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .doc-list {
@@ -275,7 +275,7 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  background: #f5f7fa;
+  background: var(--bg-subtle);
   border-radius: 4px;
   font-size: 14px;
 }
@@ -291,7 +291,7 @@ onMounted(async () => {
 
 .faq-answer {
   padding: 8px 0;
-  color: #606266;
+  color: var(--text-secondary-ui);
   line-height: 1.6;
 }
 
@@ -301,17 +301,17 @@ onMounted(async () => {
 
 .history-record .action {
   font-weight: 500;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .history-record .user {
   margin-left: 8px;
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 
 .history-record .duration {
   margin-left: 8px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .time-estimate {
@@ -327,6 +327,6 @@ onMounted(async () => {
 }
 
 .time-estimate strong {
-  color: #303133;
+  color: var(--gray-750);
 }
 </style>

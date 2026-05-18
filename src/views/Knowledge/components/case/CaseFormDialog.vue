@@ -374,13 +374,13 @@ const handleDialogClosed = () => {
   }
 
   .option-extra {
-    color: #909399;
+    color: var(--text-muted);
     font-size: 12px;
     margin-left: 8px;
   }
 
   .upload-tip {
-    color: #909399;
+    color: var(--text-muted);
     font-size: 12px;
     margin-top: 4px;
   }

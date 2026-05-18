@@ -50,8 +50,8 @@
 }
 
 .process-dot.status-urgent {
-  background: #EF4444;
-  box-shadow: 0 0 0 1px #EF4444;
+  background: var(--color-danger);
+  box-shadow: 0 0 0 1px var(--color-danger);
 }
 
 .process-content {

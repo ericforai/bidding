@@ -97,12 +97,12 @@ watch(visible, (val) => {
   justify-content: center;
   flex-shrink: 0;
   background: #f0f0f0;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .step-text {
   font-size: 14px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .step-active {
@@ -111,7 +111,7 @@ watch(visible, (val) => {
 
 .step-active .step-icon {
   background: #409eff;
-  color: #fff;
+  color: var(--bg-card);
 }
 
 .step-active .step-text {
@@ -121,7 +121,7 @@ watch(visible, (val) => {
 
 .step-done .step-icon {
   background: #67c23a;
-  color: #fff;
+  color: var(--bg-card);
 }
 
 .step-done .step-text {

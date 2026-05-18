@@ -162,7 +162,7 @@ onMounted(() => {
   justify-content: center;
   border-radius: 50%;
   background: var(--surface-hover, #f1f5f9);
-  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  color: var(--brand-xiyu-logo);
 }
 
 .notification-item-content {
@@ -192,7 +192,7 @@ onMounted(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #ef4444;
+  background: var(--color-danger);
   margin-top: 8px;
 }
 

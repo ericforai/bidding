@@ -232,13 +232,13 @@ function handleSave() {
 
 .title {
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .sub-title {
   font-size: 14px;
   font-weight: 600;
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 
 .custom-tree-node {

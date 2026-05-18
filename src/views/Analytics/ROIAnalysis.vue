@@ -152,7 +152,7 @@ function riskType(level) {
 .form-card, .result-card, .history-card { margin-bottom: 20px; }
 .result-card h3, .history-card h3 { margin: 0 0 16px 0; }
 .metric { text-align: center; }
-.metric-label { font-size: 12px; color: #909399; margin-bottom: 8px; }
+.metric-label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
 .metric-value { font-size: 24px; font-weight: bold; }
 .positive { color: #67c23a; }
 .negative { color: #f56c6c; }

@@ -96,7 +96,7 @@ defineEmits(['zoom-in', 'zoom-out', 'content-change', 'insert-knowledge'])
   align-items: center;
 }
 
-.section-title { font-weight: 600; color: #303133; }
+.section-title { font-weight: 600; color: var(--gray-750); }
 
 .editor-content {
   flex: 1;
@@ -114,8 +114,8 @@ defineEmits(['zoom-in', 'zoom-out', 'content-change', 'insert-knowledge'])
   padding: 20px;
   font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
   line-height: 1.8;
-  color: #303133;
-  background: #fff;
+  color: var(--gray-750);
+  background: var(--bg-card);
   border-radius: 8px;
   border: 1.5px solid #e5e7eb;
 }
@@ -131,14 +131,14 @@ defineEmits(['zoom-in', 'zoom-out', 'content-change', 'insert-knowledge'])
 .source-records {
   padding: 0 20px 16px;
   border-top: 1px solid #f0f0f0;
-  background: #fff;
+  background: var(--bg-card);
 }
 
 .source-records-header {
   padding: 12px 0 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 
 .source-record-list {
@@ -155,7 +155,7 @@ defineEmits(['zoom-in', 'zoom-out', 'content-change', 'insert-knowledge'])
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .empty-state p {
@@ -181,8 +181,8 @@ defineEmits(['zoom-in', 'zoom-out', 'content-change', 'insert-knowledge'])
 }
 
 :deep(.el-tag--info) {
-  background: linear-gradient(135deg, #64748b, #475569);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--text-slate), var(--sidebar-text-secondary));
+  color: var(--bg-card);
   border-radius: 6px;
   font-size: 12px;
   padding: 4px 10px;

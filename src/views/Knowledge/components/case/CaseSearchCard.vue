@@ -107,7 +107,7 @@ defineEmits(['reset', 'search', 'toggle-tag'])
 
     .tags-label {
       font-size: 14px;
-      color: #606266;
+      color: var(--text-secondary-ui);
       margin-right: 4px;
     }
 

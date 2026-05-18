@@ -279,7 +279,7 @@ watch(() => props.modelValue, (newVal) => {
 }
 
 .competitor-card.threat-medium {
-  border-color: var(--color-warning, var(--color-warning));
+  border-color: var(--color-warning);
 }
 
 .competitor-card.threat-medium :deep(.el-card__header) {

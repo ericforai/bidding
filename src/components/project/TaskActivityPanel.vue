@@ -177,20 +177,20 @@ defineExpose({ loadActivity, submitComment })
 .comment-content {
   margin: 0;
   white-space: pre-wrap;
-  color: #303133;
+  color: var(--gray-750);
   line-height: 1.6;
 }
 
 .history-viewer {
   border-left: 3px solid #dcdfe6;
   padding-left: 10px;
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 
 .history-title {
   margin-bottom: 6px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .history-viewer dl {
@@ -201,7 +201,7 @@ defineExpose({ loadActivity, submitComment })
 }
 
 .history-viewer dt {
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .history-viewer dd {

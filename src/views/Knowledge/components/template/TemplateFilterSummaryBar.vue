@@ -72,7 +72,7 @@ defineEmits(['clear'])
   min-height: 36px;
   padding: 0 12px;
   border-radius: 999px;
-  background: #fff;
+  background: var(--bg-card);
   border: 1px solid #d8e5f5;
   color: #1f2937;
 }
@@ -89,7 +89,7 @@ defineEmits(['clear'])
 
 .chip-key {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--gray-650);
 }
 
 .chip-value {

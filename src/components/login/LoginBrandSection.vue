@@ -128,7 +128,7 @@
 .logo-text {
   font-size: 20px;
   font-weight: 600;
-  color: #fff;
+  color: var(--bg-card);
   letter-spacing: 0.02em;
 }
 
@@ -139,7 +139,7 @@
 .hero-title {
   font-size: 48px;
   font-weight: 700;
-  color: #fff;
+  color: var(--bg-card);
   line-height: 1.2;
   margin-bottom: 16px;
   letter-spacing: -0.02em;

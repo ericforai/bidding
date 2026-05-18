@@ -308,7 +308,7 @@ onMounted(async () => {
 <style scoped>
 .analytics-dashboard {
   padding: 20px;
-  background-color: #f5f7fa;
+  background-color: var(--bg-subtle);
   min-height: 100%;
 }
 
@@ -318,7 +318,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   min-height: 400px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .loading-container .el-icon {
@@ -342,7 +342,7 @@ onMounted(async () => {
 .page-title {
   font-size: 20px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -384,7 +384,7 @@ onMounted(async () => {
 }
 
 .chart-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: var(--card-border-radius, 8px);
   padding: var(--card-padding, 20px);
   box-shadow: var(--card-shadow, 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04));
@@ -401,7 +401,7 @@ onMounted(async () => {
 .chart-title {
   font-size: 16px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin: 0;
 }
 

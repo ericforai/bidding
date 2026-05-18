@@ -59,15 +59,24 @@ const COLOR_MAP = new Map([
   ['f5f7fa', 'var(--bg-subtle)'],
   ['ffffff', 'var(--bg-card)'],
   ['f0f2f5', 'var(--bg-page)'],
+  ['f9fafb', 'var(--bg-subtle)'], // Common subtle gray bg
   // Accent
   ['0369a1', 'var(--accent-blue)'],
   ['e0f2fe', 'var(--accent-blue-light)'],
+  // PR #320 Regressions and Common Offenses
+  ['166534', 'var(--brand-xiyu-logo-active)'], // Solid green button
+  ['dc2626', 'var(--color-danger)'], // Error state red
+  ['b91c1c', 'var(--color-danger-dark)'],
+  ['059669', 'var(--color-success-dark)'],
+  ['fde68a', 'var(--color-warning-light)'],
+  ['ef4444', 'var(--color-danger)'],
+  ['10b981', 'var(--color-success)'],
+  ['e2e8f0', 'var(--gray-200)'],
+  ['f1f5f9', 'var(--gray-50)'],
+  ['94a3b8', 'var(--gray-400)'],
+  ['fee2e2', 'var(--color-danger-bg)'],
+  ['fef3c7', 'var(--color-warning-bg)'],
 ]);
-
-// 3-hex shortcuts
-const SHORT_MAP = {
-  'fff': 'ffffff',
-};
 
 function normalizeHex(hex) {
   let h = hex.replace(/^#/, '').toLowerCase();
@@ -78,9 +87,10 @@ function normalizeHex(hex) {
   return h;
 }
 
-function findFiles(dir, ext) {
+function findFiles(dir, exts) {
+  const extFilter = exts.map(e => `-name '*.${e}'`).join(' -o ');
   try {
-    const out = execSync(`find ${dir} -name '*.${ext}' -not -path '*/node_modules/*' 2>/dev/null`, {
+    const out = execSync(`find ${dir} \\( ${extFilter} \\) -not -path '*/node_modules/*'`, {
       encoding: 'utf-8', cwd: ROOT,
     });
     return out.trim().split('\n').filter(Boolean);
@@ -88,37 +98,14 @@ function findFiles(dir, ext) {
 }
 
 // NEVER modify variables.css — it defines the tokens, don't self-reference them
-const SKIP_FILES = ['src/styles/variables.css'];
+const SKIP_FILES = ['src/styles/variables.css', 'src/styles/variables.scss'];
 
 function fileIncluded(fullPath) {
   const rel = relative(ROOT, fullPath);
   return !SKIP_FILES.includes(rel);
 }
 
-const cssFiles = findFiles(join(ROOT, 'src/styles'), 'css').filter(fileIncluded);
-cssFiles.push(...findFiles(join(ROOT, 'src/views/Dashboard/styles'), 'css').filter(fileIncluded));
-cssFiles.push(...findFiles(join(ROOT, 'src/views/Bidding'), 'css').filter(fileIncluded));
-
-const vueFiles = [
-  'src/views/AI/components/FeatureCard.vue',
-  'src/views/AI/Center.vue',
-  'src/views/Project/List.vue',
-  'src/components/layout/Header.vue',
-  'src/components/layout/Sidebar.vue',
-  'src/components/common/TaskBoard.vue',
-  'src/components/common/NotificationPanel.vue',
-  'src/components/login/LoginForm.vue',
-].map(f => join(ROOT, f));
-
-// AI components (ui-focused subdirectory)
-const aiVueFiles = findFiles(join(ROOT, 'src/components/ai'), 'vue');
-vueFiles.push(...aiVueFiles);
-
-// Resource components
-['MobileCard.vue', 'VersionControl.vue', 'SmartAssistantPanel.vue', 'CollaborationCenter.vue', 'ScoreCoverage.vue'].forEach(f => {
-  const p = join(ROOT, 'src/components/ai', f);
-  try { readFileSync(p); vueFiles.push(p); } catch {}
-});
+const allFiles = findFiles(join(ROOT, 'src'), ['css', 'vue']).filter(fileIncluded);
 
 let totalReplaced = 0;
 let totalFiles = 0;
@@ -133,11 +120,12 @@ function getImportPath(filePath) {
 
 function replaceColorsInContent(content) {
   let replaced = 0;
+  const hexRe = /#[0-9a-fA-F]{3,6}\b/g;
 
-  const result = content.replace(/#[0-9a-fA-F]{3,6}\b/g, (match, offset) => {
+  const result = content.replace(hexRe, (match, offset) => {
     const normalized = normalizeHex(match);
     // Don't replace colors inside existing var() calls
-    const before = content.substring(Math.max(0, offset - 20), offset);
+    const before = content.substring(Math.max(0, offset - 30), offset);
     if (/var\([^)]*$/.test(before)) {
       return match;
     }
@@ -151,48 +139,41 @@ function replaceColorsInContent(content) {
   return { content: result, replaced };
 }
 
-// Process CSS files
-for (const file of cssFiles) {
-  let content = readFileSync(file, 'utf-8');
+for (const file of allFiles) {
+  let content;
+  try {
+    content = readFileSync(file, 'utf-8');
+  } catch { continue; }
+  
   const relPath = relative(ROOT, file);
+  const isVue = relPath.endsWith('.vue');
+  const isGlobalStyle = relPath.startsWith('src/styles/');
+
+  const { content: newContent, replaced } = replaceColorsInContent(content);
 
   // Add @import only for view-level CSS files (not src/styles/ — loaded by main.js)
-  const isStyleFile = relPath.startsWith('src/styles/');
-  let needsImport = !isStyleFile && !content.includes('variables.css');
-  let importLine = '';
-  if (needsImport) {
-    importLine = `@import '${getImportPath(file)}';\n\n`;
-  }
-
-  const { content: newContent, replaced } = replaceColorsInContent(content);
-
-  if (replaced > 0 || needsImport) {
-    totalFiles++;
-    totalReplaced += replaced;
-    const finalContent = needsImport ? importLine + newContent : newContent;
+  let importAdded = false;
+  if (!isVue && !isGlobalStyle && replaced > 0 && !newContent.includes('variables.css')) {
+    const finalNewContent = `@import '${getImportPath(file)}';\n\n` + newContent;
     if (!DRY_RUN) {
-      writeFileSync(file, finalContent, 'utf-8');
+      writeFileSync(file, finalNewContent, 'utf-8');
     }
-    console.log(`  ${DRY_RUN ? '[DRY]' : '[OK]'}  ${relPath}  → ${replaced} replaces${needsImport ? ' (+@import)' : ''}`);
-  }
-}
-
-// Process Vue SFC files
-for (const file of vueFiles) {
-  try { readFileSync(file, 'utf-8'); } catch { continue; }
-  let content = readFileSync(file, 'utf-8');
-  const relPath = relative(ROOT, file);
-
-  const { content: newContent, replaced } = replaceColorsInContent(content);
-
-  if (replaced > 0) {
+    importAdded = true;
     totalFiles++;
-    totalReplaced += replaced;
+  } else if (replaced > 0) {
     if (!DRY_RUN) {
       writeFileSync(file, newContent, 'utf-8');
     }
-    console.log(`  ${DRY_RUN ? '[DRY]' : '[OK]'}  ${relPath}  → ${replaced} replaces`);
+    totalFiles++;
+  }
+
+  if (replaced > 0 || importAdded) {
+    totalReplaced += replaced;
+    if (VERBOSE || !DRY_RUN) {
+      console.log(`  ${DRY_RUN ? '[DRY]' : '[OK]'}  ${relPath.padEnd(50)} → ${replaced} replaces${importAdded ? ' (+@import)' : ''}`);
+    }
   }
 }
 
 console.log(`\nDone: ${totalFiles} files modified, ${totalReplaced} colors replaced.`);
+

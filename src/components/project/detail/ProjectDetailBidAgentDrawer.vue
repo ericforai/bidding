@@ -245,7 +245,7 @@ const {
   padding: 14px;
   border: 1px solid #e5ece8;
   border-radius: 16px;
-  background: #fff;
+  background: var(--bg-card);
 }
 
 .draft-title-row {

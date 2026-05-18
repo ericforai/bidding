@@ -9,6 +9,11 @@ import { join } from 'path';
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, 'src');
+const FAIL_ON_HEX = process.argv.includes('--fail-on-hex');
+const MAX_HEX = parseInt(process.argv.find(arg => arg.startsWith('--max-hex='))?.split('=')[1] || '0');
+
+// NEVER count variables.css as an offender — it defines the tokens
+const IGNORE_FILES = ['src/styles/variables.css', 'src/styles/variables.scss'];
 
 function findAllFiles(dir, ext) {
   try {
@@ -36,11 +41,14 @@ const tokenRe = /var\(--/g;
 const fileStats = {};
 
 for (const file of allFiles) {
+  const relPath = file.startsWith(ROOT) ? file.slice(ROOT.length + 1) : file;
+  if (IGNORE_FILES.includes(relPath)) continue;
+
   const content = readFileSync(file, 'utf-8');
   const hexCount = countOccurrences(content, hexRe);
   const tokenCount = countOccurrences(content, tokenRe);
+  
   if (hexCount > 0 || tokenCount > 0) {
-    const relPath = file.startsWith(ROOT) ? file.slice(ROOT.length + 1) : file;
     fileStats[relPath] = { hexCount, tokenCount };
   }
 }
@@ -66,34 +74,41 @@ const total = totalHex + totalToken;
 const coveragePct = total > 0 ? ((totalToken / total) * 100).toFixed(1) : '0.0';
 
 // --- Report ---
-console.log('\n' + '='.repeat(60));
+console.log('\n' + '='.repeat(70));
 console.log('  Design Token Coverage Report');
 console.log('  ' + new Date().toISOString().slice(0, 10));
-console.log('='.repeat(60));
+console.log('='.repeat(70));
 
 console.log('\n  By Directory:');
-console.log('  ' + '-'.repeat(56));
-console.log('  %-22s %12s %12s %10s', 'Directory', 'Hardcoded', 'Tokens', 'Coverage');
-console.log('  ' + '-'.repeat(56));
+console.log('  ' + '-'.repeat(66));
+console.log(`  ${'Directory'.padEnd(25)} ${'Hardcoded'.padStart(12)} ${'Tokens'.padStart(12)} ${'Coverage'.padStart(12)}`);
+console.log('  ' + '-'.repeat(66));
 for (const [dir, { hexCount, tokenCount }] of Object.entries(byDir).sort()) {
   const pct = (hexCount + tokenCount) > 0
     ? ((tokenCount / (hexCount + tokenCount)) * 100).toFixed(1)
     : '0.0';
-  console.log('  %-22s %12d %12d %9s%%', dir, hexCount, tokenCount, pct);
+  console.log(`  ${dir.padEnd(25)} ${hexCount.toString().padStart(12)} ${tokenCount.toString().padStart(12)} ${pct.padStart(11)}%`);
 }
-console.log('  ' + '-'.repeat(56));
-console.log('  %-22s %12d %12d %9s%%', 'TOTAL', totalHex, totalToken, coveragePct);
+console.log('  ' + '-'.repeat(66));
+console.log(`  ${'TOTAL'.padEnd(25)} ${totalHex.toString().padStart(12)} ${totalToken.toString().padStart(12)} ${coveragePct.padStart(11)}%`);
 
 console.log('\n  Top 15 files with most hardcoded colors:');
-console.log('  ' + '-'.repeat(60));
+console.log('  ' + '-'.repeat(70));
 for (const [file, { hexCount, tokenCount }] of offenders.slice(0, 15)) {
-  console.log('  %4d  %-50s  (tokens: %d)', hexCount, file.length > 48 ? '...' + file.slice(-45) : file, tokenCount);
+  const displayFile = file.length > 50 ? '...' + file.slice(-47) : file;
+  console.log(`  ${hexCount.toString().padStart(4)}  ${displayFile.padEnd(52)} (tokens: ${tokenCount})`);
 }
 
 if (totalHex > 1000) {
-  console.log(`\n  ⚠️  Still ${totalHex} hardcoded colors. More work needed.\n`);
+  console.log(`\n  ⚠️  Still ${totalHex} hardcoded colors. Major debt detected.\n`);
 } else if (totalHex === 0) {
   console.log('\n  ✅ No hardcoded colors found. Design token coverage complete!\n');
 } else {
   console.log(`\n  👍 Down to ${totalHex} hardcoded colors. Keep migrating.\n`);
 }
+
+if (FAIL_ON_HEX && totalHex > MAX_HEX) {
+  console.error(`\n  ❌ Error: ${totalHex} hardcoded colors found. Design token governance allows max ${MAX_HEX} hex colors.\n`);
+  process.exit(1);
+}
+

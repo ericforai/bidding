@@ -64,7 +64,7 @@ defineProps({
   display: flex;
   gap: 12px;
   padding: 12px;
-  background: #f5f7fa;
+  background: var(--bg-subtle);
   border-radius: 8px;
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
@@ -80,9 +80,9 @@ defineProps({
 .history-title {
   font-size: 14px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
   margin-bottom: 4px;
 }
 
-.history-time { font-size: 12px; color: #909399; }
+.history-time { font-size: 12px; color: var(--text-muted); }
 </style>

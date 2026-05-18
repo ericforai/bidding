@@ -133,7 +133,7 @@ defineEmits(['select'])
 .customer-list-panel {
   background: white;
   border-radius: 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--gray-200);
   padding: 24px;
   min-width: 0;
 }
@@ -199,7 +199,7 @@ defineEmits(['select'])
 }
 
 .score-num.high {
-  color: #10b981;
+  color: var(--color-success);
 }
 
 .score-num.mid {
@@ -207,11 +207,11 @@ defineEmits(['select'])
 }
 
 .score-num.low {
-  color: #64748b;
+  color: var(--text-slate);
 }
 
 .window-tag {
-  color: #475569;
+  color: var(--sidebar-text-secondary);
   font-size: 13px;
 }
 
@@ -220,7 +220,7 @@ defineEmits(['select'])
 }
 
 :deep(.el-table__empty-text) {
-  color: #94a3b8;
+  color: var(--gray-400);
 }
 
 @media (max-width: 960px) {

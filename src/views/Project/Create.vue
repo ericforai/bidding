@@ -102,7 +102,7 @@
       <div style="text-align: center; padding: 20px;">
         <el-icon class="is-loading" :size="40" color="#409eff"><Loading /></el-icon>
         <p style="margin-top: 20px; font-weight: 600;">正在从文档提取证据链...</p>
-        <p style="color: #909399; font-size: 13px;">这可能需要 30-60 秒，系统正在确保每一项提取都有据可查</p>
+        <p style="color: var(--text-muted); font-size: 13px;">这可能需要 30-60 秒，系统正在确保每一项提取都有据可查</p>
       </div>
     </el-dialog>
 
@@ -335,7 +335,7 @@ onMounted(async () => {
 .card-header .title {
   font-size: 16px;
   font-weight: 500;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .steps {

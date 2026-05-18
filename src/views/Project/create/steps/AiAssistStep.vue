@@ -161,7 +161,7 @@ defineExpose({ validate })
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .ai-summary { width: 100%; }
@@ -179,12 +179,12 @@ defineExpose({ validate })
   gap: 8px;
 }
 
-.score-label { font-size: 14px; color: #606266; }
+.score-label { font-size: 14px; color: var(--text-secondary-ui); }
 .score-value { font-size: 32px; font-weight: 600; }
 .score-high { color: #67c23a; }
 .score-medium { color: #e6a23c; }
 .score-low { color: #f56c6c; }
-.score-max { font-size: 16px; color: #909399; }
+.score-max { font-size: 16px; color: var(--text-muted); }
 .win-level { flex-shrink: 0; }
 
 .risk-list {
@@ -212,7 +212,7 @@ defineExpose({ validate })
 .risk-icon { font-size: 20px; }
 .risk-item.risk-high .risk-icon { color: #f56c6c; }
 .risk-item.risk-medium .risk-icon { color: #e6a23c; }
-.risk-content { flex: 1; color: #606266; }
+.risk-content { flex: 1; color: var(--text-secondary-ui); }
 
 .suggestion-list {
   margin: 0;
@@ -222,13 +222,13 @@ defineExpose({ validate })
 
 .suggestion-list li {
   margin-bottom: 8px;
-  color: #606266;
+  color: var(--text-secondary-ui);
   line-height: 1.6;
 }
 
 .ai-tasks {
   padding: 16px;
-  background-color: #f5f7fa;
+  background-color: var(--bg-subtle);
   border-radius: 8px;
 }
 
@@ -237,7 +237,7 @@ defineExpose({ validate })
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  background-color: #fff;
+  background-color: var(--bg-card);
   border-radius: 6px;
   margin-bottom: 8px;
 }
@@ -251,7 +251,7 @@ defineExpose({ validate })
   padding-left: 24px;
 }
 
-.ai-task-suggest { font-size: 12px; color: #909399; }
+.ai-task-suggest { font-size: 12px; color: var(--text-muted); }
 
 @media (max-width: 768px) {
   .summary-header { flex-direction: column; align-items: flex-start; gap: 12px; }

@@ -128,7 +128,7 @@ defineExpose({
 
 .user-role {
   font-size: 12px;
-  color: #999;
+  color: var(--text-tertiary);
 }
 
 .selected-targets {

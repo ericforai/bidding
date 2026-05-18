@@ -57,7 +57,7 @@ defineEmits(['approve'])
 
 <style scoped>
 .text-muted {
-  color: #909399;
+  color: var(--text-muted);
   font-size: 12px;
 }
 </style>

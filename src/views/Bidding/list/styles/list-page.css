@@ -136,7 +136,7 @@
 }
 
 .score-excellent {
-  color: #059669;
+  color: var(--color-success-dark);
 }
 
 .score-good {
@@ -214,7 +214,7 @@
 
 .option-desc {
   margin-left: 8px;
-  color: #94a3b8;
+  color: var(--gray-400);
 }
 
 .range-separator,
@@ -241,12 +241,12 @@
 }
 
 .growth-up {
-  color: #059669;
+  color: var(--color-success-dark);
 }
 
 .growth-down,
 .danger-item {
-  color: #dc2626;
+  color: var(--color-danger);
 }
 
 .tips-list {

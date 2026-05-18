@@ -65,7 +65,7 @@ onUnmounted(() => {
   top: -40px;
   left: 0;
   background: #1890ff;
-  color: #ffffff;
+  color: var(--bg-card);
   padding: 8px 16px;
   text-decoration: none;
   z-index: 9999;
@@ -90,14 +90,14 @@ onUnmounted(() => {
 }
 
 .layout-header {
-  background: #ffffff;
+  background: var(--bg-card);
   border-bottom: 1px solid #f0f0f0;
   padding: 0;
   box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
 }
 
 .layout-main {
-  background: #f0f2f5;
+  background: var(--bg-page);
   padding: 16px;
   overflow-y: auto;
 }

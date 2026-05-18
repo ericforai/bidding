@@ -96,7 +96,7 @@ const docTypeOptions = USE_TEMPLATE_DOC_TYPE_OPTIONS
 }
 
 .project-customer {
-  color: #909399;
+  color: var(--text-muted);
   font-size: 12px;
 }
 </style>

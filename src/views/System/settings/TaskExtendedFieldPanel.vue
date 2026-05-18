@@ -367,12 +367,12 @@ defineExpose({
   font-size: 18px;
   font-weight: 600;
   margin: 0 0 8px 0;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .panel-desc {
   margin: 0;
-  color: #909399;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -399,11 +399,11 @@ defineExpose({
 .type-cell {
   font-family: monospace;
   font-size: 12px;
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 
 .options-cell {
-  color: #606266;
+  color: var(--text-secondary-ui);
   font-size: 12px;
 }
 </style>

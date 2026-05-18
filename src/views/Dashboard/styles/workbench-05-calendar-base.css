@@ -98,7 +98,7 @@
 
 .calendar-day-cell.calendar-day-urgent {
   background: #FEFAFA;
-  border: 1px solid #FEE2E2;
+  border: 1px solid var(--color-danger-bg);
 }
 
 .calendar-day-number {
@@ -133,8 +133,8 @@
 
 .calendar-event-item.event-deadline {
   background: #FEF2F2;
-  color: #DC2626;
-  border-left: 2px solid #EF4444;
+  color: var(--color-danger);
+  border-left: 2px solid var(--color-danger);
 }
 
 .calendar-event-item.event-bid {
@@ -145,12 +145,12 @@
 
 .calendar-event-item.event-opening {
   background: #D1FAE5;
-  color: #059669;
-  border-left: 2px solid #10B981;
+  color: var(--color-success-dark);
+  border-left: 2px solid var(--color-success);
 }
 
 .calendar-event-item.event-review {
-  background: #FEF3C7;
+  background: var(--color-warning-bg);
   color: #D97706;
   border-left: 2px solid #F59E0B;
 }

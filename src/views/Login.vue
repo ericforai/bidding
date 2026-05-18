@@ -84,7 +84,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   padding: 48px;
-  background: #fff;
+  background: var(--bg-card);
 }
 
 .login-container {
@@ -105,7 +105,7 @@ onMounted(async () => {
 
 .login-subtitle {
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-slate);
 }
 
 .loading-overlay {
@@ -123,7 +123,7 @@ onMounted(async () => {
   width: 40px;
   height: 40px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #0369A1;
+  border-top: 4px solid var(--accent-blue);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 16px;

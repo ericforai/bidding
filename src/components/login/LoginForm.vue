@@ -121,7 +121,7 @@ const handleLogin = async () => {
 .form-input :deep(.el-input__wrapper) {
   padding: 10px 16px;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--gray-200);
   box-shadow: none;
   transition: all 0.2s ease;
 }
@@ -138,7 +138,7 @@ const handleLogin = async () => {
 }
 
 .form-input :deep(.el-input__inner::placeholder) {
-  color: #94a3b8;
+  color: var(--gray-400);
 }
 
 .form-actions {

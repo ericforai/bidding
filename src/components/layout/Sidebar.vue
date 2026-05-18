@@ -240,7 +240,7 @@ const filteredMenus = computed(() => {
   background: var(--bg-card); border-bottom: 1px solid rgba(46, 118, 89, 0.12);
 }
 
-.logo-icon { font-size: 20px; font-weight: 700; color: var(--brand-xiyu-logo, var(--brand-xiyu-logo)); letter-spacing: 2px; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; }
+.logo-icon { font-size: 20px; font-weight: 700; color: var(--brand-xiyu-logo); letter-spacing: 2px; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; }
 
 .logo-icon-small { display: inline-flex; align-items: center; justify-content: center; }
 
@@ -331,7 +331,7 @@ const filteredMenus = computed(() => {
   transform: translateY(-50%);
   width: 3px;
   height: 20px;
-  background: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  background: var(--brand-xiyu-logo);
   border-radius: 0 2px 2px 0;
 }
 
@@ -342,8 +342,8 @@ const filteredMenus = computed(() => {
 
 :deep(.el-menu-item.is-active) {
   background: rgba(46, 118, 89, 0.12) !important;
-  border-right: 3px solid var(--brand-xiyu-logo, var(--brand-xiyu-logo));
-  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo)) !important;
+  border-right: 3px solid var(--brand-xiyu-logo);
+  color: var(--brand-xiyu-logo) !important;
   box-shadow: none;
 }
 
@@ -355,14 +355,14 @@ const filteredMenus = computed(() => {
   transform: translateY(-50%);
   width: 3px;
   height: 24px;
-  background: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  background: var(--brand-xiyu-logo);
   border-radius: 0 2px 2px 0;
   box-shadow: 0 0 8px rgba(46, 118, 89, 0.2);
 }
 
 :deep(.el-sub-menu .el-menu-item.is-active) {
   background: rgba(46, 118, 89, 0.1) !important;
-  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo)) !important;
+  color: var(--brand-xiyu-logo) !important;
 }
 
 :deep(.el-sub-menu .el-menu-item.is-active)::before {
@@ -373,7 +373,7 @@ const filteredMenus = computed(() => {
   transform: translateY(-50%);
   width: 2px;
   height: 16px;
-  background: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  background: var(--brand-xiyu-logo);
   border-radius: 0 2px 2px 0;
 }
 
@@ -456,7 +456,7 @@ const filteredMenus = computed(() => {
 
 .close-icon {
   font-size: 20px;
-  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  color: var(--brand-xiyu-logo);
   cursor: pointer;
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
@@ -468,7 +468,7 @@ const filteredMenus = computed(() => {
 }
 
 .close-icon:hover {
-  color: var(--brand-xiyu-logo-active, var(--brand-xiyu-logo-active));
+  color: var(--brand-xiyu-logo-active);
   background: rgba(46, 118, 89, 0.08);
 }
 

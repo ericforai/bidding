@@ -55,22 +55,22 @@ const handleWeComLogin = async () => {
   content: '';
   flex: 1;
   height: 1px;
-  background: #e2e8f0;
+  background: var(--gray-200);
 }
 
 .divider span {
   padding: 0 16px;
   font-size: 13px;
-  color: #94a3b8;
+  color: var(--gray-400);
 }
 
 .wecom-button {
   width: 100%;
   height: 44px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--gray-200);
   border-radius: 8px;
-  background: #fff;
-  color: #334155;
+  background: var(--bg-card);
+  color: var(--sidebar-text);
   font-weight: 500;
   display: flex;
   align-items: center;

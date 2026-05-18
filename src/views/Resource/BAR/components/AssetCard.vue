@@ -140,7 +140,7 @@ const handleViewSOP = () => emit('view-sop', props.site)
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 20px;
-  background: #fff;
+  background: var(--bg-card);
   transition: all 0.3s ease;
 }
 
@@ -180,7 +180,7 @@ const handleViewSOP = () => emit('view-sop', props.site)
   font-size: 18px;
   font-weight: 600;
   margin: 0;
-  color: #1a1a1a;
+  color: var(--text-primary);
   word-break: break-word;
 }
 
@@ -188,7 +188,7 @@ const handleViewSOP = () => emit('view-sop', props.site)
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #909399;
+  color: var(--text-muted);
   font-size: 13px;
   text-decoration: none;
   transition: color 0.2s;
@@ -218,7 +218,7 @@ const handleViewSOP = () => emit('view-sop', props.site)
 }
 
 .status-item .label {
-  color: #606266;
+  color: var(--text-secondary-ui);
   font-weight: 500;
 }
 
@@ -243,7 +243,7 @@ const handleViewSOP = () => emit('view-sop', props.site)
 }
 
 .icon-user {
-  color: #909399;
+  color: var(--text-muted);
   font-size: 18px;
 }
 

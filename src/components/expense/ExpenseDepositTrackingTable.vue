@@ -115,7 +115,7 @@ function depositStatus(row) {
 }
 
 .text-muted {
-  color: #909399;
+  color: var(--text-muted);
   font-size: 12px;
 }
 </style>

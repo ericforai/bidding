@@ -103,7 +103,7 @@ defineExpose({ reload: loadStage, stages: STAGES })
 <style scoped>
 .project-stage-timeline {
   padding: 12px 8px;
-  background: #fff;
+  background: var(--bg-card);
   border: 1px solid #ebeef5;
   border-radius: 8px;
 }

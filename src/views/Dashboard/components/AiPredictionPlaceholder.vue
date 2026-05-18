@@ -1,7 +1,7 @@
 <template>
   <div class="ai-prediction-placeholder">
     <div class="placeholder-header">
-      <el-icon :size="24" color="#909399"><TrendCharts /></el-icon>
+      <el-icon :size="24" color="var(--text-muted)"><TrendCharts /></el-icon>
       <span class="placeholder-title">AI 商机预测</span>
       <el-tag size="small" type="info">规划中</el-tag>
     </div>
@@ -18,7 +18,7 @@ import { TrendCharts } from '@element-plus/icons-vue'
 
 <style scoped>
 .ai-prediction-placeholder {
-  background: #fff;
+  background: var(--bg-card);
   border: 1px dashed #dcdfe6;
   border-radius: 8px;
   padding: 24px;
@@ -33,11 +33,11 @@ import { TrendCharts } from '@element-plus/icons-vue'
 .placeholder-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
 }
 .placeholder-desc {
   font-size: 13px;
-  color: #909399;
+  color: var(--text-muted);
   margin: 0;
   line-height: 1.6;
 }

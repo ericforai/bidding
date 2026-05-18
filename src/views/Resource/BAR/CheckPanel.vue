@@ -265,12 +265,12 @@ onMounted(async () => {
   font-size: 24px;
   font-weight: 600;
   margin: 0 0 8px 0;
-  color: #1a1a1a;
+  color: var(--text-primary);
 }
 
 .page-subtitle {
   font-size: 14px;
-  color: #909399;
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -291,7 +291,7 @@ onMounted(async () => {
 
 .quick-label {
   font-size: 14px;
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 
 .quick-tag {
@@ -312,7 +312,7 @@ onMounted(async () => {
   font-size: 16px;
   font-weight: 600;
   margin: 0 0 16px 0;
-  color: #1a1a1a;
+  color: var(--text-primary);
 }
 
 .history-card .card-header {
@@ -329,6 +329,6 @@ onMounted(async () => {
 
 .history-site {
   font-weight: 500;
-  color: #303133;
+  color: var(--gray-750);
 }
 </style>

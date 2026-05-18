@@ -59,12 +59,12 @@ defineEmits(['add-competitor', 'remove-competitor', 'reset', 'submit'])
 .title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .subtitle {
   font-size: 13px;
-  color: #909399;
+  color: var(--text-muted);
   margin-top: 4px;
 }
 

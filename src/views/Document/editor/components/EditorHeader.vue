@@ -41,8 +41,8 @@ defineEmits(['back', 'preview', 'export', 'archive', 'save'])
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  background: #fff;
-  border-bottom: 1px solid #e4e7ed;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--gray-250);
   flex-shrink: 0;
 }
 
@@ -62,7 +62,7 @@ defineEmits(['back', 'preview', 'export', 'archive', 'save'])
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .header-actions {
@@ -100,11 +100,11 @@ defineEmits(['back', 'preview', 'export', 'archive', 'save'])
 
 .header-actions .el-button--default {
   border: 1.5px solid #e5e7eb;
-  color: #64748b;
+  color: var(--text-slate);
 }
 
 .header-actions .el-button--default:hover {
-  border-color: #94a3b8;
+  border-color: var(--gray-400);
   color: #1e293b;
   background: #f8fafc;
 }
@@ -125,7 +125,7 @@ defineEmits(['back', 'preview', 'export', 'archive', 'save'])
 }
 
 :deep(.el-tag--info) {
-  background: linear-gradient(135deg, #64748b, #475569);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--text-slate), var(--sidebar-text-secondary));
+  color: var(--bg-card);
 }
 </style>

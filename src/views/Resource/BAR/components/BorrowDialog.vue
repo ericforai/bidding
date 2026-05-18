@@ -285,7 +285,7 @@ const handleSubmit = async () => {
 <style scoped>
 .uk-info {
   padding: 12px;
-  background: #f5f7fa;
+  background: var(--bg-subtle);
   border-radius: 6px;
 }
 
@@ -295,7 +295,7 @@ const handleSubmit = async () => {
 }
 
 .uk-info .label {
-  color: #909399;
+  color: var(--text-muted);
   margin-right: 8px;
 }
 
@@ -323,12 +323,12 @@ const handleSubmit = async () => {
   align-items: center;
   justify-content: center;
   margin-bottom: 8px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .flow-step .step-icon.active {
   background: #409eff;
-  color: #fff;
+  color: var(--bg-card);
 }
 
 .flow-step .step-text {
@@ -337,11 +337,11 @@ const handleSubmit = async () => {
 
 .flow-step .step-title {
   font-weight: 500;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .flow-step .step-desc {
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .flow-arrow {

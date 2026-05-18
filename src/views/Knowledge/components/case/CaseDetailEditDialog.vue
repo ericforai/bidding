@@ -123,6 +123,6 @@ const handleSave = async () => {
 <style scoped>
 .field-suffix {
   margin-left: 8px;
-  color: #606266;
+  color: var(--text-secondary-ui);
 }
 </style>

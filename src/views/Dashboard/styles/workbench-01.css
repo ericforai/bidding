@@ -76,7 +76,7 @@
 
 .banner-actions .el-button--primary {
   background: var(--bg-card);
-  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  color: var(--brand-xiyu-logo);
   border-color: var(--bg-card);
 }
 
@@ -150,9 +150,9 @@
 }
 
 .metric-card.metric-blue::before { background: linear-gradient(180deg, #1E40AF 0%, #3B82F6 100%); }
-.metric-card.metric-green::before { background: linear-gradient(180deg, #059669 0%, #10B981 100%); }
+.metric-card.metric-green::before { background: linear-gradient(180deg, var(--color-success-dark) 0%, var(--color-success) 100%); }
 .metric-card.metric-amber::before { background: linear-gradient(180deg, #D97706 0%, #F59E0B 100%); }
-.metric-card.metric-red::before { background: linear-gradient(180deg, #DC2626 0%, #EF4444 100%); }
+.metric-card.metric-red::before { background: linear-gradient(180deg, var(--color-danger) 0%, var(--color-danger) 100%); }
 
 .metric-card:hover {
   transform: translateY(-2px);
@@ -223,8 +223,8 @@
   white-space: nowrap;
 }
 
-.metric-change.up { color: #059669; }
-.metric-change.down { color: #DC2626; }
+.metric-change.up { color: var(--color-success-dark); }
+.metric-change.down { color: var(--color-danger); }
 .metric-change.neutral { color: var(--gray-650); }
 
 .metric-compare {
@@ -289,5 +289,5 @@
 .section-icon {
   width: 20px;
   height: 20px;
-  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
+  color: var(--brand-xiyu-logo);
 }

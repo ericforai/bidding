@@ -642,7 +642,7 @@ onMounted(async () => {
 
 .header-left .site-url {
   font-size: 14px;
-  color: #909399;
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -664,7 +664,7 @@ onMounted(async () => {
 .card-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .sop-preview .sop-link {
@@ -687,7 +687,7 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: #f5f7fa;
+  background: var(--bg-subtle);
   border-radius: 4px;
 }
 
@@ -697,12 +697,12 @@ onMounted(async () => {
 
 .attachment-item .file-name {
   font-size: 14px;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .attachment-item .file-size {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .text-warning {

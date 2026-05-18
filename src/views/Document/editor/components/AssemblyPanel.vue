@@ -128,7 +128,7 @@ defineEmits(['start-assembly'])
 .section-label {
   font-size: 14px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
   margin: 0 0 12px 0;
 }
 
@@ -153,7 +153,7 @@ defineEmits(['start-assembly'])
 }
 
 .template-name { font-size: 14px; font-weight: 600; line-height: 1.3; }
-.template-meta { font-size: 12px; color: #909399; }
+.template-meta { font-size: 12px; color: var(--text-muted); }
 
 .section-checkboxes {
   display: flex;
@@ -173,14 +173,14 @@ defineEmits(['start-assembly'])
   border-radius: 8px;
   font-size: 15px;
   font-weight: 600;
-  background: linear-gradient(135deg, #0369a1, #0284c7);
+  background: linear-gradient(135deg, var(--accent-blue), #0284c7);
   border: none;
   box-shadow: 0 2px 8px rgba(3, 105, 161, 0.2);
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .assembly-btn:hover {
-  background: linear-gradient(135deg, #0284c7, #0369a1);
+  background: linear-gradient(135deg, #0284c7, var(--accent-blue));
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
 }
@@ -195,19 +195,19 @@ defineEmits(['start-assembly'])
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-:deep(.el-radio.is-bordered:hover) { border-color: #94a3b8; }
+:deep(.el-radio.is-bordered:hover) { border-color: var(--gray-400); }
 
 :deep(.el-radio.is-bordered.is-checked) {
-  border-color: #0369a1;
+  border-color: var(--accent-blue);
   background: #f0f9ff;
 }
 
 :deep(.el-checkbox) { transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1); }
-:deep(.el-checkbox:hover) { color: #0369a1; }
+:deep(.el-checkbox:hover) { color: var(--accent-blue); }
 
 :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
-  background: linear-gradient(135deg, #0369a1, #0284c7);
-  border-color: #0369a1;
+  background: linear-gradient(135deg, var(--accent-blue), #0284c7);
+  border-color: var(--accent-blue);
 }
 
 @media (max-width: 1200px) {

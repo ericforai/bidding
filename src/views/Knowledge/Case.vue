@@ -107,7 +107,7 @@ const {
     .page-title {
       font-size: 20px;
       font-weight: 600;
-      color: #303133;
+      color: var(--gray-750);
       margin: 0;
     }
   }

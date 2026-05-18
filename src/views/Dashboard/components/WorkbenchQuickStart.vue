@@ -125,8 +125,8 @@ const {
 
 const actions = computed(() => [
   { key: 'support', title: '标书支持申请', desc: '申请技术/商务支持', icon: Icons.Document, iconStyle: 'background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%); color: #1E40AF;' },
-  { key: 'borrow', title: '资质/合同借阅', desc: '资质或合同借阅申请', icon: Icons.FolderOpened, iconStyle: 'background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); color: #059669;' },
-  { key: 'expense', title: '投标费用申请', desc: '保证金/标书购买费', icon: Icons.Wallet, iconStyle: 'background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); color: #D97706;' },
+  { key: 'borrow', title: '资质/合同借阅', desc: '资质或合同借阅申请', icon: Icons.FolderOpened, iconStyle: 'background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); color: var(--color-success-dark);' },
+  { key: 'expense', title: '投标费用申请', desc: '保证金/标书购买费', icon: Icons.Wallet, iconStyle: 'background: linear-gradient(135deg, var(--color-warning-bg) 0%, var(--color-warning-light) 100%); color: #D97706;' },
 ])
 
 defineExpose({ quickStart })
