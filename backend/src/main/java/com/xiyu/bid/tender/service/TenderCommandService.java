@@ -12,6 +12,7 @@ import com.xiyu.bid.tender.dto.TenderAbandonRequest;
 import com.xiyu.bid.tender.dto.TenderBidResponse;
 import com.xiyu.bid.tender.dto.TenderDTO;
 import lombok.RequiredArgsConstructor;
+import com.xiyu.bid.tender.service.TenderAuditService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -36,7 +37,6 @@ import java.util.concurrent.TimeoutException;
 @Transactional
 public class TenderCommandService {
 
-    private final TenderDeduplicationService tenderDeduplicationService;
     private final TenderRepository tenderRepository;
     private final AiService aiService;
     private final TenderMapper tenderMapper;
@@ -50,7 +50,7 @@ public class TenderCommandService {
     public TenderDTO createTender(TenderDTO tenderDTO) {
         log.debug("Creating new tender: {}", tenderDTO.getTitle());
         Tender tender = tenderMapper.toEntity(withCommandDefaults(tenderDTO));
-        tenderDeduplicationService.checkDuplicate(tender);
+        checkDuplicate(tender);
         Tender savedTender = tenderRepository.save(tender);
         log.info("Created tender with id: {}", savedTender.getId());
 
@@ -65,7 +65,6 @@ public class TenderCommandService {
      * 尝试自动分配标讯。
      * CRM 接口异常时记录日志，不影响标讯创建。
      */
-
     private void tryAutoAssign(Tender tender) {
         try {
             if (autoAssignmentService.autoAssignIfPossible(tender)) {

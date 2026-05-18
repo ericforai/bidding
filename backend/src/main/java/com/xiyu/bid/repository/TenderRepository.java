@@ -69,10 +69,5 @@ public interface TenderRepository extends JpaRepository<Tender, Long>, JpaSpecif
      * 根据业主哈希查询标讯(按发布时间降序)
      * 用于商机时间预测
      */
-    /**
-     * 按项目名称和业主单位查找标讯，用于去重检查。
-     */
-    List<Tender> findByTitleAndPurchaserNameAllIgnoreCase(String title, String purchaserName);
-
     List<Tender> findByPurchaserHashOrderByPublishDateDesc(String purchaserHash);
 }

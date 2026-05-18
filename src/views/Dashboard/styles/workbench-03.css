@@ -77,7 +77,7 @@
 
 .welcome-banner .banner-actions .el-button--primary .banner-action-label,
 .welcome-banner .banner-actions .el-button--primary .el-icon {
-  color: #FFFFFF !important;
+  color: var(--brand-xiyu-logo-active, #18563E) !important;
 }
 
 /* ==================== 团队绩效卡片 ==================== */

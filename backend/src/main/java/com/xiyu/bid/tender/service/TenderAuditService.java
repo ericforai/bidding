@@ -89,7 +89,7 @@ public class TenderAuditService {
     }
 
     public List<AuditLog> getAuditLogs(Long tenderId) {
-        return auditLogRepository.findByEntityTypeAndEntityIdOrderByTimestampDesc("TENDER", String.valueOf(tenderId));
+        return auditLogRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc("TENDER", String.valueOf(tenderId));
     }
 
     private AuditLog buildAuditLog(String action, String entityType, String entityId,
