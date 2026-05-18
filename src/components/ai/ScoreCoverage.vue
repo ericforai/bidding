@@ -157,9 +157,9 @@ const progressColor = computed(() => {
 
 // 根据百分比获取颜色
 const getCategoryColor = (percentage) => {
-  if (percentage >= 80) return '#00AA44'
-  if (percentage >= 50) return '#FF8800'
-  return '#DD2200'
+  if (percentage >= 80) return 'var(--color-success)'
+  if (percentage >= 50) return 'var(--color-warning)'
+  return 'var(--color-danger)'
 }
 
 // 根据百分比获取样式类
@@ -209,7 +209,7 @@ defineEmits(['fill-from-knowledge'])
 .coverage-title {
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin: 0 0 12px 0;
 }
 
@@ -227,7 +227,7 @@ defineEmits(['fill-from-knowledge'])
 
 .percentage-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--text-muted);
   margin-top: 4px;
 }
 
@@ -238,7 +238,7 @@ defineEmits(['fill-from-knowledge'])
 .progress-value {
   font-size: 24px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .category-progress {
@@ -248,7 +248,7 @@ defineEmits(['fill-from-knowledge'])
 .category-item {
   margin-bottom: 20px;
   padding: 16px;
-  background-color: #f5f7fa;
+  background-color: var(--bg-subtle);
   border-radius: 8px;
 }
 
@@ -266,12 +266,12 @@ defineEmits(['fill-from-knowledge'])
 .category-name {
   font-size: 15px;
   font-weight: 500;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .category-weight {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .category-score {
@@ -284,16 +284,16 @@ defineEmits(['fill-from-knowledge'])
 .score-covered {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--gray-750);
 }
 
 .score-separator {
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .score-total {
   font-size: 14px;
-  color: #909399;
+  color: var(--text-muted);
 }
 
 .score-percentage {
@@ -303,15 +303,15 @@ defineEmits(['fill-from-knowledge'])
 }
 
 .percentage-high {
-  color: #00AA44;
+  color: var(--color-success);
 }
 
 .percentage-medium {
-  color: #FF8800;
+  color: var(--color-warning);
 }
 
 .percentage-low {
-  color: #DD2200;
+  color: var(--color-danger);
 }
 
 .category-gaps {
@@ -330,7 +330,7 @@ defineEmits(['fill-from-knowledge'])
 }
 
 .text-success {
-  color: #00AA44;
+  color: var(--color-success);
   font-size: 12px;
 }
 

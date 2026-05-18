@@ -114,7 +114,7 @@ const handleLogin = async () => {
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: #334155;
+  color: var(--sidebar-text);
   margin-bottom: 8px;
 }
 
@@ -149,12 +149,12 @@ const handleLogin = async () => {
 }
 
 .login-checkbox {
-  color: #64748b;
+  color: var(--text-slate);
   font-size: 13px;
 }
 
 .forgot-link {
-  color: #0369A1;
+  color: var(--accent-blue);
   font-size: 13px;
   text-decoration: none;
   transition: color 0.2s ease;
@@ -170,7 +170,7 @@ const handleLogin = async () => {
   font-size: 15px;
   font-weight: 600;
   border-radius: 8px;
-  background: linear-gradient(135deg, #0369A1 0%, #0891b2 100%);
+  background: linear-gradient(135deg, var(--accent-blue) 0%, #0891b2 100%);
   border: none;
   transition: all 0.3s ease;
 }

@@ -70,7 +70,7 @@
 
 /* 卡片 */
 .card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   border: 1px solid var(--gray-100);

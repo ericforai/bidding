@@ -275,15 +275,15 @@ watch(() => props.modelValue, (newVal) => {
 }
 
 .competitor-card.threat-high :deep(.el-card__header) {
-  background: linear-gradient(135deg, #fef0f0 0%, #ffffff 100%);
+  background: linear-gradient(135deg, #fef0f0 0%, var(--bg-card) 100%);
 }
 
 .competitor-card.threat-medium {
-  border-color: var(--color-warning, #FF8800);
+  border-color: var(--color-warning, var(--color-warning));
 }
 
 .competitor-card.threat-medium :deep(.el-card__header) {
-  background: linear-gradient(135deg, #fdf6ec 0%, #ffffff 100%);
+  background: linear-gradient(135deg, #fdf6ec 0%, var(--bg-card) 100%);
 }
 
 .competitor-header {
@@ -293,7 +293,7 @@ watch(() => props.modelValue, (newVal) => {
 }
 
 .competitor-avatar {
-  background: var(--color-primary, #0066CC);
+  background: var(--color-primary, var(--brand-primary));
   color: white;
   font-weight: 600;
 }
@@ -308,7 +308,7 @@ watch(() => props.modelValue, (newVal) => {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
 }
 
 .competitor-stats {
@@ -335,7 +335,7 @@ watch(() => props.modelValue, (newVal) => {
 .stat-value {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-primary, #0066CC);
+  color: var(--color-primary, var(--brand-primary));
 }
 
 .competitor-tactics {
@@ -373,9 +373,9 @@ watch(() => props.modelValue, (newVal) => {
   align-items: flex-start;
   gap: 12px;
   padding: 12px;
-  background: #f5f7fa;
+  background: var(--bg-subtle);
   border-radius: 6px;
-  border-left: 3px solid var(--color-primary, #0066CC);
+  border-left: 3px solid var(--color-primary, var(--brand-primary));
 }
 
 .strategy-tag {

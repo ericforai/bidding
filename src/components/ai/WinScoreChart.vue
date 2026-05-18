@@ -41,13 +41,13 @@ const getChartOption = () => {
       center: ['50%', '55%'],
       radius: '65%',
       axisName: {
-        color: '#606266',
+        color: 'var(--text-secondary-ui)',
         fontSize: 13,
         fontWeight: 500
       },
       splitArea: {
         areaStyle: {
-          color: ['#f5f7fa', '#e4e7ed', '#d4d7dc', '#c4c7cc', '#b4b7bc']
+          color: ['var(--bg-subtle)', 'var(--gray-250)', '#d4d7dc', '#c4c7cc', '#b4b7bc']
         }
       },
       axisLine: {
@@ -82,11 +82,11 @@ const getChartOption = () => {
               }
             },
             lineStyle: {
-              color: '#0066CC',
+              color: 'var(--brand-primary)',
               width: 2
             },
             itemStyle: {
-              color: '#0066CC'
+              color: 'var(--brand-primary)'
             }
           }
         ]

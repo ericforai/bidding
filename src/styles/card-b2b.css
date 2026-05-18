@@ -6,7 +6,7 @@
 
 /* ==================== Base Card Styles ==================== */
 .b2b-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   border: 1px solid var(--gray-100);
@@ -24,7 +24,7 @@
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-lg);
-  background: #fff;
+  background: var(--bg-card);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   border: 1px solid var(--gray-100);
@@ -112,7 +112,7 @@
 .b2b-metric-card {
   position: relative;
   padding: 24px;
-  background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+  background: linear-gradient(135deg, var(--bg-card) 0%, #fafbfc 100%);
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
   border: 1px solid rgba(0, 0, 0, 0.06);
@@ -131,19 +131,19 @@
 }
 
 .b2b-metric-card.metric-blue::before {
-  background: linear-gradient(180deg, #0066CC 0%, #3388DD 100%);
+  background: linear-gradient(180deg, var(--brand-primary) 0%, var(--brand-primary-light) 100%);
 }
 
 .b2b-metric-card.metric-green::before {
-  background: linear-gradient(180deg, #00AA44 0%, #22CC66 100%);
+  background: linear-gradient(180deg, var(--color-success) 0%, #22CC66 100%);
 }
 
 .b2b-metric-card.metric-orange::before {
-  background: linear-gradient(180deg, #FF8800 0%, #FFAA33 100%);
+  background: linear-gradient(180deg, var(--color-warning) 0%, #FFAA33 100%);
 }
 
 .b2b-metric-card.metric-red::before {
-  background: linear-gradient(180deg, #DD2200 0%, #FF4422 100%);
+  background: linear-gradient(180deg, var(--color-danger) 0%, #FF4422 100%);
 }
 
 .b2b-metric-card::after {
@@ -158,10 +158,10 @@
   transition: opacity 0.3s ease;
 }
 
-.b2b-metric-card.metric-blue::after { background: #0066CC; }
-.b2b-metric-card.metric-green::after { background: #00AA44; }
-.b2b-metric-card.metric-orange::after { background: #FF8800; }
-.b2b-metric-card.metric-red::after { background: #DD2200; }
+.b2b-metric-card.metric-blue::after { background: var(--brand-primary); }
+.b2b-metric-card.metric-green::after { background: var(--color-success); }
+.b2b-metric-card.metric-orange::after { background: var(--color-warning); }
+.b2b-metric-card.metric-red::after { background: var(--color-danger); }
 
 .b2b-metric-card:hover {
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
@@ -181,7 +181,7 @@
 .b2b-metric-label {
   font-size: 12px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--gray-650);
   margin-bottom: 12px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -190,7 +190,7 @@
 .b2b-metric-value {
   font-size: 36px;
   font-weight: 700;
-  color: #111827;
+  color: var(--gray-950);
   line-height: 1;
   margin-bottom: 12px;
   letter-spacing: -0.02em;
@@ -218,7 +218,7 @@
 }
 
 .b2b-metric-trend.positive .trend-value {
-  color: #00AA44;
+  color: var(--color-success);
   font-weight: 600;
 }
 
@@ -227,13 +227,13 @@
 }
 
 .b2b-metric-trend.negative .trend-value {
-  color: #DD2200;
+  color: var(--color-danger);
   font-weight: 600;
 }
 
 /* ==================== Section Card ==================== */
 .b2b-section-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   border: 1px solid var(--gray-100);
@@ -267,7 +267,7 @@
 
 /* ==================== Feature Card (for AI Center) ==================== */
 .b2b-feature-card {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   border: 1px solid var(--gray-100);
@@ -316,7 +316,7 @@
 /* ==================== Project Item Card ==================== */
 .b2b-project-item {
   padding: var(--space-4);
-  background: #fff;
+  background: var(--bg-card);
   border: 1px solid var(--gray-100);
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -360,7 +360,7 @@
   flex-direction: column;
   align-items: center;
   padding: var(--space-lg) var(--space-4);
-  background: #fff;
+  background: var(--bg-card);
   border-radius: var(--radius-md);
   border: 1px solid var(--gray-100);
   cursor: pointer;
@@ -381,7 +381,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--bg-card);
   margin-bottom: 12px;
 }
 
@@ -396,7 +396,7 @@
   top: var(--space-sm);
   right: var(--space-sm);
   background: var(--color-danger);
-  color: #fff;
+  color: var(--bg-card);
   font-size: var(--font-size-xs);
   padding: 2px var(--space-sm);
   border-radius: 10px;

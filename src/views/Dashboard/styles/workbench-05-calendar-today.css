@@ -1,3 +1,5 @@
+@import '../../../styles/variables.css';
+
 /* 今日日程卡片 */
 .today-events-list {
   padding: 16px;
@@ -63,7 +65,7 @@
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: #111827;
+  color: var(--gray-950);
   margin-bottom: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -72,5 +74,5 @@
 
 .event-project {
   font-size: 12px;
-  color: #6B7280;
+  color: var(--gray-650);
 }

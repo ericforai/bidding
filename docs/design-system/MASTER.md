@@ -18,11 +18,16 @@
 
 | Role | Hex | CSS Variable |
 |------|-----|--------------|
-| Primary | `#0F172A` | `--color-primary` |
-| Secondary | `#334155` | `--color-secondary` |
-| CTA/Accent | `#0369A1` | `--color-cta` |
-| Background | `#F8FAFC` | `--color-background` |
-| Text | `#020617` | `--color-text` |
+| Brand Green (Primary) | `#2E7659` | `--brand-xiyu-logo` / `--el-color-primary` |
+| Brand Blue (Secondary) | `#0066CC` | `--brand-primary` / `--color-info` |
+| Accent Blue | `#0369A1` | `--accent-blue` |
+| Sidebar Text | `#334155` | `--sidebar-text` |
+| Page Background | `#F0F2F5` | `--bg-page` |
+| Card / Surface | `#FFFFFF` | `--bg-card` |
+| Subtle Background | `#F5F7FA` | `--bg-subtle` |
+| Error | `#DD2200` | `--color-danger` |
+| Warning | `#FF8800` | `--color-warning` |
+| Success | `#00AA44` | `--color-success` |
 
 **Color Notes:** Professional navy + blue CTA
 

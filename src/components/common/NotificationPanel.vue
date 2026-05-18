@@ -98,7 +98,7 @@ onMounted(() => {
   max-width: 100vw;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
+  background: var(--bg-card);
 }
 
 .notification-panel-header {
@@ -162,7 +162,7 @@ onMounted(() => {
   justify-content: center;
   border-radius: 50%;
   background: var(--surface-hover, #f1f5f9);
-  color: var(--brand-xiyu-logo, #2E7659);
+  color: var(--brand-xiyu-logo, var(--brand-xiyu-logo));
 }
 
 .notification-item-content {

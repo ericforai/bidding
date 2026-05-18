@@ -1,10 +1,12 @@
+@import '../../../../styles/variables.css';
+
 .table-container {
   width: 100%;
   overflow: hidden;
 }
 
 .tender-table {
-  --el-table-row-hover-bg-color: #eff6ff;
+  --el-table-row-hover-bg-color: var(--accent-blue-light, #E0F2FE);
 }
 
 .tender-table .tender-main-column .cell {
@@ -53,7 +55,7 @@
   flex-wrap: wrap;
   gap: 6px 10px;
   min-width: 0;
-  color: #64748b;
+  color: var(--text-slate, #64748b);
   font-size: 12px;
   line-height: 1.4;
 }
@@ -101,7 +103,7 @@
 }
 
 .table-container .el-table__fixed-right::before {
-  box-shadow: -8px 0 16px -14px #475569;
+  box-shadow: -8px 0 16px -14px var(--sidebar-text-secondary, #475569);
 }
 
 .tender-table .el-table-fixed-column--right .cell,
