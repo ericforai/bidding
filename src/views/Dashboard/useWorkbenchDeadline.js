@@ -36,8 +36,7 @@ export function useWorkbenchDeadline({
       } else {
         deadlineMetricsError.value = '截止节点数据暂时不可用'
       }
-    } catch (error) {
-      console.error('[Workbench] Failed to load deadline stats:', error)
+    } catch {
       deadlineMetricsError.value = '截止节点数据暂时不可用，请稍后重试'
     } finally {
       deadlineMetricsLoading.value = false

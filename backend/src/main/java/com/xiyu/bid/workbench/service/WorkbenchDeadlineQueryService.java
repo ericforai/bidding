@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -61,19 +60,15 @@ public class WorkbenchDeadlineQueryService {
             List<Long> allowedTenderIds = projectRepository.findTenderIdsByProjectIds(allowedProjectIds);
 
             if (!allowedTenderIds.isEmpty()) {
-                List<LocalDateTime> batchRegDeadlines = new ArrayList<>();
-                List<LocalDateTime> batchOpeningTimes = new ArrayList<>();
-                for (List<Long> batch : partition(allowedTenderIds, MAX_TENDER_IDS_FOR_IN_CLAUSE)) {
-                    batchRegDeadlines.addAll(tenderRepository.findRegistrationDeadlinesByTenderIds(batch, queryStart, queryEnd));
-                    batchOpeningTimes.addAll(tenderRepository.findBidOpeningTimesByTenderIds(batch, queryStart, queryEnd));
-                }
+                List<Long> safeTenderIds = allowedTenderIds.size() > MAX_TENDER_IDS_FOR_IN_CLAUSE
+                        ? allowedTenderIds.subList(0, MAX_TENDER_IDS_FOR_IN_CLAUSE)
+                        : allowedTenderIds;
                 if (allowedTenderIds.size() > MAX_TENDER_IDS_FOR_IN_CLAUSE) {
-                    log.info("Deadline stats: batch-queried {} tender IDs in {} chunks",
-                            allowedTenderIds.size(),
-                            (allowedTenderIds.size() + MAX_TENDER_IDS_FOR_IN_CLAUSE - 1) / MAX_TENDER_IDS_FOR_IN_CLAUSE);
+                    log.warn("Tender ID count {} exceeds safe IN-clause limit {}, truncating to {}",
+                            allowedTenderIds.size(), MAX_TENDER_IDS_FOR_IN_CLAUSE, safeTenderIds.size());
                 }
-                regDeadlines = batchRegDeadlines;
-                openingTimes = batchOpeningTimes;
+                regDeadlines = tenderRepository.findRegistrationDeadlinesByTenderIds(safeTenderIds, queryStart, queryEnd);
+                openingTimes = tenderRepository.findBidOpeningTimesByTenderIds(safeTenderIds, queryStart, queryEnd);
             } else {
                 regDeadlines = List.of();
                 openingTimes = List.of();
@@ -125,13 +120,5 @@ public class WorkbenchDeadlineQueryService {
     private static LocalDateTime latest(LocalDateTime a, LocalDateTime b, LocalDateTime c) {
         LocalDateTime ab = a.isAfter(b) ? a : b;
         return ab.isAfter(c) ? ab : c;
-    }
-
-    private static <T> List<List<T>> partition(List<T> list, int batchSize) {
-        List<List<T>> batches = new java.util.ArrayList<>();
-        for (int i = 0; i < list.size(); i += batchSize) {
-            batches.add(list.subList(i, Math.min(i + batchSize, list.size())));
-        }
-        return batches;
     }
 }
