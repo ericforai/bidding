@@ -16,9 +16,6 @@
       <el-form-item label="API密钥">
         <el-input v-model="sourceConfig.apiKey" type="password" placeholder="仅本次会话使用，不会写入本地存储" show-password />
       </el-form-item>
-      <el-form-item label="业务单位">
-        <el-input v-model="sourceConfig.businessUnit" placeholder="输入业务单位名称" />
-      </el-form-item>
       <el-form-item label="关键字">
         <el-select v-model="sourceConfig.keywords" multiple allow-create filterable placeholder="选择或输入关键字" class="full-width">
           <el-option v-for="keyword in keywordOptions" :key="keyword" :label="keyword" :value="keyword" />

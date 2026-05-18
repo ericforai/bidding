@@ -11,7 +11,6 @@ import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,16 +22,11 @@ import java.time.LocalDateTime;
  * 标讯提醒设置实体
  */
 @Entity
-@Table(name = "tender_reminder_settings",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "uk_tender_reminder_tender_type",
-                        columnNames = {"tender_id", "reminder_type"})
-        },
-        indexes = {
-                @Index(name = "idx_tender_reminder_tender", columnList = "tender_id"),
-                @Index(name = "idx_tender_reminder_type", columnList = "reminder_type"),
-                @Index(name = "idx_tender_reminder_enabled", columnList = "enabled")
-        })
+@Table(name = "tender_reminder_settings", indexes = {
+    @Index(name = "idx_tender_reminder_tender", columnList = "tender_id"),
+    @Index(name = "idx_tender_reminder_type", columnList = "reminder_type"),
+    @Index(name = "idx_tender_reminder_enabled", columnList = "enabled")
+})
 @Data
 @Builder
 @NoArgsConstructor
