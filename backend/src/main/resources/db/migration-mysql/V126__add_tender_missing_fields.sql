@@ -1,6 +1,6 @@
--- V127: 补齐 tenders 表中 Tender 实体预期的剩余缺失字段
+-- V126: 补齐 tenders 表中 Tender 实体预期的剩余缺失字段
 -- V75/V78 已补齐大部分基础字段（region, industry, purchaser_hash, contact_name/phone,
--- 归一化字段等），V126 已补齐 bid_notice。本迁移补齐从 H2 V110 中尚未
+-- 归一化字段等），V125 已补齐 bid_notice。本迁移补齐从 H2 V110 中尚未
 -- 在 MySQL 侧覆盖的字段：联系人2信息、项目/标讯负责人员信息。
 
 ALTER TABLE tenders
