@@ -11,11 +11,11 @@ import com.xiyu.bid.exception.ResourceNotFoundException;
 import com.xiyu.bid.project.core.InitiationFieldPolicy;
 import com.xiyu.bid.project.core.ProjectFieldLockPolicy;
 import com.xiyu.bid.project.core.ProjectStage;
-import com.xiyu.bid.project.core.ProjectStageTransitionPolicy;
 import com.xiyu.bid.project.dto.InitiationDto;
 import com.xiyu.bid.project.dto.InitiationViewDto;
 import com.xiyu.bid.project.repository.ProjectInitiationDetailsRepository;
 import com.xiyu.bid.repository.ProjectRepository;
+import com.xiyu.bid.service.ProjectAccessScopeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -37,9 +37,11 @@ public class ProjectInitiationService {
     private final ProjectInitiationDetailsRepository repository;
     private final ProjectRepository projectRepository;
     private final ProjectStageService projectStageService;
+    private final ProjectAccessScopeService projectAccessScopeService;
 
-    @Auditable(action = "SUBMIT_INITIATION", entityType = "ProjectInitiationDetails", description = "提交项目立项")
+    @Auditable(action = "SUBMIT_INITIATION", entityType = "ProjectInitiationDetails", description = "提交项目立项审核")
     public InitiationViewDto submit(Long projectId, InitiationDto req, Long currentUserId) {
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
         mustGetProject(projectId);
         var input = toInput(req);
         var decision = InitiationFieldPolicy.validate(input);
@@ -52,23 +54,28 @@ public class ProjectInitiationService {
                         .projectId(projectId)
                         .createdBy(currentUserId)
                         .locked(Boolean.FALSE)
+                        .reviewStatus("DRAFT")
                         .build());
+        // 蓝图 V1.1 §4.3: 不能重复提交已审核或待审核的项目
+        if ("PENDING_REVIEW".equals(entity.getReviewStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "项目已提交审核，请勿重复提交");
+        }
+        if ("APPROVED".equals(entity.getReviewStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "项目已通过审核，不可重新提交");
+        }
         applyInput(entity, req);
-        entity.setLocked(Boolean.TRUE); // §3.1.2 提交后即锁定
+        // 蓝图 V1.1 §4.3: 提交审核 → PENDING_REVIEW（不再直接推进到 DRAFTING）
+        entity.setReviewStatus("PENDING_REVIEW");
+        entity.setRejectionReason(null); // 清空驳回原因
         entity.setUpdatedBy(currentUserId);
         ProjectInitiationDetails saved = repository.save(entity);
-        // §5.4: 立项提交后推进 INITIATED → DRAFTING（已推进则幂等跳过）
-        ProjectStage current = projectStageService.currentStage(projectId);
-        if (current == ProjectStage.INITIATED) {
-            projectStageService.requestTransition(projectId, ProjectStage.DRAFTING,
-                    ProjectStageTransitionPolicy.GateInputs.EMPTY);
-        }
-        log.info("Initiation submitted project={} user={}", projectId, currentUserId);
+        log.info("Initiation submitted for review project={} user={}", projectId, currentUserId);
         return toView(saved);
     }
 
     @Auditable(action = "UPDATE_INITIATION", entityType = "ProjectInitiationDetails", description = "更新项目立项")
     public InitiationViewDto update(Long projectId, InitiationDto req, Long currentUserId) {
+        projectAccessScopeService.assertCurrentUserCanAccessProject(projectId);
         mustGetProject(projectId);
         // §3.6 全字段锁定 — CLOSED 阶段拒绝写入。
         ProjectStage stage = projectStageService.currentStage(projectId);
@@ -194,6 +201,10 @@ public class ProjectInitiationService {
                 .departmentSnapshot(e.getDepartmentSnapshot())
                 .depositAmount(e.getDepositAmount()).depositPaymentMethod(e.getDepositPaymentMethod())
                 .competitors(e.getCompetitors()).locked(e.getLocked())
+                .reviewStatus(e.getReviewStatus())
+                .rejectionReason(e.getRejectionReason())
+                .reviewedBy(e.getReviewedBy()).reviewedAt(e.getReviewedAt())
+                .aiRiskLevel(e.getAiRiskLevel()).tenderDocumentId(e.getTenderDocumentId())
                 .createdAt(e.getCreatedAt()).updatedAt(e.getUpdatedAt())
                 .build();
     }

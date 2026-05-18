@@ -177,9 +177,32 @@ async function handleAbandon() {
 
 async function handleTransition() {
   if (!targetSubStage.value) return ElMessage.warning('请选择子阶段')
+  // 蓝图 V1.1 §4.3 要求评标情况说明必填
+  let notes = ''
+  try {
+    const { value } = await ElMessageBox.prompt(
+      '请填写本次评标情况说明（必填）',
+      '评标状态切换',
+      {
+        confirmButtonText: '提交',
+        cancelButtonText: '取消',
+        inputType: 'textarea',
+        inputPlaceholder: '请输入评标情况说明...',
+        inputValidator: (v) => (v && v.trim().length > 0) || '评标情况说明不能为空',
+        distinguishCancelAndClose: true
+      }
+    )
+    notes = (value || '').trim()
+  } catch (e) {
+    if (e !== 'cancel' && e !== 'close') console.warn(e)
+    return
+  }
   transitioning.value = true
   try {
-    await projectLifecycleApi.transitionEvaluationSubStage(props.projectId, { target: targetSubStage.value })
+    await projectLifecycleApi.transitionEvaluationSubStage(props.projectId, {
+      targetSubStage: targetSubStage.value,
+      notes
+    })
     ElMessage.success('子阶段已切换')
     await load()
   } catch (e) {

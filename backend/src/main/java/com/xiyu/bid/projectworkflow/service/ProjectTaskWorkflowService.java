@@ -15,7 +15,9 @@ import com.xiyu.bid.task.service.TaskHistoryRecorder;
 import com.xiyu.bid.task.service.TaskSnapshots;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -37,6 +39,7 @@ class ProjectTaskWorkflowService {
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
     private final TaskHistoryRecorder taskHistoryRecorder;
+    private final ProjectTaskDeliverableCollector deliverableCollector;
 
     List<ProjectTaskViewDTO> getProjectTasks(Long projectId) {
         guardService.requireProject(projectId);
@@ -78,10 +81,26 @@ class ProjectTaskWorkflowService {
     ) {
         guardService.requireWorkflowMutationProject(projectId);
         Task task = guardService.requireTask(projectId, taskId);
+        Task.Status targetStatus = toEntityStatus(request.getStatus());
+
+        // REVIEW -> TODO (驳回) 时校验 reviewComment 非空
+        if (task.getStatus() == Task.Status.REVIEW && targetStatus == Task.Status.TODO) {
+            if (!hasText(request.getReviewComment())) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "驳回任务时必须填写驳回原因");
+            }
+        }
+
         Task before = TaskSnapshots.copy(task);
-        task.setStatus(toEntityStatus(request.getStatus()));
+        task.setStatus(targetStatus);
         Task saved = taskRepository.save(task);
         taskHistoryRecorder.recordUpdate(before, saved, actorUsername);
+
+        // COMPLETED 时：归集任务交付物到项目文档（幂等 + 批量）
+        if (targetStatus == Task.Status.COMPLETED) {
+            deliverableCollector.collect(projectId, taskId);
+        }
+
         return toTaskView(saved);
     }
 

@@ -21,4 +21,6 @@ public class ProjectTaskStatusUpdateRequest {
 
     @NotNull(message = "任务状态不能为空")
     private Status status;
+
+    private String reviewComment;
 }

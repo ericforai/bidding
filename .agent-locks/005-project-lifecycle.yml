@@ -1,0 +1,9 @@
+version: 1
+task: "005-project-lifecycle"
+locks:
+  - path: "backend/src/main/resources/db/migration-mysql/V126__project_lifecycle_enhancements.sql"
+    scope: "file"
+    owner: "claude"
+    branch: "005-project-lifecycle"
+    expiresAt: "2026-05-25T00:00:00Z"
+    reason: "V126 project lifecycle DB migration; renamed from V125 to avoid conflict with cursor's V125"

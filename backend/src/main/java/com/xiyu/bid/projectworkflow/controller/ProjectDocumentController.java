@@ -93,7 +93,7 @@ public class ProjectDocumentController {
     }
 
     @DeleteMapping("/{documentId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<ApiResponse<Void>> deleteProjectDocument(
             @PathVariable Long projectId,
             @PathVariable Long documentId

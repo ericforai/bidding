@@ -1,5 +1,5 @@
-// Input: current stage, requested stage, gate inputs
-// Output: Allow / Deny(reason) sealed Decision; linear-only, CLOSED terminal
+// Input: current stage, requested stage, gate inputs, result type
+// Output: Allow / Deny(reason) sealed Decision; linear-only with result-aware routing
 // Pos: project/core/ - pure rule, no Spring/JPA
 // 一旦我被更新，务必更新我的开头注释，以及所属的文件夹的 md。
 package com.xiyu.bid.project.core;
@@ -7,14 +7,15 @@ package com.xiyu.bid.project.core;
 import java.util.Objects;
 
 /**
- * PRD §5.4 项目阶段线性 FSM 决策。
+ * 项目阶段 FSM 决策。产品蓝图 V1.1 §4.3。
  * <p>
  * 规则：
  * <ul>
  *   <li>仅允许相邻阶段顺向推进（INITIATED→...→CLOSED）。</li>
  *   <li>CLOSED 为终态，任何离开均拒绝。</li>
  *   <li>跨级跳转、倒退、同态自循环均拒绝。</li>
- *   <li>EVALUATING 内部子状态线性：IN_PROGRESS→AWAITING_BOARD→ANNOUNCED。</li>
+ *   <li>结果确认阶段（RESULT_PENDING）按投标结果类型分流：
+ *       中标/未中标 → 复盘；流标/弃标 → 结项。</li>
  * </ul>
  */
 public final class ProjectStageTransitionPolicy {
@@ -36,10 +37,6 @@ public final class ProjectStageTransitionPolicy {
         if (expectedNext == null || requested != expectedNext) {
             return new Decision.Deny("非法跳转：" + current + "→" + requested + "，仅允许线性顺推到 " + expectedNext);
         }
-        // gateInputs 仅提供给将来扩展（如保证金/任务全完成），此处不强校验，由 shell 层拼装。
-        // TODO(PRD §3.2.3/§3.6): 把 ProjectClosureGatePolicy + AllTasksCompletedPolicy 的判断
-        // 从 shell 上提到这里集中决策，让 stage 推进闸门成为单一真源（pure rule + GateInputs 携带证据）。
-        // 这是一个重构，当前 fix 范围之外。
         Objects.requireNonNull(gateInputs, "gateInputs 不能为空");
         return Decision.ALLOW;
     }
@@ -72,9 +69,21 @@ public final class ProjectStageTransitionPolicy {
     private static EvaluationSubStage nextSub(EvaluationSubStage s) {
         return switch (s) {
             case IN_PROGRESS -> EvaluationSubStage.AWAITING_BOARD;
-            case AWAITING_BOARD -> EvaluationSubStage.ANNOUNCED;
+            case AWAITING_BOARD -> EvaluationSubStage.RESULT_OUT;
+            case RESULT_OUT -> EvaluationSubStage.ANNOUNCED;
             case ANNOUNCED -> null;
         };
+    }
+
+    /**
+     * 结果确认阶段按投标结果类型决定下一状态。
+     * 产品蓝图 V1.1 §4.3：中标/未中标 → 复盘；流标/弃标 → 结项。
+     */
+    public static ProjectStage decideResultNext(BidResultType resultType) {
+        Objects.requireNonNull(resultType, "resultType 不能为空");
+        return (resultType == BidResultType.FAILED || resultType == BidResultType.ABANDONED)
+                ? ProjectStage.CLOSED
+                : ProjectStage.RETROSPECTIVE;
     }
 
     /** Gate inputs 占位：未来由 shell 注入（保证金已退回、任务全完成等）。 */
