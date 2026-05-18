@@ -67,4 +67,9 @@ jobs:
           fi
 
           git commit -m "chore(locks): prune stale expired locks"
+
+          # Sync with main before pushing to avoid non-fast-forward rejection
+          # when main received updates during this run.
+          git pull --rebase origin main
+
           git push origin HEAD:main

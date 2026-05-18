@@ -1,0 +1,9 @@
+version: 1
+task: "audit-fix"
+locks:
+  - path: ".github/workflows/agent-locks-janitor.yml"
+    scope: "file"
+    owner: "cursor"
+    branch: "cursor/audit-fix"
+    expiresAt: "2026-05-19T00:17:56.966Z"
+    reason: "审计修复：添加 rebase 防止竞态"
