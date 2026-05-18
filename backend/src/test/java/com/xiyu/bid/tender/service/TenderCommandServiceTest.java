@@ -70,6 +70,9 @@ class TenderCommandServiceTest {
     @Mock
     private TenderAutoAssignmentService autoAssignmentService;
 
+    @Mock
+    private TenderDeduplicationService tenderDeduplicationService;
+
     private TenderCommandService tenderCommandService;
     private TenderQueryService tenderQueryService;
     private com.xiyu.bid.batch.core.TenderStatusTransitionPolicy statusTransitionPolicy;
