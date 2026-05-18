@@ -1,5 +1,6 @@
 package com.xiyu.bid.workbench.controller;
 
+import com.xiyu.bid.config.BizTimezoneProperties;
 import com.xiyu.bid.dto.ApiResponse;
 import com.xiyu.bid.workbench.dto.WorkbenchDeadlineStatsDTO;
 import com.xiyu.bid.workbench.service.WorkbenchDeadlineQueryService;
@@ -20,13 +21,14 @@ import java.time.LocalDate;
 public class WorkbenchDeadlineController {
 
     private final WorkbenchDeadlineQueryService deadlineQueryService;
+    private final BizTimezoneProperties bizTimezone;
 
     @GetMapping("/deadline-stats")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<WorkbenchDeadlineStatsDTO>> getDeadlineStats() {
         log.info("GET /api/workbench/deadline-stats");
         return ResponseEntity.ok(ApiResponse.success(
-                deadlineQueryService.getDeadlineStats(LocalDate.now())
+                deadlineQueryService.getDeadlineStats(bizTimezone.today())
         ));
     }
 }
